@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Select Evidence v2 — Auto-advance on Function Pick</title>
+<style>
+/* ── Project CSS Variables (from colors_and_type.css) ── */
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.07);
+
+  --teal:     #0d5245;  --teal-bg:   #ddf1eb;
+  --green:    #2d6612;  --green-bg:  #e6f2dc;
+  --red:      #942929;  --red-bg:    #f8e6e6;
+  --amber:    #7a4d0e;  --amber-bg:  #f6edda;
+  --purple:   #3a3185;  --purple-bg: #eceafe;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  display: flex;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Two-column layout ── */
+.layout { display: flex; width: 100%; max-width: 1100px; margin: 32px auto; gap: 24px; padding: 0 24px; }
+.left-panel { flex: 0 0 360px; }
+.right-panel {
+  flex: 1;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--t2);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.right-panel .para-num { color: var(--t3); font-size: 11px; margin-right: 6px; user-select: none; }
+.right-panel p { margin-bottom: 14px; }
+
+/* ── se-strip (section tabs) ── */
+.se-strip { display: flex; gap: 6px; margin-bottom: 16px; padding: 4px; background: var(--surface2); border-radius: 8px; }
+.se-strip-btn {
+  flex: 1; padding: 8px 4px; border-radius: 6px; border: none;
+  background: transparent; font-size: 11px; font-weight: 500;
+  cursor: pointer; font-family: inherit; color: var(--t2);
+  transition: all .15s; display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+}
+.se-strip-btn.active { background: var(--surface); color: var(--t1); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.se-strip-btn.done { color: var(--green); background: var(--green-bg); }
+.se-strip-btn.done.active { background: var(--green-bg); box-shadow: 0 1px 3px rgba(45,102,18,.12); }
+.se-strip-func { font-size: 9px; color: var(--t3); font-weight: 500; }
+.se-strip-btn.done .se-strip-func { color: var(--green); }
+
+/* ── se-card (section header) ── */
+.se-card { margin-bottom: 16px; }
+.se-range {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; color: var(--teal);
+  background: var(--teal-bg); padding: 3px 8px; border-radius: 3px;
+  margin-bottom: 10px;
+}
+.se-title { font-size: 18px; font-weight: 700; letter-spacing: -.2px; line-height: 1.4; color: var(--t1); margin-bottom: 4px; }
+.se-help { font-size: 12px; color: var(--t2); line-height: 1.6; margin-bottom: 14px; }
+
+/* ── se-step ── */
+.se-step-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--t3); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.se-step-num {
+  width: 16px; height: 16px; border-radius: 50%; background: var(--t1);
+  color: var(--surface); font-size: 9px; display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 700;
+}
+.se-step-num.done { background: var(--green); }
+
+/* ── se-func-row (function buttons) ── */
+.se-func-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 18px; }
+.se-func-btn {
+  padding: 10px 8px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--surface); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: inherit; color: var(--t2);
+  text-align: center; transition: all .12s;
+}
+.se-func-btn:hover:not(.locked):not(.dim):not(.wrong):not(.correct-flash) { border-color: var(--t3); }
+.se-func-btn.selected { border-color: var(--teal); background: var(--teal-bg); color: var(--teal); font-weight: 600; }
+.se-func-btn.locked { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 600; cursor: default; }
+.se-func-btn.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+.se-func-btn.dim { opacity: .4; cursor: default; }
+
+/* NEW: correct flash (green before auto-advance) */
+.se-func-btn.correct-flash {
+  border-color: var(--green); background: var(--green-bg);
+  color: var(--green); font-weight: 600; cursor: default;
+  transform: scale(1.03);
+}
+
+/* NEW: shake animation for wrong picks */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+  90% { transform: translateX(1px); }
+}
+.se-func-btn.shake { animation: shake .4s ease-in-out; }
+
+/* NEW: wrong-hint feedback below func buttons */
+.se-wrong-hint {
+  font-size: 11px; color: var(--red); font-weight: 500;
+  margin-top: -10px; margin-bottom: 14px; padding-left: 2px;
+  opacity: 0; transition: opacity .2s;
+}
+.se-wrong-hint.visible { opacity: 1; }
+
+/* ── se-ev-callout ── */
+.se-ev-callout {
+  padding: 14px 16px; background: var(--bg);
+  border: 1px dashed rgba(28,28,26,.14); border-radius: 10px;
+  margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;
+}
+.se-ev-arrow { font-size: 18px; color: var(--teal); flex-shrink: 0; margin-top: 1px; }
+.se-ev-text { font-size: 13px; line-height: 1.6; color: var(--t2); }
+.se-ev-count { font-size: 11px; color: var(--t3); margin-top: 6px; }
+
+/* ── se-action-row ── */
+.se-action-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.se-tally { font-size: 11px; color: var(--t3); flex: 1; }
+.se-tally.ok { color: var(--green); font-weight: 600; }
+.se-btn {
+  padding: 10px 16px; border-radius: 8px; border: none;
+  background: var(--t1); color: var(--surface); font-size: 13px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.se-btn.off { opacity: .35; cursor: default; }
+.se-btn-ghost {
+  padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--t2); font-size: 12px;
+  font-weight: 500; cursor: pointer; font-family: inherit;
+}
+
+/* ── se-hint ── */
+.se-hint-toggle {
+  font-size: 11px; color: var(--t3); cursor: pointer; padding: 4px 8px;
+  border-radius: 4px; background: transparent; border: 1px solid var(--border);
+  font-family: inherit; align-self: flex-start;
+}
+.se-hint-box {
+  padding: 10px 14px; background: var(--amber-bg);
+  border: 1px solid rgba(122,77,14,.15); border-radius: 8px;
+  font-size: 12px; color: var(--amber); line-height: 1.6; margin-top: 8px;
+}
+
+/* ── se-ai feedback ── */
+.se-ai-box {
+  padding: 14px 16px; background: var(--purple-bg); border-radius: 10px;
+  border: 1px solid rgba(58,49,133,.12); margin-top: 14px;
+}
+.se-ai-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.se-ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--purple); flex-shrink: 0; margin-top: 6px; }
+.se-ai-opener { font-size: 12px; line-height: 1.7; color: var(--purple); font-weight: 500; }
+.se-ai-note {
+  font-size: 12px; line-height: 1.65; color: var(--purple);
+  padding: 8px 0 8px 16px; border-left: 2px solid rgba(58,49,133,.25);
+  margin-bottom: 6px; margin-left: 2px;
+}
+.se-ai-quote { font-weight: 600; color: var(--t1); }
+
+/* ── se-why list ── */
+.se-why-list {
+  margin-top: 10px; padding: 10px 14px; background: var(--surface);
+  border-radius: 8px; border: 1px solid var(--border);
+}
+.se-why-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--t3); margin-bottom: 6px; }
+.se-why-item { font-size: 12px; line-height: 1.6; padding: 5px 0; display: flex; gap: 8px; color: var(--t2); border-bottom: 1px dashed var(--border); }
+.se-why-item.last { border-bottom: none; }
+.se-why-dot { flex-shrink: 0; font-size: 11px; margin-top: 1px; font-weight: 700; }
+.se-why-dot.good { color: var(--green); }
+.se-why-dot.bad { color: var(--red); }
+
+/* ── Token styles (right panel) ── */
+.se-tk { transition: all .12s; }
+.se-tk-idle {
+  cursor: pointer; padding: 2px 4px; margin: 0 -2px; border-radius: 3px;
+  background: rgba(0,150,136,.07); border-bottom: 1.5px dashed rgba(0,150,136,.35);
+  transition: background .15s;
+}
+.se-tk-idle:hover { background: rgba(0,150,136,.14); }
+.se-tk-picked {
+  background: #fef6c8; color: var(--t1); padding: 3px 5px; margin: 0 -2px;
+  border-radius: 3px; box-shadow: inset 0 -8px 0 #fce98a; font-weight: 500; cursor: pointer;
+}
+.se-tk-good {
+  background: var(--green-bg); color: var(--green); padding: 3px 5px; margin: 0 -2px;
+  border-radius: 3px; font-weight: 600;
+}
+.se-tk-bad {
+  background: var(--red-bg); color: var(--red); padding: 3px 5px; margin: 0 -2px;
+  border-radius: 3px; text-decoration: line-through; text-decoration-color: rgba(148,41,41,.4);
+}
+.se-tk-missed {
+  background: rgba(45,102,18,.07); padding: 3px 5px; margin: 0 -2px;
+  border-radius: 3px; border-bottom: 1px dashed var(--green); color: var(--t2);
+}
+/* Inactive paragraphs — no token interaction */
+.para-inactive .se-tk-idle { cursor: default; background: transparent; border-bottom-color: transparent; }
+.para-inactive .se-tk-idle:hover { background: transparent; }
+
+/* ── Slide-in transition for Step 2 ── */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.step2-enter { animation: slideIn .3s ease-out; }
+
+/* ── Design note banner ── */
+.design-note {
+  background: var(--purple-bg); border: 1px solid rgba(58,49,133,.12);
+  border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;
+  font-size: 11px; color: var(--purple); line-height: 1.6;
+}
+.design-note strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- LEFT: Exercise panel -->
+  <div class="left-panel">
+    <div class="design-note">
+      <strong>Design v2:</strong> No Confirm button. Clicking a function immediately judges — correct auto-advances to evidence (0.4s green flash), wrong shakes in place.
+    </div>
+
+    <div id="exercise-root"></div>
+  </div>
+
+  <!-- RIGHT: Reading text -->
+  <div class="right-panel" id="text-panel"></div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────
+const FUNC_OPTIONS = ['Introduction', 'History', 'Culture', 'Conclusion']
+
+const SECTIONS = [
+  {
+    id: 'sec-history',
+    label: '¶3–4',
+    correctFunction: 'History',
+    range: [3, 4],
+    hint: 'Look for time markers and chronological language.',
+    hintZh: '寻找时间标记和按时间顺序排列的语言。',
+    aiCorrect: '**Perfect!** You identified all the historical signal phrases — nice eye for chronological markers.',
+    aiPartial: 'You found most signals — you missed a couple of time markers.',
+  },
+  {
+    id: 'sec-culture',
+    label: '¶5–7',
+    correctFunction: 'Culture',
+    range: [5, 6, 7],
+    hint: 'Look for words about beliefs, customs, and traditions.',
+    hintZh: '寻找与信仰、习俗和传统相关的词语。',
+    aiCorrect: '**Excellent!** Every cultural signal phrase located correctly.',
+    aiPartial: 'Good work — a few cultural markers slipped through.',
+  },
+  {
+    id: 'sec-conclusion',
+    label: '¶8',
+    correctFunction: 'Conclusion',
+    range: [8],
+    hint: 'Look for summary language and final-thought markers.',
+    hintZh: '寻找总结性语言和结尾标志词。',
+    aiCorrect: '**Spot on!** You caught every concluding signal.',
+    aiPartial: 'Almost there — one concluding signal was missed.',
+  },
+]
+
+// Simulated paragraph text with tokens
+const PARAGRAPHS = {
+  3: {
+    text: [
+      { t: 'The origins of this tradition ', kind: null },
+      { t: 'date back to', kind: 'evidence', why: 'Chronological marker — signals historical origin.' },
+      { t: ' the early Tang Dynasty. In those days, artisans ', kind: null },
+      { t: 'first developed', kind: 'evidence', why: '"First developed" marks a historical starting point.' },
+      { t: ' techniques for shaping clay into intricate forms. Communities ', kind: null },
+      { t: 'gradually adopted', kind: 'distractor', why: '"Gradually" shows change over time but describes cultural spread, not a historical marker.' },
+      { t: ' these crafts as part of daily life.', kind: null },
+    ],
+  },
+  4: {
+    text: [
+      { t: 'By the Song Dynasty, production had ', kind: null },
+      { t: 'expanded significantly', kind: 'evidence', why: 'Shows historical progression across dynasties.' },
+      { t: '. Trade routes enabled wider distribution, and ', kind: null },
+      { t: 'over the centuries', kind: 'evidence', why: 'Explicit time-span phrase — strong chronological signal.' },
+      { t: ' the craft evolved in both form and function.', kind: null },
+    ],
+  },
+  5: {
+    text: [
+      { t: 'These objects carry deep ', kind: null },
+      { t: 'symbolic meaning', kind: 'evidence', why: 'Signals cultural significance and symbolism.' },
+      { t: ' within the community. Families use them during ', kind: null },
+      { t: 'ceremonial occasions', kind: 'evidence', why: '"Ceremonial" is a strong cultural practice marker.' },
+      { t: ' such as weddings and harvest festivals.', kind: null },
+    ],
+  },
+  6: {
+    text: [
+      { t: 'The motifs on each piece ', kind: null },
+      { t: 'reflect local beliefs', kind: 'evidence', why: '"Beliefs" directly signals cultural values.' },
+      { t: ' about prosperity and protection. Elders ', kind: null },
+      { t: 'pass down', kind: 'distractor', why: '"Pass down" relates to tradition transmission but is a process verb, not a cultural-value signal.' },
+      { t: ' these stories through generations.', kind: null },
+    ],
+  },
+  7: {
+    text: [
+      { t: 'In rural areas, the craft is ', kind: null },
+      { t: 'considered sacred', kind: 'evidence', why: '"Sacred" signals deep cultural and spiritual value.' },
+      { t: '. Artisans must follow strict ', kind: null },
+      { t: 'customary rules', kind: 'evidence', why: '"Customary rules" directly references cultural norms.' },
+      { t: ' when creating pieces for ritual use.', kind: null },
+    ],
+  },
+  8: {
+    text: [
+      { t: '', kind: null },
+      { t: 'In summary', kind: 'evidence', why: '"In summary" is a classic concluding transition.' },
+      { t: ', this craft represents a living link between past and present. ', kind: null },
+      { t: 'Taken together', kind: 'evidence', why: '"Taken together" signals synthesis — a concluding move.' },
+      { t: ', the historical depth and cultural richness make it ', kind: null },
+      { t: 'a lasting testament', kind: 'evidence', why: '"Lasting testament" signals a final evaluative judgment.' },
+      { t: ' to human creativity.', kind: null },
+    ],
+  },
+}
+
+// ── State ─────────────────────────────────────────────
+let currentSectionIdx = 0
+const sectionStates = {}
+SECTIONS.forEach(s => {
+  sectionStates[s.id] = {
+    stage: 'pick',     // pick | evidence | graded
+    funcChoice: null,
+    funcWrong: false,
+    picked: new Set(),
+    showHint: false,
+  }
+})
+
+function cur() { return SECTIONS[currentSectionIdx] }
+function st() { return sectionStates[cur().id] }
+
+// ── Render: Left panel ───────────────────────────────
+function renderLeft() {
+  const section = cur()
+  const state = st()
+  const root = document.getElementById('exercise-root')
+
+  let html = ''
+
+  // Strip
+  html += '<div class="se-strip">'
+  SECTIONS.forEach((s, i) => {
+    const ss = sectionStates[s.id]
+    const active = i === currentSectionIdx ? ' active' : ''
+    const done = ss.stage === 'graded' ? ' done' : ''
+    const funcLabel = ss.stage === 'graded' ? s.correctFunction : '\u2014'
+    html += `<button class="se-strip-btn${active}${done}" onclick="switchSection(${i})">
+      <span>${s.label}${ss.stage === 'graded' ? ' \u2713' : ''}</span>
+      <span class="se-strip-func">${funcLabel}</span>
+    </button>`
+  })
+  html += '</div>'
+
+  // Card
+  html += `<div class="se-card">
+    <span class="se-range">Section &middot; ${section.label}</span>
+    <div class="se-title">What is this section's function?</div>
+    <div class="se-help">First pick the function. Then <strong>locate the why</strong> by clicking the <strong>signal phrases</strong> in the text on the right.</div>
+  </div>`
+
+  // Step 1
+  const step1Done = state.stage !== 'pick'
+  html += `<div class="se-step-label">
+    <span class="se-step-num${step1Done ? ' done' : ''}">1</span>
+    <span>Pick the function</span>
+  </div>`
+
+  html += '<div class="se-func-row">'
+  FUNC_OPTIONS.forEach(f => {
+    const locked = state.stage !== 'pick'
+    const isLockedRight = locked && f === section.correctFunction
+    const isWrongPick = state.funcWrong && state.funcChoice === f && f !== section.correctFunction
+    let cls = 'se-func-btn'
+    if (isLockedRight) cls += ' locked'
+    else if (locked) cls += ' dim'
+    else if (isWrongPick) cls += ' wrong shake'
+    else if (state.funcChoice === f) cls += ' selected'
+    const disabled = locked ? ' disabled' : ''
+    html += `<button class="${cls}"${disabled} onclick="pickFunc('${f}')">${f}</button>`
+  })
+  html += '</div>'
+
+  // Wrong hint (no confirm button!)
+  if (state.stage === 'pick') {
+    const vis = state.funcWrong ? ' visible' : ''
+    html += `<div class="se-wrong-hint${vis}">Not quite \u2014 look at the signal words on the right.</div>`
+  }
+
+  // Step 2
+  if (state.stage !== 'pick') {
+    html += `<div class="step2-enter">`
+
+    html += `<div class="se-step-label" style="margin-top:24px">
+      <span class="se-step-num${state.stage === 'graded' ? ' done' : ''}">2</span>
+      <span>Locate the why</span>
+    </div>`
+
+    if (state.stage === 'evidence') {
+      const count = state.picked.size
+      html += `<div class="se-ev-callout">
+        <span class="se-ev-arrow">&rarr;</span>
+        <div class="se-ev-text">
+          In the text on the right, click the <strong>phrases</strong> (underlined with dots) that prove this is <strong style="color:var(--teal)">${section.correctFunction}</strong>.
+          <div class="se-ev-count">${count === 0 ? "Only structural signal phrases are clickable \u2014 connector words aren't." : count + ' phrase' + (count > 1 ? 's' : '') + ' highlighted.'}</div>
+        </div>
+      </div>`
+
+      html += `<button class="se-hint-toggle" onclick="toggleHint()">${state.showHint ? '\u25be Hide hint' : '\u25b8 Stuck? Show hint'}</button>`
+      if (state.showHint && section.hint) {
+        html += `<div class="se-hint-box">${section.hint}${section.hintZh ? '<div style="color:var(--t3);font-style:italic;margin-top:4px">' + section.hintZh + '</div>' : ''}</div>`
+      }
+
+      html += `<div class="se-action-row" style="margin-top:14px">
+        <span class="se-tally">${count === 0 ? 'Click at least one phrase.' : 'Ready when you are.'}</span>
+        <button class="se-btn${count === 0 ? ' off' : ''}" ${count === 0 ? 'disabled' : ''} onclick="gradeEvidence()">Check evidence</button>
+      </div>`
+    }
+
+    if (state.stage === 'graded') {
+      const fb = computeFeedback(section, state)
+      const whyItems = computeWhyItems(section, state)
+
+      // AI box
+      html += `<div class="se-ai-box"><div class="se-ai-head"><span class="se-ai-dot"></span><div class="se-ai-opener">`
+      if (fb.perfect) {
+        html += mdToHtml(section.aiCorrect)
+      } else if (fb.passed) {
+        html += section.aiPartial ? mdToHtml(section.aiPartial) : `You found <strong>${fb.hit} of ${fb.totalEv}</strong> signals \u2014 enough to move on.`
+      } else if (fb.wrongPicks.length > 0) {
+        html += `You found <strong>${fb.hit} of ${fb.totalEv}</strong> signals \u2014 but a few picks aren't signals. Let me explain:`
+      } else {
+        html += `You found <strong>${fb.hit} of ${fb.totalEv}</strong> signals.${fb.missed.length > 0 ? ' A few are still missing \u2014 check the dashed-underline phrases.' : ''}`
+      }
+      html += `</div></div>`
+
+      if (!fb.perfect) {
+        fb.wrongPicks.forEach(w => {
+          html += `<div class="se-ai-note"><span class="se-ai-quote">"${w.phrase}"</span> <span style="color:var(--t3)">(\u00b6${w.p})</span> \u2014 ${w.why}</div>`
+        })
+        if (fb.wrongPicks.length === 0 && fb.missed.length > 0) {
+          const m = fb.missed[0]
+          html += `<div class="se-ai-note" style="border-left-color:rgba(45,102,18,.3)">Look for: <span class="se-ai-quote">"${m.phrase}"</span> in \u00b6${m.p} \u2014 ${m.why}</div>`
+        }
+      }
+      html += `</div>`
+
+      // Why list
+      html += `<div class="se-why-list"><div class="se-why-header">All signals in this section</div>`
+      whyItems.forEach((it, i) => {
+        const last = i === whyItems.length - 1 ? ' last' : ''
+        const dotCls = it.good ? 'good' : 'bad'
+        const icon = it.good ? (it.picked ? '\u2713' : '+') : '\u2717'
+        const nameStyle = it.good ? 'color:var(--t1)' : 'color:var(--t3)'
+        const missedTag = (!it.picked && it.good) ? ' <span style="color:var(--t3);margin-left:6px;font-style:italic">(missed)</span>' : ''
+        html += `<div class="se-why-item${last}"><span class="se-why-dot ${dotCls}">${icon}</span><div><span style="font-weight:600;${nameStyle}">${it.text}</span><span style="color:var(--t2)"> \u2014 ${it.why}</span>${missedTag}</div></div>`
+      })
+      html += `</div>`
+
+      // Actions
+      const tallyClass = fb.passed ? ' ok' : ''
+      let tallyText = fb.perfect
+        ? `Perfect \u2014 ${fb.hit}/${fb.totalEv} signals.`
+        : fb.passed
+          ? `${fb.hit}/${fb.totalEv} signals \u2014 enough to move on.`
+          : `${fb.hit}/${fb.totalEv} signals \u00b7 ${fb.wrongPicks.length} non-signals picked.`
+
+      html += `<div class="se-action-row" style="margin-top:12px"><span class="se-tally${tallyClass}">${tallyText}</span>`
+      if (!fb.passed) html += `<button class="se-btn-ghost" onclick="retryEvidence()">Try again</button>`
+      if (fb.passed && !fb.perfect) html += `<button class="se-btn-ghost" onclick="retryEvidence()">Try for full marks</button>`
+
+      const nextIdx = SECTIONS.findIndex(s => sectionStates[s.id].stage !== 'graded')
+      if (fb.passed && nextIdx >= 0) {
+        html += `<button class="se-btn" onclick="switchSection(${nextIdx})">Next section &rarr;</button>`
+      } else if (fb.passed && nextIdx < 0) {
+        html += `<span style="color:var(--green);font-weight:600;font-size:12px">All ${SECTIONS.length} done \u2713</span>`
+      }
+      html += `</div>`
+    }
+
+    html += `</div>` // step2-enter
+  }
+
+  root.innerHTML = html
+}
+
+// ── Render: Right panel (text with tokens) ───────────
+function renderRight() {
+  const section = cur()
+  const state = st()
+  const panel = document.getElementById('text-panel')
+  let html = ''
+
+  // Render all paragraphs 3–8
+  for (let pn = 3; pn <= 8; pn++) {
+    const para = PARAGRAPHS[pn]
+    if (!para) continue
+    const isActive = section.range.includes(pn) && state.stage !== 'pick'
+    const inactiveClass = !isActive ? ' para-inactive' : ''
+    html += `<p class="${inactiveClass.trim()}"><span class="para-num">\u00b6${pn}</span>`
+    para.text.forEach((tk, i) => {
+      if (!tk.kind) {
+        html += tk.t
+      } else {
+        const key = `${pn}:${i}`
+        let cls = 'se-tk '
+        if (state.stage === 'graded' && isActive) {
+          const isPicked = state.picked.has(key)
+          if (isPicked && tk.kind === 'evidence') cls += 'se-tk-good'
+          else if (isPicked && tk.kind !== 'evidence') cls += 'se-tk-bad'
+          else if (!isPicked && tk.kind === 'evidence') cls += 'se-tk-missed'
+          else cls += 'se-tk-idle'
+        } else if (state.stage === 'evidence' && isActive) {
+          cls += state.picked.has(key) ? 'se-tk-picked' : 'se-tk-idle'
+        } else {
+          cls += 'se-tk-idle'
+        }
+        // Also show graded tokens from other completed sections
+        if (!isActive) {
+          const otherSection = SECTIONS.find(s => s.range.includes(pn) && s.id !== section.id)
+          if (otherSection) {
+            const oss = sectionStates[otherSection.id]
+            if (oss.stage === 'graded' && oss.picked.has(key) && tk.kind === 'evidence') {
+              cls = 'se-tk se-tk-good'
+            }
+          }
+        }
+        const clickable = isActive && state.stage === 'evidence' ? ` onclick="toggleToken('${key}')"` : ''
+        html += `<span class="${cls}"${clickable}>${tk.t}</span>`
+      }
+    })
+    html += '</p>'
+  }
+
+  panel.innerHTML = html
+}
+
+function render() { renderLeft(); renderRight() }
+
+// ── Actions ──────────────────────────────────────────
+
+function switchSection(idx) {
+  currentSectionIdx = idx
+  render()
+}
+
+// KEY CHANGE: pickFunc auto-judges immediately (no Confirm button)
+function pickFunc(f) {
+  const section = cur()
+  const state = st()
+  if (state.stage !== 'pick') return
+
+  state.funcChoice = f
+  state.funcWrong = false
+
+  if (f === section.correctFunction) {
+    // Correct — flash green, then auto-advance after 0.4s
+    render()
+    // Apply correct-flash class
+    const btns = document.querySelectorAll('.se-func-btn')
+    btns.forEach(btn => {
+      if (btn.textContent === f) {
+        btn.classList.remove('selected')
+        btn.classList.add('correct-flash')
+      }
+    })
+    setTimeout(() => {
+      state.stage = 'evidence'
+      state.funcWrong = false
+      render()
+    }, 400)
+  } else {
+    // Wrong — shake + red
+    state.funcWrong = true
+    render()
+  }
+}
+
+function toggleToken(key) {
+  const state = st()
+  if (state.stage !== 'evidence') return
+  if (state.picked.has(key)) state.picked.delete(key)
+  else state.picked.add(key)
+  render()
+}
+
+function toggleHint() {
+  const state = st()
+  state.showHint = !state.showHint
+  render()
+}
+
+function gradeEvidence() {
+  const state = st()
+  if (state.picked.size === 0) return
+  state.stage = 'graded'
+  render()
+}
+
+function retryEvidence() {
+  const state = st()
+  state.stage = 'evidence'
+  state.picked = new Set()
+  state.showHint = false
+  render()
+}
+
+// ── Feedback computation ─────────────────────────────
+function computeFeedback(section, state) {
+  let hit = 0, totalEv = 0
+  const wrongPicks = [], missed = []
+
+  section.range.forEach(pn => {
+    const para = PARAGRAPHS[pn]
+    if (!para) return
+    para.text.forEach((tk, i) => {
+      const key = `${pn}:${i}`
+      const isPicked = state.picked.has(key)
+      if (tk.kind === 'evidence') {
+        totalEv++
+        if (isPicked) hit++
+        else missed.push({ phrase: tk.t, why: tk.why || '', p: pn })
+      } else if (isPicked && (tk.kind === 'distractor' || tk.kind === 'pick')) {
+        wrongPicks.push({ phrase: tk.t, why: tk.why || 'Not a structural signal.', p: pn })
+      }
+    })
+  })
+  const minHits = Math.min(section.minHits ?? totalEv, totalEv)
+  const passed = hit >= minHits
+  const perfect = hit === totalEv && wrongPicks.length === 0
+  return { wrongPicks, missed, hit, totalEv, perfect, passed }
+}
+
+function computeWhyItems(section, state) {
+  const out = []
+  section.range.forEach(pn => {
+    const para = PARAGRAPHS[pn]
+    if (!para) return
+    para.text.forEach((tk, i) => {
+      const key = `${pn}:${i}`
+      const isPicked = state.picked.has(key)
+      if (tk.kind === 'evidence') {
+        out.push({ good: true, picked: isPicked, text: `"${tk.t}"`, why: tk.why || '' })
+      } else if (isPicked && (tk.kind === 'distractor' || tk.kind === 'pick')) {
+        out.push({ good: false, picked: true, text: `"${tk.t}"`, why: tk.why || 'Not a structural signal.' })
+      }
+    })
+  })
+  return out
+}
+
+function mdToHtml(t) {
+  if (!t) return ''
+  return t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+}
+
+// ── Init ─────────────────────────────────────────────
+render()
+</script>
+</body>
+</html>

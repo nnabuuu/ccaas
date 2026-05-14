@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Depth Leaderboard — 深度互动排行榜 Design Spec</title>
+<style>
+/* ── Project CSS Variables (from teacher-base.css) ── */
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.08);
+  --border-strong: rgba(28, 28, 26, 0.14);
+
+  --amber:     #7a4d0e;
+  --amber-soft: #f6edda;
+  --amber-dot: #c48a1e;
+  --green:     #2d6612;
+  --green-soft: #e6f2dc;
+  --green-dot: #5a9a3a;
+
+  /* ── AI tokens ── */
+  --ai:       #7c3aed;
+  --ai-soft:  #f3f0ff;
+
+  /* ── Leaderboard-specific tokens ── */
+  --gold:        #c48a1e;
+  --gold-bg:     #fdf6e3;
+  --gold-border: #d4a534;
+  --gold-glow:   rgba(196, 138, 30, 0.15);
+
+  --silver:        #6b7280;
+  --silver-bg:     #f3f4f6;
+  --silver-border: #9ca3af;
+
+  --bronze:        #92400e;
+  --bronze-bg:     #fef3e2;
+  --bronze-border: #b45309;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  line-height: 1.5;
+  padding: 24px;
+}
+
+/* ── Design spec header ── */
+.spec-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.spec-header h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.spec-header p { font-size: 12px; color: var(--t3); }
+
+/* ── Section labels ── */
+.section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 40px 0 12px;
+  padding-left: 4px;
+}
+
+/* ── Panel container (simulates right panel width) ── */
+.panel {
+  width: 340px;
+  margin: 0 auto 32px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── Panel header ── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.panel-header-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.panel-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+}
+.panel-header-count {
+  font-size: 11px;
+  color: var(--t3);
+  margin-left: auto;
+}
+
+/* ═══ PODIUM ═══ */
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 16px 16px;
+}
+
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  max-width: 100px;
+}
+
+/* #1 is taller */
+.podium-slot--1 { transform: translateY(-12px); }
+
+/* ── Avatar circle ── */
+.podium-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+.podium-slot--1 .podium-avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+  background: linear-gradient(135deg, #d4a534, #c48a1e);
+  border: 3px solid var(--gold-border);
+  box-shadow: 0 0 24px var(--gold-glow);
+}
+.podium-slot--2 .podium-avatar {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  border: 3px solid var(--silver-border);
+}
+.podium-slot--3 .podium-avatar {
+  background: linear-gradient(135deg, #d97706, #92400e);
+  border: 3px solid var(--bronze-border);
+}
+
+/* ── Crown on #1 ── */
+.podium-slot--1 .podium-avatar::before {
+  content: "\1F451";
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  animation: crown-float 3s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(196, 138, 30, 0.3));
+}
+
+@keyframes crown-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* ── Rank badge ── */
+.podium-rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+}
+.podium-slot--1 .podium-rank { background: var(--gold); }
+.podium-slot--2 .podium-rank { background: var(--silver); }
+.podium-slot--3 .podium-rank { background: var(--bronze); }
+
+/* ── Name ── */
+.podium-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Stats row ── */
+.podium-stats {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.stat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+.stat-badge--hl {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+.stat-badge--tp {
+  color: var(--green);
+  background: var(--green-soft);
+}
+.stat-legend {
+  font-size: 10px;
+  color: var(--t3);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.stat-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.stat-legend .stat-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Podium card for #1 glow ── */
+.podium-card {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.podium-slot--1 .podium-card {
+  background: var(--gold-bg);
+  box-shadow: 0 0 24px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.04);
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+.podium-slot--2 .podium-card {
+  background: var(--silver-bg);
+}
+.podium-slot--3 .podium-card {
+  background: var(--bronze-bg);
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 24px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.04); }
+  50%      { box-shadow: 0 0 32px rgba(196, 138, 30, 0.25), 0 2px 8px rgba(0,0,0,0.04); }
+}
+
+/* ═══ LIST ROWS (#4-#5) ═══ */
+
+.list-section {
+  border-top: 1px solid var(--border);
+  padding: 8px 12px;
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+.list-row:hover { background: var(--surface2); }
+
+.list-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.list-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--t2);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.list-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-stats {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ═══ EMPTY STATE ═══ */
+
+.empty-state {
+  padding: 40px 24px;
+  text-align: center;
+}
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+.empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t2);
+  margin-bottom: 4px;
+}
+.empty-desc {
+  font-size: 12px;
+  color: var(--t3);
+  line-height: 1.6;
+}
+
+/* ═══ FEW-STUDENTS LAYOUT ═══ */
+/* When only 1-2 students, no podium — just list */
+
+.few-list {
+  padding: 12px;
+}
+.few-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: var(--gold-bg);
+  margin-bottom: 8px;
+}
+.few-row:last-child { margin-bottom: 0; }
+.few-row:nth-child(2) { background: var(--silver-bg); }
+
+.few-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: white;
+}
+.few-row:first-child .few-rank { background: var(--gold); }
+.few-row:nth-child(2) .few-rank { background: var(--silver); }
+
+.few-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+}
+.few-row:first-child .few-avatar {
+  background: linear-gradient(135deg, #d4a534, #c48a1e);
+  border: 2px solid var(--gold-border);
+}
+.few-row:nth-child(2) .few-avatar {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  border: 2px solid var(--silver-border);
+}
+
+.few-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  flex: 1;
+}
+
+.few-stats {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ═══ AI SUMMARY ═══ */
+
+.ai-summary {
+  font-size: 11px;
+  color: var(--t2);
+  margin-top: 4px;
+  line-height: 1.5;
+  text-align: center;
+  padding: 0 4px;
+}
+
+.ai-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ai);
+  background: var(--ai-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+/* refresh hint for teachers */
+.ai-refresh-hint {
+  font-size: 9px;
+  color: var(--t3);
+  text-align: center;
+  padding: 2px 0 6px;
+}
+
+/* ═══ EXPAND / COLLAPSE ═══ */
+
+.expand-details {
+  width: 100%;
+}
+.expand-details summary {
+  list-style: none;
+  cursor: pointer;
+}
+.expand-details summary::-webkit-details-marker { display: none; }
+
+/* Podium expand trigger — invisible summary, card itself is clickable */
+.podium-card { cursor: pointer; }
+.podium-card:hover { filter: brightness(0.97); }
+
+/* List row expand */
+.list-row { cursor: pointer; }
+
+.expand-arrow {
+  font-size: 10px;
+  color: var(--t3);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.expand-details[open] > summary .expand-arrow,
+.expand-details[open] > .list-row .expand-arrow { transform: rotate(90deg); }
+
+/* Expand panel */
+.expand-panel {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+/* Podium conversation section — full-width below podium */
+.podium-convo-section {
+  border-top: 1px solid var(--border);
+  padding: 0 12px 8px;
+}
+
+.podium-convo-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.podium-convo-header:hover { background: var(--surface2); }
+
+.podium-convo-rank {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+}
+
+.podium-convo-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t1);
+  flex: 1;
+}
+
+.podium-convo-panel {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 4px;
+}
+
+/* List expand panel sits below the row */
+.list-expand-panel {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 4px 6px 8px;
+}
+
+/* ═══ CONVERSATION BUBBLES ═══ */
+
+.convo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.convo-bubble {
+  font-size: 11px;
+  line-height: 1.5;
+  max-width: 85%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+.convo-bubble--ai {
+  align-self: flex-start;
+  background: var(--ai-soft);
+  color: var(--t1);
+}
+
+.convo-bubble--student {
+  align-self: flex-end;
+  background: var(--amber-soft);
+  color: var(--t1);
+}
+
+.convo-role {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--t3);
+  margin-bottom: 2px;
+}
+
+.convo-role--ai { text-align: left; }
+.convo-role--student { text-align: right; }
+
+/* Highlight badge on bubble */
+.convo-highlight-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid rgba(196, 138, 30, 0.2);
+  padding: 0px 4px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Key insight block */
+.convo-insight {
+  border-left: 2px solid var(--amber-dot);
+  background: var(--surface);
+  padding: 4px 8px;
+  margin-top: 6px;
+  border-radius: 0 4px 4px 0;
+  font-size: 10px;
+  color: var(--t2);
+  line-height: 1.5;
+}
+.convo-insight-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 2px;
+}
+
+/* ═══ FEW-STUDENTS AI SUMMARY ═══ */
+
+.few-summary {
+  font-size: 11px;
+  color: var(--t2);
+  line-height: 1.5;
+  padding: 2px 8px 0;
+}
+
+/* ═══ DRAWER EXPANDED VIEW ═══ */
+
+.drawer-sim {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 32px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px 0 0 14px;
+  box-shadow: -12px 0 40px rgba(28, 28, 26, 0.10);
+  overflow: hidden;
+}
+
+.drawer-sim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.drawer-sim-header .title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.drawer-sim-close {
+  font-size: 11px;
+  color: var(--t3);
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.drawer-sim-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.drawer-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Left column — ranking list */
+.drawer-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-rank-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.drawer-rank-row:hover { background: var(--surface2); }
+.drawer-rank-row--active {
+  background: var(--gold-bg);
+  border: 1px solid rgba(196, 138, 30, 0.15);
+}
+
+.drawer-rank-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.drawer-rank-info {
+  flex: 1;
+  min-width: 0;
+}
+.drawer-rank-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.drawer-rank-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+}
+.drawer-rank-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.drawer-rank-summary {
+  font-size: 12px;
+  color: var(--t2);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.drawer-rank-stats {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+/* Drawer expanded student — discussion cards */
+.drawer-discuss-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 8px 12px 12px;
+}
+
+.drawer-discuss-card {
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.drawer-discuss-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.drawer-discuss-card-header:hover { background: var(--surface); }
+
+.drawer-discuss-step {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: var(--amber-dot);
+  padding: 1px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.drawer-discuss-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-discuss-meta {
+  font-size: 10px;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.drawer-discuss-body {
+  padding: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* Drawer conversation bubbles — slightly larger */
+.drawer-discuss-body .convo { gap: 6px; }
+.drawer-discuss-body .convo-bubble {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  max-width: 88%;
+}
+.drawer-discuss-body .convo-role { font-size: 9px; }
+.drawer-discuss-body .convo-insight {
+  font-size: 11px;
+  padding: 6px 10px;
+  margin-top: 8px;
+}
+.drawer-discuss-body .convo-insight-label { font-size: 9px; }
+.drawer-discuss-body .convo-highlight-badge { font-size: 9px; }
+
+/* Collapsed discussion card */
+.drawer-discuss-card--collapsed .drawer-discuss-body { display: none; }
+.drawer-discuss-card--collapsed { opacity: 0.85; }
+
+/* ═══ MESSAGE ANNOTATION BADGES ═══ */
+
+.msg-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.badge-tp {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #2d6612;
+  background: var(--green-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.badge-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.badge-evidence {
+  font-size: 10px;
+  color: var(--t3);
+  font-style: italic;
+  margin-top: 2px;
+  padding-left: 2px;
+  border-left: 2px solid var(--border-strong);
+  line-height: 1.4;
+}
+
+/* ═══ DEPTH-1 DRAWER (student detail overlay) ═══ */
+
+.drawer-d1-sim {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto 32px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px 0 0 14px;
+  box-shadow: -12px 0 40px rgba(28, 28, 26, 0.14);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Peek strip — shows depth-0 behind */
+.drawer-d1-peek {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 100%;
+  background: var(--surface2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 16px;
+  gap: 6px;
+  opacity: 0.5;
+}
+.drawer-d1-peek-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--t3);
+  opacity: 0.3;
+}
+
+.drawer-d1-content {
+  margin-left: 56px;
+}
+
+.drawer-d1-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.drawer-d1-header .title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t1);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.drawer-d1-back {
+  font-size: 12px;
+  color: var(--t2);
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.drawer-d1-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+/* Student summary bar in d1 */
+.d1-student-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--gold-bg);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.d1-student-summary {
+  font-size: 12px;
+  color: var(--t2);
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* Target point checklist */
+.d1-tp-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.d1-tp-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.d1-tp-item--hit {
+  background: var(--green-soft);
+  border-color: rgba(45, 102, 18, 0.15);
+  color: var(--green);
+}
+.d1-tp-item--miss {
+  background: var(--surface);
+  color: var(--t3);
+}
+
+/* Discussion section in d1 — card style for clear separation */
+.d1-discuss-section {
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.d1-discuss-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--amber-soft);
+}
+.d1-discuss-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  flex: 1;
+}
+
+/* d1 conversation — larger bubbles for detail view */
+.d1-convo .convo-bubble {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.d1-convo .convo-role { font-size: 10px; }
+.d1-convo .convo-insight {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.d1-convo .convo-highlight-badge { font-size: 10px; }
+
+/* ═══ REDUCED MOTION ═══ */
+@media (prefers-reduced-motion: reduce) {
+  .podium-slot--1 .podium-avatar::before { animation: none; }
+  .podium-slot--1 .podium-card { animation: none; }
+  .expand-arrow { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Design Spec Header ── -->
+<div class="spec-header">
+  <h1>深度互动排行榜 v2 — Depth Leaderboard</h1>
+  <p>Static design spec &middot; computeDepthRanking() top 5 &middot; Teacher right panel &middot; LLM 总结 + 展开对话</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 1: Full 5-student leaderboard      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-label">Section 1 &mdash; Full Leaderboard (5 students, #1 默认展开对话)</div>
+
+<div class="panel">
+  <!-- Panel header -->
+  <div class="panel-header">
+    <span class="panel-header-icon">&#x1F3C6;</span>
+    <span class="panel-header-title">深度互动排行</span>
+    <span class="panel-header-count">Top 5</span>
+    <span style="flex: 1;"></span>
+    <div class="stat-legend">
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--hl">&#x2726;</span> 亮点</span>
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--tp">&#x25CF;</span> 目标</span>
+    </div>
+  </div>
+
+  <!-- Unified list: all 5 students -->
+  <div class="list-section" style="border-top: none; padding-top: 4px;">
+
+    <!-- #1 张三 — 展开对话 -->
+    <details class="expand-details" open>
+      <summary>
+        <div class="list-row">
+          <div class="list-rank" style="background: var(--gold); color: white;">1</div>
+          <div class="list-avatar" style="background: linear-gradient(135deg, #d4a534, #c48a1e); color: white; border: 2px solid var(--gold-border);">张</div>
+          <div class="list-name">张三</div>
+          <div class="list-stats">
+            <span class="stat-badge stat-badge--hl">&#x2726; 3</span>
+            <span class="stat-badge stat-badge--tp">&#x25CF; 5</span>
+          </div>
+          <span class="expand-arrow">▸</span>
+        </div>
+      </summary>
+      <div class="list-expand-panel">
+        <div class="ai-summary" style="text-align: left; margin-bottom: 6px;">
+          <span class="ai-tag">✦ AI</span>多次引用原文论据，对"理想之美"提出了独立见解，讨论深度远超预期
+        </div>
+        <div class="convo">
+          <div class="convo-role convo-role--ai">🤖 AI</div>
+          <div class="convo-bubble convo-bubble--ai">你认为"理想之美"这个概念在文中有什么含义？</div>
+          <div class="convo-role convo-role--student">张三 👤</div>
+          <div class="convo-bubble convo-bubble--student">我觉得作者说的理想之美不只是外表，而是内在品质的体现。文中提到"美不自美，因人而彰"…</div>
+          <div class="convo-role convo-role--ai">🤖 AI</div>
+          <div class="convo-bubble convo-bubble--ai">很好的引用！那你能进一步解释为什么作者要强调"因人而彰"吗？</div>
+          <div class="convo-role convo-role--student">张三 👤</div>
+          <div class="convo-bubble convo-bubble--student"><span class="convo-highlight-badge">✦ 亮点</span>因为美需要观察者的审美能力才能被发现，这说明美是主观和客观的结合，不是纯粹客观的。</div>
+          <div class="convo-role convo-role--ai">🤖 AI</div>
+          <div class="convo-bubble convo-bubble--ai">精彩的分析！你把主客观的关系讲得很清楚。最后，这和我们日常生活中对美的理解有什么关系？</div>
+          <div class="convo-role convo-role--student">张三 👤</div>
+          <div class="convo-bubble convo-bubble--student">我们每个人看到的美其实都带着自己的理解，所以对同一件事的审美可以完全不同，这也是为什么需要尊重多元审美。</div>
+        </div>
+        <div class="convo-insight">
+          <div class="convo-insight-label">✦ AI 洞察</div>
+          多次引用原文支撑论点，能将主客观关系清晰表达，并延伸到现实生活，展现出优秀的批判性思维
+        </div>
+      </div>
+    </details>
+
+    <!-- #2 王五 -->
+    <details class="expand-details">
+      <summary>
+        <div class="list-row">
+          <div class="list-rank" style="background: var(--silver); color: white;">2</div>
+          <div class="list-avatar" style="background: linear-gradient(135deg, #9ca3af, #6b7280); color: white; border: 2px solid var(--silver-border);">王</div>
+          <div class="list-name">王五</div>
+          <div class="list-stats">
+            <span class="stat-badge stat-badge--hl">&#x2726; 2</span>
+            <span class="stat-badge stat-badge--tp">&#x25CF; 4</span>
+          </div>
+          <span class="expand-arrow">▸</span>
+        </div>
+      </summary>
+      <div class="list-expand-panel">
+        <div class="ai-summary" style="text-align: left; margin-bottom: 6px;">
+          <span class="ai-tag">✦ AI</span>善于追问，能从不同角度切入问题，推动了讨论的深入
+        </div>
+      </div>
+    </details>
+
+    <!-- #3 李四 -->
+    <details class="expand-details">
+      <summary>
+        <div class="list-row">
+          <div class="list-rank" style="background: var(--bronze); color: white;">3</div>
+          <div class="list-avatar" style="background: linear-gradient(135deg, #d97706, #92400e); color: white; border: 2px solid var(--bronze-border);">李</div>
+          <div class="list-name">李四</div>
+          <div class="list-stats">
+            <span class="stat-badge stat-badge--hl">&#x2726; 1</span>
+            <span class="stat-badge stat-badge--tp">&#x25CF; 3</span>
+          </div>
+          <span class="expand-arrow">▸</span>
+        </div>
+      </summary>
+      <div class="list-expand-panel">
+        <div class="ai-summary" style="text-align: left; margin-bottom: 6px;">
+          <span class="ai-tag">✦ AI</span>回答切题且有条理，开始展现批判性思维
+        </div>
+      </div>
+    </details>
+
+    <!-- #4 赵六 — 展开对话 -->
+    <details class="expand-details" open>
+      <summary>
+        <div class="list-row">
+          <div class="list-rank" style="background: #7a8fb5; color: white;">4</div>
+          <div class="list-avatar" style="background: linear-gradient(135deg, #8b9dc3, #5b7ba5); color: white;">赵</div>
+          <div class="list-name">赵六</div>
+          <div class="list-stats">
+            <span class="stat-badge stat-badge--hl">&#x2726; 0</span>
+            <span class="stat-badge stat-badge--tp">&#x25CF; 3</span>
+          </div>
+          <span class="expand-arrow">▸</span>
+        </div>
+      </summary>
+      <div class="list-expand-panel">
+        <div class="ai-summary" style="text-align: left; margin-bottom: 6px;">
+          <span class="ai-tag">✦ AI</span>积极参与讨论，但观点较为表面
+        </div>
+        <div class="convo">
+          <div class="convo-role convo-role--ai">🤖 AI</div>
+          <div class="convo-bubble convo-bubble--ai">你怎么理解文中提到的"理想之美"？</div>
+          <div class="convo-role convo-role--student">赵六 👤</div>
+          <div class="convo-bubble convo-bubble--student">就是很完美的那种美吧。</div>
+          <div class="convo-role convo-role--ai">🤖 AI</div>
+          <div class="convo-bubble convo-bubble--ai">可以再具体一些吗？作者有没有对"理想"给出什么特别的解释？</div>
+          <div class="convo-role convo-role--student">赵六 👤</div>
+          <div class="convo-bubble convo-bubble--student">嗯…作者好像说美不只是外在的，还有内在的意思。</div>
+        </div>
+        <div class="convo-insight">
+          <div class="convo-insight-label">✦ AI 洞察</div>
+          参与意愿积极，但回答较简短，需引导进行更深入的文本分析
+        </div>
+      </div>
+    </details>
+
+    <!-- #5 孙七 — 折叠 -->
+    <details class="expand-details">
+      <summary>
+        <div class="list-row">
+          <div class="list-rank" style="background: #7d9e6a; color: white;">5</div>
+          <div class="list-avatar" style="background: linear-gradient(135deg, #a3b18a, #6b8e5a); color: white;">孙</div>
+          <div class="list-name">孙七</div>
+          <div class="list-stats">
+            <span class="stat-badge stat-badge--hl">&#x2726; 0</span>
+            <span class="stat-badge stat-badge--tp">&#x25CF; 2</span>
+          </div>
+          <span class="expand-arrow">▸</span>
+        </div>
+      </summary>
+      <div class="list-expand-panel">
+        <div class="ai-summary" style="text-align: left; margin-bottom: 6px;">
+          <span class="ai-tag">✦ AI</span>参与度尚可，需要更多引导
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="ai-refresh-hint">✦ AI 总结每 30s 刷新一次</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 2: Drawer expanded view            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-label">Section 2 &mdash; Drawer 展开态（投屏视图，点击任一学生 → 弹出 depth-1 drawer 查看完整对话）</div>
+
+<div class="drawer-sim">
+  <div class="drawer-sim-header">
+    <div class="title">
+      <span>&#x1F3C6;</span>
+      <span>深度互动排行</span>
+      <span style="font-size: 11px; color: var(--t3); font-weight: 400;">Top 5 · 3 次讨论</span>
+    </div>
+    <div class="stat-legend">
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--hl">&#x2726;</span> 亮点发言</span>
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--tp">&#x25CF;</span> 教学目标命中</span>
+    </div>
+    <button class="drawer-sim-close">✕ 关闭</button>
+  </div>
+  <div class="drawer-sim-body">
+    <div class="drawer-rank-list">
+
+      <!-- ── #1 张三 — 选中态（点击跳转 depth-1 drawer） ── -->
+      <div class="drawer-rank-row drawer-rank-row--active" style="cursor: pointer;">
+        <div class="drawer-rank-avatar" style="background: linear-gradient(135deg, #d4a534, #c48a1e); border: 2px solid var(--gold-border);">张</div>
+        <div class="drawer-rank-info">
+          <div class="drawer-rank-name-row">
+            <span class="drawer-rank-num" style="background: var(--gold);">1</span>
+            <span class="drawer-rank-name">张三</span>
+          </div>
+          <div class="drawer-rank-summary">
+            <span class="ai-tag">✦ AI</span>多次引用原文论据，对"理想之美"提出了独立见解，讨论深度远超预期
+          </div>
+        </div>
+        <div class="drawer-rank-stats">
+          <span class="stat-badge stat-badge--hl">&#x2726; 3</span>
+          <span class="stat-badge stat-badge--tp">&#x25CF; 5</span>
+        </div>
+        <span class="expand-arrow">▸</span>
+      </div>
+
+      <!-- ── #2 王五 — 折叠态 ── -->
+      <div class="drawer-rank-row">
+        <div class="drawer-rank-avatar" style="background: linear-gradient(135deg, #9ca3af, #6b7280); border: 2px solid var(--silver-border);">王</div>
+        <div class="drawer-rank-info">
+          <div class="drawer-rank-name-row">
+            <span class="drawer-rank-num" style="background: var(--silver);">2</span>
+            <span class="drawer-rank-name">王五</span>
+          </div>
+          <div class="drawer-rank-summary">
+            <span class="ai-tag">✦ AI</span>善于追问，能从不同角度切入问题，推动了讨论的深入
+          </div>
+        </div>
+        <div class="drawer-rank-stats">
+          <span class="stat-badge stat-badge--hl">&#x2726; 2</span>
+          <span class="stat-badge stat-badge--tp">&#x25CF; 4</span>
+        </div>
+        <span class="expand-arrow">▸</span>
+      </div>
+
+      <!-- ── #3 李四 — 折叠态 ── -->
+      <div class="drawer-rank-row">
+        <div class="drawer-rank-avatar" style="background: linear-gradient(135deg, #d97706, #92400e); border: 2px solid var(--bronze-border);">李</div>
+        <div class="drawer-rank-info">
+          <div class="drawer-rank-name-row">
+            <span class="drawer-rank-num" style="background: var(--bronze);">3</span>
+            <span class="drawer-rank-name">李四</span>
+          </div>
+          <div class="drawer-rank-summary">
+            <span class="ai-tag">✦ AI</span>回答切题且有条理，开始展现批判性思维
+          </div>
+        </div>
+        <div class="drawer-rank-stats">
+          <span class="stat-badge stat-badge--hl">&#x2726; 1</span>
+          <span class="stat-badge stat-badge--tp">&#x25CF; 3</span>
+        </div>
+        <span class="expand-arrow">▸</span>
+      </div>
+
+      <!-- ── #4 赵六 — 折叠态 ── -->
+      <div class="drawer-rank-row">
+        <div class="drawer-rank-avatar" style="background: linear-gradient(135deg, #8b9dc3, #5b7ba5); border: 2px solid #7a8fb5;">赵</div>
+        <div class="drawer-rank-info">
+          <div class="drawer-rank-name-row">
+            <span class="drawer-rank-num" style="background: #7a8fb5;">4</span>
+            <span class="drawer-rank-name">赵六</span>
+          </div>
+          <div class="drawer-rank-summary">
+            <span class="ai-tag">✦ AI</span>积极参与讨论，但观点较为表面，需要更多引导进行文本分析
+          </div>
+        </div>
+        <div class="drawer-rank-stats">
+          <span class="stat-badge stat-badge--hl">&#x2726; 0</span>
+          <span class="stat-badge stat-badge--tp">&#x25CF; 3</span>
+        </div>
+        <span class="expand-arrow">▸</span>
+      </div>
+
+      <!-- ── #5 孙七 — 折叠态 ── -->
+      <div class="drawer-rank-row">
+        <div class="drawer-rank-avatar" style="background: linear-gradient(135deg, #a3b18a, #6b8e5a); border: 2px solid #7d9e6a;">孙</div>
+        <div class="drawer-rank-info">
+          <div class="drawer-rank-name-row">
+            <span class="drawer-rank-num" style="background: #7d9e6a;">5</span>
+            <span class="drawer-rank-name">孙七</span>
+          </div>
+          <div class="drawer-rank-summary">
+            <span class="ai-tag">✦ AI</span>参与度尚可，回答简短，需要更具体的问题引导深度思考
+          </div>
+        </div>
+        <div class="drawer-rank-stats">
+          <span class="stat-badge stat-badge--hl">&#x2726; 0</span>
+          <span class="stat-badge stat-badge--tp">&#x25CF; 2</span>
+        </div>
+        <span class="expand-arrow">▸</span>
+      </div>
+
+      <div class="ai-refresh-hint" style="margin-top: 8px;">✦ AI 总结每 30s 刷新一次</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 3: Empty state                     -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 3: Depth-1 drawer (student detail) -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-label">Section 3 &mdash; Depth-1 Drawer（点击某人后的叠层详情，z-index 更高）</div>
+
+<div class="drawer-d1-sim">
+  <!-- Peek strip — hint that depth-0 is behind -->
+  <div class="drawer-d1-peek">
+    <div class="drawer-d1-peek-dot"></div>
+    <div class="drawer-d1-peek-dot"></div>
+    <div class="drawer-d1-peek-dot"></div>
+    <div class="drawer-d1-peek-dot"></div>
+    <div class="drawer-d1-peek-dot"></div>
+  </div>
+
+  <div class="drawer-d1-content">
+    <div class="drawer-d1-header">
+      <div class="title">
+        <div class="drawer-rank-avatar" style="width: 28px; height: 28px; font-size: 12px; background: linear-gradient(135deg, #d4a534, #c48a1e); border: 2px solid var(--gold-border);">张</div>
+        张三 · 讨论详情
+      </div>
+      <div class="stat-legend">
+        <span class="stat-legend-item"><span class="stat-badge stat-badge--hl">&#x2726;</span> 亮点发言</span>
+        <span class="stat-legend-item"><span class="stat-badge stat-badge--tp">&#x25CF;</span> 教学目标命中</span>
+      </div>
+      <button class="drawer-d1-back">← 返回排行</button>
+    </div>
+
+    <div class="drawer-d1-body">
+      <!-- Student summary bar -->
+      <div class="d1-student-bar">
+        <div class="drawer-rank-avatar" style="width: 40px; height: 40px; font-size: 16px; background: linear-gradient(135deg, #d4a534, #c48a1e); border: 2px solid var(--gold-border);">张</div>
+        <div class="d1-student-summary">
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">张三 <span style="font-size: 11px; font-weight: 400; color: var(--t3);">#1 · 3 次讨论 · 9 轮对话</span></div>
+          <span class="ai-tag">✦ AI</span>多次引用原文论据，对"理想之美"提出了独立见解，讨论深度远超预期
+        </div>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <span class="stat-badge stat-badge--hl" style="font-size: 11px;">&#x2726; 3</span>
+          <span class="stat-badge stat-badge--tp" style="font-size: 11px;">&#x25CF; 5</span>
+        </div>
+      </div>
+
+      <!-- Target point checklist — all 3 discussions combined -->
+      <div style="font-size: 11px; font-weight: 700; color: var(--t2); margin-bottom: 6px;">教学目标达成</div>
+      <div class="d1-tp-checklist">
+        <div class="d1-tp-item d1-tp-item--hit">✓ 识别冲突开头</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ 核心问题意识</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ 超越外表</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ 具体文化含义</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ shallow含义理解</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ 文本证据引用</div>
+        <div class="d1-tp-item d1-tp-item--hit">✓ 论证链意识</div>
+      </div>
+
+      <!-- Discussion 1: 冲突开头 -->
+      <div class="d1-discuss-section">
+        <div class="d1-discuss-header">
+          <span class="drawer-discuss-step">步骤 2</span>
+          <span class="d1-discuss-title">冲突开头</span>
+          <span style="font-size: 11px; color: var(--t3);">🎯 2/2 · 3 轮 · ✦ 1 亮点</span>
+        </div>
+        <div class="d1-convo">
+          <div class="convo">
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">你觉得作者为什么选择用这两个截然不同的例子开头？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              因为一个觉得胖好看，一个觉得瘦好看，放一起就产生了冲突。
+              <div class="msg-badges">
+                <span class="badge-cluster">c2 读者效果感知</span>
+              </div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">对！那这个冲突对读者产生了什么效果？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              <span class="convo-highlight-badge">✦ 亮点</span>让读者开始想到底哪种审美才是对的，这就是作者故意制造的悬念。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 写作策略识别</span>
+                <span class="badge-tp">🎯 识别冲突开头</span>
+                <span class="badge-tp">🎯 核心问题意识</span>
+              </div>
+              <div class="badge-evidence">"作者故意制造的悬念"</div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">非常棒！你说出了"故意制造冲突"这个关键点。</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              对，这种写法在议论文里很常见，先给两个对立的观点。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 写作策略识别</span>
+              </div>
+            </div>
+          </div>
+          <div class="convo-insight">
+            <div class="convo-insight-label">✦ AI 洞察</div>
+            识别出冲突开头策略，并迁移到议论文写作技巧的认知
+          </div>
+        </div>
+      </div>
+
+      <!-- Discussion 2: 文化语言 -->
+      <div class="d1-discuss-section">
+        <div class="d1-discuss-header">
+          <span class="drawer-discuss-step">步骤 4</span>
+          <span class="d1-discuss-title">文化语言</span>
+          <span style="font-size: 11px; color: var(--t3);">🎯 2/2 · 3 轮 · ✦ 1 亮点</span>
+        </div>
+        <div class="d1-convo">
+          <div class="convo">
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">如果外星人看了你的矩阵，他们会觉得人类只在乎"好看"吗？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              不会，因为每种审美都有背后的文化含义，不只是好看。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 文化语言概括</span>
+                <span class="badge-tp">🎯 超越外表</span>
+              </div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">能举个文中的具体例子吗？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              <span class="convo-highlight-badge">✦ 亮点</span>比如 Maori 的 tā moko 纹身不是为了好看，而是代表社会地位和家族身份，美是一种文化语言。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 文化语言概括</span>
+                <span class="badge-tp">🎯 具体文化含义</span>
+              </div>
+              <div class="badge-evidence">"代表社会地位和家族身份，美是一种文化语言"</div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">"美是文化语言"——说得太好了！</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              其实中国也一样，古代的审美也反映当时的社会价值观。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 文化语言概括</span>
+              </div>
+            </div>
+          </div>
+          <div class="convo-insight">
+            <div class="convo-insight-label">✦ AI 洞察</div>
+            从具体文本证据提炼出"美是文化语言"的抽象概念，并跨文化迁移
+          </div>
+        </div>
+      </div>
+
+      <!-- Discussion 3: 论证链 -->
+      <div class="d1-discuss-section">
+        <div class="d1-discuss-header">
+          <span class="drawer-discuss-step">步骤 5</span>
+          <span class="d1-discuss-title">论证链</span>
+          <span style="font-size: 11px; color: var(--t3);">🎯 3/3 · 3 轮 · ✦ 1 亮点</span>
+        </div>
+        <div class="d1-convo">
+          <div class="convo">
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">作者说现代媒体审美是"肤浅的"。你觉得公平吗？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              我觉得公平。因为媒体只推一种标准——瘦和白。
+              <div class="msg-badges">
+                <span class="badge-cluster">c2 单一证据引用</span>
+                <span class="badge-tp">🎯 shallow含义理解</span>
+              </div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">你能用文中的例子来证明"肤浅"是有道理的吗？</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              <span class="convo-highlight-badge">✦ 亮点</span>文中说 Borneo 长耳垂代表生命经历，Maori 纹身代表地位。但媒体把美简化成单一外表，忽视了这些文化深度，所以是肤浅的。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 论证链构建</span>
+                <span class="badge-tp">🎯 文本证据引用</span>
+                <span class="badge-tp">🎯 论证链意识</span>
+              </div>
+              <div class="badge-evidence">"Borneo 长耳垂代表生命经历，Maori 纹身代表地位…忽视了这些文化深度"</div>
+            </div>
+            <div class="convo-role convo-role--ai">🤖 AI</div>
+            <div class="convo-bubble convo-bubble--ai">完美的论证链！观点→证据→解释，一气呵成。</div>
+            <div class="convo-role convo-role--student">张三 👤</div>
+            <div class="convo-bubble convo-bubble--student">
+              深刻的审美标准应该包含身份、价值观这些东西，不只是外表。
+              <div class="msg-badges">
+                <span class="badge-cluster">c3 论证链构建</span>
+              </div>
+            </div>
+          </div>
+          <div class="convo-insight">
+            <div class="convo-insight-label">✦ AI 洞察</div>
+            成功构建 claim→evidence→explanation 论证链，批判性思维出色
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 4: Empty state                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-label">Section 4 &mdash; Empty State (不变)</div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-header-icon">&#x1F3C6;</span>
+    <span class="panel-header-title">深度互动排行</span>
+  </div>
+  <div class="empty-state">
+    <div class="empty-icon">&#x1F4AC;</div>
+    <div class="empty-title">暂无讨论数据</div>
+    <div class="empty-desc">学生开始讨论后，互动排行将在这里展示</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- Section 3: Few students (1-2 people)       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-label">Section 4 &mdash; Few Students (1-2, no podium, with AI summaries)</div>
+
+<!-- 2 students -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-header-icon">&#x1F3C6;</span>
+    <span class="panel-header-title">深度互动排行</span>
+    <span class="panel-header-count">Top 2</span>
+    <span style="flex: 1;"></span>
+    <div class="stat-legend">
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--hl">&#x2726;</span> 亮点发言</span>
+      <span class="stat-legend-item"><span class="stat-badge stat-badge--tp">&#x25CF;</span> 教学目标命中</span>
+    </div>
+  </div>
+  <div class="few-list">
+    <div class="few-row">
+      <div class="few-rank">1</div>
+      <div class="few-avatar">张</div>
+      <div class="few-name">张三</div>
+      <div class="few-stats">
+        <span class="stat-badge stat-badge--hl">&#x2726; 3</span>
+        <span class="stat-badge stat-badge--tp">&#x25CF; 5</span>
+      </div>
+    </div>
+    <div class="few-summary">
+      <span class="ai-tag">✦ AI</span>多次引用原文论据，对"理想之美"提出了独立见解，讨论深度远超预期
+    </div>
+    <div class="few-row">
+      <div class="few-rank">2</div>
+      <div class="few-avatar">王</div>
+      <div class="few-name">王五</div>
+      <div class="few-stats">
+        <span class="stat-badge stat-badge--hl">&#x2726; 2</span>
+        <span class="stat-badge stat-badge--tp">&#x25CF; 4</span>
+      </div>
+    </div>
+    <div class="few-summary">
+      <span class="ai-tag">✦ AI</span>善于追问，能从不同角度切入问题，推动了讨论的深入
+    </div>
+  </div>
+</div>
+
+<!-- 1 student -->
+<div class="panel" style="margin-top: 16px;">
+  <div class="panel-header">
+    <span class="panel-header-icon">&#x1F3C6;</span>
+    <span class="panel-header-title">深度互动排行</span>
+    <span class="panel-header-count">Top 1</span>
+  </div>
+  <div class="few-list">
+    <div class="few-row">
+      <div class="few-rank">1</div>
+      <div class="few-avatar">张</div>
+      <div class="few-name">张三</div>
+      <div class="few-stats">
+        <span class="stat-badge stat-badge--hl">&#x2726; 3</span>
+        <span class="stat-badge stat-badge--tp">&#x25CF; 5</span>
+      </div>
+    </div>
+    <div class="few-summary">
+      <span class="ai-tag">✦ AI</span>多次引用原文论据，对"理想之美"提出了独立见解，讨论深度远超预期
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
