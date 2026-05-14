@@ -22,7 +22,7 @@ export function markGuideSeen(key: string): void {
 }
 
 /** Build storage key for AI chat persistence. Includes sessionCode + taskId for isolation. */
-export function aiChatStorageKey(sessionCode: string | null, taskId: number): string {
+export function aiChatStorageKey(sessionCode: string | null | undefined, taskId: number): string {
   return `ai-chat-${sessionCode || 'local'}-${taskId}`
 }
 
