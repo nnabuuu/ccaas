@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import type { TaskExercise } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
+import SelectEvidenceGuide from './SelectEvidenceGuide'
 
 interface SectionState {
   stage: 'pick' | 'evidence' | 'graded'
@@ -56,6 +57,11 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
     return init
   })
   const [currentId, setCurrentId] = useState(sections[0].id)
+  const [correctFlash, setCorrectFlash] = useState<string | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-se') } catch { return false } })())
+  const [shakeKey, setShakeKey] = useState(0)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const current = sections.find(s => s.id === currentId)!
   const state = secStates[currentId]
@@ -137,19 +143,11 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
     onOverlayChange(overlay)
   }, [currentId, state.stage, state.picked, secStates, sections, current, paragraphTokens, onOverlayChange])
 
-  // Cleanup overlay on unmount
-  useEffect(() => () => onOverlayChange(null), [onOverlayChange])
-
-  const lockFunc = () => {
-    if (reviewData) return
-    if (!state.funcChoice) return
-    funcAttemptsRef.current[currentId] = (funcAttemptsRef.current[currentId] || 0) + 1
-    if (state.funcChoice === current.correctFunction) {
-      updateState(currentId, { stage: 'evidence', funcWrong: false })
-    } else {
-      updateState(currentId, { funcWrong: true })
-    }
-  }
+  // Cleanup overlay + flash timer on unmount
+  useEffect(() => () => {
+    onOverlayChange(null)
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+  }, [onOverlayChange])
 
   const grade = () => {
     if (reviewData) return
@@ -259,8 +257,17 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
       <div className="se-card">
         <span className="se-range">Section &middot; {current.label}</span>
         <div className="se-title">What is this section's function?</div>
-        <div className="se-help">
-          First pick the function. Then <strong>locate the why</strong> by clicking the <strong>signal phrases</strong> in the text on the right.
+        <div className="se-help" style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          <span style={{ flex: 1 }}>First pick the function. Then <strong>locate the why</strong> by clicking the <strong>signal phrases</strong> in the text on the right.</span>
+          <button
+            className={`se-guide-btn${sections.every(s => secStates[s.id].stage === 'pick' && !secStates[s.id].funcChoice) && !guideOpen && !guideSeen.current ? ' pulse' : ''}`}
+            aria-label="Select evidence guide"
+            onClick={() => {
+              setGuideOpen(true)
+              try { localStorage.setItem('guide-seen-se', '1') } catch { /* */ }
+              guideSeen.current = true
+            }}
+          >?</button>
         </div>
       </div>
 
@@ -278,33 +285,43 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
           let cls = 'se-func-btn'
           if (isLockedRight) cls += ' locked'
           else if (locked) cls += ' dim'
-          else if (isWrongPick) cls += ' wrong'
+          else if (isWrongPick) cls += ' wrong shake'
+          else if (sel && correctFlash === currentId) cls += ' correct-flash'
           else if (sel) cls += ' selected'
           return (
             <button
-              key={f} className={cls} disabled={locked}
-              onClick={() => !locked && updateState(currentId, { funcChoice: f, funcWrong: false })}
+              key={isWrongPick ? `${f}-${shakeKey}` : f}
+              className={cls}
+              disabled={locked}
+              onClick={() => {
+                if (locked || reviewData || correctFlash) return
+                funcAttemptsRef.current[currentId] = (funcAttemptsRef.current[currentId] || 0) + 1
+                const targetId = currentId
+                if (f === current.correctFunction) {
+                  updateState(targetId, { funcChoice: f, funcWrong: false })
+                  setCorrectFlash(targetId)
+                  flashTimerRef.current = setTimeout(() => {
+                    setCorrectFlash(null)
+                    updateState(targetId, { stage: 'evidence', funcWrong: false })
+                    flashTimerRef.current = null
+                  }, 400)
+                } else {
+                  updateState(currentId, { funcChoice: f, funcWrong: true })
+                  setShakeKey(k => k + 1)
+                }
+              }}
             >{f}</button>
           )
         })}
       </div>
 
-      {state.stage === 'pick' && (
-        <div className="se-action-row">
-          <span className="se-tally">
-            {state.funcWrong
-              ? <span style={{ color: 'var(--red)' }}>Not quite — look at the signal words on the right.</span>
-              : 'Pick one, then confirm.'}
-          </span>
-          <button className={`se-btn${!state.funcChoice ? ' off' : ''}`} disabled={!state.funcChoice} onClick={lockFunc}>
-            Confirm &rarr;
-          </button>
-        </div>
+      {state.stage === 'pick' && state.funcWrong && (
+        <div className="se-wrong-hint">Not quite — look at the signal words in the text.</div>
       )}
 
       {/* Step 2: Locate evidence */}
       {state.stage !== 'pick' && (
-        <>
+        <div key={currentId + '-s2'} className="se-step2-enter">
           <div className="se-step-label" style={{ marginTop: 24 }}>
             <span className={`se-step-num${state.stage === 'graded' ? ' done' : ''}`}>2</span>
             <span>Locate the why</span>
@@ -417,8 +434,9 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
               </div>
             </>
           )}
-        </>
+        </div>
       )}
+      <SelectEvidenceGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   )
 }

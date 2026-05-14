@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Map Guide — 说明弹窗 Design Spec</title>
+<style>
+/* ── Project CSS Variables ── */
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.07);
+
+  --teal:     #0d5245;  --teal-bg:   #ddf1eb;
+  --green:    #2d6612;  --green-bg:  #e6f2dc;
+  --red:      #942929;  --red-bg:    #f8e6e6;
+  --amber:    #7a4d0e;  --amber-bg:  #f6edda;
+  --purple:   #3a3185;  --purple-bg: #eceafe;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  min-height: 100vh;
+}
+
+/* ── Design note ── */
+.design-note {
+  background: var(--teal-bg); border: 1px solid rgba(13,82,69,.12);
+  border-radius: 8px; padding: 12px 16px; margin-bottom: 24px;
+  font-size: 11px; color: var(--teal); line-height: 1.6;
+  max-width: 820px; width: 100%;
+}
+.design-note strong { font-weight: 700; }
+
+/* ── Trigger button row ── */
+.trigger-row {
+  display: flex; gap: 16px; align-items: center;
+  margin-bottom: 32px;
+}
+.trigger-row label {
+  font-size: 12px; color: var(--t2);
+}
+
+/* ── Guide trigger "?" button ── */
+.se-guide-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--teal); font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s;
+}
+.se-guide-btn:hover { border-color: var(--teal); background: var(--teal-bg); }
+.se-guide-btn.pulse { animation: se-guide-pulse 1.8s ease-in-out infinite; }
+@keyframes se-guide-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(13,82,69,.45); }
+  50%      { box-shadow: 0 0 0 7px rgba(13,82,69,0); border-color: var(--teal); color: var(--teal); }
+}
+
+/* ── Modal (reuses sd-guide-* pattern) ── */
+.sd-guide-backdrop {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.35);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: sd-guide-fade-in .2s ease-out;
+}
+.sd-guide-backdrop.closing { animation: sd-guide-fade-out .15s ease-in forwards; }
+
+.sd-guide-popup {
+  width: 100%; max-width: 820px; max-height: 90vh;
+  overflow-y: auto; scrollbar-width: none;
+  background: var(--surface); border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.04);
+  display: flex; flex-direction: column;
+  animation: sd-guide-scale-up .25s cubic-bezier(.34,1.56,.64,1);
+}
+.sd-guide-popup::-webkit-scrollbar { display: none; }
+.sd-guide-popup.closing { animation: sd-guide-scale-down .15s ease-in forwards; }
+
+.sd-guide-header {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 24px 28px 18px; border-bottom: 1px solid var(--border);
+}
+.sd-guide-header h3 { font-size: 18px; font-weight: 700; color: var(--t1); }
+
+.sd-guide-section-label {
+  padding: 20px 28px 0;
+  font-size: 11px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .8px;
+}
+
+.sd-guide-cards {
+  padding: 16px 28px 28px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+
+.sd-guide-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: sd-guide-slide-up .3s ease-out both;
+}
+.sd-guide-card:hover {
+  border-color: rgba(28,28,26,.14);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -10px rgba(28,28,26,.15);
+  transition: all .18s;
+}
+
+.sd-guide-card-hd { display: flex; align-items: center; gap: 10px; }
+
+.sd-guide-card-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #f0efe8;
+}
+.sd-guide-card-num.teal { background: var(--teal); }
+
+.sd-guide-card-hd h4 {
+  font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -.2px;
+}
+
+.sd-guide-card-illust {
+  width: 100%; min-height: 120px; aspect-ratio: 16/9;
+  background: var(--surface); border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px; overflow: hidden;
+}
+.sd-guide-card-illust svg { width: 100%; height: 100%; display: block; }
+
+.sd-guide-card-desc {
+  font-size: 13px; color: var(--t2); line-height: 1.65;
+}
+
+.sd-guide-footer {
+  padding: 14px 28px 22px;
+  display: flex; justify-content: center;
+}
+
+.stu-btn {
+  padding: 10px 20px; border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.stu-btn.pri {
+  background: var(--t1); color: var(--surface);
+}
+.stu-btn.pri:hover { opacity: .85; }
+
+/* ── Animations ── */
+@keyframes sd-guide-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sd-guide-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sd-guide-scale-up { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes sd-guide-scale-down { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.95); } }
+@keyframes sd-guide-slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) { .sd-guide-cards { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .sd-guide-card, .sd-guide-popup, .sd-guide-backdrop { animation: none; }
+  .se-guide-btn.pulse { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="design-note">
+  <strong>Map Guide:</strong> "?" 按钮触发的说明弹窗。3 张卡片介绍 Map 练习的交互流程：选芯片 → 放坐标 → 写理由。
+  点击下方按钮预览。
+</div>
+
+<div class="trigger-row">
+  <label>点击 "?" 打开 Guide →</label>
+  <button class="se-guide-btn pulse" id="guide-trigger" onclick="openGuide()">?</button>
+</div>
+
+<!-- Modal (hidden by default) -->
+<div class="sd-guide-backdrop" id="guide-backdrop" style="display:none" onclick="closeGuide()">
+  <div class="sd-guide-popup" onclick="event.stopPropagation()">
+
+    <div class="sd-guide-header">
+      <h3>Map Exercise 小帮手</h3>
+    </div>
+
+    <div class="sd-guide-section-label">练习中你会看到这些</div>
+
+    <div class="sd-guide-cards">
+
+      <!-- Card 1: 选芯片 -->
+      <div class="sd-guide-card" style="animation-delay:100ms">
+        <div class="sd-guide-card-hd">
+          <div class="sd-guide-card-num teal">1</div>
+          <h4>选芯片</h4>
+        </div>
+        <div class="sd-guide-card-illust">
+          <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="16" y="8" width="248" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="140" y="26" font-family="Plus Jakarta Sans" font-size="7" font-weight="700" fill="#9c9a92" text-anchor="middle" letter-spacing=".6">CHIP TRAY</text>
+            <rect x="26" y="34" width="72" height="22" rx="11" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <circle cx="38" cy="45" r="3" fill="#9c9a92"/>
+            <text x="46" y="49" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#5c5b56">Tradition</text>
+            <rect x="106" y="34" width="82" height="22" rx="11" fill="#ddf1eb" stroke="#0d5245" stroke-width="1.5"/>
+            <circle cx="118" cy="45" r="3" fill="#0d5245"/>
+            <text x="126" y="49" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#0d5245">Innovation ✓</text>
+            <rect x="196" y="34" width="58" height="22" rx="11" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <circle cx="208" cy="45" r="3" fill="#9c9a92"/>
+            <text x="216" y="49" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#5c5b56">Risk</text>
+            <text x="140" y="74" font-family="Plus Jakarta Sans" font-size="7" font-weight="700" fill="#0d5245" text-anchor="middle">↓ click to select</text>
+            <rect x="72" y="82" width="136" height="22" rx="6" fill="#ddf1eb" stroke="#0d5245"/>
+            <text x="140" y="96" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#0d5245" text-anchor="middle">Selected — now click on plane</text>
+          </svg>
+        </div>
+        <p class="sd-guide-card-desc">从上方托盘点选一个标签，它会高亮等待放置。</p>
+      </div>
+
+      <!-- Card 2: 放坐标 -->
+      <div class="sd-guide-card" style="animation-delay:180ms">
+        <div class="sd-guide-card-hd">
+          <div class="sd-guide-card-num teal">2</div>
+          <h4>放坐标</h4>
+        </div>
+        <div class="sd-guide-card-illust">
+          <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="16" y="8" width="248" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <rect x="30" y="16" width="220" height="120" rx="4" fill="#f8f7f2" stroke="#e4e2d8"/>
+            <line x1="140" y1="16" x2="140" y2="136" stroke="#e4e2d8" stroke-width="1"/>
+            <line x1="30" y1="76" x2="250" y2="76" stroke="#e4e2d8" stroke-width="1"/>
+            <text x="140" y="14" font-family="Plus Jakarta Sans" font-size="6" font-weight="600" fill="#9c9a92" text-anchor="middle">High</text>
+            <text x="140" y="146" font-family="Plus Jakarta Sans" font-size="6" font-weight="600" fill="#9c9a92" text-anchor="middle">Low</text>
+            <rect x="160" y="42" width="56" height="16" rx="8" fill="#ddf1eb" stroke="#0d5245" stroke-width="1.5"/>
+            <circle cx="168" cy="50" r="2.5" fill="#0d5245"/>
+            <text x="175" y="54" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#0d5245">Innovation</text>
+            <path d="M180 60 L180 70 M176 66 L180 70 L184 66" stroke="#0d5245" stroke-width="1" fill="none"/>
+            <text x="180" y="82" font-family="Plus Jakarta Sans" font-size="6" fill="#0d5245" text-anchor="middle">drag to adjust</text>
+            <text x="140" y="130" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92" text-anchor="middle">drag outside → auto remove</text>
+          </svg>
+        </div>
+        <p class="sd-guide-card-desc">点击坐标平面将标签放到合适位置，也可以拖动调整；拖出边界自动移除。</p>
+      </div>
+
+      <!-- Card 3: 写理由 -->
+      <div class="sd-guide-card" style="animation-delay:260ms">
+        <div class="sd-guide-card-hd">
+          <div class="sd-guide-card-num teal">3</div>
+          <h4>写理由</h4>
+        </div>
+        <div class="sd-guide-card-illust">
+          <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="16" y="8" width="248" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <rect x="26" y="16" width="228" height="96" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <rect x="36" y="24" width="64" height="16" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <circle cx="44" cy="32" r="2.5" fill="#9c9a92"/>
+            <text x="50" y="36" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#5c5b56">Innovation</text>
+            <rect x="36" y="70" width="208" height="32" rx="4" fill="#e6f2dc" stroke="#2d6612"/>
+            <text x="42" y="84" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">Innovation drives positive change because</text>
+            <text x="42" y="96" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">it opens up new possibilities and...</text>
+            <rect x="36" y="126" width="208" height="4" rx="2" fill="#edece7"/>
+            <rect x="36" y="126" width="156" height="4" rx="2" fill="#2d6612"/>
+            <text x="140" y="142" font-family="Plus Jakarta Sans" font-size="6.5" font-weight="600" fill="#2d6612" text-anchor="middle">3/4 reasoned</text>
+          </svg>
+        </div>
+        <p class="sd-guide-card-desc">在下方卡片写为什么放在这里，字数达标后进度条更新。</p>
+      </div>
+
+    </div>
+
+    <div class="sd-guide-footer">
+      <button class="stu-btn pri" onclick="closeGuide()">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const backdrop = document.getElementById('guide-backdrop')
+const trigger = document.getElementById('guide-trigger')
+
+function openGuide() {
+  backdrop.style.display = ''
+  backdrop.classList.remove('closing')
+  backdrop.querySelector('.sd-guide-popup').classList.remove('closing')
+  trigger.classList.remove('pulse')
+}
+
+function closeGuide() {
+  backdrop.classList.add('closing')
+  backdrop.querySelector('.sd-guide-popup').classList.add('closing')
+  backdrop.addEventListener('animationend', () => {
+    backdrop.style.display = 'none'
+  }, { once: true })
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && backdrop.style.display !== 'none') closeGuide()
+})
+</script>
+</body>
+</html>

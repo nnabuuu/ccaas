@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import MapGuide from './MapGuide'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -34,6 +35,8 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   const reasons: Reasons = ans.reasons || {}
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
+  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-map') } catch { return false } })())
   const planeRef = useRef<HTMLDivElement>(null)
   const hasDragged = useRef(false)
 
@@ -187,10 +190,22 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Prompt */}
-      <div style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
-        {mdLiteNodes(prompt)}
+      {/* Prompt + guide button */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ flex: 1, fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
+          {mdLiteNodes(prompt)}
+        </div>
+        <button
+          className={`se-guide-btn${!guideSeen.current && !guideOpen ? ' pulse' : ''}`}
+          aria-label="Map exercise guide"
+          onClick={() => {
+            setGuideOpen(true)
+            try { localStorage.setItem('guide-seen-map', '1') } catch { /* */ }
+            guideSeen.current = true
+          }}
+        >?</button>
       </div>
+      <MapGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
 
       {/* Chip tray */}
       {unplaced.length > 0 && (

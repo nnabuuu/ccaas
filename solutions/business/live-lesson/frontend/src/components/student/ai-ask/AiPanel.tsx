@@ -28,20 +28,19 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
   // Storage key for session persistence
   const storageKey = `ai-chat-${sessionCode || 'local'}-${taskId}`
 
-  // Restore chat from sessionStorage on mount / taskId change
+  // Restore chat from localStorage on mount / taskId change
   useEffect(() => {
-    const saved = sessionStorage.getItem(storageKey)
-    if (saved) {
-      try { setMsgs(JSON.parse(saved)) } catch { /* ignore corrupt data */ }
-    } else {
-      setMsgs([])
-    }
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) setMsgs(JSON.parse(saved))
+      else setMsgs([])
+    } catch { setMsgs([]) }
   }, [storageKey])
 
-  // Persist chat to sessionStorage on change
+  // Persist chat to localStorage on change
   useEffect(() => {
     if (msgs.length > 0) {
-      sessionStorage.setItem(storageKey, JSON.stringify(msgs))
+      try { localStorage.setItem(storageKey, JSON.stringify(msgs)) } catch { /* quota */ }
     }
   }, [msgs, storageKey])
 

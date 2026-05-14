@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import HelpButton from '../HelpButton'
 import { scrollToParas } from '../utils/linkParas'
+import MatrixGuide from './MatrixGuide'
 
 import type { TaskMatrixRow, ServerHintMap } from '../task-data'
 
@@ -40,6 +41,9 @@ function selectPracticeRows(nonDemoIndices: number[], count: number, seed: strin
 }
 
 export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults }: Props) {
+  const [guideOpen, setGuideOpen] = useState(false)
+  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-matrix') } catch { return false } })())
+
   // Determine which rows are practice vs extra-demo
   const { practiceIndices, extraDemoIndices } = useMemo(() => {
     const nonDemoIndices = rows.map((r, i) => ({ r, i })).filter(x => !x.r.demo).map(x => x.i)
@@ -72,6 +76,19 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
 
   return (
     <div className="stu-mat-wrap">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 }}>Matrix</span>
+        <button
+          className={`se-guide-btn${!guideSeen.current && !guideOpen ? ' pulse' : ''}`}
+          aria-label="Matrix exercise guide"
+          onClick={() => {
+            setGuideOpen(true)
+            try { localStorage.setItem('guide-seen-matrix', '1') } catch { /* */ }
+            guideSeen.current = true
+          }}
+        >?</button>
+      </div>
+      <MatrixGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr>

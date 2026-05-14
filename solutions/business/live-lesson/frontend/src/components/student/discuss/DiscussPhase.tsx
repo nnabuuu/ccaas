@@ -242,6 +242,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const [guideOpen, setGuideOpen] = useState(false)
+  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-discuss') } catch { return false } })())
   const [clusters, setClusters] = useState<ClusterProgress[]>([])
   const [nudge, setNudge] = useState<string | null>(null)
 
@@ -515,7 +516,11 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           {d.openingQZh && (
             <button className="sd-help-btn" title={d.openingQZh} onClick={() => alert(d.openingQZh)}>中文</button>
           )}
-          <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen ? ' pulse' : ''}`} onClick={() => setGuideOpen(true)} aria-label="Discussion guide">?</button>
+          <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen && !guideSeen.current ? ' pulse' : ''}`} onClick={() => {
+            setGuideOpen(true)
+            try { localStorage.setItem('guide-seen-discuss', '1') } catch { /* */ }
+            guideSeen.current = true
+          }} aria-label="Discussion guide">?</button>
         </div>
         <DiscussGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
 
