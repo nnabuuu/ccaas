@@ -352,6 +352,48 @@ export function formatDuration(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+// ── Depth Ranking ──
+
+export interface DepthRankStudent {
+  studentId: string
+  studentName: string
+  highlightCount: number
+  targetPointHits: number
+}
+
+export function computeDepthRanking(state: { coaching?: ClassroomState['coaching']; clusterStats?: ClassroomState['clusterStats'] }): DepthRankStudent[] {
+  const map = new Map<string, DepthRankStudent>()
+
+  // 1. Count highlights per student
+  for (const h of state.coaching?.highlights ?? []) {
+    let entry = map.get(h.studentId)
+    if (!entry) {
+      entry = { studentId: h.studentId, studentName: h.studentName, highlightCount: 0, targetPointHits: 0 }
+      map.set(h.studentId, entry)
+    }
+    entry.highlightCount++
+  }
+
+  // 2. Count target point hits per student (across all steps)
+  for (const [, stepData] of Object.entries(state.clusterStats ?? {})) {
+    for (const tp of stepData.targetPointStats ?? []) {
+      for (const s of tp.students) {
+        let entry = map.get(s.studentId)
+        if (!entry) {
+          entry = { studentId: s.studentId, studentName: s.studentName, highlightCount: 0, targetPointHits: 0 }
+          map.set(s.studentId, entry)
+        }
+        entry.targetPointHits++
+      }
+    }
+  }
+
+  // 3. Sort: highlight count desc → target hits desc; take top 5
+  return [...map.values()]
+    .sort((a, b) => b.highlightCount - a.highlightCount || b.targetPointHits - a.targetPointHits)
+    .slice(0, 5)
+}
+
 // ── Transition Insight Types ──
 
 export interface TimingInsight {

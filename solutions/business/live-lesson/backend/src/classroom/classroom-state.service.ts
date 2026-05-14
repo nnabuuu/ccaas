@@ -176,6 +176,9 @@ export class ClassroomStateService {
       timestamp: q.askedAt instanceof Date ? q.askedAt.toISOString() : String(q.askedAt),
     }));
 
+    // Restore target point hits from DB if needed
+    await this.clusterAggregator.restoreIfNeeded(sessionId);
+
     // Cluster stats per task step
     const clusterStats: Record<number, {
       definitions: Array<{ id: string; label: string }>;
@@ -286,7 +289,7 @@ export class ClassroomStateService {
       },
       clusterStats,
       coaching: {
-        highlights: this.coachingService.getHighlights(sessionId),
+        highlights: await this.coachingService.getHighlights(sessionId),
         llmInsights: this.coachingService.getCached(sessionId),
       },
     };

@@ -238,8 +238,8 @@ export class PersonalizationService {
       this.logger.warn(`Recap tier computation failed: ${e}`);
     }
 
-    // ── Highlights (in-memory, sync) ──
-    const allHighlights = this.coachingService.getHighlights(session.id);
+    // ── Highlights ──
+    const allHighlights = await this.coachingService.getHighlights(session.id);
     const highlights = allHighlights
       .filter(h => h.studentId === studentId)
       .map(h => ({ taskNum: h.taskNum, gist: h.gist, evidenceSpan: h.evidenceSpan }));

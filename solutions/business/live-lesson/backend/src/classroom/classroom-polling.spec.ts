@@ -38,6 +38,8 @@ import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { DiscussHighlight } from '../entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
 import { CacheModule } from '@nestjs/cache-manager';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 
@@ -141,6 +143,7 @@ const ALL_ENTITIES = [
   Lesson, Student, Submission, ClassroomSession,
   AiQuestion, ChatMessage, ClassroomSnapshot,
   ObservationRecord, ObserverEventRecord,
+  DiscussHighlight, DiscussTargetHit,
 ];
 
 describe('Classroom polling — HTTP integration', () => {

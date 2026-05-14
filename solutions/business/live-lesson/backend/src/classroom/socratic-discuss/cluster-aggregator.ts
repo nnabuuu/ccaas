@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
 import type { ObservationState, ClusterStats, ClassifyResult } from '../../schemas/classroom/clustering';
 
 interface TargetPointState {
@@ -12,6 +15,7 @@ interface TargetPointState {
 
 @Injectable()
 export class ClusterAggregator {
+  private readonly logger = new Logger(ClusterAggregator.name);
   private static readonly MAX_CLUSTER_EVIDENCE = 5;
   private static readonly MAX_TP_EVIDENCE = 3;
   // sessionId → taskNum → Map<`${studentId}:${clusterId}`, ObservationState>
@@ -20,6 +24,10 @@ export class ClusterAggregator {
   private missHistory = new Map<string, boolean[]>();
   // sessionId → taskNum → Map<`${studentId}:${tpId}`, TargetPointState>
   private targetPointSessions = new Map<string, Map<number, Map<string, TargetPointState>>>();
+
+  constructor(
+    @InjectRepository(DiscussTargetHit) private readonly targetHitRepo: Repository<DiscussTargetHit>,
+  ) {}
 
   ingest(
     sessionId: string,
@@ -106,6 +114,7 @@ export class ClusterAggregator {
           if (hit.confidence === 'high' && !existing.hit) {
             existing.hit = true;
             existing.firstHitAt = Date.now();
+            this.persistTargetHit(sessionId, studentId, studentName, taskNum, hit);
           }
           if (hit.confidence === 'high' && existing.evidenceSpans.length < ClusterAggregator.MAX_TP_EVIDENCE) {
             existing.evidenceSpans.push(hit.evidenceSpan);
@@ -119,6 +128,9 @@ export class ClusterAggregator {
             evidenceSpans: hit.evidenceSpan ? [hit.evidenceSpan] : [],
             firstHitAt: hit.confidence === 'high' ? Date.now() : 0,
           });
+          if (hit.confidence === 'high') {
+            this.persistTargetHit(sessionId, studentId, studentName, taskNum, hit);
+          }
         }
       }
     }
@@ -233,6 +245,28 @@ export class ClusterAggregator {
     }));
   }
 
+  /** Restore target point hits from DB if not already in memory. */
+  async restoreIfNeeded(sessionId: string): Promise<void> {
+    if (this.targetPointSessions.has(sessionId)) return;
+    const rows = await this.targetHitRepo.find({ where: { sessionId } });
+    if (rows.length === 0) return;
+
+    for (const row of rows) {
+      const index = this.ensureTargetPointIndex(sessionId, row.taskNum);
+      const key = `${row.studentId}:${row.targetPointId}`;
+      if (!index.has(key)) {
+        index.set(key, {
+          studentId: row.studentId,
+          studentName: row.studentName,
+          targetPointId: row.targetPointId,
+          hit: true,
+          evidenceSpans: row.evidenceSpan ? [row.evidenceSpan] : [],
+          firstHitAt: Number(row.hitAt),
+        });
+      }
+    }
+  }
+
   cleanupSession(sessionId: string): void {
     this.sessions.delete(sessionId);
     this.targetPointSessions.delete(sessionId);
@@ -267,6 +301,21 @@ export class ClusterAggregator {
       taskMap.set(taskNum, new Map());
     }
     return taskMap.get(taskNum)!;
+  }
+
+  private persistTargetHit(
+    sessionId: string, studentId: string, studentName: string,
+    taskNum: number, hit: { targetPointId: string; evidenceSpan: string },
+  ): void {
+    this.targetHitRepo.upsert(
+      {
+        sessionId, studentId, studentName, taskNum,
+        targetPointId: hit.targetPointId,
+        evidenceSpan: hit.evidenceSpan || '',
+        hitAt: Date.now(),
+      },
+      ['sessionId', 'studentId', 'taskNum', 'targetPointId'],
+    ).catch(e => this.logger.warn('Failed to persist target hit', e));
   }
 
   private handleStateChange(

@@ -17,6 +17,7 @@ import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
+import { DiscussHighlight } from '../../entities/discuss-highlight.entity';
 
 const PT_MANIFEST = {
   id: 'pt-lesson',
@@ -81,11 +82,11 @@ describe('PersonalizationService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight]),
       ],
       providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService],
     }).compile();

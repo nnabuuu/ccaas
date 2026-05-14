@@ -15,6 +15,8 @@ import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
+import { DiscussHighlight } from '../../entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
 import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
@@ -69,11 +71,11 @@ describe('DiscussService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         DiscussService, ObservationQueryService, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService,

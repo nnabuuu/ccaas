@@ -6,24 +6,31 @@ function makeMockAiPromptBuilder(response = '{"insights":[]}') {
   return { callLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;
 }
 
+function makeMockHighlightRepo() {
+  return {
+    upsert: jest.fn().mockResolvedValue(undefined),
+    find: jest.fn().mockResolvedValue([]),
+  } as any;
+}
+
 describe('CoachingService', () => {
   let service: CoachingService;
   let ai: AiPromptBuilder;
 
   beforeEach(() => {
     ai = makeMockAiPromptBuilder();
-    service = new CoachingService(ai);
+    service = new CoachingService(ai, makeMockHighlightRepo());
   });
 
   // ── Highlight management ──
 
   describe('addHighlight / getHighlights', () => {
-    it('stores and retrieves highlights', () => {
+    it('stores and retrieves highlights', async () => {
       service.addHighlight('s1', {
         studentId: 'stu1', studentName: 'Alice', taskNum: 1, clusterId: 'c1',
         message: 'I think...', gist: 'Interesting point', evidenceSpan: 'evidence',
       });
-      const highlights: DiscussionHighlight[] = service.getHighlights('s1');
+      const highlights: DiscussionHighlight[] = await service.getHighlights('s1');
       expect(highlights).toHaveLength(1);
       expect(highlights[0]).toMatchObject({
         studentId: 'stu1', studentName: 'Alice', gist: 'Interesting point', clusterId: 'c1',
@@ -31,19 +38,19 @@ describe('CoachingService', () => {
       expect(highlights[0].detectedAt).toBeGreaterThan(0);
     });
 
-    it('returns empty array for unknown session', () => {
-      expect(service.getHighlights('unknown')).toEqual([]);
+    it('returns empty array for unknown session', async () => {
+      expect(await service.getHighlights('unknown')).toEqual([]);
     });
 
-    it('caps highlights at 100 per session', () => {
+    it('caps highlights at 100 per session', async () => {
       for (let i = 0; i < 110; i++) {
         service.addHighlight('s1', {
           studentId: `stu${i}`, studentName: `S${i}`, taskNum: 1, clusterId: 'c1',
           message: 'm', gist: `g${i}`, evidenceSpan: 'e',
         });
       }
-      expect(service.getHighlights('s1')).toHaveLength(100);
-      expect(service.getHighlights('s1')[0].gist).toBe('g10'); // oldest 10 dropped
+      expect(await service.getHighlights('s1')).toHaveLength(100);
+      expect((await service.getHighlights('s1'))[0].gist).toBe('g10'); // oldest 10 dropped
     });
   });
 
@@ -74,7 +81,7 @@ describe('CoachingService', () => {
         insights: [{ title: '关注Q1', detail: '多人出错', suggestedAction: '讲解Q1' }],
       });
       ai = makeMockAiPromptBuilder(llmResponse);
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
 
       await service.maybeRefresh('s1', stateInput);
       const cached: CoachingInsight | null = service.getCached('s1');
@@ -87,7 +94,7 @@ describe('CoachingService', () => {
     it('throttles within THROTTLE_MS window', async () => {
       const llmResponse = JSON.stringify({ insights: [{ title: 'T', detail: 'D', suggestedAction: 'A' }] });
       ai = makeMockAiPromptBuilder(llmResponse);
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
 
       await service.maybeRefresh('s1', stateInput);
       await service.maybeRefresh('s1', stateInput);
@@ -110,7 +117,7 @@ describe('CoachingService', () => {
         ],
       });
       ai = makeMockAiPromptBuilder(llmResponse);
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
 
       await service.maybeRefresh('s1', stateInput);
       expect(service.getCached('s1')!.insights).toHaveLength(3);
@@ -118,7 +125,7 @@ describe('CoachingService', () => {
 
     it('handles LLM returning invalid JSON gracefully', async () => {
       ai = makeMockAiPromptBuilder('not json');
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
 
       await service.maybeRefresh('s1', stateInput);
       expect(service.getCached('s1')).toBeNull();
@@ -126,7 +133,7 @@ describe('CoachingService', () => {
 
     it('handles LLM returning non-array insights', async () => {
       ai = makeMockAiPromptBuilder('{"insights": "not an array"}');
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
 
       await service.maybeRefresh('s1', stateInput);
       expect(service.getCached('s1')).toBeNull();
@@ -143,7 +150,7 @@ describe('CoachingService', () => {
       });
       const llmResponse = JSON.stringify({ insights: [{ title: 'T', detail: 'D', suggestedAction: 'A' }] });
       ai = makeMockAiPromptBuilder(llmResponse);
-      service = new CoachingService(ai);
+      service = new CoachingService(ai, makeMockHighlightRepo());
       service.addHighlight('s1', {
         studentId: 'stu1', studentName: 'A', taskNum: 1, clusterId: 'c1',
         message: 'm', gist: 'g', evidenceSpan: 'e',
@@ -153,7 +160,7 @@ describe('CoachingService', () => {
       });
 
       service.cleanupSession('s1');
-      expect(service.getHighlights('s1')).toEqual([]);
+      expect(await service.getHighlights('s1')).toEqual([]);
       expect(service.getCached('s1')).toBeNull();
     });
   });

@@ -13,11 +13,15 @@ function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
   } as ClassifyResult;
 }
 
+function makeMockTargetHitRepo() {
+  return { upsert: jest.fn().mockResolvedValue(undefined), find: jest.fn().mockResolvedValue([]) } as any;
+}
+
 describe('ClusterAggregator', () => {
   let agg: ClusterAggregator;
 
   beforeEach(() => {
-    agg = new ClusterAggregator();
+    agg = new ClusterAggregator(makeMockTargetHitRepo());
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2024-01-01T00:00:00Z'));
   });

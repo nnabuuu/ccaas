@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
+import type { ReadingManifest } from '../../../types/reading'
 import type { ClassroomState } from '../../../hooks/useClassroom'
+import { StudentModal } from '../StudentModal'
 import OverlayShell from '../observe/OverlayShell'
 import {
   buildStepMapping,
@@ -10,6 +12,7 @@ import {
   computeTimingInsight,
   pickRepresentativeQuestions,
   computeAiHeat,
+  computeDepthRanking,
   formatDuration,
   QUADRANT_META,
   QUADRANT_ORDER,
@@ -25,7 +28,7 @@ interface Props {
   stepNames: Record<number, string>
   totalSteps: number
   taskSteps: Array<{ idx: number; duration?: number }>
-  onStudentClick: (name: string) => void
+  manifest: ReadingManifest
 }
 
 // ── Default viewBox for the matrix SVG ──
@@ -34,8 +37,13 @@ const MIN_ZOOM = 0.5
 const MAX_ZOOM = 4
 const DRAG_THRESHOLD = 3 // px — ignore micro-movements so clicks on dots work
 
-export default function SummaryOverlay({ open, onClose, state, students, questions, stepNames, totalSteps, taskSteps, onStudentClick }: Props) {
+export default function SummaryOverlay({ open, onClose, state, students, questions, stepNames, totalSteps, taskSteps, manifest }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [modalStudent, setModalStudent] = useState<string | null>(null)
+  const modalStudentData = useMemo(() => {
+    if (!modalStudent) return null
+    return students.find(s => s.name === modalStudent) || null
+  }, [modalStudent, students])
   const [viewBox, setViewBox] = useState(DEFAULT_VB)
   const viewBoxRef = useRef(viewBox)
   useEffect(() => { viewBoxRef.current = viewBox }, [viewBox])
@@ -80,9 +88,14 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
     [state.stepMetrics, stepNames],
   )
 
+  const depthRanking = useMemo(
+    () => computeDepthRanking({ coaching: state.coaching, clusterStats: state.clusterStats }),
+    [state.coaching, state.clusterStats],
+  )
+
   const metrics = { ...quadrantData.metrics, weakDimensionCount: weakDimensions.length }
 
-  const hasTransitionInsights = timingInsight || repQuestions.length > 0 || aiHeat.length > 0
+  const hasTransitionInsights = timingInsight || repQuestions.length > 0 || aiHeat.length > 0 || depthRanking.length > 0
 
   const selectedStudent = useMemo(
     () => quadrantData.students.find(s => s.id === selectedId) || null,
@@ -186,6 +199,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
   const submitted = students.filter(s => s.submissions && Object.values(s.submissions).some(sub => sub?.score)).length
 
   return (
+  <>
     <OverlayShell open={open} onClose={onClose} depth={0}>
       <div className="so-root">
         {/* ── Header ── */}
@@ -300,7 +314,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                 weakDimensions={weakDimensions}
                 allStudents={quadrantData.students}
                 candidates={candidates}
-                onStudentClick={onStudentClick}
+                onOpenModal={setModalStudent}
               />
             ) : (
               <div className="so-detail-empty">
@@ -317,7 +331,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
             <div className="so-section-h">推荐提问候选</div>
             {candidates.length === 0 && <div className="so-empty-hint">暂无推荐</div>}
             {candidates.map(c => (
-              <div key={c.student.id} className="qc-recommend-card" onClick={() => { setSelectedId(c.student.id); onStudentClick(c.student.name) }}>
+              <div key={c.student.id} className="qc-recommend-card" onClick={() => { setSelectedId(c.student.id); setModalStudent(c.student.name) }}>
                 <div className="qcr-head">
                   <span className="qcr-name">{c.student.name}</span>
                   <span className={`qcr-intent ${c.intent}`}>{c.intentLabel}</span>
@@ -412,10 +426,39 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                 })}
               </div>
             )}
+
+            {/* Depth interaction Top 5 */}
+            {depthRanking.length > 0 && (
+              <div className="so-transition-card">
+                <div className="so-transition-label">深度互动 Top {depthRanking.length}</div>
+                {depthRanking.map((s, i) => (
+                  <div key={s.studentId} className="so-depth-row" onClick={() => { setSelectedId(s.studentId); setModalStudent(s.studentName) }}>
+                    <span className="so-depth-rank">{i + 1}</span>
+                    <span className="so-depth-name">{s.studentName}</span>
+                    <span className="so-depth-stats">
+                      {s.highlightCount > 0 && <span className="so-depth-hl">{s.highlightCount} 亮点</span>}
+                      {s.targetPointHits > 0 && <span className="so-depth-tp">{s.targetPointHits} 命中</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
     </OverlayShell>
+    {modalStudent && modalStudentData && (
+      <div style={{ position: 'relative', zIndex: 200 }}>
+        <StudentModal
+          student={modalStudentData}
+          manifest={manifest}
+          state={state}
+          questions={questions}
+          onClose={() => setModalStudent(null)}
+        />
+      </div>
+    )}
+  </>
   )
 }
 
@@ -431,7 +474,7 @@ function MetricCard({ label, value, color, sub }: { label: string; value: string
   )
 }
 
-function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, weakDimensions: _weakDimensions, allStudents, candidates, onStudentClick }: {
+function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, weakDimensions: _weakDimensions, allStudents, candidates, onOpenModal }: {
   student: StudentQuadrantData
   rawStudent: ClassroomState['students'][number] | null
   stepNames: Record<number, string>
@@ -440,7 +483,7 @@ function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, w
   weakDimensions: WeakDimension[]
   allStudents: StudentQuadrantData[]
   candidates: QuestionCandidate[]
-  onStudentClick: (name: string) => void
+  onOpenModal: (name: string) => void
 }) {
   const meta = QUADRANT_META[student.quadrant]
   const completion = `${student.submissionCount} / ${totalSteps}`
@@ -482,7 +525,7 @@ function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, w
   return (
     <div className="so-detail-content">
       <div className="so-detail-head">
-        <span className="so-detail-name" onClick={() => onStudentClick(student.name)} style={{ cursor: 'pointer' }}>{student.name}</span>
+        <span className="so-detail-name" onClick={() => onOpenModal(student.name)} style={{ cursor: 'pointer' }}>{student.name}</span>
         <span className="so-detail-tag" style={{ background: meta.bgColor, color: meta.color }}>{meta.label}</span>
       </div>
 
@@ -527,8 +570,8 @@ function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, w
         <div className="so-detail-reason">{recommendReason}</div>
       </div>
 
-      <button className="so-detail-open-btn" onClick={() => onStudentClick(student.name)}>
-        加入提问候选 ↗
+      <button className="so-detail-open-btn" onClick={() => onOpenModal(student.name)}>
+        查看学生详情 ↗
       </button>
     </div>
   )

@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AiPromptBuilder } from './ai-prompt-builder';
+import { DiscussHighlight } from '../entities/discuss-highlight.entity';
 import type { DiscussionHighlight, CoachingStateInput, CoachingInsight } from '../schemas/classroom/coaching';
 
 @Injectable()
@@ -14,22 +17,55 @@ export class CoachingService {
   private pending = new Set<string>();
   private readonly THROTTLE_MS = 30_000;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {}
+  constructor(
+    private readonly aiPromptBuilder: AiPromptBuilder,
+    @InjectRepository(DiscussHighlight) private readonly highlightRepo: Repository<DiscussHighlight>,
+  ) {}
 
   // ── Highlight management ──
 
   addHighlight(sessionId: string, h: Omit<DiscussionHighlight, 'detectedAt'>): void {
+    const now = Date.now();
     if (!this.highlights.has(sessionId)) {
       this.highlights.set(sessionId, []);
     }
     const list = this.highlights.get(sessionId)!;
-    list.push({ ...h, detectedAt: Date.now() });
+    list.push({ ...h, detectedAt: now });
     if (list.length > 100) list.splice(0, list.length - 100);
     this.logger.log(`Highlight detected for ${h.studentName} in session ${sessionId}: ${h.gist}`);
+
+    // Persist to DB (fire-and-forget)
+    this.highlightRepo.upsert(
+      {
+        sessionId, studentId: h.studentId, studentName: h.studentName,
+        taskNum: h.taskNum, clusterId: h.clusterId,
+        message: h.message, gist: h.gist, evidenceSpan: h.evidenceSpan,
+        detectedAt: now,
+      },
+      ['sessionId', 'studentId', 'taskNum', 'clusterId'],
+    ).catch(e => this.logger.warn('Failed to persist highlight', e));
   }
 
-  getHighlights(sessionId: string): DiscussionHighlight[] {
-    return this.highlights.get(sessionId) || [];
+  async getHighlights(sessionId: string): Promise<DiscussionHighlight[]> {
+    const cached = this.highlights.get(sessionId);
+    if (cached) return cached;
+
+    // Restore from DB
+    const rows = await this.highlightRepo.find({
+      where: { sessionId },
+      order: { detectedAt: 'ASC' },
+    });
+    if (rows.length > 0) {
+      const restored = rows.map(r => ({
+        studentId: r.studentId, studentName: r.studentName,
+        taskNum: r.taskNum, clusterId: r.clusterId,
+        message: r.message, gist: r.gist, evidenceSpan: r.evidenceSpan,
+        detectedAt: Number(r.detectedAt),
+      }));
+      this.highlights.set(sessionId, restored);
+      return restored;
+    }
+    return [];
   }
 
   // ── LLM Insight management ──
@@ -71,7 +107,7 @@ export class CoachingService {
     try {
       const { stepMetrics, healthCards, observation } = state;
 
-      const highlights = this.getHighlights(sessionId);
+      const highlights = await this.getHighlights(sessionId);
       const recentHighlightGists = highlights.slice(-3).map(h => h.gist);
 
       // Build a compact summary for the LLM

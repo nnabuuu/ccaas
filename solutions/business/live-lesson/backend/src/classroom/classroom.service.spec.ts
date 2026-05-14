@@ -16,6 +16,8 @@ import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { DiscussHighlight } from '../entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
 import { ObservationQueryService } from './observation/observation-query.service';
 import { GradingService } from './exercise/grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
@@ -213,11 +215,11 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -439,11 +441,11 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3090,11 +3092,11 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3245,11 +3247,11 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3569,11 +3571,11 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3817,11 +3819,11 @@ describe('ClassroomService — snapshots', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3985,11 +3987,11 @@ describe('StudentSubmissionService — getSubmission', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4094,11 +4096,11 @@ describe('Phase sync integration — student ↔ teacher', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4375,11 +4377,11 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4555,11 +4557,11 @@ describe('Submission phase separation — cross-module', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4791,11 +4793,11 @@ describe('REST polling scenarios — student', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4865,11 +4867,11 @@ describe('REST polling scenarios — teacher getState', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4986,11 +4988,11 @@ async function buildAntiPatternTestModule(): Promise<TestingModule> {
       TypeOrmModule.forRoot({
         type: 'better-sqlite3',
         database: ':memory:',
-        entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+        entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit],
         synchronize: true,
         logging: false,
       }),
-      TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+      TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
     ],
     providers: [
       ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,

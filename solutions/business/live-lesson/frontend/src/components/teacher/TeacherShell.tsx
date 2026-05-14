@@ -469,7 +469,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             stepNames={stepNames}
             totalSteps={stepCards.length}
             taskSteps={taskSteps}
-            onStudentClick={setModalStudent}
+            manifest={manifest}
           />
         </Suspense>
       )}

@@ -9,6 +9,8 @@ import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { DiscussHighlight } from '../entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import {
   ObserverEngine,
@@ -76,7 +78,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
   imports: [
     CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
     ClassroomController,

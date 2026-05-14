@@ -13,6 +13,7 @@ import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { ManifestCacheService } from './manifest-cache.service';
 import type { AnswerKey } from '../schemas/answer-key.schema';
@@ -131,11 +132,11 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Student, Submission, ChatMessage, Lesson],
+          entities: [Student, Submission, ChatMessage, Lesson, DiscussTargetHit],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Student, Submission, ChatMessage, Lesson]),
+        TypeOrmModule.forFeature([Student, Submission, ChatMessage, Lesson, DiscussTargetHit]),
       ],
       providers: [
         ObserveRegistry,
