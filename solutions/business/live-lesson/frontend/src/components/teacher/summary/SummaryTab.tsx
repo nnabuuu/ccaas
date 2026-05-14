@@ -140,15 +140,13 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
       </div>
 
       {/* ── Depth Leaderboard ── */}
-      {state.depthLeaderboard && (
-        <DepthLeaderboardCard
-          rankings={state.depthLeaderboard.rankings}
-          coaching={state.coaching}
-          sessionCode={sessionCode}
-          onStudentClick={onStudentClick}
-          onExpandOverlay={onExpandDepthOverlay}
-        />
-      )}
+      <DepthLeaderboardCard
+        rankings={state.depthLeaderboard?.rankings ?? []}
+        coaching={state.coaching}
+        sessionCode={sessionCode}
+        onStudentClick={onStudentClick}
+        onExpandOverlay={onExpandDepthOverlay}
+      />
     </div>
   )
 }

@@ -31,7 +31,7 @@ export function DepthLeaderboardCard({ rankings, coaching, sessionCode, onStuden
         <div className="dl-empty">
           <div className="dl-empty-icon">💬</div>
           <div className="dl-empty-title">暂无讨论数据</div>
-          <div className="dl-empty-desc">课堂讨论开始后，将自动生成深度互动排行</div>
+          <div className="dl-empty-desc">课堂讨论开始后，将自动生成深度互动排行。排行数据在课堂开始 5 分钟后开始计算，每 30 秒刷新一次。</div>
         </div>
       </div>
     )
