@@ -430,3 +430,138 @@
 
 /* ── Divider ── */
 .drawer-divider { height: 1px; background: var(--border); margin: 12px 0 }
+
+/* ═══ DEPTH LEADERBOARD ═══ */
+
+/* ── Tab compact card ── */
+.dl-header { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--surface) }
+.dl-header-icon { font-size: 14px }
+.dl-header-title { font-size: 14px; font-weight: 700; color: var(--t1) }
+.dl-header-count { font-size: 11px; color: var(--t3); margin-left: auto }
+.dl-stat-legend { font-size: 10px; color: var(--t3); display: inline-flex; align-items: center; gap: 8px }
+.dl-stat-legend-item { display: inline-flex; align-items: center; gap: 3px }
+
+.dl-stat-hl { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 8px; color: var(--amber); background: var(--amber-soft) }
+.dl-stat-tp { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; padding: 2px 6px; border-radius: 8px; color: var(--green); background: var(--green-soft) }
+.dl-stat-hl.legend, .dl-stat-tp.legend { font-size: 9px; padding: 1px 4px }
+
+/* List rows */
+.dl-list { padding: 4px 12px 8px }
+.dl-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 6px; cursor: pointer }
+.dl-row:hover { background: var(--surface2) }
+.dl-rank { width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.dl-rank--1 { background: var(--gold); color: white }
+.dl-rank--2 { background: var(--silver); color: white }
+.dl-rank--3 { background: var(--bronze); color: white }
+.dl-rank--4 { background: #7a8fb5; color: white }
+.dl-rank--5 { background: #7d9e6a; color: white }
+.dl-rank--default { background: var(--surface2); color: var(--t2) }
+
+.dl-avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white }
+.dl-avatar--1 { background: linear-gradient(135deg, #d4a534, #c48a1e); border: 2px solid var(--gold-border) }
+.dl-avatar--2 { background: linear-gradient(135deg, #9ca3af, #6b7280); border: 2px solid var(--silver-border) }
+.dl-avatar--3 { background: linear-gradient(135deg, #d97706, #92400e); border: 2px solid var(--bronze-border) }
+.dl-avatar--4 { background: linear-gradient(135deg, #8b9dc3, #5b7ba5); border: 2px solid #7a8fb5 }
+.dl-avatar--5 { background: linear-gradient(135deg, #a3b18a, #6b8e5a); border: 2px solid #7d9e6a }
+.dl-avatar--default { background: var(--surface2); color: var(--t2) }
+
+.dl-name { font-size: 13px; font-weight: 600; color: var(--t1); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dl-stats { display: flex; gap: 6px; flex-shrink: 0 }
+.dl-expand-arrow { font-size: 10px; color: var(--t3); transition: transform .15s; flex-shrink: 0 }
+.dl-expand-arrow.open { transform: rotate(90deg) }
+
+/* Expand panel */
+.dl-expand { background: var(--bg); border-radius: 6px; padding: 10px; margin: 4px 6px 8px }
+.dl-ai-tag { display: inline-block; font-size: 9px; font-weight: 700; color: var(--ai); background: var(--ai-soft); padding: 1px 5px; border-radius: 3px; margin-right: 3px; vertical-align: middle }
+.dl-ai-summary { font-size: 11px; color: var(--t2); line-height: 1.5; margin-bottom: 6px }
+
+/* Conversation bubbles (shared) */
+.dl-convo { display: flex; flex-direction: column; gap: 6px }
+.dl-convo-bubble { font-size: 11px; line-height: 1.5; max-width: 85%; padding: 6px 10px; border-radius: 8px; word-break: break-word }
+.dl-convo-bubble--ai { align-self: flex-start; background: var(--ai-soft); color: var(--t1) }
+.dl-convo-bubble--student { align-self: flex-end; background: var(--amber-soft); color: var(--t1) }
+.dl-convo-role { font-size: 9px; font-weight: 700; color: var(--t3); margin-bottom: 2px }
+.dl-convo-role--ai { text-align: left }
+.dl-convo-role--student { text-align: right }
+.dl-convo-hl-badge { display: inline-block; font-size: 9px; font-weight: 700; color: var(--amber); background: var(--amber-soft); border: 1px solid rgba(196,138,30,.2); padding: 0 4px; border-radius: 3px; margin-right: 4px; vertical-align: middle }
+.dl-convo-insight { border-left: 2px solid var(--amber-dot); background: var(--surface); padding: 4px 8px; margin-top: 6px; border-radius: 0 4px 4px 0; font-size: 10px; color: var(--t2); line-height: 1.5 }
+.dl-convo-insight-label { font-size: 9px; font-weight: 700; color: var(--amber); margin-bottom: 2px }
+
+/* Refresh hint */
+.dl-refresh-hint { font-size: 9px; color: var(--t3); text-align: center; padding: 2px 0 6px }
+
+/* Footer expand button */
+.dl-expand-btn { width: 100%; padding: 7px 12px; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border: 1px solid rgba(26,95,160,.15); border-radius: 6px; cursor: pointer; text-align: center; font-family: inherit; margin-top: 4px }
+.dl-expand-btn:hover { background: rgba(26,95,160,.12); border-color: rgba(26,95,160,.3) }
+
+/* Empty state */
+.dl-empty { padding: 40px 24px; text-align: center }
+.dl-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .4 }
+.dl-empty-title { font-size: 14px; font-weight: 600; color: var(--t2); margin-bottom: 4px }
+.dl-empty-desc { font-size: 12px; color: var(--t3); line-height: 1.6 }
+
+/* Few-students layout */
+.dl-few-list { padding: 12px }
+.dl-few-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 8px; margin-bottom: 8px }
+.dl-few-row:last-child { margin-bottom: 0 }
+.dl-few-row:first-child { background: var(--gold-bg) }
+.dl-few-row:nth-child(2) { background: var(--silver-bg) }
+.dl-few-summary { font-size: 11px; color: var(--t2); line-height: 1.5; padding: 2px 8px 0 }
+
+/* ── Drawer (depth-0) ── */
+.dl-drawer-root { display: flex; flex-direction: column; height: 100% }
+.dl-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); flex-shrink: 0 }
+.dl-drawer-title { font-size: 15px; font-weight: 700; color: var(--t1); display: flex; align-items: center; gap: 8px }
+.dl-drawer-meta { font-size: 11px; color: var(--t3); font-weight: 400 }
+.dl-drawer-close { font-size: 11px; color: var(--t3); cursor: pointer; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-family: inherit }
+.dl-drawer-close:hover { background: var(--surface); color: var(--t1) }
+.dl-drawer-body { padding: 16px 20px; overflow-y: auto; flex: 1 }
+
+.dl-drawer-list { display: flex; flex-direction: column; gap: 4px }
+.dl-drawer-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background .12s }
+.dl-drawer-row:hover { background: var(--surface2) }
+.dl-drawer-row--active { background: var(--gold-bg); border: 1px solid rgba(196,138,30,.15) }
+.dl-drawer-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: white; flex-shrink: 0 }
+.dl-drawer-info { flex: 1; min-width: 0 }
+.dl-drawer-name-row { display: flex; align-items: center; gap: 6px }
+.dl-drawer-rank-num { font-size: 11px; font-weight: 800; color: white; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.dl-drawer-name { font-size: 14px; font-weight: 700; color: var(--t1) }
+.dl-drawer-summary { font-size: 12px; color: var(--t2); margin-top: 3px; line-height: 1.5 }
+.dl-drawer-stats { display: flex; gap: 6px; flex-shrink: 0; padding-top: 2px }
+
+/* ── Depth-1 student detail ── */
+.dl-d1-root { display: flex; flex-direction: column; height: 100% }
+.dl-d1-header { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); flex-shrink: 0 }
+.dl-d1-title { font-size: 15px; font-weight: 700; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 8px }
+.dl-d1-back { font-size: 12px; color: var(--t2); cursor: pointer; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; display: flex; align-items: center; gap: 4px; font-family: inherit }
+.dl-d1-back:hover { background: var(--surface); color: var(--t1) }
+.dl-d1-body { padding: 16px 20px; overflow-y: auto; flex: 1 }
+
+.dl-d1-student-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--gold-bg); border-radius: 8px; margin-bottom: 16px }
+.dl-d1-student-summary { font-size: 12px; color: var(--t2); line-height: 1.5; flex: 1 }
+.dl-d1-student-name { font-weight: 700; font-size: 14px; margin-bottom: 2px }
+.dl-d1-student-meta { font-size: 11px; font-weight: 400; color: var(--t3) }
+
+.dl-d1-tp-label { font-size: 11px; font-weight: 700; color: var(--t2); margin-bottom: 6px }
+.dl-d1-tp-checklist { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px }
+.dl-d1-tp-item { display: flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border) }
+.dl-d1-tp-item--hit { background: var(--green-soft); border-color: rgba(45,102,18,.15); color: var(--green) }
+.dl-d1-tp-item--miss { background: var(--surface); color: var(--t3) }
+
+.dl-d1-discuss-section { margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; padding: 14px 16px }
+.dl-d1-discuss-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--amber-soft) }
+.dl-d1-discuss-step { font-size: 10px; font-weight: 700; color: white; background: var(--amber-dot); padding: 1px 6px; border-radius: 3px; flex-shrink: 0 }
+.dl-d1-discuss-title { font-size: 13px; font-weight: 700; color: var(--t1); flex: 1 }
+.dl-d1-discuss-meta { font-size: 11px; color: var(--t3) }
+
+/* d1 larger bubbles */
+.dl-d1-convo .dl-convo-bubble { font-size: 13px; padding: 8px 12px; border-radius: 10px }
+.dl-d1-convo .dl-convo-role { font-size: 10px }
+.dl-d1-convo .dl-convo-insight { font-size: 12px; padding: 8px 12px }
+.dl-d1-convo .dl-convo-hl-badge { font-size: 10px }
+
+/* Message annotation badges */
+.dl-msg-badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px }
+.dl-badge-tp { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 600; color: var(--green); background: var(--green-soft); padding: 1px 5px; border-radius: 3px }
+.dl-badge-cluster { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 600; color: #4338ca; background: #eef2ff; padding: 1px 5px; border-radius: 3px }
+.dl-badge-evidence { font-size: 10px; color: var(--t3); font-style: italic; margin-top: 2px; padding-left: 2px; border-left: 2px solid var(--border-strong); line-height: 1.4 }

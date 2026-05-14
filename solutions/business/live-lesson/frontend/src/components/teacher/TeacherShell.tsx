@@ -19,6 +19,7 @@ import { useDrawerState } from './useDrawerState'
 
 const ObserveDrawer = lazy(() => import('./observe/ObserveDrawer'))
 const SummaryOverlay = lazy(() => import('./summary/SummaryOverlay'))
+const DepthLeaderboardOverlay = lazy(() => import('./summary/DepthLeaderboardOverlay'))
 const DiscussInsightDrawer = lazy(() => import('./DiscussInsightDrawer'))
 const ClassroomStatusDrawer = lazy(() => import('./ClassroomStatusDrawer'))
 
@@ -37,6 +38,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
   const [modalStudent, setModalStudent] = useState<string | null>(null)
   const [expandedStep, setExpandedStep] = useState<number | null>(null)
   const [rightTab, setRightTab] = useState<RightTab>('discuss')
+  const [depthExpanded, setDepthExpanded] = useState(false)
 
   const {
     observeParams, summaryOpen, openSummary, closeSummary,
@@ -424,8 +426,10 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                 stepNames={stepNames}
                 totalSteps={stepCards.length}
                 taskSteps={taskSteps}
+                sessionCode={sessionCode || ''}
                 onStudentClick={setModalStudent}
                 onExpandOverlay={openSummary}
+                onExpandDepthOverlay={() => setDepthExpanded(true)}
               />
             )}
 
@@ -470,6 +474,21 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             totalSteps={stepCards.length}
             taskSteps={taskSteps}
             manifest={manifest}
+          />
+        </Suspense>
+      )}
+
+      {/* ═══ DEPTH LEADERBOARD OVERLAY ═══ */}
+      {depthExpanded && state?.depthLeaderboard && (
+        <Suspense fallback={null}>
+          <DepthLeaderboardOverlay
+            open={depthExpanded}
+            onClose={() => setDepthExpanded(false)}
+            rankings={state.depthLeaderboard.rankings}
+            generatedAt={state.depthLeaderboard.generatedAt}
+            state={state}
+            sessionCode={sessionCode || ''}
+            onStudentClick={setModalStudent}
           />
         </Suspense>
       )}

@@ -12,7 +12,6 @@ import {
   computeTimingInsight,
   pickRepresentativeQuestions,
   computeAiHeat,
-  computeDepthRanking,
   formatDuration,
   QUADRANT_META,
   QUADRANT_ORDER,
@@ -88,10 +87,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
     [state.stepMetrics, stepNames],
   )
 
-  const depthRanking = useMemo(
-    () => computeDepthRanking({ coaching: state.coaching, clusterStats: state.clusterStats }),
-    [state.coaching, state.clusterStats],
-  )
+  const depthRanking = state.depthLeaderboard?.rankings ?? []
 
   const metrics = { ...quadrantData.metrics, weakDimensionCount: weakDimensions.length }
 
@@ -427,17 +423,17 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
               </div>
             )}
 
-            {/* Depth interaction Top 5 */}
+            {/* Depth interaction Top N (from backend depthLeaderboard) */}
             {depthRanking.length > 0 && (
               <div className="so-transition-card">
                 <div className="so-transition-label">深度互动 Top {depthRanking.length}</div>
-                {depthRanking.map((s, i) => (
+                {depthRanking.map(s => (
                   <div key={s.studentId} className="so-depth-row" onClick={() => { setSelectedId(s.studentId); setModalStudent(s.studentName) }}>
-                    <span className="so-depth-rank">{i + 1}</span>
+                    <span className="so-depth-rank">{s.rank}</span>
                     <span className="so-depth-name">{s.studentName}</span>
                     <span className="so-depth-stats">
                       {s.highlightCount > 0 && <span className="so-depth-hl">{s.highlightCount} 亮点</span>}
-                      {s.targetPointHits > 0 && <span className="so-depth-tp">{s.targetPointHits} 命中</span>}
+                      {s.tpHitCount > 0 && <span className="so-depth-tp">{s.tpHitCount} 命中</span>}
                     </span>
                   </div>
                 ))}

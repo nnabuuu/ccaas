@@ -361,6 +361,7 @@ export interface DepthRankStudent {
   targetPointHits: number
 }
 
+/** @deprecated Use backend `depthLeaderboard` from ClassroomState instead. */
 export function computeDepthRanking(state: { coaching?: ClassroomState['coaching']; clusterStats?: ClassroomState['clusterStats'] }): DepthRankStudent[] {
   const map = new Map<string, DepthRankStudent>()
 

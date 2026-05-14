@@ -29,6 +29,10 @@
   --teal-soft: #ddf1eb;
   --lecture: #6b5b3a;
   --lecture-soft: #f3eed8;
+  /* Leaderboard rank tokens */
+  --gold: #c48a1e; --gold-bg: #fdf6e3; --gold-border: #d4a534; --gold-glow: rgba(196,138,30,.15);
+  --silver: #6b7280; --silver-bg: #f3f4f6; --silver-border: #9ca3af;
+  --bronze: #92400e; --bronze-bg: #fef3e2; --bronze-border: #b45309;
 }
 
 .teacher-root {

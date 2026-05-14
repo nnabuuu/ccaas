@@ -334,6 +334,13 @@ export interface ClassroomState {
       generatedAt: number
     } | null
   } | null
+  depthLeaderboard?: {
+    rankings: Array<{
+      studentId: string; studentName: string; rank: number; score: number
+      highlightCount: number; tpHitCount: number; aiSummary: string | null
+    }>
+    generatedAt: number
+  } | null
   observation?: {
     logs: Array<{
       studentId: string
