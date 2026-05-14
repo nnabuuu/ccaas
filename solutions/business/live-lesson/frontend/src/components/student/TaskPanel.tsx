@@ -281,7 +281,7 @@ export function useStudentTask(
   })
 
   let taskId = 0
-  if (screen !== 'intro' && screen !== 'summary' && screen !== 'personal-touch' && screen !== 'bonus-unlock' && screen !== 'bonus') taskId = parseInt(screen)
+  if (screen !== 'intro' && screen !== 'summary' && screen !== 'personal-touch' && screen !== 'bonus-unlock' && screen !== 'bonus' && screen !== 'bonus-review') taskId = parseInt(screen)
   const task = tasks.find(t => t.id === taskId)
 
   // Listen for sync messages from parent (demo orchestrator)
@@ -373,7 +373,10 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
         </div>
       )}
       {screen === 'summary' && (
-        <SummaryScreen lessonSummary={summaryText} lessonId={lessonId} enableMath={config.enableMath} />
+        <SummaryScreen lessonSummary={summaryText} lessonId={lessonId} enableMath={config.enableMath} onReviewBonus={() => setScreen('bonus-review')} />
+      )}
+      {screen === 'bonus-review' && (
+        <BonusPhase reviewMode onComplete={() => setScreen('summary')} />
       )}
       {screen === 'personal-touch' && (
         <PersonalTouchScreen onContinue={(bonusUnlocked) => {

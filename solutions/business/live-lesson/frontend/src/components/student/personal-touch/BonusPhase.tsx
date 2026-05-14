@@ -2,7 +2,8 @@ import { useState, useEffect, useContext, useCallback } from 'react'
 import { SessionCtx } from '../TaskPanel'
 import { MatchExercise } from '../exercise/MatchExercise'
 import { MatrixExercise } from '../exercise/MatrixExercise'
-import type { CheckResult } from '../../../hooks/useClassroom'
+import type { CheckResult, CachedSubmission } from '../../../hooks/useClassroom'
+import { getSubmission } from '../../../hooks/useClassroom'
 
 interface BonusArticle {
   title: string
@@ -23,7 +24,7 @@ interface BonusExerciseData {
   strategy: string
 }
 
-export function BonusPhase({ onComplete }: { onComplete: () => void }) {
+export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void; reviewMode?: boolean }) {
   const ctx = useContext(SessionCtx)
   const [bonusStep, setBonusStep] = useState(1)
   const [exerciseData, setExerciseData] = useState<BonusExerciseData | null>(null)
@@ -35,6 +36,45 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
   const [allDone, setAllDone] = useState(false)
   const [complete, setComplete] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [savedSubs, setSavedSubs] = useState<Record<number, CachedSubmission>>({})
+
+  // reviewMode: load previously submitted data for step 101 & 102
+  useEffect(() => {
+    if (!reviewMode || !ctx.sessionCode || !ctx.studentId) return
+    let cancelled = false
+    Promise.all([
+      getSubmission(ctx.sessionCode, ctx.studentId, 101),
+      getSubmission(ctx.sessionCode, ctx.studentId, 102),
+    ]).then(([s1, s2]) => {
+      if (cancelled) return
+      const subs: Record<number, CachedSubmission> = {}
+      if (s1) subs[1] = s1
+      if (s2) subs[2] = s2
+      setSavedSubs(subs)
+    })
+    return () => { cancelled = true }
+  }, [reviewMode, ctx.sessionCode, ctx.studentId])
+
+  // reviewMode: restore ans/correctQs from savedSubs when exerciseData loads
+  useEffect(() => {
+    if (!reviewMode) return
+    const sub = savedSubs[bonusStep]
+    if (!sub?.data || !exerciseData) return
+
+    if (exerciseData.exercise.type === 'match') {
+      const restored: Record<string, any> = {}
+      const answers = (sub.data.answers as any[]) || []
+      answers.forEach((a: any) => { restored[a.idx] = a.selected })
+      setAns(restored)
+      setCorrectQs(new Set((exerciseData.exercise.pairs || []).map((_: any, i: number) => i)))
+    } else if (exerciseData.exercise.type === 'matrix') {
+      const rowsArray = (sub.data.rows as Array<{ what?: string; why?: string }>) || []
+      const restored: Record<number, any> = {}
+      rowsArray.forEach((r, i) => { restored[i] = r })
+      setAns(restored)
+    }
+    setAllDone(true)
+  }, [reviewMode, savedSubs, bonusStep, exerciseData])
 
   const fetchExercise = useCallback((step: number) => {
     if (!ctx.sessionCode) return
@@ -58,7 +98,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
 
     const submitData = exerciseData.exercise.type === 'match'
       ? { answers: Object.entries(ans).map(([idx, val]) => ({ idx: Number(idx), selected: val })) }
-      : { rows: ans.rows || [] }
+      : { rows: (exerciseData.exercise.rows || []).map((_, i) => ans[i] || {}) }
 
     let result: CheckResult
     try {
@@ -126,7 +166,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
     )
   }
 
-  if (complete) {
+  if (complete && !reviewMode) {
     return (
       <div className="stu-task-inner" style={{ paddingTop: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
@@ -142,7 +182,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="stu-task-inner" style={{ paddingTop: 24 }}>
       <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8 }}>
-        💡 这是额外挑战，做不完也没关系 —— 随时可以结束。
+        {reviewMode ? '📖 查看已提交的 Bonus 答案（只读）' : '💡 这是额外挑战，做不完也没关系 —— 随时可以结束。'}
       </div>
       <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
         Bonus Step {bonusStep} · {exerciseData.strategy}
@@ -172,7 +212,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
           <MatchExercise
             pairs={ex.pairs! as any}
             ans={ans}
-            setAns={setAns}
+            setAns={reviewMode ? () => {} : setAns}
             correctQs={correctQs}
             wrongQs={wrongQs}
             attemptCount={(pi: number) => (attempts as any)?.[pi] ?? 0}
@@ -181,24 +221,46 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
         {ex.type === 'matrix' && (
           <MatrixExercise
             rows={ex.rows! as any}
+            ans={ans as any}
+            onAnsChange={reviewMode ? undefined : (ri, field, value) => {
+              setAns(prev => ({
+                ...prev,
+                [ri]: { ...(prev[ri] || {}), [field]: value },
+              }))
+            }}
+            disabled={reviewMode}
           />
         )}
       </div>
 
-      {!allDone && (
-        <button className="stu-btn pri" onClick={handleCheck} disabled={
-          checking || (ex.type === 'match' ? (ex.pairs || []).some((_: any, i: number) => !correctQs.has(i) && ans[i] === undefined) : false)
-        }>
-          {checking ? 'Checking…' : 'Check →'}
-        </button>
-      )}
-      {allDone && (
-        <button className="stu-btn pri" onClick={handleNext}>
-          {bonusStep === 1 ? 'Next Step →' : 'Finish →'}
-        </button>
-      )}
-      {!allDone && (
-        <button className="stu-btn ghost" style={{ marginTop: 12 }} onClick={onComplete} disabled={checking}>结束课程 →</button>
+      {reviewMode ? (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {bonusStep === 1 && savedSubs[2] && (
+            <button className="stu-btn pri" onClick={() => setBonusStep(2)}>Step 2 →</button>
+          )}
+          {bonusStep === 2 && (
+            <button className="stu-btn ghost" onClick={() => setBonusStep(1)}>← Step 1</button>
+          )}
+          <button className="stu-btn ghost" onClick={onComplete}>← 返回总结</button>
+        </div>
+      ) : (
+        <>
+          {!allDone && (
+            <button className="stu-btn pri" onClick={handleCheck} disabled={
+              checking || (ex.type === 'match' ? (ex.pairs || []).some((_: any, i: number) => !correctQs.has(i) && ans[i] === undefined) : false)
+            }>
+              {checking ? 'Checking…' : 'Check →'}
+            </button>
+          )}
+          {allDone && (
+            <button className="stu-btn pri" onClick={handleNext}>
+              {bonusStep === 1 ? 'Next Step →' : 'Finish →'}
+            </button>
+          )}
+          {!allDone && (
+            <button className="stu-btn ghost" style={{ marginTop: 12 }} onClick={onComplete} disabled={checking}>结束课程 →</button>
+          )}
+        </>
       )}
     </div>
   )

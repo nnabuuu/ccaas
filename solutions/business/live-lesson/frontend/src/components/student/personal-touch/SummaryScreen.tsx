@@ -30,10 +30,11 @@ function formatMinutes(totalSeconds: number): string {
   return `${min} min`
 }
 
-export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
+export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBonus }: {
   lessonSummary: string
   lessonId?: string
   enableMath?: boolean
+  onReviewBonus?: () => void
 }) {
   const ctx = useContext(SessionCtx)
   const [recap, setRecap] = useState<RecapData | null>(null)
@@ -139,6 +140,15 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
           {renderMd(lessonSummary, { math: enableMath })}
         </div>
       </div>
+
+      {/* Review Bonus — only if student completed bonus */}
+      {recap?.bonusCompleted && onReviewBonus && (
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <button className="stu-btn ghost" onClick={onReviewBonus}>
+            Review Bonus →
+          </button>
+        </div>
+      )}
     </div>
   )
 }
