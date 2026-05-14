@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchSessionSnapshot, getCachedSubmission, cacheSubmission, type CheckResult } from '../useClassroom'
+import { fetchSessionSnapshot, getCachedSubmission } from '../useClassroom'
 
 /* ── localStorage mock ── */
 

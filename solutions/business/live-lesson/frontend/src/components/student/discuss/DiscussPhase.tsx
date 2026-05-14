@@ -191,8 +191,8 @@ function ContinueChat({ taskId }: { taskId: number }) {
 /* ═══ CLUSTER TRACKER (bar-style + star slot) ═══ */
 function ClusterTracker({ clusters, starSlotRef, countRef }: {
   clusters: ClusterProgress[]
-  starSlotRef: React.RefObject<HTMLDivElement | null>
-  countRef: React.RefObject<HTMLSpanElement | null>
+  starSlotRef: React.RefObject<HTMLDivElement>
+  countRef: React.RefObject<HTMLSpanElement>
 }) {
   if (clusters.length === 0) return null
   const hitCount = clusters.filter(c => c.hit).length

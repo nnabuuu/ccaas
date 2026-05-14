@@ -54,7 +54,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
   const [chatInput, setChatInput] = useState('')
   const popoverRef = useRef<HTMLDivElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
-  const cooldownTimer = useRef<ReturnType<typeof setTimeout>>(null)
+  const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatLoadingRef = useRef(false)
   const cancelledRef = useRef(false)
   const fabRef = useRef<HTMLButtonElement>(null)

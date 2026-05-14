@@ -183,7 +183,7 @@ describe('filterMessagesForApi', () => {
     ]
     const result = filterMessagesForApi(msgs)
     expect(result).toHaveLength(2)
-    expect(result.every(m => m.role !== 'notification')).toBe(true)
+    expect(result.every(m => (m.role as string) !== 'notification')).toBe(true)
   })
 
   it('keeps ai and student messages', () => {

@@ -68,7 +68,7 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
             )}
           </div>
         )}
-        {!recap?.tier && recap?.totalTime !== null && recap?.totalTime > 0 && (
+        {!recap?.tier && recap?.totalTime != null && recap.totalTime > 0 && (
           <div style={{ fontSize: 12, color: 'var(--t3)', marginBottom: 8 }}>{formatMinutes(recap.totalTime)}</div>
         )}
       </div>
