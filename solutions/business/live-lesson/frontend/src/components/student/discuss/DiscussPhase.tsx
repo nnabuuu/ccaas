@@ -515,7 +515,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           {d.openingQZh && (
             <button className="sd-help-btn" title={d.openingQZh} onClick={() => alert(d.openingQZh)}>中文</button>
           )}
-          <button className="sd-guide-btn" onClick={() => setGuideOpen(true)} aria-label="Discussion guide">?</button>
+          <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen ? ' pulse' : ''}`} onClick={() => setGuideOpen(true)} aria-label="Discussion guide">?</button>
         </div>
         <DiscussGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
 
