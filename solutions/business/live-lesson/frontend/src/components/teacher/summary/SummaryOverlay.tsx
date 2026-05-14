@@ -447,7 +447,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
         )}
       </div>
     </OverlayShell>
-    {/* Rendered after OverlayShell so DOM order places it on top (both use position:fixed) */}
+    {/* StudentModal z-index (200) > OverlayShell panel (101), so it renders on top */}
     {modalStudent && modalStudentData && (
       <StudentModal
         student={modalStudentData}
