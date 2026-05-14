@@ -158,6 +158,13 @@ CREATE TABLE IF NOT EXISTS discuss_highlights (
 CREATE INDEX IF NOT EXISTS idx_highlights_session_detected
   ON discuss_highlights(session_id, detected_at);
 
+-- 已有表性能索引（polling 热路径优化）
+CREATE INDEX IF NOT EXISTS idx_submissions_session_phase
+  ON reading_submissions(session_id, phase);
+
+CREATE INDEX IF NOT EXISTS idx_ai_questions_session_asked
+  ON reading_ai_questions(session_id, asked_at);
+
 -- discuss_target_hits（讨论 target-point 命中记录）
 CREATE TABLE IF NOT EXISTS discuss_target_hits (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
