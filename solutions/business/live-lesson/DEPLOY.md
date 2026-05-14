@@ -130,6 +130,54 @@ ls /root/ccaas/solutions/business/live-lesson/data/lessons/*/manifest.json
 > 首次部署时需先用 `NODE_ENV=development` 启动一次让 TypeORM 创建表结构，
 > 或手动运行 migration。
 
+### Schema Migration（已有环境新增表）
+
+当代码新增了 Entity 但生产数据库尚无对应表时，需要手动建表。
+以下 SQL 涵盖截至当前版本的所有需要手动创建的表：
+
+```bash
+cd /root/ccaas/solutions/business/live-lesson/backend
+
+sqlite3 data/live-lesson.db <<'SQL'
+-- discuss_highlights（讨论高光记录）
+CREATE TABLE IF NOT EXISTS discuss_highlights (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  task_num INTEGER NOT NULL,
+  cluster_id TEXT NOT NULL,
+  message TEXT NOT NULL,
+  gist TEXT NOT NULL,
+  evidence_span TEXT NOT NULL,
+  detected_at INTEGER NOT NULL,
+  created_at DATETIME DEFAULT (datetime('now')),
+  UNIQUE(session_id, student_id, task_num, cluster_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_highlights_session_detected
+  ON discuss_highlights(session_id, detected_at);
+
+-- discuss_target_hits（讨论 target-point 命中记录）
+CREATE TABLE IF NOT EXISTS discuss_target_hits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL,
+  student_id TEXT NOT NULL,
+  student_name TEXT NOT NULL,
+  task_num INTEGER NOT NULL,
+  target_point_id TEXT NOT NULL,
+  evidence_span TEXT NOT NULL DEFAULT '',
+  hit_at INTEGER NOT NULL,
+  created_at DATETIME DEFAULT (datetime('now')),
+  UNIQUE(session_id, student_id, task_num, target_point_id)
+);
+SQL
+
+echo "Migration done"
+```
+
+> **Tip**：用 `CREATE TABLE IF NOT EXISTS`，可安全重复执行。
+
 ---
 
 ## 3. 环境变量
@@ -455,7 +503,10 @@ git pull origin master
 
 # 重新构建
 cd solutions/business/live-lesson/backend && npx nest build
-cd ../frontend && npm run build
+cd ../frontend && npm install && npm run build
+
+# 如果有新增 Entity / 表结构变更，先执行 migration SQL（见第 2 节）
+# 如果 manifest 有改动，更新 DB 中的课程数据（见第 7 节）
 
 # 重启
 pm2 restart live-lesson-backend
