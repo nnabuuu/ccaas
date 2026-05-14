@@ -41,6 +41,7 @@
 .right-tab:hover { color: var(--t2) }
 .right-tab.active { color: var(--t1); border-bottom-color: var(--t1) }
 .right-tab-cnt { font-size: 9px; background: var(--surface2); padding: 1px 5px; border-radius: 8px; font-weight: 600 }
+.right-tab-cnt.depth { background: var(--gold-bg); color: var(--gold) }
 
 /* ═══ SUMMARY TAB ═══ */
 

@@ -370,6 +370,7 @@
       "answerKey": {
         "type": "select-evidence",
         "functionOptions": [
+          "Phenomenon",
           "History",
           "Culture",
           "Conclusion"

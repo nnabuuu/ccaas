@@ -12,6 +12,7 @@ import { Timeline } from './Timeline'
 import { DiscussInsightTab } from './DiscussInsightTab'
 import { StudentModal } from './StudentModal'
 import { SummaryTab } from './summary/SummaryTab'
+import { DepthLeaderboardCard } from './summary/DepthLeaderboardCard'
 import { ClassroomStatusTab } from './ClassroomStatusTab'
 import { SubTaskRow } from './SubTaskRow'
 import { ProgressBar } from './ProgressBar'
@@ -23,7 +24,7 @@ const DepthLeaderboardOverlay = lazy(() => import('./summary/DepthLeaderboardOve
 const DiscussInsightDrawer = lazy(() => import('./DiscussInsightDrawer'))
 const ClassroomStatusDrawer = lazy(() => import('./ClassroomStatusDrawer'))
 
-type RightTab = 'discuss' | 'analysis' | 'status'
+type RightTab = 'discuss' | 'analysis' | 'status' | 'depth'
 
 interface Props {
   manifest: ReadingManifest
@@ -403,6 +404,14 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               课堂状态
               {urgentAlertCount > 0 && <span className="obs-badge urgent">{urgentAlertCount}</span>}
             </button>
+            <button className={`right-tab${rightTab === 'depth' ? ' active' : ''}`} onClick={() => setRightTab('depth')}>
+              深度排行
+              {(state?.depthLeaderboard?.rankings?.length ?? 0) > 0 && (
+                <span className="right-tab-cnt depth">
+                  {state?.depthLeaderboard?.rankings?.length}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="ov-body">
@@ -426,10 +435,8 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                 stepNames={stepNames}
                 totalSteps={stepCards.length}
                 taskSteps={taskSteps}
-                sessionCode={sessionCode || ''}
                 onStudentClick={setModalStudent}
                 onExpandOverlay={openSummary}
-                onExpandDepthOverlay={() => setDepthExpanded(true)}
               />
             )}
 
@@ -443,6 +450,23 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                 onStudentClick={setModalStudent}
                 onExpandDrawer={openStatusDrawer}
               />
+            )}
+
+            {/* Tab 4: 深度排行 */}
+            {rightTab === 'depth' && (
+              <div>
+                <div className="panel-header">
+                  <span className="title">深度排行</span>
+                  <button className="expand-btn" onClick={() => setDepthExpanded(true)}>展开 ↗</button>
+                </div>
+                <DepthLeaderboardCard
+                  rankings={state?.depthLeaderboard?.rankings ?? []}
+                  coaching={state?.coaching}
+                  sessionCode={sessionCode || ''}
+                  onStudentClick={setModalStudent}
+                  onExpandOverlay={() => setDepthExpanded(true)}
+                />
+              </div>
             )}
           </div>
         </div>

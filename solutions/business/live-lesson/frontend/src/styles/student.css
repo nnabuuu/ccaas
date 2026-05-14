@@ -656,7 +656,7 @@
 .sd-guide-callout-icon{flex-shrink:0;font-size:15px;margin-top:1px}
 .sd-guide-section-label{padding:20px 28px 0;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
 .sd-guide-cards{padding:16px 28px 28px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.sd-guide-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;animation:sd-guide-slide-up .3s ease-out both}
+.sd-guide-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0;animation:sd-guide-slide-up .3s ease-out both}
 .sd-guide-card:hover{border-color:rgba(28,28,26,.14);transform:translateY(-2px);box-shadow:0 12px 28px -10px rgba(28,28,26,.15);transition:all .18s}
 .sd-guide-card-hd{display:flex;align-items:center;gap:10px}
 .sd-guide-card-num{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#f0efe8}

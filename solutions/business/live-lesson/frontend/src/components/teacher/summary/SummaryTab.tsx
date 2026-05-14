@@ -9,8 +9,6 @@ import {
   QUADRANT_ORDER,
 } from './summary-helpers'
 import type { Quadrant } from './summary-helpers'
-import { DepthLeaderboardCard } from './DepthLeaderboardCard'
-
 interface Props {
   state: ClassroomState
   students: ClassroomState['students']
@@ -18,13 +16,11 @@ interface Props {
   stepNames: Record<number, string>
   totalSteps: number
   taskSteps: Array<{ idx: number; duration?: number }>
-  sessionCode: string
   onStudentClick: (name: string) => void
   onExpandOverlay: () => void
-  onExpandDepthOverlay: () => void
 }
 
-export function SummaryTab({ state, students, questions, stepNames, totalSteps, taskSteps, sessionCode, onStudentClick, onExpandOverlay, onExpandDepthOverlay }: Props) {
+export function SummaryTab({ state, students, questions, stepNames, totalSteps, taskSteps, onStudentClick, onExpandOverlay }: Props) {
   const { stepToTask, taskDurations } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
 
   const quadrantData = useMemo(
@@ -139,14 +135,6 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
         )}
       </div>
 
-      {/* ── Depth Leaderboard ── */}
-      <DepthLeaderboardCard
-        rankings={state.depthLeaderboard?.rankings ?? []}
-        coaching={state.coaching}
-        sessionCode={sessionCode}
-        onStudentClick={onStudentClick}
-        onExpandOverlay={onExpandDepthOverlay}
-      />
     </div>
   )
 }
