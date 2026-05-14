@@ -445,7 +445,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       )}
       {ex.type === 'matrix' && (
         <MatrixExercise
-          rows={ex.rows!}
+          rows={ex.rows ?? []}
           practiceCount={ex.practiceCount}
           studentId={ctx.studentId}
           stepIdx={stepIdx}

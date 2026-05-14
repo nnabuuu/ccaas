@@ -240,6 +240,49 @@ describe('enrichExerciseFromSpec — manifest fallback', () => {
     expect(exercise.rows![0].practice).toBe('new')
   })
 
+  it('quiz: sanitized manifest with questions only (no answers)', () => {
+    const ak = {
+      type: 'quiz',
+      questions: [{ text: 'Q1', translate: '问题1', options: ['A', 'B'] }],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.questions).toHaveLength(1)
+    expect(exercise.questions![0].q).toBe('Q1')
+    expect(exercise.questions![0].translate).toBe('问题1')
+    expect(exercise.questions![0].opts).toEqual(['A', 'B'])
+    expect(exercise.questions![0].correct).toBeUndefined()
+    expect(serverCheck).toBe(false)
+  })
+
+  it('match: sanitized manifest with pairs only (no answers)', () => {
+    const ak = {
+      type: 'match',
+      pairs: [{ left: 'Apple', options: ['Fruit', 'Veg'] }],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.pairs).toHaveLength(1)
+    expect(exercise.pairs![0].left).toBe('Apple')
+    expect(exercise.pairs![0].opts).toEqual(['Fruit', 'Veg'])
+    expect(exercise.pairs![0].correct).toBeUndefined()
+    expect(serverCheck).toBe(false)
+  })
+
+  it('matrix: sanitized manifest with rows only (no answers)', () => {
+    const ak = {
+      type: 'matrix',
+      rows: [
+        { place: 'Tokyo', isDemo: true, practice: 'culture' },
+        { place: 'Berlin', isDemo: false },
+      ],
+      practiceCount: 1,
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.rows).toHaveLength(2)
+    expect(exercise.rows![0]).toMatchObject({ place: 'Tokyo', demo: true, practice: 'culture' })
+    expect(exercise.practiceCount).toBe(1)
+    expect(serverCheck).toBe(false)
+  })
+
   it('stance: injects from manifest ak', () => {
     const ak = {
       type: 'stance',

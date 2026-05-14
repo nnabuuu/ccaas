@@ -118,18 +118,18 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
         ...(a.paraRef ? { paraRef: a.paraRef as number[] } : {}),
       } as TaskQuestion
     })
-    // Sanitized manifest uses ExerciseSpec format (text/translate/options fields)
-    if (ak.questions?.length) {
-      ex.questions = ak.questions.map((q: Record<string, unknown>, i: number) => {
-        const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-        return {
-          ...base,
-          q: (q.text as string) || base.q,
-          translate: (q.translate as string) || base.translate,
-          opts: (q.options as string[]) || base.opts,
-        } as TaskQuestion
-      })
-    }
+  }
+  // Sanitized manifest uses ExerciseSpec format (text/translate/options fields)
+  if (ak.type === 'quiz' && ak.questions?.length) {
+    ex.questions = ak.questions.map((q: Record<string, unknown>, i: number) => {
+      const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
+      return {
+        ...base,
+        q: (q.text as string) || base.q,
+        translate: (q.translate as string) || base.translate,
+        opts: (q.options as string[]) || base.opts,
+      } as TaskQuestion
+    })
   }
   if (ak.type === 'match' && ak.answers?.length) {
     const sharedOpts = ak.options
@@ -149,17 +149,17 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
         ...(a.paraRef ? { paraRef: a.paraRef as number[] } : {}),
       } as TaskMatchPair
     })
-    // Sanitized manifest uses ExerciseSpec format
-    if (ak.pairs?.length) {
-      ex.pairs = ak.pairs.map((p: Record<string, unknown>, i: number) => {
-        const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-        return {
-          ...base,
-          left: (p.left as string) || base.left,
-          opts: (p.options as string[]) || base.opts,
-        } as TaskMatchPair
-      })
-    }
+  }
+  // Sanitized manifest uses ExerciseSpec format (pairs, not answers)
+  if (ak.type === 'match' && ak.pairs?.length) {
+    ex.pairs = ak.pairs.map((p: Record<string, unknown>, i: number) => {
+      const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
+      return {
+        ...base,
+        left: (p.left as string) || base.left,
+        opts: (p.options as string[]) || base.opts,
+      } as TaskMatchPair
+    })
   }
   if (ak.type === 'matrix' && ak.answers?.length) {
     ex.rows = ak.answers.map((a: Record<string, unknown>, i: number) => {
@@ -178,23 +178,23 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
       } as TaskMatrixRow
     })
     if (ak.practiceCount) ex.practiceCount = ak.practiceCount
-    // Sanitized manifest uses ExerciseSpec format
-    if (ak.rows?.length) {
-      ex.rows = ak.rows.map((r: Record<string, unknown>, i: number) => {
-        const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-        return {
-          ...base,
-          place: (r.place as string) || base.place,
-          demo: (r.isDemo as boolean) ?? base.demo,
-          ...(r.practice ? { practice: r.practice as string } : {}),
-          ...(r.reason ? { reason: r.reason as string } : {}),
-          ...(r.paraRef ? { paraRef: r.paraRef as number[] } : {}),
-          ...(r.whatPrompt ? { whatPrompt: r.whatPrompt as string } : {}),
-          ...(r.whyPrompt ? { whyPrompt: r.whyPrompt as string } : {}),
-        } as TaskMatrixRow
-      })
-      if (ak.practiceCount) ex.practiceCount = ak.practiceCount
-    }
+  }
+  // Sanitized manifest uses ExerciseSpec format (rows, not answers)
+  if (ak.type === 'matrix' && ak.rows?.length) {
+    ex.rows = ak.rows.map((r: Record<string, unknown>, i: number) => {
+      const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
+      return {
+        ...base,
+        place: (r.place as string) || base.place,
+        demo: (r.isDemo as boolean) ?? base.demo,
+        ...(r.practice ? { practice: r.practice as string } : {}),
+        ...(r.reason ? { reason: r.reason as string } : {}),
+        ...(r.paraRef ? { paraRef: r.paraRef as number[] } : {}),
+        ...(r.whatPrompt ? { whatPrompt: r.whatPrompt as string } : {}),
+        ...(r.whyPrompt ? { whyPrompt: r.whyPrompt as string } : {}),
+      } as TaskMatrixRow
+    })
+    if (ak.practiceCount) ex.practiceCount = ak.practiceCount
   }
   if (ak.type === 'stance') {
     if (ak.stanceQ) ex.stanceQ = ak.stanceQ
