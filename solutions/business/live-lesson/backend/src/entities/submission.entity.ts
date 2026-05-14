@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique, Index } from 'typeorm';
 
 @Entity('reading_submissions')
 @Unique(['sessionId', 'studentId', 'step', 'phase'])
+@Index(['sessionId', 'phase'])
 export class Submission {
   @PrimaryGeneratedColumn()
   id: number;

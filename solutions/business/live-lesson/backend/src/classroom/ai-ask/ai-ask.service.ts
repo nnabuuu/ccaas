@@ -9,6 +9,7 @@ import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
+import { StateCacheService } from '../state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class AiAskService {
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
+    private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -77,6 +79,7 @@ export class AiAskService {
       category: parsed.category,
     });
     await this.aiQuestionRepo.save(aiQuestion);
+    this.stateCache.markDirty(session.id);
 
     if (messages && messages.length > 0) {
       const threadId = `continue:${step}`;

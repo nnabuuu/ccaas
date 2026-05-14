@@ -42,6 +42,9 @@ import { ExerciseService } from './exercise/exercise.service';
 import { ExerciseController } from './exercise/exercise.controller';
 import { GradingService } from './exercise/grading.service';
 
+// ── State Cache ──
+import { StateCacheService } from './state-cache.service';
+
 // ── Coaching ──
 import { CoachingService } from './coaching.service';
 
@@ -90,7 +93,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
   ],
   providers: [
     // Infra
-    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, ManifestCacheService,
+    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, ManifestCacheService, StateCacheService,
     // Observe handlers + registry
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler,
     // Exercise

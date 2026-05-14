@@ -16,6 +16,7 @@ import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../
 import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
+import { StateCacheService } from '../state-cache.service';
 import { buildCheckItems } from '../exercise/build-check-items';
 import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
 
@@ -50,6 +51,7 @@ export class PersonalizationService {
     private readonly manifestCache: ManifestCacheService,
     private readonly exerciseService: ExerciseService,
     private readonly coachingService: CoachingService,
+    private readonly stateCache: StateCacheService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -211,6 +213,7 @@ export class PersonalizationService {
       });
       await this.submissionRepo.save(submission);
     }
+    this.stateCache.markDirty(session.id);
 
     const ak = stepDef.answerKey as Record<string, unknown>;
     const items = gradeResult ? buildCheckItems(ak, data, gradeResult) : [];

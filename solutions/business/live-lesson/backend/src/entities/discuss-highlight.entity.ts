@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique, Index } from 'typeorm';
 
 @Entity('discuss_highlights')
 @Unique(['sessionId', 'studentId', 'taskNum', 'clusterId'])
+@Index(['sessionId', 'detectedAt'])
 export class DiscussHighlight {
   @PrimaryGeneratedColumn()
   id: number;

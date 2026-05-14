@@ -10,6 +10,7 @@ import { ClassroomSession } from '../entities/classroom-session.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomBroadcastService } from './classroom-broadcast.service';
 import { ClassroomStateService } from './classroom-state.service';
+import { StateCacheService } from './state-cache.service';
 import { Lesson } from '../entities/lesson.entity';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { TranslateService } from './translate/translate.service';
@@ -41,6 +42,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly broadcastService: ClassroomBroadcastService,
     private readonly stateService: ClassroomStateService,
+    private readonly stateCache: StateCacheService,
     private readonly translateService: TranslateService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
@@ -241,6 +243,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     session.status = 'active';
     session.startedAt = new Date();
     await this.sessionRepo.save(session);
+    this.stateCache.markDirty(session.id);
     await this.cache.del(this.sessionInfoKey(code));
 
     this.stateService.initObservation(session.id, session.lessonId).catch(e =>
@@ -260,6 +263,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     session.status = 'ended';
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
+    this.stateCache.markDirty(session.id);
     await this.cache.del(this.sessionInfoKey(code));
 
     // Flush any pending debounced broadcast, then send final state immediately
@@ -322,6 +326,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
       session.currentStep = step;
       await this.sessionRepo.save(session);
     }
+    this.stateCache.markDirty(sessionId);
     const state = await this.getState(sessionId, step);
     this.broadcastNamed(sessionId, 'step_sync', { currentStep: step, ...state });
     return { ok: true, currentStep: step };
@@ -332,6 +337,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     const id = `${notifyType}::${message}`;
 
     const active = this.stateService.toggleNotification(sessionId, id, message, notifyType);
+    this.stateCache.markDirty(sessionId);
 
     if (!active) {
       this.broadcastNamed(sessionId, 'notification_revoke', { id });

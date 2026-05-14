@@ -6,6 +6,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { StudentSubmissionService } from './student-submission.service';
 import { GradingService } from './exercise/grading.service';
 import { ManifestCacheService } from './manifest-cache.service';
+import { StateCacheService } from './state-cache.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -81,6 +82,7 @@ describe('StudentSubmissionService — getProgress checkItems', () => {
         StudentSubmissionService,
         GradingService,
         ManifestCacheService,
+        StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
         {
           provide: AiPromptBuilder,

@@ -7,6 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AiAskService } from './ai-ask.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
+import { StateCacheService } from '../state-cache.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
@@ -63,7 +64,7 @@ describe('AiAskService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot]),
       ],
       providers: [
-        AiAskService, AiPromptBuilder, ManifestCacheService,
+        AiAskService, AiPromptBuilder, ManifestCacheService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

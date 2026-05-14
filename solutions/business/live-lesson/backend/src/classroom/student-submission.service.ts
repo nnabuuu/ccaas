@@ -7,6 +7,7 @@ import { ClassroomSession } from '../entities/classroom-session.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { GradingService } from './exercise/grading.service';
 import { ManifestCacheService } from './manifest-cache.service';
+import { StateCacheService } from './state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
@@ -24,6 +25,7 @@ export class StudentSubmissionService {
     private readonly submissionRepo: Repository<Submission>,
     private readonly gradingService: GradingService,
     private readonly manifestCache: ManifestCacheService,
+    private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -45,6 +47,7 @@ export class StudentSubmissionService {
       name,
     });
     const saved = await this.studentRepo.save(student);
+    this.stateCache.markDirty(session.id);
 
     this.engine.dispatch({
       type: 'student_join',
@@ -82,6 +85,7 @@ export class StudentSubmissionService {
       },
       ['sessionId', 'studentId', 'step', 'phase'],
     );
+    this.stateCache.markDirty(session.id);
 
     // Observation events only for exercise submissions — discuss has its own events in DiscussService
     if (phase === 'exercise') {
@@ -149,6 +153,7 @@ export class StudentSubmissionService {
       }
       try {
         await this.studentRepo.save(student);
+        this.stateCache.markDirty(session.id);
         return;
       } catch (e: any) {
         if (e.name === 'OptimisticLockVersionMismatchError') continue;

@@ -10,6 +10,7 @@ import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
 import { ManifestCacheService } from './manifest-cache.service';
+import { StateCacheService } from './state-cache.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -59,6 +60,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
     const module = await Test.createTestingModule({
       providers: [
         ClassroomStateService,
+        StateCacheService,
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(Submission), useValue: {} },
         { provide: getRepositoryToken(ClassroomSession), useValue: {} },
@@ -236,6 +238,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
       ],
       providers: [
         ClassroomStateService,
+        StateCacheService,
         ObservationQueryService,
         MetricsAggregator,
         ClusterAggregator,

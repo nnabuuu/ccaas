@@ -23,6 +23,7 @@ import { ClusterAggregator } from './cluster-aggregator';
 import { CoachingService } from '../coaching.service';
 import { StudentSubmissionService } from '../student-submission.service';
 import { GradingService } from '../exercise/grading.service';
+import { StateCacheService } from '../state-cache.service';
 
 const DISCUSS_MANIFEST = {
   id: 'discuss-lesson',
@@ -78,7 +79,7 @@ describe('DiscussService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
-        DiscussService, ObservationQueryService, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService,
+        DiscussService, ObservationQueryService, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

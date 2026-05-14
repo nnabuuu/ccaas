@@ -10,6 +10,7 @@ import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { CoachingService } from '../coaching.service';
+import { StateCacheService } from '../state-cache.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
@@ -88,7 +89,7 @@ describe('PersonalizationService', () => {
         }),
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight]),
       ],
-      providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService],
+      providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
     }).compile();
 
     service = module.get(PersonalizationService);

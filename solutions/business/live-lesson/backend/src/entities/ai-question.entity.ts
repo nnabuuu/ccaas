@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('reading_ai_questions')
+@Index(['sessionId', 'askedAt'])
 export class AiQuestion {
   @PrimaryGeneratedColumn()
   id: number;

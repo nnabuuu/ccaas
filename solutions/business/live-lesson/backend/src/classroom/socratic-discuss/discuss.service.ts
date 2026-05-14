@@ -16,6 +16,7 @@ import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
 import { StudentSubmissionService } from '../student-submission.service';
 import { CoachingService } from '../coaching.service';
+import { StateCacheService } from '../state-cache.service';
 
 @Injectable()
 export class DiscussService {
@@ -37,6 +38,7 @@ export class DiscussService {
     private readonly clusterAggregator: ClusterAggregator,
     private readonly studentSubmission: StudentSubmissionService,
     private readonly coachingService: CoachingService,
+    private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -185,6 +187,7 @@ export class DiscussService {
         payload: { student: lastStudentMsg, ai: reply, taskNum, round },
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
+      this.stateCache.markDirty(session.id);
       return { reply, goalReached, llmFailed: false, highlight, nudge };
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
@@ -202,6 +205,7 @@ export class DiscussService {
         answer: null,
         category: 'discuss',
       })).catch(saveErr => this.logger.warn(`Failed to save AiQuestion on error: ${saveErr}`));
+      this.stateCache.markDirty(session.id);
 
       return {
         reply: 'Sorry, let me think about that differently. Could you rephrase your answer?',
@@ -285,6 +289,7 @@ export class DiscussService {
     }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
 
     await this.studentSubmission.updatePhase(session, studentId, taskNum, 'takeaway');
+    this.stateCache.markDirty(session.id);
 
     return { ok: true, mcCorrect };
   }

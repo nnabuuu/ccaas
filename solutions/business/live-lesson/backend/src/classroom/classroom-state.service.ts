@@ -13,6 +13,7 @@ import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
 import { ManifestCacheService } from './manifest-cache.service';
+import { StateCacheService } from './state-cache.service';
 import { buildTaskMap } from './task-map.utils';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type {
@@ -43,6 +44,7 @@ export class ClassroomStateService {
     private readonly observationQuery: ObservationQueryService,
     private readonly coachingService: CoachingService,
     private readonly manifestCache: ManifestCacheService,
+    private readonly stateCache: StateCacheService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -85,19 +87,26 @@ export class ClassroomStateService {
     this.clusterAggregator.cleanupSession(sessionId);
     this.coachingService.cleanupSession(sessionId);
     this.observeRegistryCache.delete(lessonId);
+    this.stateCache.clear(sessionId);
   }
 
   // ── State aggregation ──
 
   async getState(sessionId: string, currentStep?: number): Promise<ClassroomStateResponse> {
-    const students = await this.studentRepo.find({
-      where: { sessionId },
-      order: { joinedAt: 'ASC' },
-    });
+    // Only use cache when no explicit step override — callers with currentStep
+    // (e.g. setStep) need a fresh computation against that specific step value.
+    if (currentStep === undefined) {
+      const cached = this.stateCache.get(sessionId);
+      if (cached) return cached;
+    }
 
-    const submissions = await this.submissionRepo.find({
-      where: { sessionId, phase: 'exercise' },
-    });
+    // Step 1: 4 independent queries in parallel
+    const [students, submissions, session, questions] = await Promise.all([
+      this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } }),
+      this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } }),
+      this.sessionRepo.findOne({ where: { id: sessionId } }),
+      this.aiQuestionRepo.find({ where: { sessionId }, order: { askedAt: 'ASC' } }),
+    ]);
 
     const subsByStudent = new Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>();
     for (const sub of submissions) {
@@ -114,9 +123,9 @@ export class ClassroomStateService {
       };
     }
 
-    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
     const stepToCheck = currentStep ?? session?.currentStep ?? 0;
 
+    // Step 2: manifest depends on session.lessonId
     let manifest: any = null;
     if (session?.lessonId) {
       try {
@@ -135,11 +144,6 @@ export class ClassroomStateService {
         submitted++;
       }
     }
-
-    const questions = await this.aiQuestionRepo.find({
-      where: { sessionId },
-      order: { askedAt: 'ASC' },
-    });
 
     const studentDurations = this.metricsAggregator.computeStudentDurations(students, subsByStudent, taskMap);
     const registry = (session?.lessonId && this.observeRegistryCache.get(session.lessonId)) || buildRegistry(manifest);
@@ -203,7 +207,14 @@ export class ClassroomStateService {
       }
     }
 
-    return {
+    // Pre-index question counts: key = `${studentId}:${step}` → count
+    const aiCountByStudentStep = new Map<string, number>();
+    for (const q of questions) {
+      const key = `${q.studentId}:${q.step}`;
+      aiCountByStudentStep.set(key, (aiCountByStudentStep.get(key) ?? 0) + 1);
+    }
+
+    const result: ClassroomStateResponse = {
       sessionStatus: session?.status ?? 'active',
       currentStep: stepToCheck,
       activeNotifications: this.getActiveNotifications(sessionId),
@@ -221,7 +232,7 @@ export class ClassroomStateService {
             duration: dur,
             timeFormatted: dur != null ? this.metricsAggregator.formatDuration(dur) : null,
             result: this.metricsAggregator.deriveResult(sub.score),
-            aiRoundsCount: questions.filter(q => q.studentId === s.id && q.step === stepNum).length,
+            aiRoundsCount: aiCountByStudentStep.get(`${s.id}:${stepNum}`) ?? 0,
           };
         }
 
@@ -229,7 +240,7 @@ export class ClassroomStateService {
         for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
           const taskStepIdx = taskMap.taskToStep[taskNum];
           const sub = subs[taskStepIdx];
-          const aiCount = questions.filter(q => q.studentId === s.id && q.step === taskStepIdx).length;
+          const aiCount = aiCountByStudentStep.get(`${s.id}:${taskStepIdx}`) ?? 0;
 
           if (sub && (s.currentTask > taskNum || s.currentPhase === 'completed')) {
             const score = sub.score;
@@ -293,6 +304,10 @@ export class ClassroomStateService {
         llmInsights: this.coachingService.getCached(sessionId),
       },
     };
+    if (currentStep === undefined) {
+      this.stateCache.set(sessionId, result);
+    }
+    return result;
   }
 
   // ── Surfaces (on-demand observe data) ──
