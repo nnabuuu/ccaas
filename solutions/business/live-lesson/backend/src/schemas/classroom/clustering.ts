@@ -21,6 +21,12 @@ export interface ClusterStats {
   observations: ObservationState[];
 }
 
+export interface TargetPointHit {
+  targetPointId: string;
+  confidence: 'high' | 'medium' | 'low';
+  evidenceSpan: string;
+}
+
 export interface ClassifyResult {
   clusterId: string;
   confidence: 'high' | 'medium' | 'low';
@@ -28,4 +34,5 @@ export interface ClassifyResult {
   eventType: 'new_signal' | 'reinforcing' | 'state_change';
   isHighlight: boolean;
   highlightGist?: string;
+  targetPointHits: TargetPointHit[];
 }

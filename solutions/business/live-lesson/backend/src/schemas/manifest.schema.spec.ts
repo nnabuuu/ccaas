@@ -99,6 +99,46 @@ describe('ManifestSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('should parse discuss steps with targetPoints', () => {
+    const result = ReadingStepSchema.safeParse({
+      id: 's1', idx: 1, label: 'Test', type: 'task',
+      discuss: {
+        openingQ: 'Why?', goal: 'Understand conflict', systemPrompt: 'You are a tutor.',
+        fallbackMC: {
+          question: 'Q?', options: ['A', 'B'], correctIndex: 0, explanation: 'Because.',
+        },
+        insight: 'Insight text.',
+        clusters: [{ id: 'c1', label: 'Surface', description: 'desc' }],
+        targetPoints: [
+          { id: 'tp_1_1', label: '识别冲突', description: '学生提到对立' },
+          { id: 'tp_1_2', label: '核心问题', description: '学生意识到核心问题' },
+        ],
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.discuss!.targetPoints).toHaveLength(2);
+      expect(result.data.discuss!.targetPoints![0].id).toBe('tp_1_1');
+    }
+  });
+
+  it('should allow discuss without targetPoints (optional)', () => {
+    const result = ReadingStepSchema.safeParse({
+      id: 's1', idx: 1, label: 'Test', type: 'task',
+      discuss: {
+        openingQ: 'Why?', goal: 'Understand conflict', systemPrompt: 'You are a tutor.',
+        fallbackMC: {
+          question: 'Q?', options: ['A', 'B'], correctIndex: 0, explanation: 'Because.',
+        },
+        insight: 'Insight text.',
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.discuss!.targetPoints).toBeUndefined();
+    }
+  });
+
   it('should allow passthrough fields on manifest', () => {
     const result = ManifestSchema.safeParse({
       id: 'test', title: 'Test', subject: 's', gradeLevel: 'g', lessonType: 'reading',

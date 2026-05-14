@@ -50,6 +50,12 @@ const DiscussClusterSchema = z.object({
   description: z.string(),
 });
 
+const TargetPointSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string(),
+});
+
 const FallbackMCSchema = z.object({
   question: z.string(),
   questionZh: z.string().optional(),
@@ -72,6 +78,7 @@ const DiscussSchema = z.object({
   insightZh: z.string().optional(),
   observe: z.array(z.string()).optional(),
   clusters: z.array(DiscussClusterSchema).optional(),
+  targetPoints: z.array(TargetPointSchema).optional(),
 });
 
 // ── PhaseConfig ──
@@ -202,4 +209,5 @@ export type BonusArticle = z.infer<typeof BonusArticleSchema>;
 export type BonusStep = z.infer<typeof BonusStepSchema>;
 export type Discuss = z.infer<typeof DiscussSchema>;
 export type DiscussCluster = z.infer<typeof DiscussClusterSchema>;
+export type TargetPoint = z.infer<typeof TargetPointSchema>;
 export type FallbackMC = z.infer<typeof FallbackMCSchema>;
