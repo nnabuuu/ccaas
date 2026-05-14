@@ -100,8 +100,8 @@ describe('computeDepthRanking', () => {
           definitions: [],
           targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp1', label: 'TP1', students: [{ studentId: 's1', studentName: 'Alice' }] },
-            { targetPointId: 'tp2', label: 'TP2', students: [{ studentId: 's1', studentName: 'Alice' }, { studentId: 's2', studentName: 'Bob' }] },
+            { targetPointId: 'tp1', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp2', uniqueStudents: 2, students: [{ studentId: 's1', studentName: 'Alice' }, { studentId: 's2', studentName: 'Bob' }] },
           ],
         },
       },
@@ -129,7 +129,7 @@ describe('computeDepthRanking', () => {
           definitions: [],
           targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp1', label: 'TP1', students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp1', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
           ],
         },
       },
@@ -168,7 +168,7 @@ describe('computeDepthRanking', () => {
           definitions: [],
           targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp1', label: 'TP1', students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp1', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
           ],
         },
       },
@@ -187,7 +187,7 @@ describe('computeDepthRanking', () => {
           definitions: [],
           targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp1', label: 'TP1', students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp1', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
           ],
         },
       },
@@ -204,14 +204,14 @@ describe('computeDepthRanking', () => {
         1: {
           clusters: [], definitions: [], targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp1', label: 'TP1', students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp1', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
           ],
         },
         2: {
           clusters: [], definitions: [], targetPointDefs: [],
           targetPointStats: [
-            { targetPointId: 'tp2', label: 'TP2', students: [{ studentId: 's1', studentName: 'Alice' }] },
-            { targetPointId: 'tp3', label: 'TP3', students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp2', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
+            { targetPointId: 'tp3', uniqueStudents: 1, students: [{ studentId: 's1', studentName: 'Alice' }] },
           ],
         },
       },

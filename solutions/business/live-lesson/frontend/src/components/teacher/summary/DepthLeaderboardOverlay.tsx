@@ -10,13 +10,11 @@ interface Props {
   open: boolean
   onClose: () => void
   rankings: DepthEntry[]
-  generatedAt: number
   state: ClassroomState
   sessionCode: string
-  onStudentClick: (name: string) => void
 }
 
-export default function DepthLeaderboardOverlay({ open, onClose, rankings, generatedAt, state, sessionCode, onStudentClick }: Props) {
+export default function DepthLeaderboardOverlay({ open, onClose, rankings, state, sessionCode }: Props) {
   const [detailStudent, setDetailStudent] = useState<DepthEntry | null>(null)
 
   // Reset detail when overlay closes
@@ -101,7 +99,6 @@ export default function DepthLeaderboardOverlay({ open, onClose, rankings, gener
             state={state}
             sessionCode={sessionCode}
             onClose={() => setDetailStudent(null)}
-            onStudentClick={onStudentClick}
           />
         )}
       </OverlayShell>

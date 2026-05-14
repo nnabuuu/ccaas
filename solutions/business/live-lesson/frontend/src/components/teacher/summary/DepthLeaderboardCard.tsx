@@ -6,9 +6,7 @@ type DepthEntry = NonNullable<ClassroomState['depthLeaderboard']>['rankings'][nu
 
 interface Props {
   rankings: DepthEntry[]
-  generatedAt: number
   coaching: ClassroomState['coaching']
-  clusterStats: ClassroomState['clusterStats']
   sessionCode: string
   onStudentClick: (name: string) => void
   onExpandOverlay: () => void
@@ -20,7 +18,7 @@ const AVATAR_CLASSES = ['', 'dl-avatar--1', 'dl-avatar--2', 'dl-avatar--3', 'dl-
 function rankClass(rank: number) { return RANK_CLASSES[rank] || 'dl-rank--default' }
 function avatarClass(rank: number) { return AVATAR_CLASSES[rank] || 'dl-avatar--default' }
 
-export function DepthLeaderboardCard({ rankings, generatedAt, coaching, clusterStats, sessionCode, onStudentClick, onExpandOverlay }: Props) {
+export function DepthLeaderboardCard({ rankings, coaching, sessionCode, onStudentClick, onExpandOverlay }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(rankings[0]?.studentId ?? null)
 
   if (rankings.length === 0) {
@@ -109,7 +107,6 @@ export function DepthLeaderboardCard({ rankings, generatedAt, coaching, clusterS
                 <ExpandPanel
                   entry={entry}
                   coaching={coaching}
-                  clusterStats={clusterStats}
                   sessionCode={sessionCode}
                   onStudentClick={onStudentClick}
                 />
@@ -128,10 +125,9 @@ export function DepthLeaderboardCard({ rankings, generatedAt, coaching, clusterS
 }
 
 // Lazily-loaded expand panel with chat history
-function ExpandPanel({ entry, coaching, clusterStats, sessionCode, onStudentClick }: {
+function ExpandPanel({ entry, coaching, sessionCode, onStudentClick }: {
   entry: DepthEntry
   coaching: ClassroomState['coaching']
-  clusterStats: ClassroomState['clusterStats']
   sessionCode: string
   onStudentClick: (name: string) => void
 }) {

@@ -485,10 +485,8 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             open={depthExpanded}
             onClose={() => setDepthExpanded(false)}
             rankings={state.depthLeaderboard.rankings}
-            generatedAt={state.depthLeaderboard.generatedAt}
             state={state}
             sessionCode={sessionCode || ''}
-            onStudentClick={setModalStudent}
           />
         </Suspense>
       )}

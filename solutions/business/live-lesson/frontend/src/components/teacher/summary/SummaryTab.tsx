@@ -143,9 +143,7 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
       {state.depthLeaderboard && (
         <DepthLeaderboardCard
           rankings={state.depthLeaderboard.rankings}
-          generatedAt={state.depthLeaderboard.generatedAt}
           coaching={state.coaching}
-          clusterStats={state.clusterStats}
           sessionCode={sessionCode}
           onStudentClick={onStudentClick}
           onExpandOverlay={onExpandDepthOverlay}

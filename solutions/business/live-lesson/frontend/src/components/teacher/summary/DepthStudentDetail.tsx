@@ -10,12 +10,11 @@ interface Props {
   state: ClassroomState
   sessionCode: string
   onClose: () => void
-  onStudentClick: (name: string) => void
 }
 
 type ChatThread = Array<{ role: string; content: string; seq: number; createdAt: string }>
 
-export function DepthStudentDetail({ student, state, sessionCode, onClose, onStudentClick }: Props) {
+export function DepthStudentDetail({ student, state, sessionCode, onClose }: Props) {
   const { fetchHistory } = useChatHistory(sessionCode)
   const [threads, setThreads] = useState<Record<string, ChatThread> | null>(null)
 
