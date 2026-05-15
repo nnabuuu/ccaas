@@ -51,12 +51,15 @@ RULES:
 - event_type: "new_signal" = 学生首次表现出这种倾向, "reinforcing" = 继续表现已有倾向无新信息, "state_change" = 认知状态变化（从困惑到澄清，或从一种误解转向另一种）
 
 HIGHLIGHT DETECTION:
-- is_highlight: true 当学生提出了预设类别之外的、有教学信息价值的新角度或深度思考
-  - 例如：跨文化对比中学生自发引入了课文未提及的新案例
-  - 例如：学生对观点提出了有逻辑的反驳
-  - 例如：学生建立了课文不同部分之间的意外联系
-- is_highlight: false 当发言是常规的对错回答、简单重复、或离题
-- highlight_gist: 若 is_highlight 为 true，用一句中文说明该亮点的价值
+- is_highlight: true 当学生的发言体现出思考质量，包括但不限于：
+  - 用自己的话解释了核心概念（不是简单复述原文）
+  - 举了具体例子来支撑观点
+  - 引用了课文原文作为论据
+  - 表达了有逻辑的个人立场或判断
+  - 提出了新角度、反驳、或意外联系
+  - 回答切中要害，表述清晰完整
+- is_highlight: false 仅当发言属于以下情况：只有一两个词的敷衍回答、简单重复教师的话、完全离题、或只说"不知道"
+- highlight_gist: 若 is_highlight 为 true，用一句中文说明该发言的亮点
 ${targetPointSection}
 输出格式（纯 JSON）:
 ${outputFormat}

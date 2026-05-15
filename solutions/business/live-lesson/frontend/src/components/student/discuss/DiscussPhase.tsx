@@ -264,14 +264,32 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
 
   const getElapsed = useCallback(() => Math.floor((Date.now() - startTime) / 1000), [startTime])
 
-  // Restore discuss thread on mount
+  // Restore discuss thread + target point progress on mount
   const restoredRef = useRef(false)
   useEffect(() => {
     if (restoredRef.current || !sessionCode || !studentId) return
     restoredRef.current = true
-    fetchHistory(studentId, `discuss:${task.id}`).then(data => {
-      if (!data) return
-      const thread = data[`discuss:${task.id}`]
+
+    Promise.all([
+      fetchHistory(studentId, `discuss:${task.id}`),
+      fetchProgress(studentId, task.id),
+    ]).then(([historyData, progressData]) => {
+      // ── Restore target point progress ──
+      if (progressData?.targetPoints) {
+        setClusters(progressData.targetPoints)
+        const tpHitCount = progressData.targetPoints.filter((c: ClusterProgress) => c.hit).length
+        if (tpHitCount > 0) {
+          starCountRef.current = tpHitCount
+          requestAnimationFrame(() => {
+            if (starSlotRef.current) starSlotRef.current.classList.add('visible')
+            if (countRef.current) countRef.current.textContent = String(tpHitCount)
+          })
+        }
+      }
+
+      // ── Restore messages ──
+      if (!historyData) return
+      const thread = historyData[`discuss:${task.id}`]
       if (!thread || thread.length === 0) return
       const restored: Msg[] = thread.map(m => ({
         role: m.role as 'ai' | 'student',
@@ -281,6 +299,23 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       if (restored[0]?.text !== d.openingQ) {
         restored.unshift({ role: 'ai', text: d.openingQ })
       }
+
+      // ── Inject point-discovered notifications from target point hits ──
+      // Placed after the last student message as an approximation — the backend
+      // does not track which turn triggered each hit, so exact positions cannot
+      // be reconstructed. See backlog: unified discuss-restore endpoint.
+      const restoredHitCount = progressData?.targetPoints?.filter((c: ClusterProgress) => c.hit).length ?? 0
+      if (restoredHitCount > 0) {
+        const lastStudentIdx = restored.findLastIndex(m => m.role === 'student')
+        if (lastStudentIdx >= 0) {
+          const notifs: Msg[] = []
+          for (let i = 0; i < restoredHitCount; i++) {
+            notifs.push({ role: 'notification', text: `Point ${i + 1} discovered` })
+          }
+          restored.splice(lastStudentIdx + 1, 0, ...notifs)
+        }
+      }
+
       setMessages(restored)
       const studentMsgCount = restored.filter(m => m.role === 'student').length
       setRound(studentMsgCount)
@@ -299,25 +334,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         setPhase('fallback')
       }
     })
-  }, [sessionCode, studentId, task.id, fetchHistory])
-
-  // Fetch target point progress on mount — restore star slot if hits exist
-  useEffect(() => {
-    if (!sessionCode || !studentId) return
-    fetchProgress(studentId, task.id).then(data => {
-      if (data?.targetPoints) {
-        setClusters(data.targetPoints)
-        const hitCount = data.targetPoints.filter((c: ClusterProgress) => c.hit).length
-        if (hitCount > 0) {
-          starCountRef.current = hitCount
-          requestAnimationFrame(() => {
-            if (starSlotRef.current) starSlotRef.current.classList.add('visible')
-            if (countRef.current) countRef.current.textContent = String(hitCount)
-          })
-        }
-      }
-    })
-  }, [sessionCode, studentId, task.id, fetchProgress])
+  }, [sessionCode, studentId, task.id, fetchHistory, fetchProgress])
 
   // Timer — pauses while AI is loading so students aren't penalised for latency
   useEffect(() => {
@@ -514,9 +531,6 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         <div className="sd-chat-header">
           <div className="sd-ai-dot" />
           <div className="sd-chat-title">Socratic Discussion</div>
-          {d.openingQZh && (
-            <button className="sd-help-btn" title={d.openingQZh} onClick={() => alert(d.openingQZh)}>中文</button>
-          )}
           <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen && !guideSeen.current ? ' pulse' : ''}`} onClick={() => {
             setGuideOpen(true)
             markGuideSeen('guide-seen-discuss')

@@ -502,7 +502,6 @@
 .sd-chat-header{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
 .sd-ai-dot{width:8px;height:8px;border-radius:50%;background:var(--purple);flex-shrink:0}
 .sd-chat-title{font-size:12px;font-weight:600;color:var(--purple);flex:1}
-.sd-help-btn{font-size:10px;color:var(--t3);cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface);font-family:inherit}
 .sd-msg-list{padding:12px 16px}
 .sd-msg-row{display:flex;gap:10px;margin-bottom:14px;align-items:flex-start}
 .sd-msg-row.student{flex-direction:row-reverse}
@@ -702,7 +701,7 @@
 .sd-flying-star{position:fixed;font-size:16px;font-weight:700;color:var(--amber);pointer-events:none;z-index:1000;filter:drop-shadow(0 0 6px rgba(122,77,14,.4));will-change:transform,opacity}
 
 /* ── Point Discovered Notification ── */
-.sd-point-discovered{text-align:center;padding:6px 0}
+.sd-point-discovered{text-align:center;margin:-8px 0 14px}
 .sd-notif{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);padding:5px 16px;border-radius:100px;position:relative;overflow:hidden;animation:sd-notif-enter .6s cubic-bezier(.34,1.56,.64,1) forwards}
 .sd-notif .point-num{font-weight:800;font-size:12px}
 .sd-notif-star{font-size:10px;display:inline-block;animation:sd-star-twinkle 1.5s ease-in-out .3s infinite}
