@@ -503,12 +503,12 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
       )}
 
       {/* ═══ DEPTH LEADERBOARD OVERLAY ═══ */}
-      {depthExpanded && state?.depthLeaderboard && (
+      {depthExpanded && (
         <Suspense fallback={null}>
           <DepthLeaderboardOverlay
             open={depthExpanded}
             onClose={() => setDepthExpanded(false)}
-            rankings={state.depthLeaderboard.rankings}
+            rankings={state?.depthLeaderboard?.rankings ?? []}
             state={state}
             sessionCode={sessionCode || ''}
           />

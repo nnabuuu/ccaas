@@ -101,10 +101,6 @@ export function useSessionLookup() {
         return null
       }
       const data = await res.json()
-      if (data.status === 'ended') {
-        setError('该课堂已结束')
-        return null
-      }
       setSession(data)
       return data
     } catch {

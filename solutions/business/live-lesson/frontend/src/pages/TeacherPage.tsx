@@ -58,7 +58,7 @@ function TeacherPageWithSession({ manifest, sessionCode, sessionStatus: initialS
 }) {
   const { state } = useTeacherPolling(sessionCode)
   const navigate = useNavigate()
-  const [started, setStarted] = useState(initialStatus === 'active')
+  const [started, setStarted] = useState(initialStatus === 'active' || initialStatus === 'ended')
   const [starting, setStarting] = useState(false)
   const [ending, setEnding] = useState(false)
 
@@ -76,8 +76,10 @@ function TeacherPageWithSession({ manifest, sessionCode, sessionStatus: initialS
 
   const sessionStatus = state?.sessionStatus
 
-  if (started || sessionStatus === 'active') {
-    return <TeacherShell manifest={manifest} sessionCode={sessionCode} embed={embed} onEndSession={handleEndSession} ending={ending} />
+  const isEnded = initialStatus === 'ended' || sessionStatus === 'ended'
+
+  if (started || sessionStatus === 'active' || isEnded) {
+    return <TeacherShell manifest={manifest} sessionCode={sessionCode} embed={embed} onEndSession={isEnded ? undefined : handleEndSession} ending={ending} />
   }
 
   return (
