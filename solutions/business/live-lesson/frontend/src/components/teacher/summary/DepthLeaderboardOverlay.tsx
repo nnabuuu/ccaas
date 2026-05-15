@@ -55,6 +55,7 @@ export default function DepthLeaderboardOverlay({ open, onClose, rankings, state
                 <div className="dl-empty-desc">课堂讨论开始后，将自动生成深度互动排行。排行数据在课堂开始 5 分钟后开始计算，每 30 秒刷新一次。</div>
               </div>
             ) : (
+            <>
             <div className="dl-drawer-list">
               {rankings.map(entry => {
                 const avatarStyle = getAvatarStyle(entry.rank)
@@ -94,6 +95,7 @@ export default function DepthLeaderboardOverlay({ open, onClose, rankings, state
               })}
             </div>
             <div className="dl-refresh-hint" style={{ marginTop: 8 }}>✦ AI 总结每 30s 刷新一次</div>
+            </>
             )}
           </div>
         </div>
