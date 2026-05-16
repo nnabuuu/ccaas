@@ -121,7 +121,7 @@ export class MatrixGrader implements Grader {
       responseFormat: { type: 'json_object' },
     });
 
-    let parsed: any;
+    let parsed: { rows?: Record<string, { whatQ?: number; whyQ?: number }> };
     try {
       parsed = JSON.parse(raw);
     } catch {

@@ -11,8 +11,8 @@ export function ImageUploadExercise({
   prompt: string
   promptImages?: PromptImage[]
   rubric: RubricItem[]
-  ans: Record<string, any>
-  setAns: (updater: any) => void
+  ans: Record<string, string | string[]>
+  setAns: (updater: (prev: Record<string, string | string[]>) => Record<string, string | string[]>) => void
   allDone: boolean
   feedback?: string | null
   rubricResults?: Record<string, { score: number; hint?: string }>
@@ -52,7 +52,7 @@ export function ImageUploadExercise({
       const compressed = await compressImage(files[0])
       const newImages = [compressed]
       setPreviews(newImages)
-      setAns((prev: any) => ({ ...prev, images: newImages }))
+      setAns(prev => ({ ...prev, images: newImages }))
     } finally {
       setCompressing(false)
     }

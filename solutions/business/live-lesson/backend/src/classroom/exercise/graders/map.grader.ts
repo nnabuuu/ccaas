@@ -149,7 +149,7 @@ export class MapGrader implements Grader {
       responseFormat: { type: 'json_object' },
     });
 
-    let parsed: any;
+    let parsed: { items?: Array<{ id?: string; relevant?: boolean; comment?: string }>; overall?: string };
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -163,7 +163,7 @@ export class MapGrader implements Grader {
     }
 
     return {
-      items: parsed.items.map((it: any) => ({
+      items: parsed.items.map(it => ({
         id: String(it.id || ''),
         relevant: Boolean(it.relevant),
         comment: String(it.comment || ''),

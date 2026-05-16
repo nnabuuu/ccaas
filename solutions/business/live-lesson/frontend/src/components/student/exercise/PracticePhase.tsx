@@ -174,7 +174,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         const r: Record<string, { score: number; hint?: string }> = {}
         restoredCheck.items.forEach(it => {
           if (it.idx === '_llm') return
-          r[it.idx as string] = { score: (it as any).score ?? 0, hint: it.hint }
+          r[it.idx as string] = { score: it.score ?? 0, hint: it.hint }
         })
         return r
       })()
@@ -417,7 +417,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       const rubricRes: Record<string, { score: number; hint?: string }> = {}
       result.items.forEach(item => {
         if (item.idx === '_llm') return
-        rubricRes[item.idx as string] = { score: (item as any).score ?? 0, hint: item.hint }
+        rubricRes[item.idx as string] = { score: item.score ?? 0, hint: item.hint }
       })
       setImageUploadRubricResults(rubricRes)
       setSoftDone(true); setAllDone(true)

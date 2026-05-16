@@ -71,14 +71,14 @@ ${key.sampleSolution ? `【参考答案】\n${key.sampleSolution}\n` : ''}【评
   }
 
   private parseResponse(raw: string, key: ImageUploadAnswerKey): GradeResult {
-    let parsed: any;
+    let parsed: { dimensions?: Array<{ id: string; score: number; comment: string }>; feedback?: string };
     try {
       parsed = JSON.parse(raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim());
     } catch {
       throw new Error(`Vision LLM returned unparseable JSON: ${raw.slice(0, 200)}`);
     }
 
-    const dims = parsed.dimensions as Array<{ id: string; score: number; comment: string }> || [];
+    const dims = parsed.dimensions || [];
     const byDimension: Record<string, number> = {};
     const llmItems: Array<{ index: number; id: string; relevant: boolean; reason: string }> = [];
 

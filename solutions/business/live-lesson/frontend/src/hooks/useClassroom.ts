@@ -451,6 +451,7 @@ export interface CheckItem {
   walkthrough?: string
   walkthroughZh?: string
   aiMessage?: string
+  score?: number
 }
 
 export interface CheckResult {

@@ -7,12 +7,12 @@ export function FillBlankExercise({
 }: {
   sentences: Sentence[]
   ans: Record<string, string>
-  setAns: (updater: any) => void
+  setAns: (updater: (prev: Record<string, string>) => Record<string, string>) => void
   blankResults?: Record<string, boolean>
   allDone: boolean
 }) {
   const handleChange = (key: string, value: string) => {
-    setAns((prev: any) => ({ ...prev, [key]: value }))
+    setAns(prev => ({ ...prev, [key]: value }))
   }
 
   return (

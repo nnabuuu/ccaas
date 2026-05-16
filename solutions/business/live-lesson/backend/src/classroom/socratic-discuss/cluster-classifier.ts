@@ -78,7 +78,11 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
   }
 
   private parseResult(raw: string, validIds: string[], validTpIds: string[] = []): ClassifyResult {
-    let parsed: any;
+    let parsed: {
+      cluster_id?: string; confidence?: string; evidence_span?: string;
+      event_type?: string; is_highlight?: boolean; highlight_gist?: string;
+      target_point_hits?: Array<{ target_point_id: string; confidence: string; evidence_span?: string }>;
+    };
     try {
       parsed = JSON.parse(raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim());
     } catch {
@@ -109,7 +113,7 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
         ) {
           targetPointHits.push({
             targetPointId: hit.target_point_id,
-            confidence: hit.confidence,
+            confidence: hit.confidence as 'high' | 'medium' | 'low',
             evidenceSpan: typeof hit.evidence_span === 'string' ? hit.evidence_span : '',
           });
         }

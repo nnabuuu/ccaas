@@ -417,9 +417,9 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     highlights: Array<{ taskNum: number; gist: string; evidenceSpan: string }>;
     aiStats: { translateCount: number; askCount: number; discussRounds: number };
     tier: { label: string; labelEn: string; tone: string } | null;
-    manifest?: any;
+    manifest?: { lessonType?: string; subject?: string; article?: { paragraphs?: unknown[] } };
   }): { system: string; user: string } {
-    const isReading = !data.manifest || data.manifest.lessonType === 'reading' || data.manifest.article?.paragraphs?.length > 0;
+    const isReading = !data.manifest || data.manifest.lessonType === 'reading' || (data.manifest.article?.paragraphs?.length ?? 0) > 0;
     const roleLabel = isReading ? '英语阅读教学助教' : `${data.manifest?.subject || '学科'}教学助手`;
     const system = `你是${roleLabel}，正在为学生写课后个性化回顾总结。
 
@@ -510,9 +510,9 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
   /** Build prompt for personal-touch AI comment */
   buildPersonalTouchPrompt(
     strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>,
-    manifest?: any,
+    manifest?: { lessonType?: string; subject?: string; article?: { paragraphs?: unknown[] } },
   ): { system: string; user: string } {
-    const isReading = !manifest || manifest.lessonType === 'reading' || manifest.article?.paragraphs?.length > 0;
+    const isReading = !manifest || manifest.lessonType === 'reading' || (manifest.article?.paragraphs?.length ?? 0) > 0;
     const roleLabel = isReading ? '英语阅读教学助教' : `${manifest?.subject || '学科'}教学助手`;
     const system = `你是${roleLabel}，正在给学生写课后个性化反馈。
 规则：
