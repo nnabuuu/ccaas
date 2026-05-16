@@ -170,7 +170,10 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
             <div className="stu-guide-mission-title">Today&apos;s Mission</div>
             <div className="stu-guide-mission-topic">{manifest.title}</div>
             <div className="stu-guide-mission-meta">
-              围绕课文 <strong>{manifest.article.title}</strong>，依次练习 {steps.length} 种阅读技巧。每个任务包含 听讲 → 练习 → 讨论 → 总结 四个阶段。
+              {manifest.article
+                ? <>围绕课文 <strong>{manifest.article.title}</strong>，依次练习 {steps.length} 种阅读技巧。</>
+                : <>本节课共 {steps.length} 个学习环节。</>
+              }每个任务包含 听讲 → 练习 → 讨论 → 总结 四个阶段。
             </div>
             {steps.length > 0 && (
               <div className="stu-guide-mission-steps">

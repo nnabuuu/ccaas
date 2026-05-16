@@ -384,7 +384,7 @@ export interface ReadingManifest {
   lessonIntro?: string
   lessonSummary?: string
   enableMath?: boolean
-  article: Article
+  article?: Article
   readingSteps: ReadingStep[]
   boardData?: BoardData
   cumulativeMinutes: number[]

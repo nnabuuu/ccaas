@@ -15,12 +15,20 @@ export class AiPromptBuilder {
   buildBaseContextLayers(manifest: any, stepDef: any): string[] {
     const layers: string[] = [];
     const paragraphs: Array<{ id: string; text: string }> = manifest.article?.paragraphs || [];
+    const isReading = manifest.lessonType === 'reading' || paragraphs.length > 0;
 
-    // Layer 1: Role
-    layers.push(`你是一位专业的英语阅读教学助教，正在帮助中学生学习阅读理解策略。
+    // Layer 1: Role — adapt to lesson type
+    if (isReading) {
+      layers.push(`你是一位专业的英语阅读教学助教，正在帮助中学生学习阅读理解策略。
 你的教学风格是苏格拉底式引导——通过提问帮助学生自己发现答案，而不是直接告诉他们。`);
+    } else {
+      const subject = manifest.subject || '学科';
+      const grade = manifest.gradeLevel || '中学';
+      layers.push(`你是一位${grade}${subject}教学助手。
+你的教学风格是苏格拉底式引导——通过提问帮助学生自己发现答案，而不是直接告诉他们。`);
+    }
 
-    // Layer 2: Article full text
+    // Layer 2: Article full text (reading lessons only)
     if (paragraphs.length > 0) {
       const articleTitle = manifest.article?.title || '';
       const articleText = paragraphs.map((p: any, i: number) => `¶${i + 1}: ${p.text}`).join('\n\n');
@@ -29,8 +37,12 @@ export class AiPromptBuilder {
 
     // Layer 3: Step context
     if (stepDef) {
-      const focusParas = stepDef.focusParagraphs?.join(', ') || '全文';
-      layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n策略：${stepDef.strategy || 'N/A'}\n描述：${stepDef.description || 'N/A'}\n关注段落：${focusParas}`);
+      if (isReading) {
+        const focusParas = stepDef.focusParagraphs?.join(', ') || '全文';
+        layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n策略：${stepDef.strategy || 'N/A'}\n描述：${stepDef.description || 'N/A'}\n关注段落：${focusParas}`);
+      } else {
+        layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n描述：${stepDef.description || 'N/A'}`);
+      }
     }
 
     return layers;
@@ -56,7 +68,10 @@ export class AiPromptBuilder {
     }
 
     // Layer 6: Classification instruction
-    layers.push(`【回答格式要求】
+    const paragraphsAsk = manifest.article?.paragraphs || [];
+    const isReadingAsk = manifest.lessonType === 'reading' || paragraphsAsk.length > 0;
+    if (isReadingAsk) {
+      layers.push(`【回答格式要求】
 1. 回答开头必须用【分类名】标注问题类型
 2. 可用分类：概念理解、阅读策略、课文内容、解题求助
 3. 如果问题不属于以上分类，可以创建新的合适分类名
@@ -72,6 +87,24 @@ export class AiPromptBuilder {
 - 用中文回答
 - 简洁，2-3句话（30-150字），绝不超过150字
 - 鼓励学生自己思考`);
+    } else {
+      layers.push(`【回答格式要求】
+1. 回答开头必须用【分类名】标注问题类型
+2. 可用分类：概念理解、解题方法、公式应用、解题求助
+3. 如果问题不属于以上分类，可以创建新的合适分类名
+4. 分类后直接给出回答内容
+
+分类回答策略：
+- 概念理解 → 直接解释，给出清晰定义和例子
+- 解题方法 → 给步骤指导，用具体例子说明
+- 公式应用 → 说明适用条件和使用方法
+- 解题求助 → 苏格拉底式引导，绝不给出答案
+
+回答规则：
+- 用中文回答
+- 简洁，2-3句话（30-150字），绝不超过150字
+- 鼓励学生自己思考`);
+    }
 
     return layers.join('\n\n');
   }
@@ -84,8 +117,16 @@ export class AiPromptBuilder {
     const layers = this.buildBaseContextLayers(manifest, stepDef);
 
     // Override L1 role for post-discuss context
-    layers[0] = `你是英语阅读助教，学生已完成练习并看到了答案，现在在做延伸讨论。
+    const paragraphs = manifest.article?.paragraphs || [];
+    const isReadingChat = manifest.lessonType === 'reading' || paragraphs.length > 0;
+    if (isReadingChat) {
+      layers[0] = `你是英语阅读助教，学生已完成练习并看到了答案，现在在做延伸讨论。
 你的目标是帮助学生深入理解，可以自由引用答案和课文来解释。`;
+    } else {
+      const subject = manifest.subject || '学科';
+      layers[0] = `你是${subject}教学助手，学生已完成练习并看到了答案，现在在做延伸讨论。
+你的目标是帮助学生深入理解。`;
+    }
 
     // L4: Answer key (freely available)
     if (stepDef?.answerKey) {
@@ -109,7 +150,7 @@ export class AiPromptBuilder {
 
     // L6: Response rules
     layers.push(`【回答规则】
-- 直接解释，可以引用答案和课文
+- 直接解释，可以引用答案${isReadingChat ? '和课文' : ''}
 - 鼓励学生深入思考、提出更多问题
 - 用中文回答
 - 简洁明了，不超过 200 字`);
@@ -119,11 +160,11 @@ export class AiPromptBuilder {
 
   /** Fallback prompt when manifest is unavailable */
   buildFallbackPrompt(): string {
-    return `你是一位教学助教，正在帮助学生学习阅读理解。
+    return `你是一位教学助教，正在帮助学生学习。
 
 【回答格式要求】
 1. 回答开头必须用【分类名】标注问题类型
-2. 可用分类：概念理解、阅读策略、课文内容、解题求助
+2. 可用分类：概念理解、学习策略、课程内容、解题求助
 
 回答规则：
 - 用苏格拉底式引导：给提示和思路，不直接给出答案
@@ -264,13 +305,20 @@ Do NOT include a followUpQuestion key.`);
    */
   buildTranslatePrompt(manifest: any, stepDef: any): string {
     const layers: string[] = [];
+    const paragraphs = manifest.article?.paragraphs || [];
+    const isReading = manifest.lessonType === 'reading' || paragraphs.length > 0;
 
     // L1: Translate-specific role
-    layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+    if (isReading) {
+      layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+    } else {
+      const subject = manifest.subject || '学科';
+      layers.push(`你是一位${subject}教学助手，帮助中学生理解学习中遇到的术语和概念。`);
+    }
 
     // L2-L3: Reuse article + step context from base layers
     const base = this.buildBaseContextLayers(manifest, stepDef);
-    if (base[1]) layers.push(base[1]); // L2: article full text
+    if (base[1]) layers.push(base[1]); // L2: article full text (if exists)
     if (base[2]) layers.push(base[2]); // L3: step context
 
     // L4: JSON output schema
@@ -297,7 +345,14 @@ Do NOT include a followUpQuestion key.`);
     const layers: string[] = [];
 
     // L1-L3: Same as translate (shared prefix cache)
-    layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+    const paragraphs = manifest.article?.paragraphs || [];
+    const isReading = manifest.lessonType === 'reading' || paragraphs.length > 0;
+    if (isReading) {
+      layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+    } else {
+      const subject = manifest.subject || '学科';
+      layers.push(`你是一位${subject}教学助手，帮助中学生理解学习中遇到的术语和概念。`);
+    }
     const base = this.buildBaseContextLayers(manifest, stepDef);
     if (base[1]) layers.push(base[1]);
     if (base[2]) layers.push(base[2]);
@@ -309,7 +364,7 @@ Do NOT include a followUpQuestion key.`);
     layers.push(`【回答规则】
 - 用中文回答
 - 简洁明了，不超过 200 字
-- 结合课文语境解释
+${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
 - 帮助学生深入理解该词/短语的用法和含义`);
 
     return layers.join('\n\n');
@@ -362,12 +417,15 @@ Do NOT include a followUpQuestion key.`);
     highlights: Array<{ taskNum: number; gist: string; evidenceSpan: string }>;
     aiStats: { translateCount: number; askCount: number; discussRounds: number };
     tier: { label: string; labelEn: string; tone: string } | null;
+    manifest?: any;
   }): { system: string; user: string } {
-    const system = `你是英语阅读教学助教，正在为学生写课后个性化回顾总结。
+    const isReading = !data.manifest || data.manifest.lessonType === 'reading' || data.manifest.article?.paragraphs?.length > 0;
+    const roleLabel = isReading ? '英语阅读教学助教' : `${data.manifest?.subject || '学科'}教学助手`;
+    const system = `你是${roleLabel}，正在为学生写课后个性化回顾总结。
 
 输出格式——用 markdown，分三段，每段带加粗小标题：
 1. **综合回顾**：1-2 句，概括这节课的整体表现，语气温暖肯定
-2. **课堂亮点**：2-3 句，分别点评 Practice（得分、策略掌握）、Discussion（引用讨论发言）、AI 工具使用情况
+2. **课堂亮点**：2-3 句，分别点评练习表现（得分、掌握情况）、讨论发言、AI 工具使用情况
 3. **成长方向**：1 句，基于薄弱项给出一条具体可行的建议
 
 规则：
@@ -452,19 +510,23 @@ Do NOT include a followUpQuestion key.`);
   /** Build prompt for personal-touch AI comment */
   buildPersonalTouchPrompt(
     strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>,
+    manifest?: any,
   ): { system: string; user: string } {
-    const system = `你是英语阅读教学助教，正在给学生写课后个性化反馈。
+    const isReading = !manifest || manifest.lessonType === 'reading' || manifest.article?.paragraphs?.length > 0;
+    const roleLabel = isReading ? '英语阅读教学助教' : `${manifest?.subject || '学科'}教学助手`;
+    const system = `你是${roleLabel}，正在给学生写课后个性化反馈。
 规则：
 - 用中文
 - 3-5 句话，不超过 150 字
-- 先肯定优点（最高分策略），再给一条具体建议（最低分策略）
+- 先肯定优点（最高分项），再给一条具体建议（最低分项）
 - 鼓励语气，温暖真诚
 - 不要使用"同学"称呼，直接用"你"`;
 
     const lines = strategies.map(
       s => `Task ${s.task} - ${s.strategy}: 得分 ${s.score}%, 尝试 ${s.attempts} 次`,
     );
-    const user = `学生在以下 4 个阅读策略练习中的表现：\n${lines.join('\n')}\n\n请根据以上数据写一段个性化反馈。`;
+    const taskLabel = isReading ? '阅读策略练习' : '课堂练习';
+    const user = `学生在以下 ${strategies.length} 个${taskLabel}中的表现：\n${lines.join('\n')}\n\n请根据以上数据写一段个性化反馈。`;
 
     return { system, user };
   }

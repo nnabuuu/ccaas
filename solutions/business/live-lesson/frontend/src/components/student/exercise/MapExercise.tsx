@@ -75,6 +75,14 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   // Fire onActiveChange when activeId or pendingTrayChip changes
   const [pendingTrayChip, setPendingTrayChip] = useState<string | null>(null)
 
+  // Auto-select when only 1 practice item configured (avoids confusing 2-step flow)
+  useEffect(() => {
+    if (practiceItems.length === 1 && unplaced.length === 1 && !pendingTrayChip && !allDone) {
+      setPendingTrayChip(unplaced[0].id)
+      setActiveId(unplaced[0].id)
+    }
+  }, [practiceItems.length, unplaced.length, pendingTrayChip, allDone])
+
   const onActiveChangeRef = useRef(onActiveChange)
   onActiveChangeRef.current = onActiveChange
 

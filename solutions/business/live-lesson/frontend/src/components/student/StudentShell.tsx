@@ -190,8 +190,8 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       {/* Top bar */}
       {!embed && (
         <div className="stu-top">
-          <div className="stu-top-title">{manifest.article.title}</div>
-          <div className="stu-top-sub">Senior High English · AI 1-on-1</div>
+          <div className="stu-top-title">{manifest.article?.title || manifest.title}</div>
+          <div className="stu-top-sub">{manifest.subject || '课堂'} · AI 1-on-1</div>
           {task && (
             <div style={{ fontSize: 12, fontWeight: 600 }}>
               Task {task.id}: {task.name}
@@ -232,7 +232,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           <TaskColumn
             screen={screen} setScreen={setScreen} task={enrichedTask} completeTask={completeTask}
             lessonId={manifest.id} stepIdx={taskId ? taskToStep[taskId] : undefined}
-            articleTitle={manifest.article.title} lessonIntro={manifest.lessonIntro}
+            articleTitle={manifest.article?.title || manifest.title} lessonIntro={manifest.lessonIntro}
             lessonSummary={manifest.lessonSummary} phaseConfig={manifest.phaseConfig}
             onOverlayChange={handleOverlayChange}
             courseIntroView={courseIntroView}
@@ -241,17 +241,19 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             onPhaseChange={handlePhaseChange}
             initialPhase={initialPhase}
           />
-          <TextPanel
-            title={manifest.article.title}
-            paragraphs={manifest.article.paragraphs}
-            focusIds={focusIds}
-            lessonId={manifest.id}
-            showRoles={taskId != null && manifest.readingSteps?.find(s => s.idx === taskToStep[taskId])?.showRoles === true}
-            overlay={textOverlay}
-            collapsed={!textbookOpen}
-            onToggle={() => setTextbookOpen(o => !o)}
-            enableMath={manifest.enableMath}
-          />
+          {manifest.article && (
+            <TextPanel
+              title={manifest.article.title}
+              paragraphs={manifest.article.paragraphs}
+              focusIds={focusIds}
+              lessonId={manifest.id}
+              showRoles={taskId != null && manifest.readingSteps?.find(s => s.idx === taskToStep[taskId])?.showRoles === true}
+              overlay={textOverlay}
+              collapsed={!textbookOpen}
+              onToggle={() => setTextbookOpen(o => !o)}
+              enableMath={manifest.enableMath}
+            />
+          )}
           <div className="stu-toolbar-h">
             <TranslateButton taskId={taskId || 1} phase={currentPhase} />
             <AiPanel

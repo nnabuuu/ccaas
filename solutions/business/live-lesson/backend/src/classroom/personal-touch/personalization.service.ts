@@ -113,11 +113,12 @@ export class PersonalizationService {
 
     let aiComment = '';
     try {
-      const { system, user } = this.aiPromptBuilder.buildPersonalTouchPrompt(strategies);
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+      const { system, user } = this.aiPromptBuilder.buildPersonalTouchPrompt(strategies, manifest);
       aiComment = await this.aiPromptBuilder.callLlm(system, user, { maxTokens: 256, temperature: 0.8 });
     } catch (e) {
       this.logger.warn(`Personal touch AI comment failed: ${e}`);
-      aiComment = '你完成了所有阅读策略练习，继续保持！';
+      aiComment = '你完成了所有练习，继续保持！';
     }
 
     const BONUS_TIME_LIMIT_MIN = 15;
@@ -292,8 +293,9 @@ export class PersonalizationService {
     const aiStats = { translateCount, askCount, discussRounds };
     let aiRecap = '';
     try {
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
       const { system, user } = this.aiPromptBuilder.buildRecapPrompt({
-        strategies, highlights, aiStats, tier,
+        strategies, highlights, aiStats, tier, manifest,
       });
       const timeout = new Promise<string>(r => setTimeout(() => r(''), 5000));
       aiRecap = await Promise.race([

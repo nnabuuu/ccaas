@@ -68,7 +68,7 @@ const FallbackMCSchema = z.object({
 const DiscussSchema = z.object({
   openingQ: z.string(),
   openingQZh: z.string().optional(),
-  goal: z.string(),
+  goal: z.string().optional(),
   systemPrompt: z.string(),
   scaffolds: z.array(z.string()).optional(),
   maxRounds: z.number().int().min(1).default(6),
@@ -189,7 +189,7 @@ export const ManifestSchema = z.object({
   teachingNotes: z.string().optional(),
   lessonIntro: z.string().optional(),
   lessonSummary: z.string().optional(),
-  article: ArticleSchema,
+  article: ArticleSchema.optional(),
   readingSteps: z.array(ReadingStepSchema).min(1),
   phaseConfig: z.array(PhaseConfigSchema).optional(),
   aiReferenceQA: z.array(z.object({
@@ -197,6 +197,7 @@ export const ManifestSchema = z.object({
   })).optional(),
   personalTouch: PersonalTouchSchema.optional(),
   bonusArticle: BonusArticleSchema.optional(),
+  cumulativeMinutes: z.array(z.number()).optional(),
   bonusSteps: z.array(BonusStepSchema).optional(),
   boardData: BoardDataSchema.optional(),
   observations: z.record(z.string(), ObservationDefSchema).optional(),
