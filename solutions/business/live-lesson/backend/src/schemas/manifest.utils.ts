@@ -40,6 +40,8 @@ const sanitizers: Record<string, (ak: AKInput) => ExerciseSpec> = {
   order: sanitizeOrder,
   'select-evidence': sanitizeSelectEvidence,
   map: sanitizeMap,
+  'image-upload': sanitizeImageUpload,
+  'fill-blank': sanitizeFillBlank,
 };
 
 function sanitizeQuiz(ak: AKInput): ExerciseSpec {
@@ -144,6 +146,34 @@ function sanitizeSelectEvidence(ak: AKInput): ExerciseSpec {
     functionOptions: ak.functionOptions as string[],
     sections,
     paragraphTokens,
+  };
+}
+
+function sanitizeImageUpload(ak: AKInput): ExerciseSpec {
+  const rubric = (ak.rubric as Array<AKInput>) || [];
+  return {
+    type: 'image-upload',
+    label: '',
+    prompt: ak.prompt as string,
+    ...(ak.promptImages && { promptImages: ak.promptImages as Array<{ url: string; alt?: string }> }),
+    rubric: rubric.map((r) => ({
+      id: r.id as string,
+      label: r.label as string,
+      weight: r.weight as number,
+    })),
+    ...(ak.maxImages && { maxImages: ak.maxImages as number }),
+  };
+}
+
+function sanitizeFillBlank(ak: AKInput): ExerciseSpec {
+  const sentences = (ak.sentences as Array<AKInput>) || [];
+  return {
+    type: 'fill-blank',
+    label: '',
+    sentences: sentences.map((s) => ({
+      id: s.id as string,
+      template: s.template as string,
+    })),
   };
 }
 

@@ -9,6 +9,8 @@ import { StanceGrader } from './graders/stance.grader';
 import { OrderGrader } from './graders/order.grader';
 import { SelectEvidenceGrader } from './graders/select-evidence.grader';
 import { MapGrader } from './graders/map.grader';
+import { ImageUploadGrader } from './graders/image-upload.grader';
+import { FillBlankGrader } from './graders/fill-blank.grader';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 
 @Injectable()
@@ -24,6 +26,8 @@ export class GradingService {
       order: new OrderGrader(),
       'select-evidence': new SelectEvidenceGrader(),
       map: new MapGrader(aiPromptBuilder),
+      'image-upload': new ImageUploadGrader(aiPromptBuilder),
+      'fill-blank': new FillBlankGrader(aiPromptBuilder),
     };
   }
 

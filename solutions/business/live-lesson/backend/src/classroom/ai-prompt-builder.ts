@@ -469,6 +469,58 @@ Do NOT include a followUpQuestion key.`);
     return { system, user };
   }
 
+  async callVisionLlm(
+    systemPrompt: string,
+    content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>,
+    options?: {
+      maxTokens?: number;
+      temperature?: number;
+      responseFormat?: { type: 'json_object' };
+      model?: string;
+    },
+  ): Promise<string> {
+    const apiKey = this.configService.get<string>('LLM_VISION_API_KEY')
+      || this.configService.get<string>('LLM_API_KEY');
+    if (!apiKey) {
+      throw new Error('LLM_API_KEY not configured');
+    }
+    const model = options?.model
+      || this.configService.get<string>('LLM_VISION_MODEL')
+      || 'qwen-vl-plus';
+    const baseUrl = this.configService.get<string>('LLM_VISION_BASE_URL')
+      || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content },
+      ],
+      max_tokens: options?.maxTokens ?? 256,
+      temperature: options?.temperature ?? 0.7,
+    };
+    if (options?.responseFormat) {
+      body.response_format = options.responseFormat;
+    }
+
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Vision LLM API error ${res.status}: ${text}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
+  }
+
   async callLlm(
     systemPrompt: string,
     userMessage: string,

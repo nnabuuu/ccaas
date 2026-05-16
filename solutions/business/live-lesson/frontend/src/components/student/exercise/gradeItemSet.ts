@@ -39,6 +39,17 @@ export function formatSubmitData(
     case 'map':
       result = { placements: ans.placements || {}, reasons: ans.reasons || {} }
       break
+    case 'image-upload':
+      result = { images: ans.images || [] }
+      break
+    case 'fill-blank': {
+      const blanks: Record<string, string> = {}
+      for (const [k, v] of Object.entries(ans)) {
+        if (typeof v === 'string') blanks[k] = v
+      }
+      result = { blanks }
+      break
+    }
     default:
       result = ans
   }

@@ -146,6 +146,48 @@ const SelectEvidenceAnswerKeySchema = z.object({
   { message: 'select-evidence: range paragraph must have entry in paragraphTokens' },
 );
 
+// ── Image Upload ──
+
+const PromptImageSchema = z.object({
+  url: z.string().min(1),
+  alt: z.string().optional(),
+});
+
+const RubricItemSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  weight: z.number().min(0),
+  criteria: z.string().min(1),
+});
+
+const ImageUploadAnswerKeySchema = z.object({
+  type: z.literal('image-upload'),
+  prompt: z.string().min(1),
+  promptImages: z.array(PromptImageSchema).optional(),
+  rubric: z.array(RubricItemSchema).nonempty(),
+  sampleSolution: z.string().optional(),
+  aiSystemPrompt: z.string().optional(),
+  maxImages: z.number().int().min(1).optional(),
+});
+
+// ── Fill Blank ──
+
+const FillBlankBlankSchema = z.object({
+  accepts: z.array(z.string()).nonempty(),
+  hint: z.string().optional(),
+});
+
+const FillBlankSentenceSchema = z.object({
+  id: z.string().min(1),
+  template: z.string().min(1),
+  blanks: z.record(z.string(), FillBlankBlankSchema),
+});
+
+const FillBlankAnswerKeySchema = z.object({
+  type: z.literal('fill-blank'),
+  sentences: z.array(FillBlankSentenceSchema).nonempty(),
+});
+
 // ── Map ──
 
 const MapAxisSchema = z.object({
@@ -184,6 +226,8 @@ export const AnswerKeySchema = z.union([
   OrderAnswerKeySchema,
   SelectEvidenceAnswerKeySchema,
   MapAnswerKeySchema,
+  ImageUploadAnswerKeySchema,
+  FillBlankAnswerKeySchema,
 ]);
 
 export type AnswerKey = z.infer<typeof AnswerKeySchema>;
@@ -197,6 +241,8 @@ export type StanceAnswerKey = z.infer<typeof StanceAnswerKeySchema>;
 export type OrderAnswerKey = z.infer<typeof OrderAnswerKeySchema>;
 export type SelectEvidenceAnswerKey = z.infer<typeof SelectEvidenceAnswerKeySchema>;
 export type MapAnswerKey = z.infer<typeof MapAnswerKeySchema>;
+export type ImageUploadAnswerKey = z.infer<typeof ImageUploadAnswerKeySchema>;
+export type FillBlankAnswerKey = z.infer<typeof FillBlankAnswerKeySchema>;
 
 // ── Compatibility layer ──
 

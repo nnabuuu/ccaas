@@ -124,6 +124,49 @@ export function buildCheckItems(
       return result;
     }
 
+    case 'image-upload': {
+      const rubric = (ak.rubric || []) as Array<Record<string, unknown>>;
+      const llmItemsMap = new Map<string, { reason: string }>();
+      if (gradeResult.llmItems) {
+        for (const li of gradeResult.llmItems) {
+          if (li.id) llmItemsMap.set(li.id, { reason: li.reason });
+        }
+      }
+      const result: Array<Record<string, unknown>> = rubric.map((r) => {
+        const id = r.id as string;
+        const score = gradeResult.byDimension?.[id] as number ?? -1;
+        const llmItem = llmItemsMap.get(id);
+        return {
+          idx: id,
+          correct: score >= 2,
+          score,
+          ...(llmItem?.reason && { hint: llmItem.reason }),
+        };
+      });
+      if (gradeResult.llmFeedback) {
+        result.push({ idx: '_llm', correct: true, hint: gradeResult.llmFeedback });
+      }
+      return result;
+    }
+
+    case 'fill-blank': {
+      const sentences = (ak.sentences || []) as Array<Record<string, unknown>>;
+      const result: Array<Record<string, unknown>> = [];
+      for (const s of sentences) {
+        const blanks = (s.blanks || {}) as Record<string, Record<string, unknown>>;
+        for (const blankId of Object.keys(blanks)) {
+          const dimKey = `${s.id}_${blankId}`;
+          const correct = gradeResult.byDimension?.[dimKey] === true;
+          result.push({
+            idx: dimKey,
+            correct,
+            ...(!correct && blanks[blankId]?.hint && { hint: blanks[blankId].hint as string }),
+          });
+        }
+      }
+      return result;
+    }
+
     default:
       return [];
   }

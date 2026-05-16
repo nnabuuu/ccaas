@@ -26,7 +26,7 @@ export interface TaskMatrixRow {
 export interface MapAxis { neg: string; pos: string; label: string }
 export interface MapItem { id: string; label: string; hint?: string; refs?: number[] }
 export interface TaskExercise {
-  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map'
+  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank'
   label: string
   questions?: TaskQuestion[]
   pairs?: TaskMatchPair[]
@@ -46,6 +46,12 @@ export interface TaskExercise {
   minReasonLength?: number
   givenPlacements?: Record<string, { x: number; y: number }>
   practiceItemIds?: string[]
+  // image-upload fields
+  promptImages?: Array<{ url: string; alt?: string }>
+  rubric?: Array<{ id: string; label: string; weight: number }>
+  maxImages?: number
+  // fill-blank fields
+  sentences?: Array<{ id: string; template: string }>
 }
 export interface FallbackMC {
   question: string; questionZh?: string

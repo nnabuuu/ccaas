@@ -12,6 +12,8 @@ import { StanceExercise } from './StanceExercise'
 import { OrderExercise } from './OrderExercise'
 import { SelectEvidenceExercise } from './SelectEvidenceExercise'
 import { MapExercise } from './MapExercise'
+import { ImageUploadExercise } from './ImageUploadExercise'
+import { FillBlankExercise } from './FillBlankExercise'
 
 const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
 
@@ -39,6 +41,10 @@ export function restoreAns(type: string, data: Record<string, unknown>): Record<
       return data // matrix restoration handled separately via effectiveMatrixAns
     case 'select-evidence':
       return data // pass through so SelectEvidenceExercise can hydrate
+    case 'image-upload':
+      return { images: data.images || [] }
+    case 'fill-blank':
+      return data.blanks ? data.blanks as Record<string, unknown> : data
     default:
       return data as Record<string, unknown>
   }
@@ -61,6 +67,9 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [mapItemResults, setMapItemResults] = useState<Record<string, { correct: boolean; hint?: string }>>({})
   const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
   const [matrixRowResults, setMatrixRowResults] = useState<Record<number, boolean>>({})
+  const [imageUploadFeedback, setImageUploadFeedback] = useState<string | null>(null)
+  const [imageUploadRubricResults, setImageUploadRubricResults] = useState<Record<string, { score: number; hint?: string }>>({})
+  const [fillBlankResults, setFillBlankResults] = useState<Record<string, boolean>>({})
 
   // Per-question timing: track when each question was first viewed
   const questionTimesRef = useRef<Record<number, number>>({})
@@ -156,6 +165,29 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       })()
     : mapItemResults
 
+  const effectiveImageUploadFeedback = reviewMode && restoredCheck && ex.type === 'image-upload'
+    ? (restoredCheck.items.find(it => it.idx === '_llm')?.hint ?? imageUploadFeedback)
+    : imageUploadFeedback
+
+  const effectiveImageUploadRubricResults = reviewMode && restoredCheck && ex.type === 'image-upload'
+    ? (() => {
+        const r: Record<string, { score: number; hint?: string }> = {}
+        restoredCheck.items.forEach(it => {
+          if (it.idx === '_llm') return
+          r[it.idx as string] = { score: (it as any).score ?? 0, hint: it.hint }
+        })
+        return r
+      })()
+    : imageUploadRubricResults
+
+  const effectiveFillBlankResults = reviewMode && restoredCheck && ex.type === 'fill-blank'
+    ? (() => {
+        const r: Record<string, boolean> = {}
+        restoredCheck.items.forEach(it => { r[it.idx as string] = it.correct })
+        return r
+      })()
+    : fillBlankResults
+
   const effectiveAllDone = reviewMode || allDone
   const effectiveSoftDone = reviewMode || softDone
 
@@ -176,6 +208,14 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       const rs = ans.reasons || {}
       const min = ex.minReasonLength || 8
       return practice.every(it => pl[it.id] && (rs[it.id] || '').trim().length >= min)
+    }
+    if (ex.type === 'image-upload') return (ans.images || []).length > 0
+    if (ex.type === 'fill-blank') {
+      if (!ex.sentences) return false
+      return ex.sentences.every(s => {
+        const blankIds = [...s.template.matchAll(/\{\{(\d+)\}\}/g)].map(m => m[1])
+        return blankIds.every(id => (ans[`${s.id}_${id}`] || '').trim().length > 0)
+      })
     }
     return true
   }
@@ -371,6 +411,30 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       setSoftDone(true); setAllDone(true)
       reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
       onDone()
+    } else if (ex.type === 'image-upload') {
+      const llmItem = result.items.find(it => it.idx === '_llm')
+      if (llmItem?.hint) setImageUploadFeedback(llmItem.hint)
+      const rubricRes: Record<string, { score: number; hint?: string }> = {}
+      result.items.forEach(item => {
+        if (item.idx === '_llm') return
+        rubricRes[item.idx as string] = { score: (item as any).score ?? 0, hint: item.hint }
+      })
+      setImageUploadRubricResults(rubricRes)
+      setSoftDone(true); setAllDone(true)
+      reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
+      onDone()
+    } else if (ex.type === 'fill-blank') {
+      const blankRes: Record<string, boolean> = {}
+      result.items.forEach(item => {
+        blankRes[item.idx as string] = item.correct
+      })
+      setFillBlankResults(blankRes)
+      if (result.allCorrect) {
+        setAllDone(true); onDone()
+      } else {
+        setSoftDone(true); setAllDone(true)
+        onDone()
+      }
     } else {
       // stance — soft done
       setSoftDone(true); setAllDone(true)
@@ -482,6 +546,27 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
               onOverlayChange(null)
             }
           }}
+        />
+      )}
+      {ex.type === 'image-upload' && ex.rubric && (
+        <ImageUploadExercise
+          prompt={ex.prompt || ''}
+          promptImages={ex.promptImages}
+          rubric={ex.rubric}
+          ans={effectiveAns}
+          setAns={noopSetAns}
+          allDone={effectiveAllDone}
+          feedback={effectiveImageUploadFeedback}
+          rubricResults={Object.keys(effectiveImageUploadRubricResults).length > 0 ? effectiveImageUploadRubricResults : undefined}
+        />
+      )}
+      {ex.type === 'fill-blank' && ex.sentences && (
+        <FillBlankExercise
+          sentences={ex.sentences}
+          ans={effectiveAns as Record<string, string>}
+          setAns={noopSetAns}
+          blankResults={Object.keys(effectiveFillBlankResults).length > 0 ? effectiveFillBlankResults : undefined}
+          allDone={effectiveAllDone}
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (

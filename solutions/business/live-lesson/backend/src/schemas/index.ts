@@ -10,6 +10,8 @@ export {
   type OrderAnswerKey,
   type SelectEvidenceAnswerKey,
   type MapAnswerKey,
+  type ImageUploadAnswerKey,
+  type FillBlankAnswerKey,
   type ValidationResult,
 } from './answer-key.schema';
 

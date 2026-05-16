@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const ExerciseSpecSchema = z.object({
-  type: z.enum(['quiz', 'match', 'matrix', 'stance', 'order', 'select-evidence', 'map']),
+  type: z.enum(['quiz', 'match', 'matrix', 'stance', 'order', 'select-evidence', 'map', 'image-upload', 'fill-blank']),
   label: z.string(),
   // quiz
   questions: z.array(z.object({
@@ -72,6 +72,15 @@ export const ExerciseSpecSchema = z.object({
   // map practiceCount + givenPlacements
   givenPlacements: z.record(z.string(), z.object({ x: z.number(), y: z.number() })).optional(),
   practiceItemIds: z.array(z.string()).optional(),
+  // image-upload
+  promptImages: z.array(z.object({ url: z.string(), alt: z.string().optional() })).optional(),
+  rubric: z.array(z.object({ id: z.string(), label: z.string(), weight: z.number() })).optional(),
+  maxImages: z.number().optional(),
+  // fill-blank
+  sentences: z.array(z.object({
+    id: z.string(),
+    template: z.string(),
+  })).optional(),
 });
 
 export type ExerciseSpec = z.infer<typeof ExerciseSpecSchema>;
