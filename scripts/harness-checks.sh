@@ -4,20 +4,38 @@ set -e
 # Parse arguments
 FULL_MODE=false
 E2E_MODE=false
-for arg in "$@"; do
-  case "$arg" in
-    --full) FULL_MODE=true ;;
-    --e2e)  E2E_MODE=true ;;
+SCOPE_DIR=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --full)  FULL_MODE=true ;;
+    --e2e)   E2E_MODE=true ;;
+    --scope) SCOPE_DIR="$2"; shift ;;
   esac
+  shift
 done
 
-echo "Running harness checks..."
+# Validate scope directory if provided
+if [ -n "$SCOPE_DIR" ]; then
+  if [ ! -d "$SCOPE_DIR" ]; then
+    echo "ERROR: scope directory '$SCOPE_DIR' does not exist"
+    exit 1
+  fi
+  SCAN_DIRS="$SCOPE_DIR"
+  echo "Running harness checks (scope: $SCOPE_DIR)..."
+else
+  SCAN_DIRS="packages/ solutions/"
+  echo "Running harness checks..."
+fi
 
 ERRORS=0
 WARNINGS=0
 
 # Load baselines for ratchet mechanism
-BASELINES_FILE="$(dirname "$0")/../.harness-baselines.json"
+if [ -n "$SCOPE_DIR" ] && [ -f "$SCOPE_DIR/.harness-baselines.json" ]; then
+  BASELINES_FILE="$SCOPE_DIR/.harness-baselines.json"
+else
+  BASELINES_FILE="$(dirname "$0")/../.harness-baselines.json"
+fi
 if command -v jq &>/dev/null && [ -f "$BASELINES_FILE" ]; then
   BASELINE_CONSOLE_LOG=$(jq -r '.console_log' "$BASELINES_FILE")
   BASELINE_ANY_TYPE=$(jq -r '.any_type' "$BASELINES_FILE")
@@ -72,36 +90,40 @@ ratchet_check() {
 
 # Check 1: No empty serverUrl in production code
 echo "  [1/12] Checking serverUrl patterns..."
-if grep -rn "serverUrl:\s*['\"]['\"]" --include="*.ts" --include="*.tsx" solutions/ packages/ 2>/dev/null | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace"; then
+if grep -rn "serverUrl:\s*['\"]['\"]" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace"; then
   echo "  ERROR: Empty serverUrl detected. Must use absolute URL (e.g. http://localhost:3001)."
   ERRORS=$((ERRORS + 1))
 else
   echo "  OK"
 fi
 
-# Check 2: All core backend controllers must have @ApiTags
-echo "  [2/12] Checking @ApiTags coverage (core backend)..."
-for f in $(find packages/backend/src -name "*.controller.ts" -not -path "*/node_modules/*" 2>/dev/null); do
-  if ! grep -q "@ApiTags" "$f"; then
-    echo "  ERROR: $f missing @ApiTags decorator"
-    ERRORS=$((ERRORS + 1))
-  fi
-done
-echo "  OK"
+# Check 2: All core backend controllers must have @ApiTags (core-only, skip when scoped)
+if [ -z "$SCOPE_DIR" ]; then
+  echo "  [2/12] Checking @ApiTags coverage (core backend)..."
+  for f in $(find packages/backend/src -name "*.controller.ts" -not -path "*/node_modules/*" 2>/dev/null); do
+    if ! grep -q "@ApiTags" "$f"; then
+      echo "  ERROR: $f missing @ApiTags decorator"
+      ERRORS=$((ERRORS + 1))
+    fi
+  done
+  echo "  OK"
 
-# Warning: solution backend controllers without @ApiTags (non-blocking)
-for f in $(find solutions -name "*.controller.ts" -not -path "*/node_modules/*" -not -path "*/.agent-workspace/*" 2>/dev/null); do
-  if ! grep -q "@ApiTags" "$f"; then
-    WARNINGS=$((WARNINGS + 1))
+  # Warning: solution backend controllers without @ApiTags (non-blocking)
+  for f in $(find solutions -name "*.controller.ts" -not -path "*/node_modules/*" -not -path "*/.agent-workspace/*" 2>/dev/null); do
+    if ! grep -q "@ApiTags" "$f"; then
+      WARNINGS=$((WARNINGS + 1))
+    fi
+  done
+  if [ $WARNINGS -gt 0 ]; then
+    echo "  WARNING: $WARNINGS solution controller(s) missing @ApiTags (non-blocking)"
   fi
-done
-if [ $WARNINGS -gt 0 ]; then
-  echo "  WARNING: $WARNINGS solution controller(s) missing @ApiTags (non-blocking)"
+else
+  echo "  [2/12] Skipping @ApiTags check (core-only, not applicable in scoped mode)"
 fi
 
 # Check 3: No console.log in production code (ratchet — cannot increase)
 echo "  [3/12] Checking console.log in production code..."
-CONSOLE_LOG_COUNT=$(grep -rn "console\.log" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
+CONSOLE_LOG_COUNT=$(grep -rn "console\.log" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null \
   | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace" | wc -l | tr -d ' ')
 if [ "$CONSOLE_LOG_COUNT" -eq 0 ]; then
   echo "  OK"
@@ -115,7 +137,7 @@ fi
 
 # Check 4: No @ts-ignore / @ts-nocheck (ERROR — zero tolerance)
 echo "  [4/12] Checking @ts-ignore / @ts-nocheck..."
-if grep -rn "@ts-ignore\|@ts-nocheck" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace"; then
+if grep -rn "@ts-ignore\|@ts-nocheck" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace"; then
   echo "  ERROR: @ts-ignore or @ts-nocheck detected. Fix the type error instead of suppressing it."
   ERRORS=$((ERRORS + 1))
 else
@@ -124,7 +146,7 @@ fi
 
 # Check 5: any type escape (ratchet — cannot increase)
 echo "  [5/12] Checking 'any' type usage in production code..."
-ANY_COUNT=$(grep -rn ": any\b\|as any\b" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
+ANY_COUNT=$(grep -rn ": any\b\|as any\b" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null \
   | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace" | wc -l | tr -d ' ')
 if [ "$ANY_COUNT" -eq 0 ]; then
   echo "  OK"
@@ -138,7 +160,7 @@ fi
 
 # Check 6: TODO/FIXME without issue reference (ratchet — cannot increase)
 echo "  [6/12] Checking TODO/FIXME without issue reference..."
-UNLINKED_TODO_COUNT=$(grep -rn "TODO\|FIXME" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
+UNLINKED_TODO_COUNT=$(grep -rn "TODO\|FIXME" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null \
   | grep -v "node_modules" | grep -v "/dist/" | grep -v "\.agent-workspace" | grep -v -E "(NIE-|CCaas-|Linear)" | wc -l | tr -d ' ')
 if [ "$UNLINKED_TODO_COUNT" -eq 0 ]; then
   echo "  OK"
@@ -152,7 +174,7 @@ fi
 
 # Check 7: eslint-disable comments (ratchet — cannot increase)
 echo "  [7/12] Checking eslint-disable comments..."
-ESLINT_DISABLE_COUNT=$(grep -rn "eslint-disable" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
+ESLINT_DISABLE_COUNT=$(grep -rn "eslint-disable" --include="*.ts" --include="*.tsx" $SCAN_DIRS 2>/dev/null \
   | grep -v node_modules | grep -v "/dist/" | grep -v "\.agent-workspace" | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | wc -l | tr -d ' ')
 if [ "$ESLINT_DISABLE_COUNT" -eq 0 ]; then
   echo "  OK"
@@ -164,8 +186,10 @@ else
   fi
 fi
 
-# Check 8: Test coverage (backend) — only in --full mode
-if [ "$FULL_MODE" = true ]; then
+# Check 8: Test coverage (backend) — only in --full mode, core-only (skip when scoped)
+if [ -n "$SCOPE_DIR" ]; then
+  echo "  [8/12] Skipping coverage check (core-only, not applicable in scoped mode)"
+elif [ "$FULL_MODE" = true ]; then
   echo "  [8/12] Checking backend test coverage..."
   (cd packages/backend && npx jest --coverage --coverageReporters=json-summary --silent 2>/dev/null) || true
   if [ -f packages/backend/coverage/coverage-summary.json ]; then
@@ -184,10 +208,14 @@ else
   echo "  [8/12] Skipping coverage check (use --full to enable)"
 fi
 
-# Check 9: E2E tests (live-lesson) — only with --e2e
+# Check 9: E2E tests — only with --e2e
 if [ "$E2E_MODE" = true ]; then
-  echo "  [9/12] Running E2E tests (live-lesson)..."
-  E2E_SCRIPT="$(dirname "$0")/../solutions/business/live-lesson/e2e/run-e2e.sh"
+  echo "  [9/12] Running E2E tests..."
+  if [ -n "$SCOPE_DIR" ]; then
+    E2E_SCRIPT="$SCOPE_DIR/e2e/run-e2e.sh"
+  else
+    E2E_SCRIPT="$(dirname "$0")/../solutions/business/live-lesson/e2e/run-e2e.sh"
+  fi
   if [ -f "$E2E_SCRIPT" ]; then
     if bash "$E2E_SCRIPT"; then
       echo "  OK"
@@ -205,8 +233,13 @@ fi
 # Check 10: Hardcoded localhost URLs in solution frontend source code
 # These should use Vite proxy (relative paths) or env vars instead
 echo "  [10/12] Checking hardcoded localhost URLs in frontend src/..."
+if [ -n "$SCOPE_DIR" ]; then
+  LOCALHOST_SCAN_DIR="$SCOPE_DIR/frontend/src/"
+else
+  LOCALHOST_SCAN_DIR="solutions/*/*/frontend/src/"
+fi
 HARDCODED_LOCALHOST_COUNT=$(grep -rn "localhost:[0-9]" --include="*.ts" --include="*.tsx" \
-  solutions/*/*/frontend/src/ 2>/dev/null \
+  $LOCALHOST_SCAN_DIR 2>/dev/null \
   | grep -v node_modules | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | wc -l | tr -d ' ')
 if [ "$HARDCODED_LOCALHOST_COUNT" -eq 0 ]; then
   echo "  OK"
@@ -221,7 +254,12 @@ fi
 # Check 11: Static JSON data files in solution frontend public/ dirs
 # These often duplicate API data — should be served by backend API instead
 echo "  [11/12] Checking static JSON data in frontend public/..."
-STATIC_JSON_FILES=$(find solutions/*/frontend/public solutions/*/*/frontend/public \
+if [ -n "$SCOPE_DIR" ]; then
+  STATIC_JSON_SCAN="$SCOPE_DIR/frontend/public"
+else
+  STATIC_JSON_SCAN="solutions/*/frontend/public solutions/*/*/frontend/public"
+fi
+STATIC_JSON_FILES=$(find $STATIC_JSON_SCAN \
   -name "*.json" -not -name "tsconfig*.json" -not -name "package*.json" \
   -not -name "manifest.json" 2>/dev/null || true)
 if [ -n "$STATIC_JSON_FILES" ]; then
@@ -239,7 +277,7 @@ fi
 # without declaring color — risking inherited low-contrast values (WCAG fail)
 echo "  [12/12] Checking CSS text classes without explicit color..."
 CSS_NO_COLOR_COUNT=$(
-  grep -rnE '\.[-a-z]*(title|heading|sub[^m]|label|caption|desc)\b' --include="*.css" solutions/ 2>/dev/null \
+  grep -rnE '\.[-a-z]*(title|heading|sub[^m]|label|caption|desc)\b' --include="*.css" $SCAN_DIRS 2>/dev/null \
   | grep -v node_modules | grep -v '\.agent-workspace' | grep -v '/dist/' \
   | grep -v '::placeholder' | grep -vE '(close|icon|mini|spacer)' \
   | grep -E 'font-(size|weight)' \
