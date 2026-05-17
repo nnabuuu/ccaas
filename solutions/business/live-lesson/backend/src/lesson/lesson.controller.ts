@@ -43,4 +43,32 @@ export class LessonController {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     fs.createReadStream(audioPath).pipe(res);
   }
+
+  @Get(':id/resources/:filename')
+  getResource(
+    @Param('id') id: string,
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+      throw new BadRequestException('Invalid lesson ID');
+    }
+    if (!/^[a-zA-Z0-9_-]+\.(png|jpg|jpeg|gif|webp)$/.test(filename)) {
+      throw new BadRequestException('Invalid filename');
+    }
+
+    const filePath = path.resolve(process.cwd(), '..', 'data', 'lessons', id, 'resources', filename);
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('Resource not found');
+    }
+
+    const ext = filename.split('.').pop()!.toLowerCase();
+    const mime: Record<string, string> = {
+      png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      gif: 'image/gif', webp: 'image/webp',
+    };
+    res.setHeader('Content-Type', mime[ext] || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    fs.createReadStream(filePath).pipe(res);
+  }
 }

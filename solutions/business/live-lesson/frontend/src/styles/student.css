@@ -60,6 +60,7 @@
 .stu-instr-body table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
 .stu-instr-body th,.stu-instr-body td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
 .stu-instr-body tr:nth-child(even){background:var(--surface2)}
+.stu-instr-body img{max-width:100%;height:auto;border-radius:var(--r-input,6px);margin:10px 0;display:block}
 /* Key points callout */
 .stu-instr-kp{margin-top:14px;padding:12px 14px;background:var(--teal-bg);border-left:3px solid var(--teal);border-radius:0 8px 8px 0}
 .stu-instr-kp-label{font-size:var(--fs-meta,10px);font-weight:var(--fw-semibold,600);color:var(--teal);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
