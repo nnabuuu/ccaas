@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsIn, IsOptional, Min, Max, MaxLength, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsString, IsInt, IsIn, IsOptional, IsArray, Min, Max, MaxLength, Matches, ArrayMaxSize, ValidateNested, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class DiscussMessageDto {
@@ -9,6 +9,14 @@ class DiscussMessageDto {
   @IsString()
   @MaxLength(5000)
   text: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @MaxLength(200_000, { each: true })
+  @Matches(/^data:image\/(jpeg|png|webp|gif);base64,/, { each: true, message: 'Each image must be a base64 data URL' })
+  images?: string[];
 }
 
 export class AiDiscussDto {

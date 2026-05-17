@@ -6,19 +6,11 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
-  MessageSquare,
-  ListChecks,
-  Layers,
-  ArrowLeftRight,
-  SortAsc,
-  Search,
-  Map,
-  ImageUp,
-  PenLine,
   GripVertical,
 } from 'lucide-react'
 import type { ReadingStep } from '../../types'
-import { getStepColor, BLOCK_TYPE_LABELS } from '../../types'
+import { getStepColor } from '../../types'
+import { getBlockIcon, getBlockBadgeClass, getBlockLabel } from '../../types/block-registry'
 
 // ── Color maps for Tailwind (no dynamic class construction) ──
 
@@ -38,30 +30,6 @@ const STEP_BADGE_BG: Record<string, string> = {
   green: 'bg-green-100 text-green-700',
 }
 
-const TYPE_BADGE: Record<string, string> = {
-  quiz: 'bg-blue-50 text-blue-600',
-  match: 'bg-indigo-50 text-indigo-600',
-  matrix: 'bg-purple-50 text-purple-600',
-  discuss: 'bg-teal-50 text-teal-600',
-  order: 'bg-orange-50 text-orange-600',
-  'select-evidence': 'bg-emerald-50 text-emerald-600',
-  map: 'bg-rose-50 text-rose-600',
-  'fill-blank': 'bg-cyan-50 text-cyan-600',
-  'image-upload': 'bg-amber-50 text-amber-600',
-  instruction: 'bg-gray-50 text-gray-600',
-}
-
-const BLOCK_ICON: Record<string, typeof ListChecks> = {
-  quiz: ListChecks,
-  match: ArrowLeftRight,
-  matrix: Layers,
-  discuss: MessageSquare,
-  order: SortAsc,
-  'select-evidence': Search,
-  map: Map,
-  'image-upload': ImageUp,
-  'fill-blank': PenLine,
-}
 
 // ── Props ──
 
@@ -153,7 +121,7 @@ export default function StepList({ steps, onStepsChange, onSelectBlock, selected
       blocks.push({
         type: t,
         key: 'answerKey',
-        label: BLOCK_TYPE_LABELS[t] || t,
+        label: getBlockLabel(t),
         description: step.exerciseLabel || '',
       })
     }
@@ -209,7 +177,7 @@ export default function StepList({ steps, onStepsChange, onSelectBlock, selected
               />
 
               {/* Type badge */}
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${TYPE_BADGE[step.type || 'task'] || 'bg-gray-50 text-gray-500'}`}>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${getBlockBadgeClass(step.type || 'task')}`}>
                 {step.type || 'task'}
               </span>
 
@@ -275,7 +243,7 @@ export default function StepList({ steps, onStepsChange, onSelectBlock, selected
                 {blocks.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {blocks.map((block) => {
-                      const Icon = BLOCK_ICON[block.type] || ListChecks
+                      const Icon = getBlockIcon(block.type)
                       const isSelected = selectedBlock?.stepIdx === i
                       return (
                         <div
@@ -291,7 +259,7 @@ export default function StepList({ steps, onStepsChange, onSelectBlock, selected
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-gray-700">{block.label}</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${TYPE_BADGE[block.type] || ''}`}>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${getBlockBadgeClass(block.type)}`}>
                                 {block.type}
                               </span>
                             </div>

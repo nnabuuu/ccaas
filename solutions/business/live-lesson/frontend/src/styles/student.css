@@ -511,6 +511,11 @@
 .sd-bubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.7;max-width:85%}
 .sd-bubble.ai{background:var(--bg);border:1px solid var(--border);border-radius:2px 14px 14px 14px;color:var(--t1)}
 .sd-bubble.student{background:var(--teal);color:#fff;border-radius:14px 2px 14px 14px;max-width:80%}
+/* Image preview */
+.sd-img-preview{display:flex;align-items:flex-start;gap:6px;padding:8px 16px 0;background:var(--surface)}
+.sd-img-dismiss{width:22px;height:22px;border-radius:50%;border:none;background:var(--bg);color:var(--t2);cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+/* Camera button */
+.sd-camera-btn{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 /* Input */
 .sd-input-row{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface)}
 .sd-input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);resize:none;min-height:42px;line-height:1.5;box-sizing:border-box}

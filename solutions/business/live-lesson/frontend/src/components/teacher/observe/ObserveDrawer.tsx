@@ -13,6 +13,8 @@ const DiscussClassView = lazy(() => import('./discuss/DiscussClassView'))
 const DiscussStudentView = lazy(() => import('./discuss/DiscussStudentView'))
 const MatrixClassView = lazy(() => import('./matrix/MatrixClassView'))
 const MatrixStudentView = lazy(() => import('./matrix/MatrixStudentView'))
+const ImageUploadClassView = lazy(() => import('./image-upload/ImageUploadClassView'))
+const ImageUploadStudentView = lazy(() => import('./image-upload/ImageUploadStudentView'))
 
 export interface ObserveData {
   stats: Record<string, unknown>
@@ -34,6 +36,7 @@ const TYPE_LABELS: Record<string, string> = {
   map: 'Map 观察',
   discuss: 'Discuss 观察',
   matrix: 'Matrix 观察',
+  'image-upload': '手写批改观察',
 }
 
 function LoadingView() {
@@ -137,6 +140,7 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
               {type === 'map' && <MapClassView data={mapData!} onStudentSelect={handleStudentSelect} />}
               {type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
               {type === 'matrix' && <MatrixClassView data={data} onStudentSelect={handleStudentSelect} />}
+              {type === 'image-upload' && <ImageUploadClassView data={data} onStudentSelect={handleStudentSelect} />}
             </Suspense>
           )}
         </div>
@@ -166,6 +170,7 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
               {type === 'map' && <MapStudentView data={mapData!} studentId={selectedStudent} />}
               {type === 'discuss' && <DiscussStudentView data={data} studentId={selectedStudent} />}
               {type === 'matrix' && <MatrixStudentView data={data} studentId={selectedStudent} />}
+              {type === 'image-upload' && <ImageUploadStudentView data={data} studentId={selectedStudent} />}
             </Suspense>
           )}
         </div>

@@ -631,6 +631,60 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
   }
 
+  /** Multi-turn vision conversation — user messages may contain images */
+  async callVisionConversation(
+    systemPrompt: string,
+    messages: Array<{ role: 'assistant' | 'user'; content: string; images?: string[] }>,
+    options?: { maxTokens?: number; temperature?: number },
+  ): Promise<string> {
+    const apiKey = this.configService.get<string>('LLM_VISION_API_KEY')
+      || this.configService.get<string>('LLM_API_KEY');
+    if (!apiKey) {
+      throw new Error('LLM_API_KEY not configured');
+    }
+    const model = this.configService.get<string>('LLM_VISION_MODEL') || 'qwen-vl-plus';
+    const baseUrl = this.configService.get<string>('LLM_VISION_BASE_URL')
+      || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+
+    const apiMessages = messages.map(m => {
+      if (m.role === 'user' && m.images?.length) {
+        const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+          { type: 'text', text: m.content },
+          ...m.images.map(url => ({ type: 'image_url' as const, image_url: { url } })),
+        ];
+        return { role: 'user' as const, content };
+      }
+      return { role: m.role, content: m.content };
+    });
+
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...apiMessages,
+      ],
+      max_tokens: options?.maxTokens ?? 512,
+      temperature: options?.temperature ?? 0.75,
+    };
+
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Vision LLM API error ${res.status}: ${text}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
+  }
+
   /** Multi-turn conversation call — accepts pre-built messages array */
   async callLlmConversation(
     systemPrompt: string,

@@ -129,4 +129,89 @@ describe('RefinementEvaluator', () => {
       expect(evaluateRefinement(def, data)).toEqual({ pass: false, message: def.message });
     });
   });
+
+  describe('edge cases', () => {
+    it('every-item: path resolves to non-array → fail', () => {
+      const def: RefinementDef = {
+        type: 'every-item',
+        path: 'answers',
+        expr: 'item.correct < item.options.length',
+        message: 'fail',
+      };
+      expect(evaluateRefinement(def, { answers: 'not-an-array' })).toEqual({ pass: false, message: 'fail' });
+    });
+
+    it('every-item: unsupported expression → caught, item fails', () => {
+      const def: RefinementDef = {
+        type: 'every-item',
+        path: 'items',
+        expr: 'item.x + item.y > 10',
+        message: 'unsupported',
+      };
+      // evalExpr throws for unsupported pattern; catch returns false per item
+      expect(evaluateRefinement(def, { items: [{ x: 5, y: 6 }] })).toEqual({ pass: false, message: 'unsupported' });
+    });
+
+    it('array-is-permutation: non-integer floats pass refinement (schema layer catches these)', () => {
+      // 1.5 passes: typeof === 'number', 0 <= 1.5 < 2, not seen
+      // JSON Schema "type": "integer" catches this before refinement runs
+      const def: RefinementDef = {
+        type: 'array-is-permutation',
+        arrayPath: 'correctOrder',
+        lengthRef: 'items.length',
+        message: 'perm fail',
+      };
+      expect(evaluateRefinement(def, { correctOrder: [0, 1.5], items: ['a', 'b'] })).toEqual({ pass: true });
+    });
+
+    it('array-is-permutation: negative index → fail', () => {
+      const def: RefinementDef = {
+        type: 'array-is-permutation',
+        arrayPath: 'correctOrder',
+        lengthRef: 'items.length',
+        message: 'perm fail',
+      };
+      expect(evaluateRefinement(def, { correctOrder: [-1, 0], items: ['a', 'b'] })).toEqual({ pass: false, message: 'perm fail' });
+    });
+
+    it('every-value-in-set: malformed valuePath (no []) → fail', () => {
+      const def: RefinementDef = {
+        type: 'every-value-in-set',
+        valuePath: 'sections.correctFunction',
+        setPath: 'functionOptions',
+        message: 'bad path',
+      };
+      expect(evaluateRefinement(def, { functionOptions: ['a'], sections: [{ correctFunction: 'a' }] })).toEqual({ pass: false, message: 'bad path' });
+    });
+
+    it('conditional-required: null item in array → fail', () => {
+      const def: RefinementDef = {
+        type: 'conditional-required',
+        path: 'answers',
+        unless: 'isDemo',
+        required: ['practice'],
+        message: 'null item',
+      };
+      expect(evaluateRefinement(def, { answers: [null] })).toEqual({ pass: false, message: 'null item' });
+    });
+
+    it('array-length-eq: non-array path → fail', () => {
+      const def: RefinementDef = {
+        type: 'array-length-eq',
+        paths: ['correctOrder', 'items'],
+        message: 'not arrays',
+      };
+      expect(evaluateRefinement(def, { correctOrder: 'nope', items: 123 })).toEqual({ pass: false, message: 'not arrays' });
+    });
+
+    it('array-is-permutation: lengthRef without .length suffix → fail', () => {
+      const def: RefinementDef = {
+        type: 'array-is-permutation',
+        arrayPath: 'correctOrder',
+        lengthRef: 'items',
+        message: 'bad ref',
+      };
+      expect(evaluateRefinement(def, { correctOrder: [0, 1], items: ['a', 'b'] })).toEqual({ pass: false, message: 'bad ref' });
+    });
+  });
 });

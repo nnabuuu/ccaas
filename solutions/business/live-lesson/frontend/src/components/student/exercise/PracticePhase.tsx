@@ -188,6 +188,18 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       })()
     : fillBlankResults
 
+  // Clear stale rubric results when student picks a new image (before re-submit)
+  const imageKey = ex.type === 'image-upload' ? JSON.stringify(ans.images || []) : ''
+  const prevImageKeyRef = useRef(imageKey)
+  useEffect(() => {
+    if (ex.type !== 'image-upload' || allDone) return
+    if (prevImageKeyRef.current !== imageKey && Object.keys(imageUploadRubricResults).length > 0) {
+      setImageUploadFeedback(null)
+      setImageUploadRubricResults({})
+    }
+    prevImageKeyRef.current = imageKey
+  }, [imageKey, allDone]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const effectiveAllDone = reviewMode || allDone
   const effectiveSoftDone = reviewMode || softDone
 
@@ -420,9 +432,12 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         rubricRes[item.idx as string] = { score: item.score ?? 0, hint: item.hint }
       })
       setImageUploadRubricResults(rubricRes)
-      setSoftDone(true); setAllDone(true)
       reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
-      onDone()
+      if (result.allCorrect) {
+        setSoftDone(true); setAllDone(true)
+        onDone()
+      }
+      // else: keep UI active for re-upload
     } else if (ex.type === 'fill-blank') {
       const blankRes: Record<string, boolean> = {}
       result.items.forEach(item => {
@@ -590,13 +605,26 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
             <span style={{ fontSize: 16 }}>✓</span>Practice complete!
           </div>
         ) : (
-          <button
-            className="stu-btn pri"
-            style={(!canSub() || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
-            onClick={(canSub() && !submitting) ? handleSubmit : undefined}
-          >
-            {submitting ? 'Checking...' : Object.keys(attempts).length > 0 ? 'Try Again' : 'Submit'}
-          </button>
+          <>
+            <button
+              className="stu-btn pri"
+              style={(!canSub() || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
+              onClick={(canSub() && !submitting) ? handleSubmit : undefined}
+            >
+              {submitting ? 'Checking...'
+                : ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 ? '重新提交'
+                : Object.keys(attempts).length > 0 ? 'Try Again' : 'Submit'}
+            </button>
+            {ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 && !effectiveAllDone && (
+              <button
+                className="stu-btn"
+                style={{ marginTop: 8, background: 'var(--surface)', color: 'var(--t2)', border: '1px solid var(--border)' }}
+                onClick={() => { setAllDone(true); onDone() }}
+              >
+                继续到讨论
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

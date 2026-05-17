@@ -195,6 +195,9 @@ cd backend && npm install --legacy-peer-deps && npx nest build && node dist/main
 
 # Frontend
 cd frontend && npm install && npm run dev
+
+# Type-check frontend (use `npm run build`, NOT `tsc --noEmit`)
+cd frontend && npm run build
 ```
 
 ## Ports

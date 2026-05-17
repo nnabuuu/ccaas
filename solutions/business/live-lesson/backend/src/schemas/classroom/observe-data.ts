@@ -161,6 +161,31 @@ export interface MatrixObserveData {
   }>;
 }
 
+export interface ImageUploadObserveData {
+  stats: {
+    totalStudents: number;
+    submitted: number;
+    avgScore: number;
+    perfectCount: number;
+    pendingReview: number;
+  };
+  rubricStats: Array<{
+    id: string;
+    label: string;
+    avgScore: number;
+    distribution: Record<number, number>;
+  }>;
+  students: Array<{
+    id: string;
+    name: string;
+    score: number;
+    images: string[];
+    rubricResults: Array<{ id: string; label: string; score: number; comment: string }>;
+    feedback: string;
+    keyInsights: string[];
+  }>;
+}
+
 export interface DiscussObserveData {
   stats: {
     totalStudents: number;

@@ -1,17 +1,21 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import {
   X,
   Pencil,
   BarChart3,
   Zap,
   Eye,
-  MessageSquare,
-  FileText,
-  ClipboardList,
 } from 'lucide-react'
 import type { ReadingStep, AnswerKey, Discuss } from '../../types'
-import { BLOCK_TYPE_LABELS, createDefaultAnswerKey } from '../../types'
-import { ChoiceEditor, DiscussEditor } from './editors'
+import {
+  getBlockLabel,
+  getBlockIcon,
+  createDefaultAnswerKey,
+  EXERCISE_TYPES,
+  EXERCISE_REGISTRY,
+} from '../../types/block-registry'
+import type { ExerciseMeta } from '../../types/block-registry'
+import { DiscussEditor } from './editors'
 
 interface BlockEditorDrawerProps {
   step: ReadingStep
@@ -20,18 +24,6 @@ interface BlockEditorDrawerProps {
 }
 
 type SubTab = 'content' | 'observe' | 'rules' | 'preview'
-
-const ANSWER_KEY_TYPES = [
-  'quiz',
-  'match',
-  'matrix',
-  'stance',
-  'order',
-  'select-evidence',
-  'map',
-  'image-upload',
-  'fill-blank',
-] as const
 
 const inputCls =
   'w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500'
@@ -51,12 +43,6 @@ function getBlockType(step: ReadingStep): string {
   return 'instruction'
 }
 
-function getBlockIcon(type: string) {
-  if (type === 'discuss') return MessageSquare
-  if (type === 'instruction') return FileText
-  return ClipboardList
-}
-
 function TypeSpecificEditor({
   answerKey,
   onChange,
@@ -64,17 +50,20 @@ function TypeSpecificEditor({
   answerKey: AnswerKey
   onChange: (ak: AnswerKey) => void
 }) {
-  switch (answerKey.type) {
-    case 'quiz':
-      return <ChoiceEditor answerKey={answerKey} onChange={onChange} />
-    default:
-      return (
-        <div className="text-xs text-gray-400 italic py-4 text-center border border-dashed border-gray-200 rounded-lg">
-          {BLOCK_TYPE_LABELS[answerKey.type] ?? answerKey.type} editor coming
-          soon
-        </div>
-      )
+  const meta: ExerciseMeta | undefined = EXERCISE_REGISTRY[answerKey.type as keyof typeof EXERCISE_REGISTRY]
+  if (meta?.editor) {
+    const LazyEditor = lazy(meta.editor)
+    return (
+      <Suspense fallback={<div className="text-xs text-gray-400 py-4 text-center">Loading...</div>}>
+        <LazyEditor answerKey={answerKey} onChange={onChange} />
+      </Suspense>
+    )
   }
+  return (
+    <div className="text-xs text-gray-400 italic py-4 text-center border border-dashed border-gray-200 rounded-lg">
+      {getBlockLabel(answerKey.type)} editor coming soon
+    </div>
+  )
 }
 
 function ContentTab({
@@ -191,9 +180,9 @@ function ContentTab({
               value={step.answerKey.type}
               onChange={(e) => handleAnswerKeyTypeChange(e.target.value)}
             >
-              {ANSWER_KEY_TYPES.map((t) => (
+              {EXERCISE_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {BLOCK_TYPE_LABELS[t] ?? t}
+                  {getBlockLabel(t)}
                 </option>
               ))}
             </select>
@@ -275,7 +264,7 @@ export default function BlockEditorDrawer({
   const [activeTab, setActiveTab] = useState<SubTab>('content')
   const blockType = getBlockType(step)
   const Icon = getBlockIcon(blockType)
-  const typeLabel = BLOCK_TYPE_LABELS[blockType] ?? blockType
+  const typeLabel = getBlockLabel(blockType)
 
   return (
     <div className="w-[420px] max-w-[50%] h-full border-l border-gray-200 bg-white flex flex-col shrink-0 animate-slide-in">

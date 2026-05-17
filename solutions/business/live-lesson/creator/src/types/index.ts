@@ -274,49 +274,21 @@ export interface FillBlankAnswerKey {
   }[];
 }
 
-// ── Block type labels ──
+// ── Block registry (re-export for external consumers) ──
 
-export const BLOCK_TYPE_LABELS: Record<string, string> = {
-  quiz: '选择题',
-  match: '匹配题',
-  matrix: '矩阵分析',
-  stance: '立场论证',
-  order: '排序题',
-  'select-evidence': '证据选择',
-  map: '概念图',
-  'image-upload': '图片上传',
-  'fill-blank': '填空题',
-};
+export {
+  createDefaultAnswerKey,
+  getBlockLabel,
+  getBlockIcon,
+  getBlockBadgeClass,
+  EXERCISE_TYPES,
+  BLOCK_META,
+  EXERCISE_REGISTRY,
+} from './block-registry';
 
 export const STEP_COLORS = ['teal', 'blue', 'purple', 'amber', 'green'] as const;
 export type StepColor = (typeof STEP_COLORS)[number];
 
 export function getStepColor(idx: number): StepColor {
   return STEP_COLORS[idx % STEP_COLORS.length];
-}
-
-/** Create a properly shaped default AnswerKey for a given exercise type */
-export function createDefaultAnswerKey(type: string): AnswerKey {
-  switch (type) {
-    case 'quiz':
-      return { type: 'quiz', answers: [] };
-    case 'match':
-      return { type: 'match', answers: [] };
-    case 'matrix':
-      return { type: 'matrix', answers: [] };
-    case 'stance':
-      return { type: 'stance', validPositions: [], minEvidence: 1, stanceOpts: [], evidence: [] };
-    case 'order':
-      return { type: 'order', items: [], correctOrder: [] };
-    case 'select-evidence':
-      return { type: 'select-evidence', functionOptions: [], sections: [] };
-    case 'map':
-      return { type: 'map', prompt: '', axes: { x: { neg: '', pos: '', label: '' }, y: { neg: '', pos: '', label: '' } }, items: [] };
-    case 'image-upload':
-      return { type: 'image-upload', prompt: '', rubric: [] };
-    case 'fill-blank':
-      return { type: 'fill-blank', sentences: [] };
-    default:
-      return { type: 'quiz', answers: [] };
-  }
 }
