@@ -145,6 +145,17 @@
       "subtitle": "填空补全平方差公式的文字描述和符号表达",
       "duration": 4,
       "description": "通过填空练习，让学生用自己的语言归纳平方差公式。",
+      "studentView": {
+        "title": "新知归纳：平方差公式",
+        "body": "<p>刚才我们通过计算发现了一个规律：</p><p style=\"text-align:center;font-size:1.2em;\">$(y+2)(y-2)=y^2-4$<br/>$(3-a)(3+a)=9-a^2$<br/>$(2a+b)(2a-b)=4a^2-b^2$</p><p>观察左边：每道算式都是<strong>两个数的和</strong>乘以<strong>两个数的差</strong>。</p><p>观察右边：结果都是<strong>两个数的平方差</strong>（大的平方减小的平方）。</p><p>用字母表示这个规律：</p><p style=\"text-align:center;font-size:1.3em;font-weight:bold;color:#0d9488;\">$(a+b)(a-b) = a^2 - b^2$</p><p>用文字描述：<strong>两个数的和</strong>与<strong>两个数的差</strong>的乘积，等于<strong>这两个数的平方差</strong>。</p><p>这个公式叫做<strong>平方差公式</strong>。</p>",
+        "keyPoints": [
+          "$(a+b)$ 表示两个数的\u201c和\u201d",
+          "$(a-b)$ 表示两个数的\u201c差\u201d",
+          "$a^2-b^2$ 表示两个数的\u201c平方差\u201d",
+          "公式名称：平方差公式"
+        ],
+        "confirmLabel": "我来填一填"
+      },
       "exerciseLabel": "根据刚才的学习，补全下列空白。",
       "answerKey": {
         "type": "fill-blank",
