@@ -8,6 +8,7 @@ import DiscussGuide from './DiscussGuide'
 import { readGuideSeen, markGuideSeen } from '../exercise/guide-helpers'
 import { formatTime, computeUrgency, determineInitialPhase, detectFallbackOnRestore, deriveCompletionType, filterMessagesForApi, findNewHits, mcOptionClass } from './discuss-helpers'
 import { runStarAnimation } from './star-animation'
+import { compressImage } from '../../../utils/compress-image'
 
 /* ═══ TYPING INDICATOR ═══ */
 export function TypingIndicator() {
@@ -217,9 +218,11 @@ function ClusterTracker({ clusters, starSlotRef, countRef }: {
   )
 }
 
+const IMAGE_ONLY_PLACEHOLDER = '（见图片）'
+
 /* ═══ MAIN: DISCUSS PHASE ═══ */
 type Phase = 'chat' | 'fallback' | 'done'
-type Msg = { role: 'ai' | 'student' | 'notification'; text: string; highlight?: { score: number; gist: string } }
+type Msg = { role: 'ai' | 'student' | 'notification'; text: string; images?: string[]; imageDescription?: string; highlight?: { score: number; gist: string } }
 
 export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: () => void; isRevisit?: boolean }) {
   const { sessionCode, studentId, submit, config, discussMeta } = useContext(SessionCtx)
@@ -241,6 +244,8 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const sendingRef = useRef(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
 
   const [guideOpen, setGuideOpen] = useState(false)
   const guideSeen = useRef(readGuideSeen('guide-seen-discuss'))
@@ -294,6 +299,8 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       const restored: Msg[] = thread.map(m => ({
         role: m.role as 'ai' | 'student',
         text: m.content,
+        ...(m.images && { images: m.images }),
+        ...(m.imageDescription && { imageDescription: m.imageDescription }),
       }))
       // Ensure opening question is present (may be missing from chat_messages)
       if (restored[0]?.text !== d.openingQ) {
@@ -378,16 +385,30 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
     }
   }, [onDone])
 
+  // Handle file selection for camera
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = '' // reset so same file can be re-selected
+    if (file.size > 10 * 1024 * 1024) return // 10MB guard for low-end devices
+    try {
+      const dataUrl = await compressImage(file)
+      setPendingImage(dataUrl)
+    } catch { /* ignore corrupt files */ }
+  }
+
   // Send message
   const send = async () => {
-    const text = input.trim()
-    if (!text || loading || sendingRef.current || phase !== 'chat') return
+    const text = input.trim() || (pendingImage ? IMAGE_ONLY_PLACEHOLDER : '')
+    if ((!text && !pendingImage) || loading || sendingRef.current || phase !== 'chat') return
     sendingRef.current = true
+    const imageToSend = pendingImage
+    setPendingImage(null)
     try {
       const newRound = round + 1
       setRound(newRound)
       setInput('')
-      const studentMsg: Msg = { role: 'student', text }
+      const studentMsg: Msg = { role: 'student', text, ...(imageToSend && { images: [imageToSend] }) }
       setMessages(m => [...m, studentMsg])
       // Filter to only ai/student messages (strip notifications + extra fields) for backend
       const allMsgs = filterMessagesForApi([...messages, studentMsg])
@@ -424,13 +445,16 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       if (result.nudge?.hint) setNudge(result.nudge.hint)
       else setNudge(null)
 
-      // Single batch: highlight + point-discovered notifications + AI reply
+      // Single batch: highlight + imageDescription + point-discovered notifications + AI reply
       setMessages(m => {
         const updated = [...m]
-        if (result.highlight) {
+        if (result.highlight || result.imageDescription) {
           const lastStudentIdx = updated.findLastIndex(msg => msg.role === 'student')
           if (lastStudentIdx >= 0) {
-            updated[lastStudentIdx] = { ...updated[lastStudentIdx], highlight: result.highlight }
+            const patch: Partial<Msg> = {}
+            if (result.highlight) patch.highlight = result.highlight
+            if (result.imageDescription) patch.imageDescription = result.imageDescription
+            updated[lastStudentIdx] = { ...updated[lastStudentIdx], ...patch }
           }
         }
         for (let i = 0; i < newHits.length; i++) {
@@ -563,7 +587,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           ) : (
             <div key={i} className="sd-msg-row student">
               <div className="sd-bubble student" style={{ position: 'relative' }}>
-                {msg.text}
+                {msg.images?.map((src, j) => (
+                  <img key={j} src={src} alt="uploaded" style={{ maxWidth: 200, borderRadius: 8, display: 'block', marginBottom: msg.text && msg.text !== IMAGE_ONLY_PLACEHOLDER ? 6 : 0 }} />
+                ))}
+                {msg.text !== IMAGE_ONLY_PLACEHOLDER && msg.text}
                 {msg.highlight && (
                   <span className="sd-highlight-badge" title={msg.highlight.gist}>
                     ✦ +{msg.highlight.score}
@@ -658,9 +685,19 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           </div>
         )}
 
+        {/* Image preview */}
+        {phase === 'chat' && pendingImage && (
+          <div className="sd-img-preview">
+            <img src={pendingImage} alt="preview" style={{ maxHeight: 120, borderRadius: 8 }} />
+            <button className="sd-img-dismiss" onClick={() => setPendingImage(null)}>×</button>
+          </div>
+        )}
+
         {/* Input */}
         {phase === 'chat' && (
           <div className="sd-input-row">
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelect} />
+            <button className="sd-camera-btn" onClick={() => fileInputRef.current?.click()} title="Take photo" aria-label="Take photo">📷</button>
             <textarea
               ref={inputRef}
               className="sd-input"
@@ -672,8 +709,8 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
             />
             <button
               className="sd-send-btn"
-              disabled={!input.trim() || loading}
-              style={!input.trim() || loading ? { opacity: 0.3, cursor: 'default' } : undefined}
+              disabled={(!input.trim() && !pendingImage) || loading}
+              style={(!input.trim() && !pendingImage) || loading ? { opacity: 0.3, cursor: 'default' } : undefined}
               onClick={send}
             >→</button>
           </div>

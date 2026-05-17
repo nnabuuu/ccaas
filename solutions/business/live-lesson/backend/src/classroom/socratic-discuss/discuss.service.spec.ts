@@ -267,6 +267,87 @@ describe('DiscussService', () => {
       expect(updated!.discussMeta!.startedAt).toBeDefined();
     });
 
+    it('calls vision LLM and extracts imageDescription when images present', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callVisionConversation')
+        .mockResolvedValueOnce('I see a formula')       // main vision call
+        .mockResolvedValueOnce('(a+b)(a-b)');           // extraction call
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+
+      const result = await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: '（见图片）', images: ['data:image/png;base64,abc'] }],
+        1, 15,
+      );
+
+      expect(result.reply).toBe('I see a formula');
+      expect(result.imageDescription).toBe('(a+b)(a-b)');
+      expect(aiPromptBuilder.callVisionConversation).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns undefined imageDescription when extraction fails', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callVisionConversation')
+        .mockResolvedValueOnce('I see something')       // main vision call
+        .mockRejectedValueOnce(new Error('timeout'))     // extraction attempt 1
+        .mockRejectedValueOnce(new Error('timeout'));    // extraction retry
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+
+      const result = await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: '（见图片）', images: ['data:image/png;base64,abc'] }],
+        1, 15,
+      );
+
+      expect(result.reply).toBe('I see something');
+      expect(result.imageDescription).toBeUndefined();
+    });
+
+    it('does not extract imageDescription when no images in messages', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Text reply');
+      jest.spyOn(aiPromptBuilder, 'callVisionConversation');
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+
+      const result = await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: 'plain text answer' }],
+        1, 15,
+      );
+
+      expect(result.imageDescription).toBeUndefined();
+      expect(aiPromptBuilder.callVisionConversation).not.toHaveBeenCalled();
+    });
+
+    it('persists imageDescription to chat_messages DB', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const chatMessageRepo = module.get(getRepositoryToken(ChatMessage)) as Repository<ChatMessage>;
+      jest.spyOn(aiPromptBuilder, 'callVisionConversation')
+        .mockResolvedValueOnce('Vision reply')
+        .mockResolvedValueOnce('extracted desc');
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+
+      await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: '（见图片）', images: ['data:image/png;base64,img'] }],
+        1, 10,
+      );
+
+      const saved = await chatMessageRepo.find({
+        where: { sessionId: session.id, studentId: student.id, threadId: 'discuss:1' },
+        order: { seq: 'ASC' },
+      });
+      expect(saved).toHaveLength(2); // student + ai
+      expect(saved[0].role).toBe('student');
+      expect(saved[0].imageDescription).toBe('extracted desc');
+      expect(saved[1].role).toBe('ai');
+      expect(saved[1].imageDescription).toBeNull();
+    });
+
     it('preserves existing startedAt on subsequent calls', async () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Tell me more');

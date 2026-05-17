@@ -302,12 +302,19 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     const grouped: Record<string, ChatMessageResponse[]> = {};
     for (const m of messages) {
       if (!grouped[m.threadId]) grouped[m.threadId] = [];
-      grouped[m.threadId].push({
+      const entry: ChatMessageResponse = {
         role: m.role,
         content: m.content,
         seq: m.seq,
         createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
-      });
+      };
+      if (m.images) {
+        try { entry.images = JSON.parse(m.images); } catch { /* ignore corrupt JSON */ }
+      }
+      if (m.imageDescription) {
+        entry.imageDescription = m.imageDescription;
+      }
+      grouped[m.threadId].push(entry);
     }
     return grouped;
   }

@@ -582,10 +582,10 @@ export function useAiDiscuss(sessionCode: string) {
   const discuss = useCallback(async (
     studentId: string,
     taskNum: number,
-    messages: Array<{ role: 'ai' | 'student'; text: string }>,
+    messages: Array<{ role: 'ai' | 'student'; text: string; images?: string[] }>,
     round: number,
     timeUsedSeconds: number,
-  ): Promise<{ reply: string; goalReached: boolean; llmFailed?: boolean; highlight?: { score: number; gist: string }; nudge?: { hint: string } } | null> => {
+  ): Promise<{ reply: string; goalReached: boolean; llmFailed?: boolean; highlight?: { score: number; gist: string }; nudge?: { hint: string }; imageDescription?: string } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {
@@ -659,7 +659,7 @@ export function useDiscussComplete(sessionCode: string) {
 // ── Chat history hook (student restore) ──
 
 export function useChatHistory(sessionCode: string) {
-  const fetchHistory = useCallback(async (studentId: string, threadId?: string): Promise<Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>> | null> => {
+  const fetchHistory = useCallback(async (studentId: string, threadId?: string): Promise<Record<string, Array<{ role: string; content: string; images?: string[]; imageDescription?: string; seq: number; createdAt: string }>> | null> => {
     if (!sessionCode || !studentId) return null
     const params = new URLSearchParams({ studentId })
     if (threadId) params.set('threadId', threadId)

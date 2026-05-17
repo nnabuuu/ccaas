@@ -77,11 +77,29 @@ export function deriveCompletionType(
 // ── filterMessagesForApi ──
 
 export function filterMessagesForApi(
-  messages: Array<{ role: string; text: string; [k: string]: unknown }>,
-): Array<{ role: 'ai' | 'student'; text: string }> {
-  return messages
-    .filter(m => m.role !== 'notification')
-    .map(m => ({ role: m.role as 'ai' | 'student', text: m.text }))
+  messages: Array<{ role: string; text: string; images?: string[]; imageDescription?: string; [k: string]: unknown }>,
+): Array<{ role: 'ai' | 'student'; text: string; images?: string[] }> {
+  const filtered = messages.filter(m => m.role !== 'notification')
+  const lastIdx = filtered.length - 1
+  return filtered.map((m, i) => {
+    // 最后一条消息保留原始 images（当前发送的）
+    if (i === lastIdx && m.images?.length) {
+      return { role: m.role as 'ai' | 'student', text: m.text, images: m.images }
+    }
+    // 历史消息：有 imageDescription → 用 placeholder 替代 images
+    if (m.images?.length && m.imageDescription) {
+      const prefix = `[用户图片：${m.imageDescription}]`
+      const text = m.text ? `${prefix}\n${m.text}` : prefix
+      return { role: m.role as 'ai' | 'student', text }
+    }
+    // 历史消息：有 images 但无 imageDescription（extraction 失败）→ 剥离 images，加通用 placeholder
+    if (m.images?.length) {
+      const prefix = '[用户发送了图片]'
+      const text = m.text ? `${prefix}\n${m.text}` : prefix
+      return { role: m.role as 'ai' | 'student', text }
+    }
+    return { role: m.role as 'ai' | 'student', text: m.text }
+  })
 }
 
 // ── findNewHits ──

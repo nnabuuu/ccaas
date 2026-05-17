@@ -50,7 +50,7 @@ export class DiscussService {
     session: ClassroomSession,
     studentId: string,
     taskNum: number,
-    messages: Array<{ role: 'ai' | 'student'; text: string }>,
+    messages: Array<{ role: 'ai' | 'student'; text: string; images?: string[] }>,
     round: number,
     timeUsedSeconds: number,
   ): Promise<{
@@ -59,6 +59,7 @@ export class DiscussService {
     llmFailed: boolean;
     highlight?: { score: number; gist: string };
     nudge?: { hint: string };
+    imageDescription?: string;
   }> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
@@ -77,17 +78,29 @@ export class DiscussService {
     try {
       const systemPrompt = await this.buildSocraticSystemPrompt(session, studentId, taskNum);
 
+      const hasImages = messages.some(m => m.images?.length);
       const llmMessages = messages.map(m => ({
         role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
         content: m.text,
+        ...(m.images?.length && { images: m.images }),
       }));
 
-      const rawResponse = await this.aiPromptBuilder.callLlmConversation(
-        systemPrompt, llmMessages, { maxTokens: 512, temperature: 0.75 },
-      );
+      const rawResponse = hasImages
+        ? await this.aiPromptBuilder.callVisionConversation(
+            systemPrompt, llmMessages, { maxTokens: 512, temperature: 0.75 },
+          )
+        : await this.aiPromptBuilder.callLlmConversation(
+            systemPrompt, llmMessages, { maxTokens: 512, temperature: 0.75 },
+          );
 
       const goalReached = rawResponse.includes('[GOAL_REACHED]');
       const reply = rawResponse.replace(/\s*\[GOAL_REACHED\]\s*/g, ' ').trim();
+
+      // Start image description extraction in parallel with manifest/aiQuestion work
+      const currentImages = messages[messages.length - 1]?.images;
+      const imageDescriptionPromise = hasImages && currentImages?.length
+        ? this.extractImageDescription(currentImages)
+        : Promise.resolve(undefined);
 
       const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
       const taskMap = manifest ? buildTaskMap(manifest) : null;
@@ -102,8 +115,11 @@ export class DiscussService {
         category: 'discuss',
       }));
 
+      // Await extraction result before persisting (may block up to 10s worst-case on 2 retries)
+      const imageDescription = await imageDescriptionPromise;
+
       await this.persistThread(
-        session.id, studentId, `discuss:${taskNum}`, messages, reply,
+        session.id, studentId, `discuss:${taskNum}`, messages, reply, imageDescription,
       ).catch(e => this.logger.warn(`persistThread failed: ${e}`));
 
       // Per-question cluster classification — await with 3s timeout for highlight/nudge
@@ -188,7 +204,7 @@ export class DiscussService {
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
       this.stateCache.markDirty(session.id);
-      return { reply, goalReached, llmFailed: false, highlight, nudge };
+      return { reply, goalReached, llmFailed: false, highlight, nudge, imageDescription };
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
 
@@ -304,8 +320,9 @@ export class DiscussService {
     sessionId: string,
     studentId: string,
     threadId: string,
-    messages: Array<{ role: 'ai' | 'student'; text: string }>,
+    messages: Array<{ role: 'ai' | 'student'; text: string; images?: string[] }>,
     aiReply: string,
+    imageDescription?: string,
   ): Promise<void> {
     await this.chatMessageRepo.manager.transaction(async (em) => {
       const repo = em.getRepository(ChatMessage);
@@ -318,10 +335,34 @@ export class DiscussService {
       await repo.save(
         newMsgs.map((m, i) => repo.create({
           sessionId, studentId, threadId,
-          role: m.role, content: m.text, seq: existingCount + i,
+          role: m.role, content: m.text,
+          images: m.images?.length ? JSON.stringify(m.images) : null,
+          imageDescription: m.images?.length ? (imageDescription ?? null) : null,
+          seq: existingCount + i,
         })),
       );
     });
+  }
+
+  private async extractImageDescription(images: string[]): Promise<string | undefined> {
+    const attempt = () => Promise.race([
+      this.aiPromptBuilder.callVisionConversation(
+        '你是图片内容提取工具。用一句话描述图片核心内容（数学公式、文字、图表等）。只输出内容，不解释。',
+        [{ role: 'user', content: '描述图片内容', images }],
+        { maxTokens: 128, temperature: 0.1 },
+      ),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000)),
+    ]);
+    try {
+      return await attempt();
+    } catch {
+      try {
+        return await attempt();
+      } catch (e) {
+        this.logger.warn(`Image description extraction failed after 2 attempts: ${e}`);
+        return undefined;
+      }
+    }
   }
 
   private async buildSocraticSystemPrompt(

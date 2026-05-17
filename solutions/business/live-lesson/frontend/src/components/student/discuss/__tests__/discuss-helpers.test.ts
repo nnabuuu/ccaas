@@ -206,6 +206,115 @@ describe('filterMessagesForApi', () => {
     expect(result[0]).toEqual({ role: 'student', text: 'Hi' })
     expect('highlight' in result[0]).toBe(false)
   })
+
+  // ── Image placeholder tests ──
+
+  it('keeps images on the last message (current send)', () => {
+    const msgs = [
+      { role: 'ai', text: 'What do you see?' },
+      { role: 'student', text: '（见图片）', images: ['data:image/png;base64,abc'] },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1]).toEqual({
+      role: 'student',
+      text: '（见图片）',
+      images: ['data:image/png;base64,abc'],
+    })
+  })
+
+  it('replaces historical images with imageDescription placeholder', () => {
+    const msgs = [
+      { role: 'ai', text: 'Opening question' },
+      { role: 'student', text: '（见图片）', images: ['data:image/png;base64,abc'], imageDescription: 'a²+2ab+b²' },
+      { role: 'ai', text: 'I see the formula' },
+      { role: 'student', text: 'Is it correct?' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1]).toEqual({
+      role: 'student',
+      text: '[用户图片：a²+2ab+b²]\n（见图片）',
+    })
+    expect(result[1]).not.toHaveProperty('images')
+  })
+
+  it('uses imageDescription only (no newline) when text is empty', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q' },
+      { role: 'student', text: '', images: ['img'], imageDescription: 'handwriting' },
+      { role: 'ai', text: 'Reply' },
+      { role: 'student', text: 'next' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1].text).toBe('[用户图片：handwriting]')
+  })
+
+  it('uses generic placeholder when images present but imageDescription missing', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q' },
+      { role: 'student', text: '（见图片）', images: ['img'] },
+      { role: 'ai', text: 'Reply' },
+      { role: 'student', text: 'next' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1]).toEqual({
+      role: 'student',
+      text: '[用户发送了图片]\n（见图片）',
+    })
+    expect(result[1]).not.toHaveProperty('images')
+  })
+
+  it('uses generic placeholder without newline when text is empty and no description', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q' },
+      { role: 'student', text: '', images: ['img'] },
+      { role: 'ai', text: 'Reply' },
+      { role: 'student', text: 'next' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1].text).toBe('[用户发送了图片]')
+  })
+
+  it('handles multiple image messages in history correctly', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q1' },
+      { role: 'student', text: 'pic1', images: ['img1'], imageDescription: 'formula A' },
+      { role: 'ai', text: 'R1' },
+      { role: 'student', text: 'pic2', images: ['img2'], imageDescription: 'formula B' },
+      { role: 'ai', text: 'R2' },
+      { role: 'student', text: 'pic3', images: ['img3'] }, // last msg — keeps images
+    ]
+    const result = filterMessagesForApi(msgs)
+    // First image msg: placeholder with description
+    expect(result[1].text).toBe('[用户图片：formula A]\npic1')
+    expect(result[1]).not.toHaveProperty('images')
+    // Second image msg: placeholder with description
+    expect(result[3].text).toBe('[用户图片：formula B]\npic2')
+    expect(result[3]).not.toHaveProperty('images')
+    // Last msg: raw images kept
+    expect(result[5].images).toEqual(['img3'])
+    expect(result[5].text).toBe('pic3')
+  })
+
+  it('strips notifications before determining last message index', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q' },
+      { role: 'student', text: 'answer', images: ['img'], imageDescription: 'desc' },
+      { role: 'notification', text: 'Point discovered' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    // After stripping notifications, student msg IS the last msg → keeps images
+    expect(result).toHaveLength(2)
+    expect(result[1].images).toEqual(['img'])
+  })
+
+  it('plain text messages pass through unchanged', () => {
+    const msgs = [
+      { role: 'ai', text: 'Q' },
+      { role: 'student', text: 'just text, no images' },
+    ]
+    const result = filterMessagesForApi(msgs)
+    expect(result[1]).toEqual({ role: 'student', text: 'just text, no images' })
+  })
 })
 
 // ── findNewHits ──

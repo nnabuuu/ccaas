@@ -25,6 +25,12 @@ export class ChatMessage {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ type: 'text', nullable: true })
+  images: string | null;
+
+  @Column({ name: 'image_description', type: 'text', nullable: true })
+  imageDescription: string | null;
+
   @Column()
   seq: number;
 

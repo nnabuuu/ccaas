@@ -32,6 +32,8 @@ export interface StudentProgressResponse {
 export interface ChatMessageResponse {
   role: string;
   content: string;
+  images?: string[];
+  imageDescription?: string;
   seq: number;
   createdAt: string;
 }
