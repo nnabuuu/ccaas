@@ -110,9 +110,15 @@
           { "id": "symbolic", "label": "符号归纳", "description": "学生能用 (a+b)(a-b)=a²-b² 表示规律" },
           { "id": "verify", "label": "多项式验证", "description": "学生能展开 (a+b)(a-b) 验证公式" },
           { "id": "verbal", "label": "文字描述", "description": "学生能用文字描述平方差公式" }
+        ],
+        "targetPoints": [
+          { "id": "tp_1_1", "label": "特征观察", "description": "学生发现左边两个因式是一和一差、右边结果是平方减平方" },
+          { "id": "tp_1_2", "label": "符号归纳", "description": "学生能用字母 a、b 表示规律：(a+b)(a-b)=a²-b²" },
+          { "id": "tp_1_3", "label": "多项式验证", "description": "学生能用多项式乘法展开 (a+b)(a-b) 验证等式成立" },
+          { "id": "tp_1_4", "label": "文字描述", "description": "学生能用文字描述规律：两个数的和与差的积等于这两个数的平方差" }
         ]
       },
-      "summary": "通过计算发现规律，归纳出平方差公式 (a+b)(a-b)=a²-b²。",
+      "summary": "我们通过计算三道乘法算式，发现了一个共同的规律：\n\n• $(y+2)(y-2) = y^2 - 4$\n• $(3-a)(3+a) = 9 - a^2$\n• $(2a+b)(2a-b) = 4a^2 - b^2$\n\n每道题的两个因式都是**一和一差**（只有中间符号不同），结果都等于**两项的平方之差**。\n\n归纳成公式：$(a+b)(a-b) = a^2 - b^2$\n\n这就是**平方差公式**——两个数的和与差的积，等于这两个数的平方差。",
       "teacherView": {
         "speechLine": "让学生先算，再从结果中自己发现规律，不要直接告诉公式。",
         "quickActions": [
@@ -200,9 +206,14 @@
           { "id": "structure", "label": "一和一差结构", "description": "学生提到两个因式必须是一个和、一个差" },
           { "id": "correspondence", "label": "项的对应", "description": "学生提到相同项和不同项必须对应" },
           { "id": "counterexample", "label": "反例辨析", "description": "学生能举出不能用平方差公式的反例" }
+        ],
+        "targetPoints": [
+          { "id": "tp_2_1", "label": "一和一差结构", "description": "学生提到两个因式必须是一个和、一个差的形式" },
+          { "id": "tp_2_2", "label": "项的对应", "description": "学生说清楚相同项和不同项必须分别对应" },
+          { "id": "tp_2_3", "label": "反例辨析", "description": "学生能举出不能用平方差公式的反例并解释原因" }
         ]
       },
-      "summary": "学会用文字和符号表述平方差公式。",
+      "summary": "平方差公式可以用两种方式表述：\n\n**文字语言**：两个数的**和**与这两个数的**差**的乘积，等于这两个数的**平方差**。\n\n**符号语言**：$(a+b)(a-b) = a^2 - b^2$\n\n识别公式的关键特征：两个因式「**一和一差**」，相同项对应，不同项对应。只要满足这个结构，不论字母还是数字，都可以使用平方差公式。",
       "teacherView": {
         "speechLine": "让学生自己归纳公式的文字表述，不要直接给答案。",
         "quickActions": [
@@ -292,9 +303,14 @@
           { "id": "missing-square", "label": "漏平方", "description": "学生提到忘记对整体平方，如 (3x)² 写成 3x²" },
           { "id": "sign-error", "label": "符号错误", "description": "学生提到正负号搞混" },
           { "id": "wrong-pattern", "label": "误判结构", "description": "学生提到不符合一和一差却硬套公式" }
+        ],
+        "targetPoints": [
+          { "id": "tp_3_1", "label": "漏平方错误", "description": "学生指出 (3x)² 应为 9x² 而非 3x² 这类整体平方错误" },
+          { "id": "tp_3_2", "label": "符号错误", "description": "学生指出正负号搞混的错误" },
+          { "id": "tp_3_3", "label": "结构误判", "description": "学生指出不符合一和一差结构却硬套公式的错误" }
         ]
       },
-      "summary": "学会辨别可以使用平方差公式的算式。",
+      "summary": "使用平方差公式前，要先**辨别结构**：\n\n**能用**平方差公式的：两个因式形如 $(A+B)(A-B)$，其中 $A$、$B$ 完全相同，只有中间符号一正一负。\n• 例如 $(x+5)(x-5)$，$A=x$，$B=5$ ✓\n• 例如 $(-m+n)(-m-n)$，$A=-m$，$B=n$ ✓\n\n**不能用**平方差公式的：两个因式的项不完全对应。\n• 例如 $(x+3)(x-4)$，$+3$ 和 $-4$ 不是同一个数的正负 ✗\n\n辨析三步：**辨结构 → 定 $a$、$b$ → 代入公式**。",
       "teacherView": {
         "speechLine": "辨结构是用公式的前提——先判断能不能用，再动手算。",
         "quickActions": [
@@ -377,9 +393,19 @@
           "explanationZh": "第一步应该判断算式是否符合「一和一差」结构，确认后再确定 a 和 b。"
         },
         "insight": "解题思路：辨结构→定a、b→代公式→检验",
-        "insightZh": "解题思路：辨结构→定a、b→代公式→检验"
+        "insightZh": "解题思路：辨结构→定a、b→代公式→检验",
+        "clusters": [
+          { "id": "identify-structure", "label": "辨结构", "description": "学生提到第一步是判断能否使用平方差公式" },
+          { "id": "determine-ab", "label": "定a和b", "description": "学生提到需要正确识别谁是 a、谁是 b" },
+          { "id": "substitute-verify", "label": "代入验证", "description": "学生提到代入公式计算并检验结果" }
+        ],
+        "targetPoints": [
+          { "id": "tp_4_1", "label": "辨结构", "description": "学生提到第一步是判断算式是否符合一和一差结构" },
+          { "id": "tp_4_2", "label": "定a和b", "description": "学生提到需要正确识别谁是 a、谁是 b" },
+          { "id": "tp_4_3", "label": "代入验证", "description": "学生提到代入公式计算并检验结果" }
+        ]
       },
-      "summary": "能完整写出平方差公式的解题过程。",
+      "summary": "用平方差公式解题的完整步骤：\n\n**第一步：辨结构** — 确认两个因式是「一和一差」。\n**第二步：定 $a$、$b$** — 找出公式中的 $a$ 和 $b$ 分别对应什么。\n**第三步：代公式** — 代入 $a^2 - b^2$，注意整体平方。\n**第四步：化简检验** — 计算并检查结果。\n\n示例：$(2x+3)(2x-3)$\n$a = 2x$，$b = 3$\n原式 $= (2x)^2 - 3^2 = 4x^2 - 9$",
       "teacherView": {
         "speechLine": "手写过程比答案重要。让学生养成「辨结构→定a、b→代公式→检验」的习惯。",
         "quickActions": [
