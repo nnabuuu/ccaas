@@ -191,14 +191,16 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   // Clear stale rubric results when student picks a new image (before re-submit)
   const imageKey = ex.type === 'image-upload' ? JSON.stringify(ans.images || []) : ''
   const prevImageKeyRef = useRef(imageKey)
+  const hadRubricResults = useRef(false)
+  hadRubricResults.current = Object.keys(imageUploadRubricResults).length > 0
   useEffect(() => {
     if (ex.type !== 'image-upload' || allDone) return
-    if (prevImageKeyRef.current !== imageKey && Object.keys(imageUploadRubricResults).length > 0) {
+    if (prevImageKeyRef.current !== imageKey && hadRubricResults.current) {
       setImageUploadFeedback(null)
       setImageUploadRubricResults({})
     }
     prevImageKeyRef.current = imageKey
-  }, [imageKey, allDone]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [imageKey, allDone, ex.type])
 
   const effectiveAllDone = reviewMode || allDone
   const effectiveSoftDone = reviewMode || softDone

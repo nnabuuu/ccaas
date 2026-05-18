@@ -531,6 +531,76 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     return { system, user };
   }
 
+  /** Shared OpenAI-compatible API call */
+  private async callOpenAiCompatible(config: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+    messages: unknown[];
+    maxTokens: number;
+    temperature: number;
+    responseFormat?: { type: 'json_object' };
+    label?: string;
+  }): Promise<string> {
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages: config.messages,
+      max_tokens: config.maxTokens,
+      temperature: config.temperature,
+    };
+    if (config.responseFormat) {
+      body.response_format = config.responseFormat;
+    }
+
+    const res = await fetch(`${config.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`${config.label || 'LLM'} API error ${res.status}: ${text}`);
+    }
+
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(`${config.label || 'LLM'} API returned non-JSON response`);
+    }
+    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
+  }
+
+  private getTextLlmConfig(options?: { model?: string }) {
+    const apiKey = this.configService.get<string>('LLM_API_KEY');
+    if (!apiKey) throw new Error('LLM_API_KEY not configured');
+    return {
+      apiKey,
+      model: options?.model || this.configService.get<string>('LLM_MODEL') || 'deepseek-v4-flash',
+      baseUrl: this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com',
+      label: 'LLM',
+    };
+  }
+
+  private getVisionLlmConfig(options?: { model?: string }) {
+    const apiKey = this.configService.get<string>('LLM_VISION_API_KEY')
+      || this.configService.get<string>('LLM_API_KEY');
+    if (!apiKey) throw new Error('LLM_API_KEY not configured');
+    return {
+      apiKey,
+      model: options?.model
+        || this.configService.get<string>('LLM_VISION_MODEL')
+        || 'qwen-vl-plus',
+      baseUrl: this.configService.get<string>('LLM_VISION_BASE_URL')
+        || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      label: 'Vision LLM',
+    };
+  }
+
   async callVisionLlm(
     systemPrompt: string,
     content: Array<{ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }>,
@@ -541,46 +611,17 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       model?: string;
     },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('LLM_VISION_API_KEY')
-      || this.configService.get<string>('LLM_API_KEY');
-    if (!apiKey) {
-      throw new Error('LLM_API_KEY not configured');
-    }
-    const model = options?.model
-      || this.configService.get<string>('LLM_VISION_MODEL')
-      || 'qwen-vl-plus';
-    const baseUrl = this.configService.get<string>('LLM_VISION_BASE_URL')
-      || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-
-    const body: Record<string, unknown> = {
-      model,
+    const cfg = this.getVisionLlmConfig(options);
+    return this.callOpenAiCompatible({
+      ...cfg,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content },
       ],
-      max_tokens: options?.maxTokens ?? 256,
+      maxTokens: options?.maxTokens ?? 256,
       temperature: options?.temperature ?? 0.7,
-    };
-    if (options?.responseFormat) {
-      body.response_format = options.responseFormat;
-    }
-
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
+      responseFormat: options?.responseFormat,
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Vision LLM API error ${res.status}: ${text}`);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
   }
 
   async callLlm(
@@ -593,42 +634,17 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       model?: string;
     },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('LLM_API_KEY');
-    if (!apiKey) {
-      throw new Error('LLM_API_KEY not configured');
-    }
-    const model = options?.model || this.configService.get<string>('LLM_MODEL') || 'deepseek-v4-flash';
-    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
-
-    const body: Record<string, unknown> = {
-      model,
+    const cfg = this.getTextLlmConfig(options);
+    return this.callOpenAiCompatible({
+      ...cfg,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      max_tokens: options?.maxTokens ?? 256,
+      maxTokens: options?.maxTokens ?? 256,
       temperature: options?.temperature ?? 0.7,
-    };
-    if (options?.responseFormat) {
-      body.response_format = options.responseFormat;
-    }
-
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
+      responseFormat: options?.responseFormat,
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`LLM API error ${res.status}: ${text}`);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
   }
 
   /** Multi-turn vision conversation — user messages may contain images */
@@ -637,15 +653,7 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     messages: Array<{ role: 'assistant' | 'user'; content: string; images?: string[] }>,
     options?: { maxTokens?: number; temperature?: number },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('LLM_VISION_API_KEY')
-      || this.configService.get<string>('LLM_API_KEY');
-    if (!apiKey) {
-      throw new Error('LLM_API_KEY not configured');
-    }
-    const model = this.configService.get<string>('LLM_VISION_MODEL') || 'qwen-vl-plus';
-    const baseUrl = this.configService.get<string>('LLM_VISION_BASE_URL')
-      || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-
+    const cfg = this.getVisionLlmConfig();
     const apiMessages = messages.map(m => {
       if (m.role === 'user' && m.images?.length) {
         const content: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
@@ -656,33 +664,15 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       }
       return { role: m.role, content: m.content };
     });
-
-    const body: Record<string, unknown> = {
-      model,
+    return this.callOpenAiCompatible({
+      ...cfg,
       messages: [
         { role: 'system', content: systemPrompt },
         ...apiMessages,
       ],
-      max_tokens: options?.maxTokens ?? 512,
+      maxTokens: options?.maxTokens ?? 512,
       temperature: options?.temperature ?? 0.75,
-    };
-
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Vision LLM API error ${res.status}: ${text}`);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
   }
 
   /** Multi-turn conversation call — accepts pre-built messages array */
@@ -691,38 +681,15 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     messages: Array<{ role: 'assistant' | 'user'; content: string }>,
     options?: { maxTokens?: number; temperature?: number; model?: string },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('LLM_API_KEY');
-    if (!apiKey) {
-      throw new Error('LLM_API_KEY not configured');
-    }
-    const model = options?.model || this.configService.get<string>('LLM_MODEL') || 'deepseek-v4-flash';
-    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
-
-    const body: Record<string, unknown> = {
-      model,
+    const cfg = this.getTextLlmConfig(options);
+    return this.callOpenAiCompatible({
+      ...cfg,
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages,
       ],
-      max_tokens: options?.maxTokens ?? 512,
+      maxTokens: options?.maxTokens ?? 512,
       temperature: options?.temperature ?? 0.75,
-    };
-
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
     });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`LLM API error ${res.status}: ${text}`);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
   }
 }

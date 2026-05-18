@@ -24,14 +24,14 @@ export class ImageUploadObserveHandler implements ObserveHandler {
     let perfectCount = 0;
     let pendingReview = 0;
 
-    // Per-rubric accumulators
-    const rubricAccum = rubric.map(r => ({
+    // Per-rubric accumulators (Map for O(1) lookup)
+    const rubricAccum = new Map(rubric.map(r => [r.id, {
       id: r.id,
       label: r.label,
       scoreSum: 0,
       count: 0,
       distribution: { 0: 0, 1: 0, 2: 0, 3: 0 } as Record<number, number>,
-    }));
+    }]));
 
     const studentResults: ImageUploadObserveData['students'] = [];
 
@@ -65,7 +65,7 @@ export class ImageUploadObserveHandler implements ObserveHandler {
           });
 
           // Accumulate rubric stats
-          const acc = rubricAccum.find(a => a.id === ri.id);
+          const acc = rubricAccum.get(ri.id);
           if (acc) {
             acc.scoreSum += dimScore;
             acc.count++;
@@ -106,7 +106,7 @@ export class ImageUploadObserveHandler implements ObserveHandler {
       });
     }
 
-    const rubricStats = rubricAccum.map(acc => ({
+    const rubricStats = [...rubricAccum.values()].map(acc => ({
       id: acc.id,
       label: acc.label,
       avgScore: acc.count > 0 ? acc.scoreSum / acc.count : 0,

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense, type ComponentType } from 'react'
 import {
   X,
   Pencil,
@@ -14,8 +14,16 @@ import {
   EXERCISE_TYPES,
   EXERCISE_REGISTRY,
 } from '../../types/block-registry'
-import type { ExerciseMeta } from '../../types/block-registry'
+import type { EditorProps } from '../../types/block-registry'
 import { DiscussEditor } from './editors'
+
+// Pre-build lazy components at module scope to avoid remount on every render
+const LAZY_EDITORS: Partial<Record<AnswerKey['type'], React.LazyExoticComponent<ComponentType<EditorProps>>>> = {}
+for (const [type, meta] of Object.entries(EXERCISE_REGISTRY)) {
+  if (meta.editor) {
+    LAZY_EDITORS[type as AnswerKey['type']] = lazy(meta.editor)
+  }
+}
 
 interface BlockEditorDrawerProps {
   step: ReadingStep
@@ -50,9 +58,8 @@ function TypeSpecificEditor({
   answerKey: AnswerKey
   onChange: (ak: AnswerKey) => void
 }) {
-  const meta: ExerciseMeta | undefined = EXERCISE_REGISTRY[answerKey.type as keyof typeof EXERCISE_REGISTRY]
-  if (meta?.editor) {
-    const LazyEditor = lazy(meta.editor)
+  const LazyEditor = LAZY_EDITORS[answerKey.type]
+  if (LazyEditor) {
     return (
       <Suspense fallback={<div className="text-xs text-gray-400 py-4 text-center">Loading...</div>}>
         <LazyEditor answerKey={answerKey} onChange={onChange} />

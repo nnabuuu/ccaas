@@ -49,7 +49,7 @@ export default function ImageUploadStudentView({ data, studentId }: Props) {
         {student.images.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             <div className="m2-section-h">学生手写作业</div>
-            {student.images.map((img, i) => (
+            {student.images.filter(img => typeof img === 'string' && img.startsWith('data:image/')).map((img, i) => (
               <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 8, marginBottom: 8 }}>
                 <img
                   src={img}

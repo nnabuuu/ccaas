@@ -31,6 +31,7 @@ export class AiDiscussDto {
   @ValidateNested({ each: true })
   @Type(() => DiscussMessageDto)
   @ArrayMinSize(1)
+  @ArrayMaxSize(30)
   messages: DiscussMessageDto[];
 
   @IsInt()
