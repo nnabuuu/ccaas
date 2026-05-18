@@ -1,48 +1,53 @@
-import { useState, useRef } from 'react'
 import { RenderMath } from '../../../utils/render-math'
-import { compressImage } from '../../../utils/compress-image'
+import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
+import { ImageGallery } from '../image-capture/ImageGallery'
+import '../image-capture/image-capture.css'
 
 interface RubricItem { id: string; label: string; weight: number }
 interface PromptImage { url: string; alt?: string }
 
 export function ImageUploadExercise({
-  prompt, promptImages, rubric,
+  prompt, promptImages, rubric, maxImages = 1,
   ans, setAns, allDone, feedback, rubricResults,
 }: {
   prompt: string
   promptImages?: PromptImage[]
   rubric: RubricItem[]
+  maxImages?: number
   ans: Record<string, string | string[]>
   setAns: (updater: (prev: Record<string, string | string[]>) => Record<string, string | string[]>) => void
   allDone: boolean
   feedback?: string | null
   rubricResults?: Record<string, { score: number; hint?: string }>
 }) {
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [previews, setPreviews] = useState<string[]>((ans.images || []) as string[])
-  const [compressing, setCompressing] = useState(false)
+  // Single source of truth: derive from ans
+  const images = (ans.images || []) as string[]
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-    setCompressing(true)
-    try {
-      const compressed = await compressImage(files[0])
-      const newImages = [compressed]
-      setPreviews(newImages)
-      setAns(prev => ({ ...prev, images: newImages }))
-    } finally {
-      setCompressing(false)
+  const handleCapture = (dataUri: string) => {
+    if (maxImages === 1) {
+      setAns(prev => ({ ...prev, images: [dataUri] }))
+    } else {
+      setAns(prev => {
+        const current = (prev.images || []) as string[]
+        return { ...prev, images: [...current, dataUri].slice(0, maxImages) }
+      })
     }
+  }
+
+  const handleRemove = (index: number) => {
+    setAns(prev => {
+      const current = (prev.images || []) as string[]
+      return { ...prev, images: current.filter((_, i) => i !== index) }
+    })
   }
 
   const isPendingReview = rubricResults && Object.values(rubricResults).some(r => r.score === -1)
 
   const scoreLabel = (score: number) => {
-    if (score === 3) return { text: '\u4F18\u79C0', color: '#22c55e' }
-    if (score === 2) return { text: '\u826F\u597D', color: '#3b82f6' }
-    if (score === 1) return { text: '\u57FA\u672C', color: '#f59e0b' }
-    return { text: '\u7F3A\u5931', color: '#ef4444' }
+    if (score === 3) return { text: '优秀', color: '#22c55e' }
+    if (score === 2) return { text: '良好', color: '#3b82f6' }
+    if (score === 1) return { text: '基本', color: '#f59e0b' }
+    return { text: '缺失', color: '#ef4444' }
   }
 
   return (
@@ -62,31 +67,53 @@ export function ImageUploadExercise({
         </div>
       )}
 
-      {/* Upload area */}
-      {!allDone && (
+      {/* Upload / Gallery */}
+      {!allDone && maxImages === 1 && (
         <div>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment"
-            onChange={handleFile} style={{ display: 'none' }} />
-          <button className="stu-btn sec" onClick={() => fileRef.current?.click()}
-            disabled={compressing}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {compressing ? '\u538B\u7F29\u4E2D...' : previews.length > 0 ? '\u91CD\u65B0\u62CD\u7167' : '\uD83D\uDCF7 \u62CD\u7167/\u4E0A\u4F20'}
-          </button>
+          {images.length > 0 ? (
+            <div>
+              <img src={images[0]} alt="作答"
+                style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 8 }} />
+              <ImageCaptureButton onCapture={handleCapture} />
+            </div>
+          ) : (
+            <ImageCaptureButton onCapture={handleCapture} />
+          )}
         </div>
       )}
 
-      {/* Preview */}
-      {previews.length > 0 && (
+      {!allDone && maxImages > 1 && (
+        <ImageGallery
+          images={images}
+          maxImages={maxImages}
+          onAdd={handleCapture}
+          onRemove={handleRemove}
+        />
+      )}
+
+      {/* Single-image preview when done */}
+      {allDone && maxImages === 1 && images.length > 0 && (
         <div>
-          <img src={previews[0]} alt="\u4F5C\u7B54"
+          <img src={images[0]} alt="作答"
             style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)' }} />
         </div>
+      )}
+
+      {/* Multi-image preview when done */}
+      {allDone && maxImages > 1 && images.length > 0 && (
+        <ImageGallery
+          images={images}
+          maxImages={maxImages}
+          onAdd={() => {}}
+          onRemove={() => {}}
+          disabled
+        />
       )}
 
       {/* Results */}
       {allDone && isPendingReview && (
         <div style={{ padding: '12px 16px', background: '#fef3c7', borderRadius: 8, fontSize: 13 }}>
-          AI \u6682\u65F6\u65E0\u6CD5\u6279\u9605\uFF0C\u5DF2\u63D0\u4EA4\u7ED9\u8001\u5E08\u5BA1\u9605
+          AI 暂时无法批阅，已提交给老师审阅
         </div>
       )}
 
@@ -108,7 +135,7 @@ export function ImageUploadExercise({
           })}
           {feedback && (
             <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, fontSize: 13 }}>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>{'\u603B\u8BC4'}</div>
+              <div style={{ fontWeight: 500, marginBottom: 4 }}>{'总评'}</div>
               <div style={{ color: 'var(--t2)' }}>{feedback}</div>
             </div>
           )}

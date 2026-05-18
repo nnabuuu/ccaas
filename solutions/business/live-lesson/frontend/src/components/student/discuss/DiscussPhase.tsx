@@ -8,7 +8,8 @@ import DiscussGuide from './DiscussGuide'
 import { readGuideSeen, markGuideSeen } from '../exercise/guide-helpers'
 import { formatTime, computeUrgency, determineInitialPhase, detectFallbackOnRestore, deriveCompletionType, filterMessagesForApi, findNewHits, mcOptionClass } from './discuss-helpers'
 import { runStarAnimation } from './star-animation'
-import { compressImage } from '../../../utils/compress-image'
+import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
+import '../image-capture/image-capture.css'
 
 /* ═══ TYPING INDICATOR ═══ */
 export function TypingIndicator() {
@@ -244,7 +245,6 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const sendingRef = useRef(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
 
   const [guideOpen, setGuideOpen] = useState(false)
@@ -384,18 +384,6 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       onDone()
     }
   }, [onDone])
-
-  // Handle file selection for camera
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = '' // reset so same file can be re-selected
-    if (file.size > 10 * 1024 * 1024) return // 10MB guard for low-end devices
-    try {
-      const dataUrl = await compressImage(file)
-      setPendingImage(dataUrl)
-    } catch { /* ignore corrupt files */ }
-  }
 
   // Send message
   const send = async () => {
@@ -696,8 +684,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         {/* Input */}
         {phase === 'chat' && (
           <div className="sd-input-row">
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelect} />
-            <button className="sd-camera-btn" onClick={() => fileInputRef.current?.click()} title="Take photo" aria-label="Take photo">📷</button>
+            <ImageCaptureButton onCapture={setPendingImage} variant="icon" />
             <textarea
               ref={inputRef}
               className="sd-input"

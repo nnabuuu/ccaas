@@ -570,6 +570,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           prompt={ex.prompt || ''}
           promptImages={ex.promptImages}
           rubric={ex.rubric}
+          maxImages={ex.maxImages ?? 1}
           ans={effectiveAns}
           setAns={noopSetAns}
           allDone={effectiveAllDone}
