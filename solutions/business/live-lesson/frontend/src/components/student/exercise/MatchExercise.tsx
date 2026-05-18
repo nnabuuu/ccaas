@@ -1,4 +1,7 @@
+import { useContext } from 'react'
 import HelpButton, { HintBanner } from '../HelpButton'
+import { renderMd } from '../renderMd'
+import { SessionCtx } from '../TaskPanel'
 import { scrollToParas } from '../utils/linkParas'
 import type { TaskMatchPair, ServerHintMap } from '../task-data'
 
@@ -13,6 +16,8 @@ interface Props {
 }
 
 export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptCount, serverHints }: Props) {
+  const { config } = useContext(SessionCtx)
+  const mathOpts = { math: config.enableMath }
   return <>
     {pairs.map((p, pi) => {
       const locked = correctQs.has(pi)
@@ -26,7 +31,7 @@ export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptC
       return (
         <div key={pi}>
           <div className="stu-match-row">
-            <div className="stu-match-left" style={locked ? { color: 'var(--green)' } : undefined}>{locked ? '✓' : p.left}</div>
+            <div className="stu-match-left" style={locked ? { color: 'var(--green)' } : undefined}>{locked ? '✓' : renderMd(p.left, mathOpts)}</div>
             <div style={{ display: 'flex', gap: 5, flex: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               {p.opts.map((o, oi) => {
                 const sel = ans[pi] === oi
@@ -36,11 +41,13 @@ export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptC
                 if (isCorrectLocked) cls += ' correct'
                 else if (sel) cls += ' selected'
                 return (
-                  <button
+                  <div
+                    role="button" tabIndex={locked ? -1 : 0}
                     key={oi} className={cls}
                     style={locked && oi !== correctIdx ? { opacity: 0.4, cursor: 'default' } : locked ? { cursor: 'default' } : undefined}
                     onClick={locked ? undefined : () => setAns(a => ({ ...a, [pi]: oi }))}
-                  >{o}</button>
+                    onKeyDown={locked ? undefined : (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAns(a => ({ ...a, [pi]: oi })) } }}
+                  >{renderMd(o, mathOpts)}</div>
                 )
               })}
               {p.paraRef && !locked && (

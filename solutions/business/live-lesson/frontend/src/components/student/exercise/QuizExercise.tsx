@@ -1,4 +1,7 @@
+import { useContext } from 'react'
 import HelpButton, { HintBanner } from '../HelpButton'
+import { renderMd } from '../renderMd'
+import { SessionCtx } from '../TaskPanel'
 import { scrollToParas } from '../utils/linkParas'
 import type { TaskQuestion, ServerHintMap } from '../task-data'
 
@@ -13,6 +16,8 @@ interface Props {
 }
 
 export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attemptCount, serverHints }: Props) {
+  const { config } = useContext(SessionCtx)
+  const mathOpts = { math: config.enableMath }
   return <>
     {questions.map((q, qi) => {
       const locked = correctQs.has(qi)
@@ -26,7 +31,7 @@ export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attem
       return (
         <div key={qi} className={`stu-quiz-card${locked ? ' correct' : ''}`}>
           <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ flex: 1 }}>{q.q}</span>
+            <span style={{ flex: 1 }}>{renderMd(q.q, mathOpts)}</span>
             {locked && <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 600 }}>✓</span>}
             {tries > 0 && !locked && <span style={{ fontSize: 9, color: 'var(--t3)' }}>{tries === 1 ? '1 attempt' : `${tries} attempts`}</span>}
             {q.paraRef && !locked && (
@@ -46,7 +51,7 @@ export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attem
                 style={locked && oi !== correctIdx ? { opacity: 0.5, cursor: 'default' } : locked ? { cursor: 'default' } : undefined}
                 onClick={locked ? undefined : () => setAns(a => ({ ...a, [qi]: oi }))}
               >
-                <span className="stu-quiz-radio" />{isCorrectLocked ? `✓ ${o}` : o}
+                <span className="stu-quiz-radio" />{isCorrectLocked ? <><span>✓ </span>{renderMd(o, mathOpts)}</> : renderMd(o, mathOpts)}
               </div>
             )
           })}
