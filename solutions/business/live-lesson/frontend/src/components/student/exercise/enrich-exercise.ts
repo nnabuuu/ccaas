@@ -6,7 +6,7 @@
  * Adding a new type = create handler object + register in `handlers` map.
  */
 
-import type { TaskExercise, TaskQuestion, TaskMatchPair, TaskMatrixRow } from '../task-data'
+import type { TaskExercise, TaskQuestion, TaskMatchPair, TaskMatrixRow, GdStep } from '../task-data'
 
 // ── Per-type spec interfaces (discriminated union) ──
 
@@ -70,16 +70,25 @@ export interface RichContentQuizExerciseSpec extends ExerciseSpecBase {
   prompt?: string
   promptImages?: Array<{ url: string; alt?: string }>
   maxImages?: number
+  inputMethods?: string[]
   parts?: Array<{
     id: string; prompt: string
     rubric: Array<{ id: string; label: string; weight: number }>
     maxImages?: number; hasScaffold?: boolean
+    inputMethods?: string[]
   }>
 }
 
 export interface FillBlankExerciseSpec extends ExerciseSpecBase {
   type: 'fill-blank'
   sentences?: Array<{ id: string; template: string }>
+}
+
+export interface GuidedDiscoveryExerciseSpec extends ExerciseSpecBase {
+  type: 'guided-discovery'
+  gdTitle?: string
+  gdSteps?: GdStep[]
+  gdSummary?: { formula?: string; name?: string; description?: string }
 }
 
 export type ExerciseSpec =
@@ -93,6 +102,7 @@ export type ExerciseSpec =
   | ImageUploadExerciseSpec
   | RichContentQuizExerciseSpec
   | FillBlankExerciseSpec
+  | GuidedDiscoveryExerciseSpec
 
 export interface EnrichResult {
   exercise: TaskExercise
@@ -347,10 +357,12 @@ const richContentQuizHandler: ExerciseEnrichHandler<RichContentQuizExerciseSpec>
     if (spec.promptImages) ex.promptImages = spec.promptImages
     if (spec.maxImages) ex.maxImages = spec.maxImages
     if (spec.subType) ex.subType = spec.subType
+    if (spec.inputMethods) ex.inputMethods = spec.inputMethods
     if (spec.parts) {
       ex.parts = spec.parts.map(p => ({
         id: p.id,
         prompt: p.prompt,
+        ...(p.inputMethods && { inputMethods: p.inputMethods }),
       }))
     }
   },
@@ -360,10 +372,12 @@ const richContentQuizHandler: ExerciseEnrichHandler<RichContentQuizExerciseSpec>
     if (ak.promptImages) ex.promptImages = ak.promptImages
     if (ak.maxImages) ex.maxImages = ak.maxImages
     if (ak.subType) ex.subType = ak.subType
+    if (ak.inputMethods) ex.inputMethods = ak.inputMethods
     if (ak.parts) {
       ex.parts = ak.parts.map((p: any) => ({
         id: p.id,
         prompt: p.prompt,
+        ...(p.inputMethods && { inputMethods: p.inputMethods }),
       }))
     }
   },
@@ -375,6 +389,21 @@ const fillBlankHandler: ExerciseEnrichHandler<FillBlankExerciseSpec> = {
   },
   fromManifest(ex, ak) {
     if (ak.sentences) ex.sentences = ak.sentences
+  },
+}
+
+const guidedDiscoveryHandler: ExerciseEnrichHandler<GuidedDiscoveryExerciseSpec> = {
+  fromApi(ex, spec) {
+    if (spec.gdTitle) ex.gdTitle = spec.gdTitle
+    if (spec.gdSteps) ex.gdSteps = spec.gdSteps
+    if (spec.gdSummary) ex.gdSummary = spec.gdSummary
+  },
+  fromManifest(ex, ak) {
+    ex.type = 'guided-discovery'
+    if (ak.gdTitle) ex.gdTitle = ak.gdTitle
+    else if (ak.title) ex.gdTitle = ak.title
+    if (ak.gdSteps) ex.gdSteps = ak.gdSteps
+    if (ak.gdSummary) ex.gdSummary = ak.gdSummary
   },
 }
 
@@ -391,6 +420,7 @@ const handlers: Record<ExerciseSpec['type'], ExerciseEnrichHandler> = {
   'image-upload': imageUploadHandler,
   'rich-content-quiz': richContentQuizHandler,
   'fill-blank': fillBlankHandler,
+  'guided-discovery': guidedDiscoveryHandler,
 }
 
 // ── Orchestrator ──

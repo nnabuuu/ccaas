@@ -29,10 +29,46 @@ export interface RichContentQuizPart {
   id: string
   prompt?: string
   promptImages?: Array<{ url: string; alt?: string }>
+  inputMethods?: string[]
 }
 
+// Guided Discovery step types (student-safe, no answers)
+export interface GdChoiceItem { id: string; prompt: string; options: string[] }
+export interface GdBlankItem { id: string; label: string; placeholder?: string; inputMethods?: string[] }
+export interface GdLineItem { text: string; blank?: { id: string; placeholder?: string; inputMethods?: string[] } }
+export interface GdTextBlankItem { id: string; inputMethods?: string[] }
+
+export interface GdStepBase { id: string; title: string }
+export interface GdObservationStep extends GdStepBase {
+  type: 'observation_choice'
+  table?: Array<{ expression: string; result: string }>
+  highlights?: {
+    same: { color: string; terms: string[][] }
+    opposite: { color: string; terms: string[][] }
+  }
+  choices: GdChoiceItem[]
+}
+export interface GdFormulaBlanksStep extends GdStepBase {
+  type: 'formula_blanks'
+  prompt?: string
+  blanks: GdBlankItem[]
+  inputMethods?: string[]
+}
+export interface GdDerivationBlankStep extends GdStepBase {
+  type: 'derivation_blank'
+  lines: GdLineItem[]
+  inputMethods?: string[]
+}
+export interface GdTextBlanksStep extends GdStepBase {
+  type: 'text_blanks'
+  template: string
+  textBlanks: GdTextBlankItem[]
+  inputMethods?: string[]
+}
+export type GdStep = GdObservationStep | GdFormulaBlanksStep | GdDerivationBlankStep | GdTextBlanksStep
+
 export interface TaskExercise {
-  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank' | 'rich-content-quiz'
+  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank' | 'rich-content-quiz' | 'guided-discovery'
   label: string
   questions?: TaskQuestion[]
   pairs?: TaskMatchPair[]
@@ -61,6 +97,11 @@ export interface TaskExercise {
   // rich-content-quiz fields
   parts?: RichContentQuizPart[]
   subType?: string
+  inputMethods?: string[]
+  // guided-discovery fields
+  gdTitle?: string
+  gdSteps?: GdStep[]
+  gdSummary?: { formula?: string; name?: string; description?: string }
 }
 export interface FallbackMC {
   question: string; questionZh?: string

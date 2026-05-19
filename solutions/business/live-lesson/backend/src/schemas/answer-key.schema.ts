@@ -1,8 +1,12 @@
 /**
- * AnswerKey Zod schemas — discriminated union for all 6 exercise types.
+ * AnswerKey Zod schemas — union for all exercise types.
  * Replaces the 278-line hand-written validator with declarative Zod schemas.
  */
 import { z } from 'zod';
+
+// ── Shared ──
+
+const InputMethodsSchema = z.array(z.enum(['keyboard', 'handwrite', 'photo'])).optional();
 
 // ── Quiz ──
 
@@ -170,6 +174,130 @@ const ImageUploadAnswerKeySchema = z.object({
   maxImages: z.number().int().min(1).optional(),
 });
 
+// ── Rich Content Quiz (extends image-upload with parts + scaffold) ──
+
+const ScaffoldLevelSchema = z.object({
+  hintZh: z.string().min(1),
+});
+
+const ScaffoldSchema = z.object({
+  threshold: z.number().int().min(0),
+  levels: z.array(ScaffoldLevelSchema).nonempty(),
+});
+
+const RichContentPartSchema = z.object({
+  id: z.string().min(1),
+  prompt: z.string().min(1),
+  rubric: z.array(RubricItemSchema).nonempty(),
+  sampleSolution: z.string().optional(),
+  maxImages: z.number().int().min(1).optional(),
+  aiSystemPrompt: z.string().optional(),
+  scaffold: ScaffoldSchema.optional(),
+  inputMethods: InputMethodsSchema,
+});
+
+const RichContentQuizAnswerKeySchema = z.object({
+  type: z.literal('rich-content-quiz'),
+  subType: z.enum(['calculation']).optional(),
+  prompt: z.string().optional(),
+  promptImages: z.array(PromptImageSchema).optional(),
+  rubric: z.array(RubricItemSchema).optional(),
+  sampleSolution: z.string().optional(),
+  aiSystemPrompt: z.string().optional(),
+  maxImages: z.number().int().min(1).optional(),
+  parts: z.array(RichContentPartSchema).optional(),
+  inputMethods: InputMethodsSchema,
+}).refine(
+  (ak) => (ak.parts && ak.parts.length > 0) || (ak.rubric && ak.rubric.length > 0),
+  { message: 'rich-content-quiz: must have either parts or rubric' },
+);
+
+// ── Guided Discovery ──
+
+const GdObservationChoiceSchema = z.object({
+  type: z.literal('observation_choice'),
+  id: z.string().min(1),
+  title: z.string(),
+  table: z.array(z.object({
+    expression: z.string(),
+    result: z.string(),
+  })).optional(),
+  highlights: z.object({
+    same: z.object({ color: z.string(), terms: z.array(z.array(z.string())) }),
+    opposite: z.object({ color: z.string(), terms: z.array(z.array(z.string())) }),
+  }).optional(),
+  choices: z.array(z.object({
+    id: z.string().min(1),
+    prompt: z.string(),
+    options: z.array(z.string()).length(2),
+    correct: z.number().int().min(0).max(1),
+  })).nonempty(),
+});
+
+const GdFormulaBlanksSchema = z.object({
+  type: z.literal('formula_blanks'),
+  id: z.string().min(1),
+  title: z.string(),
+  prompt: z.string().optional(),
+  blanks: z.array(z.object({
+    id: z.string().min(1),
+    label: z.string(),
+    placeholder: z.string().optional(),
+    accepts: z.array(z.string()).nonempty(),
+    rejects: z.array(z.string()).optional(),
+    rejectHint: z.string().optional(),
+    inputMethods: InputMethodsSchema,
+  })).nonempty(),
+  inputMethods: InputMethodsSchema,
+});
+
+const GdDerivationBlankSchema = z.object({
+  type: z.literal('derivation_blank'),
+  id: z.string().min(1),
+  title: z.string(),
+  lines: z.array(z.object({
+    text: z.string(),
+    blank: z.object({
+      id: z.string().min(1),
+      placeholder: z.string().optional(),
+      accepts: z.array(z.string()).nonempty(),
+      inputMethods: InputMethodsSchema,
+    }).optional(),
+  })).nonempty(),
+  inputMethods: InputMethodsSchema,
+});
+
+const GdTextBlanksSchema = z.object({
+  type: z.literal('text_blanks'),
+  id: z.string().min(1),
+  title: z.string(),
+  template: z.string().min(1),
+  blanks: z.array(z.object({
+    id: z.string().min(1),
+    accepts: z.array(z.string()).nonempty(),
+    inputMethods: InputMethodsSchema,
+  })).nonempty(),
+  inputMethods: InputMethodsSchema,
+});
+
+const GuidedDiscoveryStepSchema = z.discriminatedUnion('type', [
+  GdObservationChoiceSchema,
+  GdFormulaBlanksSchema,
+  GdDerivationBlankSchema,
+  GdTextBlanksSchema,
+]);
+
+const GuidedDiscoveryAnswerKeySchema = z.object({
+  type: z.literal('guided-discovery'),
+  title: z.string(),
+  steps: z.array(GuidedDiscoveryStepSchema).nonempty(),
+  summary: z.object({
+    formula: z.string().optional(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+  }).optional(),
+});
+
 // ── Fill Blank ──
 
 const FillBlankBlankSchema = z.object({
@@ -227,7 +355,9 @@ export const AnswerKeySchema = z.union([
   SelectEvidenceAnswerKeySchema,
   MapAnswerKeySchema,
   ImageUploadAnswerKeySchema,
+  RichContentQuizAnswerKeySchema,
   FillBlankAnswerKeySchema,
+  GuidedDiscoveryAnswerKeySchema,
 ]);
 
 export type AnswerKey = z.infer<typeof AnswerKeySchema>;
@@ -242,7 +372,11 @@ export type OrderAnswerKey = z.infer<typeof OrderAnswerKeySchema>;
 export type SelectEvidenceAnswerKey = z.infer<typeof SelectEvidenceAnswerKeySchema>;
 export type MapAnswerKey = z.infer<typeof MapAnswerKeySchema>;
 export type ImageUploadAnswerKey = z.infer<typeof ImageUploadAnswerKeySchema>;
+export type RichContentQuizAnswerKey = z.infer<typeof RichContentQuizAnswerKeySchema>;
+export type RichContentPart = z.infer<typeof RichContentPartSchema>;
 export type FillBlankAnswerKey = z.infer<typeof FillBlankAnswerKeySchema>;
+export type GuidedDiscoveryAnswerKey = z.infer<typeof GuidedDiscoveryAnswerKeySchema>;
+export type GuidedDiscoveryStep = z.infer<typeof GuidedDiscoveryStepSchema>;
 
 // ── Compatibility layer ──
 

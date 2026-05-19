@@ -41,7 +41,9 @@ const sanitizers: Record<string, (ak: AKInput) => ExerciseSpec> = {
   'select-evidence': sanitizeSelectEvidence,
   map: sanitizeMap,
   'image-upload': sanitizeImageUpload,
+  'rich-content-quiz': sanitizeRichContentQuiz,
   'fill-blank': sanitizeFillBlank,
+  'guided-discovery': sanitizeGuidedDiscovery,
 };
 
 function sanitizeQuiz(ak: AKInput): ExerciseSpec {
@@ -165,6 +167,38 @@ function sanitizeImageUpload(ak: AKInput): ExerciseSpec {
   };
 }
 
+function sanitizeRichContentQuiz(ak: AKInput): ExerciseSpec {
+  const parts = ak.parts as Array<AKInput> | undefined;
+  if (parts && parts.length > 0) {
+    return {
+      type: 'rich-content-quiz',
+      label: '',
+      ...(ak.subType && { subType: ak.subType as string }),
+      ...(ak.maxImages && { maxImages: ak.maxImages as number }),
+      ...(ak.inputMethods && { inputMethods: ak.inputMethods as string[] }),
+      parts: parts.map((p) => ({
+        id: p.id as string,
+        prompt: p.prompt as string,
+        rubric: ((p.rubric as Array<AKInput>) || []).map((r) => ({
+          id: r.id as string,
+          label: r.label as string,
+          weight: r.weight as number,
+        })),
+        ...(p.maxImages && { maxImages: p.maxImages as number }),
+        ...(p.scaffold && { hasScaffold: true }),
+        ...(p.inputMethods && { inputMethods: p.inputMethods as string[] }),
+      })),
+    };
+  }
+  // No parts — fall back to image-upload style sanitization
+  return {
+    ...sanitizeImageUpload(ak),
+    type: 'rich-content-quiz',
+    ...(ak.subType && { subType: ak.subType as string }),
+    ...(ak.inputMethods && { inputMethods: ak.inputMethods as string[] }),
+  };
+}
+
 function sanitizeFillBlank(ak: AKInput): ExerciseSpec {
   const sentences = (ak.sentences as Array<AKInput>) || [];
   return {
@@ -174,6 +208,72 @@ function sanitizeFillBlank(ak: AKInput): ExerciseSpec {
       id: s.id as string,
       template: s.template as string,
     })),
+  };
+}
+
+function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
+  const steps = (ak.steps || []) as Array<AKInput>;
+  return {
+    type: 'guided-discovery',
+    label: '',
+    gdTitle: ak.title as string,
+    gdSteps: steps.map(step => {
+      const stepType = step.type as 'observation_choice' | 'formula_blanks' | 'derivation_blank' | 'text_blanks';
+      const base = { type: stepType, id: step.id as string, title: step.title as string };
+      switch (stepType) {
+        case 'observation_choice':
+          return {
+            ...base,
+            table: step.table as Array<{ expression: string; result: string }> | undefined,
+            highlights: step.highlights,
+            choices: ((step.choices || []) as Array<AKInput>).map(c => ({
+              id: c.id as string,
+              prompt: c.prompt as string,
+              options: c.options as string[],
+            })),
+          };
+        case 'formula_blanks':
+          return {
+            ...base,
+            ...(step.prompt && { prompt: step.prompt as string }),
+            blanks: ((step.blanks || []) as Array<AKInput>).map(b => ({
+              id: b.id as string,
+              label: b.label as string,
+              ...(b.placeholder && { placeholder: b.placeholder as string }),
+              ...(b.inputMethods && { inputMethods: b.inputMethods as string[] }),
+            })),
+            ...(step.inputMethods && { inputMethods: step.inputMethods as string[] }),
+          };
+        case 'derivation_blank':
+          return {
+            ...base,
+            lines: ((step.lines || []) as Array<AKInput>).map(l => ({
+              text: l.text as string,
+              ...(l.blank && {
+                blank: {
+                  id: (l.blank as AKInput).id as string,
+                  ...((l.blank as AKInput).placeholder && { placeholder: (l.blank as AKInput).placeholder as string }),
+                  ...((l.blank as AKInput).inputMethods && { inputMethods: (l.blank as AKInput).inputMethods as string[] }),
+                },
+              }),
+            })),
+            ...(step.inputMethods && { inputMethods: step.inputMethods as string[] }),
+          };
+        case 'text_blanks':
+          return {
+            ...base,
+            template: step.template as string,
+            textBlanks: ((step.blanks || []) as Array<AKInput>).map(b => ({
+              id: b.id as string,
+              ...(b.inputMethods && { inputMethods: b.inputMethods as string[] }),
+            })),
+            ...(step.inputMethods && { inputMethods: step.inputMethods as string[] }),
+          };
+        default:
+          return base;
+      }
+    }),
+    ...(ak.summary && { gdSummary: ak.summary as { formula?: string; name?: string; description?: string } }),
   };
 }
 
