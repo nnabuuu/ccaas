@@ -9,7 +9,7 @@ import { GradingService } from './exercise/grading.service';
 import { ManifestCacheService } from './manifest-cache.service';
 import { StateCacheService } from './state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import type { GradeResult } from '../schemas';
+import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
 import { buildCheckItems } from './exercise/build-check-items';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../schemas/classroom';
@@ -69,6 +69,17 @@ export class StudentSubmissionService {
     }
 
     const phase = data?.phase === 'discuss' ? 'discuss' : 'exercise';
+
+    // Check for parts-based submission
+    const partId = typeof data?.partId === 'string' ? data.partId : undefined;
+    if (phase === 'exercise' && partId) {
+      // Pass shortcut: student acknowledged scaffold and wants to proceed
+      if (data._pass) {
+        return this.passPart(session, student, step, partId);
+      }
+      return this.submitPart(session, student, step, data, partId);
+    }
+
     const score = phase === 'exercise'
       ? await this.gradeSubmission(session.lessonId, step, data)
       : null;
@@ -89,38 +100,11 @@ export class StudentSubmissionService {
 
     // Observation events only for exercise submissions — discuss has its own events in DiscussService
     if (phase === 'exercise') {
-      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
-      const taskNum = taskMap.stepToTask[step];
-
-      this.engine.dispatch({
-        type: 'exercise_result',
-        sessionId: session.id,
-        entityId: studentId,
-        tenantId: session.lessonId,
-        payload: { step, score: score?.total ?? null },
-      }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
-
-      const currentTask = student.currentTask;
-      if (taskNum !== undefined && currentTask > taskNum) {
-        this.engine.dispatch({
-          type: 'step_complete',
-          sessionId: session.id,
-          entityId: studentId,
-          tenantId: session.lessonId,
-          payload: { step, taskNum, nextTask: currentTask },
-        }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
-      }
-
-      const exerciseCorrectRate = score?.total ?? 0;
-      this.engine.dispatch({
-        type: 'chat_turn',
-        sessionId: session.id,
-        entityId: studentId,
-        tenantId: session.lessonId,
-        payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
-      }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+      this.dispatchExerciseEvents(session, studentId, step, score, data);
 
       // Auto-advance: if advanceOn === 'submit' and score is 100%, advance to discuss
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const taskNum = taskMap.stepToTask[step];
       if (score?.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
         await this.updatePhase(session, studentId, taskNum, 'discuss');
         const updated = await this.studentRepo.findOne({ where: { id: studentId, sessionId: session.id } });
@@ -129,6 +113,320 @@ export class StudentSubmissionService {
     }
 
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
+  }
+
+  /**
+   * Handle a part-level submission for rich-content-quiz with parts.
+   * Grades only the specified part, manages scaffold attempts, merges into submission.
+   */
+  private async submitPart(
+    session: ClassroomSession,
+    student: Student,
+    step: number,
+    data: Record<string, unknown>,
+    partId: string,
+  ): Promise<SubmitResponse> {
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+    const readingSteps = manifest.readingSteps || [];
+    const stepDef = readingSteps.find((s: any) => s.idx === step);
+    const answerKey = stepDef?.answerKey as RichContentQuizAnswerKey | undefined;
+    if (!answerKey?.parts || answerKey.type !== 'rich-content-quiz') {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+
+    const partDef = answerKey.parts.find(p => p.id === partId);
+    if (!partDef) {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+
+    // Load existing submission to get parts progress
+    const existingSub = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId: student.id, step, phase: 'exercise' },
+    });
+    const existingData = (existingSub?.dataJson as Record<string, unknown>) ?? {};
+    const partsProgress: Record<string, any> = (existingData.parts as Record<string, any>) ?? {};
+    const partProgress = partsProgress[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
+
+    // Grade this part by constructing a synthetic image-upload answer key
+    const syntheticKey = {
+      type: 'image-upload' as const,
+      prompt: partDef.prompt,
+      rubric: partDef.rubric,
+      sampleSolution: partDef.sampleSolution,
+      aiSystemPrompt: partDef.aiSystemPrompt ?? answerKey.aiSystemPrompt,
+    };
+    const partScore = await this.gradingService.grade(syntheticKey, data) ?? { total: 0, byDimension: {} };
+
+    partProgress.attempts += 1;
+
+    // Preserve attempt history for teacher review (Gap 1 + Gap 5: method tracking)
+    if (!partProgress.attemptsHistory) partProgress.attemptsHistory = [];
+    partProgress.attemptsHistory.push({
+      version: partProgress.attempts,
+      images: data.images as string[],
+      method: (data.method as string) ?? 'photo',
+      score: partScore,
+      submittedAt: new Date().toISOString(),
+    });
+
+    partProgress.images = data.images;     // latest (backward compat)
+    partProgress.score = partScore;        // latest
+
+    // Check scaffold
+    let scaffoldResponse: SubmitResponse['scaffold'] = null;
+    if (partDef.scaffold && partScore.total <= partDef.scaffold.threshold) {
+      const nextLevel = partProgress.scaffoldLevel + 1;
+      if (nextLevel < partDef.scaffold.levels.length) {
+        partProgress.scaffoldLevel = nextLevel;
+        partProgress.completed = false;
+        const isLastLevel = nextLevel === partDef.scaffold.levels.length - 1;
+        scaffoldResponse = {
+          level: nextLevel,
+          hintZh: partDef.scaffold.levels[nextLevel].hintZh,
+          canRetry: !isLastLevel,
+        };
+      } else {
+        // All scaffold levels exhausted — mark as completed
+        partProgress.completed = true;
+      }
+    } else {
+      partProgress.completed = true;
+    }
+
+    // Update parts progress
+    partsProgress[partId] = partProgress;
+
+    // Determine next part
+    const partIds = answerKey.parts.map(p => p.id);
+    const currentIdx = partIds.indexOf(partId);
+    let nextPartId: string | null = null;
+    if (partProgress.completed) {
+      for (let i = currentIdx + 1; i < partIds.length; i++) {
+        if (!partsProgress[partIds[i]]?.completed) {
+          nextPartId = partIds[i];
+          break;
+        }
+      }
+    }
+
+    // Compute aggregate score across all completed parts
+    const aggregateScore = this.computeAggregateScore(answerKey.parts, partsProgress);
+
+    // Merge data for storage — only pick known fields from user data
+    const mergedData: Record<string, unknown> = {
+      ...existingData,
+      images: data.images,
+      method: data.method,
+      parts: partsProgress,
+      currentPartId: partProgress.completed ? (nextPartId ?? partId) : partId,
+    };
+
+    const allCompleted = answerKey.parts.every(p => partsProgress[p.id]?.completed);
+
+    await this.submissionRepo.upsert(
+      {
+        sessionId: session.id,
+        lessonId: session.lessonId,
+        studentId: student.id,
+        step,
+        phase: 'exercise',
+        dataJson: mergedData as any,
+        scoreJson: (allCompleted ? aggregateScore : partScore) as any,
+      },
+      ['sessionId', 'studentId', 'step', 'phase'],
+    );
+    this.stateCache.markDirty(session.id);
+
+    if (allCompleted) {
+      this.dispatchExerciseEvents(session, student.id, step, aggregateScore, mergedData);
+
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const taskNum = taskMap.stepToTask[step];
+      if (aggregateScore.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
+        await this.updatePhase(session, student.id, taskNum, 'discuss');
+        const updated = await this.studentRepo.findOne({ where: { id: student.id, sessionId: session.id } });
+        return {
+          ok: true, score: aggregateScore,
+          currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
+          partId, nextPartId: null,
+        };
+      }
+    }
+
+    return {
+      ok: true,
+      score: partScore,
+      currentTask: student.currentTask,
+      currentPhase: student.currentPhase,
+      partId,
+      ...(scaffoldResponse && { scaffold: scaffoldResponse }),
+      nextPartId: partProgress.completed ? nextPartId : null,
+    };
+  }
+
+  /**
+   * Handle a pass action — student acknowledged scaffold and wants to proceed.
+   * Marks the part as completed without grading.
+   */
+  private async passPart(
+    session: ClassroomSession,
+    student: Student,
+    step: number,
+    partId: string,
+  ): Promise<SubmitResponse> {
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+    const readingSteps = manifest.readingSteps || [];
+    const stepDef = readingSteps.find((s: any) => s.idx === step);
+    const answerKey = stepDef?.answerKey as RichContentQuizAnswerKey | undefined;
+    if (!answerKey?.parts || answerKey.type !== 'rich-content-quiz') {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+
+    // Load existing submission
+    const existingSub = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId: student.id, step, phase: 'exercise' },
+    });
+    const existingData = (existingSub?.dataJson as Record<string, unknown>) ?? {};
+    const partsProgress: Record<string, any> = (existingData.parts as Record<string, any>) ?? {};
+    const partProgress = partsProgress[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
+
+    // Guard: only allow pass if student has actually seen a scaffold
+    if (partProgress.scaffoldLevel < 0) {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+
+    // Mark as completed without incrementing attempts
+    partProgress.completed = true;
+    partsProgress[partId] = partProgress;
+
+    // Determine next part
+    const partIds = answerKey.parts.map(p => p.id);
+    const currentIdx = partIds.indexOf(partId);
+    let nextPartId: string | null = null;
+    for (let i = currentIdx + 1; i < partIds.length; i++) {
+      if (!partsProgress[partIds[i]]?.completed) {
+        nextPartId = partIds[i];
+        break;
+      }
+    }
+
+    const allCompleted = answerKey.parts.every(p => partsProgress[p.id]?.completed);
+    const aggregateScore = this.computeAggregateScore(answerKey.parts, partsProgress);
+
+    const mergedData: Record<string, unknown> = {
+      ...existingData,
+      parts: partsProgress,
+      currentPartId: nextPartId ?? partId,
+    };
+
+    await this.submissionRepo.upsert(
+      {
+        sessionId: session.id,
+        lessonId: session.lessonId,
+        studentId: student.id,
+        step,
+        phase: 'exercise',
+        dataJson: mergedData as any,
+        scoreJson: (allCompleted ? aggregateScore : (partProgress.score ?? null)) as any,
+      },
+      ['sessionId', 'studentId', 'step', 'phase'],
+    );
+    this.stateCache.markDirty(session.id);
+
+    if (allCompleted) {
+      this.dispatchExerciseEvents(session, student.id, step, aggregateScore, mergedData);
+
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const taskNum = taskMap.stepToTask[step];
+      if (aggregateScore.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
+        await this.updatePhase(session, student.id, taskNum, 'discuss');
+        const updated = await this.studentRepo.findOne({ where: { id: student.id, sessionId: session.id } });
+        return {
+          ok: true, score: aggregateScore,
+          currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
+          partId, nextPartId: null,
+        };
+      }
+    }
+
+    return {
+      ok: true,
+      score: partProgress.score ?? null,
+      currentTask: student.currentTask,
+      currentPhase: student.currentPhase,
+      partId,
+      nextPartId,
+    };
+  }
+
+  /** Compute weighted aggregate score from all completed parts. */
+  private computeAggregateScore(parts: RichContentPart[], partsProgress: Record<string, any>): GradeResult {
+    let totalWeight = 0;
+    let weightedSum = 0;
+    const byDimension: Record<string, number | boolean> = {};
+
+    for (const part of parts) {
+      const pp = partsProgress[part.id];
+      if (!pp?.score) continue;
+
+      const partWeight = part.rubric.reduce((sum, r) => sum + r.weight, 0);
+      totalWeight += partWeight;
+      weightedSum += (pp.score.total / 100) * partWeight;
+
+      // Namespace dimensions by part id
+      for (const [key, val] of Object.entries(pp.score.byDimension || {})) {
+        byDimension[`${part.id}_${key}`] = val as number | boolean;
+      }
+    }
+
+    return {
+      total: totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) : 0,
+      byDimension,
+    };
+  }
+
+  /** Dispatch observer events for exercise submission. */
+  private dispatchExerciseEvents(
+    session: ClassroomSession, studentId: string, step: number,
+    score: GradeResult | null, data: Record<string, unknown>,
+  ): void {
+    this.engine.dispatch({
+      type: 'exercise_result',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { step, score: score?.total ?? null },
+    }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
+
+    getCachedTaskMap(session.lessonId, this.lessonRepo).then(taskMap => {
+      const taskNum = taskMap.stepToTask[step];
+      return this.studentRepo.findOne({ where: { id: studentId, sessionId: session.id } }).then(s => {
+        if (s && taskNum !== undefined && s.currentTask > taskNum) {
+          return this.engine.dispatch({
+            type: 'step_complete',
+            sessionId: session.id,
+            entityId: studentId,
+            tenantId: session.lessonId,
+            payload: { step, taskNum, nextTask: s.currentTask },
+          });
+        }
+      });
+    }).catch(err => this.logger.error(`Observer dispatch step_complete pipeline failed: ${err}`));
+
+    const exerciseCorrectRate = score?.total ?? 0;
+    this.engine.dispatch({
+      type: 'chat_turn',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
+    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
   }
 
   private static readonly PHASE_RANK: Record<string, number> = { listen: 0, practice: 1, discuss: 2, takeaway: 3, completed: 4 };
