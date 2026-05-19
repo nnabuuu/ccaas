@@ -5,7 +5,7 @@ import type { ExerciseSpec } from '../../../../hooks/useClassroom'
 
 const BASE: TaskExercise = { type: 'quiz', label: '' }
 
-/* ═══ API PATH (7 types) ═══ */
+/* ═══ API PATH (9 types) ═══ */
 
 describe('enrichExerciseFromSpec — API path', () => {
   it('quiz: injects questions without correct', () => {
@@ -142,9 +142,60 @@ describe('enrichExerciseFromSpec — API path', () => {
     const { exercise } = enrichExerciseFromSpec(BASE, spec, undefined)
     expect(exercise.practiceItemIds).toBeUndefined()
   })
+
+  it('image-upload: injects prompt/rubric/promptImages/maxImages, serverCheck=true', () => {
+    const spec: ExerciseSpec = {
+      type: 'image-upload', label: 'Upload',
+      prompt: 'Draw a diagram',
+      promptImages: [{ url: 'https://example.com/sample.png', alt: 'sample' }],
+      rubric: [{ id: 'r1', label: 'Accuracy', weight: 1 }],
+      maxImages: 3,
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.type).toBe('image-upload')
+    expect(exercise.prompt).toBe('Draw a diagram')
+    expect(exercise.promptImages).toEqual([{ url: 'https://example.com/sample.png', alt: 'sample' }])
+    expect(exercise.rubric).toEqual([{ id: 'r1', label: 'Accuracy', weight: 1 }])
+    expect(exercise.maxImages).toBe(3)
+    expect(serverCheck).toBe(true)
+  })
+
+  it('fill-blank: injects sentences, serverCheck=true', () => {
+    const spec: ExerciseSpec = {
+      type: 'fill-blank', label: 'Fill',
+      sentences: [{ id: 's1', template: 'The ___ is blue' }],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.type).toBe('fill-blank')
+    expect(exercise.sentences).toEqual([{ id: 's1', template: 'The ___ is blue' }])
+    expect(serverCheck).toBe(true)
+  })
+
+  it('rich-content-quiz: injects parts/subType/prompt from API spec', () => {
+    const spec: ExerciseSpec = {
+      type: 'rich-content-quiz', label: 'RCQ',
+      subType: 'calculation',
+      prompt: 'Solve step by step',
+      maxImages: 2,
+      parts: [
+        { id: 'p1', prompt: 'Step 1', rubric: [{ id: 'r1', label: 'Accuracy', weight: 1 }] },
+        { id: 'p2', prompt: 'Step 2', rubric: [{ id: 'r2', label: 'Method', weight: 1 }], maxImages: 3 },
+      ],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.type).toBe('rich-content-quiz')
+    expect(exercise.subType).toBe('calculation')
+    expect(exercise.prompt).toBe('Solve step by step')
+    expect(exercise.maxImages).toBe(2)
+    expect(exercise.parts).toHaveLength(2)
+    expect(exercise.parts![0].id).toBe('p1')
+    expect(exercise.parts![0].prompt).toBe('Step 1')
+    expect(exercise.parts![1].id).toBe('p2')
+    expect(serverCheck).toBe(true)
+  })
 })
 
-/* ═══ MANIFEST FALLBACK (7 types) ═══ */
+/* ═══ MANIFEST FALLBACK (9 types) ═══ */
 
 describe('enrichExerciseFromSpec — manifest fallback', () => {
   it('quiz: injects from ak.answers with correct/hint/walkthrough', () => {
@@ -352,6 +403,50 @@ describe('enrichExerciseFromSpec — manifest fallback', () => {
     const { exercise } = enrichExerciseFromSpec(BASE, undefined, ak)
     expect(exercise.practiceItemIds).toEqual(['b'])
     expect(exercise.givenPlacements).toEqual({ a: { x: 0.5, y: 0.5 } })
+  })
+
+  it('image-upload: injects from manifest ak, serverCheck=false', () => {
+    const ak = {
+      type: 'image-upload',
+      prompt: 'Draw it',
+      promptImages: [{ url: 'https://example.com/ref.png' }],
+      rubric: [{ id: 'r1', label: 'Clarity', weight: 2 }],
+      maxImages: 5,
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.prompt).toBe('Draw it')
+    expect(exercise.promptImages).toEqual([{ url: 'https://example.com/ref.png' }])
+    expect(exercise.rubric).toEqual([{ id: 'r1', label: 'Clarity', weight: 2 }])
+    expect(exercise.maxImages).toBe(5)
+    expect(serverCheck).toBe(false)
+  })
+
+  it('fill-blank: injects sentences from manifest ak, serverCheck=false', () => {
+    const ak = {
+      type: 'fill-blank',
+      sentences: [{ id: 's1', template: 'The sky is ___' }],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.sentences).toEqual([{ id: 's1', template: 'The sky is ___' }])
+    expect(serverCheck).toBe(false)
+  })
+
+  it('rich-content-quiz: injects parts/subType from manifest ak, serverCheck=false', () => {
+    const ak = {
+      type: 'rich-content-quiz',
+      subType: 'calculation',
+      prompt: 'Draw the shape',
+      maxImages: 1,
+      parts: [{ id: 'p1', prompt: 'Part A' }],
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.type).toBe('rich-content-quiz')
+    expect(exercise.subType).toBe('calculation')
+    expect(exercise.prompt).toBe('Draw the shape')
+    expect(exercise.parts).toHaveLength(1)
+    expect(exercise.parts![0].id).toBe('p1')
+    expect(exercise.parts![0].prompt).toBe('Part A')
+    expect(serverCheck).toBe(false)
   })
 })
 

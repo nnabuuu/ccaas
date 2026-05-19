@@ -7,7 +7,7 @@ import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
 import { SummaryScreen } from './personal-touch/SummaryScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
 import { renderMd } from './renderMd'
-import { reportPhase, type CachedSubmission, type DiscussMeta } from '../../hooks/useClassroom'
+import { reportPhase, type CachedSubmission, type DiscussMeta, type SubmitResult } from '../../hooks/useClassroom'
 import type { Task } from './task-data'
 import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
@@ -21,7 +21,7 @@ export interface SessionConfig {
 export const SessionCtx = createContext<{
   sessionCode?: string
   studentId?: string
-  submit?: (step: number, data: Record<string, any>) => Promise<boolean>
+  submit?: (step: number, data: Record<string, any>) => Promise<SubmitResult>
   config: SessionConfig
   boardData?: BoardData | null
   restoredSubmissions?: Record<number, CachedSubmission>
@@ -93,19 +93,21 @@ function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; 
   )
 }
 
+import type { ScaffoldHint } from './ScaffoldPanel'
+
 /** Phase→component registry. Each entry renders the phase given standard props. */
 const PHASE_REGISTRY: Record<string, (props: {
-  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean
+  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
 }) => JSX.Element | null> = {
   listen: ({ task, onDone, lessonId, isRevisit }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} />,
-  practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} />,
+  practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} onScaffoldPush={onScaffoldPush} />,
   discuss: ({ task, onDone, isRevisit }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} isRevisit={isRevisit} />,
   takeaway: ({ task, onComplete, lessonId, taskCount }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} />,
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null; onScaffoldPush?: (hint: ScaffoldHint) => void
 }) {
   const ctx = useContext(SessionCtx)
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
@@ -244,6 +246,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
                 onDone: () => markDone(phase.id),
                 onComplete,
                 onOverlayChange,
+                onScaffoldPush,
                 taskCount,
                 isRevisit: isRevisit || donePhases.has(phase.id),
               })}
@@ -314,7 +317,7 @@ export function useStudentTask(
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -331,6 +334,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   doneSet?: Set<number>
   initialPhase?: string | null
   onPhaseChange?: (phase: string) => void
+  onScaffoldPush?: (hint: ScaffoldHint) => void
 }) {
   const { config } = useContext(SessionCtx)
   const introText = lessonIntro || ''
@@ -401,7 +405,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus' && (
         <BonusPhase onComplete={() => setScreen('summary')} />
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} />}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} onScaffoldPush={onScaffoldPush} />}
     </div>
   )
 }

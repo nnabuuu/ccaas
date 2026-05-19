@@ -114,6 +114,16 @@ export function useSessionLookup() {
   return { session, loading, error, lookup }
 }
 
+// ── Submit result (exposes scaffold / part flow from backend) ──
+
+export interface SubmitResult {
+  ok: boolean
+  score?: Record<string, unknown> | null
+  scaffold?: { level: number; hintZh: string; canRetry: boolean } | null
+  partId?: string
+  nextPartId?: string | null
+}
+
 // ── Student session hook ──
 
 interface StudentSession {
@@ -122,7 +132,7 @@ interface StudentSession {
   joining: boolean
   joinError: string | null
   join: (name: string) => Promise<boolean>
-  submit: (step: number, data: Record<string, any>) => Promise<boolean>
+  submit: (step: number, data: Record<string, any>) => Promise<SubmitResult>
   submittedSteps: Set<number>
   lessonId: string | null
 }
@@ -201,8 +211,8 @@ export function useStudentSession(sessionCode: string): StudentSession {
     }
   }, [sessionCode, storageKey])
 
-  const submit = useCallback(async (step: number, data: Record<string, any>) => {
-    if (!studentId) return false
+  const submit = useCallback(async (step: number, data: Record<string, any>): Promise<SubmitResult> => {
+    if (!studentId) return { ok: false }
     try {
       const res = await fetch(`${API_BASE}/${sessionCode}/submit`, {
         method: 'POST',
@@ -210,12 +220,13 @@ export function useStudentSession(sessionCode: string): StudentSession {
         body: JSON.stringify({ studentId, step, data }),
       })
       if (!res.ok) throw new Error(`Submit failed: ${res.status}`)
-      const body = await res.json().catch(() => null) as { score?: Record<string, unknown> } | null
-      cacheSubmission(sessionCode, step, data, body?.score ?? null)
+      const body = await res.json().catch(() => null) as SubmitResult | null
+      const result: SubmitResult = body ?? { ok: true }
+      cacheSubmission(sessionCode, step, data, result.score ?? null)
       setSubmittedSteps(prev => new Set(prev).add(step))
-      return true
+      return result
     } catch {
-      return false
+      return { ok: false }
     }
   }, [sessionCode, studentId])
 
@@ -423,25 +434,8 @@ export function useStudentPolling(sessionCode: string, initialStatus?: 'waiting'
 
 // ── Exercise API hooks (student) ──
 
-export interface ExerciseSpec {
-  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map'
-  label: string
-  questions?: Array<{ idx: number; text: string; translate?: string; options: string[]; paraRef?: number[] }>
-  pairs?: Array<{ idx: number; left: string; options: string[]; paraRef?: number[] }>
-  rows?: Array<{ idx: number; place: string; isDemo: boolean; practice?: string; reason?: string; paraRef?: number[]; whatPrompt?: string; whyPrompt?: string }>
-  practiceCount?: number
-  stanceQ?: string; stanceQZh?: string; stanceOpts?: string[]; evidence?: string[]
-  items?: string[]
-  functionOptions?: string[]
-  sections?: Array<{ id: string; label: string; range: number[]; correctFunction?: string; minHits?: number; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
-  paragraphTokens?: Record<string, Array<{ t: string; interactive?: boolean; kind?: string; why?: string }>>
-  prompt?: string
-  axes?: { x: { neg: string; pos: string; label: string }; y: { neg: string; pos: string; label: string } }
-  mapItems?: Array<{ id: string; label: string; hint?: string; refs?: number[] }>
-  minReasonLength?: number
-  givenPlacements?: Record<string, { x: number; y: number }>
-  practiceItemIds?: string[]
-}
+import type { ExerciseSpec } from '../components/student/exercise/enrich-exercise'
+export type { ExerciseSpec }
 
 export interface CheckItem {
   idx: number | string

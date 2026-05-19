@@ -21,9 +21,11 @@ interface Props {
   collapsed?: boolean
   onToggle?: () => void
   enableMath?: boolean
+  scaffoldAvailable?: boolean
+  onSwitchToScaffold?: () => void
 }
 
-export default function TextPanel({ title, paragraphs, focusIds, lessonId, showRoles, overlay, collapsed, onToggle, enableMath }: Props) {
+export default function TextPanel({ title, paragraphs, focusIds, lessonId, showRoles, overlay, collapsed, onToggle, enableMath, scaffoldAvailable, onSwitchToScaffold }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevFocus = useRef('')
 
@@ -82,6 +84,15 @@ export default function TextPanel({ title, paragraphs, focusIds, lessonId, showR
         <div className="stu-text-hd">
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--teal)', flex: 1 }}>Text · {title}</span>
           {focusLabel && <span className="stu-text-hd-badge">{focusLabel}</span>}
+          {scaffoldAvailable && onSwitchToScaffold && (
+            <button
+              className="stu-text-hd-badge"
+              style={{ cursor: 'pointer', background: 'none', border: '1px solid var(--amber, #f59e0b)', borderRadius: 4, padding: '2px 8px', fontSize: 11, color: 'var(--amber, #f59e0b)' }}
+              onClick={onSwitchToScaffold}
+            >
+              查看提示
+            </button>
+          )}
           {showRoles && !overlay && (
             <div style={{ fontSize: 12, color: 'var(--t3)', display: 'flex', gap: 10, marginTop: 2 }}>
               <span><span style={{ color: 'var(--t1)', fontWeight: 600 }}>●</span> Key sentence</span>

@@ -25,8 +25,14 @@ export interface TaskMatrixRow {
 }
 export interface MapAxis { neg: string; pos: string; label: string }
 export interface MapItem { id: string; label: string; hint?: string; refs?: number[] }
+export interface RichContentQuizPart {
+  id: string
+  prompt?: string
+  promptImages?: Array<{ url: string; alt?: string }>
+}
+
 export interface TaskExercise {
-  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank'
+  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank' | 'rich-content-quiz'
   label: string
   questions?: TaskQuestion[]
   pairs?: TaskMatchPair[]
@@ -52,6 +58,9 @@ export interface TaskExercise {
   maxImages?: number
   // fill-blank fields
   sentences?: Array<{ id: string; template: string }>
+  // rich-content-quiz fields
+  parts?: RichContentQuizPart[]
+  subType?: string
 }
 export interface FallbackMC {
   question: string; questionZh?: string

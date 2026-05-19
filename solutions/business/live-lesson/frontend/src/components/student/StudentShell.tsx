@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
 import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
-import { fetchExerciseSpec, reportPhase, type ExerciseSpec, type CachedSubmission, type DiscussMeta } from '../../hooks/useClassroom'
+import { fetchExerciseSpec, reportPhase, type ExerciseSpec, type CachedSubmission, type DiscussMeta, type SubmitResult } from '../../hooks/useClassroom'
 import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
+import ScaffoldPanel from './ScaffoldPanel'
+import type { ScaffoldHint } from './ScaffoldPanel'
 import AiPanel from './ai-ask/AiPanel'
 import TranslateButton from './TranslateButton'
 import HelpGuide from './HelpGuide'
@@ -17,7 +19,7 @@ interface Props {
   sessionCode?: string
   studentId?: string
   studentName?: string
-  submit?: (step: number, data: Record<string, unknown>) => Promise<boolean>
+  submit?: (step: number, data: Record<string, unknown>) => Promise<SubmitResult>
   initialProgress?: { currentTask: number; currentPhase: string; discussMeta?: DiscussMeta | null } | null
   initialSubmissions?: Record<number, CachedSubmission>
 }
@@ -51,6 +53,22 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   const [exerciseSpecs, setExerciseSpecs] = useState<Record<number, ExerciseSpec>>({})
   const [textbookOpen, setTextbookOpen] = useState(true)
   const [paraRefIds, setParaRefIds] = useState<string[]>([])
+
+  // ── Scaffold hints (right panel mode) ──
+  const [scaffoldHints, setScaffoldHints] = useState<ScaffoldHint[]>([])
+  const [rightMode, setRightMode] = useState<'text' | 'scaffold'>('text')
+
+  const handleScaffoldPush = useCallback((hint: ScaffoldHint) => {
+    setScaffoldHints(prev => {
+      if (prev.some(h => h.level === hint.level)) return prev
+      return [...prev, hint]
+    })
+    setRightMode('scaffold')
+    setTextbookOpen(true)
+  }, [])
+
+  // Clear scaffold hints on task change
+  useEffect(() => { setScaffoldHints([]); setRightMode('text') }, [taskId])
 
   // Listen for scroll-to-para events from paragraph reference links
   useEffect(() => {
@@ -235,13 +253,22 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             articleTitle={manifest.article?.title || manifest.title} lessonIntro={manifest.lessonIntro}
             lessonSummary={manifest.lessonSummary} phaseConfig={manifest.phaseConfig}
             onOverlayChange={handleOverlayChange}
+            onScaffoldPush={handleScaffoldPush}
             courseIntroView={courseIntroView}
             taskCount={taskCount}
             doneSet={doneSet}
             onPhaseChange={handlePhaseChange}
             initialPhase={initialPhase}
           />
-          {manifest.article && (
+          {scaffoldHints.length > 0 && rightMode === 'scaffold' ? (
+            <ScaffoldPanel
+              hints={scaffoldHints}
+              enableMath={manifest.enableMath}
+              onSwitchToText={manifest.article ? () => setRightMode('text') : undefined}
+              collapsed={!textbookOpen}
+              onToggle={() => setTextbookOpen(o => !o)}
+            />
+          ) : manifest.article ? (
             <TextPanel
               title={manifest.article.title}
               paragraphs={manifest.article.paragraphs}
@@ -252,8 +279,17 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               collapsed={!textbookOpen}
               onToggle={() => setTextbookOpen(o => !o)}
               enableMath={manifest.enableMath}
+              scaffoldAvailable={scaffoldHints.length > 0}
+              onSwitchToScaffold={() => setRightMode('scaffold')}
             />
-          )}
+          ) : scaffoldHints.length > 0 ? (
+            <ScaffoldPanel
+              hints={scaffoldHints}
+              enableMath={manifest.enableMath}
+              collapsed={!textbookOpen}
+              onToggle={() => setTextbookOpen(o => !o)}
+            />
+          ) : null}
           <div className="stu-toolbar-h">
             <TranslateButton taskId={taskId || 1} phase={currentPhase} />
             <AiPanel

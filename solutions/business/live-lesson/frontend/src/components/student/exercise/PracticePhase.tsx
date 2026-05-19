@@ -14,6 +14,8 @@ import { SelectEvidenceExercise } from './SelectEvidenceExercise'
 import { MapExercise } from './MapExercise'
 import { ImageUploadExercise } from './ImageUploadExercise'
 import { FillBlankExercise } from './FillBlankExercise'
+import { RichContentQuizExercise } from './RichContentQuizExercise'
+import type { ScaffoldHint } from '../ScaffoldPanel'
 
 const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
 
@@ -50,8 +52,8 @@ export function restoreAns(type: string, data: Record<string, unknown>): Record<
   }
 }
 
-export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit }: {
-  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean
+export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush }: {
+  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
 }) {
   const ctx = useContext(SessionCtx)
   const ex = task.exercise
@@ -585,6 +587,19 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           setAns={noopSetAns}
           blankResults={Object.keys(effectiveFillBlankResults).length > 0 ? effectiveFillBlankResults : undefined}
           allDone={effectiveAllDone}
+        />
+      )}
+      {ex.type === 'rich-content-quiz' && ex.parts && ex.parts.length > 0 && (
+        <RichContentQuizExercise
+          parts={ex.parts}
+          subType={ex.subType}
+          prompt={ex.prompt}
+          promptImages={ex.promptImages}
+          maxImages={ex.maxImages ?? 1}
+          stepIdx={stepIdx}
+          taskId={task.id}
+          onScaffoldPush={onScaffoldPush}
+          onDone={() => { setAllDone(true); onDone() }}
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (
