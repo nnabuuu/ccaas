@@ -1,4 +1,4 @@
-import { useState, useContext, useCallback } from 'react'
+import { useState, useContext, useCallback, useRef } from 'react'
 import { SessionCtx } from '../TaskPanel'
 import type { RichContentQuizPart } from '../task-data'
 import type { ScaffoldHint } from '../ScaffoldPanel'
@@ -6,9 +6,10 @@ import type { SubmitResult } from '../../../hooks/useClassroom'
 import { cacheSubmission } from '../../../hooks/useClassroom'
 import { reportAttempt } from './gradeItemSet'
 import { RenderMath } from '../../../utils/render-math'
-import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
-import { ImageGallery } from '../image-capture/ImageGallery'
-import '../image-capture/image-capture.css'
+import { HandwritingCanvas } from '../image-capture/HandwritingCanvas'
+import type { HandwritingCanvasHandle } from '../image-capture/HandwritingCanvas'
+
+type PartPhase = 'work' | 'wrong' | 'retry' | 'wrong2' | 'done'
 
 interface Props {
   parts: RichContentQuizPart[]
@@ -27,82 +28,120 @@ export function RichContentQuizExercise({
   stepIdx, taskId, onScaffoldPush, onDone,
 }: Props) {
   const ctx = useContext(SessionCtx)
+  const canvasRef = useRef<HandwritingCanvasHandle>(null)
+  const busyRef = useRef(false)
 
   const [currentPartIdx, setCurrentPartIdx] = useState(0)
   const [partImages, setPartImages] = useState<Record<string, string[]>>({})
-  const [partStatus, setPartStatus] = useState<Record<string, 'pending' | 'submitted' | 'retry' | 'done'>>({})
+  const [partPhase, setPartPhase] = useState<Record<string, PartPhase>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [hasContent, setHasContent] = useState(false)
+  const [lastFeedback, setLastFeedback] = useState('')
 
   const currentPart = parts[currentPartIdx]
   const currentPartId = currentPart?.id
   const images = currentPartId ? (partImages[currentPartId] || []) : []
-  const status = currentPartId ? (partStatus[currentPartId] || 'pending') : 'pending'
-  const allPartsDone = parts.length > 0 && parts.every(p => partStatus[p.id] === 'done')
+  const phase: PartPhase = currentPartId ? (partPhase[currentPartId] || 'work') : 'work'
+  const allPartsDone = parts.length > 0 && parts.every(p => partPhase[p.id] === 'done')
 
-  const handleCapture = useCallback((dataUri: string) => {
+  const handlePagesChange = useCallback((dataUris: string[]) => {
     if (!currentPartId) return
-    const partMax = maxImages
-    if (partMax === 1) {
-      setPartImages(prev => ({ ...prev, [currentPartId]: [dataUri] }))
-    } else {
-      setPartImages(prev => {
-        const cur = prev[currentPartId] || []
-        return { ...prev, [currentPartId]: [...cur, dataUri].slice(0, partMax) }
-      })
-    }
-  }, [currentPartId, maxImages])
-
-  const handleRemove = useCallback((index: number) => {
-    if (!currentPartId) return
-    setPartImages(prev => {
-      const cur = prev[currentPartId] || []
-      return { ...prev, [currentPartId]: cur.filter((_, i) => i !== index) }
-    })
+    setPartImages(prev => ({ ...prev, [currentPartId]: dataUris }))
   }, [currentPartId])
 
+  const handleContentStatusChange = useCallback((has: boolean) => {
+    setHasContent(has)
+  }, [])
+
+  const advanceToNext = (updatedPhases: Record<string, PartPhase>, result: SubmitResult) => {
+    if (result.nextPartId) {
+      const nextIdx = parts.findIndex(p => p.id === result.nextPartId)
+      if (nextIdx >= 0) {
+        setCurrentPartIdx(nextIdx)
+        setHasContent(false)
+      }
+    } else {
+      if (parts.every(p => updatedPhases[p.id] === 'done')) {
+        onDone()
+      } else {
+        const nextIncomplete = parts.findIndex(p => updatedPhases[p.id] !== 'done')
+        if (nextIncomplete >= 0) {
+          setCurrentPartIdx(nextIncomplete)
+          setHasContent(false)
+        }
+      }
+    }
+  }
+
   const handleSubmit = async () => {
-    if (!currentPartId || submitting || images.length === 0) return
+    if (!currentPartId || busyRef.current) return
     if (stepIdx === undefined || !ctx.submit) return
 
+    const freshImages = canvasRef.current?.exportPages() || images
+    if (freshImages.length === 0) return
+
+    busyRef.current = true
     setSubmitting(true)
     try {
       const submitData = {
-        images,
+        images: freshImages,
         partId: currentPartId,
         method: subType || 'rich-content-quiz',
       }
       const result: SubmitResult = await ctx.submit(stepIdx, submitData)
 
-      // Cache for page-refresh recovery
       if (ctx.sessionCode) {
         cacheSubmission(ctx.sessionCode, stepIdx, submitData, result.score ?? null)
       }
 
-      // Track attempt for analytics
       reportAttempt(taskId ?? 0, 0, 1, submitData, null, result.ok !== false)
 
       if (!result.ok) return
 
       if (result.scaffold) {
         onScaffoldPush?.(result.scaffold)
-        setPartStatus(prev => ({ ...prev, [currentPartId]: 'retry' }))
-        setPartImages(prev => ({ ...prev, [currentPartId]: [] }))
-      } else if (result.nextPartId) {
-        setPartStatus(prev => ({ ...prev, [currentPartId]: 'done' }))
-        const nextIdx = parts.findIndex(p => p.id === result.nextPartId)
-        if (nextIdx >= 0) setCurrentPartIdx(nextIdx)
-      } else {
-        // No scaffold, no next part — compute updated status synchronously
-        const updatedStatus = { ...partStatus, [currentPartId]: 'done' as const }
-        setPartStatus(updatedStatus)
-        if (parts.every(p => updatedStatus[p.id] === 'done')) {
-          onDone()
+        const feedback = (result.score as Record<string, unknown>)?.llmFeedback as string | undefined
+        setLastFeedback(feedback || '答案不正确，请参考右侧提示修改后重新提交。')
+        if (result.scaffold.canRetry) {
+          setPartPhase(prev => ({ ...prev, [currentPartId]: 'wrong' }))
         } else {
-          const nextIncomplete = parts.findIndex(p => updatedStatus[p.id] !== 'done')
-          if (nextIncomplete >= 0) setCurrentPartIdx(nextIncomplete)
+          setPartPhase(prev => ({ ...prev, [currentPartId]: 'wrong2' }))
         }
+      } else {
+        const updated = { ...partPhase, [currentPartId]: 'done' as const }
+        setPartPhase(updated)
+        advanceToNext(updated, result)
       }
     } finally {
+      busyRef.current = false
+      setSubmitting(false)
+    }
+  }
+
+  const handleRetry = () => {
+    if (!currentPartId) return
+    setPartPhase(prev => ({ ...prev, [currentPartId]: 'retry' }))
+    setPartImages(prev => ({ ...prev, [currentPartId]: [] }))
+    setHasContent(false)
+  }
+
+  const handlePass = async () => {
+    if (!currentPartId || busyRef.current) return
+    if (stepIdx === undefined || !ctx.submit) return
+
+    busyRef.current = true
+    setSubmitting(true)
+    try {
+      const submitData = { partId: currentPartId, _pass: true, images: [], method: 'pass' }
+      const result: SubmitResult = await ctx.submit(stepIdx, submitData)
+
+      if (!result.ok) return
+
+      const updated = { ...partPhase, [currentPartId]: 'done' as const }
+      setPartPhase(updated)
+      advanceToNext(updated, result)
+    } finally {
+      busyRef.current = false
       setSubmitting(false)
     }
   }
@@ -124,6 +163,8 @@ export function RichContentQuizExercise({
     )
   }
 
+  const showCanvas = phase === 'work' || phase === 'retry'
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Top-level prompt */}
@@ -143,7 +184,7 @@ export function RichContentQuizExercise({
       {parts.length > 1 && (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {parts.map((p, i) => {
-            const st = partStatus[p.id] || 'pending'
+            const st = partPhase[p.id] || 'work'
             const isCurrent = i === currentPartIdx
             return (
               <div
@@ -173,45 +214,95 @@ export function RichContentQuizExercise({
         </div>
       )}
 
-      {/* Image upload for current part */}
-      {status !== 'done' && maxImages === 1 && (
-        <div>
-          {images.length > 0 ? (
-            <div>
-              <img src={images[0]} alt="作答"
-                style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 8 }} />
-              <ImageCaptureButton onCapture={handleCapture} />
-            </div>
-          ) : (
-            <ImageCaptureButton onCapture={handleCapture} />
-          )}
+      {/* Checking status card */}
+      {submitting && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '14px 18px', borderRadius: 10,
+          background: 'rgba(109,89,214,.08)', border: '1px solid rgba(109,89,214,.15)',
+          fontSize: 13, fontWeight: 500, color: '#6d59d6', marginBottom: 4,
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#6d59d6',
+            animation: 'rcq-pulse 1.2s infinite',
+          }} />
+          AI 助教正在批改…
         </div>
       )}
 
-      {status !== 'done' && maxImages > 1 && (
-        <ImageGallery
-          images={images}
-          maxImages={maxImages}
-          onAdd={handleCapture}
-          onRemove={handleRemove}
+      {/* Wrong result card (red) — canRetry, first scaffold */}
+      {phase === 'wrong' && !submitting && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '14px 18px', borderRadius: 10,
+          background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.15)',
+        }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(239,68,68,.12)', color: '#ef4444',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700, marginTop: 1,
+          }}>✗</div>
+          <div>
+            <div style={{ fontWeight: 600, color: '#ef4444', fontSize: 13 }}>答案不正确</div>
+            <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 2, lineHeight: 1.5 }}>{lastFeedback}</div>
+            <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 6 }}>请参考右侧提示修改后重新提交</div>
+          </div>
+        </div>
+      )}
+
+      {/* Wrong2 result card (amber) — last scaffold, show pass */}
+      {phase === 'wrong2' && !submitting && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          padding: '14px 18px', borderRadius: 10,
+          background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.15)',
+        }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(245,158,11,.12)', color: '#f59e0b',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, fontWeight: 700, marginTop: 1,
+          }}>→</div>
+          <div>
+            <div style={{ fontWeight: 600, color: '#f59e0b', fontSize: 13 }}>已展示完整解答</div>
+            <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 2, lineHeight: 1.5 }}>
+              请仔细阅读右侧解题过程，理解后继续下一题。
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Handwriting canvas + photo unified input */}
+      {showCanvas && !submitting && (
+        <HandwritingCanvas
+          key={currentPartId}
+          ref={canvasRef}
+          maxPages={Math.max(maxImages, 5)}
+          onPagesChange={handlePagesChange}
+          onContentStatusChange={handleContentStatusChange}
         />
       )}
 
-      {/* Retry hint */}
-      {status === 'retry' && (
-        <div style={{ fontSize: 13, color: 'var(--amber, #f59e0b)', padding: '4px 0' }}>
-          请查看右侧提示后重新作答
-        </div>
+      {/* Retry button */}
+      {phase === 'wrong' && !submitting && (
+        <button className="stu-btn pri" onClick={handleRetry}>
+          修改答案，再试一次
+        </button>
       )}
 
-      {/* Submit button */}
-      {status !== 'done' && (
-        <button
-          className="stu-btn pri"
-          style={(!images.length || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
-          onClick={images.length > 0 && !submitting ? handleSubmit : undefined}
-        >
-          {submitting ? '提交中...' : status === 'retry' ? '重新提交' : '提交'}
+      {/* Pass button */}
+      {phase === 'wrong2' && !submitting && (
+        <button className="stu-btn pri" onClick={handlePass}>
+          已理解，继续下一题 →
+        </button>
+      )}
+
+      {/* Submit button — only when there is content, in work/retry phase, not submitting */}
+      {hasContent && showCanvas && !submitting && (
+        <button className="stu-btn pri" onClick={handleSubmit}>
+          {phase === 'retry' ? '重新提交' : '提交'}
         </button>
       )}
     </div>
