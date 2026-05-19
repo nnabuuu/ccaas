@@ -178,6 +178,7 @@ const ImageUploadAnswerKeySchema = z.object({
 
 const ScaffoldLevelSchema = z.object({
   hintZh: z.string().min(1),
+  hintImage: z.string().optional(),
 });
 
 const ScaffoldSchema = z.object({

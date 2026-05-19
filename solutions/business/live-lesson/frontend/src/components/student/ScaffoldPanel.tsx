@@ -4,6 +4,7 @@ import { renderMd } from './renderMd'
 export interface ScaffoldHint {
   level: number
   hintZh: string
+  hintImage?: string
   canRetry: boolean
 }
 
@@ -73,6 +74,10 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
               <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--t1)' }}>
                 {renderMd(hint.hintZh, { math: enableMath })}
               </div>
+              {hint.hintImage && (
+                <img src={hint.hintImage} alt={`提示 ${hint.level + 1}`}
+                  style={{ maxWidth: '100%', borderRadius: 6, marginTop: 8 }} />
+              )}
             </div>
           ))}
           {hints.length === 0 && (

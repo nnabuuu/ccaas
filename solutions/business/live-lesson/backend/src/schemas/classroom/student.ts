@@ -14,6 +14,14 @@ export interface SubmitResponse {
   score: GradeResult | null;
   currentTask: number;
   currentPhase: string;
+  partId?: string;
+  scaffold?: {
+    level: number;
+    hintZh: string;
+    hintImage?: string;
+    canRetry: boolean;
+  } | null;
+  nextPartId?: string | null;
 }
 
 export interface SubmissionResponse {

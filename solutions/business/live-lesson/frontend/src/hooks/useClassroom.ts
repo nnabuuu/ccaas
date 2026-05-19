@@ -119,7 +119,7 @@ export function useSessionLookup() {
 export interface SubmitResult {
   ok: boolean
   score?: Record<string, unknown> | null
-  scaffold?: { level: number; hintZh: string; canRetry: boolean } | null
+  scaffold?: { level: number; hintZh: string; hintImage?: string; canRetry: boolean } | null
   partId?: string
   nextPartId?: string | null
 }

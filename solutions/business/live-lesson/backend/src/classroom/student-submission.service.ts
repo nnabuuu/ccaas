@@ -186,6 +186,7 @@ export class StudentSubmissionService {
         scaffoldResponse = {
           level: nextLevel,
           hintZh: partDef.scaffold.levels[nextLevel].hintZh,
+          hintImage: partDef.scaffold.levels[nextLevel].hintImage,
           canRetry: !isLastLevel,
         };
       } else {
@@ -431,6 +432,32 @@ export class StudentSubmissionService {
 
   private static readonly PHASE_RANK: Record<string, number> = { listen: 0, practice: 1, discuss: 2, takeaway: 3, completed: 4 };
 
+  /**
+   * Compute phase rank dynamically — supports step-level phaseConfig (e.g. practice-1, practice-2).
+   * Falls back to lesson-level phaseConfig, then static PHASE_RANK.
+   */
+  private async getPhaseRank(session: ClassroomSession, task: number, phase: string): Promise<number> {
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (manifest) {
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const stepIdx = taskMap.taskToStep?.[task];
+      if (stepIdx !== undefined) {
+        const step = (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx);
+        const stepPhases = step?.phaseConfig as Array<{ id: string }> | undefined;
+        if (stepPhases?.length) {
+          const idx = stepPhases.findIndex(p => p.id === phase);
+          if (idx >= 0) return idx;
+        }
+      }
+      const lessonPhases = manifest.phaseConfig as Array<{ id: string }> | undefined;
+      if (lessonPhases?.length) {
+        const idx = lessonPhases.findIndex(p => p.id === phase);
+        if (idx >= 0) return idx;
+      }
+    }
+    return StudentSubmissionService.PHASE_RANK[phase] ?? 0;
+  }
+
   async updatePhase(session: ClassroomSession, studentId: string, task: number, phase: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const student = await this.studentRepo.findOne({
@@ -439,8 +466,8 @@ export class StudentSubmissionService {
       if (!student) {
         throw new NotFoundException('Student not found in this session');
       }
-      const oldRank = (student.currentTask * 10) + (StudentSubmissionService.PHASE_RANK[student.currentPhase] ?? 0);
-      const newRank = (task * 10) + (StudentSubmissionService.PHASE_RANK[phase] ?? 0);
+      const oldRank = (student.currentTask * 10) + await this.getPhaseRank(session, student.currentTask, student.currentPhase);
+      const newRank = (task * 10) + await this.getPhaseRank(session, task, phase);
       if (newRank <= oldRank) return;
       const taskChanged = student.currentTask !== task;
       student.currentTask = task;
