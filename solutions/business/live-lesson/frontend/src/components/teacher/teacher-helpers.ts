@@ -210,6 +210,7 @@ export function getObserveType(answerKeyType?: string): string | null {
     case 'select-evidence': return 'evidence'
     case 'map': return 'map'
     case 'matrix': return 'matrix'
+    case 'guided-discovery': return 'guided-discovery'
     default: return null
   }
 }

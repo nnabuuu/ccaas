@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-const VALID_OBSERVE_TYPES = new Set(['mc', 'evidence', 'map', 'discuss', 'matrix'])
+const VALID_OBSERVE_TYPES = new Set(['mc', 'evidence', 'map', 'discuss', 'matrix', 'guided-discovery'])
 
 export function useDrawerState() {
   const [searchParams, setSearchParams] = useSearchParams()

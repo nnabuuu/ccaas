@@ -47,8 +47,18 @@ export class ObserveRegistry implements OnModuleInit {
   }
 
   async compute(type: string, ctx: ObserveContext): Promise<unknown> {
-    const handler = this.handlers.get(type);
-    if (!handler) throw new BadRequestException(`Unknown observe type: ${type}`);
+    let handler = this.handlers.get(type);
+    // Fallback: rich-content-quiz reuses the image-upload handler
+    if (!handler && type === 'rich-content-quiz') {
+      handler = this.handlers.get('image-upload');
+    }
+    if (!handler) {
+      // Types without a dedicated handler return empty observe data
+      if (type === 'fill-blank') {
+        return { type, students: [] };
+      }
+      throw new BadRequestException(`Unknown observe type: ${type}`);
+    }
     return handler.compute(ctx);
   }
 

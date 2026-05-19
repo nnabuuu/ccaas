@@ -37,6 +37,7 @@ import { MapObserveHandler } from './observe/handlers/map.handler';
 import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
 import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { ImageUploadObserveHandler } from './observe/handlers/image-upload.handler';
+import { GuidedDiscoveryObserveHandler } from './observe/handlers/guided-discovery.handler';
 
 // ── Exercise component ──
 import { ExerciseService } from './exercise/exercise.service';
@@ -99,7 +100,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
     // Infra
     ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService,
     // Observe handlers + registry
-    ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler,
+    ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
     ExerciseService, GradingService,
     // Socratic Discuss

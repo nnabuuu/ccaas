@@ -161,6 +161,7 @@ function autoGenerate(answerKey: Record<string, unknown>): ResolvedObserve {
     case 'order': return autoGenerateOrder();
     case 'select-evidence': return autoGenerateSelectEvidence(key);
     case 'map': return autoGenerateMap(key);
+    case 'guided-discovery': return autoGenerateGuidedDiscovery(key);
     default: return { dimensions: [], issueRules: [], surfaces: [], dimensionNameMap: {} };
   }
 }
@@ -242,6 +243,16 @@ function autoGenerateMap(key: AnswerKeyLike): ResolvedObserve {
     { type: 'positions', source: 'data.placements', label: 'Placement Distribution' },
   ];
   return { dimensions, issueRules, surfaces, dimensionNameMap: buildNameMap(dimensions) };
+}
+
+function autoGenerateGuidedDiscovery(key: AnswerKeyLike): ResolvedObserve {
+  const steps = (key.steps || []) as Array<{ id: string; title?: string }>;
+  const dimensions: ObserveDimension[] = steps.map(s => ({
+    key: s.id,
+    label: s.title || s.id,
+    type: 'boolean' as const,
+  }));
+  return { dimensions, issueRules: [], surfaces: [], dimensionNameMap: buildNameMap(dimensions) };
 }
 
 // ── Helpers ──

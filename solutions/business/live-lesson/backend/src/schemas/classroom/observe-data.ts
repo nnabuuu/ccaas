@@ -186,6 +186,71 @@ export interface ImageUploadObserveData {
   }>;
 }
 
+export interface RichContentQuizObserveData extends ImageUploadObserveData {
+  scaffoldDistribution?: {
+    independent: number;
+    partial: number;
+    full: number;
+  };
+  errorClusters?: Array<{
+    type: string;
+    count: number;
+    students: Array<{ id: string; name: string }>;
+  }>;
+  students: Array<ImageUploadObserveData['students'][number] & {
+    parts?: Record<string, {
+      completed: boolean;
+      attempts: number;
+      scaffoldLevel: number;
+      attemptsHistory?: Array<{
+        version: number;
+        images: string[];
+        method: string;
+        score: { total: number };
+        submittedAt: string;
+      }>;
+    }>;
+    scaffoldTier?: 'independent' | 'partial' | 'full';
+    method?: 'handwrite' | 'photo';
+  }>;
+}
+
+export interface GuidedDiscoveryObserveData {
+  stats: {
+    totalStudents: number;
+    submitted: number;
+    avgScore: number;
+    perfectCount: number;
+    avgTime: number;
+  };
+  stepDefs: Array<{
+    id: string;
+    title: string;
+    type: string;
+  }>;
+  stepStats: Array<{
+    id: string;
+    title: string;
+    passedCount: number;
+    passedRate: number;
+    errors: Array<{
+      description: string;
+      count: number;
+      students: Array<{ id: string; name: string }>;
+    }>;
+  }>;
+  students: Array<{
+    id: string;
+    name: string;
+    submitted: boolean;
+    score: number;
+    time: number;
+    stepResults: Record<string, boolean>;
+    stepAnswers: Record<string, Record<string, unknown>>;
+    keyInsights: string[];
+  }>;
+}
+
 export interface DiscussObserveData {
   stats: {
     totalStudents: number;
