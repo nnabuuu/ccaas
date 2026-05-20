@@ -16,7 +16,7 @@
     { "id": "discuss", "label": "讨论", "unlockAfter": "practice" },
     { "id": "takeaway", "label": "小结", "unlockAfter": "discuss" }
   ],
-  "cumulativeMinutes": [0, 3, 7, 11, 15, 19, 25],
+  "cumulativeMinutes": [0, 3, 7, 11, 17],
   "readingSteps": [
     {
       "id": "intro",
@@ -176,9 +176,9 @@
             "id": "observation",
             "title": "观察下面的乘法算式与结果，看看能发现什么？",
             "table": [
-              { "expression": "$(\\color{red}{x}+\\color{blue}{2})(\\color{red}{x}-\\color{blue}{2})$", "result": "$x^2-4$" },
-              { "expression": "$(\\color{red}{3}+\\color{blue}{y})(\\color{red}{3}-\\color{blue}{y})$", "result": "$9-y^2$" },
-              { "expression": "$(\\color{red}{2a}+\\color{blue}{b})(\\color{red}{2a}-\\color{blue}{b})$", "result": "$4a^2-b^2$" }
+              { "expression": "$(\\color{red}{x}\\color{blue}{+2})(\\color{red}{x}\\color{blue}{-2})$", "result": "$x^2-4$" },
+              { "expression": "$(\\color{red}{3}\\color{blue}{+y})(\\color{red}{3}\\color{blue}{-y})$", "result": "$9-y^2$" },
+              { "expression": "$(\\color{red}{2a}\\color{blue}{+b})(\\color{red}{2a}\\color{blue}{-b})$", "result": "$4a^2-b^2$" }
             ],
             "highlights": {
               "same": { "color": "red", "terms": [["x", "x"], ["3", "3"], ["2a", "2a"]] },
@@ -311,206 +311,14 @@
             "body": "第一题(y+2)(y-2) 有两级脚手架：\n• 做错第一次：提示思路（多项式乘法）+ 列公式\n• 做错第二次：直接给出完整过程和答案\n第二三题无脚手架，独立完成。"
           },
           {
-            "title": "过渡到任务2",
-            "body": "学生归纳出公式后，引导：\n\"好，规律你们已经发现了。现在观察这三道算式的结构特征。\""
+            "title": "过渡到例1",
+            "body": "学生归纳出公式后，引导：\n\"好，公式推导完毕。接下来看看怎么用这个公式来解题。\""
           }
         ]
       }
     },
     {
       "idx": 2,
-      "id": "self-summarize",
-      "type": "task",
-      "displayName": "自主归纳",
-      "label": "自主归纳",
-      "labelEn": "Summarize",
-      "subtitle": "观察选择，归纳规律",
-      "duration": 4,
-      "description": "引导学生通过2选1选择题归纳相同项、相反项的概念，以及平方差公式的结构。",
-      "studentView": {
-        "title": "观察与归纳",
-        "body": "<p>回顾刚才的计算结果：</p><table style=\"width:100%;border-collapse:collapse;text-align:center;\"><thead><tr><th style=\"border:1px solid #ccc;padding:8px;\">乘法算式</th><th style=\"border:1px solid #ccc;padding:8px;\">结果</th></tr></thead><tbody><tr><td style=\"border:1px solid #ccc;padding:8px;\">$(\\color{red}{y}+\\color{blue}{2})(\\color{red}{y}-\\color{blue}{2})$</td><td style=\"border:1px solid #ccc;padding:8px;\">$y^2-4$</td></tr><tr><td style=\"border:1px solid #ccc;padding:8px;\">$(\\color{red}{3}-\\color{blue}{a})(\\color{red}{3}+\\color{blue}{a})$</td><td style=\"border:1px solid #ccc;padding:8px;\">$9-a^2$</td></tr><tr><td style=\"border:1px solid #ccc;padding:8px;\">$(\\color{red}{2a}+\\color{blue}{b})(\\color{red}{2a}-\\color{blue}{b})$</td><td style=\"border:1px solid #ccc;padding:8px;\">$4a^2-b^2$</td></tr></tbody></table><p>观察<span style=\"color:red;\">红色</span>标注的项和<span style=\"color:blue;\">蓝色</span>标注的项，回答下面的问题。</p>",
-        "keyPoints": [
-          "红色标注的项在两个括号中完全相同",
-          "蓝色标注的项在两个括号中只有符号相反",
-          "结果 = 相同项的平方 − 相反项的平方"
-        ],
-        "confirmLabel": "我来观察"
-      },
-      "exerciseLabel": "根据观察回答下列问题。",
-      "answerKey": {
-        "type": "quiz",
-        "answers": [
-          {
-            "questionIdx": 0,
-            "questionText": "标红的 $y$ 和 $y$、$3$ 和 $3$、$2a$ 和 $2a$，这些完全相同的项我们称为？",
-            "options": ["相同项", "相反项"],
-            "correct": 0,
-            "hint": "标红的部分在两个括号中完全一样",
-            "hintZh": "标红的部分在两个括号中完全一样"
-          },
-          {
-            "questionIdx": 1,
-            "questionText": "标蓝的 $+2$ 和 $-2$、$-a$ 和 $+a$、$+b$ 和 $-b$，这些只有符号相反的项我们叫它？",
-            "options": ["相同项", "相反项"],
-            "correct": 1,
-            "hint": "标蓝的部分只有正负号不同",
-            "hintZh": "标蓝的部分只有正负号不同"
-          },
-          {
-            "questionIdx": 2,
-            "questionText": "最后的结果可以看成是：____的平方 减 ____的平方。",
-            "options": ["相同项的平方 减 相反项的平方", "相反项的平方 减 相同项的平方"],
-            "correct": 0,
-            "hint": "观察 $y^2-4$：$y$ 是相同项（红色），$2$ 是相反项（蓝色）",
-            "hintZh": "观察 $y^2-4$：$y$ 是相同项（红色），$2$ 是相反项（蓝色）"
-          }
-        ]
-      },
-      "discuss": {
-        "openingQ": "平方差公式的关键特征是什么？能不能用自己的话说说，什么样的乘法才能用平方差公式？",
-        "openingQZh": "平方差公式的关键特征是什么？能不能用自己的话说说，什么样的乘法才能用平方差公式？",
-        "goal": "学生能用自己的话说出：两个因式必须是「一和一差」结构（即一个是 a+b，一个是 a-b），且相同项和不同项要一一对应。",
-        "maxRounds": 4,
-        "maxTimeSeconds": 180,
-        "systemPrompt": "你是一位初中数学教师助手。学生刚完成了归纳练习，识别了相同项和相反项。\n\n【教学目标】引导学生用自己的话总结平方差公式的结构特征：两个因式一个是和、一个是差，且相同项和相反项要对应。\n\n【引导策略】\n- 如果学生只说了公式本身，追问「什么样的算式才能用这个公式？」\n- 如果学生提到「一和一差」，肯定并追问「和与差中哪些部分要相同？」\n- 如果学生理解到位，给出反例让学生判断：$(a+b)(a-c)$ 能用平方差公式吗？\n- 如果学生达到了教学目标，在回复末尾加上 [GOAL_REACHED]\n\n回答格式：纯文本回答\n用中文回答，简洁（30-80字）",
-        "fallbackMC": {
-          "question": "下列哪个式子可以用平方差公式计算？",
-          "questionZh": "下列哪个式子可以用平方差公式计算？",
-          "options": ["$(a+b)(a+b)$", "$(a+b)(a-b)$", "$(a+b)(c-d)$", "$(a-b)(b-a)$"],
-          "correctIndex": 1,
-          "explanation": "$(a+b)(a-b)$ 符合「一和一差」的特征，可以用平方差公式。",
-          "explanationZh": "$(a+b)(a-b)$ 符合「一和一差」的特征，可以用平方差公式。"
-        },
-        "insight": "平方差公式 $(a+b)(a-b)=a^2-b^2$：两个因式「一和一差」，相同项对应，相反项对应。结果 = 相同项² − 相反项²。",
-        "insightZh": "平方差公式 $(a+b)(a-b)=a^2-b^2$：两个因式「一和一差」，相同项对应，相反项对应。结果 = 相同项² − 相反项²。",
-        "clusters": [
-          { "id": "structure", "label": "一和一差结构", "description": "学生提到两个因式必须是一个和、一个差" },
-          { "id": "correspondence", "label": "项的对应", "description": "学生提到相同项和相反项必须对应" },
-          { "id": "counterexample", "label": "反例辨析", "description": "学生能举出不能用平方差公式的反例" }
-        ],
-        "targetPoints": [
-          { "id": "tp_2_1", "label": "一和一差结构", "description": "学生提到两个因式必须是一个和、一个差的形式" },
-          { "id": "tp_2_2", "label": "项的对应", "description": "学生说清楚相同项和相反项必须分别对应" },
-          { "id": "tp_2_3", "label": "反例辨析", "description": "学生能举出不能用平方差公式的反例并解释原因" }
-        ]
-      },
-      "summary": "通过观察，我们发现了平方差公式的结构：\n\n• **相同项**（红色）：两个括号中完全一样的部分\n• **相反项**（蓝色）：两个括号中只有符号不同的部分\n\n**平方差公式**：$(a+b)(a-b) = a^2 - b^2$\n\n用文字说：两个数的和与差的积 = 相同项的平方 − 相反项的平方。\n\n识别关键：两个因式「**一和一差**」，相同项对应，相反项对应。",
-      "teacherView": {
-        "speechLine": "让学生自己观察标红标蓝的项，归纳相同项和相反项的概念。",
-        "quickActions": [
-          { "emoji": "💡", "label": "看颜色", "message": "注意表格中红色和蓝色标注的项，它们有什么特点？", "type": "hint" },
-          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间观察思考", "type": "time" }
-        ],
-        "cueCards": [
-          {
-            "title": "引导策略",
-            "body": "让学生通过颜色标注自己发现相同项和相反项。\n\n提问模板：\n• \"红色的项在两个括号里一样吗？\"\n• \"蓝色的项有什么区别？\"\n• \"结果里的平方分别对应什么？\""
-          },
-          {
-            "title": "过渡到任务3",
-            "body": "学生完成归纳后，引导：\n\"好，公式你已经理解了。但什么样的式子才能用这个公式？下面我们来辨一辨。\""
-          }
-        ]
-      }
-    },
-    {
-      "idx": 3,
-      "id": "explore-symbolize",
-      "type": "task",
-      "displayName": "符号归纳",
-      "label": "符号归纳",
-      "labelEn": "Symbolize",
-      "subtitle": "用符号和文字总结平方差公式",
-      "duration": 4,
-      "description": "对应教案问2-4，学生用符号和文字填空归纳平方差公式。",
-      "studentView": {
-        "title": "平方差公式使用步骤",
-        "body": "<p>平方差公式使用步骤：</p><ol><li>找<b>相同项</b></li><li>找<b>相反项</b></li><li>相同项² − 相反项²</li></ol>",
-        "keyPoints": [
-          "第一步：找相同项",
-          "第二步：找相反项",
-          "第三步：相同项的平方 减 相反项的平方"
-        ],
-        "confirmLabel": "我来填写"
-      },
-      "exerciseLabel": "根据观察到的规律，完成下面的填空。",
-      "answerKey": {
-        "type": "fill-blank",
-        "sentences": [
-          {
-            "id": "s1",
-            "template": "$(a+b)(a-b)=${{1}}",
-            "blanks": { "1": { "accepts": ["a²-b²", "a^2-b^2"] } }
-          },
-          {
-            "id": "s2",
-            "template": "两个数的{{1}}与这两个数的{{2}}的乘积等于这两个数的平方差。",
-            "blanks": {
-              "1": { "accepts": ["和"] },
-              "2": { "accepts": ["差"] }
-            }
-          },
-          {
-            "id": "s3",
-            "template": "即 {{1}} ，这个公式叫做平方差公式。",
-            "blanks": { "1": { "accepts": ["(a+b)(a-b)=a²-b²", "(a+b)(a-b)=a^2-b^2"] } }
-          }
-        ]
-      },
-      "discuss": {
-        "openingQ": "你能用多项式乘法验证 $(a+b)(a-b)=a^2-b^2$ 吗？",
-        "openingQZh": "你能用多项式乘法验证 $(a+b)(a-b)=a^2-b^2$ 吗？",
-        "goal": "学生能展开 (a+b)(a-b)=a²-ab+ab-b²=a²-b²，完成验证。",
-        "maxRounds": 4,
-        "maxTimeSeconds": 180,
-        "systemPrompt": "你是一位初中数学教师助手。学生刚完成平方差公式的填空归纳练习。\n\n【教学目标】引导学生用多项式乘法展开 (a+b)(a-b) 来验证公式成立。\n\n【引导策略】\n1. 先问「你能把 (a+b)(a-b) 用多项式乘法展开吗？」\n2. 如果学生展开正确（a²-ab+ab-b²=a²-b²），肯定并追问「中间两项为什么消掉了？」\n3. 如果学生卡住，提示「把第一个括号的每一项分别乘以第二个括号的每一项」\n4. 如果学生完成验证并解释了中间项消掉的原因，在回复末尾加上 [GOAL_REACHED]\n\n用中文回答，简洁（30-80字）",
-        "fallbackMC": {
-          "question": "用多项式乘法展开 $(a+b)(a-b)$，中间两项 $-ab$ 和 $+ab$ 会怎样？",
-          "questionZh": "用多项式乘法展开 $(a+b)(a-b)$，中间两项 $-ab$ 和 $+ab$ 会怎样？",
-          "options": ["相加变成 $2ab$", "互相抵消变成 $0$", "不能合并", "变成 $a^2b^2$"],
-          "correctIndex": 1,
-          "explanation": "$-ab + ab = 0$，所以 $(a+b)(a-b) = a^2 - ab + ab - b^2 = a^2 - b^2$。",
-          "explanationZh": "$-ab + ab = 0$，所以 $(a+b)(a-b) = a^2 - ab + ab - b^2 = a^2 - b^2$。"
-        },
-        "insight": "$(a+b)(a-b) = a^2 - ab + ab - b^2 = a^2 - b^2$，中间项互相抵消，验证了平方差公式。",
-        "insightZh": "$(a+b)(a-b) = a^2 - ab + ab - b^2 = a^2 - b^2$，中间项互相抵消，验证了平方差公式。",
-        "clusters": [
-          { "id": "expand-correct", "label": "正确展开", "description": "学生能正确展开 (a+b)(a-b) 的四项" },
-          { "id": "cancel-explain", "label": "抵消解释", "description": "学生能解释 -ab+ab 互相抵消的原因" },
-          { "id": "verify-complete", "label": "验证完整", "description": "学生完成完整验证过程" }
-        ],
-        "targetPoints": [
-          { "id": "tp_3_1", "label": "正确展开", "description": "学生能用多项式乘法展开 (a+b)(a-b) 得到四项" },
-          { "id": "tp_3_2", "label": "抵消解释", "description": "学生能解释中间两项 -ab+ab 为何互相抵消" },
-          { "id": "tp_3_3", "label": "验证完成", "description": "学生完成展开验证，确认 (a+b)(a-b)=a²-b²" }
-        ]
-      },
-      "summary": "**平方差公式**的两种表述：\n\n**符号表述**：$(a+b)(a-b) = a^2 - b^2$\n\n**文字表述**：两个数的**和**与这两个数的**差**的乘积，等于这两个数的**平方差**。\n\n**验证**：用多项式乘法展开\n$(a+b)(a-b) = a^2 - ab + ab - b^2 = a^2 - b^2$ ✓\n\n中间项 $-ab + ab = 0$，互相抵消。",
-      "teacherView": {
-        "speechLine": "让学生自己用符号和文字总结公式，加深理解。",
-        "quickActions": [
-          { "emoji": "💡", "label": "回顾计算", "message": "回忆刚才三道算式的共同规律，试着用 a、b 来表示。", "type": "hint" },
-          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成填空", "type": "time" }
-        ],
-        "cueCards": [
-          {
-            "title": "引导策略",
-            "body": "让学生从具体到抽象，用符号概括规律。\n\n提问模板：\n• \"刚才的 y、3、2a 都可以用什么字母代替？\"\n• \"能用一句话描述这个公式吗？\""
-          },
-          {
-            "title": "验证引导",
-            "body": "讨论环节引导学生展开验证：\n• \"你能用多项式乘法展开 (a+b)(a-b) 吗？\"\n• \"展开后中间两项怎么了？\"\n• \"这说明公式是对的吗？\""
-          },
-          {
-            "title": "过渡到例1",
-            "body": "学生完成归纳和验证后，引导：\n\"好，公式推导完毕。接下来看看怎么用这个公式来解题。\""
-          }
-        ]
-      }
-    },
-    {
-      "idx": 4,
       "id": "apply-basic",
       "type": "task",
       "displayName": "例1：基础运用",
@@ -610,9 +418,9 @@
           { "id": "skip-check", "label": "跳过辨结构", "description": "学生提到没有先判断结构就直接套公式" }
         ],
         "targetPoints": [
-          { "id": "tp_4_1", "label": "漏平方错误", "description": "学生指出 (3a)² 应为 9a² 而非 3a² 这类整体平方错误" },
-          { "id": "tp_4_2", "label": "符号错误", "description": "学生指出正负号搞混的错误" },
-          { "id": "tp_4_3", "label": "辨结构意识", "description": "学生认识到要先辨结构再动手计算" }
+          { "id": "tp_2_1", "label": "漏平方错误", "description": "学生指出 (3a)² 应为 9a² 而非 3a² 这类整体平方错误" },
+          { "id": "tp_2_2", "label": "符号错误", "description": "学生指出正负号搞混的错误" },
+          { "id": "tp_2_3", "label": "辨结构意识", "description": "学生认识到要先辨结构再动手计算" }
         ]
       },
       "summary": "**例1小结**：使用平方差公式的三步法：\n\n**辨结构** → **定 $a$、$b$** → **代公式**\n\n$(3x+2)(3x-2)$：$a=3x, b=2 \\Rightarrow (3x)^2-2^2=9x^2-4$\n$(1+3a)(1-3a)$：$a=1, b=3a \\Rightarrow 1^2-(3a)^2=1-9a^2$\n\n**易错点**：$(3x)^2=9x^2$，$(3a)^2=9a^2$，不要漏掉整体平方！",
@@ -639,7 +447,7 @@
       }
     },
     {
-      "idx": 5,
+      "idx": 3,
       "id": "apply-advanced",
       "type": "task",
       "displayName": "例2：综合运用",
@@ -739,9 +547,9 @@
           { "id": "full-path", "label": "完整路径", "description": "学生能描述完整的解题思维路径" }
         ],
         "targetPoints": [
-          { "id": "tp_5_1", "label": "辨结构", "description": "学生提到第一步是判断算式是否符合一和一差结构" },
-          { "id": "tp_5_2", "label": "定a和b", "description": "学生提到需要正确识别相同项和相反项" },
-          { "id": "tp_5_3", "label": "完整思维路径", "description": "学生能描述辨结构→定a、b→代公式的完整路径" }
+          { "id": "tp_3_1", "label": "辨结构", "description": "学生提到第一步是判断算式是否符合一和一差结构" },
+          { "id": "tp_3_2", "label": "定a和b", "description": "学生提到需要正确识别相同项和相反项" },
+          { "id": "tp_3_3", "label": "完整思维路径", "description": "学生能描述辨结构→定a、b→代公式的完整路径" }
         ]
       },
       "summary": "**口诀：一和一差，结果平方差。**\n\n**思维路径**：辨结构 → 定 $a$、$b$ → 代公式 → 检验\n\n$(2x+3)(2x-3) = (2x)^2 - 3^2 = 4x^2 - 9$\n$(-m+n)(-m-n) = (-m)^2 - n^2 = m^2 - n^2$\n\n**注意事项**：\n• 整体平方：$(2x)^2 = 4x^2$，$(-m)^2 = m^2$\n• 结果顺序：相同项² 在前，相反项² 在后\n\n**课后练习**：用平方差公式计算 $201 \\times 199$、$53 \\times 47$。",
