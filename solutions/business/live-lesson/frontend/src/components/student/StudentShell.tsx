@@ -279,7 +279,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               enableMath={manifest.enableMath}
               onSwitchToText={manifest.article ? () => setRightMode('text') : undefined}
               collapsed={!textbookOpen}
-              onToggle={() => setTextbookOpen(o => !o)}
+              onToggle={() => { setScaffoldHints([]); setRightMode('text') }}
             />
           ) : manifest.article ? (
             <TextPanel
@@ -300,7 +300,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               hints={scaffoldHints}
               enableMath={manifest.enableMath}
               collapsed={!textbookOpen}
-              onToggle={() => setTextbookOpen(o => !o)}
+              onToggle={() => { setScaffoldHints([]); setTextbookOpen(false) }}
             />
           ) : null}
           <div className="stu-toolbar-h">
