@@ -131,6 +131,12 @@ export const ExerciseSpecSchema = z.object({
     template: z.string().optional(),
     textBlanks: z.array(z.object({ id: z.string(), inputMethods: z.array(z.string()).optional() })).optional(),
     prompt: z.string().optional(),
+    hintSteps: z.array(z.object({
+      title: z.string(),
+      widget: z.string().optional(),
+      props: z.record(z.unknown()).optional(),
+      hintZh: z.string().optional(),
+    })).optional(),
   })).optional(),
   gdTitle: z.string().optional(),
   gdSummary: z.object({

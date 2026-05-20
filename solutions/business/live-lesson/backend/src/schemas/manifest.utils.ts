@@ -266,6 +266,9 @@ function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
               }),
             })),
             ...(step.inputMethods && { inputMethods: step.inputMethods as string[] }),
+            // hintSteps are pedagogical scaffolding (widget configs, hints) shown on incorrect attempts —
+            // no answer data, safe to pass through to the student.
+            ...(step.hintSteps && { hintSteps: step.hintSteps as Array<{ title: string; widget?: string; props?: Record<string, unknown>; hintZh?: string }> }),
           };
         case 'text_blanks':
           return {
