@@ -58,7 +58,7 @@
         { "id": "practice-2", "label": "练习2", "unlockAfter": "practice-1", "partIds": ["q2"] },
         { "id": "practice-3", "label": "练习3", "unlockAfter": "practice-2", "partIds": ["q3"] },
         { "id": "discovery", "label": "引导发现", "unlockAfter": "practice-3" },
-        { "id": "takeaway", "label": "小结", "unlockAfter": "discuss" }
+        { "id": "takeaway", "label": "小结", "unlockAfter": "discovery" }
       ],
       "displayName": "探索发现",
       "label": "探索发现",
@@ -85,6 +85,7 @@
               }
             ],
             "sampleSolution": "$(y+2)(y-2) = y \\cdot y + y \\cdot (-2) + 2 \\cdot y + 2 \\cdot (-2) = y^2 - 2y + 2y - 4 = y^2 - 4$",
+            "accepts": ["y^2-4", "y²-4"],
             "maxImages": 1,
             "scaffold": {
               "threshold": 1,
@@ -145,6 +146,7 @@
               }
             ],
             "sampleSolution": "$(3-a)(3+a) = 3 \\cdot 3 + 3 \\cdot a + (-a) \\cdot 3 + (-a) \\cdot a = 9 + 3a - 3a - a^2 = 9 - a^2$",
+            "accepts": ["9-a^2", "9-a²"],
             "maxImages": 1
           },
           {
@@ -160,6 +162,7 @@
               }
             ],
             "sampleSolution": "$(2a+b)(2a-b) = 2a \\cdot 2a + 2a \\cdot (-b) + b \\cdot 2a + b \\cdot (-b) = 4a^2 - 2ab + 2ab - b^2 = 4a^2 - b^2$",
+            "accepts": ["4a^2-b^2", "4a²-b²"],
             "maxImages": 1
           }
         ]
@@ -240,27 +243,44 @@
             "id": "derivation",
             "title": "你能用学过的多项式乘法验证上面的规律吗？",
             "inputMethods": ["keyboard", "handwrite", "photo"],
-            "lines": [
+            "hintSteps": [
               {
-                "text": "$(a+b)(a-b) = a^2 - ab + ab - b^2 =$",
-                "blank": {
-                  "id": "d1",
-                  "placeholder": "最终结果",
-                  "accepts": ["a²-b²", "a^2-b^2", "a² - b²", "a^2 - b^2"],
-                  "inputMethods": ["keyboard", "handwrite", "photo"]
+                "title": "多项式乘法展开",
+                "widget": "formula-animation",
+                "props": {
+                  "formula": "(a+b)(a-b)",
+                  "pairs": [
+                    { "vars": ["a", "a"], "cls": "pair-blue" },
+                    { "vars": ["a", "-b"], "cls": "pair-green" },
+                    { "vars": ["b", "a"], "cls": "pair-amber" },
+                    { "vars": ["b", "-b"], "cls": "pair-coral" }
+                  ],
+                  "substitution": "= a² − ab + ab − b²"
                 }
               }
+            ],
+            "lines": [
+              { "text": "$(a+b)(a-b)$" },
+              {
+                "text": "$=$",
+                "blank": {
+                  "id": "d1",
+                  "placeholder": "用多项式乘法展开",
+                  "accepts": ["a^2-ab+ab-b^2", "a^2+ab-ab-b^2"],
+                  "inputMethods": ["keyboard", "handwrite", "photo"]
+                }
+              },
+              { "text": "$= a^2 - b^2$" }
             ]
           },
           {
             "type": "text_blanks",
             "id": "verbal",
-            "title": "你能用文字语言来描述上面的规律吗？",
-            "template": "两个数的{{1}}与这两个数的{{2}}的乘积等于这两个数的平方差。即 $(a+b)(a-b) =${{3}}，这个公式叫做平方差公式。",
+            "title": "用文字语言来描述上面的规律\n请在横线上填入合适的字：",
+            "template": "两个数的{{1}}与这两个数的{{2}}的乘积等于这两个数的平方差。",
             "blanks": [
               { "id": "1", "accepts": ["和"] },
-              { "id": "2", "accepts": ["差"] },
-              { "id": "3", "accepts": ["a²-b²", "a^2-b^2", "a² - b²", "a^2 - b^2"] }
+              { "id": "2", "accepts": ["差"] }
             ]
           }
         ],
@@ -361,6 +381,7 @@
               }
             ],
             "sampleSolution": "$(3x+2)(3x-2)$\n$a=3x$，$b=2$\n原式 $= (3x)^2 - 2^2 = 9x^2 - 4$",
+            "accepts": ["9x^2-4", "9x²-4"],
             "maxImages": 1,
             "scaffold": {
               "threshold": 1,
@@ -386,6 +407,7 @@
               }
             ],
             "sampleSolution": "$(1+3a)(1-3a)$\n$a=1$，$b=3a$\n原式 $= 1^2 - (3a)^2 = 1 - 9a^2$",
+            "accepts": ["1-9a^2", "1-9a²"],
             "maxImages": 1,
             "scaffold": {
               "threshold": 1,
@@ -490,6 +512,7 @@
               }
             ],
             "sampleSolution": "$(2x+3)(2x-3)$\n$a=2x$，$b=3$\n原式 $= (2x)^2 - 3^2 = 4x^2 - 9$",
+            "accepts": ["4x^2-9", "4x²-9"],
             "maxImages": 1,
             "scaffold": {
               "threshold": 1,
@@ -515,6 +538,7 @@
               }
             ],
             "sampleSolution": "$(-m+n)(-m-n)$\n相同项 $= -m$，相反项 $= n$\n原式 $= (-m)^2 - n^2 = m^2 - n^2$",
+            "accepts": ["m^2-n^2", "m²-n²"],
             "maxImages": 1,
             "scaffold": {
               "threshold": 1,
