@@ -12,3 +12,18 @@ e2e/screenshots/
 
 # ElevenLabs auth token (short-lived JWT)
 scripts/.elevenlabs-token
+
+# Backend runtime SQLite database
+backend/data/live-lesson.db
+backend/data/live-lesson.db-wal
+backend/data/live-lesson.db-shm
+
+# Session analysis artifacts
+analyze/
+
+# Word temp/lock files
+.~*.docx
+data/lessons/**/.~*.docx
+
+# Deprecated lesson source docs
+data/lessons/**/*-depracated.docx
