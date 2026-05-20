@@ -238,7 +238,7 @@ const GdObservationChoiceSchema = z.object({
   }).optional(),
   choices: z.array(z.object({
     id: z.string().min(1),
-    prompt: z.string(),
+    prompt: z.string().optional(),
     options: z.array(z.string()).length(2),
     correct: z.number().int().min(0).max(1),
   })).nonempty(),
