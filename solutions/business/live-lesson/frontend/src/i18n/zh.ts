@@ -345,6 +345,8 @@ export const zh: Record<keyof typeof en, string> = {
   'gd.confirm': '确认',
   'gd.stepCorrect': '\u2713 回答正确！',
   'gd.stepWrong': '还不太对，再试一次',
+  'gd.pickOne': '选一个',
+  'gd.retryPick': '再选 ↻',
 
   // ── Camera Modal ──
   'camera.permDenied': '相机权限被拒绝',

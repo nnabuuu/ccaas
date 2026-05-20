@@ -48,6 +48,7 @@ export interface GdObservationStep extends GdStepBase {
     opposite: { color: string; terms: string[][] }
   }
   choices: GdChoiceItem[]
+  conclusion?: string
 }
 export interface GdFormulaBlanksStep extends GdStepBase {
   type: 'formula_blanks'

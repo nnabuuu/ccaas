@@ -343,6 +343,8 @@ export const en = {
   'gd.confirm': 'Check',
   'gd.stepCorrect': '\u2713 Correct!',
   'gd.stepWrong': 'Not quite right, try again',
+  'gd.pickOne': 'Pick one',
+  'gd.retryPick': 'Retry ↻',
 
   // ── Camera Modal ──
   'camera.permDenied': 'Camera permission denied',

@@ -164,55 +164,72 @@ function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoi
       {step.choices.map(choice => {
         const status = choiceStatuses[choice.id]
         const isLocked = status === 'correct'
+        const hasAnswered = answers[choice.id] !== undefined
+        const isCorrect = status === 'correct'
         return (
-          <div key={choice.id} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14 }}><RenderMath text={choice.prompt} /></span>
-            {choice.options.map((opt, oi) => {
-              const selected = answers[choice.id] === oi
-              // Determine button styling based on feedback status
-              let border = '1px solid var(--border)'
-              let bg = 'var(--surface)'
-              let color = 'var(--t1)'
-              let fontWeight = 400
+          <div key={choice.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 14 }}><RenderMath text={choice.prompt} /></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {choice.options.map((opt, oi) => {
+                const selected = answers[choice.id] === oi
+                // Design-spec button states
+                let border = '1.5px solid var(--teal)'
+                let bg = 'var(--surface)'
+                let color = 'var(--teal)'
+                let fontWeight: number = 600
+                let opacity = 1
+                let anim: string | undefined = (!hasAnswered && !disabled) ? 'btnBreathe 2s ease-in-out infinite' : undefined
+                let clickable = !disabled && !isLocked
 
-              if (selected && status === 'correct') {
-                border = '2px solid #22c55e'
-                bg = '#f0fdf4'
-                color = '#16a34a'
-                fontWeight = 600
-              } else if (selected && status === 'wrong') {
-                border = '2px solid #ef4444'
-                bg = '#fef2f2'
-                color = '#ef4444'
-                fontWeight = 600
-              } else if (selected) {
-                border = '2px solid var(--pri)'
-                bg = 'var(--pri-light, #e0e7ff)'
-                color = 'var(--pri)'
-                fontWeight = 600
-              }
+                if (selected && status === 'correct') {
+                  border = '1.5px solid var(--green)'
+                  bg = 'var(--green-bg)'
+                  color = 'var(--green)'
+                  anim = undefined
+                  clickable = false
+                } else if (selected && status === 'wrong') {
+                  border = '1.5px solid var(--red)'
+                  bg = 'var(--red-bg)'
+                  color = 'var(--red)'
+                  opacity = 0.5
+                  anim = undefined
+                  clickable = false
+                } else if (isLocked) {
+                  // Not selected but step is locked (correct found) — stay teal, not clickable
+                  anim = undefined
+                  clickable = false
+                }
 
-              return (
-                <button
-                  key={oi}
-                  onClick={() => {
-                    if (disabled || isLocked) return
-                    onChoiceSelect(choice.id, oi)
-                  }}
-                  disabled={disabled || isLocked}
-                  style={{
-                    padding: '4px 14px', borderRadius: 6, fontSize: 13,
-                    cursor: (disabled || isLocked) ? 'default' : 'pointer',
-                    border, background: bg, fontWeight, color,
-                    opacity: disabled && !selected ? 0.5 : 1,
-                    transition: 'all .2s',
-                  }}
-                >
-                  <RenderMath text={opt} />
-                </button>
-              )
-            })}
-            {status === 'correct' && <span style={{ color: '#22c55e', fontSize: 16 }}>{'\u2713'}</span>}
+                return (
+                  <button
+                    key={oi}
+                    onClick={() => { if (clickable) onChoiceSelect(choice.id, oi) }}
+                    disabled={!clickable}
+                    style={{
+                      padding: '4px 14px', borderRadius: 6, fontSize: 13,
+                      cursor: clickable ? 'pointer' : 'default',
+                      border, background: bg, fontWeight, color, opacity,
+                      animation: anim,
+                      transition: anim ? 'opacity .2s, color .2s' : 'all .2s',
+                    }}
+                  >
+                    <RenderMath text={opt} />
+                  </button>
+                )
+              })}
+              {!hasAnswered && !disabled && (
+                <span style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                  background: 'var(--teal-bg)', color: 'var(--teal)', fontWeight: 600,
+                }}>{t('gd.pickOne')}</span>
+              )}
+              {hasAnswered && !isCorrect && (
+                <span style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                  background: 'var(--amber-bg, #fef3c7)', color: 'var(--amber, #92400e)', fontWeight: 600,
+                }}>{t('gd.retryPick')}</span>
+              )}
+            </div>
           </div>
         )
       })}
@@ -336,30 +353,56 @@ export function parseGdReview(review: ReviewData) {
 
 // ── Step feedback + transition bar ──
 
-function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, t }: {
+/* SVG icons for feedback bar */
+const CheckSvg = () => (
+  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+)
+const XSvg = () => (
+  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+)
+
+function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion, t }: {
   isCompleted: boolean; isCorrect: boolean; isLast: boolean
-  onAdvance?: () => void; t: TFn
+  onAdvance?: () => void; conclusion?: string; t: TFn
 }) {
   if (!isCompleted) return null
   return (
-    <div style={{
-      marginTop: 10, padding: '8px 12px', borderRadius: 8,
-      background: isCorrect ? '#f0fdf4' : '#fef2f2',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: isCorrect ? '#16a34a' : '#ef4444' }}>
-        {isCorrect ? t('gd.stepCorrect') : t('gd.stepWrong')}
-      </span>
+    <>
+      {/* AI feedback card */}
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        marginTop: 12, padding: '12px 14px', borderRadius: 10,
+        background: isCorrect ? 'var(--green-bg)' : 'var(--red-bg)',
+        border: `1px solid ${isCorrect ? 'rgba(45,102,18,.12)' : 'rgba(148,41,41,.12)'}`,
+      }}>
+        {/* Icon box */}
+        <span style={{
+          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+          background: isCorrect ? 'var(--green)' : 'var(--red)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {isCorrect ? <CheckSvg /> : <XSvg />}
+        </span>
+        {/* Body */}
+        <span style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 }}>
+          <strong style={{ color: isCorrect ? 'var(--green)' : 'var(--red)' }}>
+            {isCorrect ? t('gd.stepCorrect') : t('gd.stepWrong')}
+          </strong>
+          {isCorrect && conclusion && ` ${conclusion}`}
+        </span>
+      </div>
+      {/* Full-width teal "继续" button — outside feedback card */}
       {isCorrect && onAdvance && (
-        <button
-          className="stu-btn pri"
-          style={{ fontSize: 13, padding: '4px 16px' }}
-          onClick={onAdvance}
-        >
+        <button onClick={onAdvance} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          width: '100%', padding: 12, borderRadius: 8, border: 'none',
+          background: 'var(--teal)', color: '#fff',
+          fontSize: 13, fontWeight: 600, marginTop: 8, cursor: 'pointer',
+        }}>
           {isLast ? t('gd.viewSummary') : t('gd.continueNext')}
         </button>
       )}
-    </div>
+    </>
   )
 }
 
@@ -426,7 +469,7 @@ export function GuidedDiscoveryExercise({
           const isStepCompleted = !!(completedSteps?.has(step.id)) || (result !== undefined)
           const isStepCorrect = result === true || (!!(completedSteps?.has(step.id)) && result === undefined)
           const isLast = si === steps.length - 1
-          const resultColor = result === true ? '#22c55e' : result === false ? '#ef4444' : undefined
+          const resultColor = result === true ? 'var(--green)' : result === false ? 'var(--red)' : undefined
           const isAnimating = animatingIdx === si
 
           // In progressive mode, only the current (last visible) step is interactive
@@ -436,22 +479,22 @@ export function GuidedDiscoveryExercise({
           return (
             <div key={step.id} style={{
               padding: '12px 16px', borderRadius: 10,
-              border: resultColor ? `2px solid ${resultColor}`
-                : (isStepCompleted && !resultColor) ? '2px solid #22c55e'
+              border: resultColor ? `1.5px solid ${resultColor}`
+                : (isStepCompleted && !resultColor) ? '1.5px solid var(--green)'
                 : '1px solid var(--border)',
-              background: result === true ? '#f0fdf4'
-                : result === false ? '#fef2f2'
-                : (isStepCompleted && result === undefined) ? '#f0fdf4'
+              background: result === true ? 'var(--green-bg)'
+                : result === false ? 'var(--red-bg)'
+                : (isStepCompleted && result === undefined) ? 'var(--green-bg)'
                 : 'var(--surface)',
               animation: isAnimating ? 'gdCardIn .35s ease-out' : undefined,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 24, height: 24, borderRadius: '50%', fontSize: 13, fontWeight: 600,
-                  background: (result === true || (isStepCompleted && result === undefined)) ? '#22c55e'
-                    : result === false ? '#ef4444'
-                    : 'var(--pri)',
+                  width: 22, height: 22, borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  background: (result === true || (isStepCompleted && result === undefined)) ? 'var(--green)'
+                    : result === false ? 'var(--red)'
+                    : 'var(--teal)',
                   color: '#fff',
                 }}>
                   {(result === true || (isStepCompleted && result === undefined)) ? '\u2713' : result === false ? '\u2717' : si + 1}
@@ -474,6 +517,7 @@ export function GuidedDiscoveryExercise({
                       isCorrect={isStepCorrect}
                       isLast={isLast}
                       onAdvance={isStepCorrect && !effectiveAllDone ? onAdvance : undefined}
+                      conclusion={step.conclusion}
                       t={t}
                     />
                   )}
@@ -575,10 +619,10 @@ export function GuidedDiscoveryExercise({
 
         {effectiveAllDone && summary && (
           <div style={{
-            padding: '14px 18px', borderRadius: 10, border: '2px solid #22c55e',
-            background: '#f0fdf4',
+            padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(13,82,69,.15)',
+            background: 'var(--teal-bg)',
           }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--teal)', marginBottom: 6 }}>
               {summary.name || t('gd.summary')}
             </div>
             {summary.formula && (
@@ -597,6 +641,10 @@ export function GuidedDiscoveryExercise({
         @keyframes gdCardIn {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes btnBreathe {
+          0%,100% { background: var(--surface); }
+          50% { background: var(--teal-bg); }
         }
       `}</style>
     </LocaleScope>
