@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import type { ObserveData } from '../ObserveDrawer'
 import { qColor, qLabel } from '../observe-helpers'
 
@@ -12,6 +13,8 @@ interface StudentEntry {
   rubricResults: Array<{ id: string; label: string; score: number; comment: string }>
   feedback: string
   keyInsights: string[]
+  scaffoldTier?: 'independent' | 'partial' | 'full'
+  method?: 'handwrite' | 'photo'
 }
 
 interface ImageUploadData {
@@ -21,6 +24,7 @@ interface ImageUploadData {
   }
   rubricStats: RubricStat[]
   students: StudentEntry[]
+  scaffoldDistribution?: { independent: number; partial: number; full: number }
 }
 
 interface Props {
@@ -37,19 +41,58 @@ export default function ImageUploadClassView({ data, onStudentSelect }: Props) {
   const total = stats.totalStudents ?? 0
   const submitted = stats.submitted ?? 0
 
+  const avgScore = Math.round(stats.avgScore ?? 0)
+
+  // Gap 4: Filter chips + scaffold awareness
+  const [filter, setFilter] = useState('all')
+  const hasScaffold = students.some(s => s.scaffoldTier)
+  const scaffoldDist = d.scaffoldDistribution
+
+  const filterCounts = useMemo(() => ({
+    all: students.length,
+    high: students.filter(s => s.score >= 80).length,
+    low: students.filter(s => s.score < 50).length,
+    scaffold: hasScaffold ? students.filter(s => s.scaffoldTier && s.scaffoldTier !== 'independent').length : 0,
+  }), [students, hasScaffold])
+
+  const filteredStudents = useMemo(() => {
+    switch (filter) {
+      case 'high': return students.filter(s => s.score >= 80)
+      case 'low': return students.filter(s => s.score < 50)
+      case 'scaffold': return students.filter(s => s.scaffoldTier && s.scaffoldTier !== 'independent')
+      default: return students
+    }
+  }, [students, filter])
+
   return (
     <>
-      {/* Health cards */}
+      {/* Gap 5: Hero stats */}
+      <div style={{ display: 'flex', gap: 16, padding: '16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--t1)', lineHeight: 1 }}>
+            {submitted}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--t3)' }}>/{total}</span>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>已提交</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: avgScore >= 80 ? 'var(--green)' : avgScore >= 50 ? 'var(--amber)' : 'var(--red)', lineHeight: 1 }}>
+            {avgScore}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--t3)' }}>%</span>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>平均正确率</div>
+        </div>
+        {scaffoldDist && (
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', gap: 8, fontSize: 12, fontWeight: 700 }}>
+              <span style={{ color: 'var(--green)' }}>{scaffoldDist.independent}</span>
+              <span style={{ color: 'var(--amber)' }}>{scaffoldDist.partial}</span>
+              <span style={{ color: 'var(--red)' }}>{scaffoldDist.full}</span>
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>独立 / 提示 / 全部</div>
+          </div>
+        )}
+      </div>
+      {/* Detail cards */}
       <div className="obs-health">
-        <div className="hcard green">
-          <div className="hcard-lb">已提交</div>
-          <div className="hcard-v">{submitted}/{total}</div>
-        </div>
-        <div className="hcard">
-          <div className="hcard-lb">平均分</div>
-          <div className="hcard-v">{Math.round(stats.avgScore ?? 0)}</div>
-          <div className="hcard-sub">满分 100</div>
-        </div>
         <div className="hcard green">
           <div className="hcard-lb">满分</div>
           <div className="hcard-v">{stats.perfectCount ?? 0}</div>
@@ -98,10 +141,22 @@ export default function ImageUploadClassView({ data, onStudentSelect }: Props) {
         </div>
       )}
 
-      {/* Student table */}
+      {/* Student table with filter chips (Gap 4) */}
       {students.length > 0 && (
         <div>
           <div className="m2-section-h">全部学生</div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
+            {[
+              { id: 'all', label: `全部 ${filterCounts.all}` },
+              { id: 'high', label: `优秀 ${filterCounts.high}` },
+              { id: 'low', label: `需关注 ${filterCounts.low}` },
+              ...(hasScaffold ? [{ id: 'scaffold', label: `使用提示 ${filterCounts.scaffold}` }] : []),
+            ].map(chip => (
+              <button key={chip.id} className={`obs-tab${filter === chip.id ? ' active' : ''}`} onClick={() => setFilter(chip.id)}>
+                {chip.label}
+              </button>
+            ))}
+          </div>
           <table className="obs-table">
             <thead>
               <tr>
@@ -111,9 +166,19 @@ export default function ImageUploadClassView({ data, onStudentSelect }: Props) {
               </tr>
             </thead>
             <tbody>
-              {students.map(s => (
+              {filteredStudents.map(s => (
                 <tr key={s.id} onClick={() => onStudentSelect(s.id)}>
-                  <td style={{ fontWeight: 600 }}>{s.name}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    {s.name}
+                    {s.scaffoldTier && s.scaffoldTier !== 'independent' && (
+                      <span style={{
+                        marginLeft: 4, fontSize: 9, padding: '1px 4px', borderRadius: 2,
+                        background: s.scaffoldTier === 'full' ? 'var(--red-soft)' : 'var(--amber-soft)',
+                        color: s.scaffoldTier === 'full' ? 'var(--red)' : 'var(--amber)',
+                        fontWeight: 600,
+                      }}>{s.scaffoldTier === 'full' ? '全部提示' : '部分提示'}</span>
+                    )}
+                  </td>
                   <td>
                     <span style={{ fontSize: 11, fontWeight: 700, color: s.score >= 80 ? 'var(--green)' : s.score >= 50 ? 'var(--blue)' : 'var(--amber)' }}>
                       {s.score}

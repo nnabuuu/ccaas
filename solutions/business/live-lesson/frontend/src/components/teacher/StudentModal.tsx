@@ -79,6 +79,66 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
   const discussQs = studentStepQuestions.filter(q => q.category === 'discuss')
   const askQs = studentStepQuestions.filter(q => q.category !== 'discuss')
 
+  // ── Gap 9: Extract submission method ──
+  const selSubMethod = useMemo(() => {
+    if (!selSub?.data) return undefined
+    const d = selSub.data as Record<string, unknown>
+    if (d.method) return d.method as string
+    const parts = d.parts as Record<string, { attemptsHistory?: Array<{ method?: string; submittedAt?: string }> }> | undefined
+    if (!parts) return undefined
+    let latest = ''
+    let latestTs = 0
+    for (const pp of Object.values(parts)) {
+      if (!pp?.attemptsHistory?.length) continue
+      const last = pp.attemptsHistory[pp.attemptsHistory.length - 1]
+      const ts = last.submittedAt ? new Date(last.submittedAt).getTime() : 0
+      if (last.method && ts > latestTs) {
+        latest = last.method
+        latestTs = ts
+      }
+    }
+    return latest || undefined
+  }, [selSub])
+
+  // ── Gap 1: Extract submission images ──
+  const selSubImages = useMemo(() => {
+    if (!selSub?.data) return []
+    const d = selSub.data as Record<string, unknown>
+    const directImages = (d.images || []) as string[]
+    const parts = d.parts as Record<string, { attemptsHistory?: Array<{ images?: string[] }> }> | undefined
+    const partImages: string[] = []
+    if (parts) {
+      for (const pp of Object.values(parts)) {
+        if (!pp?.attemptsHistory?.length) continue
+        const last = pp.attemptsHistory[pp.attemptsHistory.length - 1]
+        if (last.images) partImages.push(...last.images)
+      }
+    }
+    return [...directImages, ...partImages].filter(img => typeof img === 'string' && img.startsWith('data:image/'))
+  }, [selSub])
+
+  // ── Gap 2: Extract scaffold levels from submission parts ──
+  const selScaffoldParts = useMemo(() => {
+    if (!selSub?.data) return []
+    const d = selSub.data as Record<string, unknown>
+    const parts = d.parts as Record<string, { scaffoldLevel?: number }> | undefined
+    if (!parts) return []
+    const step = taskSteps[selectedStep - 1]
+    const akParts = (step?.answerKey as any)?.parts as Array<{ id: string; scaffold?: { levels: unknown[] } }> | undefined
+    return Object.entries(parts)
+      .filter(([, pp]) => pp?.scaffoldLevel !== undefined)
+      .map(([partId, pp], i) => {
+        const idx = akParts?.findIndex(p => p.id === partId) ?? -1
+        const maxLevel = (idx >= 0 ? akParts![idx] : akParts?.[0])?.scaffold?.levels?.length ?? 2
+        return {
+          partId,
+          label: `Part ${idx >= 0 ? idx + 1 : i + 1}`,
+          scaffoldLevel: pp!.scaffoldLevel!,
+          maxLevel,
+        }
+      })
+  }, [selSub, taskSteps, selectedStep])
+
   return (
     <div className="overlay" onClick={(e) => { if ((e.target as HTMLElement).classList.contains('overlay')) onClose() }}>
       <div className="modal">
@@ -89,6 +149,26 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
             <div className="mod-ti-n">{student.name}</div>
             <div className="mod-ti-m">
               当前在 {stepName}
+              {selSub && (
+                <>
+                  <span style={{ margin: '0 4px', color: 'var(--t3)' }}>·</span>
+                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: 'var(--green-soft)', color: 'var(--green)', fontWeight: 600 }}>已提交</span>
+                </>
+              )}
+              {selSubMethod && (
+                <>
+                  <span style={{ margin: '0 3px', color: 'var(--t3)' }}>·</span>
+                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: 'var(--surface2)', color: 'var(--t2)', fontWeight: 500 }}>
+                    {selSubMethod === 'handwrite' ? '手写作答' : selSubMethod === 'photo' ? '拍照提交' : selSubMethod}
+                  </span>
+                </>
+              )}
+              {typeof selSub?.duration === 'number' && selSub.duration > 0 && (
+                <>
+                  <span style={{ margin: '0 3px', color: 'var(--t3)' }}>·</span>
+                  <span style={{ fontSize: 10, color: 'var(--t3)' }}>用时 {fmtDur(selSub.duration as number)}</span>
+                </>
+              )}
               {student.currentPhase === 'discuss' && student.discussMeta && (
                 <span style={{ marginLeft: 8, fontSize: 11, color: student.discussMeta.goalReached ? 'var(--green)' : 'var(--t3)' }}>
                   {student.discussMeta.goalReached
@@ -184,6 +264,22 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                     {Object.keys(selByDim).length === 0 && (
                       <div style={{ fontSize: 12, color: 'var(--t3)' }}>已提交，暂无维度数据</div>
                     )}
+                    {/* Gap 1: Image preview */}
+                    {selSubImages.length > 0 && (
+                      <div style={{ marginTop: 12 }}>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>作答图片</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+                          {selSubImages.slice(0, 4).map((img, i) => (
+                            <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                              <img src={img} alt={`作答 ${i + 1}`} loading="lazy" style={{ width: '100%', display: 'block', maxHeight: 200, objectFit: 'contain' }} />
+                            </div>
+                          ))}
+                        </div>
+                        {selSubImages.length > 4 && (
+                          <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>共 {selSubImages.length} 张图片</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: 'var(--t3)' }}>
@@ -192,8 +288,30 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                 )}
               </div>
 
-              {/* Right col: AI chat or class compare */}
+              {/* Right col: scaffold + AI chat or class compare */}
               <div className="mod-col right">
+                {/* Gap 2: Scaffold usage */}
+                {selScaffoldParts.length > 0 && (
+                  <>
+                    <div className="mod-h">提示使用</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+                      {selScaffoldParts.map(sp => {
+                        const level = sp.scaffoldLevel
+                        const isFull = level >= 0 && level >= sp.maxLevel - 1
+                        const color = level === -1 ? 'var(--green)' : isFull ? 'var(--red)' : 'var(--amber)'
+                        const bg = level === -1 ? 'var(--green-soft)' : isFull ? 'var(--red-soft)' : 'var(--amber-soft)'
+                        const tierLabel = level === -1 ? '独立完成' : `已查看 ${level + 1} 级提示`
+                        return (
+                          <div key={sp.partId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                            <span style={{ fontSize: 11, color: 'var(--t2)', flex: 1 }}>{sp.label}</span>
+                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 3, background: bg, color, fontWeight: 600 }}>{tierLabel}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
                 {studentStepQuestions.length > 0 ? (
                   <>
                     {/* Discuss replay section */}
@@ -261,6 +379,15 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
       </div>
     </div>
   )
+}
+
+function fmtDur(sec: number): string {
+  const total = Math.round(sec)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  if (m === 0 && s === 0) return '<1秒'
+  if (m === 0) return `${s}秒`
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 function CompareBar({ label, studentVal, classVal, max, unit, color }: {
