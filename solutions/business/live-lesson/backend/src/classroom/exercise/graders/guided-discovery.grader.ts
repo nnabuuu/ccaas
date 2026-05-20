@@ -137,30 +137,44 @@ export class GuidedDiscoveryGrader implements Grader {
     stepDef: GuidedDiscoveryStep,
   ): Promise<ImageGradeResult> {
     const labelPart = blank.label ? `学生正在填写：${blank.label}` : `填空题（步骤：${stepDef.title}）`;
-    const rejectsPart = blank.rejects?.length ? `\n常见错误：${blank.rejects.join(', ')}` : '';
 
     const userText = `${labelPart}
-正确答案（任一即可）：${blank.accepts.join(', ')}${rejectsPart}
-
-请识别图片中的手写内容，判断是否与正确答案之一匹配。
-输出JSON：{ "recognized": "识别出的表达式", "correct": true/false, "feedback": "简短反馈(20字内)" }`;
+请识别图片中所有未被划掉的手写内容，然后根据上述填写位置，提取对应的答案。
+输出JSON：{ "allText": "所有识别出的内容，多行用\\n分隔", "recognized": "对应填写位置的表达式或文字" }`;
 
     try {
       const raw = await this.aiPromptBuilder!.callVisionLlm(
-        '你是一位初中数学教师助手。请识别学生手写的数学表达式，判断是否与正确答案匹配。',
+        '你是一位数学手写识别助手。请准确识别图片中学生手写的所有数学表达式或文字。\n如果有涂改或划掉的内容，请忽略被划掉的部分。',
         [
           { type: 'image_url', image_url: { url: imageUri } },
           { type: 'text', text: userText },
         ],
-        { maxTokens: 200, temperature: 0.1, responseFormat: { type: 'json_object' } },
+        { maxTokens: 200, temperature: 0, responseFormat: { type: 'json_object' } },
       );
 
       const cleaned = raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();
-      const parsed = JSON.parse(cleaned) as { recognized?: string; correct?: boolean; feedback?: string };
-      return {
-        correct: parsed.correct === true,
-        feedback: parsed.feedback,
-      };
+      const parsed = JSON.parse(cleaned) as { allText?: string; recognized?: string };
+      const recognized = parsed.recognized?.trim();
+      const allText = parsed.allText?.trim();
+
+      if (!recognized) {
+        return { correct: false, feedback: '无法识别手写内容，请重新书写' };
+      }
+
+      if (matchesAny(recognized, blank.accepts)) {
+        return { correct: true };
+      }
+      if (allText) {
+        const lines = allText.split('\n').map(l => l.replace(/^[=＝]\s*/, '').trim()).filter(Boolean);
+        if (lines.some(line => matchesAny(line, blank.accepts))) {
+          return { correct: true };
+        }
+      }
+      if (blank.rejects?.length && matchesAny(recognized, blank.rejects) && blank.rejectHint) {
+        return { correct: false, feedback: blank.rejectHint };
+      }
+      const display = recognized.length > 50 ? recognized.slice(0, 50) + '…' : recognized;
+      return { correct: false, feedback: `识别结果「${display}」不正确` };
     } catch (e) {
       this.logger.warn(`Vision grading failed for blank ${blank.id}: ${e}`);
       return { correct: false, feedback: '图片识别失败，请重新提交' };

@@ -33,6 +33,8 @@ interface HandwritingCanvasProps {
   onContentStatusChange?: (hasContent: boolean) => void
   disabled?: boolean
   locale?: Locale
+  /** When true, auto-create the first canvas page on mount (skip empty-state chooser). */
+  autoStart?: boolean
 }
 
 /* ── Constants ── */
@@ -43,7 +45,7 @@ const H = 480
 /* ── Component ── */
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, HandwritingCanvasProps>(
-  function HandwritingCanvas({ maxPages = 5, onPagesChange, onContentStatusChange, disabled, locale }, ref) {
+  function HandwritingCanvas({ maxPages = 5, onPagesChange, onContentStatusChange, disabled, locale, autoStart }, ref) {
     const t = useT(locale)
     const canvasRefs = useRef<Record<number, HTMLCanvasElement | null>>({})
     const strokesRef = useRef<Record<number, Stroke[]>>({})
@@ -175,6 +177,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         }
       })
     }, [pages, redrawTick, redrawPage])
+
+    /* ── Auto-start: skip empty-state chooser ── */
+
+    useEffect(() => {
+      if (autoStart && pages.length === 0) addCanvasPage()
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     /* ── Drawing ── */
 
