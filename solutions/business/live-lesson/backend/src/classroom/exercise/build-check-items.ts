@@ -124,6 +124,7 @@ export function buildCheckItems(
       return result;
     }
 
+    case 'rich-content-quiz':
     case 'image-upload': {
       const rubric = (ak.rubric || []) as Array<Record<string, unknown>>;
       const llmItemsMap = new Map<string, { reason: string }>();
@@ -163,6 +164,18 @@ export function buildCheckItems(
             ...(!correct && blanks[blankId]?.hint && { hint: blanks[blankId].hint as string }),
           });
         }
+      }
+      return result;
+    }
+
+    case 'guided-discovery': {
+      const steps = (ak.steps || []) as Array<Record<string, unknown>>;
+      const result: Array<Record<string, unknown>> = steps.map((step) => ({
+        idx: step.id as string,
+        correct: dimOk(gradeResult.byDimension?.[step.id as string]),
+      }));
+      if (gradeResult.llmFeedback) {
+        result.push({ idx: '_llm', correct: true, hint: gradeResult.llmFeedback });
       }
       return result;
     }
