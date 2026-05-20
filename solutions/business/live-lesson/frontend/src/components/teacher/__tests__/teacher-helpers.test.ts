@@ -10,7 +10,10 @@ import {
   computePhaseDistribution,
   getObserveType,
   getCatBadgeClass,
+  getEffectivePhaseConfig,
+  getPhaseIcon,
 } from '../teacher-helpers'
+import type { ReadingManifest, ReadingStep, PhaseConfig } from '../../../types/reading'
 
 // ── Factories ──
 
@@ -294,7 +297,7 @@ describe('formatRelative', () => {
 // ── computePhaseDistribution ──
 
 describe('computePhaseDistribution', () => {
-  it('counts students in each phase for the given step', () => {
+  it('counts students in each phase for the given step (default phases)', () => {
     const students = [
       makeStudent({ id: 's1', currentTask: 2, currentPhase: 'listen' }),
       makeStudent({ id: 's2', currentTask: 2, currentPhase: 'practice' }),
@@ -315,12 +318,91 @@ describe('computePhaseDistribution', () => {
     expect(dist.completed).toBe(2)
   })
 
-  it('defaults to listen for missing phase', () => {
+  it('defaults to first phase for missing phase', () => {
     const students = [
       makeStudent({ id: 's1', currentTask: 1, currentPhase: '' }),
     ]
     const dist = computePhaseDistribution(students as any, 1)
     expect(dist.listen).toBe(1)
+  })
+
+  it('uses custom phaseIds when provided', () => {
+    const customPhases = ['listen', 'practice-1', 'practice-2', 'discovery', 'takeaway']
+    const students = [
+      makeStudent({ id: 's1', currentTask: 1, currentPhase: 'practice-1' }),
+      makeStudent({ id: 's2', currentTask: 1, currentPhase: 'practice-2' }),
+      makeStudent({ id: 's3', currentTask: 1, currentPhase: 'discovery' }),
+    ]
+    const dist = computePhaseDistribution(students as any, 1, customPhases)
+    expect(dist['practice-1']).toBe(1)
+    expect(dist['practice-2']).toBe(1)
+    expect(dist.discovery).toBe(1)
+    expect(dist.listen).toBe(0)
+    expect(dist.completed).toBe(0)
+  })
+
+  it('falls back unknown phase to first phaseId', () => {
+    const customPhases = ['listen', 'practice']
+    const students = [
+      makeStudent({ id: 's1', currentTask: 1, currentPhase: 'unknown-phase' }),
+    ]
+    const dist = computePhaseDistribution(students as any, 1, customPhases)
+    expect(dist.listen).toBe(1)
+  })
+
+  it('returns Record<string, number> with all phaseIds as keys', () => {
+    const customPhases = ['a', 'b', 'c']
+    const dist = computePhaseDistribution([] as any, 1, customPhases)
+    expect(Object.keys(dist).sort()).toEqual(['a', 'b', 'c', 'completed'].sort())
+    expect(dist.a).toBe(0)
+    expect(dist.b).toBe(0)
+    expect(dist.c).toBe(0)
+    expect(dist.completed).toBe(0)
+  })
+})
+
+// ── getEffectivePhaseConfig ──
+
+describe('getEffectivePhaseConfig', () => {
+  const makeStep = (pc?: PhaseConfig[]) => ({ phaseConfig: pc } as ReadingStep)
+  const makeManifest = (pc?: PhaseConfig[]) => ({ phaseConfig: pc } as ReadingManifest)
+
+  it('uses step-level phaseConfig when present', () => {
+    const stepPC: PhaseConfig[] = [{ id: 'a', label: 'A', unlockAfter: null }]
+    const manifestPC: PhaseConfig[] = [{ id: 'b', label: 'B', unlockAfter: null }]
+    expect(getEffectivePhaseConfig(makeStep(stepPC), makeManifest(manifestPC))).toBe(stepPC)
+  })
+
+  it('falls back to manifest-level phaseConfig', () => {
+    const manifestPC: PhaseConfig[] = [{ id: 'b', label: 'B', unlockAfter: null }]
+    expect(getEffectivePhaseConfig(makeStep(), makeManifest(manifestPC))).toBe(manifestPC)
+  })
+
+  it('falls back to DEFAULT_PHASE_CONFIG when both are missing', () => {
+    const result = getEffectivePhaseConfig(makeStep(), makeManifest())
+    expect(result).toHaveLength(4)
+    expect(result.map(p => p.id)).toEqual(['listen', 'practice', 'discuss', 'takeaway'])
+  })
+})
+
+// ── getPhaseIcon ──
+
+describe('getPhaseIcon', () => {
+  it('returns known icons for standard phases', () => {
+    expect(getPhaseIcon('listen')).toBe('🎧')
+    expect(getPhaseIcon('practice')).toBe('✏️')
+    expect(getPhaseIcon('discuss')).toBe('💬')
+    expect(getPhaseIcon('takeaway')).toBe('📝')
+    expect(getPhaseIcon('discovery')).toBe('🔍')
+  })
+
+  it('returns practice icon for practice-N variants', () => {
+    expect(getPhaseIcon('practice-1')).toBe('✏️')
+    expect(getPhaseIcon('practice-2')).toBe('✏️')
+  })
+
+  it('returns fallback for unknown phases', () => {
+    expect(getPhaseIcon('unknown')).toBe('📋')
   })
 })
 
@@ -334,6 +416,9 @@ describe('getObserveType', () => {
     ['select-evidence', 'evidence'],
     ['map', 'map'],
     ['matrix', 'matrix'],
+    ['guided-discovery', 'guided-discovery'],
+    ['rich-content-quiz', 'image-upload'],
+    ['image-upload', 'image-upload'],
   ])('maps %s → %s', (input, expected) => {
     expect(getObserveType(input)).toBe(expected)
   })

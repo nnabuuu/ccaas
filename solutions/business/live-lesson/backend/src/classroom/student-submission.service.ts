@@ -183,11 +183,13 @@ export class StudentSubmissionService {
         partProgress.scaffoldLevel = nextLevel;
         partProgress.completed = false;
         const isLastLevel = nextLevel === partDef.scaffold.levels.length - 1;
+        const levelDef = partDef.scaffold.levels[nextLevel];
         scaffoldResponse = {
           level: nextLevel,
-          hintZh: partDef.scaffold.levels[nextLevel].hintZh,
-          hintImage: partDef.scaffold.levels[nextLevel].hintImage,
+          hintZh: levelDef.hintZh,
+          hintImage: levelDef.hintImage,
           canRetry: !isLastLevel,
+          steps: levelDef.steps as NonNullable<SubmitResponse['scaffold']>['steps'],
         };
       } else {
         // All scaffold levels exhausted — mark as completed

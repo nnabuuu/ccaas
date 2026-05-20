@@ -29,6 +29,7 @@ interface Props {
   stepNum: number
   manifest: ReadingManifest
   sessionCode: string
+  partIds?: string[]
   onClose: () => void
 }
 
@@ -58,7 +59,7 @@ function ErrorView({ error }: { error: string }) {
   )
 }
 
-export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, onClose }: Props) {
+export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, partIds, onClose }: Props) {
   const [data, setData] = useState<ObserveData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -72,21 +73,26 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
   const stepName = step ? getStepName(step) : `Step ${stepNum}`
   const axes = step?.answerKey?.axes as { x: { neg: string; pos: string }; y: { neg: string; pos: string } } | undefined
 
+  const partIdsKey = partIds?.join(',') ?? ''
+
   useEffect(() => {
     setLoading(true)
     setError(null)
     setData(null)
     setSelectedStudent(null)
 
-    const viewParam = (type === 'mc' || type === 'evidence') ? `?view=${view}` : ''
-    fetch(`/api/classroom/${sessionCode}/steps/${stepNum}/observe/${type}${viewParam}`)
+    const params = new URLSearchParams()
+    if (type === 'mc' || type === 'evidence') params.set('view', view)
+    if (partIdsKey) params.set('partIds', partIdsKey)
+    const qs = params.toString()
+    fetch(`/api/classroom/${sessionCode}/steps/${stepNum}/observe/${type}${qs ? `?${qs}` : ''}`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
       .then(d => { setData(d); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
-  }, [type, stepNum, sessionCode, view])
+  }, [type, stepNum, sessionCode, view, partIdsKey])
 
   const studentIds = useMemo(
     () => (data?.students || []).map(s => s.id as string),

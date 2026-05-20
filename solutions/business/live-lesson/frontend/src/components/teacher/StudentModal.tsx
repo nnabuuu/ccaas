@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS, getCatBadgeClass, getStepName, stripDiscussTag, PHASE_LABELS } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, getCatBadgeClass, getStepName, stripDiscussTag, PHASE_LABELS, getEffectivePhaseConfig } from './teacher-helpers'
 
 export function StudentModal({ student, manifest, state, questions, onClose }: {
   student: ClassroomState['students'][0]
@@ -41,7 +41,10 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
     if (sn === student.currentTask) {
       const name = getStepName(rs)
       const phase = student.currentPhase || 'listen'
-      const phaseLabel = PHASE_LABELS[phase]
+      const effectivePhases = getEffectivePhaseConfig(rs, manifest)
+      const phaseLabel = effectivePhases.find(p => p.id === phase)?.label
+        || PHASE_LABELS[phase]
+        || phase
       const isStuck = student.stepStartedAt && (Date.now() - new Date(student.stepStartedAt).getTime()) > STUCK_THRESHOLD_MS
       if (isStuck) return { sn, label: name, status: 'stuck' as const, result: 'partial' as const, score: sub?.score?.total ?? 0, phaseLabel }
       return { sn, label: name, status: 'prog' as const, result: 'partial' as const, score: sub?.score?.total ?? 0, phaseLabel }

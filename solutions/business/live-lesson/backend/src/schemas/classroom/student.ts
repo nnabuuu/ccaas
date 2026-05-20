@@ -20,6 +20,12 @@ export interface SubmitResponse {
     hintZh: string;
     hintImage?: string;
     canRetry: boolean;
+    steps?: Array<{
+      title: string;
+      hintZh?: string;
+      widget?: string;
+      props?: Record<string, unknown>;
+    }>;
   } | null;
   nextPartId?: string | null;
 }

@@ -198,6 +198,7 @@ export class ClassroomController {
     @Param('step') step: string,
     @Param('type') type: string,
     @Query('view') view?: string,
+    @Query('partIds') partIdsRaw?: string,
   ) {
     const parsedStep = parseInt(step, 10);
     if (isNaN(parsedStep) || parsedStep < 1) {
@@ -210,10 +211,19 @@ export class ClassroomController {
     const stepIdx = taskMap.taskToStep[parsedStep];
     if (stepIdx == null) throw new NotFoundException('Step not found');
 
-    type StepDef = { idx: number; answerKey?: unknown };
+    type StepDef = { idx: number; answerKey?: unknown; discoveryKey?: unknown };
     const readingSteps: StepDef[] = (manifest?.readingSteps as StepDef[]) || [];
     const stepDef = readingSteps.find(s => s.idx === stepIdx);
-    const answerKey = (stepDef?.answerKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
+
+    // When type='guided-discovery', prefer discoveryKey over answerKey
+    let answerKey: import('../schemas/answer-key.schema').AnswerKey | null;
+    if (type === 'guided-discovery' && stepDef?.discoveryKey) {
+      answerKey = (stepDef.discoveryKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
+    } else {
+      answerKey = (stepDef?.answerKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
+    }
+
+    const partIds = partIdsRaw ? partIdsRaw.split(',').filter(Boolean) : undefined;
 
     const { students, subsByStudent } = await this.observeRegistry.loadObserveData(session.id);
 
@@ -225,6 +235,7 @@ export class ClassroomController {
       stepIdx,
       answerKey,
       view: view === 'first' ? 'first' : 'latest',
+      partIds,
     });
   }
 

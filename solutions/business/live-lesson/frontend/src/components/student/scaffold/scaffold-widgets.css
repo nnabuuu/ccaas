@@ -1,0 +1,100 @@
+/* ── Scaffold Widgets — FormulaAnimation + SolutionDisplay ── */
+/* Ported from design/Practice 多项式乘法 v3.html */
+
+/* All classes prefixed with sw- to avoid collisions */
+
+/* ═══ Formula Animation ═══ */
+.sw-formula-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:16px;margin:4px 0;
+}
+.sw-formula-label-row{margin-bottom:8px}
+.sw-formula-rule-label{
+  font-size:10px;font-weight:600;color:var(--t3);
+  text-transform:uppercase;letter-spacing:.4px;
+}
+.sw-formula-main{
+  font-size:22px;font-weight:600;text-align:center;
+  padding:6px 0;letter-spacing:.5px;
+}
+.sw-fp{color:var(--t3);font-weight:400}
+.sw-fo{color:var(--t3);font-weight:400;margin:0 2px}
+.sw-fv{
+  display:inline-block;padding:1px 4px;border-radius:4px;
+  transition:all .35s ease;font-style:italic;
+}
+.sw-fv.fv-dim{opacity:.25}
+.sw-fv.fv-done{opacity:1}
+.sw-fv.pair-blue  {background:var(--blue-bg);color:var(--blue)}
+.sw-fv.pair-green {background:var(--green-bg);color:var(--green)}
+.sw-fv.pair-amber {background:var(--amber-bg);color:var(--amber)}
+.sw-fv.pair-coral {background:var(--coral-bg);color:var(--coral)}
+
+.sw-formula-expand{
+  text-align:center;font-size:18px;font-weight:600;
+  padding:8px 0 4px;min-height:32px;
+}
+.sw-feq{color:var(--t3);font-weight:400;margin-right:4px}
+.sw-fplus{
+  color:var(--t3);font-weight:400;
+  opacity:0;transition:opacity .35s ease;
+}
+.sw-fplus.vis{opacity:1}
+.sw-ft{
+  display:inline-block;padding:2px 5px;border-radius:4px;
+  font-style:italic;font-size:16px;
+  opacity:0;transform:translateY(6px);
+  transition:all .4s ease;
+}
+.sw-ft.vis{opacity:1;transform:translateY(0)}
+.sw-ft.pair-blue {background:var(--blue-bg);color:var(--blue)}
+.sw-ft.pair-green{background:var(--green-bg);color:var(--green)}
+.sw-ft.pair-amber{background:var(--amber-bg);color:var(--amber)}
+.sw-ft.pair-coral{background:var(--coral-bg);color:var(--coral)}
+
+.sw-formula-subst{
+  text-align:center;padding:6px 0 2px;
+  animation:scaffold-hintIn .4s ease;
+}
+.sw-formula-subst-label{
+  font-size:11px;color:var(--teal);font-weight:500;
+  background:var(--teal-bg);display:inline-block;
+  padding:3px 10px;border-radius:6px;
+}
+.sw-formula-play{
+  display:flex;align-items:center;gap:6px;
+  margin:10px auto 0;padding:5px 12px;border-radius:6px;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--t2);font-size:11px;font-weight:500;
+  font-family:inherit;cursor:pointer;transition:all .15s;
+}
+.sw-formula-play:hover{
+  border-color:var(--purple);color:var(--purple);background:var(--purple-bg);
+}
+.sw-formula-playing{color:var(--t3)}
+
+/* ═══ Solution Display ═══ */
+.sw-solution{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:16px 20px;
+}
+.sw-sol-line{
+  font-size:15px;line-height:2;color:var(--t1);font-weight:500;
+  opacity:0;transform:translateX(-8px);transition:all .4s ease;
+}
+.sw-sol-line.vis{opacity:1;transform:translateX(0)}
+.sw-sol-prefix{color:var(--t3);font-weight:400;margin-right:4px}
+.sw-sol-final{font-weight:700}
+.sw-sol-answer{
+  display:inline-block;background:var(--green-bg);color:var(--green);
+  padding:2px 10px;border-radius:6px;font-weight:700;font-size:17px;
+}
+
+/* Keyframe used by subst animation (also defined in scaffold-panel.css) */
+@keyframes scaffold-hintIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ Reduced motion ═══ */
+@media(prefers-reduced-motion:reduce){
+  .sw-fv,.sw-ft,.sw-fplus,.sw-sol-line{transition:none}
+  .sw-formula-subst{animation:none}
+}

@@ -137,7 +137,10 @@ export class ImageUploadObserveHandler implements ObserveHandler {
   }
 
   /** Parts-aware observe computation for rich-content-quiz with parts */
-  private computePartsAware(ctx: ObserveContext, parts: RichContentPart[]): RichContentQuizObserveData {
+  private computePartsAware(ctx: ObserveContext, allParts: RichContentPart[]): RichContentQuizObserveData {
+    const parts = ctx.partIds
+      ? allParts.filter(p => ctx.partIds!.includes(p.id))
+      : allParts;
     const totalStudents = ctx.students.length;
     let submitted = 0;
     let totalScore = 0;

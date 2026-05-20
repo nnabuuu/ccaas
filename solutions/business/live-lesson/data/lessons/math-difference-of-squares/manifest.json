@@ -93,10 +93,44 @@
               "threshold": 1,
               "levels": [
                 {
-                  "hintZh": "**第一步·理思路**：这需要用到多项式乘法——把第一个括号的每一项分别乘以第二个括号的每一项。\n\n**第二步·列公式**：$(y+2)(y-2) = y \\cdot y + y \\cdot (-2) + 2 \\cdot y + 2 \\cdot (-2)$"
+                  "hintZh": "**第一步·理思路**：这需要用到多项式乘法——把第一个括号的每一项分别乘以第二个括号的每一项。\n\n**第二步·列公式**：$(y+2)(y-2) = y \\cdot y + y \\cdot (-2) + 2 \\cdot y + 2 \\cdot (-2)$",
+                  "steps": [
+                    {
+                      "title": "第1步·理思路",
+                      "hintZh": "这道题需要用到上节课学过的**多项式乘法**法则。\n\n<span class=\"hl-expr\">(y + 2)(y − 2)</span> 是两个多项式相乘的形式。\n\n用**乘法分配律**把每一项逐个相乘再相加。"
+                    },
+                    {
+                      "title": "第2步·列公式",
+                      "widget": "formula-animation",
+                      "props": {
+                        "formula": "(a+b)(m+n)",
+                        "pairs": [
+                          { "vars": ["a", "m"], "cls": "pair-blue" },
+                          { "vars": ["a", "n"], "cls": "pair-green" },
+                          { "vars": ["b", "m"], "cls": "pair-amber" },
+                          { "vars": ["b", "n"], "cls": "pair-coral" }
+                        ],
+                        "substitution": "代入本题：a = y，b = 2，m = y，n = −2"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "hintZh": "**第三步·写过程**：\n原式 $= y^2 - 2y + 2y - 4 = y^2 - 4$\n\n答案是 $y^2 - 4$"
+                  "hintZh": "**第三步·写过程**：\n原式 $= y^2 - 2y + 2y - 4 = y^2 - 4$\n\n答案是 $y^2 - 4$",
+                  "steps": [
+                    {
+                      "title": "第3步·完整解答",
+                      "widget": "solution-display",
+                      "props": {
+                        "lines": [
+                          { "prefix": "解：", "text": "原式" },
+                          { "prefix": "= ", "text": "y · y + y · (−2) + 2 · y + 2 · (−2)" },
+                          { "prefix": "= ", "text": "y² − 2y + 2y − 4" },
+                          { "prefix": "= ", "text": "y² − 4", "isFinal": true }
+                        ]
+                      }
+                    }
+                  ]
                 }
               ]
             }

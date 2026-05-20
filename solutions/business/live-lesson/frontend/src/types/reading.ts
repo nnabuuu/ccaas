@@ -81,6 +81,7 @@ export interface ReadingStep {
     insight: string
     insightZh?: string
   }
+  discoveryKey?: { type: string; [key: string]: unknown }
   answerKey?: {
     type: string
     answers?: Array<{

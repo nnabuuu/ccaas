@@ -176,9 +176,17 @@ const ImageUploadAnswerKeySchema = z.object({
 
 // ── Rich Content Quiz (extends image-upload with parts + scaffold) ──
 
+const ScaffoldStepSchema = z.object({
+  title: z.string().min(1),
+  hintZh: z.string().optional(),
+  widget: z.enum(['formula-animation', 'solution-display']).optional(),
+  props: z.record(z.unknown()).optional(),
+});
+
 const ScaffoldLevelSchema = z.object({
   hintZh: z.string().min(1),
   hintImage: z.string().optional(),
+  steps: z.array(ScaffoldStepSchema).optional(),
 });
 
 const ScaffoldSchema = z.object({

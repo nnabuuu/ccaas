@@ -1,4 +1,5 @@
 import type { ClassroomState } from '../../hooks/useClassroom'
+import type { ReadingManifest, ReadingStep, PhaseConfig } from '../../types/reading'
 
 export const STUCK_THRESHOLD_MS = 180_000 // 3 minutes
 export const HIGHLIGHT_MATCH_TOLERANCE_MS = 120_000 // 2 minutes
@@ -189,17 +190,48 @@ export function formatRelative(ts: string): string {
 export function computePhaseDistribution(
   students: ClassroomState['students'],
   stepNum: number,
-): { listen: number; practice: number; discuss: number; takeaway: number; completed: number } {
-  const dist = { listen: 0, practice: 0, discuss: 0, takeaway: 0, completed: 0 }
+  phaseIds: string[] = ['listen', 'practice', 'discuss', 'takeaway'],
+): Record<string, number> {
+  const dist: Record<string, number> = Object.fromEntries(phaseIds.map(id => [id, 0]))
+  dist.completed = 0
   for (const s of students) {
     if (s.currentTask === stepNum) {
-      const phase = (s.currentPhase || 'listen') as keyof typeof dist
+      const phase = s.currentPhase || phaseIds[0] || 'listen'
       if (phase in dist) dist[phase]++
+      else dist[phaseIds[0]]++
     } else if (s.currentTask > stepNum) {
       dist.completed++
     }
   }
   return dist
+}
+
+// ── Phase Config Helpers ──
+
+const DEFAULT_PHASE_CONFIG: PhaseConfig[] = [
+  { id: 'listen', label: '阅读中', unlockAfter: null },
+  { id: 'practice', label: '练习中', unlockAfter: 'listen' },
+  { id: 'discuss', label: '讨论中', unlockAfter: 'practice' },
+  { id: 'takeaway', label: '总结中', unlockAfter: 'discuss' },
+]
+
+export function getEffectivePhaseConfig(
+  step: ReadingStep, manifest: ReadingManifest,
+): PhaseConfig[] {
+  if (step.phaseConfig?.length) return step.phaseConfig
+  if (manifest.phaseConfig?.length) return manifest.phaseConfig
+  return DEFAULT_PHASE_CONFIG
+}
+
+const PHASE_ICONS: Record<string, string> = {
+  listen: '🎧', practice: '✏️', discuss: '💬',
+  takeaway: '📝', discovery: '🔍',
+}
+
+export function getPhaseIcon(phaseId: string): string {
+  if (PHASE_ICONS[phaseId]) return PHASE_ICONS[phaseId]
+  if (phaseId.startsWith('practice')) return '✏️'
+  return '📋'
 }
 
 /** Map answerKey type to observe drawer type */
@@ -211,6 +243,7 @@ export function getObserveType(answerKeyType?: string): string | null {
     case 'map': return 'map'
     case 'matrix': return 'matrix'
     case 'guided-discovery': return 'guided-discovery'
+    case 'rich-content-quiz': case 'image-upload': return 'image-upload'
     default: return null
   }
 }

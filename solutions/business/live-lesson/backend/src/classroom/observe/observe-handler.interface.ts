@@ -11,6 +11,7 @@ export interface ObserveContext {
   stepIdx: number;
   answerKey: AnswerKey | null;
   view: 'first' | 'latest';
+  partIds?: string[];
 }
 
 export interface ObserveHandler {

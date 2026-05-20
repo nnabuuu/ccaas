@@ -6,6 +6,7 @@ import {
   STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI,
   getStepName, computePhaseDistribution,
   getObserveType, countHighlights,
+  getEffectivePhaseConfig, getPhaseIcon,
 } from './teacher-helpers'
 import { Band } from './Band'
 import { Timeline } from './Timeline'
@@ -119,7 +120,9 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
       const avgScore = metrics?.avgScore ?? 0
       const aiRoundsForStep = questions.filter(q => q.step === stepIdx).length
       const aiPeopleForStep = new Set(questions.filter(q => q.step === stepIdx).map(q => q.studentId)).size
-      const phaseDist = computePhaseDistribution(students, taskNum)
+      const effectivePhases = getEffectivePhaseConfig(rs, manifest)
+      const phaseIds = effectivePhases.map(p => p.id)
+      const phaseDist = computePhaseDistribution(students, taskNum, phaseIds)
       return {
         step: rs,
         stepNum: taskNum,
@@ -133,9 +136,10 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
         aiPeople: aiPeopleForStep,
         completionRate: metrics?.completionRate ?? 0,
         phaseDist,
+        effectivePhases,
       }
     })
-  }, [taskSteps, students, state, questions])
+  }, [taskSteps, students, state, questions, manifest])
 
   // Highlight count for tab badge
   const highlightCount = useMemo(() => countHighlights(state?.clusterStats), [state?.clusterStats])
@@ -284,7 +288,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                     </div>
 
                     {/* ── Progress Distribution Bar (always visible) ── */}
-                    <ProgressBar dist={sc.phaseDist} total={total} />
+                    <ProgressBar dist={sc.phaseDist} phases={sc.effectivePhases} total={total} />
 
                     {/* ── Collapsed: student dots preview ── */}
                     {!isExpanded && sc.studentsInStep.length > 0 && (
@@ -314,48 +318,39 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                     {/* ── Expanded: SubTask Rows ── */}
                     {isExpanded && (
                       <div className="step-expanded">
-                        <SubTaskRow
-                          label="Listen"
-                          icon="🎧"
-                          count={sc.phaseDist.listen}
-                          students={students.filter(s => s.currentTask === sc.stepNum && s.currentPhase === 'listen')}
-                          onStudentClick={setModalStudent}
-                          questions={questions}
-                        />
-                        <SubTaskRow
-                          label="Practice"
-                          icon="✏️"
-                          count={sc.phaseDist.practice}
-                          students={students.filter(s => s.currentTask === sc.stepNum && s.currentPhase === 'practice')}
-                          onStudentClick={setModalStudent}
-                          questions={questions}
-                          onClick={() => {
-                            const obsType = getObserveType(sc.step.answerKey?.type)
-                            if (obsType) openObserve(obsType, sc.stepNum)
-                          }}
-                          clickable
-                          avgScore={sc.avgScore}
-                        />
-                        <SubTaskRow
-                          label="Discuss"
-                          icon="💬"
-                          count={sc.phaseDist.discuss}
-                          students={students.filter(s => s.currentTask === sc.stepNum && s.currentPhase === 'discuss')}
-                          onStudentClick={setModalStudent}
-                          questions={questions}
-                          onClick={() => openObserve('discuss', sc.stepNum)}
-                          clickable
-                        />
-                        <SubTaskRow
-                          label="Takeaway"
-                          icon="📝"
-                          count={sc.phaseDist.takeaway}
-                          students={students.filter(s => s.currentTask === sc.stepNum && s.currentPhase === 'takeaway')}
-                          onStudentClick={setModalStudent}
-                          questions={questions}
-                        />
+                        {sc.effectivePhases.map(pc => {
+                          const icon = getPhaseIcon(pc.id)
+                          const count = sc.phaseDist[pc.id] || 0
+                          const phaseStudents = students.filter(
+                            s => s.currentTask === sc.stepNum && s.currentPhase === pc.id,
+                          )
+                          const isDiscuss = pc.id === 'discuss'
+                          const isPractice = pc.id === 'practice' || pc.id.startsWith('practice')
+                          const isDiscovery = pc.id === 'discovery'
+                          const obsType = getObserveType(sc.step.answerKey?.type)
+                          const discoveryObsType = isDiscovery ? getObserveType(sc.step.discoveryKey?.type) : null
+                          const clickable = isDiscuss || (isPractice && !!obsType) || (isDiscovery && !!discoveryObsType)
+
+                          return (
+                            <SubTaskRow
+                              key={pc.id}
+                              label={pc.label}
+                              icon={icon}
+                              count={count}
+                              students={phaseStudents}
+                              onStudentClick={setModalStudent}
+                              questions={questions}
+                              clickable={clickable}
+                              onClick={clickable ? () => {
+                                const type = isDiscuss ? 'discuss' : isDiscovery ? discoveryObsType : obsType
+                                if (type) openObserve(type, sc.stepNum, pc.partIds)
+                              } : undefined}
+                              avgScore={isPractice ? sc.avgScore : undefined}
+                            />
+                          )
+                        })}
                         {/* Completed row */}
-                        {sc.phaseDist.completed > 0 && (
+                        {(sc.phaseDist.completed || 0) > 0 && (
                           <div className="subtask-row completed">
                             <span className="str-icon">✓</span>
                             <span className="str-label">Completed</span>
@@ -480,6 +475,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             stepNum={observeParams.step}
             manifest={manifest}
             sessionCode={sessionCode || ''}
+            partIds={observeParams.partIds}
             onClose={closeObserve}
           />
         </Suspense>

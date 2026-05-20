@@ -1,14 +1,25 @@
-import { useRef, useEffect, useState, useCallback } from 'react'
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { renderMd } from './renderMd'
 import { useT, type Locale } from '../../i18n'
+import FormulaAnimation, { type FormulaAnimationProps } from './scaffold/FormulaAnimation'
+import SolutionDisplay, { type SolutionDisplayProps } from './scaffold/SolutionDisplay'
 import './scaffold-panel.css'
+import './scaffold/scaffold-widgets.css'
+
+export interface ScaffoldStep {
+  title: string
+  hintZh?: string
+  widget?: string
+  props?: Record<string, unknown>
+}
 
 export interface ScaffoldHint {
   level: number
   hintZh: string
   hintImage?: string
   canRetry: boolean
+  steps?: ScaffoldStep[]
 }
 
 interface Props {
@@ -18,6 +29,79 @@ interface Props {
   collapsed?: boolean
   onToggle?: () => void
   locale?: Locale
+}
+
+/** Render a widget by type, with runtime prop validation */
+function WidgetRenderer({ widget, props }: { widget: string; props?: Record<string, unknown> }) {
+  const p = props ?? {}
+  switch (widget) {
+    case 'formula-animation': {
+      if (typeof p.formula !== 'string' || !Array.isArray(p.pairs)) {
+        return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Invalid formula-animation props</div>
+      }
+      return (
+        <FormulaAnimation
+          formula={p.formula}
+          pairs={p.pairs as FormulaAnimationProps['pairs']}
+          substitution={typeof p.substitution === 'string' ? p.substitution : undefined}
+        />
+      )
+    }
+    case 'solution-display': {
+      if (!Array.isArray(p.lines)) {
+        return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Invalid solution-display props</div>
+      }
+      return <SolutionDisplay lines={p.lines as SolutionDisplayProps['lines']} />
+    }
+    default:
+      return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Unknown widget: {widget}</div>
+  }
+}
+
+/** Flatten hints into renderable cards. Each hint produces 1+ cards.
+ *  Exported for testing only. */
+export interface CardEntry {
+  stepNum: number
+  title: string
+  isSolution: boolean
+  content: ScaffoldStep | null   // null = legacy card (render from hint directly)
+  hint: ScaffoldHint
+}
+
+export function flattenCards(hints: ScaffoldHint[]): CardEntry[] {
+  const cards: CardEntry[] = []
+  let stepCounter = 0
+  for (let i = 0; i < hints.length; i++) {
+    const hint = hints[i]
+    const isLastHint = i === hints.length - 1
+
+    if (hint.steps && hint.steps.length > 0) {
+      // Widget-aware: render each step as a separate card
+      for (let s = 0; s < hint.steps.length; s++) {
+        stepCounter++
+        const isLastStep = isLastHint && !hint.canRetry && s === hint.steps.length - 1
+        cards.push({
+          stepNum: stepCounter,
+          title: hint.steps[s].title,
+          isSolution: isLastStep && hints.length > 1,
+          content: hint.steps[s],
+          hint,
+        })
+      }
+    } else {
+      // Legacy: one card per hint
+      stepCounter++
+      const isSolution = isLastHint && !hint.canRetry && hints.length > 1
+      cards.push({
+        stepNum: stepCounter,
+        title: '',
+        isSolution,
+        content: null,
+        hint,
+      })
+    }
+  }
+  return cards
 }
 
 export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, collapsed, onToggle, locale }: Props) {
@@ -68,11 +152,13 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
     )
   }
 
+  const cards = useMemo(() => flattenCards(hints), [hints])
   const lastHint = hints[hints.length - 1]
   const isSolution = lastHint && !lastHint.canRetry
+  const totalSteps = cards.length
   const badgeText = hints.length === 0
     ? t('scaffold.waiting')
-    : isSolution ? t('scaffold.fullSolution') : t('scaffold.hintRange', { n: hints.length })
+    : isSolution ? t('scaffold.fullSolution') : t('scaffold.hintRange', { n: totalSteps })
 
   return (
     <div className="stu-text-overlay scaffold-panel" data-translate-ctx="scaffold-panel">
@@ -97,25 +183,46 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
 
       {/* Scroll area */}
       <div className="scaffold-panel-scroll" ref={scrollRef}>
-        {hints.map((hint, i) => {
-          const isLast = i === hints.length - 1
-          const isSolutionCard = isLast && !hint.canRetry && hints.length > 1
-          const cardCls = isSolutionCard
+        {cards.map((card, idx) => {
+          const cardCls = card.isSolution
             ? 'scaffold-hint-card scaffold-hint-card--solution scaffold-hint-enter'
             : 'scaffold-hint-card scaffold-hint-enter'
+
+          // Widget step card
+          if (card.content) {
+            const step = card.content
+            return (
+              <div key={idx} className={cardCls} style={{ animationDelay: `${idx * 80}ms` }}>
+                <div className="scaffold-hint-hd">
+                  <div className="scaffold-step-badge">{card.stepNum}</div>
+                  <span className="scaffold-hint-title">{card.title}</span>
+                </div>
+                <div className="scaffold-hint-body">
+                  {step.widget
+                    ? <WidgetRenderer widget={step.widget} props={step.props} />
+                    : step.hintZh
+                      ? renderMd(step.hintZh, { math: enableMath })
+                      : null}
+                </div>
+              </div>
+            )
+          }
+
+          // Legacy card (no steps)
+          const { hint } = card
           return (
-            <div key={i} className={cardCls} style={{ animationDelay: `${i * 80}ms` }}>
+            <div key={idx} className={cardCls} style={{ animationDelay: `${idx * 80}ms` }}>
               <div className="scaffold-hint-hd">
-                <div className="scaffold-step-badge">{hint.level + 1}</div>
+                <div className="scaffold-step-badge">{card.stepNum}</div>
                 <span className="scaffold-hint-title">
-                  {isSolutionCard ? t('scaffold.fullSolution') : t('scaffold.stepN', { n: hint.level + 1 })}
+                  {card.isSolution ? t('scaffold.fullSolution') : t('scaffold.stepN', { n: card.stepNum })}
                 </span>
               </div>
               <div className="scaffold-hint-body">
                 {renderMd(hint.hintZh, { math: enableMath })}
               </div>
               {hint.hintImage && (
-                <img src={hint.hintImage} alt={t('scaffold.hintAlt', { n: hint.level + 1 })}
+                <img src={hint.hintImage} alt={t('scaffold.hintAlt', { n: card.stepNum })}
                   className="scaffold-hint-img"
                   onClick={() => hint.hintImage && setZoomedImg(hint.hintImage)} />
               )}

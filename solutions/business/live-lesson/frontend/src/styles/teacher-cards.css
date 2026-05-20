@@ -88,9 +88,10 @@
 
 /* Phase progress bar (stacked) */
 .phase-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin: 2px 14px 4px }
-.pb-seg { height: 100%; min-width: 2px; transition: width .3s }
+.pb-seg { height: 100%; min-width: 2px; transition: width .3s; background: var(--t3) }
 .pb-seg.listen { background: var(--lecture) }
 .pb-seg.practice { background: var(--blue) }
 .pb-seg.discuss { background: var(--ai-dot) }
 .pb-seg.takeaway { background: var(--teal) }
 .pb-seg.completed { background: var(--green-dot) }
+.pb-seg.discovery { background: var(--purple, #9b59b6) }
