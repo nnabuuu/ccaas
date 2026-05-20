@@ -62,6 +62,21 @@ export function renderMd(text: string, opts?: { math?: boolean }) {
       if (rest) segs.push(rest)
       return segs
     })
+    // inline HTML <span class="...">...</span>
+    parts = parts.flatMap((p, pi) => {
+      if (typeof p !== 'string') return [p]
+      const segs: (string | JSX.Element)[] = []
+      const re = /<span\s+class="([^"]+)">(.*?)<\/span>/g
+      let last = 0
+      let m: RegExpExecArray | null
+      while ((m = re.exec(p)) !== null) {
+        if (m.index > last) segs.push(p.slice(last, m.index))
+        segs.push(<span key={`h${pi}${m.index}`} className={m[1]}>{m[2]}</span>)
+        last = m.index + m[0].length
+      }
+      if (last < p.length) segs.push(p.slice(last))
+      return segs.length ? segs : [p]
+    })
     // para links ¶N, ¶N-M
     parts = parts.flatMap((p) => {
       if (typeof p !== 'string') return [p]
