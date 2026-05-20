@@ -129,6 +129,34 @@ Each phase has a dedicated component under `components/student/`:
 - `TaskPanel.tsx` — current task display with phase routing
 - `TextPanel.tsx` — reading text display with `BoardInline.tsx`
 
+### Exercise Review Restore Pattern
+
+Each exercise component self-manages its review restore via the `useReviewRestore` hook. PracticePhase only constructs and passes `reviewData`.
+
+**Architecture:**
+- `hooks/useReviewRestore.ts` — shared hook: `useReviewRestore<T>(reviewData, parse, onDone?) → T | null`
+- `ReviewData` type: `{ data: Record<string, unknown>; checkItems?: CheckItem[] }`
+- Each component exports a **pure parse function** (`parseXxxReview`) that converts `ReviewData → { state: T, allDone: boolean }`
+- Hook runs parse once at mount via `useState` initializer; result is stable across re-renders
+- Components overlay: `const effectiveAns = restored?.ans ?? ans` — hook result overrides props when in review mode
+
+**PracticePhase responsibilities (minimal):**
+- Constructs `reviewPayload: ReviewData | undefined` from `prevSubmission`
+- Passes `reviewData={reviewPayload}` to each exercise component
+- Keeps `effectiveAllDone = reviewMode || allDone` as a defensive prop
+
+**Adding a new exercise type checklist:**
+1. Add `reviewData?: ReviewData` to component Props
+2. Export `parseXxxReview(review: ReviewData, ...extras) → ReviewRestoreResult<T>` — pure function, no React
+3. Call `useReviewRestore(reviewData, parse)` at top of component
+4. Overlay: `const effective* = restored?.* ?? prop*`
+5. Add unit tests in `exercise/__tests__/review-restore.test.ts`
+6. Add integration test in `exercise/__tests__/review-restore-integration.test.ts`
+
+**Test files:**
+- `exercise/__tests__/review-restore.test.ts` — unit tests for all 11 parse functions
+- `exercise/__tests__/review-restore-integration.test.ts` — CachedSubmission → ReviewData → parse → state verification
+
 ## AI Features
 
 | Feature | Backend | Frontend | Purpose |

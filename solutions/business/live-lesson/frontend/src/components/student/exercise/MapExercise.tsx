@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import MapGuide from './MapGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
+import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -20,6 +21,7 @@ interface Props {
   practiceCount?: number
   practiceItemIds?: string[]
   itemResults?: Record<string, { correct: boolean; hint?: string }>
+  reviewData?: ReviewData
 }
 
 type Placements = Record<string, { x: number; y: number }>
@@ -31,9 +33,30 @@ function quadrantLabel(val: number, axis: MapAxis): string {
   return 'Neutral'
 }
 
-export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults }: Props) {
-  const placements: Placements = ans.placements || {}
-  const reasons: Reasons = ans.reasons || {}
+export function parseMapReview(review: ReviewData) {
+  const { data, checkItems } = review
+  const ans = {
+    placements: data.placements || {},
+    reasons: data.reasons || {},
+  }
+  let feedback: string | null = null
+  const itemResults: Record<string, { correct: boolean; hint?: string }> = {}
+  checkItems?.forEach(it => {
+    if (it.idx === '_llm') { feedback = it.hint ?? null; return }
+    itemResults[it.idx as string] = { correct: it.correct, hint: it.hint }
+  })
+  return { state: { ans, feedback, itemResults }, allDone: true }
+}
+
+export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults, reviewData }: Props) {
+  const restored = useReviewRestore(reviewData, parseMapReview)
+  const effectiveAns = restored?.ans ?? ans
+  const effectiveFeedback = restored?.feedback ?? feedback
+  const effectiveItemResults = restored?.itemResults ?? itemResults
+  const effectiveAllDone = restored ? true : allDone
+
+  const placements: Placements = effectiveAns.placements || {}
+  const reasons: Reasons = effectiveAns.reasons || {}
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
   const [guideOpen, setGuideOpen] = useState(false)
@@ -77,11 +100,11 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
 
   // Auto-select when only 1 practice item configured (avoids confusing 2-step flow)
   useEffect(() => {
-    if (practiceItems.length === 1 && unplaced.length === 1 && !pendingTrayChip && !allDone) {
+    if (practiceItems.length === 1 && unplaced.length === 1 && !pendingTrayChip && !effectiveAllDone) {
       setPendingTrayChip(unplaced[0].id)
       setActiveId(unplaced[0].id)
     }
-  }, [practiceItems.length, unplaced.length, pendingTrayChip, allDone])
+  }, [practiceItems.length, unplaced.length, pendingTrayChip, effectiveAllDone])
 
   const onActiveChangeRef = useRef(onActiveChange)
   onActiveChangeRef.current = onActiveChange
@@ -137,7 +160,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
 
   // Drag handling via pointer events
   const handlePlanePointerDown = useCallback((e: React.PointerEvent) => {
-    if (allDone) return
+    if (effectiveAllDone) return
     hasDragged.current = false
     // Only start drag if clicking on a placed chip
     const chipEl = (e.target as HTMLElement).closest('[data-chip-id]')
@@ -149,7 +172,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
     setActiveId(id)
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     e.preventDefault()
-  }, [allDone, givenIds])
+  }, [effectiveAllDone, givenIds])
 
   const handlePlanePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging) return
@@ -174,20 +197,20 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
 
   // Drop from tray: click tray chip → click on plane
   const handleTrayChipClick = useCallback((id: string) => {
-    if (allDone) return
+    if (effectiveAllDone) return
     setPendingTrayChip(id)
     setActiveId(id)
-  }, [allDone])
+  }, [effectiveAllDone])
 
   const handlePlaneClick = useCallback((e: React.MouseEvent) => {
-    if (hasDragged.current || !pendingTrayChip || allDone) return
+    if (hasDragged.current || !pendingTrayChip || effectiveAllDone) return
     const coords = pointerToCoords(e.clientX, e.clientY)
     if (coords) {
       updatePlacements(pendingTrayChip, coords.x, coords.y)
       setActiveId(pendingTrayChip)
     }
     setPendingTrayChip(null)
-  }, [pendingTrayChip, allDone, pointerToCoords, updatePlacements])
+  }, [pendingTrayChip, effectiveAllDone, pointerToCoords, updatePlacements])
 
   // Auto-scroll to reasoning card when a chip is placed
   const reasonRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -226,7 +249,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
               style={{
                 ...chipStyle,
                 ...(pendingTrayChip === it.id ? chipActiveStyle : {}),
-                cursor: allDone ? 'default' : 'pointer',
+                cursor: effectiveAllDone ? 'default' : 'pointer',
               }}
             >
               <span style={chipDotStyle} />
@@ -297,7 +320,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
           const p = placements[it.id]
           const pctX = ((p.x + 1) / 2) * 100
           const pctY = ((1 - (p.y + 1) / 2)) * 100 // invert y for CSS
-          const ir = itemResults?.[it.id]
+          const ir = effectiveItemResults?.[it.id]
           return (
             <div
               key={it.id}
@@ -336,7 +359,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
             const reason = reasons[it.id] || ''
             const isActive = activeId === it.id
             const done = reason.trim().length >= minReasonLength
-            const ir = itemResults?.[it.id]
+            const ir = effectiveItemResults?.[it.id]
             return (
               <div
                 key={it.id}
@@ -379,7 +402,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                   placeholder="Why did you place it here?"
                   value={reason}
                   onChange={e => setReason(it.id, e.target.value)}
-                  disabled={allDone}
+                  disabled={effectiveAllDone}
                   rows={2}
                 />
 
@@ -398,7 +421,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                 {/* Footer */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 10, color: 'var(--t3)' }}>
                   <span>{reason.trim().length} chars{!done && ` · need ≥${minReasonLength}`}</span>
-                  {!allDone && (
+                  {!effectiveAllDone && (
                     <button
                       onClick={(e) => { e.stopPropagation(); removePlacement(it.id) }}
                       style={removeBtnStyle}
@@ -414,13 +437,13 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
       )}
 
       {/* LLM feedback banner */}
-      {feedback && (
+      {effectiveFeedback && (
         <div style={{
           padding: '10px 14px', borderRadius: 8,
           background: 'var(--purple-bg)', border: '1px solid var(--purple)',
           fontSize: 13, color: 'var(--t1)', lineHeight: 1.6,
         }}>
-          {feedback}
+          {effectiveFeedback}
         </div>
       )}
 

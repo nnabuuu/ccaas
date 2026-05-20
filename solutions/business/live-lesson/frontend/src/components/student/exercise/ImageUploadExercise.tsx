@@ -1,14 +1,27 @@
 import { RenderMath } from '../../../utils/render-math'
 import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
 import { ImageGallery } from '../image-capture/ImageGallery'
+import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import '../image-capture/image-capture.css'
 
 interface RubricItem { id: string; label: string; weight: number }
 interface PromptImage { url: string; alt?: string }
 
+export function parseImageUploadReview(review: ReviewData) {
+  const { data, checkItems } = review
+  const ans = { images: data.images || [] }
+  let feedback: string | null = null
+  const rubricResults: Record<string, { score: number; hint?: string }> = {}
+  checkItems?.forEach(it => {
+    if (it.idx === '_llm') { feedback = it.hint ?? null; return }
+    rubricResults[it.idx as string] = { score: it.score ?? 0, hint: it.hint }
+  })
+  return { state: { ans, feedback, rubricResults }, allDone: true }
+}
+
 export function ImageUploadExercise({
   prompt, promptImages, rubric, maxImages = 1,
-  ans, setAns, allDone, feedback, rubricResults,
+  ans, setAns, allDone, feedback, rubricResults, reviewData,
 }: {
   prompt: string
   promptImages?: PromptImage[]
@@ -19,9 +32,16 @@ export function ImageUploadExercise({
   allDone: boolean
   feedback?: string | null
   rubricResults?: Record<string, { score: number; hint?: string }>
+  reviewData?: ReviewData
 }) {
+  const restored = useReviewRestore(reviewData, parseImageUploadReview)
+  const effectiveAns = restored?.ans ?? ans
+  const effectiveFeedback = restored?.feedback ?? feedback
+  const effectiveRubricResults = restored?.rubricResults ?? rubricResults
+  const effectiveAllDone = restored ? true : allDone
+
   // Single source of truth: derive from ans
-  const images = (ans.images || []) as string[]
+  const images = (effectiveAns.images || []) as string[]
 
   const handleCapture = (dataUri: string) => {
     if (maxImages === 1) {
@@ -41,7 +61,7 @@ export function ImageUploadExercise({
     })
   }
 
-  const isPendingReview = rubricResults && Object.values(rubricResults).some(r => r.score === -1)
+  const isPendingReview = effectiveRubricResults && Object.values(effectiveRubricResults).some(r => r.score === -1)
 
   const scoreLabel = (score: number) => {
     if (score === 3) return { text: '优秀', color: '#22c55e' }
@@ -68,7 +88,7 @@ export function ImageUploadExercise({
       )}
 
       {/* Upload / Gallery */}
-      {!allDone && maxImages === 1 && (
+      {!effectiveAllDone && maxImages === 1 && (
         <div>
           {images.length > 0 ? (
             <div>
@@ -82,7 +102,7 @@ export function ImageUploadExercise({
         </div>
       )}
 
-      {!allDone && maxImages > 1 && (
+      {!effectiveAllDone && maxImages > 1 && (
         <ImageGallery
           images={images}
           maxImages={maxImages}
@@ -92,7 +112,7 @@ export function ImageUploadExercise({
       )}
 
       {/* Single-image preview when done */}
-      {allDone && maxImages === 1 && images.length > 0 && (
+      {effectiveAllDone && maxImages === 1 && images.length > 0 && (
         <div>
           <img src={images[0]} alt="作答"
             style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)' }} />
@@ -100,7 +120,7 @@ export function ImageUploadExercise({
       )}
 
       {/* Multi-image preview when done */}
-      {allDone && maxImages > 1 && images.length > 0 && (
+      {effectiveAllDone && maxImages > 1 && images.length > 0 && (
         <ImageGallery
           images={images}
           maxImages={maxImages}
@@ -111,16 +131,16 @@ export function ImageUploadExercise({
       )}
 
       {/* Results */}
-      {allDone && isPendingReview && (
+      {effectiveAllDone && isPendingReview && (
         <div style={{ padding: '12px 16px', background: '#fef3c7', borderRadius: 8, fontSize: 13 }}>
           AI 暂时无法批阅，已提交给老师审阅
         </div>
       )}
 
-      {allDone && rubricResults && !isPendingReview && (
+      {effectiveAllDone && effectiveRubricResults && !isPendingReview && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rubric.map(r => {
-            const result = rubricResults[r.id]
+            const result = effectiveRubricResults[r.id]
             if (!result) return null
             const sl = scoreLabel(result.score)
             return (
@@ -133,10 +153,10 @@ export function ImageUploadExercise({
               </div>
             )
           })}
-          {feedback && (
+          {effectiveFeedback && (
             <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, fontSize: 13 }}>
               <div style={{ fontWeight: 500, marginBottom: 4 }}>{'总评'}</div>
-              <div style={{ color: 'var(--t2)' }}>{feedback}</div>
+              <div style={{ color: 'var(--t2)' }}>{effectiveFeedback}</div>
             </div>
           )}
         </div>

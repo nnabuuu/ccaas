@@ -4,6 +4,8 @@ import { renderMd } from '../renderMd'
 import { SessionCtx } from '../TaskPanel'
 import { scrollToParas } from '../utils/linkParas'
 import type { TaskMatchPair, ServerHintMap } from '../task-data'
+import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { toIdx } from '../../../utils/parse-helpers'
 
 interface Props {
   pairs: TaskMatchPair[]
@@ -13,15 +15,38 @@ interface Props {
   wrongQs: Set<number>
   attemptCount: (pi: number) => number
   serverHints?: ServerHintMap
+  reviewData?: ReviewData
 }
 
-export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptCount, serverHints }: Props) {
+export function parseMatchReview(review: ReviewData, pairCount: number) {
+  const { data, checkItems } = review
+  const ans: Record<string, any> = {}
+  ;((data.pairs as unknown[]) || []).forEach((v, i) => { ans[i] = v })
+  const correctQs = new Set<number>()
+  const wrongQs = new Set<number>()
+  if (checkItems?.length) {
+    checkItems.forEach(it => {
+      const idx = toIdx(it.idx)
+      if (it.correct) correctQs.add(idx); else wrongQs.add(idx)
+    })
+  } else {
+    for (let i = 0; i < pairCount; i++) correctQs.add(i)
+  }
+  return { state: { ans, correctQs, wrongQs }, allDone: true }
+}
+
+export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptCount, serverHints, reviewData }: Props) {
+  const restored = useReviewRestore(reviewData, (r) => parseMatchReview(r, pairs.length))
+  const effectiveAns = restored?.ans ?? ans
+  const effectiveCorrectQs = restored?.correctQs ?? correctQs
+  const effectiveWrongQs = restored?.wrongQs ?? wrongQs
+
   const { config } = useContext(SessionCtx)
   const mathOpts = { math: config.enableMath }
   return <>
     {pairs.map((p, pi) => {
-      const locked = correctQs.has(pi)
-      const isWrong = wrongQs.has(pi)
+      const locked = effectiveCorrectQs.has(pi)
+      const isWrong = effectiveWrongQs.has(pi)
       const tries = attemptCount(pi)
       const sh = serverHints?.[pi]
       const hint = sh?.hint ?? p.hint
@@ -34,8 +59,8 @@ export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptC
             <div className="stu-match-left" style={locked ? { color: 'var(--green)' } : undefined}>{locked ? '✓' : renderMd(p.left, mathOpts)}</div>
             <div style={{ display: 'flex', gap: 5, flex: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               {p.opts.map((o, oi) => {
-                const sel = ans[pi] === oi
-                const correctIdx = p.correct ?? ans[pi]
+                const sel = effectiveAns[pi] === oi
+                const correctIdx = p.correct ?? effectiveAns[pi]
                 const isCorrectLocked = locked && oi === correctIdx
                 let cls = 'stu-match-opt'
                 if (isCorrectLocked) cls += ' correct'

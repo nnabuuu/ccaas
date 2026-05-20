@@ -1,5 +1,16 @@
 const MAX_DIM = 1024
-const JPEG_QUALITY = 0.7
+const QUALITY = 0.7
+
+let _mime: string | null = null
+function getOutputMime(): string {
+  if (!_mime) {
+    const c = document.createElement('canvas')
+    c.width = 1; c.height = 1
+    _mime = c.toDataURL('image/webp').startsWith('data:image/webp')
+      ? 'image/webp' : 'image/jpeg'
+  }
+  return _mime
+}
 
 function resizeToCanvas(img: HTMLImageElement): string {
   let w = img.width, h = img.height
@@ -12,7 +23,7 @@ function resizeToCanvas(img: HTMLImageElement): string {
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D context unavailable')
   ctx.drawImage(img, 0, 0, w, h)
-  return canvas.toDataURL('image/jpeg', JPEG_QUALITY)
+  return canvas.toDataURL(getOutputMime(), QUALITY)
 }
 
 export function compressImage(file: File): Promise<string> {

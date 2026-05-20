@@ -3,6 +3,8 @@ import HelpButton from '../HelpButton'
 import { scrollToParas } from '../utils/linkParas'
 import MatrixGuide from './MatrixGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
+import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { toIdx } from '../../../utils/parse-helpers'
 
 import type { TaskMatrixRow, ServerHintMap } from '../task-data'
 
@@ -16,6 +18,7 @@ interface Props {
   onAnsChange?: (rowIdx: number, field: 'what' | 'why', value: string) => void
   disabled?: boolean
   rowResults?: Record<number, boolean>
+  reviewData?: ReviewData
 }
 
 /** Simple deterministic hash for student+step → consistent row selection */
@@ -41,7 +44,20 @@ function selectPracticeRows(nonDemoIndices: number[], count: number, seed: strin
   return new Set(shuffled.slice(0, count))
 }
 
-export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults }: Props) {
+export function parseMatrixReview(review: ReviewData) {
+  const { data, checkItems } = review
+  const ans = (data.rows || {}) as Record<number, { what?: string; why?: string }>
+  const rowResults: Record<number, boolean> = {}
+  checkItems?.forEach(it => { rowResults[toIdx(it.idx)] = it.correct })
+  return { state: { ans, rowResults }, allDone: true }
+}
+
+export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults, reviewData }: Props) {
+  const restored = useReviewRestore(reviewData, parseMatrixReview)
+  const effectiveAns = restored?.ans ?? ans
+  const effectiveRowResults = restored?.rowResults ?? rowResults
+  const effectiveDisabled = restored ? true : disabled
+
   const [guideOpen, setGuideOpen] = useState(false)
   const guideSeen = useRef(readGuideSeen('guide-seen-matrix'))
 
@@ -67,11 +83,11 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
   const activeRowIdx = useMemo(() => {
     for (let i = 0; i < orderedPractice.length; i++) {
       const ri = orderedPractice[i]
-      const a = ans[ri]
+      const a = effectiveAns[ri]
       if ((a?.what?.length ?? 0) < 3 || (a?.why?.length ?? 0) < 3) return i
     }
     return orderedPractice.length - 1
-  }, [orderedPractice, ans])
+  }, [orderedPractice, effectiveAns])
 
   const unlockedPractice = new Set(orderedPractice.slice(0, activeRowIdx + 1))
 
@@ -129,12 +145,12 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
               )
             }
 
-            const rowResultClass = disabled && rowResults && ri in rowResults
-              ? (rowResults[ri] ? 'stu-mat-row-ok' : 'stu-mat-row-wrong')
+            const rowResultClass = effectiveDisabled && effectiveRowResults && ri in effectiveRowResults
+              ? (effectiveRowResults[ri] ? 'stu-mat-row-ok' : 'stu-mat-row-wrong')
               : undefined
 
             return (
-              <tr key={ri} className={rowResultClass} style={isActive && !disabled ? { background: 'rgba(58,49,133,.03)' } : undefined}>
+              <tr key={ri} className={rowResultClass} style={isActive && !effectiveDisabled ? { background: 'rgba(58,49,133,.03)' } : undefined}>
                 <td className="stu-mat-td" style={{ fontWeight: 500, fontSize: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span>{r.place}</span>
@@ -148,9 +164,9 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
                     <input
                       className="stu-mat-in"
                       placeholder={r.whatPrompt || 'What?'}
-                      value={ans[ri]?.what || ''}
+                      value={effectiveAns[ri]?.what || ''}
                       onChange={e => onAnsChange?.(ri, 'what', e.target.value)}
-                      disabled={disabled}
+                      disabled={effectiveDisabled}
                     />
                     <div style={{ marginTop: 2 }}><HelpButton hint={sh?.hint ?? r.hint} hintZh={sh?.hintZh ?? r.hintZh} /></div>
                   </div>
@@ -159,9 +175,9 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
                   <input
                     className="stu-mat-in"
                     placeholder={r.whyPrompt || 'Why?'}
-                    value={ans[ri]?.why || ''}
+                    value={effectiveAns[ri]?.why || ''}
                     onChange={e => onAnsChange?.(ri, 'why', e.target.value)}
-                    disabled={disabled}
+                    disabled={effectiveDisabled}
                   />
                 </td>
               </tr>

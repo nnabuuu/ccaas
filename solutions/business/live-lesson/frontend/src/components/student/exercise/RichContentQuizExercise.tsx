@@ -2,12 +2,15 @@ import { useState, useContext, useCallback, useRef } from 'react'
 import { SessionCtx } from '../TaskPanel'
 import type { RichContentQuizPart } from '../task-data'
 import type { ScaffoldHint } from '../ScaffoldPanel'
+import { useReviewRestore } from '../../../hooks/useReviewRestore'
+import type { ReviewData } from '../../../hooks/useReviewRestore'
 import type { SubmitResult } from '../../../hooks/useClassroom'
 import { cacheSubmission } from '../../../hooks/useClassroom'
 import { reportAttempt } from './gradeItemSet'
 import { RenderMath } from '../../../utils/render-math'
 import { HandwritingCanvas } from '../image-capture/HandwritingCanvas'
 import type { HandwritingCanvasHandle } from '../image-capture/HandwritingCanvas'
+import './rcq.css'
 
 type PartPhase = 'work' | 'wrong' | 'retry' | 'wrong2' | 'done'
 
@@ -21,22 +24,61 @@ interface Props {
   taskId?: number
   onScaffoldPush?: (hint: ScaffoldHint) => void
   onDone: () => void
+  reviewData?: ReviewData
+}
+
+export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[]) {
+  const serverParts = (review.data.parts ?? {}) as Record<string, Record<string, unknown>>
+  const phases: Record<string, PartPhase> = {}
+  const outcomes: Record<string, 'correct' | 'passed'> = {}
+  const images: Record<string, string[]> = {}
+
+  for (const part of parts) {
+    const sp = serverParts[part.id]
+    if (!sp?.completed) continue
+    phases[part.id] = 'done'
+    const history = (sp.attemptsHistory ?? []) as Array<Record<string, unknown>>
+    const lastAttempt = history[history.length - 1]
+    outcomes[part.id] = lastAttempt?.method === 'pass' ? 'passed' : 'correct'
+    const partImgs = (sp.images ?? []) as string[]
+    if (partImgs.length > 0) {
+      images[part.id] = partImgs
+    } else {
+      for (let i = history.length - 1; i >= 0; i--) {
+        const hImgs = (history[i].images ?? []) as string[]
+        if (hImgs.length > 0) { images[part.id] = hImgs; break }
+      }
+    }
+  }
+  const allDone = parts.length > 0 && parts.every(p => phases[p.id] === 'done')
+  return { state: { phases, outcomes, images }, allDone }
 }
 
 export function RichContentQuizExercise({
   parts, subType, prompt, promptImages, maxImages = 1,
-  stepIdx, taskId, onScaffoldPush, onDone,
+  stepIdx, taskId, onScaffoldPush, onDone, reviewData,
 }: Props) {
   const ctx = useContext(SessionCtx)
   const canvasRef = useRef<HandwritingCanvasHandle>(null)
   const busyRef = useRef(false)
 
-  const [currentPartIdx, setCurrentPartIdx] = useState(0)
-  const [partImages, setPartImages] = useState<Record<string, string[]>>({})
-  const [partPhase, setPartPhase] = useState<Record<string, PartPhase>>({})
+  const restored = useReviewRestore(
+    reviewData,
+    (r) => parseRcqReview(r, parts),
+    onDone,
+  )
+
+  const [currentPartIdx, setCurrentPartIdx] = useState(() => {
+    if (!restored) return 0
+    const firstIncomplete = parts.findIndex(p => restored.phases[p.id] !== 'done')
+    return firstIncomplete >= 0 ? firstIncomplete : 0
+  })
+  const [partImages, setPartImages] = useState<Record<string, string[]>>(() => restored?.images ?? {})
+  const [partPhase, setPartPhase] = useState<Record<string, PartPhase>>(() => restored?.phases ?? {})
   const [submitting, setSubmitting] = useState(false)
   const [hasContent, setHasContent] = useState(false)
   const [lastFeedback, setLastFeedback] = useState('')
+  const [partOutcome, setPartOutcome] = useState<Record<string, 'correct' | 'passed'>>(() => restored?.outcomes ?? {})
 
   const currentPart = parts[currentPartIdx]
   const currentPartId = currentPart?.id
@@ -110,6 +152,7 @@ export function RichContentQuizExercise({
       } else {
         const updated = { ...partPhase, [currentPartId]: 'done' as const }
         setPartPhase(updated)
+        setPartOutcome(prev => ({ ...prev, [currentPartId]: 'correct' }))
         advanceToNext(updated, result)
       }
     } finally {
@@ -122,6 +165,7 @@ export function RichContentQuizExercise({
     if (!currentPartId) return
     setPartPhase(prev => ({ ...prev, [currentPartId]: 'retry' }))
     setPartImages(prev => ({ ...prev, [currentPartId]: [] }))
+    setPartOutcome(prev => { const next = { ...prev }; delete next[currentPartId]; return next })
     setHasContent(false)
   }
 
@@ -139,6 +183,7 @@ export function RichContentQuizExercise({
 
       const updated = { ...partPhase, [currentPartId]: 'done' as const }
       setPartPhase(updated)
+      setPartOutcome(prev => ({ ...prev, [currentPartId]: 'passed' }))
       advanceToNext(updated, result)
     } finally {
       busyRef.current = false
@@ -152,18 +197,54 @@ export function RichContentQuizExercise({
 
   if (allPartsDone) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {prompt && (
           <div style={{ fontSize: 14, lineHeight: 1.6 }}><RenderMath text={prompt} /></div>
         )}
-        <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 16 }}>✓</span>所有题目已完成
-        </div>
+        {promptImages && promptImages.length > 0 && (
+          <div className="rcq-prompt-images">
+            {promptImages.map((img, i) => (
+              <img key={i} src={img.url} alt={img.alt || ''} />
+            ))}
+          </div>
+        )}
+        {parts.map((part, i) => {
+          const outcome = partOutcome[part.id] || 'passed'
+          const imgs = partImages[part.id] || []
+          const badgeCls = outcome === 'correct'
+            ? 'rcq-review-badge rcq-review-badge--correct'
+            : 'rcq-review-badge rcq-review-badge--passed'
+          const badgeLabel = outcome === 'correct' ? '✓ 正确' : '已查看解答'
+          return (
+            <div key={part.id} className="rcq-review-card">
+              <div className="rcq-review-header">
+                <span className="rcq-review-num">第 {i + 1} 题</span>
+                <span className={badgeCls}>{badgeLabel}</span>
+              </div>
+              {part.prompt && (
+                <div className="rcq-problem-text"><RenderMath text={part.prompt} /></div>
+              )}
+              {part.expression && (
+                <div className="rcq-problem-expr"><RenderMath text={part.expression} /></div>
+              )}
+              {imgs.length > 0 && (
+                <div className="rcq-review-images">
+                  {imgs.map((src, j) => <img key={j} src={src} alt={`第 ${i + 1} 题提交`} />)}
+                </div>
+              )}
+            </div>
+          )
+        })}
+        <div className="rcq-passed-card">✓ 所有题目已完成</div>
       </div>
     )
   }
 
   const showCanvas = phase === 'work' || phase === 'retry'
+  const badgeClass = phase === 'retry' ? 'rcq-badge--retry'
+    : phase === 'done' ? 'rcq-badge--done' : ''
+  const badgeText = phase === 'retry' ? '第二次机会'
+    : phase === 'done' ? '已完成' : '独立完成'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -172,102 +253,79 @@ export function RichContentQuizExercise({
         <div style={{ fontSize: 14, lineHeight: 1.6 }}><RenderMath text={prompt} /></div>
       )}
       {promptImages && promptImages.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="rcq-prompt-images">
           {promptImages.map((img, i) => (
-            <img key={i} src={img.url} alt={img.alt || ''}
-              style={{ maxWidth: 300, borderRadius: 8, border: '1px solid var(--border)' }} />
+            <img key={i} src={img.url} alt={img.alt || ''} />
           ))}
         </div>
       )}
 
-      {/* Part indicator */}
+      {/* Part indicator dots */}
       {parts.length > 1 && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div className="rcq-part-dots">
           {parts.map((p, i) => {
             const st = partPhase[p.id] || 'work'
             const isCurrent = i === currentPartIdx
+            const cls = st === 'done' ? 'rcq-part-dot rcq-part-dot--done'
+              : isCurrent ? 'rcq-part-dot rcq-part-dot--current'
+              : 'rcq-part-dot'
             return (
-              <div
-                key={p.id}
-                style={{
-                  width: 24, height: 24, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 600,
-                  background: st === 'done' ? 'var(--green, #22c55e)' : isCurrent ? 'var(--teal, #14b8a6)' : 'var(--bg2, #f0f0f0)',
-                  color: st === 'done' || isCurrent ? '#fff' : 'var(--t3)',
-                }}
-              >
+              <div key={p.id} className={cls}>
                 {st === 'done' ? '✓' : i + 1}
               </div>
             )
           })}
-          <span style={{ fontSize: 12, color: 'var(--t3)', marginLeft: 4 }}>
+          <span className="rcq-part-dots-label">
             第 {currentPartIdx + 1} / {parts.length} 题
           </span>
         </div>
       )}
 
-      {/* Current part prompt */}
+      {/* Current part — problem card */}
       {currentPart?.prompt && (
-        <div style={{ fontSize: 14, lineHeight: 1.7, padding: '8px 0' }}>
-          <RenderMath text={currentPart.prompt} />
+        <div className="rcq-problem-card">
+          <div className="rcq-problem-header">
+            <span className="rcq-problem-num">第 {currentPartIdx + 1} 题</span>
+            <span className={`rcq-problem-badge ${badgeClass}`}>{badgeText}</span>
+          </div>
+          <div className="rcq-problem-text">
+            <RenderMath text={currentPart.prompt} />
+          </div>
+          {currentPart.expression && (
+            <div className="rcq-problem-expr">
+              <RenderMath text={currentPart.expression} />
+            </div>
+          )}
         </div>
       )}
 
       {/* Checking status card */}
       {submitting && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '14px 18px', borderRadius: 10,
-          background: 'rgba(109,89,214,.08)', border: '1px solid rgba(109,89,214,.15)',
-          fontSize: 13, fontWeight: 500, color: '#6d59d6', marginBottom: 4,
-        }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: '#6d59d6',
-            animation: 'rcq-pulse 1.2s infinite',
-          }} />
+        <div className="rcq-checking-card">
+          <div className="rcq-checking-dot" />
           AI 助教正在批改…
         </div>
       )}
 
       {/* Wrong result card (red) — canRetry, first scaffold */}
       {phase === 'wrong' && !submitting && (
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10,
-          padding: '14px 18px', borderRadius: 10,
-          background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.15)',
-        }}>
-          <div style={{
-            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-            background: 'rgba(239,68,68,.12)', color: '#ef4444',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 700, marginTop: 1,
-          }}>✗</div>
+        <div className="rcq-result-card rcq-result-wrong">
+          <div className="rcq-result-icon">✗</div>
           <div>
-            <div style={{ fontWeight: 600, color: '#ef4444', fontSize: 13 }}>答案不正确</div>
-            <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 2, lineHeight: 1.5 }}>{lastFeedback}</div>
-            <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 6 }}>请参考右侧提示修改后重新提交</div>
+            <div className="rcq-result-title">答案不正确</div>
+            <div className="rcq-result-desc">{lastFeedback}</div>
+            <div className="rcq-result-hint">请参考右侧提示修改后重新提交</div>
           </div>
         </div>
       )}
 
       {/* Wrong2 result card (amber) — last scaffold, show pass */}
       {phase === 'wrong2' && !submitting && (
-        <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 10,
-          padding: '14px 18px', borderRadius: 10,
-          background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.15)',
-        }}>
-          <div style={{
-            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-            background: 'rgba(245,158,11,.12)', color: '#f59e0b',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 700, marginTop: 1,
-          }}>→</div>
+        <div className="rcq-result-card rcq-result-final">
+          <div className="rcq-result-icon">→</div>
           <div>
-            <div style={{ fontWeight: 600, color: '#f59e0b', fontSize: 13 }}>已展示完整解答</div>
-            <div style={{ fontSize: 12, color: 'var(--t2)', marginTop: 2, lineHeight: 1.5 }}>
+            <div className="rcq-result-title">已展示完整解答</div>
+            <div className="rcq-result-desc">
               请仔细阅读右侧解题过程，理解后继续下一题。
             </div>
           </div>
@@ -287,21 +345,21 @@ export function RichContentQuizExercise({
 
       {/* Retry button */}
       {phase === 'wrong' && !submitting && (
-        <button className="stu-btn pri" onClick={handleRetry}>
-          修改答案，再试一次
+        <button className="rcq-retry-btn" onClick={handleRetry}>
+          ✏️ 修改答案，再试一次
         </button>
       )}
 
       {/* Pass button */}
       {phase === 'wrong2' && !submitting && (
-        <button className="stu-btn pri" onClick={handlePass}>
+        <button className="rcq-next-btn" onClick={handlePass}>
           已理解，继续下一题 →
         </button>
       )}
 
-      {/* Submit button — only when there is content, in work/retry phase, not submitting */}
+      {/* Submit button */}
       {hasContent && showCanvas && !submitting && (
-        <button className="stu-btn pri" onClick={handleSubmit}>
+        <button className="rcq-submit-btn" onClick={handleSubmit}>
           {phase === 'retry' ? '重新提交' : '提交'}
         </button>
       )}

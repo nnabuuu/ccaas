@@ -1,7 +1,7 @@
 import type { ObserveData } from '../ObserveDrawer'
 import { scoreColor, formatTime, statusLevel } from '../observe-helpers'
 import { RenderMath } from '../../../../utils/render-math'
-import type { GdData } from './gd-types'
+import type { GdData, GdStepDef, GdObservationChoiceSpec, GdFormulaBlanksSpec, GdDerivationBlankSpec, GdTextBlanksSpec } from './gd-types'
 
 interface Props {
   data: ObserveData
@@ -81,7 +81,7 @@ export default function GdStudentView({ data, studentId }: Props) {
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--t1)' }}>{stepDef.title}</span>
               </div>
-              <StepAnswerDetail answers={answers} />
+              <StepAnswerDetail stepDef={stepDef} answers={answers} />
             </div>
           )
         })}
@@ -168,24 +168,121 @@ export default function GdStudentView({ data, studentId }: Props) {
   )
 }
 
-function StepAnswerDetail({ answers }: { answers: Record<string, unknown> }) {
-  const entries = Object.entries(answers)
-  if (entries.length === 0) {
+function StepAnswerDetail({ stepDef, answers }: { stepDef: GdStepDef; answers: Record<string, unknown> }) {
+  if (Object.keys(answers).length === 0) {
     return <div style={{ fontSize: 10, color: 'var(--t3)', fontStyle: 'italic' }}>未作答</div>
   }
 
+  const spec = stepDef.spec
+  if (!spec) return <RawAnswerDump answers={answers} />
+
+  switch (spec.type) {
+    case 'observation_choice':
+      return <ObservationChoiceDetail spec={spec} answers={answers} />
+    case 'formula_blanks':
+      return <FormulaBlanksDetail spec={spec} answers={answers} />
+    case 'derivation_blank':
+      return <DerivationBlankDetail spec={spec} answers={answers} />
+    case 'text_blanks':
+      return <TextBlanksDetail spec={spec} answers={answers} />
+    default:
+      return <RawAnswerDump answers={answers} />
+  }
+}
+
+const itemStyle = { fontSize: 10, color: 'var(--t2)', lineHeight: 1.5, display: 'flex', alignItems: 'baseline', gap: 4 } as const
+const markOk = { color: 'var(--green)', fontWeight: 700, fontSize: 11 } as const
+const markBad = { color: 'var(--red)', fontWeight: 700, fontSize: 11 } as const
+const labelStyle = { fontWeight: 600, color: 'var(--t3)', flexShrink: 0 } as const
+
+function ObservationChoiceDetail({ spec, answers }: { spec: GdObservationChoiceSpec; answers: Record<string, unknown> }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {entries.map(([key, value]) => (
+      {spec.choices.map(c => {
+        const selected = answers[c.id]
+        const ok = selected === c.correct
+        const selectedLabel = typeof selected === 'number' ? (c.options[selected] ?? `选项${selected}`) : '—'
+        return (
+          <div key={c.id} style={itemStyle}>
+            <span style={labelStyle}>{c.prompt}:</span>
+            <span>{selectedLabel}</span>
+            <span style={ok ? markOk : markBad}>{ok ? '✓' : '✗'}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function FormulaBlanksDetail({ spec, answers }: { spec: GdFormulaBlanksSpec; answers: Record<string, unknown> }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {spec.blanks.map(b => {
+        const val = answers[b.id] as string | undefined
+        const ok = val != null && b.accepts.some(a => normalize(a) === normalize(val))
+        return (
+          <div key={b.id} style={itemStyle}>
+            <span style={labelStyle}>{b.label}:</span>
+            <span>{val ? <RenderMath text={val} /> : '—'}</span>
+            {val != null && <span style={ok ? markOk : markBad}>{ok ? '✓' : '✗'}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function DerivationBlankDetail({ spec, answers }: { spec: GdDerivationBlankSpec; answers: Record<string, unknown> }) {
+  const blanked = spec.lines.filter(l => l.blank)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {blanked.map(line => {
+        const b = line.blank!
+        const val = answers[b.id] as string | undefined
+        const ok = val != null && b.accepts.some(a => normalize(a) === normalize(val))
+        return (
+          <div key={b.id} style={itemStyle}>
+            <span style={labelStyle}><RenderMath text={line.text} />:</span>
+            <span>{val ? <RenderMath text={val} /> : '—'}</span>
+            {val != null && <span style={ok ? markOk : markBad}>{ok ? '✓' : '✗'}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function TextBlanksDetail({ spec, answers }: { spec: GdTextBlanksSpec; answers: Record<string, unknown> }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {spec.blanks.map(b => {
+        const val = answers[b.id] as string | undefined
+        const ok = val != null && b.accepts.some(a => normalize(a) === normalize(val))
+        return (
+          <div key={b.id} style={itemStyle}>
+            <span style={labelStyle}>□:</span>
+            <span>{val ? <RenderMath text={val} /> : '—'}</span>
+            {val != null && <span style={ok ? markOk : markBad}>{ok ? '✓' : '✗'}</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function RawAnswerDump({ answers }: { answers: Record<string, unknown> }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {Object.entries(answers).map(([key, value]) => (
         <div key={key} style={{ fontSize: 10, color: 'var(--t2)', lineHeight: 1.4 }}>
           <span style={{ fontWeight: 600, color: 'var(--t3)', marginRight: 4 }}>{key}:</span>
-          {typeof value === 'string' ? (
-            <RenderMath text={value} />
-          ) : (
-            <span>{JSON.stringify(value)}</span>
-          )}
+          {typeof value === 'string' ? <RenderMath text={value} /> : <span>{JSON.stringify(value)}</span>}
         </div>
       ))}
     </div>
   )
+}
+
+function normalize(s: string): string {
+  return s.replace(/\s+/g, '').toLowerCase()
 }

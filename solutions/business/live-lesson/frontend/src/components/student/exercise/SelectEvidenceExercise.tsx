@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import type { TaskExercise } from '../task-data'
+import { useReviewRestore } from '../../../hooks/useReviewRestore'
+import type { ReviewData } from '../../../hooks/useReviewRestore'
 import type { TextOverlay } from '../TextPanel'
 import SelectEvidenceGuide from './SelectEvidenceGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
@@ -17,7 +19,7 @@ interface Props {
   onOverlayChange: (overlay: TextOverlay | null) => void
   onSubmit: (data: Record<string, any>) => void
   onDone: () => void
-  reviewData?: Record<string, any>
+  reviewData?: ReviewData
 }
 
 function md(t: string | undefined) {
@@ -37,6 +39,25 @@ function md(t: string | undefined) {
   return <>{parts}</>
 }
 
+export function parseSeReview(
+  review: ReviewData,
+  sections: Array<{ id: string }>,
+) {
+  const rd = review.data as Record<string, any>
+  const secStates: Record<string, SectionState> = {}
+  sections.forEach(s => {
+    const sd = rd.sections?.[s.id]
+    secStates[s.id] = {
+      stage: 'graded',
+      funcChoice: sd?.function ?? null,
+      funcWrong: false,
+      picked: new Set<string>(sd?.picked || []),
+      showHint: false,
+    }
+  })
+  return { state: { secStates }, allDone: true }
+}
+
 export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, onDone, reviewData }: Props) {
   const sections = exercise.sections!
   const funcOptions = exercise.functionOptions!
@@ -45,15 +66,17 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   const funcAttemptsRef = useRef<Record<string, number>>({})
   const firstGradeRef = useRef<Record<string, { function: string; picked: string[]; funcAttempts: number }>>({})
 
+  const restoredSe = useReviewRestore(
+    reviewData,
+    (r) => parseSeReview(r, sections),
+    onDone,
+  )
+
   const [secStates, setSecStates] = useState<Record<string, SectionState>>(() => {
+    if (restoredSe) return restoredSe.secStates
     const init: Record<string, SectionState> = {}
     sections.forEach(s => {
-      const rd = reviewData?.sections?.[s.id]
-      if (reviewData) {
-        init[s.id] = { stage: 'graded', funcChoice: rd?.function ?? null, funcWrong: false, picked: new Set(rd?.picked || []), showHint: false }
-      } else {
-        init[s.id] = { stage: 'pick', funcChoice: null, funcWrong: false, picked: new Set(), showHint: false }
-      }
+      init[s.id] = { stage: 'pick', funcChoice: null, funcWrong: false, picked: new Set(), showHint: false }
     })
     return init
   })

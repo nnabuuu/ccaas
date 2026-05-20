@@ -3,6 +3,8 @@ import {
   forwardRef, useImperativeHandle,
 } from 'react'
 import { compressImage } from '../../../utils/compress-image'
+import { useCamera } from './useCamera'
+import { CameraModal } from './CameraModal'
 import './handwriting.css'
 
 /* ── Types ── */
@@ -61,6 +63,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
     const [redrawTick, setRedrawTick] = useState(0)
     const [dragOver, setDragOver] = useState(false)
+    const [showCamera, setShowCamera] = useState(false)
+    const { hasCamera, permission, facing, requestPermission, switchFacing } = useCamera()
 
     /* ── Helpers ── */
 
@@ -268,9 +272,37 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
       scheduleNotify()
     }
 
-    const triggerPhotoUpload = () => {
+    const triggerPhotoUpload = async () => {
       if (disabled || pagesRef.current.length >= maxPages) return
-      fileInputRef.current?.click()
+
+      if (!hasCamera || permission === 'unavailable') {
+        fileInputRef.current?.click()
+        return
+      }
+
+      if (permission === 'prompt') {
+        const ok = await requestPermission()
+        if (!ok) {
+          fileInputRef.current?.click()
+          return
+        }
+      }
+
+      if (permission === 'denied') {
+        fileInputRef.current?.click()
+        return
+      }
+
+      setShowCamera(true)
+    }
+
+    const handleCameraCapture = (dataUri: string) => {
+      const page = makePhotoPage(dataUri)
+      const next = [...pagesRef.current, page]
+      updatePages(next)
+      setActive(page.id)
+      scrollToBottom()
+      scheduleNotify()
     }
 
     const handlePhotoFiles = async (files: FileList | null) => {
@@ -320,15 +352,26 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
     /* ── Hidden file input ── */
 
     const photoInput = (
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        multiple
-        onChange={(e) => { handlePhotoFiles(e.target.files); e.target.value = '' }}
-        style={{ display: 'none' }}
-      />
+      <>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          onChange={(e) => { handlePhotoFiles(e.target.files); e.target.value = '' }}
+          style={{ display: 'none' }}
+        />
+        {showCamera && (
+          <CameraModal
+            facing={facing}
+            permission={permission}
+            onCapture={handleCameraCapture}
+            onClose={() => setShowCamera(false)}
+            onSwitchFacing={switchFacing}
+          />
+        )}
+      </>
     )
 
     /* ── Empty state: input method chooser ── */

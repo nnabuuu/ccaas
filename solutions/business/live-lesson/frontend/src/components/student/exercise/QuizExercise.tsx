@@ -4,6 +4,8 @@ import { renderMd } from '../renderMd'
 import { SessionCtx } from '../TaskPanel'
 import { scrollToParas } from '../utils/linkParas'
 import type { TaskQuestion, ServerHintMap } from '../task-data'
+import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { toIdx } from '../../../utils/parse-helpers'
 
 interface Props {
   questions: TaskQuestion[]
@@ -13,15 +15,38 @@ interface Props {
   wrongQs: Set<number>
   attemptCount: (qi: number) => number
   serverHints?: ServerHintMap
+  reviewData?: ReviewData
 }
 
-export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attemptCount, serverHints }: Props) {
+export function parseQuizReview(review: ReviewData, questionCount: number) {
+  const { data, checkItems } = review
+  const ans: Record<string, any> = {}
+  ;((data.answers as unknown[]) || []).forEach((v, i) => { ans[i] = v })
+  const correctQs = new Set<number>()
+  const wrongQs = new Set<number>()
+  if (checkItems?.length) {
+    checkItems.forEach(it => {
+      const idx = toIdx(it.idx)
+      if (it.correct) correctQs.add(idx); else wrongQs.add(idx)
+    })
+  } else {
+    for (let i = 0; i < questionCount; i++) correctQs.add(i)
+  }
+  return { state: { ans, correctQs, wrongQs }, allDone: true }
+}
+
+export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attemptCount, serverHints, reviewData }: Props) {
+  const restored = useReviewRestore(reviewData, (r) => parseQuizReview(r, questions.length))
+  const effectiveAns = restored?.ans ?? ans
+  const effectiveCorrectQs = restored?.correctQs ?? correctQs
+  const effectiveWrongQs = restored?.wrongQs ?? wrongQs
+
   const { config } = useContext(SessionCtx)
   const mathOpts = { math: config.enableMath }
   return <>
     {questions.map((q, qi) => {
-      const locked = correctQs.has(qi)
-      const isWrong = wrongQs.has(qi)
+      const locked = effectiveCorrectQs.has(qi)
+      const isWrong = effectiveWrongQs.has(qi)
       const tries = attemptCount(qi)
       const sh = serverHints?.[qi]
       const hint = sh?.hint ?? q.hint
@@ -40,9 +65,9 @@ export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attem
             <HelpButton hint={hint} hintZh={hintZh} translate={q.translate} />
           </div>
           {q.opts.map((o, oi) => {
-            const sel = ans[qi] === oi
+            const sel = effectiveAns[qi] === oi
             // Server-side check path: q.correct is undefined; use the submitted answer (confirmed correct by server)
-            const correctIdx = q.correct ?? ans[qi]
+            const correctIdx = q.correct ?? effectiveAns[qi]
             const isCorrectLocked = locked && oi === correctIdx
             return (
               <div

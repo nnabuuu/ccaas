@@ -15,45 +15,13 @@ import { MapExercise } from './MapExercise'
 import { ImageUploadExercise } from './ImageUploadExercise'
 import { FillBlankExercise } from './FillBlankExercise'
 import { RichContentQuizExercise } from './RichContentQuizExercise'
+import { GuidedDiscoveryExercise } from './GuidedDiscoveryExercise'
 import type { ScaffoldHint } from '../ScaffoldPanel'
+import type { ReviewData } from '../../../hooks/useReviewRestore'
+import { toIdx } from '../../../utils/parse-helpers'
 
-const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
-
-/** Reverse formatSubmitData: convert persisted submission data back to component ans state */
-export function restoreAns(type: string, data: Record<string, unknown>): Record<string, unknown> {
-  if (!data) return {}
-  switch (type) {
-    case 'quiz': {
-      const ans: Record<string, unknown> = {}
-      ;((data.answers as unknown[]) || []).forEach((v, i) => { ans[i] = v })
-      return ans
-    }
-    case 'match': {
-      const ans: Record<string, unknown> = {}
-      ;((data.pairs as unknown[]) || []).forEach((v, i) => { ans[i] = v })
-      return ans
-    }
-    case 'order':
-      return { order: data.order || [] }
-    case 'stance':
-      return { stance: data.position, evidence: data.evidence || [] }
-    case 'map':
-      return { placements: data.placements || {}, reasons: data.reasons || {} }
-    case 'matrix':
-      return data // matrix restoration handled separately via effectiveMatrixAns
-    case 'select-evidence':
-      return data // pass through so SelectEvidenceExercise can hydrate
-    case 'image-upload':
-      return { images: data.images || [] }
-    case 'fill-blank':
-      return data.blanks ? data.blanks as Record<string, unknown> : data
-    default:
-      return data as Record<string, unknown>
-  }
-}
-
-export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush }: {
-  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
+export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds }: {
+  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void; partIds?: string[]
 }) {
   const ctx = useContext(SessionCtx)
   const ex = task.exercise
@@ -72,6 +40,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [imageUploadFeedback, setImageUploadFeedback] = useState<string | null>(null)
   const [imageUploadRubricResults, setImageUploadRubricResults] = useState<Record<string, { score: number; hint?: string }>>({})
   const [fillBlankResults, setFillBlankResults] = useState<Record<string, boolean>>({})
+  const [gdStepResults, setGdStepResults] = useState<Record<string, boolean>>({})
 
   // Per-question timing: track when each question was first viewed
   const questionTimesRef = useRef<Record<number, number>>({})
@@ -106,6 +75,10 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
   const reviewMode = !!(shouldRestore && prevSubmission)
 
+  const reviewPayload: ReviewData | undefined = reviewMode
+    ? { data: prevSubmission!.data, checkItems: prevSubmission!.checkItems }
+    : undefined
+
   // Restore firstAttemptRef from submission data (in effect to avoid ref mutation in render)
   useEffect(() => {
     if (!reviewMode || !prevSubmission?.data) return
@@ -114,81 +87,6 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       firstAttemptRef.current = fa as unknown[] | null
     }
   }, [reviewMode, prevSubmission])
-
-  // Derive effective state for review mode (pre-filled, locked answers)
-  const effectiveAns = reviewMode ? restoreAns(ex.type, prevSubmission.data) : ans
-  const effectiveMatrixAns = reviewMode && ex.type === 'matrix'
-    ? (prevSubmission.data.rows || {}) as Record<number, { what?: string; why?: string }>
-    : matrixAns
-
-  // Derive check-result feedback for review mode restore
-  const restoredCheck = reviewMode && prevSubmission?.checkItems
-    ? {
-        type: ex.type,
-        allCorrect: prevSubmission.score?.total === 100
-          || prevSubmission.checkItems.every(it => it.correct),
-        items: prevSubmission.checkItems,
-      } as CheckResult
-    : undefined
-
-  const effectiveCorrectQs = reviewMode && (ex.type === 'quiz' || ex.type === 'match')
-    ? (() => {
-        if (restoredCheck?.items) {
-          return new Set(restoredCheck.items.filter(it => it.correct).map(it => toIdx(it.idx)))
-        }
-        return new Set((ex.type === 'quiz' ? ex.questions! : ex.pairs!).map((_, i) => i))
-      })()
-    : correctQs
-
-  const effectiveWrongQs = reviewMode && restoredCheck
-    ? new Set(restoredCheck.items.filter(it => !it.correct).map(it => toIdx(it.idx)))
-    : wrongQs
-
-  const effectiveMatrixRowResults = reviewMode && restoredCheck && ex.type === 'matrix'
-    ? (() => {
-        const r: Record<number, boolean> = {}
-        restoredCheck.items.forEach(it => { r[toIdx(it.idx)] = it.correct })
-        return r
-      })()
-    : matrixRowResults
-
-  const effectiveMapFeedback = reviewMode && restoredCheck && ex.type === 'map'
-    ? (restoredCheck.items.find(it => it.idx === '_llm')?.hint ?? mapFeedback)
-    : mapFeedback
-
-  const effectiveMapItemResults = reviewMode && restoredCheck && ex.type === 'map'
-    ? (() => {
-        const r: Record<string, { correct: boolean; hint?: string }> = {}
-        restoredCheck.items.forEach(it => {
-          if (it.idx === '_llm') return
-          r[it.idx as string] = { correct: it.correct, hint: it.hint }
-        })
-        return r
-      })()
-    : mapItemResults
-
-  const effectiveImageUploadFeedback = reviewMode && restoredCheck && ex.type === 'image-upload'
-    ? (restoredCheck.items.find(it => it.idx === '_llm')?.hint ?? imageUploadFeedback)
-    : imageUploadFeedback
-
-  const effectiveImageUploadRubricResults = reviewMode && restoredCheck && ex.type === 'image-upload'
-    ? (() => {
-        const r: Record<string, { score: number; hint?: string }> = {}
-        restoredCheck.items.forEach(it => {
-          if (it.idx === '_llm') return
-          r[it.idx as string] = { score: it.score ?? 0, hint: it.hint }
-        })
-        return r
-      })()
-    : imageUploadRubricResults
-
-  const effectiveFillBlankResults = reviewMode && restoredCheck && ex.type === 'fill-blank'
-    ? (() => {
-        const r: Record<string, boolean> = {}
-        restoredCheck.items.forEach(it => { r[it.idx as string] = it.correct })
-        return r
-      })()
-    : fillBlankResults
 
   // Clear stale rubric results when student picks a new image (before re-submit)
   const imageKey = ex.type === 'image-upload' ? JSON.stringify(ans.images || []) : ''
@@ -204,6 +102,8 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     prevImageKeyRef.current = imageKey
   }, [imageKey, allDone, ex.type])
 
+  // Defense in depth: PracticePhase forces allDone=true in reviewMode here,
+  // and each exercise component also independently derives allDone from its restored state.
   const effectiveAllDone = reviewMode || allDone
   const effectiveSoftDone = reviewMode || softDone
 
@@ -231,6 +131,24 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       return ex.sentences.every(s => {
         const blankIds = [...s.template.matchAll(/\{\{(\d+)\}\}/g)].map(m => m[1])
         return blankIds.every(id => (ans[`${s.id}_${id}`] || '').trim().length > 0)
+      })
+    }
+    if (ex.type === 'guided-discovery') {
+      if (!ex.gdSteps) return false
+      const steps = ans.steps || {}
+      return ex.gdSteps.every(step => {
+        const sd = steps[step.id]?.answers || {}
+        switch (step.type) {
+          case 'observation_choice':
+            return step.choices.every(c => sd[c.id] !== undefined)
+          case 'formula_blanks':
+            return step.blanks.every(b => (sd[b.id] || '').trim().length > 0)
+          case 'derivation_blank':
+            return step.lines.every(l => !l.blank || (sd[l.blank.id] || '').trim().length > 0)
+          case 'text_blanks':
+            return step.textBlanks.every(b => (sd[b.id] || '').trim().length > 0)
+          default: return false
+        }
       })
     }
     return true
@@ -454,6 +372,14 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         setSoftDone(true); setAllDone(true)
         onDone()
       }
+    } else if (ex.type === 'guided-discovery') {
+      const stepRes: Record<string, boolean> = {}
+      result.items.forEach(item => {
+        stepRes[item.idx as string] = item.correct
+      })
+      setGdStepResults(stepRes)
+      setSoftDone(true); setAllDone(true)
+      onDone()
     } else {
       // stance — soft done
       setSoftDone(true); setAllDone(true)
@@ -497,7 +423,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       return next
     })
   }
-  const noopSetAns: typeof setAns = reviewMode ? () => {} : trackedSetAns
+  const guardedSetAns: typeof setAns = reviewMode ? () => {} : trackedSetAns
 
   return (
     <div id="phase-practice" data-translate-ctx="practice">
@@ -507,23 +433,25 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       {ex.type === 'quiz' && (
         <QuizExercise
           questions={ex.questions!}
-          ans={effectiveAns}
-          setAns={noopSetAns}
-          correctQs={effectiveCorrectQs}
-          wrongQs={effectiveWrongQs}
+          ans={ans}
+          setAns={guardedSetAns}
+          correctQs={correctQs}
+          wrongQs={wrongQs}
           attemptCount={attemptCount}
           serverHints={serverHints}
+          reviewData={reviewPayload}
         />
       )}
       {ex.type === 'match' && (
         <MatchExercise
           pairs={ex.pairs!}
-          ans={effectiveAns}
-          setAns={noopSetAns}
-          correctQs={effectiveCorrectQs}
-          wrongQs={effectiveWrongQs}
+          ans={ans}
+          setAns={guardedSetAns}
+          correctQs={correctQs}
+          wrongQs={wrongQs}
           attemptCount={attemptCount}
           serverHints={serverHints}
+          reviewData={reviewPayload}
         />
       )}
       {ex.type === 'matrix' && (
@@ -533,30 +461,32 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           studentId={ctx.studentId}
           stepIdx={stepIdx}
           serverHints={serverHints}
-          ans={effectiveMatrixAns}
+          ans={matrixAns}
           onAnsChange={reviewMode
             ? (() => {})
             : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))}
           disabled={effectiveAllDone}
-          rowResults={Object.keys(effectiveMatrixRowResults).length > 0 ? effectiveMatrixRowResults : undefined}
+          rowResults={Object.keys(matrixRowResults).length > 0 ? matrixRowResults : undefined}
+          reviewData={reviewPayload}
         />
       )}
-      {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={effectiveAns} setAns={noopSetAns} softDone={effectiveSoftDone} />}
-      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={effectiveAns} setAns={noopSetAns} done={effectiveAllDone} wrongPositions={effectiveWrongQs} attemptCount={(attempts[0] || []).length} />}
+      {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={ans} setAns={guardedSetAns} softDone={effectiveSoftDone} reviewData={reviewPayload} />}
+      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={ans} setAns={guardedSetAns} done={effectiveAllDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} reviewData={reviewPayload} />}
       {ex.type === 'map' && ex.axes && ex.mapItems && (
         <MapExercise
           prompt={ex.prompt || ''}
           axes={ex.axes}
           mapItems={ex.mapItems}
           minReasonLength={ex.minReasonLength || 8}
-          ans={effectiveAns}
-          setAns={noopSetAns}
+          ans={ans}
+          setAns={guardedSetAns}
           allDone={effectiveAllDone}
-          feedback={effectiveMapFeedback}
+          feedback={mapFeedback}
           givenPlacements={ex.givenPlacements}
           practiceCount={ex.practiceCount}
           practiceItemIds={ex.practiceItemIds}
-          itemResults={Object.keys(effectiveMapItemResults).length > 0 ? effectiveMapItemResults : undefined}
+          itemResults={Object.keys(mapItemResults).length > 0 ? mapItemResults : undefined}
+          reviewData={reviewPayload}
           onActiveChange={(refs) => {
             if (!onOverlayChange) return
             if (refs.length > 0) {
@@ -573,25 +503,39 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           promptImages={ex.promptImages}
           rubric={ex.rubric}
           maxImages={ex.maxImages ?? 1}
-          ans={effectiveAns}
-          setAns={noopSetAns}
+          ans={ans}
+          setAns={guardedSetAns}
           allDone={effectiveAllDone}
-          feedback={effectiveImageUploadFeedback}
-          rubricResults={Object.keys(effectiveImageUploadRubricResults).length > 0 ? effectiveImageUploadRubricResults : undefined}
+          feedback={imageUploadFeedback}
+          rubricResults={Object.keys(imageUploadRubricResults).length > 0 ? imageUploadRubricResults : undefined}
+          reviewData={reviewPayload}
         />
       )}
       {ex.type === 'fill-blank' && ex.sentences && (
         <FillBlankExercise
           sentences={ex.sentences}
-          ans={effectiveAns as Record<string, string>}
-          setAns={noopSetAns}
-          blankResults={Object.keys(effectiveFillBlankResults).length > 0 ? effectiveFillBlankResults : undefined}
+          ans={ans as Record<string, string>}
+          setAns={guardedSetAns}
+          blankResults={Object.keys(fillBlankResults).length > 0 ? fillBlankResults : undefined}
           allDone={effectiveAllDone}
+          reviewData={reviewPayload}
+        />
+      )}
+      {ex.type === 'guided-discovery' && ex.gdSteps && (
+        <GuidedDiscoveryExercise
+          steps={ex.gdSteps}
+          title={ex.gdTitle}
+          summary={ex.gdSummary}
+          ans={ans}
+          setAns={guardedSetAns}
+          stepResults={Object.keys(gdStepResults).length > 0 ? gdStepResults : undefined}
+          allDone={effectiveAllDone}
+          reviewData={reviewPayload}
         />
       )}
       {ex.type === 'rich-content-quiz' && ex.parts && ex.parts.length > 0 && (
         <RichContentQuizExercise
-          parts={ex.parts}
+          parts={partIds ? ex.parts.filter(p => partIds.includes(p.id)) : ex.parts}
           subType={ex.subType}
           prompt={ex.prompt}
           promptImages={ex.promptImages}
@@ -600,6 +544,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           taskId={task.id}
           onScaffoldPush={onScaffoldPush}
           onDone={() => { setAllDone(true); onDone() }}
+          reviewData={reviewPayload}
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (
@@ -612,39 +557,41 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
             }
           }}
           onDone={() => { setAllDone(true); onDone() }}
-          reviewData={reviewMode ? prevSubmission!.data : undefined}
+          reviewData={reviewPayload}
         />
       )}
 
-      {/* Submit/Done */}
-      <div style={{ marginTop: 16 }}>
-        {effectiveAllDone ? (
-          <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 16 }}>✓</span>Practice complete!
-          </div>
-        ) : (
-          <>
-            <button
-              className="stu-btn pri"
-              style={(!canSub() || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
-              onClick={(canSub() && !submitting) ? handleSubmit : undefined}
-            >
-              {submitting ? 'Checking...'
-                : ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 ? '重新提交'
-                : Object.keys(attempts).length > 0 ? 'Try Again' : 'Submit'}
-            </button>
-            {ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 && !effectiveAllDone && (
+      {/* Submit/Done — rich-content-quiz and select-evidence manage their own buttons */}
+      {ex.type !== 'rich-content-quiz' && ex.type !== 'select-evidence' && (
+        <div style={{ marginTop: 16 }}>
+          {effectiveAllDone ? (
+            <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16 }}>✓</span>Practice complete!
+            </div>
+          ) : (
+            <>
               <button
-                className="stu-btn"
-                style={{ marginTop: 8, background: 'var(--surface)', color: 'var(--t2)', border: '1px solid var(--border)' }}
-                onClick={() => { setAllDone(true); onDone() }}
+                className="stu-btn pri"
+                style={(!canSub() || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
+                onClick={(canSub() && !submitting) ? handleSubmit : undefined}
               >
-                继续到讨论
+                {submitting ? 'Checking...'
+                  : ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 ? '重新提交'
+                  : Object.keys(attempts).length > 0 ? 'Try Again' : 'Submit'}
               </button>
-            )}
-          </>
-        )}
-      </div>
+              {ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 && !effectiveAllDone && (
+                <button
+                  className="stu-btn"
+                  style={{ marginTop: 8, background: 'var(--surface)', color: 'var(--t2)', border: '1px solid var(--border)' }}
+                  onClick={() => { setAllDone(true); onDone() }}
+                >
+                  继续到讨论
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

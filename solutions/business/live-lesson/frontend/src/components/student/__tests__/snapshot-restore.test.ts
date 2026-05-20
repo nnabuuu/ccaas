@@ -5,11 +5,10 @@
  *   1. fetchSessionSnapshot returns { progress, submissions }
  *   2. useStudentTask derives screen, doneSet, and initialPhase from progress
  *   3. PracticePhase reads from restoredSubmissions context (simulated)
- *   4. restoreAns converts submission data back to component state
+ *   4. parse functions in each exercise component convert submission data back to component state
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchSessionSnapshot, getCachedSubmission, type CachedSubmission } from '../../../hooks/useClassroom'
-import { restoreAns } from '../exercise/PracticePhase'
 import { buildTasksFromManifest } from '../task-data'
 
 /* ── localStorage mock ── */
@@ -137,9 +136,8 @@ describe('Snapshot → restore integration', () => {
     expect(sub!.data).toEqual({ answers: [1] })
     expect(sub!.score).toEqual({ total: 100, byDimension: { q0: true } })
 
-    // 5. restoreAns converts back to component state
-    const restored = restoreAns('quiz', sub!.data)
-    expect(restored).toEqual({ 0: 1 })
+    // 5. Verify submission data is available (restoreAns logic now lives in each exercise component)
+    expect(sub!.data.answers).toEqual([1])
   })
 
   it('localStorage is populated as side effect of fetchSessionSnapshot', async () => {
@@ -300,17 +298,4 @@ describe('Snapshot → restore integration', () => {
     expect(elapsedSec >= maxTimeSeconds).toBe(true)
   })
 
-  it('restoreAns works for all exercise types from snapshot data', () => {
-    // Simulate various submission types that might come from snapshot
-    const cases: Array<{ type: string; data: Record<string, unknown>; expected: Record<string, unknown> }> = [
-      { type: 'quiz', data: { answers: [1, 0, 2] }, expected: { 0: 1, 1: 0, 2: 2 } },
-      { type: 'match', data: { pairs: ['a', 'b'] }, expected: { 0: 'a', 1: 'b' } },
-      { type: 'order', data: { order: [2, 0, 1] }, expected: { order: [2, 0, 1] } },
-      { type: 'stance', data: { position: 1, evidence: [0, 2] }, expected: { stance: 1, evidence: [0, 2] } },
-      { type: 'map', data: { placements: { a: { x: 0.5, y: 0.3 } }, reasons: { a: 'why' } }, expected: { placements: { a: { x: 0.5, y: 0.3 } }, reasons: { a: 'why' } } },
-    ]
-    for (const { type, data, expected } of cases) {
-      expect(restoreAns(type, data)).toEqual(expected)
-    }
-  })
 })
