@@ -215,6 +215,10 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   }, [guideKey])
   const replayGuide = useCallback(() => setGuideOpen(true), [])
 
+  const toolbarItems = manifest.toolbar
+  const showTranslate = !toolbarItems || toolbarItems.includes('translate')
+  const showAiAsk = !toolbarItems || toolbarItems.includes('aiAsk')
+
   return (
     <LocaleScope locale={locale}>
     <div className="stu-root">
@@ -303,15 +307,19 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               onToggle={() => { setScaffoldHints([]); setTextbookOpen(false) }}
             />
           ) : null}
-          <div className="stu-toolbar-h">
-            <TranslateButton taskId={taskId || 1} phase={currentPhase} />
-            <AiPanel
-              taskId={taskId || 1}
-              taskName={task?.name}
-              phase={currentPhase}
-              aiHints={currentAiHints}
-            />
-          </div>
+          {(showTranslate || showAiAsk) && (
+            <div className="stu-toolbar-h">
+              {showTranslate && <TranslateButton taskId={taskId || 1} phase={currentPhase} />}
+              {showAiAsk && (
+                <AiPanel
+                  taskId={taskId || 1}
+                  taskName={task?.name}
+                  phase={currentPhase}
+                  aiHints={currentAiHints}
+                />
+              )}
+            </div>
+          )}
         </div>
       </SessionCtx.Provider>
       <StudentGuide open={guideOpen} onClose={handleGuideClose} manifest={manifest} />

@@ -8,6 +8,7 @@
   "teachingNotes": "初二数学《乘法公式》第一课时，围绕平方差公式展开。教学环节：情景引入→计算观察→公式归纳（填空）→辨析选择→手写计算→讨论反思。",
   "lessonType": "math",
   "enableMath": true,
+  "toolbar": [],
   "lessonIntro": "同学们好！今天我们来探索一个有趣的乘法规律。\n\n先看一道计算题：$102 \\times 98 = ?$\n\n你能不用竖式，2秒算出来吗？学完今天的内容你就能做到！",
   "lessonSummary": "今天我们发现并掌握了**平方差公式**：\n\n$(a+b)(a-b) = a^2 - b^2$\n\n记住关键特征：**一和一差，结果为平方差**。\n\n课后练习：用平方差公式计算 $201 \\times 199$、$53 \\times 47$。",
   "phaseConfig": [
@@ -28,13 +29,9 @@
       "description": "通过面积模型引入平方差公式的几何直觉",
       "studentView": {
         "title": "一块菜地引发的数学争论",
-        "body": "<p>光头强有一块边长为50米的正方形伐木空地，他把这块空地借给熊大熊二种菜。</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_01_scene_square_plot.webp\" alt=\"光头强的正方形空地\"/><p>有一天光头强灵机一动，对熊大说：\"我把这块正方形地一边增加0.2米，另一边减少0.2米，照样借给你们种菜，租金一分钱不变，怎么样？\"</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_02_proposal_rectangle_transform.webp\" alt=\"光头强提议变形\"/><p>熊二一听觉得没变化，立马就想答应。熊大连忙拦住：\"别急，小心有诈！\"</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_03_conflict_bears_disagree.webp\" alt=\"熊大拦住熊二\"/><p>同学们，你们帮熊大熊二想一想，要不要答应光头强呢？</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_04_challenge_bears_thinking.webp\" alt=\"同学们帮忙想一想\"/>",
-        "keyPoints": [
-          "正方形面积 = 50 × 50 = 2500 m²",
-          "一边 +0.2、一边 −0.2，面积变了吗？",
-          "学完平方差公式你就知道答案"
-        ],
-        "confirmLabel": "我来算一算"
+        "body": "<p>光头强有一块边长为50米的正方形伐木空地，他把这块空地借给熊大熊二种菜。</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_01_scene_square_plot.webp\" alt=\"光头强的正方形空地\"/><p>有一天光头强灵机一动，对熊大说：\"我把这块正方形地一边增加0.2米，另一边减少0.2米，照样借给你们种菜，租金一分钱不变，怎么样？\"</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_02_proposal_rectangle_transform.webp\" alt=\"光头强提议变形\"/><p>熊二一听觉得没变化，立马就想答应。熊大连忙拦住：\"别急，小心有诈！\"</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_03_conflict_bears_disagree.webp\" alt=\"熊大拦住熊二\"/><p>同学们，你们帮熊大熊二想一想，要不要答应光头强呢？</p><img src=\"/api/lessons/math-difference-of-squares/resources/1_04_challenge_bears_thinking.webp\" alt=\"同学们帮忙想一想\"/><p><strong>学完今天这节课你就知道答案</strong></p>",
+        "keyPoints": [],
+        "confirmLabel": "开始学习"
       },
       "teacherView": {
         "speechLine": "同学们看看光头强的提议，一边加0.2、一边减0.2，面积到底变没变？",

@@ -395,4 +395,5 @@ export interface ReadingManifest {
   observations?: Record<string, any>
   observationIndicators?: ObservationIndicator[]
   phaseConfig?: PhaseConfig[]
+  toolbar?: ('translate' | 'aiAsk')[]
 }
