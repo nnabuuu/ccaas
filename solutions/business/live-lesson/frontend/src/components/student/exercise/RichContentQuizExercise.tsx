@@ -11,6 +11,10 @@ import { reportAttempt } from './gradeItemSet'
 import { RenderMath } from '../../../utils/render-math'
 import { HandwritingCanvas } from '../image-capture/HandwritingCanvas'
 import type { HandwritingCanvasHandle } from '../image-capture/HandwritingCanvas'
+import { compressDataUri } from '../../../utils/compress-image'
+import RcqGuide from './RcqGuide'
+import { readGuideSeen, markGuideSeen } from './guide-helpers'
+import { resolveAdvance } from './rcq-advance'
 import './rcq.css'
 
 type PartPhase = 'work' | 'wrong' | 'retry' | 'wrong2' | 'done'
@@ -82,6 +86,8 @@ export function RichContentQuizExercise({
   const [hasContent, setHasContent] = useState(false)
   const [lastFeedback, setLastFeedback] = useState('')
   const [partOutcome, setPartOutcome] = useState<Record<string, 'correct' | 'passed'>>(() => restored?.outcomes ?? {})
+  const [guideOpen, setGuideOpen] = useState(false)
+  const guideSeen = useRef(readGuideSeen('guide-seen-rcq'))
 
   const currentPart = parts[currentPartIdx]
   const currentPartId = currentPart?.id
@@ -99,22 +105,16 @@ export function RichContentQuizExercise({
   }, [])
 
   const advanceToNext = (updatedPhases: Record<string, PartPhase>, result: SubmitResult) => {
-    if (result.nextPartId) {
-      const nextIdx = parts.findIndex(p => p.id === result.nextPartId)
-      if (nextIdx >= 0) {
-        setCurrentPartIdx(nextIdx)
-        setHasContent(false)
-      }
-    } else {
-      if (parts.every(p => updatedPhases[p.id] === 'done')) {
-        onDone()
-      } else {
-        const nextIncomplete = parts.findIndex(p => updatedPhases[p.id] !== 'done')
-        if (nextIncomplete >= 0) {
-          setCurrentPartIdx(nextIncomplete)
-          setHasContent(false)
-        }
-      }
+    const action = resolveAdvance(
+      parts.map(p => p.id),
+      updatedPhases,
+      result.nextPartId,
+    )
+    if (action.type === 'advance') {
+      setCurrentPartIdx(action.idx)
+      setHasContent(false)
+    } else if (action.type === 'done') {
+      onDone()
     }
   }
 
@@ -122,14 +122,15 @@ export function RichContentQuizExercise({
     if (!currentPartId || busyRef.current) return
     if (stepIdx === undefined || !ctx.submit) return
 
-    const freshImages = canvasRef.current?.exportPages() || images
-    if (freshImages.length === 0) return
+    const rawImages = canvasRef.current?.exportPages() || images
+    if (rawImages.length === 0) return
 
     busyRef.current = true
     setSubmitting(true)
     try {
+      const compressed = await Promise.all(rawImages.map(uri => compressDataUri(uri)))
       const submitData = {
-        images: freshImages,
+        images: compressed,
         partId: currentPartId,
         method: subType || 'rich-content-quiz',
       }
@@ -254,6 +255,20 @@ export function RichContentQuizExercise({
   return (
     <LocaleScope locale={locale}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ flex: 1 }} />
+        <button
+          className={`se-guide-btn${!guideSeen.current && !guideOpen ? ' pulse' : ''}`}
+          aria-label={t('rcq.guideLabel')}
+          onClick={() => {
+            setGuideOpen(true)
+            markGuideSeen('guide-seen-rcq')
+            guideSeen.current = true
+          }}
+        >?</button>
+      </div>
+      <RcqGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
+
       {/* Top-level prompt */}
       {prompt && (
         <div style={{ fontSize: 14, lineHeight: 1.6 }}><RenderMath text={prompt} /></div>
