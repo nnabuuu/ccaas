@@ -236,6 +236,7 @@ function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
               options: c.options as string[],
               correct: c.correct as number,
             })),
+            ...(step.conclusion && { conclusion: step.conclusion as string }),
           };
         case 'formula_blanks':
           return {

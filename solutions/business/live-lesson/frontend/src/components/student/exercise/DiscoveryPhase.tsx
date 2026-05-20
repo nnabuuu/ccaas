@@ -20,6 +20,7 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
 
   const [ans, setAns] = useState<Record<string, any>>({})
   const [stepResults, setStepResults] = useState<Record<string, boolean>>({})
+  const [stepFeedbacks, setStepFeedbacks] = useState<Record<string, string>>({})
   const [allDone, setAllDone] = useState(!!isRevisit)
   const [submitting, setSubmitting] = useState(false)
   const [currentStepIdx, setCurrentStepIdx] = useState(0)
@@ -52,6 +53,17 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
             setCompletedSteps(prev => new Set(prev).add(stepId))
           }
         }
+        const llmItem = result.items.find((it: CheckItem) => it.idx === '_llm')
+        if (llmItem?.hint) {
+          setStepFeedbacks(prev => ({ ...prev, [stepId]: llmItem.hint! }))
+        } else {
+          setStepFeedbacks(prev => {
+            if (!prev[stepId]) return prev
+            const next = { ...prev }
+            delete next[stepId]
+            return next
+          })
+        }
       }
     } finally {
       setSubmitting(false)
@@ -80,6 +92,7 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
         ans={ans}
         setAns={setAns}
         stepResults={stepResults}
+        stepFeedbacks={stepFeedbacks}
         allDone={allDone}
         locale={locale}
         currentStepIdx={currentStepIdx}

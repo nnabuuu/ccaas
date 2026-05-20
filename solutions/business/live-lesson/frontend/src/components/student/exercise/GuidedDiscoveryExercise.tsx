@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import type { GdStep, GdObservationStep, GdFormulaBlanksStep, GdDerivationBlankStep, GdTextBlanksStep } from '../task-data'
+import type { GdStep, GdObservationStep, GdChoiceItem, GdFormulaBlanksStep, GdDerivationBlankStep, GdTextBlanksStep } from '../task-data'
 import { RenderMath } from '../../../utils/render-math'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import { useT, LocaleScope, type Locale, type TFn } from '../../../i18n'
@@ -14,6 +14,7 @@ interface Props {
   ans: Record<string, any>
   setAns: (updater: (prev: Record<string, any>) => Record<string, any>) => void
   stepResults?: Record<string, boolean>
+  stepFeedbacks?: Record<string, string>
   allDone: boolean
   reviewData?: ReviewData
   locale?: Locale
@@ -133,14 +134,99 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, lo
 
 // ── ObservationChoiceStep with instant client-side feedback ──
 
-function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoiceSelect }: {
+/** Render choice option buttons for a single choice item */
+function ChoiceButtons({ choice, answers, disabled, status, onChoiceSelect }: {
+  choice: GdChoiceItem; answers: Record<string, any>; disabled: boolean
+  status: ChoiceStatus; onChoiceSelect: (choiceId: string, optionIdx: number) => void
+}) {
+  const isLocked = status === 'correct'
+  const hasAnswered = answers[choice.id] !== undefined
+  return (
+    <>
+      {choice.options.map((opt, oi) => {
+        const selected = answers[choice.id] === oi
+        let border = '1.5px solid var(--teal)'
+        let bg = 'var(--surface)'
+        let color = 'var(--teal)'
+        const fontWeight: number = 600
+        let opacity = 1
+        let anim: string | undefined = (!hasAnswered && !disabled) ? 'btnBreathe 2s ease-in-out infinite' : undefined
+        let clickable = !disabled && !isLocked
+
+        if (selected && status === 'correct') {
+          border = '1.5px solid var(--green)'; bg = 'var(--green-bg)'; color = 'var(--green)'
+          anim = undefined; clickable = false
+        } else if (selected && status === 'wrong') {
+          border = '1.5px solid var(--red)'; bg = 'var(--red-bg)'; color = 'var(--red)'
+          opacity = 0.5; anim = undefined; clickable = false
+        } else if (isLocked) {
+          anim = undefined; clickable = false
+        }
+
+        return (
+          <button
+            key={oi}
+            onClick={() => { if (clickable) onChoiceSelect(choice.id, oi) }}
+            disabled={!clickable}
+            style={{
+              padding: '4px 14px', borderRadius: 6, fontSize: 13,
+              cursor: clickable ? 'pointer' : 'default',
+              border, background: bg, fontWeight, color, opacity,
+              animation: anim,
+              transition: anim ? 'opacity .2s, color .2s' : 'all .2s',
+            }}
+          >
+            <RenderMath text={opt} />
+          </button>
+        )
+      })}
+    </>
+  )
+}
+
+function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoiceSelect, conclusion, onAdvance, isLast, t }: {
   step: GdObservationStep
   answers: Record<string, any>
   disabled: boolean
   choiceStatuses: Record<string, ChoiceStatus>
   onChoiceSelect: (choiceId: string, optionIdx: number) => void
+  conclusion?: string
+  onAdvance?: () => void
+  isLast?: boolean
+  t: TFn
 }) {
-  const t = useT()
+
+  // Build lookup and detect inline-embedded choices ({{choiceId}} in other prompts)
+  const choiceMap = new Map(step.choices.map(c => [c.id, c]))
+  const inlineIds = new Set<string>()
+  for (const c of step.choices) {
+    if (c.prompt) {
+      for (const m of c.prompt.matchAll(/\{\{(\w+)\}\}/g)) {
+        if (m[1] !== c.id) inlineIds.add(m[1])
+      }
+    }
+  }
+
+  // Render a prompt that may contain {{choiceId}} placeholders
+  function renderTemplatePrompt(prompt: string, selfChoice: GdChoiceItem) {
+    const parts = prompt.split(/(\{\{\w+\}\})/)
+    return parts.map((part, i) => {
+      const m = part.match(/^\{\{(\w+)\}\}$/)
+      if (m) {
+        const refId = m[1]
+        const refChoice = refId === selfChoice.id ? selfChoice : choiceMap.get(refId)
+        if (refChoice) {
+          return (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, verticalAlign: 'middle', margin: '0 2px' }}>
+              <ChoiceButtons choice={refChoice} answers={answers} disabled={disabled} status={choiceStatuses[refChoice.id]} onChoiceSelect={onChoiceSelect} />
+            </span>
+          )
+        }
+      }
+      return <RenderMath key={i} text={part} />
+    })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {step.table && (
@@ -161,62 +247,27 @@ function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoi
           </tbody>
         </table>
       )}
-      {step.choices.map(choice => {
+      {step.choices.filter(c => !inlineIds.has(c.id)).map(choice => {
         const status = choiceStatuses[choice.id]
-        const isLocked = status === 'correct'
         const hasAnswered = answers[choice.id] !== undefined
         const isCorrect = status === 'correct'
+        const hasTemplate = choice.prompt?.includes('{{')
+
+        if (hasTemplate) {
+          // Inline template: render sentence with embedded choice buttons
+          return (
+            <div key={choice.id} style={{ fontSize: 14, lineHeight: 2.4 }}>
+              {renderTemplatePrompt(choice.prompt!, choice)}
+            </div>
+          )
+        }
+
+        // Regular block: prompt above, buttons below
         return (
           <div key={choice.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 14 }}><RenderMath text={choice.prompt} /></div>
+            {choice.prompt && <div style={{ fontSize: 14 }}><RenderMath text={choice.prompt} /></div>}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {choice.options.map((opt, oi) => {
-                const selected = answers[choice.id] === oi
-                // Design-spec button states
-                let border = '1.5px solid var(--teal)'
-                let bg = 'var(--surface)'
-                let color = 'var(--teal)'
-                let fontWeight: number = 600
-                let opacity = 1
-                let anim: string | undefined = (!hasAnswered && !disabled) ? 'btnBreathe 2s ease-in-out infinite' : undefined
-                let clickable = !disabled && !isLocked
-
-                if (selected && status === 'correct') {
-                  border = '1.5px solid var(--green)'
-                  bg = 'var(--green-bg)'
-                  color = 'var(--green)'
-                  anim = undefined
-                  clickable = false
-                } else if (selected && status === 'wrong') {
-                  border = '1.5px solid var(--red)'
-                  bg = 'var(--red-bg)'
-                  color = 'var(--red)'
-                  opacity = 0.5
-                  anim = undefined
-                  clickable = false
-                } else if (isLocked) {
-                  // Not selected but step is locked (correct found) — stay teal, not clickable
-                  anim = undefined
-                  clickable = false
-                }
-
-                return (
-                  <button
-                    key={oi}
-                    onClick={() => { if (clickable) onChoiceSelect(choice.id, oi) }}
-                    disabled={!clickable}
-                    style={{
-                      padding: '4px 14px', borderRadius: 6, fontSize: 13,
-                      cursor: clickable ? 'pointer' : 'default',
-                      border, background: bg, fontWeight, color, opacity,
-                      animation: anim,
-                      transition: anim ? 'opacity .2s, color .2s' : 'all .2s',
-                    }}
-                  >
-                    <RenderMath text={opt} />
-                  </button>
-                )
-              })}
+              <ChoiceButtons choice={choice} answers={answers} disabled={disabled} status={status} onChoiceSelect={onChoiceSelect} />
               {!hasAnswered && !disabled && (
                 <span style={{
                   fontSize: 11, padding: '2px 8px', borderRadius: 4,
@@ -233,6 +284,46 @@ function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoi
           </div>
         )
       })}
+
+      {/* Local allCorrect — no dependency on external completedSteps */}
+      {step.choices.length > 0 && step.choices.every(c => choiceStatuses[c.id] === 'correct') && (
+        <>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            marginTop: 12, padding: '12px 14px', borderRadius: 10,
+            background: 'var(--green-bg)',
+            border: '1px solid rgba(45,102,18,.12)',
+          }}>
+            <span style={{
+              width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+              background: 'var(--green)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <CheckSvg />
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 }}>
+              {(() => {
+                if (!conclusion) return <strong style={{ color: 'var(--green)' }}>{t('gd.stepCorrect')}</strong>
+                const idx = conclusion.search(/[！!]/)
+                if (idx === -1) return <strong style={{ color: 'var(--green)' }}>{conclusion}</strong>
+                const bold = conclusion.slice(0, idx + 1)
+                const rest = conclusion.slice(idx + 1).replace(/^\s*/, '')
+                return (<><strong style={{ color: 'var(--green)' }}>{bold}</strong>{rest && ` ${rest}`}</>)
+              })()}
+            </span>
+          </div>
+          {onAdvance && (
+            <button onClick={onAdvance} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              width: '100%', padding: 12, borderRadius: 8, border: 'none',
+              background: 'var(--teal)', color: '#fff',
+              fontSize: 13, fontWeight: 600, marginTop: 8, cursor: 'pointer',
+            }}>
+              {isLast ? t('gd.viewSummary') : t('gd.continueNext')}
+            </button>
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -361,9 +452,9 @@ const XSvg = () => (
   <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 )
 
-function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion, t }: {
+function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion, feedback, t }: {
   isCompleted: boolean; isCorrect: boolean; isLast: boolean
-  onAdvance?: () => void; conclusion?: string; t: TFn
+  onAdvance?: () => void; conclusion?: string; feedback?: string; t: TFn
 }) {
   if (!isCompleted) return null
   return (
@@ -389,6 +480,7 @@ function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion
             {isCorrect ? t('gd.stepCorrect') : t('gd.stepWrong')}
           </strong>
           {isCorrect && conclusion && ` ${conclusion}`}
+          {!isCorrect && feedback && <><br />{feedback}</>}
         </span>
       </div>
       {/* Full-width teal "继续" button — outside feedback card */}
@@ -407,7 +499,7 @@ function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion
 }
 
 export function GuidedDiscoveryExercise({
-  steps, title, summary, ans, setAns, stepResults, allDone, reviewData, locale,
+  steps, title, summary, ans, setAns, stepResults, stepFeedbacks, allDone, reviewData, locale,
   currentStepIdx, completedSteps, onStepComplete, onStepSubmit, onAdvance, submitting,
 }: Props) {
   const t = useT(locale)
@@ -467,7 +559,6 @@ export function GuidedDiscoveryExercise({
           const answers = stepsData[step.id]?.answers || {}
           const result = effectiveStepResults?.[step.id]
           const isStepCompleted = !!(completedSteps?.has(step.id)) || (result !== undefined)
-          const isStepCorrect = result === true || (!!(completedSteps?.has(step.id)) && result === undefined)
           const isLast = si === steps.length - 1
           const resultColor = result === true ? 'var(--green)' : result === false ? 'var(--red)' : undefined
           const isAnimating = animatingIdx === si
@@ -503,25 +594,17 @@ export function GuidedDiscoveryExercise({
               </div>
 
               {step.type === 'observation_choice' && (
-                <>
-                  <ObservationChoiceStep
-                    step={step}
-                    answers={answers}
-                    disabled={stepDisabled}
-                    choiceStatuses={choiceStatuses[step.id] || {}}
-                    onChoiceSelect={(choiceId, optIdx) => handleChoiceSelect(step.id, step, choiceId, optIdx)}
-                  />
-                  {isProgressive && (
-                    <StepFeedbackBar
-                      isCompleted={isStepCompleted}
-                      isCorrect={isStepCorrect}
-                      isLast={isLast}
-                      onAdvance={isStepCorrect && !effectiveAllDone ? onAdvance : undefined}
-                      conclusion={step.conclusion}
-                      t={t}
-                    />
-                  )}
-                </>
+                <ObservationChoiceStep
+                  step={step}
+                  answers={answers}
+                  disabled={stepDisabled}
+                  choiceStatuses={choiceStatuses[step.id] || {}}
+                  onChoiceSelect={(choiceId, optIdx) => handleChoiceSelect(step.id, step, choiceId, optIdx)}
+                  conclusion={step.conclusion}
+                  onAdvance={isProgressive && !effectiveAllDone ? onAdvance : undefined}
+                  isLast={isLast}
+                  t={t}
+                />
               )}
               {step.type === 'formula_blanks' && (
                 <>
@@ -548,6 +631,7 @@ export function GuidedDiscoveryExercise({
                       isCorrect={result === true}
                       isLast={isLast}
                       onAdvance={result === true && !effectiveAllDone ? onAdvance : undefined}
+                      feedback={stepFeedbacks?.[step.id]}
                       t={t}
                     />
                   )}
@@ -578,6 +662,7 @@ export function GuidedDiscoveryExercise({
                       isCorrect={result === true}
                       isLast={isLast}
                       onAdvance={result === true && !effectiveAllDone ? onAdvance : undefined}
+                      feedback={stepFeedbacks?.[step.id]}
                       t={t}
                     />
                   )}
@@ -608,6 +693,7 @@ export function GuidedDiscoveryExercise({
                       isCorrect={result === true}
                       isLast={isLast}
                       onAdvance={result === true && !effectiveAllDone ? onAdvance : undefined}
+                      feedback={stepFeedbacks?.[step.id]}
                       t={t}
                     />
                   )}

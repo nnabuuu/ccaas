@@ -350,6 +350,53 @@ describe('GuidedDiscoveryGrader — edge cases', () => {
     const fail = await grader.grade(key, { steps: { only: { answers: { b: 'no' } } } });
     expect(fail.total).toBe(0);
   });
+
+  it('keyboard reject answer returns rejectHint in llmFeedback', async () => {
+    const key: GuidedDiscoveryAnswerKey = {
+      type: 'guided-discovery',
+      title: 'test',
+      steps: [{
+        type: 'formula_blanks',
+        id: 'sym',
+        title: '写公式',
+        blanks: [{
+          id: 'rhs',
+          label: '右边',
+          accepts: ['a²-b²', 'a^2-b^2'],
+          rejects: ['b²-a²', 'b^2-a^2'],
+          rejectHint: '注意左右顺序，应该是 a²-b² 而不是 b²-a²',
+        }],
+      }],
+    };
+    // Rejected answer → wrong + rejectHint in feedback
+    const result = await grader.grade(key, { steps: { sym: { answers: { rhs: 'b^2-a^2' } } } });
+    expect(result.total).toBe(0);
+    expect(result.byDimension.sym).toBe(false);
+    expect(result.llmFeedback).toBe('注意左右顺序，应该是 a²-b² 而不是 b²-a²');
+  });
+
+  it('keyboard wrong answer not in rejects returns no rejectHint', async () => {
+    const key: GuidedDiscoveryAnswerKey = {
+      type: 'guided-discovery',
+      title: 'test',
+      steps: [{
+        type: 'formula_blanks',
+        id: 'sym',
+        title: '写公式',
+        blanks: [{
+          id: 'rhs',
+          label: '右边',
+          accepts: ['a²-b²'],
+          rejects: ['b²-a²'],
+          rejectHint: '注意顺序',
+        }],
+      }],
+    };
+    // Random wrong answer not in rejects → wrong but no feedback
+    const result = await grader.grade(key, { steps: { sym: { answers: { rhs: 'xyz' } } } });
+    expect(result.total).toBe(0);
+    expect(result.llmFeedback).toBeUndefined();
+  });
 });
 
 // ── Schema validation ──

@@ -13,6 +13,7 @@ interface BlankDef {
   label?: string;
   accepts: string[];
   rejects?: string[];
+  rejectHint?: string;
 }
 
 interface ImageGradeResult {
@@ -63,7 +64,7 @@ export class GuidedDiscoveryGrader implements Grader {
 
       case 'formula_blanks':
         return this.gradeBlanks(
-          stepDef.blanks.map(b => ({ id: b.id, label: b.label, accepts: b.accepts, rejects: b.rejects })),
+          stepDef.blanks.map(b => ({ id: b.id, label: b.label, accepts: b.accepts, rejects: b.rejects, rejectHint: b.rejectHint })),
           answers as Record<string, string>,
           stepDef,
         );
@@ -115,7 +116,12 @@ export class GuidedDiscoveryGrader implements Grader {
           feedbacks.push('图片识别服务不可用，请使用键盘输入');
         }
       } else {
-        if (!matchesAny(v, blank.accepts)) allCorrect = false;
+        if (!matchesAny(v, blank.accepts)) {
+          allCorrect = false;
+          if (blank.rejects?.length && matchesAny(v, blank.rejects) && blank.rejectHint) {
+            feedbacks.push(blank.rejectHint);
+          }
+        }
       }
     }
 

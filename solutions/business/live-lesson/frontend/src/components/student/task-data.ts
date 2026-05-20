@@ -34,7 +34,7 @@ export interface RichContentQuizPart {
 }
 
 // Guided Discovery step types (student-safe, no answers)
-export interface GdChoiceItem { id: string; prompt: string; options: string[]; correct?: number }
+export interface GdChoiceItem { id: string; prompt?: string; options: string[]; correct?: number }
 export interface GdBlankItem { id: string; label: string; placeholder?: string; inputMethods?: string[] }
 export interface GdLineItem { text: string; blank?: { id: string; placeholder?: string; inputMethods?: string[] } }
 export interface GdTextBlankItem { id: string; inputMethods?: string[] }
