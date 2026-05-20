@@ -111,6 +111,8 @@ export const ExerciseSpecSchema = z.object({
       options: z.array(z.string()),
       correct: z.number().optional(),
     })).optional(),
+    layout: z.enum(['stacked', 'inline']).optional(),
+    separator: z.string().optional(),
     blanks: z.array(z.object({
       id: z.string(),
       label: z.string(),

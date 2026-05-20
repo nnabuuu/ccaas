@@ -337,6 +337,45 @@ describe('integration: RCQ multi-part with mixed outcomes', () => {
     expect(state.images.q2).toEqual(['q2-attempt.png'])
     // q3: top-level images present → use them
     expect(state.images.q3).toEqual(['q3-img.png'])
+
+    // No sampleSolution stored → solutions map is empty
+    expect(state.solutions).toEqual({})
+  })
+
+  it('restores sampleSolution from persisted part progress', () => {
+    const review = buildReviewPayload({
+      data: {
+        parts: {
+          q1: {
+            completed: true,
+            sampleSolution: '(a+b)(a-b) = a^2 - b^2',
+            images: ['q1.png'],
+            attemptsHistory: [{ method: 'submit', images: ['q1.png'] }],
+          },
+          q2: {
+            completed: true,
+            images: [],
+            attemptsHistory: [{ method: 'pass' }],
+            // no sampleSolution for passed part
+          },
+          q3: {
+            completed: true,
+            sampleSolution: 'x^2 - 9 = (x+3)(x-3)',
+            images: ['q3.png'],
+            attemptsHistory: [{ method: 'submit', images: ['q3.png'] }],
+          },
+        },
+      },
+    })
+
+    const { state, allDone } = parseRcqReview(review, parts)
+    expect(allDone).toBe(true)
+    expect(state.solutions).toEqual({
+      q1: '(a+b)(a-b) = a^2 - b^2',
+      q3: 'x^2 - 9 = (x+3)(x-3)',
+    })
+    // q2 has no sampleSolution
+    expect(state.solutions.q2).toBeUndefined()
   })
 
   it('handles partially completed set — allDone is false', () => {

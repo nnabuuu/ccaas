@@ -38,6 +38,7 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
   const phases: Record<string, PartPhase> = {}
   const outcomes: Record<string, 'correct' | 'passed'> = {}
   const images: Record<string, string[]> = {}
+  const solutions: Record<string, string> = {}
 
   for (const part of parts) {
     const sp = serverParts[part.id]
@@ -46,6 +47,7 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
     const history = (sp.attemptsHistory ?? []) as Array<Record<string, unknown>>
     const lastAttempt = history[history.length - 1]
     outcomes[part.id] = lastAttempt?.method === 'pass' ? 'passed' : 'correct'
+    if (sp.sampleSolution) solutions[part.id] = sp.sampleSolution as string
     const partImgs = (sp.images ?? []) as string[]
     if (partImgs.length > 0) {
       images[part.id] = partImgs
@@ -57,7 +59,7 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
     }
   }
   const allDone = parts.length > 0 && parts.every(p => phases[p.id] === 'done')
-  return { state: { phases, outcomes, images }, allDone }
+  return { state: { phases, outcomes, images, solutions }, allDone }
 }
 
 export function RichContentQuizExercise({
@@ -80,6 +82,7 @@ export function RichContentQuizExercise({
     const firstIncomplete = parts.findIndex(p => restored.phases[p.id] !== 'done')
     return firstIncomplete >= 0 ? firstIncomplete : 0
   })
+  const [partSolutions, setPartSolutions] = useState<Record<string, string>>(() => restored?.solutions ?? {})
   const [partImages, setPartImages] = useState<Record<string, string[]>>(() => restored?.images ?? {})
   const [partPhase, setPartPhase] = useState<Record<string, PartPhase>>(() => restored?.phases ?? {})
   const [submitting, setSubmitting] = useState(false)
@@ -157,6 +160,9 @@ export function RichContentQuizExercise({
         const updated = { ...partPhase, [currentPartId]: 'done' as const }
         setPartPhase(updated)
         setPartOutcome(prev => ({ ...prev, [currentPartId]: 'correct' }))
+        if (result.sampleSolution) {
+          setPartSolutions(prev => ({ ...prev, [currentPartId]: result.sampleSolution! }))
+        }
         advanceToNext(updated, result)
       }
     } finally {
@@ -188,6 +194,9 @@ export function RichContentQuizExercise({
       const updated = { ...partPhase, [currentPartId]: 'done' as const }
       setPartPhase(updated)
       setPartOutcome(prev => ({ ...prev, [currentPartId]: 'passed' }))
+      if (result.sampleSolution) {
+        setPartSolutions(prev => ({ ...prev, [currentPartId]: result.sampleSolution! }))
+      }
       advanceToNext(updated, result)
     } finally {
       busyRef.current = false
@@ -231,6 +240,12 @@ export function RichContentQuizExercise({
               )}
               {part.expression && (
                 <div className="rcq-problem-expr"><RenderMath text={part.expression} /></div>
+              )}
+              {partSolutions[part.id] && (
+                <div className="rcq-solution">
+                  <div className="rcq-solution-label">{t('rcq.solutionLabel')}</div>
+                  <div className="rcq-solution-body"><RenderMath text={partSolutions[part.id]} /></div>
+                </div>
               )}
               {imgs.length > 0 && (
                 <div className="rcq-review-images">

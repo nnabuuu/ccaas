@@ -215,12 +215,22 @@
             "type": "formula_blanks",
             "id": "formula",
             "title": "你能将发现的规律用符号 $a$、$b$ 表示出来吗？",
+            "prompt": "请填写等式的两边：",
+            "layout": "inline",
+            "separator": "=",
             "inputMethods": ["keyboard", "handwrite", "photo"],
             "blanks": [
               {
-                "id": "f1",
-                "label": "$(a+b)(a-b) =$",
-                "placeholder": "?",
+                "id": "f1_left",
+                "label": "等号左边",
+                "placeholder": "(a+b)(a-b)",
+                "accepts": ["(a+b)(a-b)", "(a-b)(a+b)"],
+                "inputMethods": ["keyboard", "handwrite", "photo"]
+              },
+              {
+                "id": "f1_right",
+                "label": "等号右边",
+                "placeholder": "a²-b²",
                 "accepts": ["a²-b²", "a^2-b^2", "a² - b²", "a^2 - b^2"],
                 "rejects": ["b²-a²", "b^2-a^2", "b² - a²", "b^2 - a^2"],
                 "rejectHint": "注意左右顺序，应该是 $a^2-b^2$ 而不是 $b^2-a^2$",

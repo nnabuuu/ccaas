@@ -87,6 +87,7 @@ export const en = {
   'rcq.submit': 'Submit',
   'rcq.defaultFeedback': 'Incorrect. Please check the hints on the right and resubmit.',
   'rcq.submittedAlt': 'Part {n} submission',
+  'rcq.solutionLabel': 'Reference Solution',
   'rcq.guideLabel': 'Handwriting exercise guide',
 
   // ── Bonus ──
@@ -345,6 +346,13 @@ export const en = {
   'gd.stepWrong': 'Not quite right, try again',
   'gd.pickOne': 'Pick one',
   'gd.retryPick': 'Retry ↻',
+  'gd.tapToAnswer': 'Tap to answer',
+  'gd.tapToEdit': 'Tap to edit',
+  'gd.collapse': 'Collapse',
+  'gd.confirmInput': 'Confirm',
+  'gd.kbHint': 'Hint: use ^2 for ², use * for \u00d7',
+  'gd.photoDropHint': 'Tap to take photo or upload',
+  'gd.photoReselect': 'Reselect',
 
   // ── Camera Modal ──
   'camera.permDenied': 'Camera permission denied',

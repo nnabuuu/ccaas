@@ -28,6 +28,7 @@ export interface SubmitResponse {
     }>;
   } | null;
   nextPartId?: string | null;
+  sampleSolution?: string | null;
 }
 
 export interface SubmissionResponse {

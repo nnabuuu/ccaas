@@ -249,6 +249,8 @@ const GdFormulaBlanksSchema = z.object({
   id: z.string().min(1),
   title: z.string(),
   prompt: z.string().optional(),
+  layout: z.enum(['stacked', 'inline']).optional(),
+  separator: z.string().optional(),
   blanks: z.array(z.object({
     id: z.string().min(1),
     label: z.string(),

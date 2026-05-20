@@ -232,4 +232,60 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
     expect(gradeData.images).toEqual(images);
     expect(gradeData.images).toHaveLength(1);
   });
+
+  it('returns sampleSolution when part is completed via correct answer', async () => {
+    const { session, student } = await setup();
+    // Default mock returns score 100 → part completed
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,correct'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.sampleSolution).toBe('9x²-4');
+  });
+
+  it('returns sampleSolution when part is completed via pass', async () => {
+    const { session, student } = await setup();
+    // First submit with low score → scaffold
+    gradeSpy.mockResolvedValueOnce({ total: 30, byDimension: { c1: 1 } });
+    await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,attempt1'],
+    });
+
+    // Pass the part
+    const passResult = await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      _pass: true,
+      images: [],
+    });
+    expect(passResult.ok).toBe(true);
+    expect(passResult.sampleSolution).toBe('9x²-4');
+  });
+
+  it('stores sampleSolution in partProgress for review restore', async () => {
+    const { session, student } = await setup();
+    await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,correct'],
+    });
+
+    const sub = await submissionRepo.findOne({
+      where: { sessionId: session.id, studentId: student.id, step: 1, phase: 'exercise' },
+    });
+    const data = sub!.dataJson as Record<string, any>;
+    expect(data.parts.p1.sampleSolution).toBe('9x²-4');
+  });
+
+  it('does not return sampleSolution when part triggers scaffold (not completed)', async () => {
+    const { session, student } = await setup();
+    gradeSpy.mockResolvedValueOnce({ total: 30, byDimension: { c1: 1 } });
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.scaffold).toBeDefined();
+    expect(result.sampleSolution).toBeNull();
+  });
 });

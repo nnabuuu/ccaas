@@ -128,6 +128,7 @@ export interface SubmitResult {
   } | null
   partId?: string
   nextPartId?: string | null
+  sampleSolution?: string | null
 }
 
 // ── Student session hook ──

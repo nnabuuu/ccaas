@@ -53,6 +53,8 @@ export interface GdObservationStep extends GdStepBase {
 export interface GdFormulaBlanksStep extends GdStepBase {
   type: 'formula_blanks'
   prompt?: string
+  layout?: 'stacked' | 'inline'
+  separator?: string
   blanks: GdBlankItem[]
   inputMethods?: string[]
 }

@@ -500,6 +500,30 @@ describe('parseRcqReview', () => {
     expect(result.state.phases).toEqual({})
     expect(result.state.outcomes).toEqual({})
     expect(result.state.images).toEqual({})
+    expect(result.state.solutions).toEqual({})
+  })
+
+  it('restores sampleSolution from completed parts', () => {
+    const review: ReviewData = {
+      data: {
+        parts: {
+          p1: {
+            completed: true,
+            sampleSolution: '9x^2 - 4',
+            images: ['img1'],
+            attemptsHistory: [{ method: 'submit', images: ['img1'] }],
+          },
+          p2: {
+            completed: true,
+            attemptsHistory: [{ method: 'pass' }],
+            // no sampleSolution
+          },
+        },
+      },
+    }
+    const result = parseRcqReview(review, parts)
+    expect(result.state.solutions).toEqual({ p1: '9x^2 - 4' })
+    expect(result.state.solutions.p2).toBeUndefined()
   })
 
   it('skips uncompleted parts in server data', () => {

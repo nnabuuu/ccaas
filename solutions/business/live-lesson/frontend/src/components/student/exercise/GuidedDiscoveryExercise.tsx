@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, Fragment } from 'react'
 import type { GdStep, GdObservationStep, GdChoiceItem, GdFormulaBlanksStep, GdDerivationBlankStep, GdTextBlanksStep } from '../task-data'
 import { RenderMath } from '../../../utils/render-math'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
@@ -45,6 +45,14 @@ function updateStepAnswer(setAns: Props['setAns'], stepId: string, fieldId: stri
   }))
 }
 
+/* SVG icons for feedback bar + confirm button */
+const CheckSvg = () => (
+  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+)
+const XSvg = () => (
+  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+)
+
 type InputMethod = 'keyboard' | 'handwrite' | 'photo'
 
 /* SVG icons for input method toggle — matches HandwritingCanvas style */
@@ -54,35 +62,77 @@ const MethodIcons: Record<InputMethod, JSX.Element> = {
   photo: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
 }
 
-const blankInputStyle = (valueLen: number): React.CSSProperties => ({
-  display: 'inline-block', width: Math.max(80, valueLen * 14 + 32),
-  padding: '4px 10px', border: '2px solid var(--border)', borderRadius: 6,
-  fontSize: 14, textAlign: 'center', outline: 'none', background: 'transparent',
-})
+/* Chevron-up SVG for collapse button */
+const ChevronUpSvg = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+)
 
-function GdInputField({ inputMethods, value, onChange, disabled, placeholder, locale }: {
-  inputMethods?: string[]; value: string; onChange: (val: string) => void; disabled: boolean; placeholder?: string; locale?: Locale
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
+function GdInputField({ inputMethods, value, onChange, disabled, placeholder, label, locale }: {
+  inputMethods?: string[]; value: string; onChange: (val: string) => void; disabled: boolean; placeholder?: string; label?: string; locale?: Locale
 }) {
   const t = useT(locale)
-  const methods = (inputMethods && inputMethods.length > 1) ? inputMethods as InputMethod[] : null
-  const [activeMethod, setActiveMethod] = useState<InputMethod>('keyboard')
+  const methods = (inputMethods && inputMethods.length > 0) ? inputMethods as InputMethod[] : ['keyboard'] as InputMethod[]
+  const [expanded, setExpanded] = useState(false)
+  const [activeMethod, setActiveMethod] = useState<InputMethod>(methods[0])
+  const [localText, setLocalText] = useState(value || '')
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  // Sync localText when value prop changes externally
+  useEffect(() => { setLocalText(value || '') }, [value])
 
   const handlePagesChange = useCallback((dataUris: string[]) => {
     if (dataUris.length > 0) onChangeRef.current(dataUris[0])
   }, [])
 
-  if (!methods) {
+  const handlePhoto = useCallback((files: FileList) => {
+    const f = Array.from(files).find(file => file.type.startsWith('image/'))
+    if (!f || f.size > MAX_PHOTO_BYTES) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string
+      onChangeRef.current(result)
+    }
+    reader.readAsDataURL(f)
+  }, [])
+
+  const confirmInput = useCallback(() => {
+    if (activeMethod === 'keyboard') {
+      onChangeRef.current(localText)
+    }
+    // handwrite/photo already push data via their own handlers; confirm just collapses
+    setExpanded(false)
+  }, [activeMethod, localText])
+
+  const isImage = value?.startsWith('data:image/')
+  const hasContent = activeMethod === 'keyboard' ? localText.trim().length > 0 : isImage
+
+  const handleCollapse = useCallback(() => {
+    if (activeMethod === 'keyboard') onChangeRef.current(localText)
+    setExpanded(false)
+  }, [activeMethod, localText])
+
+  // Collapsed preview
+  const renderPreview = () => {
+    if (isImage) {
+      return <img src={value} alt="" style={{ maxHeight: 36, maxWidth: 140, borderRadius: 4, display: 'block', objectFit: 'contain' }} />
+    }
+    if (value && !isImage) {
+      return <span className="math-input-text-preview">{value}</span>
+    }
+    return <span className="math-input-ph">{label || placeholder || t('gd.tapToAnswer')}</span>
+  }
+
+  const contentCls = (value && value.trim()) ? ' has-content' : ' empty'
+
+  if (disabled) {
     return (
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        disabled={disabled}
-        placeholder={placeholder || '___'}
-        style={blankInputStyle(value.length)}
-      />
+      <span className={'math-input-collapsed' + contentCls} style={{ cursor: 'default' }}>
+        {renderPreview()}
+      </span>
     )
   }
 
@@ -92,43 +142,90 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, lo
     photo: t('canvas.photoUpload'),
   }
 
+  const showTabs = methods.length > 1
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {methods.map(m => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setActiveMethod(m)}
-            disabled={disabled}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '3px 10px', borderRadius: 6, fontSize: 12, cursor: disabled ? 'default' : 'pointer',
-              border: activeMethod === m ? '1.5px solid var(--pri)' : '1px solid var(--border)',
-              background: activeMethod === m ? 'var(--pri-light, #e0e7ff)' : 'var(--surface)',
-              color: activeMethod === m ? 'var(--pri)' : 'var(--t2)',
-              fontWeight: activeMethod === m ? 600 : 400,
-              fontFamily: 'inherit', transition: 'all .15s',
-            }}
-          >
-            {MethodIcons[m]} {methodLabel[m]}
-          </button>
-        ))}
-      </div>
-      {activeMethod === 'keyboard' && (
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          disabled={disabled}
-          placeholder={placeholder || '___'}
-          style={blankInputStyle(value.length)}
-        />
+    <span className="math-input-root">
+      <span
+        className={'math-input-collapsed' + (expanded ? ' active' : '') + contentCls}
+        onClick={() => expanded ? handleCollapse() : setExpanded(true)}
+      >
+        {renderPreview()}
+        {(value && value.trim()) && !expanded && <span className="math-input-edit-hint">{t('gd.tapToEdit')}</span>}
+      </span>
+
+      {expanded && (
+        <div className="math-input-panel">
+          {/* Tab bar */}
+          <div className="math-input-tabs">
+            {showTabs && methods.map(m => (
+              <button
+                key={m}
+                type="button"
+                className={'math-input-tab' + (activeMethod === m ? ' active' : '')}
+                onClick={() => {
+                  if (activeMethod === 'keyboard') onChangeRef.current(localText)
+                  setActiveMethod(m)
+                }}
+              >
+                {MethodIcons[m]} {methodLabel[m]}
+              </button>
+            ))}
+            {!showTabs && <span className="math-input-tab active">{MethodIcons[activeMethod]} {methodLabel[activeMethod]}</span>}
+            <button type="button" className="math-input-close" onClick={handleCollapse}>
+              <ChevronUpSvg /> {t('gd.collapse')}
+            </button>
+          </div>
+
+          {activeMethod === 'keyboard' && (
+            <div className="math-input-kb">
+              <input
+                className="math-input-field"
+                value={localText}
+                onChange={e => setLocalText(e.target.value)}
+                placeholder={placeholder || '___'}
+                autoFocus
+                onKeyDown={e => { if (e.key === 'Enter' && localText.trim()) confirmInput() }}
+              />
+              <div className="math-input-kb-hint">{t('gd.kbHint')}</div>
+            </div>
+          )}
+
+          {activeMethod === 'handwrite' && (
+            <HandwritingCanvas maxPages={1} onPagesChange={handlePagesChange} disabled={disabled} locale={locale} />
+          )}
+
+          {activeMethod === 'photo' && (
+            <div className="math-input-photo">
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => { if (e.target.files) handlePhoto(e.target.files); e.target.value = '' }} />
+              {isImage ? (
+                <div className="math-input-photo-preview">
+                  <img src={value} alt="" />
+                  <button type="button" className="math-input-photo-change" onClick={() => fileRef.current?.click()}>
+                    {MethodIcons.photo} {t('gd.photoReselect')}
+                  </button>
+                </div>
+              ) : (
+                <div className="math-input-photo-drop" onClick={() => fileRef.current?.click()}>
+                  {MethodIcons.photo}
+                  <span>{t('gd.photoDropHint')}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Confirm button */}
+          {hasContent && (
+            <div className="math-input-confirm-row">
+              <button type="button" className="math-input-confirm" onClick={confirmInput}>
+                <CheckSvg /> {t('gd.confirmInput')}
+              </button>
+            </div>
+          )}
+        </div>
       )}
-      {(activeMethod === 'handwrite' || activeMethod === 'photo') && (
-        <HandwritingCanvas maxPages={1} onPagesChange={handlePagesChange} disabled={disabled} locale={locale} />
-      )}
-    </div>
+    </span>
   )
 }
 
@@ -331,22 +428,48 @@ function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoi
 function FormulaBlanksStep({ step, answers, onChange, disabled, locale }: {
   step: GdFormulaBlanksStep; answers: Record<string, any>; onChange: (id: string, val: string) => void; disabled: boolean; locale?: Locale
 }) {
+  const isInline = step.layout === 'inline'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {step.prompt && <div style={{ fontSize: 14, color: 'var(--t2)' }}><RenderMath text={step.prompt} /></div>}
-      {step.blanks.map(blank => (
-        <div key={blank.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <span style={{ fontSize: 14, lineHeight: '32px' }}><RenderMath text={blank.label} /></span>
-          <GdInputField
-            inputMethods={blank.inputMethods || step.inputMethods}
-            value={answers[blank.id] || ''}
-            onChange={val => onChange(blank.id, val)}
-            disabled={disabled}
-            placeholder={blank.placeholder}
-            locale={locale}
-          />
+      {step.prompt && (
+        <div style={{ fontSize: 14, color: 'var(--t2)', textAlign: isInline ? 'center' : undefined }}>
+          <RenderMath text={step.prompt} />
         </div>
-      ))}
+      )}
+      {isInline ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', padding: '16px 0' }}>
+          {step.blanks.map((blank, i) => (
+            <Fragment key={blank.id}>
+              {i > 0 && step.separator && (
+                <span style={{ fontSize: 24, color: 'var(--t3)' }}>{step.separator}</span>
+              )}
+              <GdInputField
+                label={blank.label}
+                placeholder={blank.placeholder}
+                inputMethods={blank.inputMethods || step.inputMethods}
+                value={answers[blank.id] || ''}
+                onChange={val => onChange(blank.id, val)}
+                disabled={disabled}
+                locale={locale}
+              />
+            </Fragment>
+          ))}
+        </div>
+      ) : (
+        step.blanks.map(blank => (
+          <div key={blank.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <span style={{ fontSize: 14, lineHeight: '32px' }}><RenderMath text={blank.label} /></span>
+            <GdInputField
+              inputMethods={blank.inputMethods || step.inputMethods}
+              value={answers[blank.id] || ''}
+              onChange={val => onChange(blank.id, val)}
+              disabled={disabled}
+              placeholder={blank.placeholder}
+              locale={locale}
+            />
+          </div>
+        ))
+      )}
     </div>
   )
 }
@@ -443,14 +566,6 @@ export function parseGdReview(review: ReviewData) {
 }
 
 // ── Step feedback + transition bar ──
-
-/* SVG icons for feedback bar */
-const CheckSvg = () => (
-  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-)
-const XSvg = () => (
-  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-)
 
 function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion, feedback, t }: {
   isCompleted: boolean; isCorrect: boolean; isLast: boolean
@@ -553,14 +668,36 @@ export function GuidedDiscoveryExercise({
   return (
     <LocaleScope locale={locale}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {title && <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--t1)' }}>{title}</div>}
+        <div className="gd-sticky-header">
+          {title && <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--t1)' }}>{title}</div>}
+
+          {/* Step progress bar */}
+          {isProgressive && steps.length > 1 && (
+            <div className="gd-step-progress">
+              {steps.map((s, i) => {
+                const done = !!(completedSteps?.has(s.id)) || effectiveStepResults?.[s.id] !== undefined
+                const active = i === currentStepIdx && !effectiveAllDone
+                return (
+                  <Fragment key={s.id}>
+                    {i > 0 && <div className={'gd-step-connector' + (done || (currentStepIdx !== undefined && i <= currentStepIdx && (completedSteps?.has(steps[i - 1].id) || effectiveStepResults?.[steps[i - 1].id] !== undefined)) ? ' filled' : '')} />}
+                    <div className="gd-step-item">
+                      <div className={'gd-step-dot' + (active ? ' active' : '') + (done ? ' done' : '')}>
+                        {done ? '\u2713' : i + 1}
+                      </div>
+                      <span className={'gd-step-label' + (active ? ' active' : '') + (done ? ' done' : '')}>{s.title || `${i + 1}`}</span>
+                    </div>
+                  </Fragment>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         {steps.slice(0, visibleCount).map((step, si) => {
           const answers = stepsData[step.id]?.answers || {}
           const result = effectiveStepResults?.[step.id]
           const isStepCompleted = !!(completedSteps?.has(step.id)) || (result !== undefined)
           const isLast = si === steps.length - 1
-          const resultColor = result === true ? 'var(--green)' : result === false ? 'var(--red)' : undefined
           const isAnimating = animatingIdx === si
 
           // In progressive mode, only the current (last visible) step is interactive
@@ -570,13 +707,9 @@ export function GuidedDiscoveryExercise({
           return (
             <div key={step.id} style={{
               padding: '12px 16px', borderRadius: 10,
-              border: resultColor ? `1.5px solid ${resultColor}`
-                : (isStepCompleted && !resultColor) ? '1.5px solid var(--green)'
+              border: result === false ? '1.5px solid var(--red)'
                 : '1px solid var(--border)',
-              background: result === true ? 'var(--green-bg)'
-                : result === false ? 'var(--red-bg)'
-                : (isStepCompleted && result === undefined) ? 'var(--green-bg)'
-                : 'var(--surface)',
+              background: result === false ? 'var(--red-bg)' : 'var(--surface)',
               animation: isAnimating ? 'gdCardIn .35s ease-out' : undefined,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -590,7 +723,7 @@ export function GuidedDiscoveryExercise({
                 }}>
                   {(result === true || (isStepCompleted && result === undefined)) ? '\u2713' : result === false ? '\u2717' : si + 1}
                 </span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)' }}>{step.title}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)' }}><RenderMath text={step.title || ''} /></span>
               </div>
 
               {step.type === 'observation_choice' && (
@@ -732,6 +865,126 @@ export function GuidedDiscoveryExercise({
           0%,100% { background: var(--surface); }
           50% { background: var(--teal-bg); }
         }
+        /* ── Sticky header (title + progress bar) ── */
+        .gd-sticky-header {
+          position: sticky; top: 38px; z-index: 9;
+          background: var(--bg); padding: 8px 0 4px;
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .gd-step-progress {
+          display: flex; align-items: center;
+          padding: 4px 0;
+        }
+        .gd-step-item {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 4px; flex: 0 0 auto; position: relative; z-index: 1;
+        }
+        .gd-step-dot {
+          width: 26px; height: 26px; border-radius: 50%;
+          background: var(--surface); border: 2px solid var(--border);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 11px; font-weight: 700; color: var(--t3);
+          transition: all .25s;
+        }
+        .gd-step-dot.active { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+        .gd-step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+        .gd-step-label {
+          font-size: 10px; color: var(--t3); font-weight: 500;
+          white-space: nowrap; transition: color .2s;
+          max-width: 64px; overflow: hidden; text-overflow: ellipsis; text-align: center;
+        }
+        .gd-step-label.active { color: var(--teal); font-weight: 600; }
+        .gd-step-label.done { color: var(--green); }
+        .gd-step-connector {
+          flex: 1; height: 2px; background: var(--border);
+          min-width: 12px; margin: 0 -2px;
+          position: relative; top: -9px; transition: background .25s;
+        }
+        .gd-step-connector.filled { background: var(--green); }
+
+        /* ── MathInput: collapsible input field ── */
+        .math-input-root { display: inline-block; vertical-align: top; }
+        .math-input-collapsed {
+          display: inline-flex; align-items: center; justify-content: center;
+          min-width: 100px; min-height: 34px; padding: 5px 14px;
+          border-radius: 8px; border: 1.5px dashed var(--teal);
+          background: var(--surface); font-size: 14px; font-weight: 500;
+          color: var(--t1); cursor: pointer; transition: all .15s;
+        }
+        .math-input-collapsed.empty { border-style: dashed; }
+        .math-input-collapsed:not(.empty) { border-style: solid; }
+        .math-input-collapsed:hover { background: var(--teal-bg); }
+        .math-input-collapsed.active { border-color: var(--teal); border-style: solid; background: var(--teal-bg); }
+        .math-input-collapsed.has-content { padding: 4px 8px; min-height: auto; border-style: solid; }
+        .math-input-ph { color: var(--teal); font-size: 12px; font-weight: 500; }
+        .math-input-text-preview { font-size: 16px; font-weight: 600; color: var(--t1); }
+        .math-input-edit-hint { font-size: 9px; color: var(--t3); margin-left: 6px; opacity: 0; transition: opacity .15s; }
+        .math-input-collapsed:hover .math-input-edit-hint { opacity: 1; }
+        .math-input-panel {
+          margin-top: 8px; border: 1px solid var(--border); border-radius: 10px;
+          background: var(--surface); overflow: hidden;
+          animation: gdCardIn .25s ease;
+        }
+        .math-input-tabs {
+          display: flex; align-items: center; gap: 2px;
+          padding: 6px 8px; border-bottom: 1px solid var(--border);
+          background: var(--surface2, #f5f5f4);
+        }
+        .math-input-tab {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 6px 14px; border-radius: 6px; border: none;
+          background: transparent; font-size: 11px; font-weight: 500;
+          color: var(--t3); cursor: pointer; font-family: inherit; transition: all .12s;
+        }
+        .math-input-tab svg { stroke: currentColor; }
+        .math-input-tab:hover { color: var(--t2); background: var(--surface); }
+        .math-input-tab.active { color: var(--teal); background: var(--surface); font-weight: 600; }
+        .math-input-close {
+          margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 10px; border-radius: 5px; border: none;
+          background: transparent; font-size: 10px; font-weight: 500;
+          color: var(--t3); cursor: pointer; font-family: inherit;
+        }
+        .math-input-close:hover { color: var(--t1); background: var(--surface); }
+        .math-input-kb { padding: 12px; }
+        .math-input-field {
+          width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+          border-radius: 6px; font-size: 14px; font-family: inherit;
+          color: var(--t1); background: var(--bg);
+        }
+        .math-input-field:focus { outline: none; border-color: var(--teal); }
+        .math-input-kb-hint { font-size: 10px; color: var(--t3); margin-top: 6px; }
+        .math-input-confirm-row { padding: 8px 12px 12px; display: flex; justify-content: flex-end; }
+        .math-input-confirm {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 20px; border-radius: 8px; border: none;
+          background: var(--teal); color: #fff; font-size: 13px; font-weight: 600;
+          font-family: inherit; cursor: pointer; transition: opacity .15s;
+        }
+        .math-input-confirm:hover { opacity: .85; }
+        .math-input-photo { padding: 12px; }
+        .math-input-photo-drop {
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+          padding: 24px 16px; border: 1.5px dashed var(--border); border-radius: 8px;
+          cursor: pointer; transition: all .15s;
+        }
+        .math-input-photo-drop:hover { border-color: var(--teal); background: var(--teal-bg); }
+        .math-input-photo-drop span { font-size: 12px; color: var(--t3); font-weight: 500; }
+        .math-input-photo-drop:hover span { color: var(--teal); }
+        .math-input-photo-preview { position: relative; }
+        .math-input-photo-preview img {
+          max-width: 100%; max-height: 280px; border-radius: 6px;
+          border: 1px solid var(--border); display: block; object-fit: contain;
+        }
+        .math-input-photo-change {
+          display: inline-flex; align-items: center; gap: 5px;
+          margin-top: 8px; padding: 5px 12px; border-radius: 6px;
+          border: 1px solid var(--border); background: var(--surface);
+          font-size: 11px; font-weight: 500; color: var(--t2);
+          cursor: pointer; font-family: inherit; transition: all .12s;
+        }
+        .math-input-photo-change:hover { background: var(--surface2, #f5f5f4); color: var(--t1); }
+        .math-input-panel .hw-area { border-radius: 0; border: none; animation: none; margin: 0; }
       `}</style>
     </LocaleScope>
   )

@@ -242,6 +242,8 @@ function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
           return {
             ...base,
             ...(step.prompt && { prompt: step.prompt as string }),
+            ...(step.layout && { layout: step.layout as 'stacked' | 'inline' }),
+            ...(step.separator && { separator: step.separator as string }),
             blanks: ((step.blanks || []) as Array<AKInput>).map(b => ({
               id: b.id as string,
               label: b.label as string,

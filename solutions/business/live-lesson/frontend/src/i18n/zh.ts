@@ -89,6 +89,7 @@ export const zh: Record<keyof typeof en, string> = {
   'rcq.submit': '提交',
   'rcq.defaultFeedback': '答案不正确，请参考右侧提示修改后重新提交。',
   'rcq.submittedAlt': '第 {n} 题提交',
+  'rcq.solutionLabel': '参考解答',
   'rcq.guideLabel': '手写解答指南',
 
   // ── Bonus ──
@@ -347,6 +348,13 @@ export const zh: Record<keyof typeof en, string> = {
   'gd.stepWrong': '还不太对，再试一次',
   'gd.pickOne': '选一个',
   'gd.retryPick': '再选 ↻',
+  'gd.tapToAnswer': '点击作答',
+  'gd.tapToEdit': '点击修改',
+  'gd.collapse': '收起',
+  'gd.confirmInput': '确认输入',
+  'gd.kbHint': '提示：² 可输入 ^2，× 可用 *',
+  'gd.photoDropHint': '点击拍照或上传图片',
+  'gd.photoReselect': '重新选择',
 
   // ── Camera Modal ──
   'camera.permDenied': '相机权限被拒绝',

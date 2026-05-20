@@ -199,6 +199,11 @@ export class StudentSubmissionService {
       partProgress.completed = true;
     }
 
+    // Attach sampleSolution when part is completed
+    if (partProgress.completed && partDef.sampleSolution) {
+      partProgress.sampleSolution = partDef.sampleSolution;
+    }
+
     // Update parts progress
     partsProgress[partId] = partProgress;
 
@@ -255,6 +260,7 @@ export class StudentSubmissionService {
           ok: true, score: aggregateScore,
           currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
           partId, nextPartId: null,
+          sampleSolution: partProgress.completed ? (partDef.sampleSolution ?? null) : null,
         };
       }
     }
@@ -267,6 +273,7 @@ export class StudentSubmissionService {
       partId,
       ...(scaffoldResponse && { scaffold: scaffoldResponse }),
       nextPartId: partProgress.completed ? nextPartId : null,
+      sampleSolution: partProgress.completed ? (partDef.sampleSolution ?? null) : null,
     };
   }
 
@@ -291,6 +298,11 @@ export class StudentSubmissionService {
       return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
     }
 
+    const partDef = answerKey.parts.find(p => p.id === partId);
+    if (!partDef) {
+      return { ok: false, score: null, currentTask: student.currentTask, currentPhase: student.currentPhase };
+    }
+
     // Load existing submission
     const existingSub = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId: student.id, step, phase: 'exercise' },
@@ -306,6 +318,12 @@ export class StudentSubmissionService {
 
     // Mark as completed without incrementing attempts
     partProgress.completed = true;
+
+    // Attach sampleSolution when part is completed
+    if (partDef.sampleSolution) {
+      partProgress.sampleSolution = partDef.sampleSolution;
+    }
+
     partsProgress[partId] = partProgress;
 
     // Determine next part
@@ -354,6 +372,7 @@ export class StudentSubmissionService {
           ok: true, score: aggregateScore,
           currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
           partId, nextPartId: null,
+          sampleSolution: partDef.sampleSolution ?? null,
         };
       }
     }
@@ -365,6 +384,7 @@ export class StudentSubmissionService {
       currentPhase: student.currentPhase,
       partId,
       nextPartId,
+      sampleSolution: partDef.sampleSolution ?? null,
     };
   }
 
