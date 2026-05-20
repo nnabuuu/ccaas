@@ -256,12 +256,11 @@
             "type": "text_blanks",
             "id": "verbal",
             "title": "你能用文字语言来描述上面的规律吗？",
-            "inputMethods": ["keyboard", "handwrite", "photo"],
             "template": "两个数的{{1}}与这两个数的{{2}}的乘积等于这两个数的平方差。即 $(a+b)(a-b) =${{3}}，这个公式叫做平方差公式。",
             "blanks": [
-              { "id": "1", "accepts": ["和"], "inputMethods": ["keyboard", "handwrite", "photo"] },
-              { "id": "2", "accepts": ["差"], "inputMethods": ["keyboard", "handwrite", "photo"] },
-              { "id": "3", "accepts": ["a²-b²", "a^2-b^2", "a² - b²", "a^2 - b^2"], "inputMethods": ["keyboard", "handwrite", "photo"] }
+              { "id": "1", "accepts": ["和"] },
+              { "id": "2", "accepts": ["差"] },
+              { "id": "3", "accepts": ["a²-b²", "a^2-b^2", "a² - b²", "a^2 - b^2"] }
             ]
           }
         ],
