@@ -5,6 +5,7 @@ import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewResto
 import { useT, LocaleScope, type Locale, type TFn } from '../../../i18n'
 import { HandwritingCanvas } from '../image-capture/HandwritingCanvas'
 import { evaluateChoice, applyChoiceSelection, type ChoiceStatus } from './gd-choice-helpers'
+import type { GdProgress } from './gd-types'
 import '../image-capture/handwriting.css'
 
 interface Props {
@@ -556,13 +557,22 @@ function TextBlanksStep({ step, answers, onChange, disabled, locale }: {
 interface GdReviewState {
   ans: { steps: Record<string, { answers: Record<string, unknown> }> }
   stepResults: Record<string, boolean>
+  gdProgress?: GdProgress
 }
 
 export function parseGdReview(review: ReviewData) {
   const { data, checkItems } = review
   const stepResults: Record<string, boolean> = {}
   checkItems?.forEach(it => { stepResults[it.idx as string] = it.correct })
-  return { state: { ans: { steps: data.steps || {} } as GdReviewState['ans'], stepResults }, allDone: true }
+  const progress = (data as Record<string, unknown>)._gdProgress as GdReviewState['gdProgress'] | undefined
+  return {
+    state: {
+      ans: { steps: (data as Record<string, any>).steps || {} } as GdReviewState['ans'],
+      stepResults,
+      gdProgress: progress,
+    },
+    allDone: !progress,
+  }
 }
 
 // ── Step feedback + transition bar ──
@@ -632,6 +642,30 @@ export function GuidedDiscoveryExercise({
 
   // Per-choice feedback status for observation_choice steps (client-side)
   const [choiceStatuses, setChoiceStatuses] = useState<Record<string, Record<string, ChoiceStatus>>>({})
+
+  // Auto-derive choiceStatuses for pre-completed observation_choice steps (restore from cache)
+  useEffect(() => {
+    if (!completedSteps || completedSteps.size === 0) return
+    setChoiceStatuses(prev => {
+      let next = prev
+      for (const step of steps) {
+        if (step.type !== 'observation_choice' || !completedSteps.has(step.id)) continue
+        if (next[step.id]) continue
+        const answers = stepsData[step.id]?.answers || {}
+        const statuses: Record<string, ChoiceStatus> = {}
+        for (const choice of step.choices) {
+          if (answers[choice.id] !== undefined) {
+            statuses[choice.id] = evaluateChoice(choice.correct, answers[choice.id])
+          }
+        }
+        if (Object.keys(statuses).length > 0) {
+          if (next === prev) next = { ...prev }
+          next[step.id] = statuses
+        }
+      }
+      return next
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- mount-only restore
 
   // Track which step cards are "new" for entrance animation
   const prevVisibleRef = useRef(0)

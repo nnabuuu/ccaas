@@ -1,9 +1,12 @@
 import { useState, useCallback, useContext, useRef } from 'react'
 import { GuidedDiscoveryExercise } from './GuidedDiscoveryExercise'
 import { SessionCtx } from '../TaskPanel'
-import { checkAnswer, type CheckItem } from '../../../hooks/useClassroom'
+import { checkAnswer, cacheSubmission, getCachedSubmission, type CheckItem } from '../../../hooks/useClassroom'
 import type { Task } from '../task-data'
 import type { Locale } from '../../../i18n'
+import type { GdProgress } from './gd-types'
+
+export type { GdProgress } from './gd-types'
 
 interface Props {
   task: Task
@@ -18,22 +21,75 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
   const dk = task.discoveryKey
   const gdSteps = dk?.gdSteps || []
 
-  const [ans, setAns] = useState<Record<string, any>>({})
-  const [stepResults, setStepResults] = useState<Record<string, boolean>>({})
-  const [stepFeedbacks, setStepFeedbacks] = useState<Record<string, string>>({})
+  // Attempt restore on mount (synchronous — no effects needed)
+  const [cachedProgress] = useState<{ steps: Record<string, any>; progress: GdProgress } | null>(() => {
+    if (stepIdx === undefined || isRevisit) return null
+    const cached = ctx.sessionCode ? getCachedSubmission(ctx.sessionCode, stepIdx) : null
+    const data = (cached?.data ?? ctx.restoredSubmissions?.[stepIdx]?.data) as Record<string, any> | undefined
+    if (data?._gdProgress && Array.isArray(data._gdProgress.completedStepIds)) {
+      return { steps: data.steps || {}, progress: data._gdProgress as GdProgress }
+    }
+    return null
+  })
+
+  const [ans, setAns] = useState<Record<string, any>>(
+    cachedProgress ? { steps: cachedProgress.steps } : {},
+  )
+  const [stepResults, setStepResults] = useState<Record<string, boolean>>(
+    cachedProgress?.progress.stepResults ?? {},
+  )
+  const [stepFeedbacks, setStepFeedbacks] = useState<Record<string, string>>(
+    cachedProgress?.progress.stepFeedbacks ?? {},
+  )
   const [allDone, setAllDone] = useState(!!isRevisit)
   const [submitting, setSubmitting] = useState(false)
-  const [currentStepIdx, setCurrentStepIdx] = useState(0)
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set())
+  const [currentStepIdx, setCurrentStepIdx] = useState(
+    cachedProgress?.progress.currentStepIdx ?? 0,
+  )
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(
+    new Set(cachedProgress?.progress.completedStepIds ?? []),
+  )
 
-  // Use ref for ans to avoid re-creating handleStepSubmit on every keystroke
+  // Ref for ans (needed in checkAnswer call to avoid re-creating on every keystroke)
   const ansRef = useRef(ans)
   ansRef.current = ans
 
+  // Refs for current state values (read in saveProgress with overrides)
+  const currentStepIdxRef = useRef(currentStepIdx)
+  currentStepIdxRef.current = currentStepIdx
+  const completedStepsRef = useRef(completedSteps)
+  completedStepsRef.current = completedSteps
+  const stepResultsRef = useRef(stepResults)
+  stepResultsRef.current = stepResults
+  const stepFeedbacksRef = useRef(stepFeedbacks)
+  stepFeedbacksRef.current = stepFeedbacks
+
+  // Guard: prevent saveProgress after final submit
+  const doneRef = useRef(false)
+
+  // Save progress to localStorage + backend. Callers pass overrides for values
+  // they just changed (avoids stale-ref issues since setState hasn't committed yet).
+  const saveProgress = useCallback((overrides?: Partial<GdProgress>) => {
+    if (doneRef.current || stepIdx === undefined || !ctx.sessionCode) return
+    const data = {
+      steps: ansRef.current.steps || {},
+      _gdProgress: {
+        currentStepIdx: overrides?.currentStepIdx ?? currentStepIdxRef.current,
+        completedStepIds: overrides?.completedStepIds ?? [...completedStepsRef.current],
+        stepResults: overrides?.stepResults ?? stepResultsRef.current,
+        stepFeedbacks: overrides?.stepFeedbacks ?? stepFeedbacksRef.current,
+      },
+    }
+    ctx.submit?.(stepIdx, data)
+    cacheSubmission(ctx.sessionCode, stepIdx, data, null)
+  }, [stepIdx, ctx.sessionCode, ctx.submit])
+
   // observation_choice: completed client-side, no server call needed
   const handleStepComplete = useCallback((stepId: string) => {
-    setCompletedSteps(prev => new Set(prev).add(stepId))
-  }, [])
+    const nextCompleted = new Set(completedStepsRef.current).add(stepId)
+    setCompletedSteps(nextCompleted)
+    saveProgress({ completedStepIds: [...nextCompleted] })
+  }, [saveProgress])
 
   // Other step types: call /check, extract result for current step
   const handleStepSubmit = useCallback(async (stepId: string) => {
@@ -47,39 +103,60 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
       )
       if (result) {
         const item = result.items.find((it: CheckItem) => (it.idx as string) === stepId)
+        // Compute new values before setState so we can pass them to saveProgress
+        let newStepResults = stepResultsRef.current
+        let newCompletedIds = [...completedStepsRef.current]
+        let newStepFeedbacks = stepFeedbacksRef.current
+
         if (item) {
-          setStepResults(prev => ({ ...prev, [stepId]: item.correct }))
+          newStepResults = { ...newStepResults, [stepId]: item.correct }
+          setStepResults(newStepResults)
           if (item.correct) {
-            setCompletedSteps(prev => new Set(prev).add(stepId))
+            const next = new Set(completedStepsRef.current).add(stepId)
+            newCompletedIds = [...next]
+            setCompletedSteps(next)
           }
         }
         const llmItem = result.items.find((it: CheckItem) => it.idx === '_llm')
         if (llmItem?.hint) {
-          setStepFeedbacks(prev => ({ ...prev, [stepId]: llmItem.hint! }))
-        } else {
-          setStepFeedbacks(prev => {
-            if (!prev[stepId]) return prev
-            const next = { ...prev }
-            delete next[stepId]
-            return next
-          })
+          newStepFeedbacks = { ...newStepFeedbacks, [stepId]: llmItem.hint! }
+          setStepFeedbacks(newStepFeedbacks)
+        } else if (newStepFeedbacks[stepId]) {
+          newStepFeedbacks = { ...newStepFeedbacks }
+          delete newStepFeedbacks[stepId]
+          setStepFeedbacks(newStepFeedbacks)
         }
+
+        saveProgress({
+          stepResults: newStepResults,
+          completedStepIds: newCompletedIds,
+          stepFeedbacks: newStepFeedbacks,
+        })
       }
     } finally {
       setSubmitting(false)
     }
-  }, [ctx.sessionCode, ctx.studentId, stepIdx])
+  }, [ctx.sessionCode, ctx.studentId, stepIdx, saveProgress])
 
   // Advance to next step, or finish if last
   const handleAdvance = useCallback(() => {
     const nextIdx = currentStepIdx + 1
     if (nextIdx >= gdSteps.length) {
+      // Prevent any pending saveProgress from overwriting the clean final data
+      doneRef.current = true
+      // Final submit: clean data without _gdProgress for proper grading
+      if (stepIdx !== undefined) {
+        const finalData = { steps: ansRef.current.steps || {} }
+        ctx.submit?.(stepIdx, finalData)
+        if (ctx.sessionCode) cacheSubmission(ctx.sessionCode, stepIdx, finalData, null)
+      }
       setAllDone(true)
       onDone()
     } else {
       setCurrentStepIdx(nextIdx)
+      saveProgress({ currentStepIdx: nextIdx })
     }
-  }, [currentStepIdx, gdSteps.length, onDone])
+  }, [currentStepIdx, gdSteps.length, onDone, stepIdx, ctx.submit, ctx.sessionCode, saveProgress])
 
   if (!dk) return null
 
