@@ -6,6 +6,7 @@ import { scrollToParas } from '../utils/linkParas'
 import type { TaskMatchPair, ServerHintMap } from '../task-data'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import { toIdx } from '../../../utils/parse-helpers'
+import { useT, type Locale } from '../../../i18n'
 
 interface Props {
   pairs: TaskMatchPair[]
@@ -16,6 +17,7 @@ interface Props {
   attemptCount: (pi: number) => number
   serverHints?: ServerHintMap
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 export function parseMatchReview(review: ReviewData, pairCount: number) {
@@ -35,12 +37,13 @@ export function parseMatchReview(review: ReviewData, pairCount: number) {
   return { state: { ans, correctQs, wrongQs }, allDone: true }
 }
 
-export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptCount, serverHints, reviewData }: Props) {
+export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptCount, serverHints, reviewData, locale }: Props) {
   const restored = useReviewRestore(reviewData, (r) => parseMatchReview(r, pairs.length))
   const effectiveAns = restored?.ans ?? ans
   const effectiveCorrectQs = restored?.correctQs ?? correctQs
   const effectiveWrongQs = restored?.wrongQs ?? wrongQs
 
+  const t = useT(locale)
   const { config } = useContext(SessionCtx)
   const mathOpts = { math: config.enableMath }
   return <>
@@ -76,10 +79,10 @@ export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptC
                 )
               })}
               {p.paraRef && !locked && (
-                <button className="stu-locate-btn" onClick={e => { e.stopPropagation(); scrollToParas(p.paraRef!.map(n => `p${n}`)) }} title="查看原文">📖</button>
+                <button className="stu-locate-btn" onClick={e => { e.stopPropagation(); scrollToParas(p.paraRef!.map(n => `p${n}`)) }} title={t('exercise.viewText')}>📖</button>
               )}
               {!locked && <HelpButton hint={hint} hintZh={hintZh} />}
-              {tries > 0 && !locked && <span style={{ fontSize: 9, color: 'var(--t3)' }}>{tries === 1 ? '1 attempt' : `${tries} attempts`}</span>}
+              {tries > 0 && !locked && <span style={{ fontSize: 9, color: 'var(--t3)' }}>{t('exercise.attempts', { n: tries, s: tries > 1 ? 's' : '' })}</span>}
             </div>
           </div>
           {isWrong && <HintBanner hint={hint} hintZh={hintZh} walkthrough={tries >= 2 ? wt : undefined} walkthroughZh={tries >= 2 ? wtZh : undefined} />}

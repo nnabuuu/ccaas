@@ -5,6 +5,7 @@ import type { ReviewData } from '../../../hooks/useReviewRestore'
 import type { TextOverlay } from '../TextPanel'
 import SelectEvidenceGuide from './SelectEvidenceGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
+import { useT, type Locale } from '../../../i18n'
 
 interface SectionState {
   stage: 'pick' | 'evidence' | 'graded'
@@ -20,6 +21,7 @@ interface Props {
   onSubmit: (data: Record<string, any>) => void
   onDone: () => void
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 function md(t: string | undefined) {
@@ -58,7 +60,8 @@ export function parseSeReview(
   return { state: { secStates }, allDone: true }
 }
 
-export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, onDone, reviewData }: Props) {
+export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, onDone, reviewData, locale }: Props) {
+  const t = useT(locale)
   const sections = exercise.sections!
   const funcOptions = exercise.functionOptions!
   const paragraphTokens = exercise.paragraphTokens!
@@ -226,7 +229,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
           if (isPicked) hit++
           else missed.push({ phrase: tk.t, why: tk.why || '', p: pn })
         } else if (isPicked && (tk.kind === 'distractor' || tk.kind === 'pick')) {
-          wrongPicks.push({ phrase: tk.t, why: tk.why || 'Not a structural signal.', p: pn })
+          wrongPicks.push({ phrase: tk.t, why: tk.why || t('evidence.notSignal'), p: pn })
         }
       })
     })
@@ -249,7 +252,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
         if (tk.kind === 'evidence') {
           out.push({ good: true, picked: isPicked, text: `"${tk.t}"`, why: tk.why || '' })
         } else if (isPicked && (tk.kind === 'distractor' || tk.kind === 'pick')) {
-          out.push({ good: false, picked: true, text: `"${tk.t}"`, why: tk.why || 'Not a structural signal.' })
+          out.push({ good: false, picked: true, text: `"${tk.t}"`, why: tk.why || t('evidence.notSignal') })
         }
       })
     })
@@ -279,13 +282,13 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
 
       {/* Section header */}
       <div className="se-card">
-        <span className="se-range">Section &middot; {current.label}</span>
-        <div className="se-title">What is this section's function?</div>
+        <span className="se-range">{t('evidence.sectionLabel', { label: current.label })}</span>
+        <div className="se-title">{t('evidence.functionQ')}</div>
         <div className="se-help" style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-          <span style={{ flex: 1 }}>First pick the function. Then <strong>locate the why</strong> by clicking the <strong>signal phrases</strong> in the text on the right.</span>
+          <span style={{ flex: 1 }}>{t('evidence.instruction')}</span>
           <button
             className={`se-guide-btn${sections.every(s => secStates[s.id].stage === 'pick' && !secStates[s.id].funcChoice) && !guideOpen && !guideSeen.current ? ' pulse' : ''}`}
-            aria-label="Select evidence guide"
+            aria-label={t('evidence.guideLabel')}
             onClick={() => {
               setGuideOpen(true)
               markGuideSeen('guide-seen-se')
@@ -298,7 +301,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
       {/* Step 1: Pick function */}
       <div className="se-step-label">
         <span className={`se-step-num${state.stage !== 'pick' ? ' done' : ''}`}>1</span>
-        <span>Pick the function</span>
+        <span>{t('evidence.pickFunction')}</span>
       </div>
       <div className="se-func-row">
         {funcOptions.map(f => {
@@ -340,7 +343,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
       </div>
 
       {state.stage === 'pick' && state.funcWrong && (
-        <div className="se-wrong-hint">Not quite — look at the signal words in the text.</div>
+        <div className="se-wrong-hint">{t('evidence.wrongPick')}</div>
       )}
 
       {/* Step 2: Locate evidence */}
@@ -348,7 +351,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
         <div key={currentId + '-s2'} className="se-step2-enter">
           <div className="se-step-label" style={{ marginTop: 24 }}>
             <span className={`se-step-num${state.stage === 'graded' ? ' done' : ''}`}>2</span>
-            <span>Locate the why</span>
+            <span>{t('evidence.locateWhy')}</span>
           </div>
 
           {state.stage === 'evidence' && (
@@ -356,17 +359,17 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
               <div className="se-ev-callout">
                 <span className="se-ev-arrow">&rarr;</span>
                 <div className="se-ev-text">
-                  In the text on the right, click the <strong>phrases</strong> (underlined with dots) that prove this is <strong style={{ color: 'var(--teal)' }}>{current.correctFunction}</strong>.
+                  {t('evidence.clickPhrases')}
                   <div className="se-ev-count">
                     {state.picked.size === 0
-                      ? "Only structural signal phrases are clickable — connector words aren't."
-                      : `${state.picked.size} phrase${state.picked.size > 1 ? 's' : ''} highlighted.`}
+                      ? t('evidence.onlySignals')
+                      : t('evidence.phrasesHighlighted', { n: state.picked.size, s: state.picked.size > 1 ? 's' : '' })}
                   </div>
                 </div>
               </div>
 
               <button className="se-hint-toggle" onClick={() => updateState(currentId, { showHint: !state.showHint })}>
-                {state.showHint ? '\u25be' : '\u25b8'} {state.showHint ? 'Hide hint' : 'Stuck? Show hint'}
+                {state.showHint ? '\u25be' : '\u25b8'} {state.showHint ? t('evidence.hideHint') : t('evidence.showHint')}
               </button>
               {state.showHint && current.hint && (
                 <div className="se-hint-box">
@@ -377,10 +380,10 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
 
               <div className="se-action-row" style={{ marginTop: 14 }}>
                 <span className="se-tally">
-                  {state.picked.size === 0 ? 'Click at least one phrase.' : 'Ready when you are.'}
+                  {state.picked.size === 0 ? t('evidence.clickOne') : t('evidence.ready')}
                 </span>
                 <button className={`se-btn${state.picked.size === 0 ? ' off' : ''}`} disabled={state.picked.size === 0} onClick={grade}>
-                  Check evidence
+                  {t('evidence.checkEvidence')}
                 </button>
               </div>
             </>
@@ -412,14 +415,14 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
 
                 {!feedback.perfect && feedback.wrongPicks.length === 0 && feedback.missed.length > 0 && (
                   <div className="se-ai-note" style={{ borderLeftColor: 'rgba(45,102,18,.3)' }}>
-                    Look for: <span className="se-ai-quote">"{feedback.missed[0].phrase}"</span> in {'\u00b6'}{feedback.missed[0].p} — {feedback.missed[0].why}
+                    {t('evidence.lookFor')} <span className="se-ai-quote">"{feedback.missed[0].phrase}"</span> in {'\u00b6'}{feedback.missed[0].p} — {feedback.missed[0].why}
                   </div>
                 )}
               </div>
 
               {/* Why list */}
               <div className="se-why-list">
-                <div className="se-why-header">All signals in this section</div>
+                <div className="se-why-header">{t('evidence.allSignals')}</div>
                 {whyItems.map((it, i) => (
                   <div key={i} className={`se-why-item${i === whyItems.length - 1 ? ' last' : ''}`}>
                     <span className={`se-why-dot ${it.good ? 'good' : 'bad'}`}>
@@ -428,7 +431,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
                     <div>
                       <span style={{ fontWeight: 600, color: it.good ? 'var(--t1)' : 'var(--t3)' }}>{it.text}</span>
                       <span style={{ color: 'var(--t2)' }}> — {it.why}</span>
-                      {!it.picked && it.good && <span style={{ color: 'var(--t3)', marginLeft: 6, fontStyle: 'italic' }}>(missed)</span>}
+                      {!it.picked && it.good && <span style={{ color: 'var(--t3)', marginLeft: 6, fontStyle: 'italic' }}>{t('evidence.missed')}</span>}
                     </div>
                   </div>
                 ))}
@@ -438,22 +441,20 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
               <div className="se-action-row" style={{ marginTop: 12 }}>
                 <span className={`se-tally${feedback.passed ? ' ok' : ''}`}>
                   {feedback.perfect
-                    ? `Perfect — ${feedback.hit}/${feedback.totalEv} signals.`
-                    : feedback.passed
-                      ? `${feedback.hit}/${feedback.totalEv} signals — enough to move on.`
-                      : `${feedback.hit}/${feedback.totalEv} signals \u00b7 ${feedback.wrongPicks.length} non-signals picked.`}
+                    ? t('evidence.perfect', { n: feedback.hit, t: feedback.totalEv })
+                    : t('evidence.partial', { n: feedback.hit, t: feedback.totalEv })}
                 </span>
                 {!feedback.passed && !reviewData && (
-                  <button className="se-btn-ghost" onClick={retry}>Try again</button>
+                  <button className="se-btn-ghost" onClick={retry}>{t('evidence.tryAgain')}</button>
                 )}
                 {feedback.passed && !feedback.perfect && !reviewData && (
-                  <button className="se-btn-ghost" onClick={retry}>Try for full marks</button>
+                  <button className="se-btn-ghost" onClick={retry}>{t('evidence.tryFullMarks')}</button>
                 )}
                 {feedback.passed && (() => {
                   const nextSec = sections.find(s => secStates[s.id].stage !== 'graded')
                   return nextSec
-                    ? <button className="se-btn" onClick={() => setCurrentId(nextSec.id)}>Next section &rarr;</button>
-                    : <span style={{ color: 'var(--green)', fontWeight: 600, fontSize: 12 }}>All {sections.length} done {'\u2713'}</span>
+                    ? <button className="se-btn" onClick={() => setCurrentId(nextSec.id)}>{t('evidence.nextSection')}</button>
+                    : <span style={{ color: 'var(--green)', fontWeight: 600, fontSize: 12 }}>{t('evidence.allDone', { n: sections.length })}</span>
                 })()}
               </div>
             </>

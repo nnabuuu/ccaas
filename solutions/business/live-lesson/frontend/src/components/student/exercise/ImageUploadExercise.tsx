@@ -2,6 +2,7 @@ import { RenderMath } from '../../../utils/render-math'
 import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
 import { ImageGallery } from '../image-capture/ImageGallery'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import '../image-capture/image-capture.css'
 
 interface RubricItem { id: string; label: string; weight: number }
@@ -21,7 +22,7 @@ export function parseImageUploadReview(review: ReviewData) {
 
 export function ImageUploadExercise({
   prompt, promptImages, rubric, maxImages = 1,
-  ans, setAns, allDone, feedback, rubricResults, reviewData,
+  ans, setAns, allDone, feedback, rubricResults, reviewData, locale,
 }: {
   prompt: string
   promptImages?: PromptImage[]
@@ -33,7 +34,9 @@ export function ImageUploadExercise({
   feedback?: string | null
   rubricResults?: Record<string, { score: number; hint?: string }>
   reviewData?: ReviewData
+  locale?: Locale
 }) {
+  const t = useT(locale)
   const restored = useReviewRestore(reviewData, parseImageUploadReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveFeedback = restored?.feedback ?? feedback
@@ -64,13 +67,14 @@ export function ImageUploadExercise({
   const isPendingReview = effectiveRubricResults && Object.values(effectiveRubricResults).some(r => r.score === -1)
 
   const scoreLabel = (score: number) => {
-    if (score === 3) return { text: '优秀', color: '#22c55e' }
-    if (score === 2) return { text: '良好', color: '#3b82f6' }
-    if (score === 1) return { text: '基本', color: '#f59e0b' }
-    return { text: '缺失', color: '#ef4444' }
+    if (score === 3) return { text: t('imageUpload.excellent'), color: '#22c55e' }
+    if (score === 2) return { text: t('imageUpload.good'), color: '#3b82f6' }
+    if (score === 1) return { text: t('imageUpload.basic'), color: '#f59e0b' }
+    return { text: t('imageUpload.missing'), color: '#ef4444' }
   }
 
   return (
+    <LocaleScope locale={locale}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Prompt */}
       <div style={{ fontSize: 14, lineHeight: 1.6 }}>
@@ -92,7 +96,7 @@ export function ImageUploadExercise({
         <div>
           {images.length > 0 ? (
             <div>
-              <img src={images[0]} alt="作答"
+              <img src={images[0]} alt={t('imageUpload.answerAlt')}
                 style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 8 }} />
               <ImageCaptureButton onCapture={handleCapture} />
             </div>
@@ -114,7 +118,7 @@ export function ImageUploadExercise({
       {/* Single-image preview when done */}
       {effectiveAllDone && maxImages === 1 && images.length > 0 && (
         <div>
-          <img src={images[0]} alt="作答"
+          <img src={images[0]} alt={t('imageUpload.answerAlt')}
             style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, border: '1px solid var(--border)' }} />
         </div>
       )}
@@ -133,7 +137,7 @@ export function ImageUploadExercise({
       {/* Results */}
       {effectiveAllDone && isPendingReview && (
         <div style={{ padding: '12px 16px', background: '#fef3c7', borderRadius: 8, fontSize: 13 }}>
-          AI 暂时无法批阅，已提交给老师审阅
+          {t('imageUpload.pendingReview')}
         </div>
       )}
 
@@ -155,12 +159,13 @@ export function ImageUploadExercise({
           })}
           {effectiveFeedback && (
             <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, fontSize: 13 }}>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>{'总评'}</div>
+              <div style={{ fontWeight: 500, marginBottom: 4 }}>{t('imageUpload.overallFeedback')}</div>
               <div style={{ color: 'var(--t2)' }}>{effectiveFeedback}</div>
             </div>
           )}
         </div>
       )}
     </div>
+    </LocaleScope>
   )
 }

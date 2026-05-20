@@ -19,11 +19,13 @@ import { GuidedDiscoveryExercise } from './GuidedDiscoveryExercise'
 import type { ScaffoldHint } from '../ScaffoldPanel'
 import type { ReviewData } from '../../../hooks/useReviewRestore'
 import { toIdx } from '../../../utils/parse-helpers'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 
-export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds }: {
-  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void; partIds?: string[]
+export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds, locale }: {
+  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void; partIds?: string[]; locale?: Locale
 }) {
   const ctx = useContext(SessionCtx)
+  const t = useT(locale)
   const ex = task.exercise
   const [ans, setAns] = useState<Record<string, any>>({})
   const [attempts, setAttempts] = useState<Record<number, any[]>>({})
@@ -393,10 +395,12 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   // Loading state: revisit/recovery requested but submission not yet loaded from API
   if (shouldRestore && !submissionChecked) {
     return (
-      <div id="phase-practice" data-translate-ctx="practice">
-        <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
-        <div style={{ fontSize: 13, color: 'var(--t3)', padding: '16px 0' }}>Loading previous answers...</div>
-      </div>
+      <LocaleScope locale={locale}>
+        <div id="phase-practice" data-translate-ctx="practice">
+          <div className="stu-section-label"><span>{t('phase.practice')}</span><div className="stu-section-line" /></div>
+          <div style={{ fontSize: 13, color: 'var(--t3)', padding: '16px 0' }}>{t('practice.loadingPrev')}</div>
+        </div>
+      </LocaleScope>
     )
   }
 
@@ -426,8 +430,9 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const guardedSetAns: typeof setAns = reviewMode ? () => {} : trackedSetAns
 
   return (
+    <LocaleScope locale={locale}>
     <div id="phase-practice" data-translate-ctx="practice">
-      <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
+      <div className="stu-section-label"><span>{t('phase.practice')}</span><div className="stu-section-line" /></div>
       <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
       {ex.type === 'quiz' && (
@@ -566,7 +571,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         <div style={{ marginTop: 16 }}>
           {effectiveAllDone ? (
             <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16 }}>✓</span>Practice complete!
+              <span style={{ fontSize: 16 }}>✓</span>{t('practice.complete')}
             </div>
           ) : (
             <>
@@ -575,9 +580,9 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
                 style={(!canSub() || submitting) ? { opacity: 0.35, cursor: 'default' } : undefined}
                 onClick={(canSub() && !submitting) ? handleSubmit : undefined}
               >
-                {submitting ? 'Checking...'
-                  : ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 ? '重新提交'
-                  : Object.keys(attempts).length > 0 ? 'Try Again' : 'Submit'}
+                {submitting ? t('practice.checking')
+                  : ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 ? t('practice.resubmit')
+                  : Object.keys(attempts).length > 0 ? t('practice.tryAgain') : t('practice.submit')}
               </button>
               {ex.type === 'image-upload' && Object.keys(imageUploadRubricResults).length > 0 && !effectiveAllDone && (
                 <button
@@ -585,7 +590,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
                   style={{ marginTop: 8, background: 'var(--surface)', color: 'var(--t2)', border: '1px solid var(--border)' }}
                   onClick={() => { setAllDone(true); onDone() }}
                 >
-                  继续到讨论
+                  {t('practice.continueToDiscuss')}
                 </button>
               )}
             </>
@@ -593,5 +598,6 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         </div>
       )}
     </div>
+    </LocaleScope>
   )
 }

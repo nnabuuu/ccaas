@@ -5,6 +5,7 @@ import MatrixGuide from './MatrixGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import { toIdx } from '../../../utils/parse-helpers'
+import { useT, type Locale } from '../../../i18n'
 
 import type { TaskMatrixRow, ServerHintMap } from '../task-data'
 
@@ -19,6 +20,7 @@ interface Props {
   disabled?: boolean
   rowResults?: Record<number, boolean>
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 /** Simple deterministic hash for student+step → consistent row selection */
@@ -52,12 +54,13 @@ export function parseMatrixReview(review: ReviewData) {
   return { state: { ans, rowResults }, allDone: true }
 }
 
-export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults, reviewData }: Props) {
+export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults, reviewData, locale }: Props) {
   const restored = useReviewRestore(reviewData, parseMatrixReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveRowResults = restored?.rowResults ?? rowResults
   const effectiveDisabled = restored ? true : disabled
 
+  const t = useT(locale)
   const [guideOpen, setGuideOpen] = useState(false)
   const guideSeen = useRef(readGuideSeen('guide-seen-matrix'))
 
@@ -97,7 +100,7 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
         <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 }}>Matrix</span>
         <button
           className={`se-guide-btn${!guideSeen.current && !guideOpen ? ' pulse' : ''}`}
-          aria-label="Matrix exercise guide"
+          aria-label={t('matrix.guideLabel')}
           onClick={() => {
             setGuideOpen(true)
             markGuideSeen('guide-seen-matrix')
@@ -109,9 +112,9 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead>
           <tr>
-            <th className="stu-mat-th" style={{ width: '22%' }}>Where / When</th>
-            <th className="stu-mat-th" style={{ width: '39%' }}>What they do</th>
-            <th className="stu-mat-th" style={{ width: '39%' }}>Why</th>
+            <th className="stu-mat-th" style={{ width: '22%' }}>{t('matrix.colWhere')}</th>
+            <th className="stu-mat-th" style={{ width: '39%' }}>{t('matrix.colWhat')}</th>
+            <th className="stu-mat-th" style={{ width: '39%' }}>{t('matrix.colWhy')}</th>
           </tr>
         </thead>
         <tbody>
@@ -139,7 +142,7 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
                 <tr key={ri} style={{ opacity: 0.4 }}>
                   <td className="stu-mat-td" style={{ fontWeight: 500, fontSize: 12 }}>{r.place}</td>
                   <td className="stu-mat-td" colSpan={2} style={{ color: 'var(--t3)', fontStyle: 'italic', fontSize: 11 }}>
-                    Complete above first
+                    {t('matrix.locked')}
                   </td>
                 </tr>
               )
@@ -163,7 +166,7 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
                   <div>
                     <input
                       className="stu-mat-in"
-                      placeholder={r.whatPrompt || 'What?'}
+                      placeholder={r.whatPrompt || t('matrix.whatDefault')}
                       value={effectiveAns[ri]?.what || ''}
                       onChange={e => onAnsChange?.(ri, 'what', e.target.value)}
                       disabled={effectiveDisabled}
@@ -174,7 +177,7 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
                 <td className="stu-mat-td">
                   <input
                     className="stu-mat-in"
-                    placeholder={r.whyPrompt || 'Why?'}
+                    placeholder={r.whyPrompt || t('matrix.whyDefault')}
                     value={effectiveAns[ri]?.why || ''}
                     onChange={e => onAnsChange?.(ri, 'why', e.target.value)}
                     disabled={effectiveDisabled}

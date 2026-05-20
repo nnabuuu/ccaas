@@ -1,42 +1,45 @@
 import { useState, useEffect } from 'react'
 import type { ReadingManifest } from '../../types/reading'
+import { useT, type TFn, type Locale } from '../../i18n'
 
 /* ── Reading strategy one-liner explanations ── */
 
-const strategyDesc: Record<string, string> = {
-  Predict: '看标题猜内容',
-  Skim: '抓首句理骨架',
-  Scan: '找证据填表格',
-  Evaluate: '用证据写观点',
-  Synthesizing: '整合多源信息',
-  Orientation: '了解学习目标',
+function getStrategyDesc(t: TFn): Record<string, string> {
+  return {
+    Predict: t('strategy.predict'),
+    Skim: t('strategy.skim'),
+    Scan: t('strategy.scan'),
+    Evaluate: t('strategy.evaluate'),
+    Synthesizing: t('strategy.synthesizing'),
+    Orientation: t('strategy.orientation'),
+  }
 }
 
 /* ── SVG Illustrations (from student-guide.html design) ── */
 
-function TaskAreaSvg() {
+function TaskAreaSvg({ t }: { t: TFn }) {
   return (
     <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="16" y="8" width="248" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
       <rect x="16" y="8" width="248" height="26" rx="8" fill="#fbfaf7"/>
       <rect x="16" y="28" width="248" height="6" fill="#fbfaf7"/>
-      <text x="30" y="26" fontFamily="Plus Jakarta Sans" fontSize="9" fontWeight="700" fill="#1c1c1a">Task 1</text>
+      <text x="30" y="26" fontFamily="Plus Jakarta Sans" fontSize="9" fontWeight="700" fill="#1c1c1a">{t('guide.svg.task', { n: 1 })}</text>
       <line x1="16" y1="34" x2="264" y2="34" stroke="#e4e2d8" strokeWidth=".5"/>
       <rect x="24" y="40" width="240" height="18" rx="4" fill="#edece7"/>
       <rect x="26" y="42" width="54" height="14" rx="3" fill="#1a6e5e"/>
-      <text x="53" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">Listen</text>
-      <text x="112" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">Practice</text>
-      <text x="172" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">Discuss</text>
-      <text x="232" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">Takeaway</text>
+      <text x="53" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">{t('guide.svg.listen')}</text>
+      <text x="112" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">{t('guide.svg.practice')}</text>
+      <text x="172" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">{t('guide.svg.discuss')}</text>
+      <text x="232" y="52" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">{t('guide.svg.takeaway')}</text>
       <rect x="30" y="68" width="224" height="32" rx="6" fill="#edece7"/>
-      <text x="142" y="87" fontFamily="Plus Jakarta Sans" fontSize="8" fill="#5c5b56" textAnchor="middle">Read carefully, then click below</text>
+      <text x="142" y="87" fontFamily="Plus Jakarta Sans" fontSize="8" fill="#5c5b56" textAnchor="middle">{t('guide.svg.readCarefully')}</text>
       <rect x="30" y="108" width="80" height="22" rx="6" fill="#1c1c1a"/>
-      <text x="70" y="122" fontFamily="Plus Jakarta Sans" fontSize="8" fontWeight="700" fill="#fff" textAnchor="middle">I understand</text>
+      <text x="70" y="122" fontFamily="Plus Jakarta Sans" fontSize="8" fontWeight="700" fill="#fff" textAnchor="middle">{t('guide.svg.iUnderstand')}</text>
     </svg>
   )
 }
 
-function TextPanelSvg() {
+function TextPanelSvg({ t }: { t: TFn }) {
   return (
     <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="16" y="8" width="130" height="140" rx="8" fill="#edece7" stroke="#e4e2d8"/>
@@ -50,7 +53,7 @@ function TextPanelSvg() {
       <path d="M182 78 L198 78" stroke="#1a5fb4" strokeWidth="1.5" strokeDasharray="4,3"/>
       <polygon points="198,75 204,78 198,81" fill="#1a5fb4"/>
       <rect x="208" y="8" width="58" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
-      <text x="216" y="22" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#1c1c1a">Text</text>
+      <text x="216" y="22" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#1c1c1a">{t('guide.svg.text')}</text>
       <text x="258" y="22" fontFamily="Plus Jakarta Sans" fontSize="9" fill="#9c9a92" textAnchor="end">&times;</text>
       <line x1="208" y1="28" x2="266" y2="28" stroke="#e4e2d8" strokeWidth=".5"/>
       <text x="214" y="40" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#d8d6d0">&#182;1</text>
@@ -63,7 +66,7 @@ function TextPanelSvg() {
       <rect x="226" y="76" width="30" height="4" rx="1" fill="#1a5fb4" fillOpacity=".4"/>
       <rect x="226" y="84" width="26" height="4" rx="1" fill="#1a5fb4" fillOpacity=".4"/>
       <rect x="215" y="98" width="42" height="12" rx="4" fill="#dbeafe"/>
-      <text x="236" y="107" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#1a5fb4" textAnchor="middle">Focus &#182;2</text>
+      <text x="236" y="107" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#1a5fb4" textAnchor="middle">{t('guide.svg.focusPara')}</text>
       <text x="214" y="122" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="700" fill="#d8d6d0">&#182;3</text>
       <rect x="226" y="116" width="30" height="4" rx="1" fill="#e4e2d8"/>
       <rect x="226" y="124" width="26" height="4" rx="1" fill="#e4e2d8"/>
@@ -71,7 +74,7 @@ function TextPanelSvg() {
   )
 }
 
-function ToolbarSvg() {
+function ToolbarSvg({ t }: { t: TFn }) {
   return (
     <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="16" y="8" width="248" height="88" rx="8" fill="#edece7" stroke="#e4e2d8"/>
@@ -86,38 +89,40 @@ function ToolbarSvg() {
       <text x="88" y="130" fontFamily="Plus Jakarta Sans" fontSize="12" fontWeight="800" fill="#7a4d0e" textAnchor="middle">译</text>
       <rect x="120" y="112" width="44" height="28" rx="7" fill="#eceafe" stroke="rgba(58,49,133,.15)"/>
       <text x="142" y="130" fontFamily="Plus Jakarta Sans" fontSize="12" fontWeight="800" fill="#3a3185" textAnchor="middle">&#x2726;</text>
-      <text x="42" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#9c9a92" textAnchor="middle">帮助</text>
-      <text x="88" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#7a4d0e" textAnchor="middle">翻译</text>
-      <text x="142" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#3a3185" textAnchor="middle">AI 提问</text>
+      <text x="42" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#9c9a92" textAnchor="middle">{t('guide.svg.help')}</text>
+      <text x="88" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#7a4d0e" textAnchor="middle">{t('guide.svg.translate')}</text>
+      <text x="142" y="148" fontFamily="Plus Jakarta Sans" fontSize="6" fill="#3a3185" textAnchor="middle">{t('guide.svg.aiAsk')}</text>
     </svg>
   )
 }
 
 /* ── Card config ── */
 
-const cards = [
-  {
-    num: 1,
-    title: '左侧 · 任务区',
-    color: 'teal' as const,
-    Svg: TaskAreaSvg,
-    desc: '课程内容、练习、讨论都在左侧完成。每个任务按 Listen → Practice → Discuss → Takeaway 顺序推进，完成前一步才能解锁下一步。',
-  },
-  {
-    num: 2,
-    title: '右侧 · 课文原文',
-    color: 'blue' as const,
-    Svg: TextPanelSvg,
-    desc: '点击右侧「T」展开课文原文。做题时会自动高亮相关段落，帮你快速定位需要关注的内容。其他段落会变暗。',
-  },
-  {
-    num: 3,
-    title: '工具栏 · 翻译与 AI',
-    color: 'amber' as const,
-    Svg: ToolbarSvg,
-    desc: '选中课文词句后点「译」即时翻译，点「✦」向 AI 提问。工具栏在底部，随时可用。',
-  },
-]
+function getCards(t: TFn) {
+  return [
+    {
+      num: 1,
+      title: t('guide.card1Title'),
+      color: 'teal' as const,
+      Svg: () => <TaskAreaSvg t={t} />,
+      desc: t('guide.card1Desc'),
+    },
+    {
+      num: 2,
+      title: t('guide.card2Title'),
+      color: 'blue' as const,
+      Svg: () => <TextPanelSvg t={t} />,
+      desc: t('guide.card2Desc'),
+    },
+    {
+      num: 3,
+      title: t('guide.card3Title'),
+      color: 'amber' as const,
+      Svg: () => <ToolbarSvg t={t} />,
+      desc: t('guide.card3Desc'),
+    },
+  ]
+}
 
 /* ── Component ── */
 
@@ -125,9 +130,11 @@ interface Props {
   open: boolean
   onClose: () => void
   manifest: ReadingManifest
+  locale?: Locale
 }
 
-export default function StudentGuide({ open, onClose, manifest }: Props) {
+export default function StudentGuide({ open, onClose, manifest, locale }: Props) {
+  const t = useT(locale)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -167,13 +174,13 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
         {/* Mission Box */}
         <div className="stu-guide-mission">
           <div className="stu-guide-mission-box">
-            <div className="stu-guide-mission-title">Today&apos;s Mission</div>
+            <div className="stu-guide-mission-title">{t('guide.mission')}</div>
             <div className="stu-guide-mission-topic">{manifest.title}</div>
             <div className="stu-guide-mission-meta">
               {manifest.article
-                ? <>围绕课文 <strong>{manifest.article.title}</strong>，依次练习 {steps.length} 种阅读技巧。</>
-                : <>本节课共 {steps.length} 个学习环节。</>
-              }每个任务包含 听讲 → 练习 → 讨论 → 总结 四个阶段。
+                ? (() => { const parts = t('guide.missionMetaArticle', { title: '__TITLE__', count: steps.length }).split('__TITLE__'); return <>{parts[0]}<strong>{manifest.article.title}</strong>{parts[1] ?? ''}</> })()
+                : t('guide.missionMetaNoArticle', { count: steps.length })
+              }{t('guide.missionPhases')}
             </div>
             {steps.length > 0 && (
               <div className="stu-guide-mission-steps">
@@ -181,7 +188,7 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
                   <span key={s.idx} className="stu-guide-step-tag">
                     <span className="num">{i + 1}</span>{' '}
                     {s.displayName || s.strategy}
-                    {strategyDesc[s.strategy] ? ` — ${strategyDesc[s.strategy]}` : ''}
+                    {getStrategyDesc(t)[s.strategy] ? ` — ${getStrategyDesc(t)[s.strategy]}` : ''}
                   </span>
                 ))}
               </div>
@@ -191,7 +198,7 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
 
         {/* Cards */}
         <div className="sd-guide-cards">
-          {cards.map((c, i) => (
+          {getCards(t).map((c, i) => (
             <div key={c.num} className="sd-guide-card" style={{ animationDelay: `${i * 80 + 100}ms` }}>
               <div className="sd-guide-card-hd">
                 <div className={`stu-guide-card-num ${c.color}`}>{c.num}</div>
@@ -207,17 +214,17 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
         <div className="stu-guide-strip">
           <div className="stu-guide-callout purple">
             <span className="stu-guide-callout-icon">&#x2726;</span>
-            <span><strong>多和 AI 互动！</strong> 遇到不懂的词句随时翻译，有想法就向 AI 提问。讨论环节中，AI 会引导你深入思考——越主动交流，收获越多。</span>
+            <span><strong>{t('guide.aiCalloutBold')}</strong> {t('guide.aiCalloutText')}</span>
           </div>
           <div className="stu-guide-callout amber">
             <span className="stu-guide-callout-icon">&#x1F3C6;</span>
-            <span><strong>深度互动奖</strong> 课程结束后，我们会评选 <strong>5 位与 AI 互动最有深度的同学</strong>，给予奖励。不是比谁说得多，而是比谁想得深！</span>
+            <span><strong>{t('guide.rewardCalloutBold')}</strong> {t('guide.rewardCalloutText')}</span>
           </div>
         </div>
 
         {/* Footer */}
         <div className="sd-guide-footer">
-          <button className="stu-btn pri" onClick={onClose}>开始学习</button>
+          <button className="stu-btn pri" onClick={onClose}>{t('guide.startLearning')}</button>
         </div>
       </div>
     </div>

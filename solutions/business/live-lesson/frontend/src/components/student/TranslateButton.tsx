@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { translateText, translateChat, type TranslateResponse } from '../../hooks/useClassroom'
+import { useT, type Locale } from '../../i18n'
 import { SessionCtx } from './TaskPanel'
 
 type Mode = 'idle' | 'selecting' | 'showing'
@@ -38,9 +39,11 @@ interface ChatMsg { t: 'q' | 'a'; x: string }
 interface Props {
   taskId: number
   phase?: string
+  locale?: Locale
 }
 
-export default function TranslateButton({ taskId, phase }: Props) {
+export default function TranslateButton({ taskId, phase, locale }: Props) {
+  const t = useT(locale)
   const { sessionCode, studentId } = useContext(SessionCtx)
   const [mode, setMode] = useState<Mode>('idle')
   const [result, setResult] = useState<TranslateResponse | null>(null)
@@ -118,7 +121,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
     if (reply) {
       setChatMsgs(prev => [...prev, { t: 'a', x: reply.reply }])
     } else {
-      setChatMsgs(prev => [...prev, { t: 'a', x: 'AI 助教暂时无法回答，请稍后再试。' }])
+      setChatMsgs(prev => [...prev, { t: 'a', x: t('translate.aiError') }])
     }
     chatLoadingRef.current = false
     setChatLoading(false)
@@ -139,7 +142,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
       if (!text) return
 
       if (text.length > MAX_CHARS) {
-        setWarning(`已选择 ${text.length} 字符，超过上限 ${MAX_CHARS} 字`)
+        setWarning(t('translate.charLimit', { len: text.length, max: MAX_CHARS }))
         return
       }
 
@@ -162,9 +165,9 @@ export default function TranslateButton({ taskId, phase }: Props) {
       if (sessionCode && studentId) {
         const res = await translateText(sessionCode, studentId, text, taskId, ctx, phase)
         if (cancelledRef.current) return
-        setResult(res ?? { definition: '翻译失败，请重试', contextAnalysis: '', suggestedQuestions: [] })
+        setResult(res ?? { definition: t('translate.failed'), contextAnalysis: '', suggestedQuestions: [] })
       } else {
-        setResult({ definition: '未连接课堂', contextAnalysis: '', suggestedQuestions: [] })
+        setResult({ definition: t('translate.notConnected'), contextAnalysis: '', suggestedQuestions: [] })
       }
 
       if (cancelledRef.current) return
@@ -226,7 +229,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
         <>
           <div className="stu-tr-overlay" />
           <div className={`stu-tr-banner${warning ? ' warn' : ''}`}>
-            {warning || '👆 选择页面上的文字即可翻译'}
+            {warning || t('translate.selectText')}
           </div>
         </>,
         document.body,
@@ -240,8 +243,8 @@ export default function TranslateButton({ taskId, phase }: Props) {
           style={{ top: popoverPos.top, left: popoverPos.left }}
         >
           <div className="stu-tr-popover-hd">
-            <span className="stu-tr-popover-icon">译</span>
-            <span className="stu-tr-popover-title">释义</span>
+            <span className="stu-tr-popover-icon">{t('translate.icon')}</span>
+            <span className="stu-tr-popover-title">{t('translate.definition')}</span>
             <button className="stu-tr-popover-close" onClick={reset}>×</button>
           </div>
 
@@ -295,7 +298,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
             <div className="stu-tr-input">
               <input
                 type="text"
-                placeholder="输入追问..."
+                placeholder={t('translate.followUpPlaceholder')}
                 maxLength={2000}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
@@ -309,7 +312,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
               />
               <button
                 className="stu-tr-send"
-                aria-label="发送"
+                aria-label={t('translate.send')}
                 disabled={!chatInput.trim() || chatLoading}
                 onClick={() => chatInput.trim() && sendChat(chatInput.trim())}
               >→</button>
@@ -323,7 +326,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
       {mode !== 'idle' && (
         <span className="stu-tr-inline">
           <span className="stu-tr-inline-dot" />
-          {mode === 'selecting' ? '选词中…' : '查看释义'}
+          {mode === 'selecting' ? t('translate.selecting') : t('translate.viewDef')}
         </span>
       )}
 
@@ -333,9 +336,9 @@ export default function TranslateButton({ taskId, phase }: Props) {
         className={`stu-tr-fab${mode !== 'idle' ? ' active' : ''}`}
         onClick={toggleMode}
         disabled={cooldown}
-        aria-label={mode === 'idle' ? '翻译' : '取消翻译'}
+        aria-label={mode === 'idle' ? t('translate.activate') : t('translate.cancel')}
       >
-        译
+        {t('translate.icon')}
       </button>
     </>
   )

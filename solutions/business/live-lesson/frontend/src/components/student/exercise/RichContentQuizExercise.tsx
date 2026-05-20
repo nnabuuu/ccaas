@@ -1,4 +1,5 @@
 import { useState, useContext, useCallback, useRef } from 'react'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
 import type { RichContentQuizPart } from '../task-data'
 import type { ScaffoldHint } from '../ScaffoldPanel'
@@ -25,6 +26,7 @@ interface Props {
   onScaffoldPush?: (hint: ScaffoldHint) => void
   onDone: () => void
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[]) {
@@ -56,8 +58,9 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
 
 export function RichContentQuizExercise({
   parts, subType, prompt, promptImages, maxImages = 1,
-  stepIdx, taskId, onScaffoldPush, onDone, reviewData,
+  stepIdx, taskId, onScaffoldPush, onDone, reviewData, locale,
 }: Props) {
+  const t = useT(locale)
   const ctx = useContext(SessionCtx)
   const canvasRef = useRef<HandwritingCanvasHandle>(null)
   const busyRef = useRef(false)
@@ -143,7 +146,7 @@ export function RichContentQuizExercise({
       if (result.scaffold) {
         onScaffoldPush?.(result.scaffold)
         const feedback = (result.score as Record<string, unknown>)?.llmFeedback as string | undefined
-        setLastFeedback(feedback || '答案不正确，请参考右侧提示修改后重新提交。')
+        setLastFeedback(feedback || t('rcq.defaultFeedback'))
         if (result.scaffold.canRetry) {
           setPartPhase(prev => ({ ...prev, [currentPartId]: 'wrong' }))
         } else {
@@ -192,11 +195,12 @@ export function RichContentQuizExercise({
   }
 
   if (parts.length === 0) {
-    return <div style={{ fontSize: 13, color: 'var(--t3)' }}>No parts configured</div>
+    return <LocaleScope locale={locale}><div style={{ fontSize: 13, color: 'var(--t3)' }}>{t('rcq.noParts')}</div></LocaleScope>
   }
 
   if (allPartsDone) {
     return (
+      <LocaleScope locale={locale}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {prompt && (
           <div style={{ fontSize: 14, lineHeight: 1.6 }}><RenderMath text={prompt} /></div>
@@ -214,11 +218,11 @@ export function RichContentQuizExercise({
           const badgeCls = outcome === 'correct'
             ? 'rcq-review-badge rcq-review-badge--correct'
             : 'rcq-review-badge rcq-review-badge--passed'
-          const badgeLabel = outcome === 'correct' ? '✓ 正确' : '已查看解答'
+          const badgeLabel = outcome === 'correct' ? t('rcq.correct') : t('rcq.passed')
           return (
             <div key={part.id} className="rcq-review-card">
               <div className="rcq-review-header">
-                <span className="rcq-review-num">第 {i + 1} 题</span>
+                <span className="rcq-review-num">{t('rcq.partNum', { n: i + 1 })}</span>
                 <span className={badgeCls}>{badgeLabel}</span>
               </div>
               {part.prompt && (
@@ -229,24 +233,26 @@ export function RichContentQuizExercise({
               )}
               {imgs.length > 0 && (
                 <div className="rcq-review-images">
-                  {imgs.map((src, j) => <img key={j} src={src} alt={`第 ${i + 1} 题提交`} />)}
+                  {imgs.map((src, j) => <img key={j} src={src} alt={t('rcq.submittedAlt', { n: i + 1 })} />)}
                 </div>
               )}
             </div>
           )
         })}
-        <div className="rcq-passed-card">✓ 所有题目已完成</div>
+        <div className="rcq-passed-card">{t('rcq.allDone')}</div>
       </div>
+      </LocaleScope>
     )
   }
 
   const showCanvas = phase === 'work' || phase === 'retry'
   const badgeClass = phase === 'retry' ? 'rcq-badge--retry'
     : phase === 'done' ? 'rcq-badge--done' : ''
-  const badgeText = phase === 'retry' ? '第二次机会'
-    : phase === 'done' ? '已完成' : '独立完成'
+  const badgeText = phase === 'retry' ? t('rcq.retry')
+    : phase === 'done' ? t('rcq.done') : t('rcq.independent')
 
   return (
+    <LocaleScope locale={locale}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Top-level prompt */}
       {prompt && (
@@ -276,7 +282,7 @@ export function RichContentQuizExercise({
             )
           })}
           <span className="rcq-part-dots-label">
-            第 {currentPartIdx + 1} / {parts.length} 题
+            {t('rcq.partLabel', { n: currentPartIdx + 1, m: parts.length })}
           </span>
         </div>
       )}
@@ -285,7 +291,7 @@ export function RichContentQuizExercise({
       {currentPart?.prompt && (
         <div className="rcq-problem-card">
           <div className="rcq-problem-header">
-            <span className="rcq-problem-num">第 {currentPartIdx + 1} 题</span>
+            <span className="rcq-problem-num">{t('rcq.partNum', { n: currentPartIdx + 1 })}</span>
             <span className={`rcq-problem-badge ${badgeClass}`}>{badgeText}</span>
           </div>
           <div className="rcq-problem-text">
@@ -303,7 +309,7 @@ export function RichContentQuizExercise({
       {submitting && (
         <div className="rcq-checking-card">
           <div className="rcq-checking-dot" />
-          AI 助教正在批改…
+          {t('rcq.aiChecking')}
         </div>
       )}
 
@@ -312,9 +318,9 @@ export function RichContentQuizExercise({
         <div className="rcq-result-card rcq-result-wrong">
           <div className="rcq-result-icon">✗</div>
           <div>
-            <div className="rcq-result-title">答案不正确</div>
+            <div className="rcq-result-title">{t('rcq.wrongTitle')}</div>
             <div className="rcq-result-desc">{lastFeedback}</div>
-            <div className="rcq-result-hint">请参考右侧提示修改后重新提交</div>
+            <div className="rcq-result-hint">{t('rcq.wrongHint')}</div>
           </div>
         </div>
       )}
@@ -324,9 +330,9 @@ export function RichContentQuizExercise({
         <div className="rcq-result-card rcq-result-final">
           <div className="rcq-result-icon">→</div>
           <div>
-            <div className="rcq-result-title">已展示完整解答</div>
+            <div className="rcq-result-title">{t('rcq.finalTitle')}</div>
             <div className="rcq-result-desc">
-              请仔细阅读右侧解题过程，理解后继续下一题。
+              {t('rcq.finalDesc')}
             </div>
           </div>
         </div>
@@ -346,23 +352,24 @@ export function RichContentQuizExercise({
       {/* Retry button */}
       {phase === 'wrong' && !submitting && (
         <button className="rcq-retry-btn" onClick={handleRetry}>
-          ✏️ 修改答案，再试一次
+          {t('rcq.retryBtn')}
         </button>
       )}
 
       {/* Pass button */}
       {phase === 'wrong2' && !submitting && (
         <button className="rcq-next-btn" onClick={handlePass}>
-          已理解，继续下一题 →
+          {t('rcq.passBtn')}
         </button>
       )}
 
       {/* Submit button */}
       {hasContent && showCanvas && !submitting && (
         <button className="rcq-submit-btn" onClick={handleSubmit}>
-          {phase === 'retry' ? '重新提交' : '提交'}
+          {phase === 'retry' ? t('rcq.resubmit') : t('rcq.submit')}
         </button>
       )}
     </div>
+    </LocaleScope>
   )
 }

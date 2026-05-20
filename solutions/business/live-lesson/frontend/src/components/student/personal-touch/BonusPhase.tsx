@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useCallback } from 'react'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
 import { MatchExercise } from '../exercise/MatchExercise'
 import { MatrixExercise } from '../exercise/MatrixExercise'
@@ -24,7 +25,8 @@ interface BonusExerciseData {
   strategy: string
 }
 
-export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void; reviewMode?: boolean }) {
+export function BonusPhase({ onComplete, reviewMode, locale }: { onComplete: () => void; reviewMode?: boolean; locale?: Locale }) {
+  const t = useT(locale)
   const ctx = useContext(SessionCtx)
   const [bonusStep, setBonusStep] = useState(1)
   const [exerciseData, setExerciseData] = useState<BonusExerciseData | null>(null)
@@ -151,41 +153,48 @@ export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void;
 
   if (loading) {
     return (
+      <LocaleScope locale={locale}>
       <div className="stu-task-inner" style={{ paddingTop: 32 }}>
         <div style={{ height: 200, borderRadius: 12, background: 'var(--bg2)', animation: 'pulse 1.2s ease-in-out infinite' }} />
       </div>
+      </LocaleScope>
     )
   }
 
   if (!exerciseData) {
     return (
+      <LocaleScope locale={locale}>
       <div className="stu-task-inner" style={{ paddingTop: 32 }}>
-        <p style={{ color: 'var(--t3)' }}>Could not load bonus exercise.</p>
-        <button className="stu-btn pri" onClick={onComplete}>Skip to Summary →</button>
+        <p style={{ color: 'var(--t3)' }}>{t('bonus.loadError')}</p>
+        <button className="stu-btn pri" onClick={onComplete}>{t('bonus.skip')}</button>
       </div>
+      </LocaleScope>
     )
   }
 
   if (complete && !reviewMode) {
     return (
+      <LocaleScope locale={locale}>
       <div className="stu-task-inner" style={{ paddingTop: 32, textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
-        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--t1)' }}>Bonus Complete!</div>
-        <p style={{ color: 'var(--t2)', marginBottom: 20 }}>You've successfully applied your reading strategies to a new article.</p>
-        <button className="stu-btn pri" onClick={onComplete}>Finish →</button>
+        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--t1)' }}>{t('bonus.complete')}</div>
+        <p style={{ color: 'var(--t2)', marginBottom: 20 }}>{t('bonus.completeDesc')}</p>
+        <button className="stu-btn pri" onClick={onComplete}>{t('bonus.finish')}</button>
       </div>
+      </LocaleScope>
     )
   }
 
   const ex = exerciseData.exercise
 
   return (
+    <LocaleScope locale={locale}>
     <div className="stu-task-inner" style={{ paddingTop: 24 }}>
       <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8 }}>
-        {reviewMode ? '📖 查看已提交的 Bonus 答案（只读）' : '💡 这是额外挑战，做不完也没关系 —— 随时可以结束。'}
+        {reviewMode ? t('bonus.reviewMode') : t('bonus.challengeHint')}
       </div>
       <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
-        Bonus Step {bonusStep} · {exerciseData.strategy}
+        {t('bonus.bonusStep', { n: bonusStep })} · {exerciseData.strategy}
       </div>
       <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-.3px', marginBottom: 16, color: 'var(--t1)' }}>
         {exerciseData.label}
@@ -207,7 +216,7 @@ export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void;
 
       {/* Exercise */}
       <div style={{ marginBottom: 16 }}>
-        <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
+        <div className="stu-section-label"><span>{t('phase.practice')}</span><div className="stu-section-line" /></div>
         {ex.type === 'match' && (
           <MatchExercise
             pairs={ex.pairs! as any}
@@ -236,12 +245,12 @@ export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void;
       {reviewMode ? (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {bonusStep === 1 && savedSubs[2] && (
-            <button className="stu-btn pri" onClick={() => setBonusStep(2)}>Step 2 →</button>
+            <button className="stu-btn pri" onClick={() => setBonusStep(2)}>{t('bonus.bonusStep', { n: 2 })} →</button>
           )}
           {bonusStep === 2 && (
-            <button className="stu-btn ghost" onClick={() => setBonusStep(1)}>← Step 1</button>
+            <button className="stu-btn ghost" onClick={() => setBonusStep(1)}>← {t('bonus.bonusStep', { n: 1 })}</button>
           )}
-          <button className="stu-btn ghost" onClick={onComplete}>← 返回总结</button>
+          <button className="stu-btn ghost" onClick={onComplete}>{t('bonus.backToSummary')}</button>
         </div>
       ) : (
         <>
@@ -249,19 +258,20 @@ export function BonusPhase({ onComplete, reviewMode }: { onComplete: () => void;
             <button className="stu-btn pri" onClick={handleCheck} disabled={
               checking || (ex.type === 'match' ? (ex.pairs || []).some((_: any, i: number) => !correctQs.has(i) && ans[i] === undefined) : false)
             }>
-              {checking ? 'Checking…' : 'Check →'}
+              {checking ? t('bonus.checking') : t('bonus.check')}
             </button>
           )}
           {allDone && (
             <button className="stu-btn pri" onClick={handleNext}>
-              {bonusStep === 1 ? 'Next Step →' : 'Finish →'}
+              {bonusStep === 1 ? t('bonus.nextStep') : t('bonus.finish')}
             </button>
           )}
           {!allDone && (
-            <button className="stu-btn ghost" style={{ marginTop: 12 }} onClick={onComplete} disabled={checking}>结束课程 →</button>
+            <button className="stu-btn ghost" style={{ marginTop: 12 }} onClick={onComplete} disabled={checking}>{t('bonus.endCourse')}</button>
           )}
         </>
       )}
     </div>
+    </LocaleScope>
   )
 }

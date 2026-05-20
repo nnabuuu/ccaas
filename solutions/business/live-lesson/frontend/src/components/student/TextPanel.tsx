@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import katex from 'katex'
 import type { Paragraph, Segment } from '../../types/reading'
 import { renderMd } from './renderMd'
+import { useT, type Locale } from '../../i18n'
 import AudioButton from './AudioButton'
 
 export interface TextOverlay {
@@ -23,9 +24,11 @@ interface Props {
   enableMath?: boolean
   scaffoldAvailable?: boolean
   onSwitchToScaffold?: () => void
+  locale?: Locale
 }
 
-export default function TextPanel({ title, paragraphs, focusIds, lessonId, showRoles, overlay, collapsed, onToggle, enableMath, scaffoldAvailable, onSwitchToScaffold }: Props) {
+export default function TextPanel({ title, paragraphs, focusIds, lessonId, showRoles, overlay, collapsed, onToggle, enableMath, scaffoldAvailable, onSwitchToScaffold, locale }: Props) {
+  const t = useT(locale)
   const scrollRef = useRef<HTMLDivElement>(null)
   const prevFocus = useRef('')
 
@@ -70,7 +73,7 @@ export default function TextPanel({ title, paragraphs, focusIds, lessonId, showR
     return (
       <div className="stu-text-rail" onClick={onToggle}>
         <div className="stu-text-rail-icon">T</div>
-        <div className="stu-text-rail-label">课文</div>
+        <div className="stu-text-rail-label">{t('textPanel.rail')}</div>
         {focusIds.length > 0 && (
           <div className="stu-text-rail-badge">{focusIds.length}</div>
         )}
@@ -90,17 +93,17 @@ export default function TextPanel({ title, paragraphs, focusIds, lessonId, showR
               style={{ cursor: 'pointer', background: 'none', border: '1px solid var(--amber, #f59e0b)', borderRadius: 4, padding: '2px 8px', fontSize: 11, color: 'var(--amber, #f59e0b)' }}
               onClick={onSwitchToScaffold}
             >
-              查看提示
+              {t('textPanel.viewHint')}
             </button>
           )}
           {showRoles && !overlay && (
             <div style={{ fontSize: 12, color: 'var(--t3)', display: 'flex', gap: 10, marginTop: 2 }}>
-              <span><span style={{ color: 'var(--t1)', fontWeight: 600 }}>●</span> Key sentence</span>
-              <span><span style={{ color: 'var(--t2)' }}>○</span> Supporting detail</span>
-              <span><span className="sig" style={{ fontSize: 12 }}>■</span> Signal word</span>
+              <span><span style={{ color: 'var(--t1)', fontWeight: 600 }}>●</span> {t('textPanel.keySentence')}</span>
+              <span><span style={{ color: 'var(--t2)' }}>○</span> {t('textPanel.supportDetail')}</span>
+              <span><span className="sig" style={{ fontSize: 12 }}>■</span> {t('textPanel.signalWord')}</span>
             </div>
           )}
-          <button className="stu-text-close" onClick={onToggle} title="收起 (Esc)">×</button>
+          <button className="stu-text-close" onClick={onToggle} title={t('textPanel.collapse')}>×</button>
         </div>
         <div className="stu-text-scroll" ref={scrollRef}>
           {paragraphs.map((p) => {

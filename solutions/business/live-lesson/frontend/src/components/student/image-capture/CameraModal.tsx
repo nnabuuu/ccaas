@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from 'react'
 import Webcam from 'react-webcam'
 import { X, ArrowsClockwise } from '@phosphor-icons/react'
 import { compressDataUri } from '../../../utils/compress-image'
+import { useT, type Locale } from '../../../i18n'
 import type { CameraPermission } from './useCamera'
 
 interface CameraModalProps {
@@ -10,9 +11,11 @@ interface CameraModalProps {
   onCapture: (dataUri: string) => void
   onClose: () => void
   onSwitchFacing: () => void
+  locale?: Locale
 }
 
-export function CameraModal({ facing, permission, onCapture, onClose, onSwitchFacing }: CameraModalProps) {
+export function CameraModal({ facing, permission, onCapture, onClose, onSwitchFacing, locale }: CameraModalProps) {
+  const t = useT(locale)
   const webcamRef = useRef<Webcam>(null)
   const capturingRef = useRef(false)
 
@@ -37,9 +40,9 @@ export function CameraModal({ facing, permission, onCapture, onClose, onSwitchFa
     return (
       <div className="ic-overlay">
         <div className="ic-denied-msg">
-          <div>相机权限被拒绝</div>
-          <div>请在浏览器设置中允许访问摄像头</div>
-          <button onClick={onClose}>关闭</button>
+          <div>{t('camera.permDenied')}</div>
+          <div>{t('camera.permMsg')}</div>
+          <button onClick={onClose}>{t('camera.close')}</button>
         </div>
       </div>
     )
@@ -57,11 +60,11 @@ export function CameraModal({ facing, permission, onCapture, onClose, onSwitchFa
         />
       </div>
       <div className="ic-controls">
-        <button className="ic-ctrl-btn" onClick={onClose} aria-label="关闭">
+        <button className="ic-ctrl-btn" onClick={onClose} aria-label={t('camera.close')}>
           <X size={22} />
         </button>
-        <button className="ic-shutter" onClick={handleShutter} aria-label="拍照" />
-        <button className="ic-ctrl-btn" onClick={onSwitchFacing} aria-label="切换摄像头">
+        <button className="ic-shutter" onClick={handleShutter} aria-label={t('camera.shutter')} />
+        <button className="ic-ctrl-btn" onClick={onSwitchFacing} aria-label={t('camera.switchCam')}>
           <ArrowsClockwise size={22} />
         </button>
       </div>

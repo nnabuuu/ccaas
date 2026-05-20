@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT, type Locale } from '../../../i18n'
 import { ImageCaptureButton } from './ImageCaptureButton'
 
 interface ImageGalleryProps {
@@ -7,9 +8,11 @@ interface ImageGalleryProps {
   onAdd: (dataUri: string) => void
   onRemove: (index: number) => void
   disabled?: boolean
+  locale?: Locale
 }
 
-export function ImageGallery({ images, maxImages, onAdd, onRemove, disabled }: ImageGalleryProps) {
+export function ImageGallery({ images, maxImages, onAdd, onRemove, disabled, locale }: ImageGalleryProps) {
+  const t = useT(locale)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
 
   return (
@@ -17,9 +20,9 @@ export function ImageGallery({ images, maxImages, onAdd, onRemove, disabled }: I
       <div className="ic-gallery">
         {images.map((src, i) => (
           <div key={i} className="ic-thumb-wrap">
-            <img src={src} alt={`图片 ${i + 1}`} onClick={() => setLightboxIdx(i)} />
+            <img src={src} alt={t('gallery.imageAlt', { n: i + 1 })} onClick={() => setLightboxIdx(i)} />
             {!disabled && (
-              <button className="ic-thumb-remove" onClick={() => onRemove(i)} aria-label="删除">×</button>
+              <button className="ic-thumb-remove" onClick={() => onRemove(i)} aria-label={t('gallery.remove')}>×</button>
             )}
           </div>
         ))}
@@ -28,12 +31,12 @@ export function ImageGallery({ images, maxImages, onAdd, onRemove, disabled }: I
         )}
       </div>
       {images.length > 0 && (
-        <div className="ic-count">{images.length}/{maxImages} 张图片</div>
+        <div className="ic-count">{t('gallery.count', { n: images.length, max: maxImages })}</div>
       )}
 
       {lightboxIdx !== null && (
         <div className="ic-lightbox" onClick={() => setLightboxIdx(null)}>
-          <img src={images[lightboxIdx]} alt="预览" />
+          <img src={images[lightboxIdx]} alt={t('gallery.preview')} />
         </div>
       )}
     </>

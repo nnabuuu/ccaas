@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useRef, useCallback } from 'react'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { renderMd } from '../renderMd'
 import { useAiAsk, useAiDiscuss, useDiscussComplete, useChatHistory, useDiscussProgress } from '../../../hooks/useClassroom'
 import type { ClusterProgress } from '../../../hooks/useClassroom'
@@ -29,13 +30,14 @@ export function TypingIndicator() {
 
 /* ═══ STATUS BAR ═══ */
 function StatusBar({ round, maxRounds, elapsed, maxTime }: { round: number; maxRounds: number; elapsed: number; maxTime: number }) {
+  const t = useT()
   const { color } = computeUrgency(round, maxRounds, elapsed, maxTime)
   return (
     <div className="sd-status-bar">
-      <div className="sd-status-pill" style={{ background: color + '18', color }}>{`Round ${round}/${maxRounds}`}</div>
+      <div className="sd-status-pill" style={{ background: color + '18', color }}>{t('discuss.round', { round, max: maxRounds })}</div>
       <div className="sd-status-pill" style={{ background: color + '18', color }}>{formatTime(elapsed)} / {formatTime(maxTime)}</div>
       <div style={{ flex: 1 }} />
-      <span style={{ fontSize: 10, color: 'var(--t3)' }}>Think deeply — no rush!</span>
+      <span style={{ fontSize: 10, color: 'var(--t3)' }}>{t('discuss.noRush')}</span>
     </div>
   )
 }
@@ -52,7 +54,8 @@ function ScaffoldChips({ scaffolds, onPick }: { scaffolds: string[]; onPick: (s:
 }
 
 /* ═══ FALLBACK MC ═══ */
-function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete: (selectedIndex: number) => void }) {
+function FallbackMCView({ config, onComplete, enableMath }: { config: FallbackMC; onComplete: (selectedIndex: number) => void; enableMath?: boolean }) {
+  const t = useT()
   const [selected, setSelected] = useState<number | null>(null)
   const [submitted, setSubmitted] = useState(false)
 
@@ -64,11 +67,11 @@ function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete
 
   return (
     <div className="sd-mc-wrap">
-      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)', marginBottom: 4 }}>Let's try a different approach</div>
-      <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 12 }}>Pick the best answer to show your understanding.</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)', marginBottom: 4 }}>{t('discuss.fallback.approach')}</div>
+      <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 12 }}>{t('discuss.fallback.pickBest')}</div>
       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)', marginBottom: 12, lineHeight: 1.5 }}>
-        {config.question}
-        {config.questionZh && <div style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 400, marginTop: 4 }}>{config.questionZh}</div>}
+        {renderMd(config.question, { math: enableMath })}
+        {config.questionZh && <div style={{ fontSize: 11, color: 'var(--t3)', fontWeight: 400, marginTop: 4 }}>{renderMd(config.questionZh!, { math: enableMath })}</div>}
       </div>
       {config.options.map((opt, i) => {
         const isRight = i === config.correctIndex
@@ -80,7 +83,7 @@ function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete
               submitted && selected === i ? { borderColor: 'var(--red)', borderWidth: 5 } :
               selected === i ? { borderColor: 'var(--teal)', borderWidth: 5 } : undefined
             } />
-            {opt}
+            {renderMd(opt, { math: enableMath })}
           </div>
         )
       })}
@@ -90,11 +93,11 @@ function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete
           disabled={selected === null}
           style={{ marginTop: 8, ...(selected === null ? { opacity: 0.35, cursor: 'default' } : {}) }}
           onClick={handleSubmit}
-        >Submit</button>
+        >{t('discuss.fallback.submit')}</button>
       )}
       {submitted && selected !== config.correctIndex && (
         <div style={{ marginTop: 8, fontSize: 12, color: 'var(--red)', fontWeight: 500, lineHeight: 1.6 }}>
-          Not quite. The correct answer is highlighted in green above.
+          {t('discuss.fallback.notQuite')}
         </div>
       )}
     </div>
@@ -103,6 +106,7 @@ function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete
 
 /* ═══ CONTINUE CHAT ═══ */
 function ContinueChat({ taskId }: { taskId: number }) {
+  const t = useT()
   const { sessionCode, studentId } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<Array<{ role: 'q' | 'a'; text: string; loading?: boolean; id?: number }>>([])
@@ -137,19 +141,19 @@ function ContinueChat({ taskId }: { taskId: number }) {
     const q = input.trim()
     const pid = Date.now()
     setInput('')
-    setMsgs(m => [...m, { role: 'q', text: q }, { role: 'a', text: 'Thinking...', loading: true, id: pid }])
+    setMsgs(m => [...m, { role: 'q', text: q }, { role: 'a', text: t('discuss.continue.thinking'), loading: true, id: pid }])
     const history = [...msgs.filter(m => !m.loading), { role: 'q' as const, text: q }]
       .map(m => ({ role: m.role === 'q' ? 'student' : 'ai', text: m.text }))
     const reply = sessionCode && studentId
-      ? (await ask(studentId, taskId, q, history))?.answer || 'Sorry, AI is unavailable right now.'
-      : 'AI discussion requires an active session.'
+      ? (await ask(studentId, taskId, q, history))?.answer || t('discuss.continue.aiUnavailable')
+      : t('discuss.continue.requiresSession')
     setMsgs(m => m.map(msg => msg.id === pid ? { role: 'a' as const, text: reply, id: pid } : msg))
   }
 
   if (!open) {
     return (
       <div style={{ textAlign: 'center', padding: '8px 0' }}>
-        <button className="sd-continue-btn" onClick={() => setOpen(true)}>Still have questions? Keep discussing</button>
+        <button className="sd-continue-btn" onClick={() => setOpen(true)}>{t('discuss.continue.keepDiscussing')}</button>
       </div>
     )
   }
@@ -158,11 +162,11 @@ function ContinueChat({ taskId }: { taskId: number }) {
     <div className="sd-chat-area" style={{ marginTop: 4 }}>
       <div className="sd-chat-header">
         <div className="sd-ai-dot" />
-        <div className="sd-chat-title">Continue Discussion</div>
-        <span style={{ fontSize: 10, color: 'var(--t3)' }}>Ask anything about this topic</span>
+        <div className="sd-chat-title">{t('discuss.continue.title')}</div>
+        <span style={{ fontSize: 10, color: 'var(--t3)' }}>{t('discuss.continue.askAnything')}</span>
       </div>
       <div className="sd-continue-area">
-        {msgs.length === 0 && <div style={{ fontSize: 12, color: 'var(--t3)', textAlign: 'center', padding: 16 }}>Ask a follow-up question.</div>}
+        {msgs.length === 0 && <div style={{ fontSize: 12, color: 'var(--t3)', textAlign: 'center', padding: 16 }}>{t('discuss.continue.followUp')}</div>}
         {msgs.map((m, i) => m.role === 'a' ? (
           <div key={i} className="sd-msg-row">
             <div className="sd-avatar ai">S</div>
@@ -178,7 +182,7 @@ function ContinueChat({ taskId }: { taskId: number }) {
       <div className="sd-input-row">
         <textarea
           className="sd-input"
-          placeholder={loading ? 'Waiting for AI...' : 'Ask anything...'}
+          placeholder={loading ? t('discuss.continue.waitingAi') : t('discuss.continue.placeholder')}
           value={input}
           rows={1}
           disabled={loading}
@@ -197,13 +201,14 @@ function ClusterTracker({ clusters, starSlotRef, countRef }: {
   starSlotRef: React.RefObject<HTMLDivElement>
   countRef: React.RefObject<HTMLSpanElement>
 }) {
+  const t = useT()
   if (clusters.length === 0) return null
   const hitCount = clusters.filter(c => c.hit).length
   const allHit = hitCount === clusters.length
   return (
     <div className="sd-tracker">
       <div className="sd-tracker-label" style={allHit ? { color: 'var(--green)' } : undefined}>
-        {allHit ? 'All Points Discovered!' : 'Discussion Points'}
+        {allHit ? t('discuss.allPoints') : t('discuss.points')}
       </div>
       <div className="sd-tracker-bar">
         {clusters.map(c => (
@@ -219,13 +224,13 @@ function ClusterTracker({ clusters, starSlotRef, countRef }: {
   )
 }
 
-const IMAGE_ONLY_PLACEHOLDER = '（见图片）'
-
 /* ═══ MAIN: DISCUSS PHASE ═══ */
 type Phase = 'chat' | 'fallback' | 'done'
 type Msg = { role: 'ai' | 'student' | 'notification'; text: string; images?: string[]; imageDescription?: string; highlight?: { score: number; gist: string } }
 
-export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: () => void; isRevisit?: boolean }) {
+export function DiscussPhase({ task, onDone, isRevisit, locale }: { task: Task; onDone: () => void; isRevisit?: boolean; locale?: Locale }) {
+  const t = useT(locale)
+  const IMAGE_ONLY_PLACEHOLDER = t('discuss.imageOnly')
   const { sessionCode, studentId, submit, config, discussMeta } = useContext(SessionCtx)
   const enableMath = config.enableMath
   const d = task.discuss
@@ -317,7 +322,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         if (lastStudentIdx >= 0) {
           const notifs: Msg[] = []
           for (let i = 0; i < restoredHitCount; i++) {
-            notifs.push({ role: 'notification', text: `Point ${i + 1} discovered` })
+            notifs.push({ role: 'notification', text: t('discuss.pointDiscovered', { n: i + 1 }) })
           }
           restored.splice(lastStudentIdx + 1, 0, ...notifs)
         }
@@ -402,7 +407,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       const allMsgs = filterMessagesForApi([...messages, studentMsg])
 
       if (!useAi) {
-        setMessages(m => [...m, { role: 'ai', text: 'AI discussion requires an active classroom session.' }])
+        setMessages(m => [...m, { role: 'ai', text: t('discuss.requiresSession') }])
         return
       }
 
@@ -411,7 +416,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       const result = await discuss(studentId!, task.id, allMsgs, newRound, getElapsed())
       if (!result) {
         setRound(round)
-        setMessages(m => [...m, { role: 'ai', text: 'Sorry, let me think about that differently. Could you rephrase your answer?' }])
+        setMessages(m => [...m, { role: 'ai', text: t('discuss.aiError') }])
         return
       }
 
@@ -446,7 +451,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           }
         }
         for (let i = 0; i < newHits.length; i++) {
-          updated.push({ role: 'notification', text: `Point ${prevHitIds.size + i + 1} discovered` })
+          updated.push({ role: 'notification', text: t('discuss.pointDiscovered', { n: prevHitIds.size + i + 1 }) })
         }
         updated.push({ role: 'ai', text: result.reply })
         return updated
@@ -535,14 +540,15 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   }
 
   return (
+    <LocaleScope locale={locale}>
     <div id="phase-discuss" data-translate-ctx="discuss">
-      <div className="stu-section-label"><span>Discuss</span><div className="stu-section-line" /></div>
+      <div className="stu-section-label"><span>{t('phase.discuss')}</span><div className="stu-section-line" /></div>
 
       <div className="sd-chat-area">
         {/* Header */}
         <div className="sd-chat-header">
           <div className="sd-ai-dot" />
-          <div className="sd-chat-title">Socratic Discussion</div>
+          <div className="sd-chat-title">{t('discuss.title')}</div>
           <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen && !guideSeen.current ? ' pulse' : ''}`} onClick={() => {
             setGuideOpen(true)
             markGuideSeen('guide-seen-discuss')
@@ -597,10 +603,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
               <div className="sd-bubble ai" style={{ maxWidth: '92%' }}>
                 <div style={{ marginBottom: 10, lineHeight: 1.6 }}>
                   {fallbackReason === 'time'
-                    ? "Time's up! You've been thinking hard. Let me give you a question to help:"
-                    : 'Great discussion! Let\'s check your understanding:'}
+                    ? t('discuss.fallback.timeUp')
+                    : t('discuss.fallback.roundsUp')}
                 </div>
-                <FallbackMCView config={d.fallbackMC} onComplete={handleMCComplete} />
+                <FallbackMCView config={d.fallbackMC} onComplete={handleMCComplete} enableMath={enableMath} />
               </div>
             </div>
           )}
@@ -611,10 +617,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
               <div className="sd-avatar" style={{ background: 'var(--green-bg)', fontSize: 16 }}>🎉</div>
               <div className="sd-bubble sd-celebration">
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--green)', marginBottom: 4 }}>
-                  Amazing! You figured it out all by yourself!
+                  {t('discuss.celebration.amazing')}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 }}>
-                  {`That's real critical thinking — ${round} round${round > 1 ? 's' : ''} in ${formatTime(elapsed)}. You should be proud!`}
+                  {t('discuss.celebration.proud', { round: String(round), s: round > 1 ? 's' : '', time: formatTime(elapsed) })}
                 </div>
               </div>
             </div>
@@ -626,16 +632,16 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
               <div className="sd-avatar ai">S</div>
               <div className="sd-bubble ai" style={{ maxWidth: '92%' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 6 }}>
-                  {goalReached ? "Here's a summary" : 'Full explanation'}
+                  {goalReached ? t('discuss.summary') : t('discuss.fullExplanation')}
                 </div>
                 <div style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--t1)' }}>{renderMd(d.fallbackMC.explanation, { math: enableMath })}</div>
                 {d.fallbackMC.explanationZh && (
-                  <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 6, fontStyle: 'italic' }}>{d.fallbackMC.explanationZh}</div>
+                  <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 6, fontStyle: 'italic' }}>{renderMd(d.fallbackMC.explanationZh, { math: enableMath })}</div>
                 )}
                 <div className="sd-insight-card">
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber)', marginBottom: 2 }}>Key Insight</div>
-                  <div style={{ fontSize: 12, color: 'var(--amber)', lineHeight: 1.5 }}>{d.insight}</div>
-                  {d.insightZh && <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>{d.insightZh}</div>}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber)', marginBottom: 2 }}>{t('discuss.keyInsight')}</div>
+                  <div style={{ fontSize: 12, color: 'var(--amber)', lineHeight: 1.5 }}>{renderMd(d.insight, { math: enableMath })}</div>
+                  {d.insightZh && <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>{renderMd(d.insightZh!, { math: enableMath })}</div>}
                 </div>
               </div>
             </div>
@@ -646,10 +652,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
             <div className="sd-unlock-notice">
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
               {isRevisit ? (
-                <div className="sd-unlock-pill">✓ Discuss complete</div>
+                <div className="sd-unlock-pill">{t('discuss.complete')}</div>
               ) : (
                 <button type="button" className="sd-unlock-pill sd-continue-action" onClick={handleContinue}>
-                  Continue to Takeaway →
+                  {t('discuss.continueToTakeaway')}
                 </button>
               )}
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
@@ -688,7 +694,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
             <textarea
               ref={inputRef}
               className="sd-input"
-              placeholder="Share your thinking..."
+              placeholder={t('discuss.sharePlaceholder')}
               value={input}
               rows={1}
               onChange={e => setInput(e.target.value)}
@@ -707,5 +713,6 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       {/* Continue chat after completion */}
       {phase === 'done' && <ContinueChat taskId={task.id} />}
     </div>
+    </LocaleScope>
   )
 }

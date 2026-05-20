@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { renderMd } from './renderMd'
+import { useT, type Locale } from '../../i18n'
 import './scaffold-panel.css'
 
 export interface ScaffoldHint {
@@ -16,9 +17,11 @@ interface Props {
   onSwitchToText?: () => void
   collapsed?: boolean
   onToggle?: () => void
+  locale?: Locale
 }
 
-export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, collapsed, onToggle }: Props) {
+export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, collapsed, onToggle, locale }: Props) {
+  const t = useT(locale)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [zoomedImg, setZoomedImg] = useState<string | null>(null)
 
@@ -57,7 +60,7 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
         <div className="stu-text-rail-icon">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <div className="stu-text-rail-label">提示</div>
+        <div className="stu-text-rail-label">{t('scaffold.rail')}</div>
         {hints.length > 0 && (
           <div className="stu-text-rail-badge">{hints.length}</div>
         )}
@@ -68,8 +71,8 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
   const lastHint = hints[hints.length - 1]
   const isSolution = lastHint && !lastHint.canRetry
   const badgeText = hints.length === 0
-    ? '等待中'
-    : isSolution ? '完整解答' : `提示 1-${hints.length}`
+    ? t('scaffold.waiting')
+    : isSolution ? t('scaffold.fullSolution') : t('scaffold.hintRange', { n: hints.length })
 
   return (
     <div className="stu-text-overlay scaffold-panel" data-translate-ctx="scaffold-panel">
@@ -78,18 +81,18 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
         <div className="scaffold-panel-icon">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <span className="scaffold-panel-title">解题思路</span>
+        <span className="scaffold-panel-title">{t('scaffold.title')}</span>
         <span className="scaffold-panel-badge">{badgeText}</span>
         {onSwitchToText && (
           <button
             className="scaffold-panel-close"
             onClick={onSwitchToText}
-            title="查看课文"
+            title={t('scaffold.viewText')}
           >
-            课文
+            {t('scaffold.textLabel')}
           </button>
         )}
-        <button className="scaffold-panel-close" onClick={onToggle} title="收起 (Esc)">×</button>
+        <button className="scaffold-panel-close" onClick={onToggle} title={t('scaffold.collapse')}>×</button>
       </div>
 
       {/* Scroll area */}
@@ -105,14 +108,14 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
               <div className="scaffold-hint-hd">
                 <div className="scaffold-step-badge">{hint.level + 1}</div>
                 <span className="scaffold-hint-title">
-                  {isSolutionCard ? '完整解答' : `第${hint.level + 1}步`}
+                  {isSolutionCard ? t('scaffold.fullSolution') : t('scaffold.stepN', { n: hint.level + 1 })}
                 </span>
               </div>
               <div className="scaffold-hint-body">
                 {renderMd(hint.hintZh, { math: enableMath })}
               </div>
               {hint.hintImage && (
-                <img src={hint.hintImage} alt={`提示 ${hint.level + 1}`}
+                <img src={hint.hintImage} alt={t('scaffold.hintAlt', { n: hint.level + 1 })}
                   className="scaffold-hint-img"
                   onClick={() => hint.hintImage && setZoomedImg(hint.hintImage)} />
               )}
@@ -120,12 +123,12 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
           )
         })}
         {hints.length === 0 && (
-          <div className="scaffold-empty">暂无提示</div>
+          <div className="scaffold-empty">{t('scaffold.noHints')}</div>
         )}
       </div>
       {zoomedImg && createPortal(
-        <div className="scaffold-zoom-overlay" role="dialog" aria-modal="true" aria-label="放大查看图片" onClick={closeZoom}>
-          <img src={zoomedImg} className="scaffold-zoom-img" alt="放大查看"
+        <div className="scaffold-zoom-overlay" role="dialog" aria-modal="true" aria-label={t('scaffold.zoomLabel')} onClick={closeZoom}>
+          <img src={zoomedImg} className="scaffold-zoom-img" alt={t('scaffold.zoomAlt')}
             onClick={e => e.stopPropagation()} />
         </div>,
         document.body

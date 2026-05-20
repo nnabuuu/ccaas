@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import MapGuide from './MapGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { useT, type Locale } from '../../../i18n'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -22,15 +23,16 @@ interface Props {
   practiceItemIds?: string[]
   itemResults?: Record<string, { correct: boolean; hint?: string }>
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 type Placements = Record<string, { x: number; y: number }>
 type Reasons = Record<string, string>
 
-function quadrantLabel(val: number, axis: MapAxis): string {
+function quadrantLabel(val: number, axis: MapAxis, neutral: string): string {
   if (val > 0.15) return axis.pos
   if (val < -0.15) return axis.neg
-  return 'Neutral'
+  return neutral
 }
 
 export function parseMapReview(review: ReviewData) {
@@ -48,7 +50,8 @@ export function parseMapReview(review: ReviewData) {
   return { state: { ans, feedback, itemResults }, allDone: true }
 }
 
-export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults, reviewData }: Props) {
+export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults, reviewData, locale }: Props) {
+  const t = useT(locale)
   const restored = useReviewRestore(reviewData, parseMapReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveFeedback = restored?.feedback ?? feedback
@@ -229,7 +232,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
         </div>
         <button
           className={`se-guide-btn${!guideSeen.current && !guideOpen ? ' pulse' : ''}`}
-          aria-label="Map exercise guide"
+          aria-label={t('map.guideLabel')}
           onClick={() => {
             setGuideOpen(true)
             markGuideSeen('guide-seen-map')
@@ -385,11 +388,11 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <div style={axisCellStyle}>
                     <div style={axisCellLabel}>X: {axes.x.label}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)' }}>{quadrantLabel(p.x, axes.x)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)' }}>{quadrantLabel(p.x, axes.x, t('map.neutral'))}</div>
                   </div>
                   <div style={axisCellStyle}>
                     <div style={axisCellLabel}>Y: {axes.y.label}</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)' }}>{quadrantLabel(p.y, axes.y)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)' }}>{quadrantLabel(p.y, axes.y, t('map.neutral'))}</div>
                   </div>
                 </div>
 
@@ -399,7 +402,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                     ...textareaStyle,
                     ...(done ? { borderColor: 'var(--green)', background: 'var(--green-bg)' } : {}),
                   }}
-                  placeholder="Why did you place it here?"
+                  placeholder={t('map.reasonPlaceholder')}
                   value={reason}
                   onChange={e => setReason(it.id, e.target.value)}
                   disabled={effectiveAllDone}

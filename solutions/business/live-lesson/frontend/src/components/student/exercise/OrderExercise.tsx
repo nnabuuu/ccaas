@@ -1,5 +1,6 @@
 import { HintBanner } from '../HelpButton'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { useT, type Locale } from '../../../i18n'
 
 interface Props {
   items: string[]
@@ -9,6 +10,7 @@ interface Props {
   wrongPositions: Set<number>
   attemptCount: number
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 export function parseOrderReview(review: ReviewData) {
@@ -16,7 +18,8 @@ export function parseOrderReview(review: ReviewData) {
   return { state: { ans: { order: data.order || [] } }, allDone: true }
 }
 
-export function OrderExercise({ items, ans, setAns, done, wrongPositions, attemptCount, reviewData }: Props) {
+export function OrderExercise({ items, ans, setAns, done, wrongPositions, attemptCount, reviewData, locale }: Props) {
+  const t = useT(locale)
   const restored = useReviewRestore(reviewData, parseOrderReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveDone = restored ? true : done
@@ -27,8 +30,8 @@ export function OrderExercise({ items, ans, setAns, done, wrongPositions, attemp
   return (
     <div>
       <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
-        Click to select the correct order:
-        {attemptCount > 0 && !effectiveDone && <span style={{ fontSize: 9, color: 'var(--amber)' }}>{attemptCount === 1 ? '1 attempt' : `${attemptCount} attempts`}</span>}
+        {t('order.instruction')}
+        {attemptCount > 0 && !effectiveDone && <span style={{ fontSize: 9, color: 'var(--amber)' }}>{t('exercise.attempts', { n: attemptCount, s: attemptCount > 1 ? 's' : '' })}</span>}
       </div>
       {effectiveDone && order.map((idx, pos) => (
         <div key={`s${pos}`} className="stu-order-slot" style={{ borderColor: 'var(--green)', background: 'var(--green-bg)' }}>
@@ -52,7 +55,7 @@ export function OrderExercise({ items, ans, setAns, done, wrongPositions, attemp
       ))}
       {!effectiveDone && wrongPositions.size > 0 && (
         <HintBanner
-          hint="The order isn't quite right. Think about the reading process: what do you do FIRST when you see a new text?"
+          hint={t('order.hint')}
           hintZh="顺序不太对。想想阅读流程：看到新文章你第一步做什么？"
         />
       )}

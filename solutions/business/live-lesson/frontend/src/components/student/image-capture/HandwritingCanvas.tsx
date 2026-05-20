@@ -3,6 +3,7 @@ import {
   forwardRef, useImperativeHandle,
 } from 'react'
 import { compressImage } from '../../../utils/compress-image'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { useCamera } from './useCamera'
 import { CameraModal } from './CameraModal'
 import './handwriting.css'
@@ -31,6 +32,7 @@ interface HandwritingCanvasProps {
   onPagesChange?: (dataUris: string[]) => void
   onContentStatusChange?: (hasContent: boolean) => void
   disabled?: boolean
+  locale?: Locale
 }
 
 /* ── Constants ── */
@@ -41,7 +43,8 @@ const H = 480
 /* ── Component ── */
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, HandwritingCanvasProps>(
-  function HandwritingCanvas({ maxPages = 5, onPagesChange, onContentStatusChange, disabled }, ref) {
+  function HandwritingCanvas({ maxPages = 5, onPagesChange, onContentStatusChange, disabled, locale }, ref) {
+    const t = useT(locale)
     const canvasRefs = useRef<Record<number, HTMLCanvasElement | null>>({})
     const strokesRef = useRef<Record<number, Stroke[]>>({})
     const drawingRef = useRef(false)
@@ -378,19 +381,21 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
 
     if (pages.length === 0) {
       return (
+        <LocaleScope locale={locale}>
         <div>
           {photoInput}
           <div className="hw-input-methods">
             <button className="hw-im-btn" onClick={addCanvasPage} disabled={disabled}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              手写作答
+              {t('canvas.handwrite')}
             </button>
             <button className="hw-im-btn" onClick={triggerPhotoUpload} disabled={disabled}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              拍照上传
+              {t('canvas.photoUpload')}
             </button>
           </div>
         </div>
+        </LocaleScope>
       )
     }
 
@@ -400,6 +405,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
     const activePageType = pages.find(p => p.id === activePageId)?.type
 
     return (
+      <LocaleScope locale={locale}>
       <div
         className="hw-area"
         onDragOver={handleDragOver}
@@ -413,27 +419,27 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         <div className="hw-toolbar">
           <div className="hw-tools">
             <button className={'hw-btn' + (tool === 'pen' ? ' active' : '')} onClick={() => setTool('pen')} disabled={disabled}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>笔
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>{t('canvas.pen')}
             </button>
             <button className={'hw-btn' + (tool === 'eraser' ? ' active' : '')} onClick={() => setTool('eraser')} disabled={disabled}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>橡皮
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>{t('canvas.eraser')}
             </button>
             <div className="hw-sep" />
-            <button className="hw-btn" onClick={undo} disabled={disabled} title="撤销（当前画布页）">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>撤销
+            <button className="hw-btn" onClick={undo} disabled={disabled} title={t('canvas.undoTitle')}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>{t('canvas.undo')}
             </button>
-            <button className="hw-btn" onClick={clearPage} disabled={disabled} title="清除（当前画布页）">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>清除
+            <button className="hw-btn" onClick={clearPage} disabled={disabled} title={t('canvas.clearTitle')}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>{t('canvas.clear')}
             </button>
             <div className="hw-sep" />
-            <button className="hw-btn" onClick={triggerPhotoUpload} disabled={disabled || pages.length >= maxPages} title="拍照 / 上传照片">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>拍照
+            <button className="hw-btn" onClick={triggerPhotoUpload} disabled={disabled || pages.length >= maxPages} title={t('canvas.cameraTitle')}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>{t('canvas.camera')}
             </button>
             {activeCanvasPage && activePageNum > 1 && (
-              <span className="hw-active-hint">操作：第{activePageNum}页</span>
+              <span className="hw-active-hint">{t('canvas.drawingPage', { n: activePageNum })}</span>
             )}
             {activePageType === 'photo' && (
-              <span className="hw-active-hint" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>当前：照片页</span>
+              <span className="hw-active-hint" style={{ background: 'var(--blue-bg)', color: 'var(--blue)' }}>{t('canvas.photoPage')}</span>
             )}
           </div>
         </div>
@@ -448,15 +454,15 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             >
               <div className="hw-page-hd">
                 <span className="hw-page-num">
-                  第{idx + 1}页
+                  {t('canvas.pageN', { n: idx + 1 })}
                   <span className={'hw-page-type-badge ' + (page.type === 'canvas' ? 'type-canvas' : 'type-photo')}>
-                    {page.type === 'canvas' ? '手写' : '照片'}
+                    {page.type === 'canvas' ? t('canvas.typeHandwrite') : t('canvas.typePhoto')}
                   </span>
                 </span>
                 {pages.length > 1 && !disabled && (
                   <button className="hw-page-del" onClick={(e) => { e.stopPropagation(); deletePage(page.id) }}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
-                    删除
+                    {t('canvas.delete')}
                   </button>
                 )}
               </div>
@@ -480,7 +486,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
               ) : (
                 <div className="hw-photo-wrap">
                   {page.photoData && (
-                    <img src={page.photoData} alt={`照片 ${idx + 1}`} />
+                    <img src={page.photoData} alt={t('canvas.photoAlt', { n: idx + 1 })} />
                   )}
                 </div>
               )}
@@ -492,16 +498,17 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
             <div className="hw-add-row">
               <button className="hw-add-btn" onClick={addCanvasPage}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <span>新增手写页</span>
+                <span>{t('canvas.addHandwrite')}</span>
               </button>
               <button className="hw-add-btn" onClick={triggerPhotoUpload}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                <span>拍照上传</span>
+                <span>{t('canvas.addPhoto')}</span>
               </button>
             </div>
           )}
         </div>
       </div>
+      </LocaleScope>
     )
   },
 )

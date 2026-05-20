@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
 
 interface StrategyResult {
@@ -34,9 +35,11 @@ function tierBorderColor(tone: string): string {
   return 'var(--t3)'
 }
 
-export function PersonalTouchScreen({ onContinue }: {
+export function PersonalTouchScreen({ onContinue, locale }: {
   onContinue: (bonusUnlocked: boolean) => void
+  locale?: Locale
 }) {
+  const t = useT(locale)
   const ctx = useContext(SessionCtx)
   const [data, setData] = useState<PersonalTouchData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,8 +58,9 @@ export function PersonalTouchScreen({ onContinue }: {
 
   if (loading) {
     return (
+      <LocaleScope locale={locale}>
       <div className="stu-task-inner" style={{ paddingTop: 32 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Loading</div>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>{t('personalTouch.loading')}</div>
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           {[1, 2, 3, 4].map(i => (
             <div key={i} style={{ width: 72, height: 80, borderRadius: 12, background: 'var(--bg2)', animation: 'pulse 1.2s ease-in-out infinite' }} />
@@ -64,23 +68,27 @@ export function PersonalTouchScreen({ onContinue }: {
         </div>
         <div style={{ height: 80, borderRadius: 12, background: 'var(--bg2)', animation: 'pulse 1.2s ease-in-out infinite' }} />
       </div>
+      </LocaleScope>
     )
   }
 
   if (!data) {
     return (
+      <LocaleScope locale={locale}>
       <div className="stu-task-inner" style={{ paddingTop: 32 }}>
-        <p style={{ color: 'var(--t3)' }}>Unable to load your report. Please continue.</p>
-        <button className="stu-btn pri" onClick={() => onContinue(false)}>Continue →</button>
+        <p style={{ color: 'var(--t3)' }}>{t('personalTouch.loadError')}</p>
+        <button className="stu-btn pri" onClick={() => onContinue(false)}>{t('personalTouch.continue')}</button>
       </div>
+      </LocaleScope>
     )
   }
 
   return (
+    <LocaleScope locale={locale}>
     <div className="stu-task-inner" style={{ paddingTop: 32 }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Complete</div>
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{t('personalTouch.complete')}</div>
       <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 20, color: 'var(--t1)' }}>
-        🎓 Your Reading Strategy Report
+        {t('personalTouch.title')}
       </div>
 
       {/* Strategy cards */}
@@ -129,8 +137,9 @@ export function PersonalTouchScreen({ onContinue }: {
       </div>
 
       <button className="stu-btn pri" onClick={() => onContinue(data.bonusUnlocked)}>
-        Continue →
+        {t('personalTouch.continue')}
       </button>
     </div>
+    </LocaleScope>
   )
 }

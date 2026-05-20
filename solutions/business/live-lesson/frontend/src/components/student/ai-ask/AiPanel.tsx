@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useContext, useEffect } from 'react'
 import { useAiAsk } from '../../../hooks/useClassroom'
+import { useT, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
 import { aiChatStorageKey, readChatMessages, writeChatMessages } from '../exercise/guide-helpers'
 
@@ -13,9 +14,11 @@ interface Props {
   taskName?: string
   phase?: string
   aiHints?: Array<{ q: string; label: string }>
+  locale?: Locale
 }
 
-export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
+export default function AIFloat({ taskId, taskName, phase, aiHints, locale }: Props) {
+  const t = useT(locale)
   const { sessionCode, studentId } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<ChatMsg[]>([])
@@ -55,7 +58,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
 
     if (sessionCode && studentId) {
       const result = await ask(studentId, taskId, question.trim())
-      setMsgs(m => [...m, { t: 'a', x: result?.answer || 'AI assistant is temporarily unavailable.' }])
+      setMsgs(m => [...m, { t: 'a', x: result?.answer || t('ai.unavailable') }])
     } else {
       setMsgs(m => [...m, { t: 'a', x: 'Think about how the evidence in the text connects to your idea. Try using the pattern: "Based on the text, I think... because..."' }])
     }
@@ -75,14 +78,14 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
   }
 
   // Phase label for header badge
-  const phaseLabel = phase === 'discuss' ? 'Discuss'
-    : phase === 'practice' ? 'Practice'
-    : phase === 'takeaway' ? 'Takeaway'
-    : phase === 'listen' ? 'Listen'
+  const phaseLabel = phase === 'discuss' ? t('phase.discuss')
+    : phase === 'practice' ? t('phase.practice')
+    : phase === 'takeaway' ? t('phase.takeaway')
+    : phase === 'listen' ? t('phase.listen')
     : null
 
   const stepLabel = taskName
-    ? `Step ${taskId}` + (phaseLabel ? ` · ${phaseLabel}` : '')
+    ? t('ai.stepN', { n: taskId }) + (phaseLabel ? ` · ${phaseLabel}` : '')
     : phaseLabel || undefined
 
   return (
@@ -94,7 +97,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
       <button
         className={`stu-ai-fab${open ? ' open' : ''}`}
         onClick={() => setOpen(!open)}
-        aria-label={open ? 'Close AI assistant' : 'Open AI assistant'}
+        aria-label={open ? t('ai.closeLabel') : t('ai.openLabel')}
       />
 
       {/* Floating panel */}
@@ -103,9 +106,9 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
           {/* Header */}
           <div className="stu-ai-hd">
             <div className="stu-ai-avatar" />
-            <span className="stu-ai-title">AI Assistant</span>
+            <span className="stu-ai-title">{t('ai.title')}</span>
             {stepLabel && <span className="stu-ai-phase-badge">{stepLabel}</span>}
-            <button className="stu-ai-close" onClick={() => setOpen(false)} aria-label="Close">×</button>
+            <button className="stu-ai-close" onClick={() => setOpen(false)} aria-label={t('ai.close')}>×</button>
           </div>
 
           {/* Suggestion chips */}
@@ -127,13 +130,13 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
             {msgs.length === 0 && !isDiscuss && (
               <div className="stu-ai-empty">
                 {taskName
-                  ? `Ask me anything about "${taskName}"!`
-                  : 'Ask me anything about the text!'}
+                  ? t('ai.emptyTask', { name: taskName })
+                  : t('ai.emptyGeneral')}
               </div>
             )}
             {msgs.length === 0 && isDiscuss && (
               <div className="stu-ai-empty">
-                Chat history will be shown here.
+                {t('ai.emptyDiscuss')}
               </div>
             )}
             {msgs.map((m, i) => (
@@ -155,7 +158,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
           {/* Discuss phase hint */}
           {isDiscuss && (
             <div className="stu-ai-discuss-hint">
-              正在 Socratic 讨论中，可以在讨论窗口直接对话
+              {t('ai.discussHint')}
             </div>
           )}
 
@@ -163,7 +166,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
           {!isDiscuss && (
             <div className="stu-ai-input">
               <textarea
-                placeholder="Type your question..."
+                placeholder={t('ai.placeholder')}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -174,7 +177,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
                 className="stu-ai-send"
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
-                aria-label="Send"
+                aria-label={t('ai.send')}
               >→</button>
             </div>
           )}

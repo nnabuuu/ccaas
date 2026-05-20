@@ -1,6 +1,7 @@
 import type { GdStep, GdObservationStep, GdFormulaBlanksStep, GdDerivationBlankStep, GdTextBlanksStep } from '../task-data'
 import { RenderMath } from '../../../utils/render-math'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 
 interface Props {
   steps: GdStep[]
@@ -11,6 +12,7 @@ interface Props {
   stepResults?: Record<string, boolean>
   allDone: boolean
   reviewData?: ReviewData
+  locale?: Locale
 }
 
 function updateStepAnswer(setAns: Props['setAns'], stepId: string, fieldId: string, value: any) {
@@ -29,14 +31,15 @@ function updateStepAnswer(setAns: Props['setAns'], stepId: string, fieldId: stri
 function ObservationChoiceStep({ step, answers, onChange, disabled }: {
   step: GdObservationStep; answers: Record<string, any>; onChange: (id: string, val: number) => void; disabled: boolean
 }) {
+  const t = useT()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {step.table && (
         <table style={{ borderCollapse: 'collapse', fontSize: 14, width: '100%' }}>
           <thead>
             <tr>
-              <th style={{ border: '1px solid var(--border)', padding: '6px 12px', background: 'var(--surface)', textAlign: 'left' }}>算式</th>
-              <th style={{ border: '1px solid var(--border)', padding: '6px 12px', background: 'var(--surface)', textAlign: 'left' }}>结果</th>
+              <th style={{ border: '1px solid var(--border)', padding: '6px 12px', background: 'var(--surface)', textAlign: 'left' }}>{t('gd.expression')}</th>
+              <th style={{ border: '1px solid var(--border)', padding: '6px 12px', background: 'var(--surface)', textAlign: 'left' }}>{t('gd.result')}</th>
             </tr>
           </thead>
           <tbody>
@@ -179,7 +182,8 @@ export function parseGdReview(review: ReviewData) {
   return { state: { ans: { steps: data.steps || {} } as GdReviewState['ans'], stepResults }, allDone: true }
 }
 
-export function GuidedDiscoveryExercise({ steps, title, summary, ans, setAns, stepResults, allDone, reviewData }: Props) {
+export function GuidedDiscoveryExercise({ steps, title, summary, ans, setAns, stepResults, allDone, reviewData, locale }: Props) {
+  const t = useT(locale)
   const restored = useReviewRestore(reviewData, parseGdReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveStepResults = restored?.stepResults ?? stepResults
@@ -188,85 +192,87 @@ export function GuidedDiscoveryExercise({ steps, title, summary, ans, setAns, st
   const stepsData = effectiveAns.steps || {}
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {title && <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--t1)' }}>{title}</div>}
+    <LocaleScope locale={locale}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {title && <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--t1)' }}>{title}</div>}
 
-      {steps.map((step, si) => {
-        const answers = stepsData[step.id]?.answers || {}
-        const result = effectiveStepResults?.[step.id]
-        const resultColor = result === true ? '#22c55e' : result === false ? '#ef4444' : undefined
+        {steps.map((step, si) => {
+          const answers = stepsData[step.id]?.answers || {}
+          const result = effectiveStepResults?.[step.id]
+          const resultColor = result === true ? '#22c55e' : result === false ? '#ef4444' : undefined
 
-        return (
-          <div key={step.id} style={{
-            padding: '12px 16px', borderRadius: 10,
-            border: resultColor ? `2px solid ${resultColor}` : '1px solid var(--border)',
-            background: result === true ? '#f0fdf4' : result === false ? '#fef2f2' : 'var(--surface)',
+          return (
+            <div key={step.id} style={{
+              padding: '12px 16px', borderRadius: 10,
+              border: resultColor ? `2px solid ${resultColor}` : '1px solid var(--border)',
+              background: result === true ? '#f0fdf4' : result === false ? '#fef2f2' : 'var(--surface)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 24, height: 24, borderRadius: '50%', fontSize: 13, fontWeight: 600,
+                  background: resultColor || 'var(--pri)', color: '#fff',
+                }}>
+                  {result === true ? '\u2713' : result === false ? '\u2717' : si + 1}
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)' }}>{step.title}</span>
+              </div>
+
+              {step.type === 'observation_choice' && (
+                <ObservationChoiceStep
+                  step={step}
+                  answers={answers}
+                  onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
+                  disabled={effectiveAllDone}
+                />
+              )}
+              {step.type === 'formula_blanks' && (
+                <FormulaBlanksStep
+                  step={step}
+                  answers={answers}
+                  onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
+                  disabled={effectiveAllDone}
+                />
+              )}
+              {step.type === 'derivation_blank' && (
+                <DerivationBlankStep
+                  step={step}
+                  answers={answers}
+                  onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
+                  disabled={effectiveAllDone}
+                />
+              )}
+              {step.type === 'text_blanks' && (
+                <TextBlanksStep
+                  step={step}
+                  answers={answers}
+                  onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
+                  disabled={effectiveAllDone}
+                />
+              )}
+            </div>
+          )
+        })}
+
+        {effectiveAllDone && summary && (
+          <div style={{
+            padding: '14px 18px', borderRadius: 10, border: '2px solid #22c55e',
+            background: '#f0fdf4',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 24, height: 24, borderRadius: '50%', fontSize: 13, fontWeight: 600,
-                background: resultColor || 'var(--pri)', color: '#fff',
-              }}>
-                {result === true ? '\u2713' : result === false ? '\u2717' : si + 1}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--t1)' }}>{step.title}</span>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>
+              {summary.name || t('gd.summary')}
             </div>
-
-            {step.type === 'observation_choice' && (
-              <ObservationChoiceStep
-                step={step}
-                answers={answers}
-                onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
-                disabled={effectiveAllDone}
-              />
+            {summary.formula && (
+              <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', margin: '8px 0' }}>
+                <RenderMath text={summary.formula} />
+              </div>
             )}
-            {step.type === 'formula_blanks' && (
-              <FormulaBlanksStep
-                step={step}
-                answers={answers}
-                onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
-                disabled={effectiveAllDone}
-              />
-            )}
-            {step.type === 'derivation_blank' && (
-              <DerivationBlankStep
-                step={step}
-                answers={answers}
-                onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
-                disabled={effectiveAllDone}
-              />
-            )}
-            {step.type === 'text_blanks' && (
-              <TextBlanksStep
-                step={step}
-                answers={answers}
-                onChange={(id, val) => updateStepAnswer(setAns, step.id, id, val)}
-                disabled={effectiveAllDone}
-              />
+            {summary.description && (
+              <div style={{ fontSize: 13, color: 'var(--t2)' }}><RenderMath text={summary.description} /></div>
             )}
           </div>
-        )
-      })}
-
-      {effectiveAllDone && summary && (
-        <div style={{
-          padding: '14px 18px', borderRadius: 10, border: '2px solid #22c55e',
-          background: '#f0fdf4',
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>
-            {summary.name || '总结'}
-          </div>
-          {summary.formula && (
-            <div style={{ fontSize: 16, fontWeight: 600, textAlign: 'center', margin: '8px 0' }}>
-              <RenderMath text={summary.formula} />
-            </div>
-          )}
-          {summary.description && (
-            <div style={{ fontSize: 13, color: 'var(--t2)' }}><RenderMath text={summary.description} /></div>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </LocaleScope>
   )
 }

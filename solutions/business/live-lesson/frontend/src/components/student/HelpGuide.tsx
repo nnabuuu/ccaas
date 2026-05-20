@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT, type TFn, type Locale } from '../../i18n'
 
 /* ── SVG illustrations (from design/student-guide.html sections 05 & 06) ── */
 
@@ -325,55 +326,59 @@ interface Feature {
   steps: StepCard[]
 }
 
-const features: Feature[] = [
-  {
-    id: 'translate',
-    num: '01',
-    title: '翻译助手',
-    en: 'Translate Tool',
-    hint: '三步翻译 · 不仅是词典',
-    color: 'amber',
-    steps: [
-      { num: 1, title: '点击「译」进入翻译模式', desc: '点击右下角「译」按钮 — FAB 变深色，顶部出现琥珀色横幅，光标变为文字选择模式。', Svg: TranslateSvg1 },
-      { num: 2, title: '划选单词或长句', desc: '在课文中划选单个单词查释义，或划选整句看翻译 — 弹窗含释义、语境分析、推荐追问。', Svg: TranslateSvg2 },
-      { num: 3, title: '释义 + 追问', desc: '弹窗内点击推荐问题或输入追问，AI 在弹窗内即时回答，可多轮对话。', Svg: TranslateSvg3 },
-    ],
-  },
-  {
-    id: 'ai',
-    num: '02',
-    title: 'AI 助教',
-    en: 'AI Tutor',
-    hint: '三步使用 · 你的随身助教',
-    color: 'purple',
-    steps: [
-      { num: 1, title: '打开面板', desc: '点击右下角 AI 图标打开助教面板。', Svg: AiSvg1 },
-      { num: 2, title: '提出问题', desc: '输入问题或点击推荐问题。', Svg: AiSvg2 },
-      { num: 3, title: '获得回答', desc: 'AI 助教给出解答，可继续追问。', Svg: AiSvg3 },
-    ],
-  },
-  {
-    id: 'textbook',
-    num: '03',
-    title: '课文面板',
-    en: 'Text Panel',
-    hint: '随时查看 · 做题自动高亮',
-    color: 'teal',
-    steps: [
-      { num: 1, title: '展开课文', desc: '点击右侧「T」按钮或按键盘 T 键，展开课文原文面板。', Svg: TextbookSvg1 },
-      { num: 2, title: '自动高亮', desc: '做题时，当前任务相关的段落自动高亮标记，方便定位。', Svg: TextbookSvg2 },
-      { num: 3, title: '划选互动', desc: '在课文中选中文字，可用「译」翻译或 ✦ 向 AI 提问。', Svg: TextbookSvg3 },
-    ],
-  },
-]
+function getFeatures(t: TFn): Feature[] {
+  return [
+    {
+      id: 'translate',
+      num: '01',
+      title: t('help.translate.title'),
+      en: t('help.translate.en'),
+      hint: t('help.translate.hint'),
+      color: 'amber',
+      steps: [
+        { num: 1, title: t('help.translate.step1.title'), desc: t('help.translate.step1.desc'), Svg: TranslateSvg1 },
+        { num: 2, title: t('help.translate.step2.title'), desc: t('help.translate.step2.desc'), Svg: TranslateSvg2 },
+        { num: 3, title: t('help.translate.step3.title'), desc: t('help.translate.step3.desc'), Svg: TranslateSvg3 },
+      ],
+    },
+    {
+      id: 'ai',
+      num: '02',
+      title: t('help.ai.title'),
+      en: t('help.ai.en'),
+      hint: t('help.ai.hint'),
+      color: 'purple',
+      steps: [
+        { num: 1, title: t('help.ai.step1.title'), desc: t('help.ai.step1.desc'), Svg: AiSvg1 },
+        { num: 2, title: t('help.ai.step2.title'), desc: t('help.ai.step2.desc'), Svg: AiSvg2 },
+        { num: 3, title: t('help.ai.step3.title'), desc: t('help.ai.step3.desc'), Svg: AiSvg3 },
+      ],
+    },
+    {
+      id: 'textbook',
+      num: '03',
+      title: t('help.textbook.title'),
+      en: t('help.textbook.en'),
+      hint: t('help.textbook.hint'),
+      color: 'teal',
+      steps: [
+        { num: 1, title: t('help.textbook.step1.title'), desc: t('help.textbook.step1.desc'), Svg: TextbookSvg1 },
+        { num: 2, title: t('help.textbook.step2.title'), desc: t('help.textbook.step2.desc'), Svg: TextbookSvg2 },
+        { num: 3, title: t('help.textbook.step3.title'), desc: t('help.textbook.step3.desc'), Svg: TextbookSvg3 },
+      ],
+    },
+  ]
+}
 
 /* ── Component ── */
 
-export default function HelpGuide({ onReplayGuide, open: controlledOpen, onOpenChange }: {
+export default function HelpGuide({ onReplayGuide, open: controlledOpen, onOpenChange, locale }: {
   onReplayGuide?: () => void
   open?: boolean
   onOpenChange?: (v: boolean) => void
+  locale?: Locale
 }) {
+  const t = useT(locale)
   const [internalOpen, setInternalOpen] = useState(false)
   const isOpen = controlledOpen ?? internalOpen
   const setIsOpen = onOpenChange ?? setInternalOpen
@@ -383,17 +388,17 @@ export default function HelpGuide({ onReplayGuide, open: controlledOpen, onOpenC
 
   return (
     <>
-      <button className="stu-help-guide-btn" onClick={() => setIsOpen(true)}>操作说明</button>
+      <button className="stu-help-guide-btn" onClick={() => setIsOpen(true)}>{t('help.title')}</button>
 
       {isOpen && (
         <div className="stu-help-guide-backdrop" onClick={() => setIsOpen(false)} onKeyDown={e => e.key === 'Escape' && setIsOpen(false)}>
           <div className="stu-help-guide-modal" role="dialog" aria-modal="true" aria-labelledby="help-guide-title" onClick={e => e.stopPropagation()}>
             <div className="stu-help-guide-hd">
-              <div id="help-guide-title" className="stu-help-guide-title">操作说明</div>
+              <div id="help-guide-title" className="stu-help-guide-title">{t('help.title')}</div>
             </div>
 
             <div className="stu-hg-accordion">
-              {features.map(f => {
+              {getFeatures(t).map(f => {
                 const isExp = expanded === f.id
                 return (
                   <div key={f.id} className={`stu-hg-item${isExp ? ' open' : ''}`}>
@@ -428,9 +433,9 @@ export default function HelpGuide({ onReplayGuide, open: controlledOpen, onOpenC
 
             <div className="stu-help-guide-footer">
               {onReplayGuide && (
-                <button className="stu-btn sec stu-help-guide-replay" onClick={() => { setIsOpen(false); onReplayGuide() }}>重看引导</button>
+                <button className="stu-btn sec stu-help-guide-replay" onClick={() => { setIsOpen(false); onReplayGuide() }}>{t('help.replayGuide')}</button>
               )}
-              <button className="stu-btn pri stu-help-guide-dismiss" onClick={() => setIsOpen(false)}>我知道了</button>
+              <button className="stu-btn pri stu-help-guide-dismiss" onClick={() => setIsOpen(false)}>{t('help.dismiss')}</button>
             </div>
           </div>
         </div>

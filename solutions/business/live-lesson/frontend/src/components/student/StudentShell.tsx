@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
+import { createT, LocaleScope, type Locale } from '../../i18n'
 import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
 import { fetchExerciseSpec, reportPhase, type ExerciseSpec, type CachedSubmission, type DiscussMeta, type SubmitResult } from '../../hooks/useClassroom'
 import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
@@ -25,6 +26,9 @@ interface Props {
 }
 
 export default function StudentShell({ manifest, embed, sessionCode, studentId, studentName, submit, initialProgress, initialSubmissions }: Props) {
+  const locale: Locale = manifest.locale || 'en'
+  const localeT = useMemo(() => createT(locale), [locale])
+
   // Lazy-load KaTeX CSS only for math-enabled lessons
   useEffect(() => {
     if (!manifest.enableMath) return
@@ -133,6 +137,14 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   // Compute task→step map from manifest (dynamic, not hardcoded)
   const taskToStep = taskToStepRef
 
+  // Per-step phaseConfig: use step-level override when available
+  const effectivePhaseConfig = useMemo(() => {
+    if (!taskId) return manifest.phaseConfig
+    const stepIdx = taskToStep[taskId]
+    const step = manifest.readingSteps?.find(s => s.idx === stepIdx)
+    return step?.phaseConfig?.length ? step.phaseConfig : manifest.phaseConfig
+  }, [taskId, taskToStep, manifest.readingSteps, manifest.phaseConfig])
+
   // Map each task to the preceding instruction's studentView
   const instructionMap = useMemo(
     () => buildInstructionMap(manifest.readingSteps || [], taskToStep),
@@ -204,15 +216,16 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   const replayGuide = useCallback(() => setGuideOpen(true), [])
 
   return (
+    <LocaleScope locale={locale}>
     <div className="stu-root">
       {/* Top bar */}
       {!embed && (
         <div className="stu-top">
           <div className="stu-top-title">{manifest.article?.title || manifest.title}</div>
-          <div className="stu-top-sub">{manifest.subject || '课堂'} · AI 1-on-1</div>
+          <div className="stu-top-sub">{manifest.subject || localeT('shell.defaultSubject')} · AI 1-on-1</div>
           {task && (
             <div style={{ fontSize: 12, fontWeight: 600 }}>
-              Task {task.id}: {task.name}
+              {localeT('shell.taskLabel', { id: task.id, name: task.name })}
               <span style={{ color: 'var(--t3)', fontWeight: 400, marginLeft: 6 }}>{task.time}</span>
             </div>
           )}
@@ -251,7 +264,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             screen={screen} setScreen={setScreen} task={enrichedTask} completeTask={completeTask}
             lessonId={manifest.id} stepIdx={taskId ? taskToStep[taskId] : undefined}
             articleTitle={manifest.article?.title || manifest.title} lessonIntro={manifest.lessonIntro}
-            lessonSummary={manifest.lessonSummary} phaseConfig={manifest.phaseConfig}
+            lessonSummary={manifest.lessonSummary} phaseConfig={effectivePhaseConfig}
             onOverlayChange={handleOverlayChange}
             onScaffoldPush={handleScaffoldPush}
             courseIntroView={courseIntroView}
@@ -303,5 +316,6 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       </SessionCtx.Provider>
       <StudentGuide open={guideOpen} onClose={handleGuideClose} manifest={manifest} />
     </div>
+    </LocaleScope>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import { useT, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
 import AudioButton from '../AudioButton'
 import { renderMd } from '../renderMd'
@@ -30,12 +31,14 @@ function formatMinutes(totalSeconds: number): string {
   return `${min} min`
 }
 
-export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBonus }: {
+export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBonus, locale }: {
   lessonSummary: string
   lessonId?: string
   enableMath?: boolean
   onReviewBonus?: () => void
+  locale?: Locale
 }) {
+  const t = useT(locale)
   const ctx = useContext(SessionCtx)
   const [recap, setRecap] = useState<RecapData | null>(null)
   const [failed, setFailed] = useState(false)
@@ -56,8 +59,8 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
     <div className="stu-task-inner" style={{ paddingTop: 32 }}>
       {/* Section 1 — Header */}
       <div className="sum-header">
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Complete</div>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 12, color: 'var(--t1)' }}>Great job today!</div>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{t('summary.complete')}</div>
+        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 12, color: 'var(--t1)' }}>{t('summary.greatJob')}</div>
         {recap?.tier && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <span className={`sum-tier ${recap.tier.tone === 'gold' ? 'gold' : recap.tier.tone === 'blue' ? 'teal' : 'neutral'}`}>
@@ -76,7 +79,7 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
       {/* Section 2 — AI Recap */}
       {recap && !failed && recap.aiRecap && (
         <div className="sum-section" style={{ animationDelay: '80ms', marginBottom: 24 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your Recap</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>{t('summary.recap')}</div>
           <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)' }}>
             {renderMd(recap.aiRecap, { math: enableMath })}
           </div>
@@ -86,7 +89,7 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
       {/* Section 3 — Highlights */}
       {recap && !failed && (
         <div className="sum-section" style={{ animationDelay: recap.aiRecap ? '160ms' : '80ms', marginBottom: 24 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your Best Moments</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>{t('summary.bestMoments')}</div>
           {recap.highlights.length > 0 ? (
             recap.highlights.map((h, i) => (
               <div key={i} className="sum-hl-card">
@@ -94,12 +97,12 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
                   <span style={{ color: 'var(--amber)', fontWeight: 700 }}>&#10022; </span>
                   <span style={{ fontStyle: 'italic' }}>"{h.evidenceSpan}"</span>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>Task {h.taskNum}</div>
+                <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>{t('summary.task', { n: h.taskNum })}</div>
               </div>
             ))
           ) : (
             <div style={{ padding: '12px 14px', background: 'var(--teal-bg)', borderRadius: 8, fontSize: 13, color: 'var(--teal)', lineHeight: 1.65 }}>
-              Next time, try expressing more of your ideas during discussions — your best moments will show up here!
+              {t('summary.noHighlights')}
             </div>
           )}
         </div>
@@ -108,25 +111,25 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
       {/* Section 4 — AI Stats */}
       {recap && !failed && (
         <div className="sum-section" style={{ animationDelay: recap.aiRecap ? '240ms' : '160ms', marginBottom: 24 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your AI Engagement</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>{t('summary.aiEngagement')}</div>
           {hasStats ? (
             <div className="sum-stats">
               <div className="sum-stat amber">
                 <div className="num">{recap.aiStats.translateCount}</div>
-                <div className="label">Translate</div>
+                <div className="label">{t('summary.translate')}</div>
               </div>
               <div className="sum-stat purple">
                 <div className="num">{recap.aiStats.askCount}</div>
-                <div className="label">AI Ask</div>
+                <div className="label">{t('summary.aiAsk')}</div>
               </div>
               <div className="sum-stat teal">
                 <div className="num">{recap.aiStats.discussRounds}</div>
-                <div className="label">Discuss</div>
+                <div className="label">{t('summary.discuss')}</div>
               </div>
             </div>
           ) : (
             <div style={{ padding: '12px 14px', background: 'var(--teal-bg)', borderRadius: 8, fontSize: 13, color: 'var(--teal)', lineHeight: 1.65 }}>
-              Next time, try the Translate and AI Ask features to deepen your understanding!
+              {t('summary.noStats')}
             </div>
           )}
         </div>
@@ -134,7 +137,7 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
 
       {/* Section 5 — Takeaway (always shown) */}
       <div className="sum-section" style={{ animationDelay: recap && !failed ? (recap.aiRecap ? '320ms' : '240ms') : '0ms', marginBottom: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Takeaway</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>{t('summary.takeaway')}</div>
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-summary.mp3`} />}
         <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>
           {renderMd(lessonSummary, { math: enableMath })}
@@ -145,7 +148,7 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath, onReviewBon
       {recap?.bonusCompleted && onReviewBonus && (
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <button className="stu-btn ghost" onClick={onReviewBonus}>
-            Review Bonus →
+            {t('summary.reviewBonus')}
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Camera } from '@phosphor-icons/react'
 import { compressImage } from '../../../utils/compress-image'
+import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { useCamera } from './useCamera'
 import { CameraModal } from './CameraModal'
 
@@ -10,9 +11,11 @@ interface ImageCaptureButtonProps {
   onCapture: (dataUri: string) => void
   disabled?: boolean
   variant?: 'button' | 'icon'
+  locale?: Locale
 }
 
-export function ImageCaptureButton({ onCapture, disabled, variant = 'button' }: ImageCaptureButtonProps) {
+export function ImageCaptureButton({ onCapture, disabled, variant = 'button', locale }: ImageCaptureButtonProps) {
+  const t = useT(locale)
   const { hasCamera, permission, facing, requestPermission, switchFacing } = useCamera()
   const [showCamera, setShowCamera] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -52,14 +55,14 @@ export function ImageCaptureButton({ onCapture, disabled, variant = 'button' }: 
 
   if (variant === 'icon') {
     return (
-      <>
+      <LocaleScope locale={locale}>
         <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
         <button
           className="sd-camera-btn"
           onClick={handleCameraClick}
           disabled={disabled || compressing}
-          title="拍照"
-          aria-label="拍照"
+          title={t('capture.photo')}
+          aria-label={t('capture.photo')}
         >
           <Camera size={20} />
         </button>
@@ -72,11 +75,12 @@ export function ImageCaptureButton({ onCapture, disabled, variant = 'button' }: 
             onSwitchFacing={switchFacing}
           />
         )}
-      </>
+      </LocaleScope>
     )
   }
 
   return (
+    <LocaleScope locale={locale}>
     <div className="ic-capture-btn">
       <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
       <button
@@ -85,11 +89,11 @@ export function ImageCaptureButton({ onCapture, disabled, variant = 'button' }: 
         disabled={disabled || compressing}
         style={{ display: 'flex', alignItems: 'center', gap: 6 }}
       >
-        {compressing ? '压缩中...' : <><Camera size={18} /> 拍照/上传</>}
+        {compressing ? t('capture.compressing') : <><Camera size={18} /> {t('capture.photoUpload')}</>}
       </button>
       {hasCamera && permission !== 'unavailable' && (
         <button className="ic-file-link" onClick={() => fileRef.current?.click()} disabled={disabled || compressing}>
-          选择文件
+          {t('capture.selectFile')}
         </button>
       )}
       {showCamera && (
@@ -102,5 +106,6 @@ export function ImageCaptureButton({ onCapture, disabled, variant = 'button' }: 
         />
       )}
     </div>
+    </LocaleScope>
   )
 }

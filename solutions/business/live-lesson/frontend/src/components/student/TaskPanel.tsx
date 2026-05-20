@@ -11,6 +11,7 @@ import { reportPhase, type CachedSubmission, type DiscussMeta, type SubmitResult
 import type { Task } from './task-data'
 import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
+import { useT, LocaleScope, type TFn, type Locale } from '../../i18n'
 
 export type { Task } from './task-data'
 
@@ -28,22 +29,25 @@ export const SessionCtx = createContext<{
   discussMeta?: DiscussMeta | null
 }>({ config: {} })
 
-const DEFAULT_PHASES: PhaseConfig[] = [
-  { id: 'listen', label: 'Listen', unlockAfter: null },
-  { id: 'practice', label: 'Practice', unlockAfter: 'listen' },
-  { id: 'discuss', label: 'Discuss', unlockAfter: 'practice' },
-  { id: 'takeaway', label: 'Takeaway', unlockAfter: 'discuss' },
-]
+function getDefaultPhases(t: TFn): PhaseConfig[] {
+  return [
+    { id: 'listen', label: t('phase.listen'), unlockAfter: null },
+    { id: 'practice', label: t('phase.practice'), unlockAfter: 'listen' },
+    { id: 'discuss', label: t('phase.discuss'), unlockAfter: 'practice' },
+    { id: 'takeaway', label: t('phase.takeaway'), unlockAfter: 'discuss' },
+  ]
+}
 
 /* ═══ LISTEN PHASE ═══ */
-function ListenPhase({ task, onDone, lessonId, isRevisit }: { task: Task; onDone: () => void; lessonId?: string; isRevisit?: boolean }) {
+function ListenPhase({ task, onDone, lessonId, isRevisit, label }: { task: Task; onDone: () => void; lessonId?: string; isRevisit?: boolean; label?: string }) {
+  const t = useT()
   const { config } = useContext(SessionCtx)
   const [done, setDone] = useState(!!isRevisit)
   const handleClick = () => { setDone(true); onDone() }
   const iv = task.instructionView
   return (
     <div id="phase-listen" data-translate-ctx="instruction">
-      <div className="stu-section-label"><span>Listen</span><div className="stu-section-line" /></div>
+      <div className="stu-section-label"><span>{label || t('phase.listen')}</span><div className="stu-section-line" /></div>
       {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
       <div className="stu-instr-card">
         <div className="stu-instr-badge">{task.name}</div>
@@ -53,7 +57,7 @@ function ListenPhase({ task, onDone, lessonId, isRevisit }: { task: Task; onDone
             <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: iv.body }} />
             {iv.keyPoints && iv.keyPoints.length > 0 && (
               <div className="stu-instr-kp">
-                <div className="stu-instr-kp-label">Remember</div>
+                <div className="stu-instr-kp-label">{t('listen.remember')}</div>
                 <ul>
                   {iv.keyPoints.map((kp, i) => <li key={i}>{kp}</li>)}
                 </ul>
@@ -68,26 +72,27 @@ function ListenPhase({ task, onDone, lessonId, isRevisit }: { task: Task; onDone
         )}
       </div>
       <button className={`stu-btn ${done ? 'ghost' : 'pri'}`} onClick={handleClick} disabled={done}>
-        {done ? 'Confirmed ✓' : (iv?.confirmLabel || "I understand — let's practice →")}
+        {done ? t('listen.confirmed') : (iv?.confirmLabel || t('listen.understand'))}
       </button>
     </div>
   )
 }
 
 /* ═══ TAKEAWAY PHASE ═══ */
-function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; onComplete: () => void; lessonId?: string; taskCount?: number }) {
+function TakeawayPhase({ task, onComplete, lessonId, taskCount, label }: { task: Task; onComplete: () => void; lessonId?: string; taskCount?: number; label?: string }) {
+  const t = useT()
   const { config, boardData } = useContext(SessionCtx)
   const total = taskCount ?? 5
   return (
     <div id="phase-takeaway" data-translate-ctx="takeaway">
-      <div className="stu-section-label"><span>Takeaway</span><div className="stu-section-line" /></div>
+      <div className="stu-section-label"><span>{label || t('phase.takeaway')}</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 16 }}>
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.mp3`} />}
         <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{renderMd(task.summary, { math: config.enableMath })}</div>
       </div>
       <BoardInline taskId={task.id} boardData={boardData} />
       <button className="stu-btn pri" style={{ marginTop: 8 }} onClick={onComplete}>
-        {task.id < total ? 'Next Task →' : 'Complete Course →'}
+        {task.id < total ? t('takeaway.nextTask') : t('takeaway.completeCourse')}
       </button>
     </div>
   )
@@ -97,20 +102,28 @@ import type { ScaffoldHint } from './ScaffoldPanel'
 
 /** Phase→component registry. Each entry renders the phase given standard props. */
 const PHASE_REGISTRY: Record<string, (props: {
-  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
+  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; partIds?: string[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
 }) => JSX.Element | null> = {
-  listen: ({ task, onDone, lessonId, isRevisit }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} />,
-  practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} onScaffoldPush={onScaffoldPush} />,
+  listen: ({ task, onDone, lessonId, isRevisit, label }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} label={label} />,
+  practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} onScaffoldPush={onScaffoldPush} partIds={partIds} />,
   discuss: ({ task, onDone, isRevisit }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} isRevisit={isRevisit} />,
-  takeaway: ({ task, onComplete, lessonId, taskCount }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} />,
+  takeaway: ({ task, onComplete, lessonId, taskCount, label }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} label={label} />,
+}
+
+/** Resolve phase renderer: exact match first, then prefix match (e.g. practice-1 → practice) */
+function getPhaseRenderer(phaseId: string) {
+  if (PHASE_REGISTRY[phaseId]) return PHASE_REGISTRY[phaseId]
+  const prefix = phaseId.split('-')[0]
+  return PHASE_REGISTRY[prefix] ?? null
 }
 
 /* ═══ TASK VIEW — main component ═══ */
 function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush }: {
   task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null; onScaffoldPush?: (hint: ScaffoldHint) => void
 }) {
+  const t = useT()
   const ctx = useContext(SessionCtx)
-  const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
+  const phases = phaseConfig?.length ? phaseConfig : getDefaultPhases(t)
   const phaseIds = useMemo(() => phases.map(p => p.id), [phases])
   const isRevisit = doneSet?.has(task.id) ?? false
 
@@ -227,7 +240,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
       <div className="stu-task-inner">
         <div style={{ paddingTop: 24 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
-            Task {task.id} · {task.name} — {task.time}
+            {t('task.header', { id: task.id })} · {task.name} — {task.time}
           </div>
           <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 8, color: 'var(--t1)' }}>
             {task.subtitle}
@@ -235,7 +248,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
         </div>
         {phases.map((phase, i) => {
           const unlocked = isUnlocked(phase)
-          const renderer = PHASE_REGISTRY[phase.id]
+          const renderer = getPhaseRenderer(phase.id)
           if (!renderer) return null
           const prevPhase = phases[i - 1]
           const showLocked = !unlocked && prevPhase && isUnlocked(prevPhase)
@@ -243,6 +256,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
             <div key={phase.id}>
               {unlocked && renderer({
                 task, lessonId, stepIdx, label: phase.label,
+                partIds: phase.partIds,
                 onDone: () => markDone(phase.id),
                 onComplete,
                 onOverlayChange,
@@ -251,7 +265,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
                 isRevisit: isRevisit || donePhases.has(phase.id),
               })}
               {showLocked && (
-                <div className="stu-phase-locked-msg">Complete {prevPhase.label} to unlock {phase.label}</div>
+                <div className="stu-phase-locked-msg">{t('phase.lockedMsg', { prev: prevPhase.label, next: phase.label })}</div>
               )}
             </div>
           )
@@ -317,7 +331,7 @@ export function useStudentTask(
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush, locale }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -335,13 +349,16 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   initialPhase?: string | null
   onPhaseChange?: (phase: string) => void
   onScaffoldPush?: (hint: ScaffoldHint) => void
+  locale?: Locale
 }) {
+  const t = useT(locale)
   const { config } = useContext(SessionCtx)
   const introText = lessonIntro || ''
   const summaryText = lessonSummary || ''
-  const title = articleTitle || 'Untitled Lesson'
+  const title = articleTitle || t('intro.untitledLesson')
 
   return (
+    <LocaleScope locale={locale}>
     <div className="stu-left-col" data-translate-ctx="task-panel">
       {screen === 'intro' && (
         <div className="stu-task-inner" style={{ paddingTop: 32 }}>
@@ -353,14 +370,14 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
                 <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: courseIntroView.body }} />
                 {courseIntroView.keyPoints && courseIntroView.keyPoints.length > 0 && (
                   <div className="stu-instr-kp">
-                    <div className="stu-instr-kp-label">Remember</div>
+                    <div className="stu-instr-kp-label">{t('listen.remember')}</div>
                     <ul>{courseIntroView.keyPoints.map((kp, i) => <li key={i}>{kp}</li>)}</ul>
                   </div>
                 )}
               </div>
             ) : (
               <>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Welcome</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>{t('intro.welcome')}</div>
                 <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>{title}</div>
                 {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-intro.mp3`} />}
                 <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(introText, { math: config.enableMath })}</div>
@@ -369,10 +386,10 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
           </div>
           {(taskCount ?? 0) > 0 ? (
             <button className="stu-btn pri" onClick={() => setScreen('1')}>
-              {courseIntroView?.confirmLabel || 'Start Task 1 →'}
+              {courseIntroView?.confirmLabel || t('intro.startTask')}
             </button>
           ) : (
-            <div style={{ color: 'var(--t3)', fontSize: 14 }}>No tasks available for this lesson.</div>
+            <div style={{ color: 'var(--t3)', fontSize: 14 }}>{t('intro.noTasks')}</div>
           )}
         </div>
       )}
@@ -391,14 +408,14 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus-unlock' && (
         <div className="stu-task-inner" style={{ paddingTop: 32, textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🗝️</div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, color: 'var(--t1)' }}>隐藏关卡</div>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--t2)' }}>Hidden Level Unlocked!</div>
-          <p style={{ color: 'var(--t2)', marginBottom: 4 }}>你比大多数同学更快完成了所有任务！</p>
-          <p style={{ color: 'var(--t2)', marginBottom: 6 }}>这里有一篇新文章等你挑战 —— 做不完也完全没问题。</p>
-          <p style={{ fontSize: 15, marginBottom: 20 }}>📖 <strong>"Beyond the Plate"</strong></p>
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, color: 'var(--t1)' }}>{t('bonus.unlockTitle')}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--t2)' }}>{t('bonus.unlockSubtitle')}</div>
+          <p style={{ color: 'var(--t2)', marginBottom: 4 }}>{t('bonus.unlockMsg1')}</p>
+          <p style={{ color: 'var(--t2)', marginBottom: 6 }}>{t('bonus.unlockMsg2')}</p>
+          <p style={{ fontSize: 15, marginBottom: 20 }}>{t('bonus.unlockArticle')}</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="stu-btn pri" onClick={() => setScreen('bonus')}>挑战一下 →</button>
-            <button className="stu-btn ghost" onClick={() => setScreen('summary')}>直接结束</button>
+            <button className="stu-btn pri" onClick={() => setScreen('bonus')}>{t('bonus.unlockAccept')}</button>
+            <button className="stu-btn ghost" onClick={() => setScreen('summary')}>{t('bonus.unlockSkip')}</button>
           </div>
         </div>
       )}
@@ -407,6 +424,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       )}
       {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} onScaffoldPush={onScaffoldPush} />}
     </div>
+    </LocaleScope>
   )
 }
 
