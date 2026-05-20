@@ -1,0 +1,94 @@
+/* ── Scaffold Panel — purple hint-panel theme (from Practice v3 design) ── */
+
+/* Panel container — used inside stu-text-overlay for layout compat */
+.scaffold-panel{
+  display:flex;flex-direction:column;
+  background:var(--surface);height:100%;
+  animation:scaffold-panelIn .35s ease;
+}
+
+/* Header */
+.scaffold-panel-hd{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.scaffold-panel-icon{
+  width:22px;height:22px;border-radius:5px;
+  background:var(--purple-bg);color:var(--purple);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.scaffold-panel-title{
+  font-size:12px;font-weight:600;color:var(--purple);flex:1;
+}
+.scaffold-panel-badge{
+  font-size:10px;padding:2px 8px;border-radius:3px;
+  background:var(--purple-bg);color:var(--purple);font-weight:500;
+}
+.scaffold-panel-close{
+  font-size:12px;color:var(--t3);cursor:pointer;
+  padding:4px 8px;border-radius:3px;
+  background:transparent;border:none;font-family:inherit;
+}
+.scaffold-panel-close:hover{color:var(--t1);background:var(--surface2)}
+
+/* Scroll area */
+.scaffold-panel-scroll{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+
+/* Hint cards */
+.scaffold-hint-card{
+  background:var(--purple-bg);border:1px solid rgba(58,49,133,.12);
+  border-radius:10px;padding:16px 18px;
+}
+.scaffold-hint-enter{animation:scaffold-hintIn .4s ease both}
+.scaffold-hint-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.scaffold-step-badge{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--purple);color:#fff;
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.scaffold-hint-title{font-size:12px;font-weight:600;color:var(--purple)}
+.scaffold-hint-body{font-size:13px;color:var(--t2);line-height:1.7}
+.scaffold-hint-body p{margin:0 0 6px;color:var(--t2)}
+.scaffold-hint-body p:last-child{margin-bottom:0}
+.scaffold-hint-body strong{color:var(--t1);font-weight:600}
+.scaffold-hint-img{max-width:100%;border-radius:6px;margin-top:8px;cursor:zoom-in}
+
+/* Zoom overlay */
+.scaffold-zoom-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  cursor:zoom-out;
+}
+.scaffold-zoom-img{
+  max-width:90vw;max-height:90vh;border-radius:8px;
+  object-fit:contain;
+}
+
+/* Solution variant (last hint, amber) */
+.scaffold-hint-card--solution{
+  background:var(--amber-bg);border-color:rgba(122,77,14,.12);
+}
+.scaffold-hint-card--solution .scaffold-step-badge{background:var(--amber)}
+.scaffold-hint-card--solution .scaffold-hint-title{color:var(--amber)}
+
+/* Empty state */
+.scaffold-empty{font-size:13px;color:var(--t3);padding:16px 0}
+
+/* Animation */
+@keyframes scaffold-hintIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaffold-panelIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+
+/* Inline expression highlight (teal) — used by <span class="hl-expr"> in manifest hintZh HTML */
+.hl-expr{display:inline-block;background:var(--teal-bg);color:var(--teal);padding:1px 6px;border-radius:4px;font-weight:600}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  .scaffold-panel,.scaffold-hint-enter{animation:none}
+}
