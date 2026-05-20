@@ -1,6 +1,4 @@
-import { IsString, IsInt, IsIn, Min, Max } from 'class-validator';
-
-const VALID_PHASES = ['listen', 'practice', 'discuss', 'takeaway', 'completed'] as const;
+import { IsString, IsInt, Matches, Min, Max } from 'class-validator';
 
 export class PhaseDto {
   @IsString()
@@ -11,6 +9,6 @@ export class PhaseDto {
   @Max(20)
   task: number;
 
-  @IsIn(VALID_PHASES)
+  @Matches(/^(listen|practice(-\d+)?|discuss|discovery|takeaway|completed)$/)
   phase: string;
 }

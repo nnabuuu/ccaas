@@ -3,6 +3,7 @@ import BoardInline from './BoardInline'
 import AudioButton from './AudioButton'
 import { DiscussPhase } from './discuss/DiscussPhase'
 import { PracticePhase } from './exercise/PracticePhase'
+import { DiscoveryPhase } from './exercise/DiscoveryPhase'
 import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
 import { SummaryScreen } from './personal-touch/SummaryScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
@@ -107,6 +108,7 @@ const PHASE_REGISTRY: Record<string, (props: {
   listen: ({ task, onDone, lessonId, isRevisit, label }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} label={label} />,
   practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} onScaffoldPush={onScaffoldPush} partIds={partIds} />,
   discuss: ({ task, onDone, isRevisit }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} isRevisit={isRevisit} />,
+  discovery: ({ task, onDone, stepIdx, isRevisit }) => <DiscoveryPhase key={`disc${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} isRevisit={isRevisit} />,
   takeaway: ({ task, onComplete, lessonId, taskCount, label }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} label={label} />,
 }
 

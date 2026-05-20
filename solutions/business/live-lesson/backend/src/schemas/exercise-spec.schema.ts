@@ -86,6 +86,7 @@ export const ExerciseSpecSchema = z.object({
   parts: z.array(z.object({
     id: z.string(),
     prompt: z.string(),
+    expression: z.string().optional(),
     rubric: z.array(z.object({ id: z.string(), label: z.string(), weight: z.number() })),
     maxImages: z.number().optional(),
     hasScaffold: z.boolean().optional(),
@@ -108,6 +109,7 @@ export const ExerciseSpecSchema = z.object({
       id: z.string(),
       prompt: z.string(),
       options: z.array(z.string()),
+      correct: z.number().optional(),
     })).optional(),
     blanks: z.array(z.object({
       id: z.string(),

@@ -75,6 +75,11 @@ export interface StepMetrics {
   questionAggregates: Record<string, { count: number; isHigh: boolean }>;
   attemptMetrics: Record<string, { avgAttempts: number; walkthroughRate: number }>;
   dimensionLabels: Record<string, string>;
+  scaffoldDistribution?: {
+    independent: number;
+    partial: number;
+    full: number;
+  };
 }
 
 // ── Health cards ──

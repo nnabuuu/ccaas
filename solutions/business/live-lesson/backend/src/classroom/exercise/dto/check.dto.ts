@@ -1,4 +1,4 @@
-import { IsString, IsObject } from 'class-validator';
+import { IsString, IsObject, IsOptional } from 'class-validator';
 
 export class CheckDto {
   @IsString()
@@ -6,4 +6,8 @@ export class CheckDto {
 
   @IsObject()
   data: Record<string, unknown>;
+
+  @IsString()
+  @IsOptional()
+  exerciseType?: string;
 }

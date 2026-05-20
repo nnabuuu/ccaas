@@ -18,9 +18,10 @@ export class ExerciseController {
     @Param('code') code: string,
     @Param('step', ParseIntPipe) step: number,
     @Query('studentId') studentId?: string,
+    @Query('exerciseType') exerciseType?: string,
   ) {
     const session = await this.classroomService.resolveStartedSession(validateCode(code));
-    return this.exercise.getExerciseSpec(session, step, studentId);
+    return this.exercise.getExerciseSpec(session, step, studentId, exerciseType);
   }
 
   @Post(':code/steps/:step/check')
@@ -30,6 +31,6 @@ export class ExerciseController {
     @Body() dto: CheckDto,
   ) {
     const session = await this.classroomService.resolveStartedSession(validateCode(code));
-    return this.exercise.checkAnswer(session, dto.studentId, step, dto.data);
+    return this.exercise.checkAnswer(session, dto.studentId, step, dto.data, dto.exerciseType);
   }
 }

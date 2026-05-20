@@ -115,6 +115,7 @@ export const ReadingStepSchema = z.object({
   subtitle: z.string().optional(),
   summary: z.string().optional(),
   answerKey: AnswerKeySchema.optional(),
+  discoveryKey: AnswerKeySchema.optional(),
   // Instruction / listen content
   studentView: StudentViewSchema.optional(),
   // AI assistant hint chips (per step)
@@ -182,6 +183,7 @@ export const BonusStepSchema = z.object({
 
 export const ManifestSchema = z.object({
   id: z.string(),
+  locale: z.enum(['en', 'zh']).optional(),
   title: z.string(),
   subject: z.string(),
   gradeLevel: z.string(),

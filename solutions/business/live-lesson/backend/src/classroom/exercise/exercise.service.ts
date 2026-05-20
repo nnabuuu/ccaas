@@ -26,16 +26,18 @@ export class ExerciseService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async getExerciseSpec(session: ClassroomSession, step: number, studentId?: string): Promise<ExerciseSpec> {
+  async getExerciseSpec(session: ClassroomSession, step: number, studentId?: string, exerciseType?: string): Promise<ExerciseSpec> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
     if (!manifest) throw new NotFoundException('Lesson not found');
     const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
     const stepDef = steps.find((s) => s.idx === step);
-    if (!stepDef?.answerKey) {
+
+    const rawKey = exerciseType === 'guided-discovery' ? stepDef?.discoveryKey : stepDef?.answerKey;
+    if (!rawKey) {
       throw new NotFoundException(`No exercise found at step ${step}`);
     }
 
-    const ak = stepDef.answerKey as Record<string, unknown>;
+    const ak = rawKey as Record<string, unknown>;
     let practiceItemIds: string[] | undefined;
     if (ak.type === 'map' && ak.randomPractice && ak.practiceCount && studentId) {
       // Validate studentId belongs to this session
@@ -50,7 +52,7 @@ export class ExerciseService {
       practiceItemIds = shuffled.slice(0, ak.practiceCount as number);
     }
 
-    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel as string | undefined, practiceItemIds);
+    const spec = sanitizeAnswerKey(rawKey, stepDef.exerciseLabel as string | undefined, practiceItemIds);
     if (!spec) throw new NotFoundException(`Unsupported exercise type at step ${step}`);
     return spec;
   }
@@ -60,6 +62,7 @@ export class ExerciseService {
     studentId: string,
     step: number,
     data: Record<string, unknown>,
+    exerciseType?: string,
   ): Promise<CheckResultResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
@@ -71,11 +74,14 @@ export class ExerciseService {
 
     const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
     const stepDef = steps.find((s) => s.idx === step);
-    if (!stepDef?.answerKey) {
+
+    // Use discoveryKey when exerciseType is 'guided-discovery', otherwise answerKey
+    const rawKey = exerciseType === 'guided-discovery' ? stepDef?.discoveryKey : stepDef?.answerKey;
+    if (!rawKey) {
       throw new NotFoundException(`No exercise found at step ${step}`);
     }
 
-    const ak = stepDef.answerKey as Record<string, unknown>;
+    const ak = rawKey as Record<string, unknown>;
 
     // Server-side recompute of practiceItemIds — never trust client submission
     if (ak.type === 'map' && ak.randomPractice && ak.practiceCount) {

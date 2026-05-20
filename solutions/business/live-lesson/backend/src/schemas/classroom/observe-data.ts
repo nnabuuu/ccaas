@@ -227,6 +227,7 @@ export interface GuidedDiscoveryObserveData {
     id: string;
     title: string;
     type: string;
+    spec: import('../answer-key.schema').GuidedDiscoveryStep;
   }>;
   stepStats: Array<{
     id: string;

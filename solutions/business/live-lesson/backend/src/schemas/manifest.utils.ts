@@ -179,6 +179,7 @@ function sanitizeRichContentQuiz(ak: AKInput): ExerciseSpec {
       parts: parts.map((p) => ({
         id: p.id as string,
         prompt: p.prompt as string,
+        ...(p.expression && { expression: p.expression as string }),
         rubric: ((p.rubric as Array<AKInput>) || []).map((r) => ({
           id: r.id as string,
           label: r.label as string,
@@ -222,6 +223,9 @@ function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
       const base = { type: stepType, id: step.id as string, title: step.title as string };
       switch (stepType) {
         case 'observation_choice':
+          // Intentionally preserve `correct` — binary 2-option choices have negligible
+          // answer leakage, and this enables instant client-side feedback without a
+          // server round-trip (same rationale as select-evidence keeping correctFunction).
           return {
             ...base,
             table: step.table as Array<{ expression: string; result: string }> | undefined,
@@ -230,6 +234,7 @@ function sanitizeGuidedDiscovery(ak: AKInput): ExerciseSpec {
               id: c.id as string,
               prompt: c.prompt as string,
               options: c.options as string[],
+              correct: c.correct as number,
             })),
           };
         case 'formula_blanks':
@@ -342,6 +347,12 @@ export function sanitizeManifest(manifest: unknown): unknown {
       const spec = sanitizeAnswerKey(step.answerKey, step.exerciseLabel as string | undefined);
       if (spec) {
         step.answerKey = spec;
+      }
+    }
+    if (step.discoveryKey) {
+      const spec = sanitizeAnswerKey(step.discoveryKey);
+      if (spec) {
+        step.discoveryKey = spec;
       }
     }
     if (step.discuss && typeof step.discuss === 'object') {

@@ -436,13 +436,12 @@ describe('GuidedDiscoveryAnswerKey — schema validation', () => {
 // ── Sanitizer — answer leakage ──
 
 describe('sanitizeGuidedDiscovery', () => {
-  it('strips correct from observation_choice', () => {
+  it('preserves correct for observation_choice (client-side feedback)', () => {
     const spec = sanitizeAnswerKey(answerKey)!;
     expect(spec.type).toBe('guided-discovery');
     const obsStep = spec.gdSteps!.find(s => s.type === 'observation_choice')!;
-    for (const choice of obsStep.choices!) {
-      expect(choice).not.toHaveProperty('correct');
-    }
+    expect(obsStep.choices![0]).toHaveProperty('correct', 0);
+    expect(obsStep.choices![1]).toHaveProperty('correct', 0);
   });
 
   it('strips accepts and rejects from formula_blanks', () => {

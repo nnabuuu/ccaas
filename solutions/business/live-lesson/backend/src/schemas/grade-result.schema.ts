@@ -15,6 +15,7 @@ export const GradeResultSchema = z.object({
     whatQ: z.number(),
     whyQ: z.number(),
   })).optional(),
+  errorTags: z.array(z.string()).optional(),
 });
 
 export type GradeResult = z.infer<typeof GradeResultSchema>;

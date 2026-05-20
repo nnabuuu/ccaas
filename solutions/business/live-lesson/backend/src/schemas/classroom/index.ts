@@ -52,6 +52,8 @@ export type {
   EvidenceObserveData,
   MapObserveData,
   MatrixObserveData,
+  ImageUploadObserveData,
+  RichContentQuizObserveData,
   DiscussObserveData,
 } from './observe-data';
 

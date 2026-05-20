@@ -148,6 +148,27 @@ export class MetricsAggregator {
         questionAggregates[cat].isHigh = questionAggregates[cat].count >= 4;
       }
 
+      // Scaffold distribution for rich-content-quiz with parts
+      let scaffoldDistribution: StepMetrics['scaffoldDistribution'];
+      if (stepDef?.answerKey?.type === 'rich-content-quiz' && stepDef.answerKey.parts?.length) {
+        const scaffoldPart = stepDef.answerKey.parts.find((p: any) => p.scaffold);
+        if (scaffoldPart) {
+          const maxLevel = scaffoldPart.scaffold.levels.length;
+          let independent = 0, partial = 0, full = 0;
+          for (const s of students) {
+            const subs = subsByStudent.get(s.id);
+            if (!subs?.[stepIdx]) continue;
+            const partsData = (subs[stepIdx].data as any)?.parts;
+            const pp = partsData?.[scaffoldPart.id];
+            const level = pp?.scaffoldLevel ?? -1;
+            if (level === -1) independent++;
+            else if (maxLevel > 0 && level >= maxLevel - 1) full++;
+            else partial++;
+          }
+          scaffoldDistribution = { independent, partial, full };
+        }
+      }
+
       stepMetrics[taskNum] = {
         name: stepDef?.label || `Step ${taskNum}`,
         desc: this.getStepTypeDesc(stepDef?.answerKey),
@@ -167,6 +188,7 @@ export class MetricsAggregator {
         questionAggregates,
         attemptMetrics,
         dimensionLabels: nameMap,
+        ...(scaffoldDistribution && { scaffoldDistribution }),
       };
     }
 
@@ -552,6 +574,11 @@ export class MetricsAggregator {
       case 'order':
         map['correct'] = 'Correct';
         break;
+      case 'guided-discovery':
+        for (const step of answerKey.steps || []) {
+          map[step.id] = step.title || step.id;
+        }
+        break;
     }
     return map;
   }
@@ -565,6 +592,10 @@ export class MetricsAggregator {
       matrix: '信息矩阵',
       stance: '立场+论据',
       order: '策略排序',
+      'image-upload': '图片上传',
+      'rich-content-quiz': '综合练习',
+      'fill-blank': '填空题',
+      'guided-discovery': '引导发现',
     };
     return typeMap[answerKey.type] || answerKey.type || '';
   }

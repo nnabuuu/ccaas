@@ -50,6 +50,9 @@ export function formatSubmitData(
       result = { blanks }
       break
     }
+    case 'guided-discovery':
+      result = { steps: ans.steps || {} }
+      break
     default:
       result = ans
   }

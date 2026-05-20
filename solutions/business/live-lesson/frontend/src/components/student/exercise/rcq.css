@@ -1,0 +1,133 @@
+/* ── RCQ (Rich Content Quiz) — extracted from Practice v3 design ── */
+
+/* Problem card */
+.rcq-problem-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-card-lg,12px);padding:20px 24px;margin-bottom:16px;
+}
+.rcq-problem-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:10px;
+}
+.rcq-problem-num{font-size:14px;font-weight:600}
+.rcq-problem-badge{
+  font-size:10px;font-weight:500;padding:2px 8px;border-radius:3px;
+  background:var(--teal-bg);color:var(--teal);
+}
+.rcq-problem-badge.rcq-badge--retry{background:var(--amber-bg);color:var(--amber)}
+.rcq-problem-badge.rcq-badge--done{background:var(--green-bg);color:var(--green)}
+.rcq-problem-text{font-size:14px;color:var(--t2);line-height:1.7}
+.rcq-problem-expr{font-size:32px;font-weight:700;letter-spacing:-.5px;text-align:center;padding:20px 0 12px}
+
+/* Part progress dots */
+.rcq-part-dots{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.rcq-part-dot{
+  width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;
+  background:var(--surface2);color:var(--t3);
+  transition:all .15s;
+}
+.rcq-part-dot--done{background:var(--green);color:#fff}
+.rcq-part-dot--current{background:var(--teal);color:#fff}
+.rcq-part-dots-label{font-size:12px;color:var(--t3);margin-left:4px}
+
+/* Checking card (purple) */
+.rcq-checking-card{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;border-radius:10px;
+  background:var(--purple-bg);border:1px solid rgba(58,49,133,.12);
+  font-size:13px;font-weight:500;color:var(--purple);
+  margin-bottom:16px;
+  animation:rcq-slideDown .3s ease;
+}
+.rcq-checking-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--purple);
+  animation:rcq-pulse 1.2s infinite;
+}
+
+/* Result cards */
+.rcq-result-card{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:16px 18px;border-radius:10px;
+  margin-bottom:12px;
+  animation:rcq-slideDown .3s ease;
+}
+.rcq-result-wrong{
+  background:var(--red-bg);border:1px solid rgba(148,41,41,.12);
+}
+.rcq-result-final{
+  background:var(--amber-bg);border:1px solid rgba(122,77,14,.12);
+}
+.rcq-result-icon{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;flex-shrink:0;color:#fff;
+}
+.rcq-result-wrong .rcq-result-icon{background:var(--red)}
+.rcq-result-final .rcq-result-icon{background:var(--amber)}
+.rcq-result-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.rcq-result-wrong .rcq-result-title{color:var(--red)}
+.rcq-result-final .rcq-result-title{color:var(--amber)}
+.rcq-result-desc{font-size:12px;color:var(--t2);line-height:1.5}
+.rcq-result-hint{font-size:12px;color:var(--t3);margin-top:6px}
+
+/* Buttons */
+.rcq-submit-btn{
+  width:100%;padding:12px;border-radius:8px;border:none;
+  background:var(--t1);color:var(--surface);
+  font-size:13px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all .15s;
+}
+.rcq-submit-btn:hover{opacity:.85}
+
+.rcq-retry-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;border-radius:8px;
+  border:1.5px solid var(--border);background:var(--surface);
+  font-size:13px;font-weight:600;color:var(--t1);
+  cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.rcq-retry-btn:hover{background:var(--surface2);border-color:var(--t3)}
+
+.rcq-next-btn{
+  width:100%;padding:12px;border-radius:8px;
+  border:none;background:var(--t1);color:var(--surface);
+  font-size:13px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:opacity .15s;
+}
+.rcq-next-btn:hover{opacity:.85}
+
+/* Passed card */
+.rcq-passed-card{
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;border-radius:10px;
+  background:var(--green-bg);border:1px solid rgba(45,102,18,.15);
+  color:var(--green);font-size:14px;font-weight:600;
+  animation:rcq-slideDown .3s ease;
+}
+
+/* Prompt images */
+.rcq-prompt-images{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.rcq-prompt-images img{max-width:300px;border-radius:8px;border:1px solid var(--border)}
+
+/* Review cards (completed state) */
+.rcq-review-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-card-lg,12px);padding:16px 20px;
+  animation:rcq-slideDown .3s ease both;
+}
+.rcq-review-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+}
+.rcq-review-num{font-size:13px;font-weight:600;color:var(--t1)}
+.rcq-review-badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:3px}
+.rcq-review-badge--correct{background:var(--green-bg);color:var(--green)}
+.rcq-review-badge--passed{background:var(--amber-bg);color:var(--amber)}
+.rcq-review-images{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.rcq-review-images img{max-width:100%;border-radius:8px;border:1px solid var(--border)}
+
+/* Animations */
+@keyframes rcq-slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rcq-pulse{0%,100%{opacity:1}50%{opacity:.3}}

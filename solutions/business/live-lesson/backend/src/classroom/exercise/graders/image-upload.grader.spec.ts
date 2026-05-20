@@ -239,14 +239,17 @@ describe('ImageUploadGrader — callVisionLlm arguments', () => {
     });
   });
 
-  it('sends multiple images when provided', async () => {
+  it('sends multiple images with page labels when provided', async () => {
     const builder = mockBuilder(perfectLlmResponse);
     const grader = new ImageUploadGrader(builder);
     await grader.grade(baseKey, { images: ['data:image/jpeg;base64,img1', 'data:image/jpeg;base64,img2'] });
     const content = (builder.callVisionLlm as jest.Mock).mock.calls[0][1] as Array<any>;
-    expect(content).toHaveLength(3); // 1 text + 2 images
-    expect(content[1].image_url.url).toBe('data:image/jpeg;base64,img1');
-    expect(content[2].image_url.url).toBe('data:image/jpeg;base64,img2');
+    // 1 text + 2×(page-label + image) = 5
+    expect(content).toHaveLength(5);
+    expect(content[1]).toEqual({ type: 'text', text: '第 1 页 / 共 2 页：' });
+    expect(content[2].image_url.url).toBe('data:image/jpeg;base64,img1');
+    expect(content[3]).toEqual({ type: 'text', text: '第 2 页 / 共 2 页：' });
+    expect(content[4].image_url.url).toBe('data:image/jpeg;base64,img2');
   });
 });
 

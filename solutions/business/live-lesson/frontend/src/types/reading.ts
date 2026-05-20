@@ -55,6 +55,7 @@ export interface ReadingStep {
   duration: number
   description: string
   focusParagraphs: string[]
+  phaseConfig?: PhaseConfig[]   // step-level override of lesson phaseConfig
   onEnter?: {
     textbook?: 'open' | 'collapsed'
   }
@@ -370,11 +371,13 @@ export interface PhaseConfig {
   id: string
   label: string
   unlockAfter: string | null
+  partIds?: string[]       // filter exercise parts (practice phases only)
 }
 
 // ── Reading Manifest (top-level) ──
 export interface ReadingManifest {
   id: string
+  locale?: 'en' | 'zh'
   title: string
   subject: string
   gradeLevel: string

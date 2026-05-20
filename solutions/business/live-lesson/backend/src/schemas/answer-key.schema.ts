@@ -189,6 +189,7 @@ const ScaffoldSchema = z.object({
 const RichContentPartSchema = z.object({
   id: z.string().min(1),
   prompt: z.string().min(1),
+  expression: z.string().optional(),
   rubric: z.array(RubricItemSchema).nonempty(),
   sampleSolution: z.string().optional(),
   maxImages: z.number().int().min(1).optional(),

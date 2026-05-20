@@ -28,12 +28,13 @@ export interface MapItem { id: string; label: string; hint?: string; refs?: numb
 export interface RichContentQuizPart {
   id: string
   prompt?: string
+  expression?: string
   promptImages?: Array<{ url: string; alt?: string }>
   inputMethods?: string[]
 }
 
 // Guided Discovery step types (student-safe, no answers)
-export interface GdChoiceItem { id: string; prompt: string; options: string[] }
+export interface GdChoiceItem { id: string; prompt: string; options: string[]; correct?: number }
 export interface GdBlankItem { id: string; label: string; placeholder?: string; inputMethods?: string[] }
 export interface GdLineItem { text: string; blank?: { id: string; placeholder?: string; inputMethods?: string[] } }
 export interface GdTextBlankItem { id: string; inputMethods?: string[] }
@@ -122,11 +123,19 @@ export interface InstructionView {
   confirmLabel?: string
 }
 
+export interface DiscoveryKey {
+  type: 'guided-discovery'
+  gdTitle?: string
+  gdSteps?: GdStep[]
+  gdSummary?: { formula?: string; name?: string; description?: string }
+}
+
 export interface Task {
   id: number; name: string; subtitle: string; time: string
   focus: number[]; intro: string; exercise: TaskExercise
   discuss: TaskDiscuss; summary: string
   instructionView?: InstructionView
+  discoveryKey?: DiscoveryKey
 }
 
 /** Dynamically compute task→step mapping from manifest readingSteps */
@@ -172,7 +181,7 @@ export function buildTasksFromManifest(
   readingSteps: Array<{ idx: number; type?: string; label?: string; labelEn?: string;
     displayName?: string; subtitle?: string; duration?: number; description?: string;
     focusParagraphs?: string[]; exerciseLabel?: string; summary?: string;
-    discuss?: any; answerKey?: any; studentView?: any }>,
+    discuss?: any; answerKey?: any; discoveryKey?: any; studentView?: any }>,
 ): Task[] {
   return readingSteps
     .filter(s => s.type === 'task' || (!s.type && s.answerKey))
@@ -199,6 +208,14 @@ export function buildTasksFromManifest(
         insightZh: step.discuss?.insightZh,
       },
       summary: step.summary || '',
+      ...(step.discoveryKey && {
+        discoveryKey: {
+          type: 'guided-discovery' as const,
+          gdTitle: step.discoveryKey.gdTitle || step.discoveryKey.title,
+          gdSteps: step.discoveryKey.gdSteps || step.discoveryKey.steps,
+          gdSummary: step.discoveryKey.gdSummary || step.discoveryKey.summary,
+        },
+      }),
     }))
 }
 

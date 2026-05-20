@@ -73,6 +73,7 @@ export interface RichContentQuizExerciseSpec extends ExerciseSpecBase {
   inputMethods?: string[]
   parts?: Array<{
     id: string; prompt: string
+    expression?: string
     rubric: Array<{ id: string; label: string; weight: number }>
     maxImages?: number; hasScaffold?: boolean
     inputMethods?: string[]
@@ -362,6 +363,7 @@ const richContentQuizHandler: ExerciseEnrichHandler<RichContentQuizExerciseSpec>
       ex.parts = spec.parts.map(p => ({
         id: p.id,
         prompt: p.prompt,
+        ...(p.expression && { expression: p.expression }),
         ...(p.inputMethods && { inputMethods: p.inputMethods }),
       }))
     }
@@ -377,6 +379,7 @@ const richContentQuizHandler: ExerciseEnrichHandler<RichContentQuizExerciseSpec>
       ex.parts = ak.parts.map((p: any) => ({
         id: p.id,
         prompt: p.prompt,
+        ...(p.expression && { expression: p.expression }),
         ...(p.inputMethods && { inputMethods: p.inputMethods }),
       }))
     }

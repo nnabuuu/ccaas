@@ -101,7 +101,16 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
           uris.push(p.photoData)
         } else if (p.type === 'canvas') {
           const canvas = canvasRefs.current[p.id]
-          if (canvas) uris.push(canvas.toDataURL('image/jpeg', 0.85))
+          if (canvas) {
+            const tmp = document.createElement('canvas')
+            tmp.width = canvas.width
+            tmp.height = canvas.height
+            const ctx = tmp.getContext('2d')!
+            ctx.fillStyle = '#fbfaf7'
+            ctx.fillRect(0, 0, tmp.width, tmp.height)
+            ctx.drawImage(canvas, 0, 0)
+            uris.push(tmp.toDataURL('image/jpeg', 0.85))
+          }
         }
       }
       return uris

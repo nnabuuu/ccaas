@@ -11,7 +11,11 @@ export {
   type SelectEvidenceAnswerKey,
   type MapAnswerKey,
   type ImageUploadAnswerKey,
+  type RichContentQuizAnswerKey,
+  type RichContentPart,
   type FillBlankAnswerKey,
+  type GuidedDiscoveryAnswerKey,
+  type GuidedDiscoveryStep,
   type ValidationResult,
 } from './answer-key.schema';
 

@@ -27,7 +27,7 @@ export class GuidedDiscoveryObserveHandler implements ObserveHandler {
     const key = ctx.answerKey as GuidedDiscoveryAnswerKey | null;
     const steps = key?.steps || [];
 
-    const stepDefs = steps.map(s => ({ id: s.id, title: s.title, type: s.type }));
+    const stepDefs = steps.map(s => ({ id: s.id, title: s.title, type: s.type, spec: s }));
 
     // Per-step accumulators
     const stepPassedCounts: Record<string, number> = {};
@@ -41,8 +41,6 @@ export class GuidedDiscoveryObserveHandler implements ObserveHandler {
     let submitted = 0;
     let totalScore = 0;
     let perfectCount = 0;
-    let totalTime = 0;
-    let timeCount = 0;
 
     for (const student of ctx.students) {
       const subs = ctx.subsByStudent.get(student.id) || {};
@@ -67,11 +65,8 @@ export class GuidedDiscoveryObserveHandler implements ObserveHandler {
       const byDimension = (sub.scoreJson?.byDimension ?? {}) as Record<string, boolean>;
       const data = sub.dataJson || {};
       const stepsData = (data.steps ?? {}) as Record<string, Record<string, unknown>>;
-      const duration = sub.duration ?? 0;
-
       totalScore += score;
       if (score === 100) perfectCount++;
-      if (duration > 0) { totalTime += duration; timeCount++; }
 
       const stepResults: Record<string, boolean> = {};
       const stepAnswers: Record<string, Record<string, unknown>> = {};
@@ -99,7 +94,7 @@ export class GuidedDiscoveryObserveHandler implements ObserveHandler {
         name: student.name,
         submitted: true,
         score,
-        time: duration,
+        time: 0,
         stepResults,
         stepAnswers,
         keyInsights: insights,
@@ -128,7 +123,7 @@ export class GuidedDiscoveryObserveHandler implements ObserveHandler {
         submitted,
         avgScore: submitted > 0 ? Math.round(totalScore / submitted) : 0,
         perfectCount,
-        avgTime: timeCount > 0 ? Math.round(totalTime / timeCount) : 0,
+        avgTime: 0,
       },
       stepDefs,
       stepStats,

@@ -2,7 +2,7 @@ import { IsString, IsInt, IsObject, Min, Max } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { BadRequestException } from '@nestjs/common';
 
-const MAX_DATA_SIZE = 10_000; // 10 KB JSON limit
+const MAX_DATA_SIZE = 2_000_000; // 2 MB — image submissions carry base64 data URIs
 
 export class SubmitDto {
   @IsString()

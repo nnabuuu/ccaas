@@ -171,6 +171,27 @@ describe('enrichExerciseFromSpec — API path', () => {
     expect(serverCheck).toBe(true)
   })
 
+  it('guided-discovery: injects gdTitle/gdSteps/gdSummary with correct on choices', () => {
+    const spec: ExerciseSpec = {
+      type: 'guided-discovery', label: 'GD',
+      gdTitle: 'Discover the pattern',
+      gdSteps: [{
+        id: 's1', title: 'Observe', type: 'observation_choice',
+        choices: [{ id: 'c1', prompt: 'Which?', options: ['A', 'B'], correct: 0 }],
+      }],
+      gdSummary: { formula: 'a²-b²=(a+b)(a-b)', name: 'Difference of squares' },
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.type).toBe('guided-discovery')
+    expect(exercise.gdTitle).toBe('Discover the pattern')
+    expect(exercise.gdSteps).toHaveLength(1)
+    expect(exercise.gdSteps![0].type).toBe('observation_choice')
+    const step = exercise.gdSteps![0] as { choices: Array<{ correct?: number }> }
+    expect(step.choices[0].correct).toBe(0)
+    expect(exercise.gdSummary).toEqual({ formula: 'a²-b²=(a+b)(a-b)', name: 'Difference of squares' })
+    expect(serverCheck).toBe(true)
+  })
+
   it('rich-content-quiz: injects parts/subType/prompt from API spec', () => {
     const spec: ExerciseSpec = {
       type: 'rich-content-quiz', label: 'RCQ',
@@ -429,6 +450,34 @@ describe('enrichExerciseFromSpec — manifest fallback', () => {
     const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
     expect(exercise.sentences).toEqual([{ id: 's1', template: 'The sky is ___' }])
     expect(serverCheck).toBe(false)
+  })
+
+  it('guided-discovery: injects from manifest ak', () => {
+    const ak = {
+      type: 'guided-discovery',
+      gdTitle: 'Discover',
+      gdSteps: [{
+        id: 's1', title: 'Step 1', type: 'formula_blanks',
+        blanks: [{ id: 'b1', label: 'x=' }],
+      }],
+      gdSummary: { formula: 'x=1', description: 'The answer' },
+    }
+    const { exercise, serverCheck } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.type).toBe('guided-discovery')
+    expect(exercise.gdTitle).toBe('Discover')
+    expect(exercise.gdSteps).toHaveLength(1)
+    expect(exercise.gdSummary).toEqual({ formula: 'x=1', description: 'The answer' })
+    expect(serverCheck).toBe(false)
+  })
+
+  it('guided-discovery: manifest ak.title fallback for gdTitle', () => {
+    const ak = {
+      type: 'guided-discovery',
+      title: 'Fallback title',
+      gdSteps: [{ id: 's1', title: 'Step', type: 'observation_choice', choices: [] }],
+    }
+    const { exercise } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.gdTitle).toBe('Fallback title')
   })
 
   it('rich-content-quiz: injects parts/subType from manifest ak, serverCheck=false', () => {

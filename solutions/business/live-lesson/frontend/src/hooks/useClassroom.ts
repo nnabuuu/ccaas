@@ -472,12 +472,13 @@ export async function checkAnswer(
   step: number,
   studentId: string,
   data: Record<string, unknown>,
+  exerciseType?: string,
 ): Promise<CheckResult | null> {
   try {
     const res = await fetch(`${API_BASE}/${sessionCode}/steps/${step}/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId, data }),
+      body: JSON.stringify({ studentId, data, ...(exerciseType && { exerciseType }) }),
     })
     if (!res.ok) return null
     return await res.json()
