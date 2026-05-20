@@ -157,6 +157,7 @@ export class StudentSubmissionService {
       rubric: partDef.rubric,
       sampleSolution: partDef.sampleSolution,
       aiSystemPrompt: partDef.aiSystemPrompt ?? answerKey.aiSystemPrompt,
+      accepts: partDef.accepts,
     };
     const partScore = await this.gradingService.grade(syntheticKey, data) ?? { total: 0, byDimension: {} };
 
@@ -177,25 +178,39 @@ export class StudentSubmissionService {
 
     // Check scaffold
     let scaffoldResponse: SubmitResponse['scaffold'] = null;
-    if (partDef.scaffold && partScore.total <= partDef.scaffold.threshold) {
-      const nextLevel = partProgress.scaffoldLevel + 1;
-      if (nextLevel < partDef.scaffold.levels.length) {
-        partProgress.scaffoldLevel = nextLevel;
-        partProgress.completed = false;
-        const isLastLevel = nextLevel === partDef.scaffold.levels.length - 1;
-        const levelDef = partDef.scaffold.levels[nextLevel];
-        scaffoldResponse = {
-          level: nextLevel,
-          hintZh: levelDef.hintZh,
-          hintImage: levelDef.hintImage,
-          canRetry: !isLastLevel,
-          steps: levelDef.steps as NonNullable<SubmitResponse['scaffold']>['steps'],
-        };
+    const isCorrect = partScore.total >= 100;
+
+    if (!isCorrect) {
+      // Wrong answer — use scaffold if available, else synthesize basic retry
+      if (partDef.scaffold) {
+        const nextLevel = partProgress.scaffoldLevel + 1;
+        if (nextLevel < partDef.scaffold.levels.length) {
+          partProgress.scaffoldLevel = nextLevel;
+          partProgress.completed = false;
+          const isLastLevel = nextLevel === partDef.scaffold.levels.length - 1;
+          const levelDef = partDef.scaffold.levels[nextLevel];
+          scaffoldResponse = {
+            level: nextLevel,
+            hintZh: levelDef.hintZh,
+            hintImage: levelDef.hintImage,
+            canRetry: !isLastLevel,
+            steps: levelDef.steps as NonNullable<SubmitResponse['scaffold']>['steps'],
+          };
+        } else {
+          // All scaffold levels exhausted — mark as completed
+          partProgress.completed = true;
+        }
       } else {
-        // All scaffold levels exhausted — mark as completed
-        partProgress.completed = true;
+        // No scaffold defined — synthesize basic retry scaffold from LLM feedback
+        partProgress.completed = false;
+        scaffoldResponse = {
+          level: 0,
+          hintZh: partScore.llmFeedback || '答案不正确，请重新检查你的计算过程。',
+          canRetry: true,
+        };
       }
     } else {
+      // Correct answer
       partProgress.completed = true;
     }
 

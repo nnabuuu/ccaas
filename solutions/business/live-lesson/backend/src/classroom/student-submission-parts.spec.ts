@@ -288,4 +288,139 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
     expect(result.scaffold).toBeDefined();
     expect(result.sampleSolution).toBeNull();
   });
+
+  // --- Correctness-based scaffold logic (bug fix coverage) ---
+
+  it('wrong answer on part WITHOUT scaffold returns synthesized retry scaffold', async () => {
+    const { session, student } = await setup();
+    // p2 has no scaffold defined
+    gradeSpy.mockResolvedValueOnce({ total: 50, byDimension: { c2: 1 }, llmFeedback: '常数项未正确平方' });
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.scaffold).toBeDefined();
+    expect(result.scaffold!.canRetry).toBe(true);
+    expect(result.scaffold!.level).toBe(0);
+    expect(result.scaffold!.hintZh).toBe('常数项未正确平方');
+    // Part should NOT be completed
+    expect(result.nextPartId).toBeNull();
+    expect(result.sampleSolution).toBeNull();
+  });
+
+  it('wrong answer on part WITHOUT scaffold uses default hint when no llmFeedback', async () => {
+    const { session, student } = await setup();
+    gradeSpy.mockResolvedValueOnce({ total: 40, byDimension: { c2: 1 } });
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+    expect(result.scaffold).toBeDefined();
+    expect(result.scaffold!.hintZh).toBe('答案不正确，请重新检查你的计算过程。');
+  });
+
+  it('wrong answer on part WITHOUT scaffold allows retry then accepts correct answer', async () => {
+    const { session, student } = await setup();
+    // First: wrong
+    gradeSpy.mockResolvedValueOnce({ total: 50, byDimension: { c2: 1 } });
+    const r1 = await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+    expect(r1.scaffold).toBeDefined();
+    expect(r1.scaffold!.canRetry).toBe(true);
+
+    // Second: correct
+    gradeSpy.mockResolvedValueOnce({ total: 100, byDimension: { c2: 3 } });
+    const r2 = await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,correct'],
+    });
+    expect(r2.scaffold).toBeUndefined();
+    expect(r2.sampleSolution).toBe('1-9a²');
+  });
+
+  it('high-score wrong answer (e.g. 60) on part WITH scaffold still triggers scaffold', async () => {
+    const { session, student } = await setup();
+    // p1 has scaffold with threshold=50, but the new logic ignores threshold —
+    // any score < 100 triggers scaffold
+    gradeSpy.mockResolvedValueOnce({ total: 60, byDimension: { c1: 2 } });
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,almost'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.scaffold).toBeDefined();
+    expect(result.scaffold!.level).toBe(0);
+    expect(result.scaffold!.hintZh).toBe('Hint L1: a=3x, b=2');
+    expect(result.sampleSolution).toBeNull();
+  });
+
+  it('score=100 marks part completed even when scaffold is configured', async () => {
+    const { session, student } = await setup();
+    // p1 has scaffold, but score=100 → correct → skip scaffold
+    gradeSpy.mockResolvedValueOnce({ total: 100, byDimension: { c1: 3 } });
+    const result = await service.submit(session, student.id, 1, {
+      partId: 'p1',
+      images: ['data:image/jpeg;base64,perfect'],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.scaffold).toBeUndefined();
+    expect(result.sampleSolution).toBe('9x²-4');
+  });
+
+  it('wrong answer on no-scaffold part persists completed=false in DB', async () => {
+    const { session, student } = await setup();
+    gradeSpy.mockResolvedValueOnce({ total: 40, byDimension: { c2: 1 } });
+    await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+
+    const sub = await submissionRepo.findOne({
+      where: { sessionId: session.id, studentId: student.id, step: 1, phase: 'exercise' },
+    });
+    const data = sub!.dataJson as Record<string, any>;
+    expect(data.parts.p2.completed).toBe(false);
+    expect(data.parts.p2.attempts).toBe(1);
+  });
+
+  it('_pass on no-scaffold part is rejected (scaffoldLevel never bumped)', async () => {
+    const { session, student } = await setup();
+    // Wrong answer on p2 (no scaffold) → synthesized scaffold, but scaffoldLevel stays -1
+    gradeSpy.mockResolvedValueOnce({ total: 50, byDimension: { c2: 1 } });
+    await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      images: ['data:image/jpeg;base64,wrong'],
+    });
+
+    // Try to pass — rejected because scaffoldLevel is -1 (passPart guard)
+    const passResult = await service.submit(session, student.id, 1, {
+      partId: 'p2',
+      _pass: true,
+      images: [],
+    });
+    expect(passResult.ok).toBe(false);
+  });
+
+  it('multiple retries on no-scaffold part all return canRetry=true', async () => {
+    const { session, student } = await setup();
+    for (let i = 0; i < 3; i++) {
+      gradeSpy.mockResolvedValueOnce({ total: 30 + i * 10, byDimension: { c2: 1 } });
+      const result = await service.submit(session, student.id, 1, {
+        partId: 'p2',
+        images: [`data:image/jpeg;base64,attempt${i}`],
+      });
+      expect(result.scaffold).toBeDefined();
+      expect(result.scaffold!.canRetry).toBe(true);
+    }
+
+    const sub = await submissionRepo.findOne({
+      where: { sessionId: session.id, studentId: student.id, step: 1, phase: 'exercise' },
+    });
+    const data = sub!.dataJson as Record<string, any>;
+    expect(data.parts.p2.attempts).toBe(3);
+    expect(data.parts.p2.completed).toBe(false);
+  });
 });
