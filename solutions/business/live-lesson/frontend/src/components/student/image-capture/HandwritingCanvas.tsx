@@ -154,12 +154,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
         ctx.lineJoin = 'round'
         if (s.tool === 'eraser') {
           ctx.globalCompositeOperation = 'destination-out'
-          ctx.lineWidth = 28
+          ctx.lineWidth = 36
           ctx.strokeStyle = 'rgba(0,0,0,1)'
         } else {
           ctx.globalCompositeOperation = 'source-over'
           ctx.strokeStyle = s.color || '#1c1c1a'
-          ctx.lineWidth = 2.5
+          ctx.lineWidth = 4
         }
         ctx.beginPath()
         ctx.moveTo(s.points[0].x, s.points[0].y)
@@ -213,12 +213,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Handwriting
       ctx.lineJoin = 'round'
       if (tool === 'eraser') {
         ctx.globalCompositeOperation = 'destination-out'
-        ctx.lineWidth = 28
+        ctx.lineWidth = 36
         ctx.strokeStyle = 'rgba(0,0,0,1)'
       } else {
         ctx.globalCompositeOperation = 'source-over'
         ctx.strokeStyle = '#1c1c1a'
-        ctx.lineWidth = 2.5
+        ctx.lineWidth = 4
       }
       ctx.beginPath()
       ctx.moveTo(pos.x, pos.y)

@@ -39,6 +39,7 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
   const outcomes: Record<string, 'correct' | 'passed'> = {}
   const images: Record<string, string[]> = {}
   const solutions: Record<string, string> = {}
+  const feedbacks: Record<string, string> = {}
 
   for (const part of parts) {
     const sp = serverParts[part.id]
@@ -48,6 +49,8 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
     const lastAttempt = history[history.length - 1]
     outcomes[part.id] = lastAttempt?.method === 'pass' ? 'passed' : 'correct'
     if (sp.sampleSolution) solutions[part.id] = sp.sampleSolution as string
+    const lastScore = (lastAttempt?.score ?? sp.score) as Record<string, unknown> | undefined
+    if (lastScore?.llmFeedback) feedbacks[part.id] = lastScore.llmFeedback as string
     const partImgs = (sp.images ?? []) as string[]
     if (partImgs.length > 0) {
       images[part.id] = partImgs
@@ -59,7 +62,7 @@ export function parseRcqReview(review: ReviewData, parts: RichContentQuizPart[])
     }
   }
   const allDone = parts.length > 0 && parts.every(p => phases[p.id] === 'done')
-  return { state: { phases, outcomes, images, solutions }, allDone }
+  return { state: { phases, outcomes, images, solutions, feedbacks }, allDone }
 }
 
 export function RichContentQuizExercise({
@@ -82,6 +85,7 @@ export function RichContentQuizExercise({
     const firstIncomplete = parts.findIndex(p => restored.phases[p.id] !== 'done')
     return firstIncomplete >= 0 ? firstIncomplete : 0
   })
+  const [partFeedback, setPartFeedback] = useState<Record<string, string>>(() => restored?.feedbacks ?? {})
   const [partSolutions, setPartSolutions] = useState<Record<string, string>>(() => restored?.solutions ?? {})
   const [partImages, setPartImages] = useState<Record<string, string[]>>(() => restored?.images ?? {})
   const [partPhase, setPartPhase] = useState<Record<string, PartPhase>>(() => restored?.phases ?? {})
@@ -157,6 +161,8 @@ export function RichContentQuizExercise({
           setPartPhase(prev => ({ ...prev, [currentPartId]: 'wrong2' }))
         }
       } else {
+        const feedback = (result.score as Record<string, unknown>)?.llmFeedback as string | undefined
+        if (feedback) setPartFeedback(prev => ({ ...prev, [currentPartId]: feedback }))
         const updated = { ...partPhase, [currentPartId]: 'done' as const }
         setPartPhase(updated)
         setPartOutcome(prev => ({ ...prev, [currentPartId]: 'correct' }))
@@ -240,6 +246,9 @@ export function RichContentQuizExercise({
               )}
               {part.expression && (
                 <div className="rcq-problem-expr"><RenderMath text={part.expression} /></div>
+              )}
+              {partFeedback[part.id] && (
+                <div className="rcq-ocr-feedback"><RenderMath text={partFeedback[part.id]} /></div>
               )}
               {partSolutions[part.id] && (
                 <div className="rcq-solution">
@@ -349,7 +358,7 @@ export function RichContentQuizExercise({
           <div className="rcq-result-icon">✗</div>
           <div>
             <div className="rcq-result-title">{t('rcq.wrongTitle')}</div>
-            <div className="rcq-result-desc">{lastFeedback}</div>
+            <div className="rcq-result-desc"><RenderMath text={lastFeedback} /></div>
             <div className="rcq-result-hint">{t('rcq.wrongHint')}</div>
           </div>
         </div>

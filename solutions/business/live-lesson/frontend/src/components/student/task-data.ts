@@ -39,6 +39,13 @@ export interface GdBlankItem { id: string; label: string; placeholder?: string; 
 export interface GdLineItem { text: string; blank?: { id: string; placeholder?: string; inputMethods?: string[] } }
 export interface GdTextBlankItem { id: string; inputMethods?: string[] }
 
+export interface GdHintStep {
+  title: string
+  widget?: string
+  props?: Record<string, unknown>
+  hintZh?: string
+}
+
 export interface GdStepBase { id: string; title: string }
 export interface GdObservationStep extends GdStepBase {
   type: 'observation_choice'
@@ -62,6 +69,7 @@ export interface GdDerivationBlankStep extends GdStepBase {
   type: 'derivation_blank'
   lines: GdLineItem[]
   inputMethods?: string[]
+  hintSteps?: GdHintStep[]
 }
 export interface GdTextBlanksStep extends GdStepBase {
   type: 'text_blanks'
@@ -139,6 +147,7 @@ export interface Task {
   discuss: TaskDiscuss; summary: string
   instructionView?: InstructionView
   discoveryKey?: DiscoveryKey
+  initialScaffold?: Array<{ level: number; hintZh: string; canRetry: boolean; steps?: Array<{ title: string; widget?: string; props?: Record<string, unknown> }> }>
 }
 
 /** Dynamically compute task→step mapping from manifest readingSteps */
@@ -184,7 +193,7 @@ export function buildTasksFromManifest(
   readingSteps: Array<{ idx: number; type?: string; label?: string; labelEn?: string;
     displayName?: string; subtitle?: string; duration?: number; description?: string;
     focusParagraphs?: string[]; exerciseLabel?: string; summary?: string;
-    discuss?: any; answerKey?: any; discoveryKey?: any; studentView?: any }>,
+    discuss?: any; answerKey?: any; discoveryKey?: any; studentView?: any; initialScaffold?: any }>,
 ): Task[] {
   return readingSteps
     .filter(s => s.type === 'task' || (!s.type && s.answerKey))
@@ -219,6 +228,7 @@ export function buildTasksFromManifest(
           gdSummary: step.discoveryKey.gdSummary || step.discoveryKey.summary,
         },
       }),
+      ...(step.initialScaffold && { initialScaffold: step.initialScaffold }),
     }))
 }
 

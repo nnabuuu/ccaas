@@ -172,6 +172,7 @@ const ImageUploadAnswerKeySchema = z.object({
   sampleSolution: z.string().optional(),
   aiSystemPrompt: z.string().optional(),
   maxImages: z.number().int().min(1).optional(),
+  accepts: z.array(z.string()).optional(),
 });
 
 // ── Rich Content Quiz (extends image-upload with parts + scaffold) ──
@@ -179,7 +180,7 @@ const ImageUploadAnswerKeySchema = z.object({
 const ScaffoldStepSchema = z.object({
   title: z.string().min(1),
   hintZh: z.string().optional(),
-  widget: z.enum(['formula-animation', 'solution-display']).optional(),
+  widget: z.enum(['formula-animation', 'solution-display', 'procedure-steps']).optional(),
   props: z.record(z.unknown()).optional(),
 });
 
@@ -204,6 +205,7 @@ const RichContentPartSchema = z.object({
   aiSystemPrompt: z.string().optional(),
   scaffold: ScaffoldSchema.optional(),
   inputMethods: InputMethodsSchema,
+  accepts: z.array(z.string()).optional(),
 });
 
 const RichContentQuizAnswerKeySchema = z.object({
@@ -267,6 +269,12 @@ const GdDerivationBlankSchema = z.object({
   type: z.literal('derivation_blank'),
   id: z.string().min(1),
   title: z.string(),
+  hintSteps: z.array(z.object({
+    title: z.string(),
+    widget: z.enum(['formula-animation', 'solution-display', 'procedure-steps']).optional(),
+    props: z.record(z.unknown()).optional(),
+    hintZh: z.string().optional(),
+  })).optional(),
   lines: z.array(z.object({
     text: z.string(),
     blank: z.object({

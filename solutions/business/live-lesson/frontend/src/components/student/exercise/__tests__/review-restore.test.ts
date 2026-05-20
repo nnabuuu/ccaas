@@ -501,6 +501,7 @@ describe('parseRcqReview', () => {
     expect(result.state.outcomes).toEqual({})
     expect(result.state.images).toEqual({})
     expect(result.state.solutions).toEqual({})
+    expect(result.state.feedbacks).toEqual({})
   })
 
   it('restores sampleSolution from completed parts', () => {
@@ -524,6 +525,34 @@ describe('parseRcqReview', () => {
     const result = parseRcqReview(review, parts)
     expect(result.state.solutions).toEqual({ p1: '9x^2 - 4' })
     expect(result.state.solutions.p2).toBeUndefined()
+  })
+
+  it('restores llmFeedback from score in attemptsHistory', () => {
+    const review: ReviewData = {
+      data: {
+        parts: {
+          p1: {
+            completed: true,
+            images: ['img1'],
+            attemptsHistory: [{
+              method: 'submit',
+              images: ['img1'],
+              score: { total: 100, llmFeedback: 'AI 识别你的作答为「4x²-9」，回答正确！' },
+            }],
+          },
+          p2: {
+            completed: true,
+            score: { total: 80, llmFeedback: '步骤可以更完整' },
+            attemptsHistory: [{ method: 'submit' }],
+          },
+        },
+      },
+    }
+    const result = parseRcqReview(review, parts)
+    expect(result.state.feedbacks).toEqual({
+      p1: 'AI 识别你的作答为「4x²-9」，回答正确！',
+      p2: '步骤可以更完整',
+    })
   })
 
   it('skips uncompleted parts in server data', () => {

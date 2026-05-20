@@ -1,5 +1,11 @@
 import type { ObserveData } from '../ObserveDrawer'
 import { qColor, qBg, qLabel } from '../observe-helpers'
+import { RenderMath } from '../../../../utils/render-math'
+
+interface PartEntry {
+  completed: boolean; attempts: number; scaffoldLevel: number
+  feedback?: string
+}
 
 interface StudentEntry {
   id: string; name: string; score: number
@@ -7,6 +13,7 @@ interface StudentEntry {
   rubricResults: Array<{ id: string; label: string; score: number; comment: string }>
   feedback: string
   keyInsights: string[]
+  parts?: Record<string, PartEntry>
 }
 
 interface ImageUploadData {
@@ -104,7 +111,21 @@ export default function ImageUploadStudentView({ data, studentId }: Props) {
               fontSize: 12, color: 'var(--t1)', lineHeight: 1.7,
               padding: '10px 12px', background: 'var(--surface)', borderRadius: 8,
               border: '1px solid var(--border)',
-            }}>{student.feedback}</div>
+            }}><RenderMath text={student.feedback} /></div>
+          </div>
+        )}
+
+        {/* Per-part feedback (OCR / LLM) */}
+        {student.parts && Object.entries(student.parts).some(([, p]) => p.feedback) && (
+          <div style={{ marginTop: 12 }}>
+            <div className="m2-section-h">各题反馈</div>
+            {Object.entries(student.parts).map(([partId, p]) => p.feedback ? (
+              <div key={partId} style={{
+                fontSize: 12, color: 'var(--t1)', lineHeight: 1.6,
+                padding: '8px 12px', background: 'var(--surface)', borderRadius: 8,
+                border: '1px solid var(--border)', marginBottom: 6,
+              }}><RenderMath text={p.feedback} /></div>
+            ) : null)}
           </div>
         )}
       </div>

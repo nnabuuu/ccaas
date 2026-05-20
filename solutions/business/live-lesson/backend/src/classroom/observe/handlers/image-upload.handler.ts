@@ -198,6 +198,7 @@ export class ImageUploadObserveHandler implements ObserveHandler {
           attempts: pp.attempts ?? 0,
           scaffoldLevel: pp.scaffoldLevel ?? -1,
           attemptsHistory: pp.attemptsHistory,
+          feedback: (pp.score?.llmFeedback as string) ?? '',
         };
 
         // Accumulate per-part rubric stats from latest score

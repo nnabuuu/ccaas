@@ -128,6 +128,13 @@
 .rcq-review-images{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .rcq-review-images img{max-width:100%;border-radius:8px;border:1px solid var(--border)}
 
+/* OCR feedback */
+.rcq-ocr-feedback{
+  font-size:12px;color:var(--teal,#0d7377);line-height:1.6;
+  padding:8px 12px;margin-top:4px;
+  background:var(--teal-bg,#e0f2f1);border-radius:8px;
+}
+
 /* Solution card (reference answer) */
 .rcq-solution{
   background:var(--teal-bg,#e8f5f0);border-radius:8px;

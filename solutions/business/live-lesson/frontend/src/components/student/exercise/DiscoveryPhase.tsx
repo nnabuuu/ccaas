@@ -1,5 +1,5 @@
 import { useState, useCallback, useContext, useRef } from 'react'
-import { GuidedDiscoveryExercise } from './GuidedDiscoveryExercise'
+import { GuidedDiscoveryExercise, serializeBlank } from './GuidedDiscoveryExercise'
 import { SessionCtx } from '../TaskPanel'
 import { checkAnswer, cacheSubmission, getCachedSubmission, type CheckItem } from '../../../hooks/useClassroom'
 import type { Task } from '../task-data'
@@ -7,6 +7,21 @@ import type { Locale } from '../../../i18n'
 import type { GdProgress } from './gd-types'
 
 export type { GdProgress } from './gd-types'
+
+/** Flatten BlankValue objects in step answers to plain strings for API/persistence */
+function serializeStepAnswers(
+  steps: Record<string, { answers?: Record<string, unknown> }>,
+): Record<string, { answers: Record<string, string> }> {
+  const out: Record<string, { answers: Record<string, string> }> = {}
+  for (const [sid, step] of Object.entries(steps)) {
+    out[sid] = {
+      answers: Object.fromEntries(
+        Object.entries(step.answers || {}).map(([k, v]) => [k, serializeBlank(v)]),
+      ),
+    }
+  }
+  return out
+}
 
 interface Props {
   task: Task
@@ -72,7 +87,7 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
   const saveProgress = useCallback((overrides?: Partial<GdProgress>) => {
     if (doneRef.current || stepIdx === undefined || !ctx.sessionCode) return
     const data = {
-      steps: ansRef.current.steps || {},
+      steps: serializeStepAnswers(ansRef.current.steps || {}),
       _gdProgress: {
         currentStepIdx: overrides?.currentStepIdx ?? currentStepIdxRef.current,
         completedStepIds: overrides?.completedStepIds ?? [...completedStepsRef.current],
@@ -98,7 +113,7 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
     try {
       const result = await checkAnswer(
         ctx.sessionCode, stepIdx, ctx.studentId,
-        { steps: ansRef.current.steps || {} },
+        { steps: serializeStepAnswers(ansRef.current.steps || {}) },
         'guided-discovery',
       )
       if (result) {
@@ -146,7 +161,7 @@ export function DiscoveryPhase({ task, onDone, stepIdx, isRevisit, locale }: Pro
       doneRef.current = true
       // Final submit: clean data without _gdProgress for proper grading
       if (stepIdx !== undefined) {
-        const finalData = { steps: ansRef.current.steps || {} }
+        const finalData = { steps: serializeStepAnswers(ansRef.current.steps || {}) }
         ctx.submit?.(stepIdx, finalData)
         if (ctx.sessionCode) cacheSubmission(ctx.sessionCode, stepIdx, finalData, null)
       }

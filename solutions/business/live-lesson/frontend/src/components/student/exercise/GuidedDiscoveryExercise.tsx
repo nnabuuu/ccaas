@@ -5,6 +5,7 @@ import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewResto
 import { useT, LocaleScope, type Locale, type TFn } from '../../../i18n'
 import { HandwritingCanvas } from '../image-capture/HandwritingCanvas'
 import { evaluateChoice, applyChoiceSelection, type ChoiceStatus } from './gd-choice-helpers'
+import { WidgetRenderer } from '../ScaffoldPanel'
 import type { GdProgress } from './gd-types'
 import '../image-capture/handwriting.css'
 
@@ -56,6 +57,36 @@ const XSvg = () => (
 
 type InputMethod = 'keyboard' | 'handwrite' | 'photo'
 
+export type BlankValue =
+  | { type: 'text'; text: string }
+  | { type: 'image'; dataUri: string }
+
+/** Normalize legacy string or BlankValue into BlankValue */
+function toBlankValue(v: unknown): BlankValue {
+  if (v && typeof v === 'object' && 'type' in v) {
+    const obj = v as Record<string, unknown>
+    if (obj.type === 'image' && typeof obj.dataUri === 'string')
+      return { type: 'image', dataUri: obj.dataUri }
+    if (obj.type === 'text' && typeof obj.text === 'string')
+      return { type: 'text', text: obj.text }
+  }
+  const s = typeof v === 'string' ? v : ''
+  if (s.startsWith('data:image/')) return { type: 'image', dataUri: s }
+  return { type: 'text', text: s }
+}
+
+/** Flatten BlankValue → string for API/persistence */
+export function serializeBlank(v: unknown): string {
+  if (v == null) return ''
+  if (typeof v === 'string') return v
+  if (typeof v === 'number') return String(v)
+  if (typeof v === 'object' && 'type' in v) {
+    const bv = v as BlankValue
+    return bv.type === 'image' ? bv.dataUri : bv.text
+  }
+  return String(v)
+}
+
 /* SVG icons for input method toggle — matches HandwritingCanvas style */
 const MethodIcons: Record<InputMethod, JSX.Element> = {
   keyboard: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/><line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="10" y2="12"/><line x1="14" y1="12" x2="14" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/></svg>,
@@ -71,22 +102,33 @@ const ChevronUpSvg = () => (
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
 function GdInputField({ inputMethods, value, onChange, disabled, placeholder, label, locale }: {
-  inputMethods?: string[]; value: string; onChange: (val: string) => void; disabled: boolean; placeholder?: string; label?: string; locale?: Locale
+  inputMethods?: string[]; value: BlankValue | string | undefined; onChange: (val: BlankValue) => void; disabled: boolean; placeholder?: string; label?: string; locale?: Locale
 }) {
   const t = useT(locale)
   const methods = (inputMethods && inputMethods.length > 0) ? inputMethods as InputMethod[] : ['keyboard'] as InputMethod[]
   const [expanded, setExpanded] = useState(false)
   const [activeMethod, setActiveMethod] = useState<InputMethod>(methods[0])
-  const [localText, setLocalText] = useState(value || '')
+
+  const bv = toBlankValue(value)
+  const [textDraft, setTextDraft] = useState(bv.type === 'text' ? bv.text : '')
+  const [imageDraft, setImageDraft] = useState(bv.type === 'image' ? bv.dataUri : '')
+
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // Sync localText when value prop changes externally
-  useEffect(() => { setLocalText(value || '') }, [value])
+  // Sync the correct draft when value prop changes externally
+  useEffect(() => {
+    const b = toBlankValue(value)
+    if (b.type === 'text') { setTextDraft(b.text); setImageDraft('') }
+    else { setImageDraft(b.dataUri); setTextDraft('') }
+  }, [value])
 
   const handlePagesChange = useCallback((dataUris: string[]) => {
-    if (dataUris.length > 0) onChangeRef.current(dataUris[0])
+    if (dataUris.length > 0) {
+      setImageDraft(dataUris[0])
+      onChangeRef.current({ type: 'image', dataUri: dataUris[0] })
+    }
   }, [])
 
   const handlePhoto = useCallback((files: FileList) => {
@@ -95,39 +137,43 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
     const reader = new FileReader()
     reader.onload = (ev) => {
       const result = ev.target?.result as string
-      onChangeRef.current(result)
+      setImageDraft(result)
+      onChangeRef.current({ type: 'image', dataUri: result })
     }
     reader.readAsDataURL(f)
   }, [])
 
   const confirmInput = useCallback(() => {
     if (activeMethod === 'keyboard') {
-      onChangeRef.current(localText)
+      onChangeRef.current({ type: 'text', text: textDraft })
     }
     // handwrite/photo already push data via their own handlers; confirm just collapses
     setExpanded(false)
-  }, [activeMethod, localText])
+  }, [activeMethod, textDraft])
 
-  const isImage = value?.startsWith('data:image/')
-  const hasContent = activeMethod === 'keyboard' ? localText.trim().length > 0 : isImage
+  const isImage = bv.type === 'image'
+  const hasImageDraft = isImage || !!imageDraft
+  const hasContent = activeMethod === 'keyboard' ? textDraft.trim().length > 0 : hasImageDraft
 
   const handleCollapse = useCallback(() => {
-    if (activeMethod === 'keyboard') onChangeRef.current(localText)
+    if (activeMethod === 'keyboard') onChangeRef.current({ type: 'text', text: textDraft })
     setExpanded(false)
-  }, [activeMethod, localText])
+  }, [activeMethod, textDraft])
 
   // Collapsed preview
   const renderPreview = () => {
-    if (isImage) {
-      return <img src={value} alt="" style={{ maxHeight: 36, maxWidth: 140, borderRadius: 4, display: 'block', objectFit: 'contain' }} />
+    const imgSrc = imageDraft || (bv.type === 'image' ? bv.dataUri : '')
+    if (imgSrc) {
+      return <img src={imgSrc} alt="" style={{ maxHeight: 36, maxWidth: 140, borderRadius: 4, display: 'block', objectFit: 'contain' }} />
     }
-    if (value && !isImage) {
-      return <span className="math-input-text-preview">{value}</span>
+    if (bv.type === 'text' && bv.text) {
+      return <span className="math-input-text-preview">{bv.text}</span>
     }
     return <span className="math-input-ph">{label || placeholder || t('gd.tapToAnswer')}</span>
   }
 
-  const contentCls = (value && value.trim()) ? ' has-content' : ' empty'
+  const hasValue = bv.type === 'image' ? !!bv.dataUri : !!bv.text.trim()
+  const contentCls = hasValue ? ' has-content' : ' empty'
 
   if (disabled) {
     return (
@@ -152,7 +198,7 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
         onClick={() => expanded ? handleCollapse() : setExpanded(true)}
       >
         {renderPreview()}
-        {(value && value.trim()) && !expanded && <span className="math-input-edit-hint">{t('gd.tapToEdit')}</span>}
+        {hasValue && !expanded && <span className="math-input-edit-hint">{t('gd.tapToEdit')}</span>}
       </span>
 
       {expanded && (
@@ -165,7 +211,7 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
                 type="button"
                 className={'math-input-tab' + (activeMethod === m ? ' active' : '')}
                 onClick={() => {
-                  if (activeMethod === 'keyboard') onChangeRef.current(localText)
+                  if (activeMethod === 'keyboard') onChangeRef.current({ type: 'text', text: textDraft })
                   setActiveMethod(m)
                 }}
               >
@@ -182,27 +228,27 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
             <div className="math-input-kb">
               <input
                 className="math-input-field"
-                value={localText}
-                onChange={e => setLocalText(e.target.value)}
+                value={textDraft}
+                onChange={e => setTextDraft(e.target.value)}
                 placeholder={placeholder || '___'}
                 autoFocus
-                onKeyDown={e => { if (e.key === 'Enter' && localText.trim()) confirmInput() }}
+                onKeyDown={e => { if (e.key === 'Enter' && textDraft.trim()) confirmInput() }}
               />
               <div className="math-input-kb-hint">{t('gd.kbHint')}</div>
             </div>
           )}
 
           {activeMethod === 'handwrite' && (
-            <HandwritingCanvas maxPages={1} onPagesChange={handlePagesChange} disabled={disabled} locale={locale} />
+            <HandwritingCanvas maxPages={1} onPagesChange={handlePagesChange} disabled={disabled} locale={locale} autoStart />
           )}
 
           {activeMethod === 'photo' && (
             <div className="math-input-photo">
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
                 onChange={e => { if (e.target.files) handlePhoto(e.target.files); e.target.value = '' }} />
-              {isImage ? (
+              {hasImageDraft ? (
                 <div className="math-input-photo-preview">
-                  <img src={value} alt="" />
+                  <img src={imageDraft || (bv.type === 'image' ? bv.dataUri : '')} alt="" />
                   <button type="button" className="math-input-photo-change" onClick={() => fileRef.current?.click()}>
                     {MethodIcons.photo} {t('gd.photoReselect')}
                   </button>
@@ -427,7 +473,7 @@ function ObservationChoiceStep({ step, answers, disabled, choiceStatuses, onChoi
 }
 
 function FormulaBlanksStep({ step, answers, onChange, disabled, locale }: {
-  step: GdFormulaBlanksStep; answers: Record<string, any>; onChange: (id: string, val: string) => void; disabled: boolean; locale?: Locale
+  step: GdFormulaBlanksStep; answers: Record<string, any>; onChange: (id: string, val: BlankValue) => void; disabled: boolean; locale?: Locale
 }) {
   const isInline = step.layout === 'inline'
   return (
@@ -448,7 +494,7 @@ function FormulaBlanksStep({ step, answers, onChange, disabled, locale }: {
                 label={blank.label}
                 placeholder={blank.placeholder}
                 inputMethods={blank.inputMethods || step.inputMethods}
-                value={answers[blank.id] || ''}
+                value={answers[blank.id]}
                 onChange={val => onChange(blank.id, val)}
                 disabled={disabled}
                 locale={locale}
@@ -462,7 +508,7 @@ function FormulaBlanksStep({ step, answers, onChange, disabled, locale }: {
             <span style={{ fontSize: 14, lineHeight: '32px' }}><RenderMath text={blank.label} /></span>
             <GdInputField
               inputMethods={blank.inputMethods || step.inputMethods}
-              value={answers[blank.id] || ''}
+              value={answers[blank.id]}
               onChange={val => onChange(blank.id, val)}
               disabled={disabled}
               placeholder={blank.placeholder}
@@ -476,7 +522,7 @@ function FormulaBlanksStep({ step, answers, onChange, disabled, locale }: {
 }
 
 function DerivationBlankStep({ step, answers, onChange, disabled, locale }: {
-  step: GdDerivationBlankStep; answers: Record<string, any>; onChange: (id: string, val: string) => void; disabled: boolean; locale?: Locale
+  step: GdDerivationBlankStep; answers: Record<string, any>; onChange: (id: string, val: BlankValue) => void; disabled: boolean; locale?: Locale
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -486,7 +532,7 @@ function DerivationBlankStep({ step, answers, onChange, disabled, locale }: {
           {line.blank && (
             <GdInputField
               inputMethods={line.blank.inputMethods || step.inputMethods}
-              value={answers[line.blank.id] || ''}
+              value={answers[line.blank.id]}
               onChange={val => onChange(line.blank!.id, val)}
               disabled={disabled}
               placeholder={line.blank.placeholder}
@@ -500,7 +546,7 @@ function DerivationBlankStep({ step, answers, onChange, disabled, locale }: {
 }
 
 function TextBlanksStep({ step, answers, onChange, disabled, locale }: {
-  step: GdTextBlanksStep; answers: Record<string, any>; onChange: (id: string, val: string) => void; disabled: boolean; locale?: Locale
+  step: GdTextBlanksStep; answers: Record<string, any>; onChange: (id: string, val: BlankValue) => void; disabled: boolean; locale?: Locale
 }) {
   const blankMethods = step.textBlanks?.reduce<Record<string, string[]>>((acc, b) => {
     if (b.inputMethods) acc[b.id] = b.inputMethods
@@ -515,7 +561,7 @@ function TextBlanksStep({ step, answers, onChange, disabled, locale }: {
         const match = part.match(/^\{\{([^}]+)\}\}$/)
         if (match) {
           const blankId = match[1]
-          const value = answers[blankId] || ''
+          const rawValue = answers[blankId]
           const methods = blankMethods[blankId] || step.inputMethods
 
           if (hasNonKeyboard && methods && methods.length > 1) {
@@ -523,7 +569,7 @@ function TextBlanksStep({ step, answers, onChange, disabled, locale }: {
               <span key={i} style={{ display: 'inline-block', verticalAlign: 'middle', margin: '0 4px' }}>
                 <GdInputField
                   inputMethods={methods}
-                  value={value}
+                  value={rawValue}
                   onChange={val => onChange(blankId, val)}
                   disabled={disabled}
                   locale={locale}
@@ -531,16 +577,17 @@ function TextBlanksStep({ step, answers, onChange, disabled, locale }: {
               </span>
             )
           }
+          const textValue = serializeBlank(rawValue)
           return (
             <input
               key={i}
               type="text"
-              value={value}
-              onChange={e => onChange(blankId, e.target.value)}
+              value={textValue}
+              onChange={e => onChange(blankId, { type: 'text', text: e.target.value })}
               disabled={disabled}
               placeholder="___"
               style={{
-                display: 'inline-block', width: Math.max(60, value.length * 16 + 24),
+                display: 'inline-block', width: Math.max(60, textValue.length * 16 + 24),
                 padding: '2px 8px', margin: '0 4px', border: '2px solid var(--border)', borderRadius: 6,
                 fontSize: 14, textAlign: 'center', outline: 'none', background: 'transparent',
                 verticalAlign: 'middle',
@@ -605,7 +652,7 @@ function StepFeedbackBar({ isCompleted, isCorrect, isLast, onAdvance, conclusion
             {isCorrect ? t('gd.stepCorrect') : t('gd.stepWrong')}
           </strong>
           {isCorrect && conclusion && ` ${conclusion}`}
-          {!isCorrect && feedback && <><br />{feedback}</>}
+          {!isCorrect && feedback && <><br /><RenderMath text={feedback} /></>}
         </span>
       </div>
       {/* Full-width teal "继续" button — outside feedback card */}
@@ -782,7 +829,7 @@ export function GuidedDiscoveryExercise({
                     disabled={stepDisabled || (isStepCompleted && result === true)}
                     locale={locale}
                   />
-                  {isProgressive && !isStepCompleted && isCurrentStep && (
+                  {isProgressive && (!isStepCompleted || result === false) && isCurrentStep && (
                     <button
                       className="stu-btn pri"
                       style={{ marginTop: 10, fontSize: 13, padding: '6px 20px' }}
@@ -813,7 +860,7 @@ export function GuidedDiscoveryExercise({
                     disabled={stepDisabled || (isStepCompleted && result === true)}
                     locale={locale}
                   />
-                  {isProgressive && !isStepCompleted && isCurrentStep && (
+                  {isProgressive && (!isStepCompleted || result === false) && isCurrentStep && (
                     <button
                       className="stu-btn pri"
                       style={{ marginTop: 10, fontSize: 13, padding: '6px 20px' }}
@@ -833,6 +880,24 @@ export function GuidedDiscoveryExercise({
                       t={t}
                     />
                   )}
+                  {isStepCompleted && result === false && step.hintSteps && step.hintSteps.length > 0 && (
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {step.hintSteps.map((hs, i) => (
+                        <div key={i} className="scaffold-hint-card">
+                          <div className="scaffold-hint-hd">
+                            <span className="scaffold-hint-title">{hs.title}</span>
+                          </div>
+                          <div className="scaffold-hint-body">
+                            {hs.widget
+                              ? <WidgetRenderer widget={hs.widget} props={hs.props} />
+                              : hs.hintZh
+                                ? <RenderMath text={hs.hintZh} />
+                                : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
               {step.type === 'text_blanks' && (
@@ -844,7 +909,7 @@ export function GuidedDiscoveryExercise({
                     disabled={stepDisabled || (isStepCompleted && result === true)}
                     locale={locale}
                   />
-                  {isProgressive && !isStepCompleted && isCurrentStep && (
+                  {isProgressive && (!isStepCompleted || result === false) && isCurrentStep && (
                     <button
                       className="stu-btn pri"
                       style={{ marginTop: 10, fontSize: 13, padding: '6px 20px' }}

@@ -93,8 +93,25 @@
 /* Keyframe used by subst animation (also defined in scaffold-panel.css) */
 @keyframes scaffold-hintIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
+/* ═══ Procedure Steps ═══ */
+.sw-proc{padding:8px 0}
+.sw-proc-step{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:8px 0;
+  opacity:0;transform:translateY(12px);
+  transition:opacity .4s ease,transform .4s ease;
+}
+.sw-proc-step.vis{opacity:1;transform:translateY(0)}
+.sw-proc-badge{
+  flex-shrink:0;width:24px;height:24px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:700;margin-top:1px;
+}
+.sw-proc-label{font-size:14px;line-height:1.5;color:var(--t1)}
+.sw-proc-label strong{font-weight:700;color:var(--purple)}
+
 /* ═══ Reduced motion ═══ */
 @media(prefers-reduced-motion:reduce){
-  .sw-fv,.sw-ft,.sw-fplus,.sw-sol-line{transition:none}
+  .sw-fv,.sw-ft,.sw-fplus,.sw-sol-line,.sw-proc-step{transition:none}
   .sw-formula-subst{animation:none}
 }

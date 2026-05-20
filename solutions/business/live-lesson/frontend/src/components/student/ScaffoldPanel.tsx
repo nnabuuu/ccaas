@@ -4,6 +4,7 @@ import { renderMd } from './renderMd'
 import { useT, type Locale } from '../../i18n'
 import FormulaAnimation, { type FormulaAnimationProps } from './scaffold/FormulaAnimation'
 import SolutionDisplay, { type SolutionDisplayProps } from './scaffold/SolutionDisplay'
+import ProcedureSteps, { type ProcedureStepsProps } from './scaffold/ProcedureSteps'
 import './scaffold-panel.css'
 import './scaffold/scaffold-widgets.css'
 
@@ -32,7 +33,7 @@ interface Props {
 }
 
 /** Render a widget by type, with runtime prop validation */
-function WidgetRenderer({ widget, props }: { widget: string; props?: Record<string, unknown> }) {
+export function WidgetRenderer({ widget, props, enableMath }: { widget: string; props?: Record<string, unknown>; enableMath?: boolean }) {
   const p = props ?? {}
   switch (widget) {
     case 'formula-animation': {
@@ -52,6 +53,12 @@ function WidgetRenderer({ widget, props }: { widget: string; props?: Record<stri
         return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Invalid solution-display props</div>
       }
       return <SolutionDisplay lines={p.lines as SolutionDisplayProps['lines']} />
+    }
+    case 'procedure-steps': {
+      if (!Array.isArray(p.steps) || p.steps.length === 0) {
+        return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Invalid procedure-steps props</div>
+      }
+      return <ProcedureSteps steps={p.steps as ProcedureStepsProps['steps']} enableMath={enableMath} />
     }
     default:
       return <div style={{ color: 'var(--t3)', fontSize: 12 }}>Unknown widget: {widget}</div>
@@ -199,7 +206,7 @@ export default function ScaffoldPanel({ hints, enableMath, onSwitchToText, colla
                 </div>
                 <div className="scaffold-hint-body">
                   {step.widget
-                    ? <WidgetRenderer widget={step.widget} props={step.props} />
+                    ? <WidgetRenderer widget={step.widget} props={step.props} enableMath={enableMath} />
                     : step.hintZh
                       ? renderMd(step.hintZh, { math: enableMath })
                       : null}

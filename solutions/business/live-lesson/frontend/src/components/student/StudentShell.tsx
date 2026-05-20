@@ -71,8 +71,18 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     setTextbookOpen(true)
   }, [])
 
-  // Clear scaffold hints on task change
-  useEffect(() => { setScaffoldHints([]); setRightMode('text') }, [taskId])
+  // On task change: populate initialScaffold or clear
+  useEffect(() => {
+    const t = tasks[taskId ? taskId - 1 : -1]
+    if (t?.initialScaffold?.length) {
+      setScaffoldHints(t.initialScaffold as ScaffoldHint[])
+      setRightMode('scaffold')
+      setTextbookOpen(true)
+    } else {
+      setScaffoldHints([])
+      setRightMode('text')
+    }
+  }, [taskId, tasks])
 
   // Listen for scroll-to-para events from paragraph reference links
   useEffect(() => {

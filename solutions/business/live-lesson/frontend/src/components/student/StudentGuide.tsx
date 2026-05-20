@@ -210,18 +210,6 @@ export default function StudentGuide({ open, onClose, manifest, locale }: Props)
           ))}
         </div>
 
-        {/* AI + Reward strip */}
-        <div className="stu-guide-strip">
-          <div className="stu-guide-callout purple">
-            <span className="stu-guide-callout-icon">&#x2726;</span>
-            <span><strong>{t('guide.aiCalloutBold')}</strong> {t('guide.aiCalloutText')}</span>
-          </div>
-          <div className="stu-guide-callout amber">
-            <span className="stu-guide-callout-icon">&#x1F3C6;</span>
-            <span><strong>{t('guide.rewardCalloutBold')}</strong> {t('guide.rewardCalloutText')}</span>
-          </div>
-        </div>
-
         {/* Footer */}
         <div className="sd-guide-footer">
           <button className="stu-btn pri" onClick={onClose}>{t('guide.startLearning')}</button>
