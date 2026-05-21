@@ -1519,3 +1519,76 @@ describe('GuidedDiscoveryGrader — image OCR allText fallback', () => {
     expect(result.byDimension.s).toBe(true);
   });
 });
+
+// ── swappable text_blanks + image OCR caching ──
+
+describe('GuidedDiscoveryGrader — swappable image blanks (ocrCache)', () => {
+  const IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC';
+
+  const swappableKey: GuidedDiscoveryAnswerKey = {
+    type: 'guided-discovery',
+    title: 'test',
+    steps: [{
+      type: 'text_blanks',
+      id: 's',
+      title: '填空',
+      template: '__乘以__',
+      blanks: [
+        { id: 'b1', accepts: ['和', '之和'] },
+        { id: 'b2', accepts: ['差', '之差'] },
+      ],
+      swappable: true,
+    }],
+  };
+
+  it('swapped image blanks correct — vision called only once per blank (2 total, not 4)', async () => {
+    const ai = {
+      callVisionLlm: jest.fn()
+        .mockResolvedValueOnce(JSON.stringify({ recognized: '差' }))
+        .mockResolvedValueOnce(JSON.stringify({ recognized: '和' })),
+    } as unknown as AiPromptBuilder;
+    const g = new GuidedDiscoveryGrader(ai);
+    // b1 answers '差' (wrong for b1.accepts=['和']), b2 answers '和' (wrong for b2.accepts=['差'])
+    // but swapped: b1.accepts=['差'] matches '差', b2.accepts=['和'] matches '和'
+    const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
+    expect(result.byDimension.s).toBe(true);
+    // Only 2 vision calls (first gradeBlanks), not 4 (retry reuses cache)
+    expect(ai.callVisionLlm).toHaveBeenCalledTimes(2);
+  });
+
+  it('swapped image blanks both wrong in both orders — still fails', async () => {
+    const ai = {
+      callVisionLlm: jest.fn()
+        .mockResolvedValueOnce(JSON.stringify({ recognized: 'x' }))
+        .mockResolvedValueOnce(JSON.stringify({ recognized: 'y' })),
+    } as unknown as AiPromptBuilder;
+    const g = new GuidedDiscoveryGrader(ai);
+    const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
+    expect(result.byDimension.s).toBe(false);
+    expect(ai.callVisionLlm).toHaveBeenCalledTimes(2);
+  });
+
+  it('mixed image + text, swapped order correct — only 1 vision call', async () => {
+    const ai = {
+      callVisionLlm: jest.fn()
+        .mockResolvedValueOnce(JSON.stringify({ recognized: '差' })),
+    } as unknown as AiPromptBuilder;
+    const g = new GuidedDiscoveryGrader(ai);
+    // b1=image('差'), b2=text('和') — original order wrong, swapped correct
+    const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: '和' } } } });
+    expect(result.byDimension.s).toBe(true);
+    expect(ai.callVisionLlm).toHaveBeenCalledTimes(1);
+  });
+
+  it('image blanks correct in original order — no retry, 2 vision calls', async () => {
+    const ai = {
+      callVisionLlm: jest.fn()
+        .mockResolvedValueOnce(JSON.stringify({ recognized: '和' }))
+        .mockResolvedValueOnce(JSON.stringify({ recognized: '差' })),
+    } as unknown as AiPromptBuilder;
+    const g = new GuidedDiscoveryGrader(ai);
+    const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
+    expect(result.byDimension.s).toBe(true);
+    expect(ai.callVisionLlm).toHaveBeenCalledTimes(2);
+  });
+});

@@ -19,6 +19,7 @@ interface BlankDef {
 interface ImageGradeResult {
   correct: boolean;
   feedback?: string;
+  recognized?: string;
 }
 
 export class GuidedDiscoveryGrader implements Grader {
@@ -86,7 +87,7 @@ export class GuidedDiscoveryGrader implements Grader {
             { ...blankDefs[0], accepts: blankDefs[1].accepts },
             { ...blankDefs[1], accepts: blankDefs[0].accepts },
           ];
-          return this.gradeBlanks(swapped, answers as Record<string, string>, stepDef);
+          return this.gradeBlanks(swapped, answers as Record<string, string>, stepDef, result.ocrCache);
         }
         return result;
       }
@@ -100,9 +101,23 @@ export class GuidedDiscoveryGrader implements Grader {
     blanks: BlankDef[],
     answers: Record<string, string>,
     stepDef: GuidedDiscoveryStep,
-  ): Promise<{ ok: boolean; feedback?: string }> {
+    ocrCache?: Map<string, string>,
+  ): Promise<{ ok: boolean; feedback?: string; ocrCache: Map<string, string> }> {
     const feedbacks: string[] = [];
     let allCorrect = true;
+    const cache = ocrCache ?? new Map<string, string>();
+
+    // Parallel vision calls for image blanks (skip if cached)
+    const imageResults = new Map<string, ImageGradeResult>();
+    await Promise.all(blanks.map(async (blank) => {
+      const v = answers[blank.id];
+      if (!v || !isDataUri(v)) return;
+      if (cache.has(blank.id)) return;
+      if (!this.aiPromptBuilder) return;
+      const result = await this.gradeImageBlank(v, blank, stepDef);
+      imageResults.set(blank.id, result);
+      if (result.recognized) cache.set(blank.id, result.recognized);
+    }));
 
     for (const blank of blanks) {
       const v = answers[blank.id];
@@ -112,14 +127,25 @@ export class GuidedDiscoveryGrader implements Grader {
       }
 
       if (isDataUri(v)) {
-        if (this.aiPromptBuilder) {
-          const result = await this.gradeImageBlank(v, blank, stepDef);
-          if (!result.correct) allCorrect = false;
-          if (result.feedback) feedbacks.push(result.feedback);
+        const imgResult = imageResults.get(blank.id);
+        if (imgResult) {
+          // Fresh vision result from this call
+          if (!imgResult.correct) allCorrect = false;
+          if (imgResult.feedback) feedbacks.push(imgResult.feedback);
         } else {
-          this.logger.warn(`Image submitted for blank ${blank.id} but AI service unavailable`);
-          allCorrect = false;
-          feedbacks.push('图片识别服务不可用，请使用键盘输入');
+          // Cached OCR text (swappable retry path) or AI unavailable
+          const cachedText = cache.get(blank.id);
+          if (cachedText !== undefined) {
+            if (!matchesAny(cachedText, blank.accepts)) {
+              allCorrect = false;
+              if (blank.rejects?.length && matchesAny(cachedText, blank.rejects) && blank.rejectHint) {
+                feedbacks.push(blank.rejectHint);
+              }
+            }
+          } else {
+            allCorrect = false;
+            feedbacks.push('图片识别服务不可用，请使用键盘输入');
+          }
         }
       } else {
         if (!matchesAny(v, blank.accepts)) {
@@ -134,6 +160,7 @@ export class GuidedDiscoveryGrader implements Grader {
     return {
       ok: allCorrect,
       feedback: feedbacks.length > 0 ? feedbacks.join('; ') : undefined,
+      ocrCache: cache,
     };
   }
 
@@ -168,19 +195,19 @@ export class GuidedDiscoveryGrader implements Grader {
       }
 
       if (matchesAny(recognized, blank.accepts)) {
-        return { correct: true };
+        return { correct: true, recognized };
       }
       if (allText) {
         const lines = allText.split('\n').map(l => l.replace(/^[=＝]\s*/, '').trim()).filter(Boolean);
         if (lines.some(line => matchesAny(line, blank.accepts))) {
-          return { correct: true };
+          return { correct: true, recognized };
         }
       }
       if (blank.rejects?.length && matchesAny(recognized, blank.rejects) && blank.rejectHint) {
-        return { correct: false, feedback: blank.rejectHint };
+        return { correct: false, feedback: blank.rejectHint, recognized };
       }
       const display = recognized.length > 50 ? recognized.slice(0, 50) + '…' : recognized;
-      return { correct: false, feedback: `识别结果「${display}」不正确` };
+      return { correct: false, feedback: `识别结果「${display}」不正确`, recognized };
     } catch (e) {
       this.logger.warn(`Vision grading failed for blank ${blank.id}: ${e}`);
       return { correct: false, feedback: '图片识别失败，请重新提交' };
