@@ -78,12 +78,18 @@ export class GuidedDiscoveryGrader implements Grader {
           stepDef,
         );
 
-      case 'text_blanks':
-        return this.gradeBlanks(
-          stepDef.blanks.map(b => ({ id: b.id, accepts: b.accepts })),
-          answers as Record<string, string>,
-          stepDef,
-        );
+      case 'text_blanks': {
+        const blankDefs = stepDef.blanks.map(b => ({ id: b.id, accepts: b.accepts }));
+        const result = await this.gradeBlanks(blankDefs, answers as Record<string, string>, stepDef);
+        if (!result.ok && stepDef.swappable && blankDefs.length === 2) {
+          const swapped = [
+            { ...blankDefs[0], accepts: blankDefs[1].accepts },
+            { ...blankDefs[1], accepts: blankDefs[0].accepts },
+          ];
+          return this.gradeBlanks(swapped, answers as Record<string, string>, stepDef);
+        }
+        return result;
+      }
 
       default:
         return { ok: false };

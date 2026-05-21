@@ -292,6 +292,7 @@ const GdTextBlanksSchema = z.object({
   id: z.string().min(1),
   title: z.string(),
   template: z.string().min(1),
+  swappable: z.boolean().optional(),
   blanks: z.array(z.object({
     id: z.string().min(1),
     accepts: z.array(z.string()).nonempty(),
