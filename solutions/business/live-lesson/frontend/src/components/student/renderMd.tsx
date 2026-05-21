@@ -2,6 +2,21 @@ import { Fragment } from 'react'
 import katex from 'katex'
 import { linkParas } from './utils/linkParas'
 
+/** Pre-process inline math $...$ in an HTML string → KaTeX spans.
+ *  Use with dangerouslySetInnerHTML when the source contains HTML tags.
+ *  Skips $$...$$ display math and $ inside HTML attributes. */
+export function renderHtmlWithMath(html: string): string {
+  // Split on HTML tags to avoid replacing $ inside attributes
+  return html.replace(/(<[^>]*>)|(?<!\$)\$(?!\$)([^$]+?)\$(?!\$)/g, (_match, tag, expr) => {
+    if (tag) return tag  // HTML tag — pass through unchanged
+    try {
+      return katex.renderToString(expr, { throwOnError: false })
+    } catch {
+      return `$${expr}$`
+    }
+  })
+}
+
 /* ═══ MARKDOWN-LITE RENDERER ═══ */
 export function renderMd(text: string, opts?: { math?: boolean }) {
   if (!text) return null

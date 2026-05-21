@@ -1,8 +1,10 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo, useContext } from 'react'
 import MapGuide from './MapGuide'
 import { readGuideSeen, markGuideSeen } from './guide-helpers'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import { useT, type Locale } from '../../../i18n'
+import { SessionCtx } from '../TaskPanel'
+import { renderMd } from '../renderMd'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -52,6 +54,7 @@ export function parseMapReview(review: ReviewData) {
 
 export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults, reviewData, locale }: Props) {
   const t = useT(locale)
+  const { config } = useContext(SessionCtx)
   const restored = useReviewRestore(reviewData, parseMapReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveFeedback = restored?.feedback ?? feedback
@@ -446,7 +449,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
           background: 'var(--purple-bg)', border: '1px solid var(--purple)',
           fontSize: 13, color: 'var(--t1)', lineHeight: 1.6,
         }}>
-          {effectiveFeedback}
+          {renderMd(effectiveFeedback, { math: config.enableMath })}
         </div>
       )}
 

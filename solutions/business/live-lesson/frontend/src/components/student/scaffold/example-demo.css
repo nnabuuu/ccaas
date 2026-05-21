@@ -1,0 +1,234 @@
+/* ── Example Demo Card — animated walkthrough ── */
+/* All classes prefixed with demo- to avoid collisions */
+
+/* === Layout wrapper + scoped color tokens === */
+.demo-card {
+  /* Brighter saturated palette for demo emphasis (distinct from global --purple etc.) */
+  --demo-teal: #0d9488;
+  --demo-teal-bg: #ccfbf1;
+  --demo-coral: #e85d5d;
+  --demo-coral-bg: #ffe4e6;
+  --demo-green: #16a34a;
+  --demo-green-bg: #dcfce7;
+  --demo-purple: #7c3aed;
+  --demo-purple-bg: #eceafe;
+
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* === Expression Card (design: .problem-card) === */
+.demo-expr-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 28px; text-align: center;
+}
+.demo-expr-label {
+  font-size: 10px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px;
+}
+.demo-expr-tokens {
+  font-size: 38px; font-weight: 600; letter-spacing: -.5px;
+  display: inline-flex; align-items: baseline; gap: 0;
+}
+.demo-tok {
+  display: inline-block; position: relative; padding: 2px 2px;
+  transition: color .4s ease;
+}
+.demo-tok-var { font-style: italic; }
+.demo-tok-op { color: var(--t3); font-weight: 400; font-style: normal; }
+
+/* Annotation underlines — positioned absolutely under each token */
+.demo-ann {
+  position: absolute; bottom: -6px; left: 0; right: 0;
+  height: 6px; overflow: visible;
+}
+.demo-ann svg {
+  display: block; width: 100%; height: 6px;
+}
+.demo-ann-path {
+  fill: none; stroke-width: 2;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  transition: stroke-dashoffset .6s ease;
+}
+.demo-ann-path.vis { stroke-dashoffset: 0; }
+
+/* Same-term (teal double line) */
+.demo-tok.demo-hl-same { color: var(--demo-teal); }
+.demo-ann-same { stroke: var(--demo-teal); }
+
+/* Opposite-term (coral wavy line) */
+.demo-tok.demo-hl-opp { color: var(--demo-coral); }
+.demo-ann-opp { stroke: var(--demo-coral); }
+
+/* Legend — chip/pill style */
+.demo-legend {
+  display: flex; gap: 14px; justify-content: center;
+  margin-top: 10px; font-size: 11px;
+}
+.demo-legend-chip {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 4px; font-weight: 600;
+  opacity: 0; transition: opacity .4s ease;
+}
+.demo-legend-chip.vis { opacity: 1; }
+.demo-legend-chip.same { background: var(--demo-teal-bg); color: var(--demo-teal); }
+.demo-legend-chip.opp { background: var(--demo-coral-bg); color: var(--demo-coral); }
+
+/* === Walkthrough Card === */
+.demo-walkthrough {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+
+/* Header bar */
+.demo-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px;
+  background: var(--demo-purple-bg);
+  border-bottom: 1px solid rgba(124, 58, 237, .08);
+}
+.demo-avatar {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--demo-purple); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 12px;
+}
+.demo-title {
+  font-size: 12px; font-weight: 600; color: var(--demo-purple); flex: 1;
+}
+.demo-stage {
+  font-size: 10px; font-weight: 500; color: var(--demo-purple);
+  background: rgba(255,255,255,.55);
+  padding: 2px 8px; border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Body wrapper */
+.demo-body { padding: 4px 0; }
+
+/* === Steps === */
+.demo-steps { display: flex; flex-direction: column; }
+
+.demo-step {
+  display: flex; gap: 14px; padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.demo-step:first-child { border-top: 0; }
+.demo-step.vis { opacity: 1; transform: translateY(0); }
+
+.demo-step-tag {
+  flex-shrink: 0; width: 56px; padding-top: 2px;
+  font-size: 10px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.demo-step.active .demo-step-tag { color: var(--demo-purple); }
+
+.demo-step-body {
+  flex: 1; min-width: 0;
+  font-size: 13px; line-height: 1.7; color: var(--t1);
+}
+.demo-step-desc { color: var(--t2); }
+
+/* === DemoMap — mapping grid === */
+.demo-map {
+  margin: 8px 0 0 0;
+}
+.demo-map-grid {
+  display: inline-grid; gap: 0; align-items: center;
+  font-size: 24px; font-weight: 600;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 22px;
+}
+.demo-map-cell {
+  text-align: center; padding: 2px 3px;
+  opacity: 0; border-radius: 4px;
+  transition: opacity .35s ease, color .35s ease, background .35s ease, padding .35s ease;
+}
+.demo-map-cell.vis { opacity: 1; }
+.demo-map-cell.demo-map-var { font-style: italic; }
+.demo-map-cell.demo-map-op { color: var(--t3); font-weight: 400; font-style: normal; }
+.demo-map-cell.demo-map-paren { color: var(--t3); font-weight: 400; }
+
+/* Map cell highlights with background */
+.demo-map-cell.demo-hl-same { color: var(--demo-teal); background: var(--demo-teal-bg); padding: 2px 6px; }
+.demo-map-cell.demo-hl-opp { color: var(--demo-coral); background: var(--demo-coral-bg); padding: 2px 6px; }
+
+/* Bridge connectors */
+.demo-map-bridge {
+  text-align: center; padding: 0;
+  position: relative; height: 20px;
+}
+.demo-map-bridge::before {
+  content: ''; display: block;
+  position: absolute; left: 50%; top: 0;
+  width: 2px; height: 100%;
+  border-left: 2px dashed var(--demo-teal);
+  transform-origin: top; transform: scaleY(0);
+  transition: transform .4s ease;
+}
+.demo-map-bridge.vis::before { transform: scaleY(1); }
+.demo-map-bridge.opp::before { border-left-color: var(--demo-coral); }
+
+/* Map legend — pill style */
+.demo-map-legend {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  margin-top: 10px; font-size: 12.5px; color: var(--t2);
+}
+.demo-map-legend-item {
+  padding: 4px 10px; border-radius: 6px; background: var(--surface2);
+  opacity: 0; transform: translateX(-6px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.demo-map-legend-item.vis { opacity: 1; transform: translateX(0); }
+.demo-map-legend-item .demo-ref-same {
+  font-style: italic; font-weight: 700;
+  padding: 0 5px; color: var(--demo-teal);
+}
+.demo-map-legend-item .demo-ref-opp {
+  font-style: italic; font-weight: 700;
+  padding: 0 5px; color: var(--demo-coral);
+}
+
+/* === DemoSolution — solution lines === */
+.demo-solution {
+  margin: 8px 0 0 0;
+  display: inline-grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0 4px; align-items: baseline;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px;
+}
+.demo-sol-cell {
+  font-size: 16px; line-height: 2; font-weight: 500; font-style: italic;
+  color: var(--t1);
+  opacity: 0; transform: translateX(-8px);
+  transition: opacity .4s ease, transform .4s ease;
+  white-space: nowrap;
+}
+.demo-sol-cell.vis { opacity: 1; transform: translateX(0); }
+.demo-sol-prefix { color: var(--t3); font-weight: 400; font-style: normal; }
+.demo-sol-eq { color: var(--t3); font-weight: 400; font-style: normal; }
+.demo-sol-final {
+  display: inline-block; background: var(--demo-green-bg);
+  color: var(--demo-green); padding: 2px 10px; border-radius: 6px;
+  font-weight: 700; font-size: 17px;
+}
+
+/* === Action row === */
+.demo-actions {
+  display: flex; gap: 10px; justify-content: center;
+  padding: 12px 20px 16px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.demo-actions.vis { opacity: 1; transform: translateY(0); }
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  .demo-step, .demo-legend-chip, .demo-map-cell,
+  .demo-map-bridge::before, .demo-map-legend-item,
+  .demo-sol-cell, .demo-actions, .demo-tok,
+  .demo-ann-path { transition: none; }
+}

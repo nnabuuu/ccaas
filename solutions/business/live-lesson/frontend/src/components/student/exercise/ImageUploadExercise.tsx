@@ -1,8 +1,11 @@
+import { useContext } from 'react'
 import { RenderMath } from '../../../utils/render-math'
 import { ImageCaptureButton } from '../image-capture/ImageCaptureButton'
 import { ImageGallery } from '../image-capture/ImageGallery'
 import { useReviewRestore, type ReviewData } from '../../../hooks/useReviewRestore'
 import { useT, LocaleScope, type Locale } from '../../../i18n'
+import { SessionCtx } from '../TaskPanel'
+import { renderMd } from '../renderMd'
 import '../image-capture/image-capture.css'
 
 interface RubricItem { id: string; label: string; weight: number }
@@ -37,6 +40,7 @@ export function ImageUploadExercise({
   locale?: Locale
 }) {
   const t = useT(locale)
+  const { config } = useContext(SessionCtx)
   const restored = useReviewRestore(reviewData, parseImageUploadReview)
   const effectiveAns = restored?.ans ?? ans
   const effectiveFeedback = restored?.feedback ?? feedback
@@ -160,7 +164,7 @@ export function ImageUploadExercise({
           {effectiveFeedback && (
             <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, fontSize: 13 }}>
               <div style={{ fontWeight: 500, marginBottom: 4 }}>{t('imageUpload.overallFeedback')}</div>
-              <div style={{ color: 'var(--t2)' }}>{effectiveFeedback}</div>
+              <div style={{ color: 'var(--t2)' }}>{renderMd(effectiveFeedback, { math: config.enableMath })}</div>
             </div>
           )}
         </div>

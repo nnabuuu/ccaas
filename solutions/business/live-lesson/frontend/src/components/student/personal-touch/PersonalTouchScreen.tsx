@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react'
 import { useT, LocaleScope, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
+import { renderMd } from '../renderMd'
 
 interface StrategyResult {
   task: number
@@ -132,7 +133,7 @@ export function PersonalTouchScreen({ onContinue, locale }: {
           <span style={{ fontWeight: 400, color: 'var(--t3)' }}>— {data.tier.label}</span>
         </div>
         <div style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--t1)' }}>
-          {data.aiComment}
+          {renderMd(data.aiComment, { math: ctx.config.enableMath })}
         </div>
       </div>
 

@@ -127,11 +127,34 @@ export interface TaskDiscuss {
   fallbackMC: FallbackMC
   insight: string; insightZh?: string
 }
+export interface DemoMapping {
+  tokens: Array<{ text: string; type?: 'same' | 'opposite' | 'op' }>
+  formulaTokens: Array<{ text: string; type?: 'same' | 'opposite' | 'op' }>
+  sameTerm: { symbol: string; mapsTo: string }
+  oppositeTerm: { symbol: string; mapsTo: string }
+}
+
+export interface DemoSolutionLine {
+  prefix: string; math: string; isFinal?: boolean
+}
+
+export interface DemoConfig {
+  expression: string
+  steps: Array<{
+    id: string; label: string
+    description?: string
+    mapping?: DemoMapping
+    solutionLines?: DemoSolutionLine[]
+  }>
+  delays: number[]
+}
+
 export interface InstructionView {
   title: string
   body: string
   keyPoints?: string[]
   confirmLabel?: string
+  demoConfig?: DemoConfig
 }
 
 export interface DiscoveryKey {

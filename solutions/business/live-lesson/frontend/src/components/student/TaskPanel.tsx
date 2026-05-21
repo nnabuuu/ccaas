@@ -7,9 +7,10 @@ import { DiscoveryPhase } from './exercise/DiscoveryPhase'
 import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
 import { SummaryScreen } from './personal-touch/SummaryScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
-import { renderMd } from './renderMd'
+import { renderMd, renderHtmlWithMath } from './renderMd'
 import { reportPhase, type CachedSubmission, type DiscussMeta, type SubmitResult } from '../../hooks/useClassroom'
 import type { Task } from './task-data'
+import ExampleDemoCard from './scaffold/ExampleDemoCard'
 import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
 import { useT, LocaleScope, type TFn, type Locale } from '../../i18n'
@@ -46,6 +47,20 @@ function ListenPhase({ task, onDone, lessonId, isRevisit, label }: { task: Task;
   const [done, setDone] = useState(!!isRevisit)
   const handleClick = () => { setDone(true); onDone() }
   const iv = task.instructionView
+  if (iv?.demoConfig) {
+    return (
+      <div id="phase-listen" data-translate-ctx="instruction">
+        <div className="stu-section-label"><span>{label || t('phase.listen')}</span><div className="stu-section-line" /></div>
+        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
+        <ExampleDemoCard
+          config={iv.demoConfig}
+          onDone={handleClick}
+          skipAnimation={done}
+          confirmLabel={iv.confirmLabel}
+        />
+      </div>
+    )
+  }
   return (
     <div id="phase-listen" data-translate-ctx="instruction">
       <div className="stu-section-label"><span>{label || t('phase.listen')}</span><div className="stu-section-line" /></div>
@@ -54,13 +69,13 @@ function ListenPhase({ task, onDone, lessonId, isRevisit, label }: { task: Task;
         <div className="stu-instr-badge">{task.name}</div>
         {iv ? (
           <>
-            {iv.title && <div className="stu-instr-title">{iv.title}</div>}
-            <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: iv.body }} />
+            {iv.title && <div className="stu-instr-title">{config.enableMath ? renderMd(iv.title, { math: true }) : iv.title}</div>}
+            <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: config.enableMath ? renderHtmlWithMath(iv.body) : iv.body }} />
             {iv.keyPoints && iv.keyPoints.length > 0 && (
               <div className="stu-instr-kp">
                 <div className="stu-instr-kp-label">{t('listen.remember')}</div>
                 <ul>
-                  {iv.keyPoints.map((kp, i) => <li key={i}>{kp}</li>)}
+                  {iv.keyPoints.map((kp, i) => <li key={i}>{config.enableMath ? renderMd(kp, { math: true }) : kp}</li>)}
                 </ul>
               </div>
             )}

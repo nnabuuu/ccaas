@@ -107,7 +107,8 @@ function FallbackMCView({ config, onComplete, enableMath }: { config: FallbackMC
 /* ═══ CONTINUE CHAT ═══ */
 function ContinueChat({ taskId }: { taskId: number }) {
   const t = useT()
-  const { sessionCode, studentId } = useContext(SessionCtx)
+  const { sessionCode, studentId, config } = useContext(SessionCtx)
+  const enableMath = config.enableMath
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<Array<{ role: 'q' | 'a'; text: string; loading?: boolean; id?: number }>>([])
   const [input, setInput] = useState('')
@@ -170,11 +171,11 @@ function ContinueChat({ taskId }: { taskId: number }) {
         {msgs.map((m, i) => m.role === 'a' ? (
           <div key={i} className="sd-msg-row">
             <div className="sd-avatar ai">S</div>
-            <div className="sd-bubble ai" style={m.loading ? { opacity: 0.6, fontStyle: 'italic' } : undefined}>{m.text}</div>
+            <div className="sd-bubble ai" style={m.loading ? { opacity: 0.6, fontStyle: 'italic' } : undefined}>{renderMd(m.text, { math: enableMath })}</div>
           </div>
         ) : (
           <div key={i} className="sd-msg-row student">
-            <div className="sd-bubble student">{m.text}</div>
+            <div className="sd-bubble student">{renderMd(m.text, { math: enableMath })}</div>
           </div>
         ))}
         <div ref={endRef} />

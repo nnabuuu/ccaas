@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useContext, useEffect } from 'react'
 import { useAiAsk } from '../../../hooks/useClassroom'
 import { useT, type Locale } from '../../../i18n'
 import { SessionCtx } from '../TaskPanel'
+import { renderMd } from '../renderMd'
 import { aiChatStorageKey, readChatMessages, writeChatMessages } from '../exercise/guide-helpers'
 
 interface ChatMsg {
@@ -19,7 +20,7 @@ interface Props {
 
 export default function AIFloat({ taskId, taskName, phase, aiHints, locale }: Props) {
   const t = useT(locale)
-  const { sessionCode, studentId } = useContext(SessionCtx)
+  const { sessionCode, studentId, config } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<ChatMsg[]>([])
   const [input, setInput] = useState('')
@@ -142,7 +143,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints, locale }: Pr
             {msgs.map((m, i) => (
               <div key={i} className={`stu-ai-msg${m.t === 'q' ? ' student' : ''}`}>
                 {m.t === 'a' && <div className="stu-ai-msg-avatar" />}
-                <div className={`stu-ai-bubble ${m.t === 'q' ? 'student' : 'ai'}`}>{m.x}</div>
+                <div className={`stu-ai-bubble ${m.t === 'q' ? 'student' : 'ai'}`}>{renderMd(m.x, { math: config.enableMath })}</div>
               </div>
             ))}
             {loading && (
