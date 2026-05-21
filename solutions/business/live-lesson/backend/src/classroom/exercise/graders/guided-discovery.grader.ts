@@ -183,7 +183,7 @@ export class GuidedDiscoveryGrader implements Grader {
           { type: 'image_url', image_url: { url: imageUri } },
           { type: 'text', text: userText },
         ],
-        { maxTokens: 200, temperature: 0, responseFormat: { type: 'json_object' }, model: 'qwen-vl-ocr' },
+        { maxTokens: 200, temperature: 0, responseFormat: { type: 'json_object' }, model: 'qwen3-vl-plus' },
       );
 
       const cleaned = raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();

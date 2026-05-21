@@ -997,7 +997,7 @@ describe('GuidedDiscoveryGrader — image OCR prompt & params', () => {
     expect(opts.maxTokens).toBe(200);
     expect(opts.temperature).toBe(0);
     expect(opts.responseFormat).toEqual({ type: 'json_object' });
-    expect(opts.model).toBe('qwen-vl-ocr');
+    expect(opts.model).toBe('qwen3-vl-plus');
   });
 
   it('user prompt asks for dual-field JSON (allText + recognized)', async () => {
