@@ -2,7 +2,7 @@
 /* All classes prefixed with demo- to avoid collisions */
 
 /* === Layout wrapper + scoped color tokens === */
-.demo-card, .demo-layout {
+.demo-card, .demo-layout, .demo-sidebar {
   /* Brighter saturated palette for demo emphasis (distinct from global --purple etc.) */
   --demo-teal: #0d9488;
   --demo-teal-bg: #ccfbf1;
