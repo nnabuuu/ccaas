@@ -983,7 +983,8 @@ describe('GuidedDiscoveryGrader — image OCR prompt & params', () => {
     const g = new GuidedDiscoveryGrader(ai);
     await g.grade(singleBlankKey, { steps: { s: { answers: { b: IMG_PNG } } } });
     const [systemPrompt] = (ai.callVisionLlm as jest.Mock).mock.calls[0];
-    expect(systemPrompt).toContain('手写识别');
+    expect(systemPrompt).toContain('OCR');
+    expect(systemPrompt).toContain('忠实转录');
     expect(systemPrompt).not.toContain('判断');
     expect(systemPrompt).not.toContain('正确');
   });
@@ -996,6 +997,7 @@ describe('GuidedDiscoveryGrader — image OCR prompt & params', () => {
     expect(opts.maxTokens).toBe(200);
     expect(opts.temperature).toBe(0);
     expect(opts.responseFormat).toEqual({ type: 'json_object' });
+    expect(opts.model).toBe('qwen-vl-ocr');
   });
 
   it('user prompt asks for dual-field JSON (allText + recognized)', async () => {

@@ -172,20 +172,22 @@ export class GuidedDiscoveryGrader implements Grader {
     const labelPart = blank.label ? `学生正在填写：${blank.label}` : `填空题（步骤：${stepDef.title}）`;
 
     const userText = `${labelPart}
-请识别图片中所有未被划掉的手写内容，然后根据上述填写位置，提取对应的答案。
-输出JSON：{ "allText": "所有识别出的内容，多行用\\n分隔", "recognized": "对应填写位置的表达式或文字" }`;
+请逐字忠实转录图片中所有未被划掉的手写内容，不要修正任何拼写或数学错误——即使你认为学生写错了也原样输出。
+然后根据上述填写位置，提取对应的答案。
+输出JSON：{ "allText": "所有转录出的内容，多行用\\n分隔", "recognized": "对应填写位置的表达式或文字" }`;
 
     try {
       const raw = await this.aiPromptBuilder!.callVisionLlm(
-        '你是一位数学手写识别助手。请准确识别图片中学生手写的所有数学表达式或文字。\n如果有涂改或划掉的内容，请忽略被划掉的部分。',
+        '你是一个 OCR 文字提取工具。忠实转录图片中的手写内容，原样输出，不要修正任何错误。如果有涂改或划掉的内容，忽略被划掉的部分。',
         [
           { type: 'image_url', image_url: { url: imageUri } },
           { type: 'text', text: userText },
         ],
-        { maxTokens: 200, temperature: 0, responseFormat: { type: 'json_object' } },
+        { maxTokens: 200, temperature: 0, responseFormat: { type: 'json_object' }, model: 'qwen-vl-ocr' },
       );
 
       const cleaned = raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();
+      this.logger.debug(`Vision OCR raw response for blank ${blank.id}: ${cleaned}`);
       const parsed = JSON.parse(cleaned) as { allText?: string; recognized?: string };
       const recognized = parsed.recognized?.trim();
       const allText = parsed.allText?.trim();

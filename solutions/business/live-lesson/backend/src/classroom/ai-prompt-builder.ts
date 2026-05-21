@@ -541,15 +541,25 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     temperature: number;
     responseFormat?: { type: 'json_object' };
     label?: string;
+    extraBody?: Record<string, unknown>;
   }): Promise<string> {
     const body: Record<string, unknown> = {
       model: config.model,
       messages: config.messages,
       max_tokens: config.maxTokens,
       temperature: config.temperature,
+      enable_thinking: false,
     };
     if (config.responseFormat) {
       body.response_format = config.responseFormat;
+    }
+    if (config.extraBody) {
+      Object.assign(body, config.extraBody);
+      // Never let extraBody override core fields
+      body.model = config.model;
+      body.messages = config.messages;
+      body.max_tokens = config.maxTokens;
+      body.temperature = config.temperature;
     }
 
     const res = await fetch(`${config.baseUrl}/chat/completions`, {
