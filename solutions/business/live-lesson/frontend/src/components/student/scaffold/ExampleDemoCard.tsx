@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from 'react'
-import type { DemoConfig, DemoMapping, DemoSolutionLine } from '../task-data'
+import type { DemoConfig, DemoMapping, DemoSolutionLine, DemoSidebar, FormulaToken } from '../task-data'
 import './example-demo.css'
 
 /** Compute stage thresholds from config steps. Stage 0 is always idle. */
@@ -54,8 +54,16 @@ export default function ExampleDemoCard({ config, onDone, skipAnimation = false,
     return -1
   }, [stage, stepStart])
 
-  return (
-    <div className="demo-card">
+  // Sidebar active step: maps demo stage to sidebar step number (1-based), clamped to sidebar range
+  const sidebarActiveStep = useMemo(() => {
+    if (!config.sidebar?.steps?.length) return 0
+    const maxStep = config.sidebar.steps.length
+    if (stage >= totalStages - 1) return maxStep + 1
+    return Math.min(activeStepIdx + 1, maxStep)
+  }, [stage, activeStepIdx, totalStages, config.sidebar])
+
+  const mainContent = (
+    <>
       <ExpressionCard
         expression={config.expression}
         tokens={mappingTokens}
@@ -108,8 +116,19 @@ export default function ExampleDemoCard({ config, onDone, skipAnimation = false,
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
+
+  if (config.sidebar) {
+    return (
+      <div className="demo-layout">
+        <div className="demo-main">{mainContent}</div>
+        <LectureSidebar sidebar={config.sidebar} activeStep={sidebarActiveStep} />
+      </div>
+    )
+  }
+
+  return <div className="demo-card">{mainContent}</div>
 }
 
 /* ═══ Expression Card ═══ */
@@ -304,6 +323,167 @@ function DemoSolution({ lines, localStage }: { lines: DemoSolutionLine[]; localS
       })}
     </div>
   )
+}
+
+/* ═══ StaticMark — always-visible SVG underline annotation ═══ */
+
+function StaticMark({ kind, color, children }: {
+  kind: 'double' | 'wavy'; color: string; children: React.ReactNode
+}) {
+  return (
+    <span className="demo-smark">
+      {children}
+      <span className="demo-smark-svg">
+        {kind === 'double' ? (
+          <svg viewBox="0 0 100 7" preserveAspectRatio="none">
+            <line x1="2" y1="2" x2="98" y2="2"
+              stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+            <line x1="2" y1="5" x2="98" y2="5"
+              stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 100 8" preserveAspectRatio="none">
+            <path d="M 0 4 Q 6.25 0 12.5 4 T 25 4 T 37.5 4 T 50 4 T 62.5 4 T 75 4 T 87.5 4 T 100 4"
+              fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        )}
+      </span>
+    </span>
+  )
+}
+
+/* ═══ LegendSwatch — SVG shape for legend chips ═══ */
+
+function LegendSwatch({ kind, color }: { kind: 'double' | 'wavy'; color: string }) {
+  return kind === 'double' ? (
+    <svg width="18" height="6" viewBox="0 0 18 6" preserveAspectRatio="none" className="demo-sb-swatch">
+      <line x1="1" y1="1.5" x2="17" y2="1.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="1" y1="4.5" x2="17" y2="4.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  ) : (
+    <svg width="20" height="6" viewBox="0 0 20 6" preserveAspectRatio="none" className="demo-sb-swatch">
+      <path d="M 0 3 Q 2.5 0 5 3 T 10 3 T 15 3 T 20 3"
+        fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/* ═══ FormulaRenderer — renders FormulaToken[] with marks ═══ */
+
+function FormulaRenderer({ tokens, className }: { tokens: FormulaToken[]; className?: string }) {
+  return (
+    <span className={className}>
+      {tokens.map((tok, i) => {
+        const colorVar = tok.color ? `var(--demo-${tok.color})` : undefined
+        if (tok.mark && tok.color) {
+          return (
+            <Fragment key={i}>
+              <StaticMark kind={tok.mark} color={colorVar!}>{tok.text}</StaticMark>
+              {tok.sup && <span className="demo-sb-sup">{tok.sup}</span>}
+            </Fragment>
+          )
+        }
+        const cls = tok.dim ? 'demo-sb-dim'
+                  : tok.op  ? 'demo-sb-op'
+                  : tok.eq  ? 'demo-sb-eq'
+                  : ''
+        return (
+          <Fragment key={i}>
+            <span className={cls || undefined}>{tok.text}</span>
+            {tok.sup && <span className="demo-sb-sup">{tok.sup}</span>}
+          </Fragment>
+        )
+      })}
+    </span>
+  )
+}
+
+/* ═══ LectureSidebar — full sidebar with rule card + step cards ═══ */
+
+function LectureSidebar({ sidebar, activeStep }: {
+  sidebar: DemoSidebar; activeStep: number
+}) {
+  if (!sidebar.ruleCard?.formula?.length || !sidebar.steps?.length) return null
+
+  const stateOf = (n: number): string => {
+    if (activeStep >= sidebar.steps.length + 1) return 'done'
+    if (n < activeStep) return 'done'
+    if (n === activeStep) return 'active'
+    return ''
+  }
+
+  return (
+    <div className="demo-sidebar">
+      <div className="demo-sb-hd">
+        <div className="demo-sb-icon">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="var(--demo-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+        <div className="demo-sb-title">{sidebar.title}</div>
+        <div className="demo-sb-badge">{sidebar.stepCount}</div>
+      </div>
+
+      <div className="demo-sb-scroll">
+        <div className="demo-sb-rule">
+          <div className="demo-sb-rule-meta">
+            <span className="demo-sb-rule-label">{sidebar.ruleCard.label}</span>
+            <span className="demo-sb-rule-name">{sidebar.ruleCard.name}</span>
+          </div>
+          <FormulaRenderer tokens={sidebar.ruleCard.formula} className="demo-sb-rule-formula" />
+          <div className="demo-sb-rule-legend">
+            {sidebar.ruleCard.legend.map((item, i) => (
+              <span key={i} className={`demo-sb-legend-chip ${item.color}`}>
+                <LegendSwatch kind={item.kind} color={`var(--demo-${item.color})`} />
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {sidebar.steps.map((step, i) => (
+          <div key={i} className={`demo-sb-step ${stateOf(i + 1)}`}>
+            <div className="demo-sb-step-num">{i + 1}</div>
+            <div className="demo-sb-step-body">
+              <div className="demo-sb-step-title">
+                {step.titleParts.map((part, j) => (
+                  <span key={j} style={part.color ? { color: `var(--demo-${part.color})` } : undefined}>
+                    {part.sup ? <sup className="demo-sb-step-sup">{part.text}</sup> : part.text}
+                  </span>
+                ))}
+              </div>
+              <div className="demo-sb-step-desc"
+                dangerouslySetInnerHTML={{ __html: escapeHtml(step.description)
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\{micro\}(.*?)\{\/micro\}/g, '<span class="demo-sb-micro">$1</span>')
+                }}
+              />
+              {step.miniFormula && (
+                <FormulaRenderer tokens={step.miniFormula} className="demo-sb-step-mini" />
+              )}
+              {step.warning && (
+                <div className="demo-sb-warn">
+                  <div className="demo-sb-warn-icon">!</div>
+                  <div className="demo-sb-warn-body">
+                    <strong>{step.warning.boldText}</strong>必须是{' '}
+                    <span className="demo-sb-warn-good">{step.warning.good}</span>，不是{' '}
+                    <span className="demo-sb-warn-bad">{step.warning.bad}</span>。
+                    {step.warning.suffix}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
 }
 
 function parseExpressionFallback(expr: string): Array<{ text: string; type?: 'same' | 'opposite' | 'op' }> {

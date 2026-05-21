@@ -138,6 +138,57 @@ export interface DemoSolutionLine {
   prefix: string; math: string; isFinal?: boolean
 }
 
+/** Formula token — drives Rule Card / Step Mini formula rendering */
+export interface FormulaToken {
+  text: string
+  mark?: 'double' | 'wavy'
+  color?: 'teal' | 'coral'
+  dim?: boolean
+  op?: boolean
+  eq?: boolean
+  sup?: string
+}
+
+export interface RuleLegendItem {
+  label: string
+  color: 'teal' | 'coral'
+  kind: 'double' | 'wavy'
+}
+
+export interface DemoSidebarRuleCard {
+  label: string
+  name: string
+  formula: FormulaToken[]
+  legend: RuleLegendItem[]
+}
+
+export interface SidebarTitlePart {
+  text: string
+  color?: 'teal' | 'coral' | 't3'
+  sup?: boolean
+}
+
+export interface SidebarWarning {
+  boldText: string
+  good: string
+  bad: string
+  suffix: string
+}
+
+export interface DemoSidebarStep {
+  titleParts: SidebarTitlePart[]
+  description: string
+  miniFormula?: FormulaToken[]
+  warning?: SidebarWarning
+}
+
+export interface DemoSidebar {
+  title: string
+  stepCount: string
+  ruleCard: DemoSidebarRuleCard
+  steps: DemoSidebarStep[]
+}
+
 export interface DemoConfig {
   expression: string
   steps: Array<{
@@ -147,6 +198,7 @@ export interface DemoConfig {
     solutionLines?: DemoSolutionLine[]
   }>
   delays: number[]
+  sidebar?: DemoSidebar
 }
 
 export interface InstructionView {

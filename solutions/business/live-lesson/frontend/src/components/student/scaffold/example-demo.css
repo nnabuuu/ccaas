@@ -2,7 +2,7 @@
 /* All classes prefixed with demo- to avoid collisions */
 
 /* === Layout wrapper + scoped color tokens === */
-.demo-card {
+.demo-card, .demo-layout {
   /* Brighter saturated palette for demo emphasis (distinct from global --purple etc.) */
   --demo-teal: #0d9488;
   --demo-teal-bg: #ccfbf1;
@@ -12,7 +12,14 @@
   --demo-green-bg: #dcfce7;
   --demo-purple: #7c3aed;
   --demo-purple-bg: #eceafe;
-
+  --demo-amber: #92400e;
+  --demo-amber-bg: #fef3c7;
+  --demo-red: #943029;
+  --demo-t1: var(--t1, #1a1a2e);
+  --demo-t2: var(--t2, #4a4a6a);
+  --demo-t3: var(--t3, #8888a4);
+}
+.demo-card {
   display: flex; flex-direction: column; gap: 16px;
 }
 
@@ -225,10 +232,177 @@
 }
 .demo-actions.vis { opacity: 1; transform: translateY(0); }
 
+/* ═══ Two-column layout ═══ */
+.demo-layout {
+  display: flex; gap: 16px;
+}
+.demo-main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* ═══ Lecture Sidebar ═══ */
+.demo-sidebar {
+  width: 400px; flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; display: flex; flex-direction: column;
+  align-self: flex-start;
+}
+
+/* Header */
+.demo-sb-hd {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.demo-sb-icon {
+  width: 22px; height: 22px; border-radius: 5px; background: var(--demo-purple-bg);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.demo-sb-title { font-size: 12px; font-weight: 600; color: var(--demo-purple); flex: 1; }
+.demo-sb-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 3px;
+  background: var(--demo-purple-bg); color: var(--demo-purple); font-weight: 500;
+}
+
+/* Scroll body */
+.demo-sb-scroll {
+  flex: 1; overflow-y: auto; padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* ── Rule Card ── */
+.demo-sb-rule {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px 16px 14px;
+}
+.demo-sb-rule-meta {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.demo-sb-rule-label {
+  font-size: 10px; font-weight: 600; color: var(--demo-t3);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.demo-sb-rule-name { font-size: 11px; font-weight: 600; color: var(--demo-t2); }
+.demo-sb-rule-formula {
+  display: block; font-size: 24px; font-weight: 600; text-align: center;
+  padding: 14px 0 16px; letter-spacing: .5px; font-style: italic;
+}
+.demo-sb-rule-legend { display: flex; gap: 10px; justify-content: center; }
+
+/* Formula token shared styles */
+.demo-sb-dim, .demo-sb-op, .demo-sb-eq {
+  color: var(--demo-t3); font-weight: 400; font-style: normal;
+}
+.demo-sb-sup {
+  font-size: 14px; vertical-align: super; margin-left: 1px;
+  font-style: italic; font-weight: 600; color: var(--demo-t3);
+}
+
+/* Legend chips */
+.demo-sb-legend-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; padding: 4px 10px; border-radius: 4px; font-weight: 600;
+}
+.demo-sb-legend-chip.teal  { background: var(--demo-teal-bg);  color: var(--demo-teal); }
+.demo-sb-legend-chip.coral { background: var(--demo-coral-bg); color: var(--demo-coral); }
+.demo-sb-swatch { flex-shrink: 0; }
+
+/* ── Step Cards (3-state system) ── */
+.demo-sb-step {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px 14px 12px;
+  display: flex; gap: 12px;
+  transition: border-color .25s ease, background .25s ease;
+  position: relative; overflow: hidden;
+}
+.demo-sb-step::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: transparent;
+  transition: background .25s ease;
+}
+/* Active = purple */
+.demo-sb-step.active { border-color: rgba(58,49,133,.18); background: var(--demo-purple-bg); }
+.demo-sb-step.active::before { background: var(--demo-purple); }
+/* Done = green left bar */
+.demo-sb-step.done { background: var(--surface); }
+.demo-sb-step.done::before { background: var(--demo-green); }
+
+/* Number badge — 3 state colors */
+.demo-sb-step-num {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: var(--surface2, #f0f0f5); color: var(--demo-t2);
+  font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all .25s ease;
+}
+.demo-sb-step.active .demo-sb-step-num { background: var(--demo-purple); color: #fff; }
+.demo-sb-step.done   .demo-sb-step-num { background: var(--demo-green);  color: #fff; }
+
+/* Step body */
+.demo-sb-step-body { flex: 1; min-width: 0; padding-top: 1px; }
+.demo-sb-step-title { font-size: 13px; font-weight: 600; color: var(--demo-t1); margin-bottom: 4px; }
+.demo-sb-step-sup { font-size: 9px; }
+.demo-sb-step-desc  { font-size: 12px; color: var(--demo-t2); line-height: 1.6; }
+.demo-sb-micro      { font-style: italic; font-weight: 600; }
+
+/* Mini formula preview */
+.demo-sb-step-mini {
+  display: block; margin-top: 10px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 16px; text-align: center;
+  font-style: italic; font-weight: 600; letter-spacing: .3px;
+}
+.demo-sb-step.active .demo-sb-step-mini { background: rgba(255,255,255,.55); }
+
+/* ── Warning callout (amber) ── */
+.demo-sb-warn {
+  display: flex; gap: 10px; padding: 10px 12px;
+  background: var(--demo-amber-bg); border: 1px solid rgba(122,77,14,.12);
+  border-radius: 8px; margin-top: 10px; align-items: flex-start;
+}
+.demo-sb-warn-icon {
+  width: 18px; height: 18px; border-radius: 4px;
+  background: var(--demo-amber); color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.demo-sb-warn-body {
+  font-size: 11.5px; color: var(--demo-amber); line-height: 1.55; font-weight: 500;
+}
+.demo-sb-warn-body strong { font-weight: 700; }
+.demo-sb-warn-good {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  background: rgba(45,102,18,.12); color: var(--demo-green);
+  font-weight: 600; font-style: italic;
+}
+.demo-sb-warn-bad {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  background: rgba(148,41,41,.12); color: var(--demo-red);
+  font-weight: 600; font-style: italic;
+  text-decoration: line-through; text-decoration-color: rgba(148,41,41,.55);
+}
+
+/* ── StaticMark SVG positioning ── */
+.demo-smark {
+  position: relative; display: inline-block; padding: 0 2px;
+}
+.demo-smark-svg {
+  position: absolute; left: 0; right: 0; bottom: -9px;
+  height: 7px; overflow: visible; pointer-events: none;
+}
+.demo-smark-svg svg { display: block; width: 100%; height: 100%; }
+
+/* === Responsive — stack sidebar on narrow viewports === */
+@media (max-width: 900px) {
+  .demo-layout { flex-direction: column; }
+  .demo-sidebar { width: 100%; }
+}
+
 /* === Reduced motion === */
 @media (prefers-reduced-motion: reduce) {
   .demo-step, .demo-legend-chip, .demo-map-cell,
   .demo-map-bridge::before, .demo-map-legend-item,
   .demo-sol-cell, .demo-actions, .demo-tok,
-  .demo-ann-path { transition: none; }
+  .demo-ann-path,
+  .demo-sb-step, .demo-sb-step::before, .demo-sb-step-num { transition: none; }
 }

@@ -407,7 +407,88 @@
               ]
             }
           ],
-          "delays": [900, 2200, 1600, 1700, 1500, 1200]
+          "delays": [900, 2200, 1600, 1700, 1500, 1200],
+          "sidebar": {
+            "title": "平方差公式 · 正确使用步骤",
+            "stepCount": "3 步",
+            "ruleCard": {
+              "label": "公式",
+              "name": "a² − b² 型",
+              "formula": [
+                { "text": "(", "dim": true },
+                { "text": "a", "mark": "double", "color": "teal" },
+                { "text": " + ", "op": true },
+                { "text": "b", "mark": "wavy", "color": "coral" },
+                { "text": ")(", "dim": true },
+                { "text": "a", "mark": "double", "color": "teal" },
+                { "text": " − ", "op": true },
+                { "text": "b", "mark": "wavy", "color": "coral" },
+                { "text": ")", "dim": true },
+                { "text": " = ", "eq": true },
+                { "text": "a", "mark": "double", "color": "teal", "sup": "2" },
+                { "text": " − ", "op": true },
+                { "text": "b", "mark": "wavy", "color": "coral", "sup": "2" }
+              ],
+              "legend": [
+                { "label": "相同项 = a", "color": "teal", "kind": "double" },
+                { "label": "相反项 = b", "color": "coral", "kind": "wavy" }
+              ]
+            },
+            "steps": [
+              {
+                "titleParts": [
+                  { "text": "找" },
+                  { "text": "相同项", "color": "teal" }
+                ],
+                "description": "两个括号里**完全一样**的那一项 —— 对应公式里的 {micro}a{/micro}。在题目上**划双横线**辅助识别。",
+                "miniFormula": [
+                  { "text": "(", "dim": true },
+                  { "text": "a", "mark": "double", "color": "teal" },
+                  { "text": "+ b", "op": true },
+                  { "text": ")(", "dim": true },
+                  { "text": "a", "mark": "double", "color": "teal" },
+                  { "text": "− b", "op": true },
+                  { "text": ")", "dim": true }
+                ]
+              },
+              {
+                "titleParts": [
+                  { "text": "找" },
+                  { "text": "相反项", "color": "coral" }
+                ],
+                "description": "两个括号里**互为相反数**的那一项（一个加、一个减）—— 对应公式里的 {micro}b{/micro}。在题目上**划波浪线**辅助识别。",
+                "miniFormula": [
+                  { "text": "(a +", "dim": true },
+                  { "text": "b", "mark": "wavy", "color": "coral" },
+                  { "text": ")(a −", "dim": true },
+                  { "text": "b", "mark": "wavy", "color": "coral" },
+                  { "text": ")", "dim": true }
+                ]
+              },
+              {
+                "titleParts": [
+                  { "text": "套公式：" },
+                  { "text": "相同项", "color": "teal" },
+                  { "text": "²", "sup": true },
+                  { "text": " − ", "color": "t3" },
+                  { "text": "相反项", "color": "coral" },
+                  { "text": "²", "sup": true }
+                ],
+                "description": "用**相同项的平方**，**减去相反项的平方**。",
+                "miniFormula": [
+                  { "text": "a", "mark": "double", "color": "teal", "sup": "2" },
+                  { "text": " − ", "op": true },
+                  { "text": "b", "mark": "wavy", "color": "coral", "sup": "2" }
+                ],
+                "warning": {
+                  "boldText": "顺序千万别错。",
+                  "good": "a² − b²",
+                  "bad": "b² − a²",
+                  "suffix": "相同项在前、相反项在后 —— 写反答案就错了。"
+                }
+              }
+            ]
+          }
         }
       },
       "initialScaffold": [
