@@ -116,6 +116,26 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   const fileRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const pendingCursorRef = useRef<number | null>(null)
+
+  const insertText = useCallback((snippet: string) => {
+    const el = inputRef.current
+    if (!el) return
+    const start = el.selectionStart ?? el.value.length
+    const end = el.selectionEnd ?? start
+    pendingCursorRef.current = start + snippet.length
+    setTextDraft(prev => prev.slice(0, start) + snippet + prev.slice(end))
+  }, [])
+
+  useEffect(() => {
+    const pos = pendingCursorRef.current
+    if (pos !== null && inputRef.current) {
+      inputRef.current.setSelectionRange(pos, pos)
+      inputRef.current.focus()
+      pendingCursorRef.current = null
+    }
+  }, [textDraft])
 
   // Sync the correct draft when value prop changes externally
   useEffect(() => {
@@ -227,6 +247,7 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
           {activeMethod === 'keyboard' && (
             <div className="math-input-kb">
               <input
+                ref={inputRef}
                 className="math-input-field"
                 value={textDraft}
                 onChange={e => setTextDraft(e.target.value)}
@@ -234,6 +255,15 @@ function GdInputField({ inputMethods, value, onChange, disabled, placeholder, la
                 autoFocus
                 onKeyDown={e => { if (e.key === 'Enter' && textDraft.trim()) confirmInput() }}
               />
+              <div className="math-input-shortcuts">
+                {['(', '^2', ')'].map(s => (
+                  <button key={s} type="button" className="math-input-shortcut"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => insertText(s)}>
+                    {s === '^2' ? 'x²' : s}
+                  </button>
+                ))}
+              </div>
               <div className="math-input-kb-hint">{t('gd.kbHint')}</div>
             </div>
           )}
@@ -1052,6 +1082,14 @@ export function GuidedDiscoveryExercise({
           color: var(--t1); background: var(--bg);
         }
         .math-input-field:focus { outline: none; border-color: var(--teal); }
+        .math-input-shortcuts { display: flex; gap: 6px; margin-top: 6px; }
+        .math-input-shortcut {
+          padding: 4px 12px; border-radius: 6px;
+          border: 1px solid var(--border); background: var(--surface);
+          font-size: 14px; font-weight: 500; color: var(--t2);
+          cursor: pointer; font-family: inherit; transition: all .12s;
+        }
+        .math-input-shortcut:hover { background: var(--teal-bg); color: var(--teal); border-color: var(--teal); }
         .math-input-kb-hint { font-size: 10px; color: var(--t3); margin-top: 6px; }
         .math-input-confirm-row { padding: 8px 12px 12px; display: flex; justify-content: flex-end; }
         .math-input-confirm {
