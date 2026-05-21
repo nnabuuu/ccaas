@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { RenderMath } from '../utils/render-math'
 import '../styles/teacher.css'
 
 const API_BASE = '/api'
@@ -123,7 +124,7 @@ export default function CourseSelectionPage() {
                     {lesson.subject} · {lesson.gradeLevel}
                   </p>
                   <p style={{ fontSize: 12, color: '#9c9a92', lineHeight: 1.6, marginBottom: 16 }}>
-                    {lesson.description}
+                    <RenderMath text={lesson.description} />
                   </p>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
