@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MatchPlugin · Bundle README</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{--bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;--t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;--border:rgba(28,28,26,.07);--border-strong:rgba(28,28,26,.14);--teal:#0d5245;--teal-bg:#dfece8;--purple:#3a3185;--purple-bg:#e9e7f3;--amber:#7a4d0e;--amber-bg:#f6edda;--green:#2d6612;--green-bg:#e6f2dc}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;letter-spacing:-.4px}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px}
+.hero-eyebrow .pill{background:var(--purple-bg);color:var(--purple);padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{font-family:"Fraunces",Georgia,serif;font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;margin-bottom:14px}
+.hero h1 em{font-style:italic;color:var(--purple);font-weight:500}
+.hero .sub{font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;max-width:620px;margin-bottom:28px}
+.hero .sub strong{color:var(--t1);font-weight:600}
+.cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cta{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.code-inline{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px;padding:10px 14px;border-radius:8px;background:var(--surface2);color:var(--t1);border:1px solid var(--border)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+.code-block{background:#1c1c1a;color:#e8e6df;border-radius:12px;padding:24px;margin-bottom:72px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.55;overflow-x:auto}
+.code-block .k{color:#b8aaf5}
+.code-block .s{color:#a5e7d1}
+.code-block .n{color:#f6c89b}
+.code-block .c{color:#7a7872;font-style:italic}
+.info-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+.info-table th{text-align:left;font-weight:600;color:var(--t3);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;border-bottom:1px solid var(--border-strong)}
+.info-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--t2);line-height:1.5;vertical-align:top}
+.info-table td:first-child{font-family:"SF Mono",Menlo,Consolas,monospace;font-weight:600;color:var(--t1);white-space:nowrap}
+.info-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:72px}
+.sub-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:72px}
+.subcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.subcard-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:4px 9px;border-radius:4px;width:fit-content}
+.subcard h4{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.subcard p{font-size:12px;color:var(--t2);line-height:1.6}
+.subcard p strong{color:var(--t1);font-weight:600}
+.subcard pre{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;line-height:1.55;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--t1);overflow-x:auto;white-space:pre-wrap}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:28px 0;border-top:1px solid var(--border)}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+@media (max-width:900px){.wrap{padding:32px 20px}.hero h1{font-size:40px}.sub-cards,.notes{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: match</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">A · Simple</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">None</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">1 · Migrated</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Synchronous · Case-insensitive matching
+    </div>
+    <h1>Match<br><em>左右配对题</em></h1>
+    <p class="sub">
+      左列固定项 + 右列选项池，学生为每个左项选择匹配的右项。<strong>case-insensitive</strong> 字符串比较，O(pairs) 同步评分。<br>典型用法：单词配释义、人物配事件、原因配结果。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="match.plugin.ts">查看源码 →</a>
+      <code class="code-inline">type: "match"</code>
+    </div>
+  </section>
+
+  <!-- SECTION 01 — Schema -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Answer Key Schema <span class="en">Zod</span></h2>
+    </div>
+    <span class="hint">服务端结构（含答案）</span>
+  </div>
+
+  <pre class="code-block"><span class="k">const</span> MatchAnswerItemSchema = z.<span class="n">object</span>({
+  pairIdx:        z.<span class="n">number</span>(),
+  left:           z.<span class="n">string</span>().<span class="n">min</span>(1),
+  correct:        z.<span class="n">string</span>().<span class="n">min</span>(1),
+  options:        z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(2).<span class="n">optional</span>(),
+  hint:           z.<span class="n">string</span>().<span class="n">optional</span>(),
+  walkthrough:    z.<span class="n">string</span>().<span class="n">optional</span>(),
+  paraRef:        z.<span class="n">array</span>(z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">positive</span>()).<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> MatchAnswerKeySchema = z.<span class="n">object</span>({
+  type:    z.<span class="n">literal</span>(<span class="s">'match'</span>),
+  answers: z.<span class="n">array</span>(MatchAnswerItemSchema).<span class="n">nonempty</span>(),
+  options: z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(2).<span class="n">optional</span>(),  <span class="c">// 共享选项池</span>
+}).<span class="n">refine</span>(
+  (ak) => ak.answers.<span class="n">every</span>((a) => a.options || ak.options),
+  { message: <span class="s">'match: each answer must have options at answer-level or top-level'</span> },
+);</pre>
+
+  <!-- SECTION 02 — Fields -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>字段说明 <span class="en">Fields</span></h2>
+    </div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>type</td><td>"match"</td><td>固定字面量</td></tr>
+      <tr><td>answers[].pairIdx</td><td>number</td><td>配对的顺序索引（0-based）</td></tr>
+      <tr><td>answers[].left</td><td>string</td><td>左列固定项（学生不操作，只看）</td></tr>
+      <tr><td>answers[].correct</td><td>string</td><td>正确的右列匹配项（<strong>大小写不敏感</strong>）</td></tr>
+      <tr><td>answers[].options</td><td>string[]?</td><td>该题独立的选项池（覆盖顶层 options）</td></tr>
+      <tr><td>options（顶层）</td><td>string[]?</td><td>所有题共享的选项池</td></tr>
+      <tr><td>answers[].hint</td><td>string?</td><td>答错提示</td></tr>
+      <tr><td>answers[].paraRef</td><td>number[]?</td><td>关联段落号</td></tr>
+    </table>
+  </div>
+
+  <!-- SECTION 03 — Example -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>示例 Answer Key <span class="en">Example</span></h2>
+    </div>
+  </div>
+
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"match"</span>,
+  <span class="s">"options"</span>: [<span class="s">"Africa"</span>, <span class="s">"Egypt"</span>, <span class="s">"Europe"</span>, <span class="s">"Modern Media"</span>],
+  <span class="s">"answers"</span>: [
+    {
+      <span class="s">"pairIdx"</span>: 0,
+      <span class="s">"left"</span>: <span class="s">"Fattening room ritual"</span>,
+      <span class="s">"correct"</span>: <span class="s">"Africa"</span>,
+      <span class="s">"paraRef"</span>: [1]
+    },
+    {
+      <span class="s">"pairIdx"</span>: 1,
+      <span class="s">"left"</span>: <span class="s">"Slim dark-haired women in paintings"</span>,
+      <span class="s">"correct"</span>: <span class="s">"Egypt"</span>,
+      <span class="s">"paraRef"</span>: [3]
+    },
+    {
+      <span class="s">"pairIdx"</span>: 2,
+      <span class="s">"left"</span>: <span class="s">"Venus of Hohle Fels"</span>,
+      <span class="s">"correct"</span>: <span class="s">"Europe"</span>,
+      <span class="s">"paraRef"</span>: [3]
+    },
+    {
+      <span class="s">"pairIdx"</span>: 3,
+      <span class="s">"left"</span>: <span class="s">"Bombarded with slim images"</span>,
+      <span class="s">"correct"</span>: <span class="s">"Modern Media"</span>,
+      <span class="s">"paraRef"</span>: [2]
+    }
+  ]
+}</pre>
+
+  <!-- SECTION 04 — Sanitize vs Grade -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>Sanitize / Grade 行为 <span class="en">Plugin Methods</span></h2>
+    </div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>从 answerKey 生成 ExerciseSpec，<strong>剥离 correct</strong>。保留 <code>left</code> / <code>options</code> / <code>paraRef</code>。每个 pair 自动 fallback 到顶层 <code>options</code>。</p>
+      <pre>// sanitize 后学生看到的
+{
+  type: "match",
+  pairs: [
+    { idx: 0, left: "...", options: [...] }
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p><strong>大小写不敏感</strong>字符串比较：<code>student.toLowerCase() === correct.toLowerCase()</code>。支持 <code>data.pairs</code> 或 <code>data.answers</code>（兼容），元素可以是字符串或 <code>{ value }</code> 对象。</p>
+      <pre>// 输出
+{
+  total: 75,
+  byDimension: { p0: true, p1: true, p2: false, p3: true }
+}</pre>
+    </div>
+  </div>
+
+  <!-- SECTION 05 — When to use -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>什么时候用 Match <span class="en">When to Use</span></h2>
+    </div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr>
+        <td>单词配释义 / 概念配例子</td>
+        <td>需要表达推理过程（用 matrix / stance）</td>
+      </tr>
+      <tr>
+        <td>历史事件配时间 / 地点</td>
+        <td>左项的"正确匹配"有多个（用 select-evidence）</td>
+      </tr>
+      <tr>
+        <td>因果关系配对</td>
+        <td>排序型题目（用 order）</td>
+      </tr>
+      <tr>
+        <td>选项数量小（2-6 个）</td>
+        <td>开放式回答（用 image-upload / stance）</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">迁移状态 · Status</div>
+      <div class="note-b">已迁移至 plugin 模式（<strong>Stage 1</strong>）。Parity tests 验证与 legacy MatchGrader 一致。</div>
+    </div>
+    <div>
+      <div class="note-h">特殊点 · Quirks</div>
+      <div class="note-b">case-insensitive 评分对 <strong>中文</strong>无影响（toLowerCase 对中文是 no-op）。如需严格大小写，需 plugin 扩展。</div>
+    </div>
+    <div>
+      <div class="note-h">使用样本 · Usage</div>
+      <div class="note-b">在阅读类课程的 Skim 步骤被频繁使用。"配对"是阅读策略中的基础工具，适合作为<strong>第一题</strong>建立信心。</div>
+    </div>
+  </div>
+
+  <footer>match plugin · v1.0.0 · KedgeAgentic Plugin Bundle</footer>
+
+</div>
+</body>
+</html>

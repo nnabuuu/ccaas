@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>QuizPlugin · Bundle README</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{--bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;--t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;--border:rgba(28,28,26,.07);--border-strong:rgba(28,28,26,.14);--teal:#0d5245;--teal-bg:#dfece8;--purple:#3a3185;--purple-bg:#e9e7f3;--amber:#7a4d0e;--amber-bg:#f6edda;--green:#2d6612;--green-bg:#e6f2dc;--red:#942929;--red-bg:#f5dada}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;letter-spacing:-.4px}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px}
+.hero-eyebrow .pill{background:var(--teal-bg);color:var(--teal);padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{font-family:"Fraunces",Georgia,serif;font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;margin-bottom:14px}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.hero .sub{font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;max-width:620px;margin-bottom:28px}
+.hero .sub strong{color:var(--t1);font-weight:600}
+.cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cta{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.code-inline{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px;padding:10px 14px;border-radius:8px;background:var(--surface2);color:var(--t1);border:1px solid var(--border)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+.code-block{background:#1c1c1a;color:#e8e6df;border-radius:12px;padding:24px;margin-bottom:72px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.55;overflow-x:auto}
+.code-block .k{color:#b8aaf5}
+.code-block .s{color:#a5e7d1}
+.code-block .n{color:#f6c89b}
+.code-block .c{color:#7a7872;font-style:italic}
+.info-table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+.info-table th{text-align:left;font-weight:600;color:var(--t3);font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;border-bottom:1px solid var(--border-strong)}
+.info-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--t2);line-height:1.5;vertical-align:top}
+.info-table td:first-child{font-family:"SF Mono",Menlo,Consolas,monospace;font-weight:600;color:var(--t1);white-space:nowrap}
+.info-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:72px}
+.sub-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:72px}
+.subcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.subcard-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:4px 9px;border-radius:4px;width:fit-content}
+.subcard h4{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.subcard p{font-size:12px;color:var(--t2);line-height:1.6}
+.subcard p strong{color:var(--t1);font-weight:600}
+.subcard pre{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;line-height:1.55;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--t1);overflow-x:auto;white-space:pre-wrap}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;padding:28px 0;border-top:1px solid var(--border)}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+@media (max-width:900px){.wrap{padding:32px 20px}.hero h1{font-size:40px}.sub-cards,.notes{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: quiz</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">A · Simple</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">None</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">1 · Migrated</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Synchronous · No LLM
+    </div>
+    <h1>Quiz<br><em>多选一选择题</em></h1>
+    <p class="sub">
+      最基础的选择题类型。每题独立，答对得满分，<strong>O(answers.length)</strong> 同步评分。所有题型中<strong>第一个迁移到 plugin 模式</strong>的样本，可作其他类型迁移参考。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="quiz.plugin.ts">查看源码 →</a>
+      <code class="code-inline">type: "quiz"</code>
+    </div>
+  </section>
+
+  <!-- SECTION 01 — Schema -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Answer Key Schema <span class="en">Zod</span></h2>
+    </div>
+    <span class="hint">服务端结构（含答案）</span>
+  </div>
+
+  <pre class="code-block"><span class="c">// quiz.plugin.ts 内的 Zod schema</span>
+<span class="k">const</span> QuizAnswerItemSchema = z.<span class="n">object</span>({
+  questionIdx:        z.<span class="n">number</span>(),
+  questionText:       z.<span class="n">string</span>().<span class="n">min</span>(1),
+  questionTranslate:  z.<span class="n">string</span>().<span class="n">optional</span>(),
+  options:            z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(2),
+  correct:            z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">nonnegative</span>(),
+  label:              z.<span class="n">string</span>().<span class="n">optional</span>(),
+  hint:               z.<span class="n">string</span>().<span class="n">optional</span>(),
+  hintZh:             z.<span class="n">string</span>().<span class="n">optional</span>(),
+  walkthrough:        z.<span class="n">string</span>().<span class="n">optional</span>(),
+  walkthroughZh:      z.<span class="n">string</span>().<span class="n">optional</span>(),
+  paraRef:            z.<span class="n">array</span>(z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">positive</span>()).<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> QuizAnswerKeySchema = z.<span class="n">object</span>({
+  type:    z.<span class="n">literal</span>(<span class="s">'quiz'</span>),
+  answers: z.<span class="n">array</span>(QuizAnswerItemSchema).<span class="n">nonempty</span>(),
+}).<span class="n">refine</span>(
+  (ak) => ak.answers.<span class="n">every</span>((a) => a.correct &lt; a.options.length),
+  { message: <span class="s">'quiz: correct index must be &lt; options.length'</span> },
+);</pre>
+
+  <!-- SECTION 02 — Fields -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>字段说明 <span class="en">Fields</span></h2>
+    </div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>type</td><td>"quiz"</td><td>固定字面量，用于 plugin 路由分发</td></tr>
+      <tr><td>answers[].questionIdx</td><td>number</td><td>题目顺序索引（从 0 开始）</td></tr>
+      <tr><td>answers[].questionText</td><td>string</td><td>题干文本（学生可见）</td></tr>
+      <tr><td>answers[].questionTranslate</td><td>string?</td><td>题干翻译（双语阅读课用）</td></tr>
+      <tr><td>answers[].options</td><td>string[]</td><td>选项数组，至少 2 个</td></tr>
+      <tr><td>answers[].correct</td><td>number</td><td>正确选项的索引（<strong>0-based</strong>，不是字母）</td></tr>
+      <tr><td>answers[].hint</td><td>string?</td><td>答错时的提示（hintZh 中文版）</td></tr>
+      <tr><td>answers[].walkthrough</td><td>string?</td><td>详细解答步骤（walkthroughZh 中文版）</td></tr>
+      <tr><td>answers[].paraRef</td><td>number[]?</td><td>关联段落号（点击高亮课文段落）</td></tr>
+    </table>
+  </div>
+
+  <!-- SECTION 03 — Example -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>示例 Answer Key <span class="en">Example</span></h2>
+    </div>
+  </div>
+
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"quiz"</span>,
+  <span class="s">"answers"</span>: [
+    {
+      <span class="s">"questionIdx"</span>: 0,
+      <span class="s">"questionText"</span>: <span class="s">"What is the main idea of paragraph 2?"</span>,
+      <span class="s">"questionTranslate"</span>: <span class="s">"第 2 段的主旨是什么?"</span>,
+      <span class="s">"options"</span>: [
+        <span class="s">"Africa has a different beauty standard"</span>,
+        <span class="s">"Media images dominate modern beauty"</span>,
+        <span class="s">"Shallow beauty ideals are questioned"</span>,
+        <span class="s">"Ancient art shows different views"</span>
+      ],
+      <span class="s">"correct"</span>: 2,
+      <span class="s">"hint"</span>: <span class="s">"Look at the last sentence — what verb signals doubt?"</span>,
+      <span class="s">"walkthrough"</span>: <span class="s">"\"Some people question these shallow beauty ideals\" 是 ¶2 的核心动作。"</span>,
+      <span class="s">"paraRef"</span>: [2]
+    }
+  ]
+}</pre>
+
+  <!-- SECTION 04 — Sanitize vs Grade -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>Sanitize / Grade 行为 <span class="en">Plugin Methods</span></h2>
+    </div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>从 answerKey 生成<strong>学生安全的 ExerciseSpec</strong>，剥离 <code>correct</code> / <code>hint</code> / <code>walkthrough</code>。保留 <code>questionText</code> / <code>options</code> / <code>paraRef</code>。</p>
+      <pre>// sanitize 后学生看到的
+{
+  type: "quiz",
+  questions: [
+    { idx: 0, text: "...", options: [...] }
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p>每题严格匹配：<code>student.answers[idx] === correct</code> 即正确。<strong>total = round(correct / total * 100)</strong>。<strong>byDimension</strong> 输出 <code>{ q0: true, q1: false, ... }</code>。同步、纯函数、无 LLM。</p>
+      <pre>// 输出
+{
+  total: 75,
+  byDimension: { q0: true, q1: false, q2: true, q3: true }
+}</pre>
+    </div>
+  </div>
+
+  <!-- SECTION 05 — When to use -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>什么时候用 Quiz <span class="en">When to Use</span></h2>
+    </div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr>
+        <td>事实回忆题（阅读理解 / 概念辨析）</td>
+        <td>需要构造性表达的题（用 stance / image-upload）</td>
+      </tr>
+      <tr>
+        <td>5 秒内可判定的简单选择</td>
+        <td>多步推理（用 guided-discovery）</td>
+      </tr>
+      <tr>
+        <td>4 选 1 / 3 选 1 / 2 选 1（true-false）</td>
+        <td>需要部分得分的题（quiz 是 0/100 二元）</td>
+      </tr>
+      <tr>
+        <td>批量出题（manifest 里加几行就行）</td>
+        <td>需要图片证据的题（用 image-upload）</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">迁移状态 · Status</div>
+      <div class="note-b">已迁移至 plugin 模式（<strong>Stage 1</strong>）。Parity tests 在 plugins.spec.ts 中验证与 legacy QuizGrader 字节级一致。</div>
+    </div>
+    <div>
+      <div class="note-h">复杂度 · Complexity</div>
+      <div class="note-b">A 组（简单受控）。<strong>同步评分</strong> · <strong>无 DI 依赖</strong> · 可作为新插件作者的<strong>模板</strong>。</div>
+    </div>
+    <div>
+      <div class="note-h">使用样本 · Usage</div>
+      <div class="note-b">在 <code>ideal-beauty-reading</code> 的 Skim 步骤、<code>math-difference-of-squares</code> 的辨析步骤被使用。</div>
+    </div>
+  </div>
+
+  <footer>quiz plugin · v1.0.0 · KedgeAgentic Plugin Bundle</footer>
+
+</div>
+</body>
+</html>
