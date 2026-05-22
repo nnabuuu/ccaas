@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!--
+  BUNDLE README TEMPLATE
+  ──────────────────────
+  Single-file HTML — copy this template to each bundle's package root
+  as README.html and replace the placeholders marked with {{...}}.
+
+  Style system derived from `design/teacher-guide.html`.
+  Fonts: Plus Jakarta Sans + Fraunces (Google Fonts CDN).
+
+  Placeholders (search-and-replace before publishing):
+    {{BUNDLE_TITLE_ZH}}       e.g. 平方差公式
+    {{BUNDLE_TITLE_EN}}       e.g. Difference of Squares
+    {{BUNDLE_TAGLINE}}        one-sentence positioning
+    {{BUNDLE_TYPE}}            e.g. guided-discovery
+    {{BUNDLE_SUBJECT}}         e.g. 数学
+    {{BUNDLE_GRADE}}           e.g. 初中二年级
+    {{BUNDLE_VERSION}}         e.g. 1.0.0
+    {{BUNDLE_PKG_NAME}}        e.g. @kedge-agentic/exercise-pack-math
+    {{DEMO_URL}}                e.g. https://demo.kedge.com/p/math-doss-default
+
+  Sections to fill (search for ▢):
+    ▢ HERO sub paragraph
+    ▢ Section 01 cards (3) — What it teaches
+    ▢ Section 02 layout illustration + legend
+    ▢ Section 03 sub-cards — Included stories
+    ▢ Section 04 info-table — Pedagogical foundation
+    ▢ Section 05 cards (3) — Integration
+    ▢ Section 06 info-table — Common scenarios
+    ▢ Notes strip (3 columns)
+-->
+<title>{{BUNDLE_TITLE_ZH}} · Bundle README</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --green:#2d6612; --green-bg:#e6f2dc;
+  --red:#942929; --red-bg:#f5dada;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.hero .sub{
+  font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:620px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+.cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 20px;border-radius:8px;
+  font-size:14px;font-weight:600;text-decoration:none;
+  transition:all .15s;
+}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.cta.pri .ar{display:inline-block;transition:transform .2s}
+.cta.pri:hover .ar{transform:translateX(3px)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.cta.sec:hover{background:var(--surface2)}
+.code-inline{
+  font-family:"SF Mono",Menlo,Consolas,monospace;
+  font-size:12px;padding:10px 14px;border-radius:8px;
+  background:var(--surface2);color:var(--t1);
+  border:1px solid var(--border);
+}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ STEP CARDS (3-col grid) ============ */
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:72px;
+}
+.scard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:14px;
+  transition:all .18s;position:relative;overflow:hidden;
+}
+.scard:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(28,28,26,.18)}
+.scard-num{
+  width:30px;height:30px;border-radius:50%;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex-shrink:0;
+}
+.scard-hd{display:flex;align-items:center;gap:10px}
+.scard h3{font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.2}
+.scard p{font-size:13px;color:var(--t2);line-height:1.6}
+.scard p strong{color:var(--t1);font-weight:600}
+.scard-illust{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:6px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:12px;overflow:hidden;
+}
+.scard-illust svg{width:100%;height:100%;display:block}
+
+/* ============ LAYOUT CARD (large) ============ */
+.layout-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:72px;
+}
+.layout-card h3{font-size:16px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px}
+.layout-svg-wrap{
+  width:100%;aspect-ratio:16/8;
+  background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;overflow:hidden;margin-bottom:20px;
+}
+.layout-svg-wrap svg{width:100%;height:100%;display:block}
+.layout-legend{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+}
+.legend-item{
+  padding:12px 14px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+}
+.legend-item-lb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:4px}
+.legend-item-v{font-size:13px;font-weight:600;color:var(--t1);line-height:1.4}
+.legend-item-d{font-size:11px;color:var(--t2);line-height:1.5;margin-top:4px}
+
+/* ============ SUB-CARDS (2-col grid) ============ */
+.sub-cards{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:72px;
+}
+.subcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.subcard-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  padding:4px 9px;border-radius:4px;width:fit-content;
+}
+.subcard h4{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.subcard p{font-size:12px;color:var(--t2);line-height:1.6}
+.subcard p strong{color:var(--t1);font-weight:600}
+.subcard pre{
+  font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;line-height:1.55;
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:10px 12px;color:var(--t1);overflow-x:auto;
+}
+
+/* ============ TABLE ============ */
+.info-table{
+  width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;
+}
+.info-table th{
+  text-align:left;font-weight:600;color:var(--t3);font-size:10px;
+  text-transform:uppercase;letter-spacing:.4px;
+  padding:8px 12px;border-bottom:1px solid var(--border-strong);
+}
+.info-table td{
+  padding:10px 12px;border-bottom:1px solid var(--border);
+  color:var(--t2);line-height:1.5;vertical-align:top;
+}
+.info-table td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+.info-table-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px 22px;margin-bottom:72px;
+}
+
+/* ============ SIGNATURE BLOCK ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:40px 44px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.25) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:40px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#7ab5a4;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#5dcaa5}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#5dcaa5;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:520px}
+.sig p strong{color:#e8e6df;font-weight:600}
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#5dcaa5;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:40px}
+  .steps,.sub-cards,.layout-legend,.notes{grid-template-columns:1fr}
+  .sig-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ╔═══════════════════ HEADER ═══════════════════╗ -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Exercise Bundle</div>
+        <div class="brand-b">{{BUNDLE_PKG_NAME}}</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Type</span><span class="meta-v">{{BUNDLE_TYPE}}</span></div>
+      <div class="meta-pair"><span class="meta-lb">Subject</span><span class="meta-v">{{BUNDLE_SUBJECT}}</span></div>
+      <div class="meta-pair"><span class="meta-lb">Version</span><span class="meta-v">v{{BUNDLE_VERSION}}</span></div>
+    </div>
+  </header>
+
+  <!-- ╔═══════════════════ HERO ═══════════════════╗ -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Exercise Bundle</span>
+      <span class="dot"></span>
+      {{BUNDLE_GRADE}} · {{BUNDLE_TYPE}}
+    </div>
+    <h1>{{BUNDLE_TITLE_ZH}}<br><em>{{BUNDLE_TITLE_EN}}</em></h1>
+    <p class="sub">
+      ▢ {{BUNDLE_TAGLINE}}
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="{{DEMO_URL}}">试用 Demo <span class="ar">→</span></a>
+      <code class="code-inline">npm install {{BUNDLE_PKG_NAME}}</code>
+    </div>
+  </section>
+
+  <!-- ╔═══════════════════ SECTION 01 — What it teaches ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>这个 Bundle 教什么 <span class="en">What it teaches</span></h2>
+    </div>
+    <span class="hint">3 个学习目标 · 渐进式</span>
+  </div>
+
+  <div class="steps">
+    <!-- Step card 1 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">1</div>
+        <h3>▢ 学习目标 1</h3>
+      </div>
+      <div class="scard-illust">
+        <!-- ▢ Replace with SVG illustration (viewBox 280x158) -->
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="20" width="200" height="118" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="140" y="85" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#9c9a92" text-anchor="middle">illustration placeholder</text>
+        </svg>
+      </div>
+      <p>▢ 用 2-3 句描述这一目标。粗体强调<strong>关键概念</strong>。</p>
+    </div>
+
+    <!-- Step card 2 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">2</div>
+        <h3>▢ 学习目标 2</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="20" width="200" height="118" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="140" y="85" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#9c9a92" text-anchor="middle">illustration placeholder</text>
+        </svg>
+      </div>
+      <p>▢ 用 2-3 句描述这一目标。</p>
+    </div>
+
+    <!-- Step card 3 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">3</div>
+        <h3>▢ 学习目标 3</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="20" width="200" height="118" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="140" y="85" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#9c9a92" text-anchor="middle">illustration placeholder</text>
+        </svg>
+      </div>
+      <p>▢ 用 2-3 句描述这一目标。</p>
+    </div>
+  </div>
+
+  <!-- ╔═══════════════════ SECTION 02 — Student Journey ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>学生体验 <span class="en">Student Journey</span></h2>
+    </div>
+    <span class="hint">一个 Story 的完整流程</span>
+  </div>
+
+  <div class="layout-card">
+    <h3>典型 Story — Default 场景</h3>
+    <div class="layout-svg-wrap">
+      <!-- ▢ Replace with annotated UI mock (viewBox 800x400) showing student view with A/B/C/D markers -->
+      <svg viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="760" height="360" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="400" y="200" font-family="Plus Jakarta Sans" font-size="14" font-weight="600" fill="#9c9a92" text-anchor="middle">student UI illustration placeholder</text>
+      </svg>
+    </div>
+    <div class="layout-legend">
+      <div class="legend-item">
+        <div class="legend-item-lb">A · ▢ 区域名</div>
+        <div class="legend-item-v">▢ 简介</div>
+        <div class="legend-item-d">▢ 详细说明</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">B · ▢ 区域名</div>
+        <div class="legend-item-v">▢ 简介</div>
+        <div class="legend-item-d">▢ 详细说明</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">C · ▢ 区域名</div>
+        <div class="legend-item-v">▢ 简介</div>
+        <div class="legend-item-d">▢ 详细说明</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">D · ▢ 区域名</div>
+        <div class="legend-item-v">▢ 简介</div>
+        <div class="legend-item-d">▢ 详细说明</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔═══════════════════ SECTION 03 — Included Stories ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>内置 Stories <span class="en">Included Stories</span></h2>
+    </div>
+    <span class="hint">每个 Story 一个可独立预览的场景</span>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">Default</span>
+      <h4>▢ 默认场景</h4>
+      <p>▢ 从零开始的完整学生体验。适合首次试用和销售演示。</p>
+      <pre>npx exercise-preview . --story Default</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">Wrong-answer</span>
+      <h4>▢ 错答路径</h4>
+      <p>▢ 预设学生答错的状态，演示 hint / rejectHint / scaffold 触发。</p>
+      <pre>npx exercise-preview . --story WrongAnswer</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">Review</span>
+      <h4>▢ 复习视图</h4>
+      <p>▢ 模拟学生完成后回看答题过程的界面。</p>
+      <pre>npx exercise-preview . --story ReviewMode</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">Teacher-observe</span>
+      <h4>▢ 教师观察视图</h4>
+      <p>▢ 含 10 个 mock 学生提交，演示教师端的全班概览和告警。</p>
+      <pre>npx exercise-preview . --story TeacherObserve</pre>
+    </div>
+  </div>
+
+  <!-- ╔═══════════════════ SECTION 04 — Pedagogical Foundation ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>教学法依据 <span class="en">Pedagogical Foundation</span></h2>
+    </div>
+    <span class="hint">研究 → 设计</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>教学法</th><th>引用</th><th>在 Bundle 中的应用</th></tr>
+      <tr>
+        <td>▢ 教学法名 1</td>
+        <td>▢ 研究引用（作者 + 年份）</td>
+        <td>▢ 这个 Bundle 用什么方式实现/体现这一教学法</td>
+      </tr>
+      <tr>
+        <td>▢ 教学法名 2</td>
+        <td>▢ 研究引用</td>
+        <td>▢ 应用方式</td>
+      </tr>
+      <tr>
+        <td>▢ 教学法名 3</td>
+        <td>▢ 研究引用</td>
+        <td>▢ 应用方式</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ╔═══════════════════ SECTION 05 — Integration ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>集成方式 <span class="en">Integration</span></h2>
+    </div>
+    <span class="hint">3 步接入到你的 admin</span>
+  </div>
+
+  <div class="steps">
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">1</div>
+        <h3>安装</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="56" width="240" height="46" rx="8" fill="#1c1c1a"/>
+          <text x="140" y="84" font-family="SF Mono,Menlo,monospace" font-size="11" font-weight="500" fill="#5dcaa5" text-anchor="middle">npm install {{BUNDLE_PKG_NAME}}</text>
+        </svg>
+      </div>
+      <p>用 npm/pnpm 安装到你的 admin-next 项目。Bundle 自带前后端代码。</p>
+    </div>
+
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">2</div>
+        <h3>注册</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="30" width="240" height="98" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="32" y="52" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#3a3185">import { Module } from</text>
+          <text x="32" y="68" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#3a3185">'{{BUNDLE_PKG_NAME}}';</text>
+          <text x="32" y="92" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#0d5245">@Module({ imports: [</text>
+          <text x="32" y="106" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#0d5245">  Module,</text>
+          <text x="32" y="120" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#0d5245">] })</text>
+        </svg>
+      </div>
+      <p>把 bundle 的 NestJS Module 添加到你的 <strong>ClassroomModule.imports</strong>。Plugin 自动注册。</p>
+    </div>
+
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">3</div>
+        <h3>写 Manifest</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="240" height="118" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="32" y="42" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#7a4d0e">"answerKey": {</text>
+          <text x="32" y="58" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#7a4d0e">  "type": "{{BUNDLE_TYPE}}",</text>
+          <text x="32" y="74" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#7a4d0e">  ...</text>
+          <text x="32" y="90" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#7a4d0e">}</text>
+        </svg>
+      </div>
+      <p>在课程 manifest 的 <strong>readingSteps[].answerKey</strong> 写 <code>type: "{{BUNDLE_TYPE}}"</code>，按 schema 填字段。</p>
+    </div>
+  </div>
+
+  <!-- ╔═══════════════════ SECTION 06 — Common Scenarios ═══════════════════╗ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">06 —</span>
+      <h2>常见场景 <span class="en">Common Scenarios</span></h2>
+    </div>
+    <span class="hint">教师在课堂上看到什么 + 做什么</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>场景</th><th>教师看到</th><th>建议做法</th></tr>
+      <tr>
+        <td>▢ 场景 1</td>
+        <td>▢ 仪表盘信号</td>
+        <td>▢ 教师建议动作</td>
+      </tr>
+      <tr>
+        <td>▢ 场景 2</td>
+        <td>▢ 信号</td>
+        <td>▢ 动作</td>
+      </tr>
+      <tr>
+        <td>▢ 场景 3</td>
+        <td>▢ 信号</td>
+        <td>▢ 动作</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ╔═══════════════════ SIGNATURE (optional, hide if not needed) ═══════════════════╗ -->
+  <div class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow">
+          <span class="dot"></span>
+          DESIGN SIGNATURE
+        </div>
+        <h2>▢ 一句话<em>突出本 Bundle 的独特之处</em>。</h2>
+        <p>
+          ▢ 2-3 句长描述，说明这个 bundle 与其他类似 bundle 的区别。粗体强调<strong>差异点</strong>。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t"><strong>▢ 特征 1</strong>▢ 说明</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t"><strong>▢ 特征 2</strong>▢ 说明</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t"><strong>▢ 特征 3</strong>▢ 说明</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ╔═══════════════════ NOTES ═══════════════════╗ -->
+  <div class="notes">
+    <div>
+      <div class="note-h">兼容性 · Compatibility</div>
+      <div class="note-b">▢ 例：需要 KedgeAgentic 平台 <strong>v0.5+</strong> 和 live-lesson solution。已在 Chrome / Safari 测试。</div>
+    </div>
+    <div>
+      <div class="note-h">许可证 · License</div>
+      <div class="note-b">▢ 例：MIT。可自由用于商业课堂。Bundle 内的<strong>课程素材</strong>另行声明。</div>
+    </div>
+    <div>
+      <div class="note-h">支持与反馈 · Support</div>
+      <div class="note-b">▢ 例：GitHub Issues、Email、社区文档链接。</div>
+    </div>
+  </div>
+
+  <footer>{{BUNDLE_PKG_NAME}} · v{{BUNDLE_VERSION}} · Generated from bundle-readme-template</footer>
+
+</div>
+
+</body>
+</html>
