@@ -5,6 +5,7 @@ import { MatchGrader } from './graders/match.grader';
 import { MatrixGrader } from './graders/matrix.grader';
 import { StanceGrader } from './graders/stance.grader';
 import { OrderGrader } from './graders/order.grader';
+import { ExerciseTypeRegistry } from './exercise-type-registry';
 
 describe('GradingService (dispatcher)', () => {
   let service: GradingService;
@@ -13,7 +14,12 @@ describe('GradingService (dispatcher)', () => {
     const mockAiPromptBuilder = {
       callLlm: jest.fn().mockRejectedValue(new Error('not configured in test')),
     } as unknown as AiPromptBuilder;
-    service = new GradingService(mockAiPromptBuilder);
+    // Empty registry — falls through to legacy graders dict (preserves old behavior)
+    const mockRegistry = {
+      has: () => false,
+      grade: async () => null,
+    } as unknown as ExerciseTypeRegistry;
+    service = new GradingService(mockAiPromptBuilder, mockRegistry);
   });
 
   it('returns null for missing answerKey', async () => {

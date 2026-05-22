@@ -43,6 +43,10 @@ import { GuidedDiscoveryObserveHandler } from './observe/handlers/guided-discove
 import { ExerciseService } from './exercise/exercise.service';
 import { ExerciseController } from './exercise/exercise.controller';
 import { GradingService } from './exercise/grading.service';
+import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
+import { QuizPlugin } from './exercise/plugins/quiz.plugin';
+import { MatchPlugin } from './exercise/plugins/match.plugin';
+import { OrderPlugin } from './exercise/plugins/order.plugin';
 
 // ── State Cache ──
 import { StateCacheService } from './state-cache.service';
@@ -103,6 +107,8 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
     ExerciseService, GradingService,
+    // Exercise type plugins (Stage 1: quiz/match/order)
+    ExerciseTypeRegistry, QuizPlugin, MatchPlugin, OrderPlugin,
     // Socratic Discuss
     DiscussService, ClusterClassifier, ClusterAggregator,
     // AI Ask

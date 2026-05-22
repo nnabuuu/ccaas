@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { AnswerKeySchema } from '../../schemas';
 import type { AnswerKey, GradeResult } from '../../schemas';
 import type { Grader } from './graders/grader.interface';
@@ -13,12 +13,26 @@ import { ImageUploadGrader } from './graders/image-upload.grader';
 import { FillBlankGrader } from './graders/fill-blank.grader';
 import { GuidedDiscoveryGrader } from './graders/guided-discovery.grader';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ExerciseTypeRegistry } from './exercise-type-registry';
 
+/**
+ * Dispatches grading to the appropriate handler.
+ *
+ * Migration strategy (during Stage 1+):
+ *   1. Try the new ExerciseTypeRegistry (plugin model) first.
+ *   2. Fall back to the legacy `graders` dict for types not yet migrated.
+ *
+ * Once all 11 types are migrated, the legacy dict can be removed.
+ */
 @Injectable()
 export class GradingService {
+  private readonly logger = new Logger(GradingService.name);
   private readonly graders: Record<string, Grader>;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
+  constructor(
+    private readonly aiPromptBuilder: AiPromptBuilder,
+    @Optional() private readonly registry: ExerciseTypeRegistry | null = null,
+  ) {
     this.graders = {
       quiz: new QuizGrader(),
       match: new MatchGrader(),
@@ -36,6 +50,16 @@ export class GradingService {
 
   async grade(rawKey: unknown, data: Record<string, unknown>): Promise<GradeResult | null> {
     if (!rawKey) return null;
+
+    // Step 1: try plugin registry first (Stage 1+ migrated types)
+    const type = (rawKey as { type?: string })?.type;
+    if (this.registry && type && this.registry.has(type)) {
+      const pluginResult = await this.registry.grade(rawKey, data);
+      if (pluginResult !== null) return pluginResult;
+      this.logger.warn(`Plugin "${type}" returned null; falling back to legacy grader`);
+    }
+
+    // Step 2: fall back to legacy grader (un-migrated types)
     const parsed = AnswerKeySchema.safeParse(rawKey);
     if (!parsed.success) return null;
     const key: AnswerKey = parsed.data;
