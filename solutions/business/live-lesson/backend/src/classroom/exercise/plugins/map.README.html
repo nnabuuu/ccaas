@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MapPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: map</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">B · w/ LLM</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">3 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill teal">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Async · Quadrant placement + reasoning
+    </div>
+    <h1>Map<br><em class="teal">象限图题</em></h1>
+    <p class="sub">
+      二维 <strong>x/y 坐标系</strong>，学生把项目拖到合适位置。<strong>practice vs given</strong>：部分项目预先放好作示范，其余学生自己放。<strong>双重评分</strong>：位置接近度（欧氏距离）+ LLM 评 reasoning 文本质量。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/map.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "map"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> MapAxisSchema = z.<span class="n">object</span>({
+  neg:   z.<span class="n">string</span>().<span class="n">min</span>(1),
+  pos:   z.<span class="n">string</span>().<span class="n">min</span>(1),
+  label: z.<span class="n">string</span>().<span class="n">min</span>(1),
+});
+
+<span class="k">const</span> MapItemSchema = z.<span class="n">object</span>({
+  id:    z.<span class="n">string</span>().<span class="n">min</span>(1),
+  label: z.<span class="n">string</span>().<span class="n">min</span>(1),
+  hint:  z.<span class="n">string</span>().<span class="n">optional</span>(),
+  refs:  z.<span class="n">array</span>(z.<span class="n">number</span>()).<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> MapAnswerKeySchema = z.<span class="n">object</span>({
+  type:            z.<span class="n">literal</span>(<span class="s">'map'</span>),
+  prompt:          z.<span class="n">string</span>().<span class="n">min</span>(1),
+  axes:            z.<span class="n">object</span>({ x: MapAxisSchema, y: MapAxisSchema }),
+  items:           z.<span class="n">array</span>(MapItemSchema).<span class="n">min</span>(1),
+  expected:        z.<span class="n">record</span>(z.<span class="n">string</span>(), z.<span class="n">tuple</span>([
+    z.<span class="n">number</span>().<span class="n">min</span>(-1).<span class="n">max</span>(1),
+    z.<span class="n">number</span>().<span class="n">min</span>(-1).<span class="n">max</span>(1),
+  ])).<span class="n">optional</span>(),  <span class="c">// item.id → [x, y] in [-1..1]</span>
+  minReasonLength: z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1).<span class="n">optional</span>(),
+  practiceCount:   z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1).<span class="n">optional</span>(),
+  randomPractice:  z.<span class="n">boolean</span>().<span class="n">optional</span>(),
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>axes.x / axes.y</td><td>{neg, pos, label}</td><td>两个轴的负/正端标签 + 轴名</td></tr>
+      <tr><td>items[]</td><td>array</td><td>所有可拖动的项目（id, label, hint?）</td></tr>
+      <tr><td>expected</td><td>Record</td><td><strong>item.id → [x, y]</strong> 坐标，范围 [-1, 1]</td></tr>
+      <tr><td>practiceCount</td><td>number?</td><td>前 N 个为练习项，后面是 given</td></tr>
+      <tr><td>randomPractice</td><td>boolean?</td><td>随机选 practiceCount 个作为练习</td></tr>
+      <tr><td>minReasonLength</td><td>number?</td><td>reasoning 文本最少字数（默认 8）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"map"</span>,
+  <span class="s">"prompt"</span>: <span class="s">"把各类美的标准放到合适的位置"</span>,
+  <span class="s">"axes"</span>: {
+    <span class="s">"x"</span>: { <span class="s">"neg"</span>: <span class="s">"自然"</span>, <span class="s">"pos"</span>: <span class="s">"人造"</span>, <span class="s">"label"</span>: <span class="s">"美的来源"</span> },
+    <span class="s">"y"</span>: { <span class="s">"neg"</span>: <span class="s">"个体"</span>, <span class="s">"pos"</span>: <span class="s">"群体"</span>, <span class="s">"label"</span>: <span class="s">"作用对象"</span> }
+  },
+  <span class="s">"items"</span>: [
+    { <span class="s">"id"</span>: <span class="s">"fattening"</span>, <span class="s">"label"</span>: <span class="s">"非洲增肥房"</span> },
+    { <span class="s">"id"</span>: <span class="s">"egypt-art"</span>, <span class="s">"label"</span>: <span class="s">"埃及绘画"</span> },
+    { <span class="s">"id"</span>: <span class="s">"venus"</span>, <span class="s">"label"</span>: <span class="s">"Hohle Fels 维纳斯"</span> },
+    { <span class="s">"id"</span>: <span class="s">"media-slim"</span>, <span class="s">"label"</span>: <span class="s">"现代媒体瘦审美"</span> }
+  ],
+  <span class="s">"expected"</span>: {
+    <span class="s">"fattening"</span>:  [ 0.6,  0.8],
+    <span class="s">"egypt-art"</span>:  [ 0.5,  0.4],
+    <span class="s">"venus"</span>:      [-0.3, -0.6],
+    <span class="s">"media-slim"</span>: [ 0.8,  0.9]
+  },
+  <span class="s">"minReasonLength"</span>: 20,
+  <span class="s">"practiceCount"</span>: 2
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>剥离 <code>expected</code>。生成 <code>givenPlacements</code>：当 practiceCount &lt; items 时，未练习的项预先放好（students 看见但不能动）。</p>
+      <pre>// 学生看到（practiceCount=2）
+{
+  type: "map",
+  mapItems: [...],  // 4 items
+  givenPlacements: {
+    "venus": { x: -0.3, y: -0.6 },
+    "media-slim": { x: 0.8, y: 0.9 }
+  }
+  // fattening, egypt-art 学生自己放
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p><strong>双重评分</strong>：(1) 位置 — 学生坐标与 expected 的<strong>欧氏距离</strong>越小分越高；(2) reasoning — LLM 评 reasoning 文本质量。综合 score 加权平均。</p>
+      <pre>// 输出
+{
+  total: 78,
+  byDimension: {
+    "fattening.pos": 90,
+    "fattening.reason": 75,
+    "egypt-art.pos": 80,
+    "egypt-art.reason": 65
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Map</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>二维对比分析（科学性 vs 实用性）</td><td>1 维排序（用 order）</td></tr>
+      <tr><td>多案例的特征定位</td><td>分类匹配（用 match）</td></tr>
+      <tr><td>批判性思维 / 立场可视化</td><td>事实回忆（用 quiz）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。当前 legacy <code>MapGrader</code> 注入 AiPromptBuilder。Stage 3 迁移。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b">坐标空间 <strong>[-1, 1]</strong>，原点是中心。距离计算用欧氏距离。学生 UI 通常显示 200×200 像素的可拖区。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">适合<strong>批判性阅读</strong>第二阶段：在矩阵化提取信息后，用 map 做二维定位，引出对立面思考。</div></div>
+  </div>
+
+  <footer>map plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

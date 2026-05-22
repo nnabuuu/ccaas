@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MatrixPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: matrix</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">B · w/ LLM</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">3 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill purple">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Async · LLM-scored quality
+    </div>
+    <h1>Matrix<br><em class="purple">矩阵填空题</em></h1>
+    <p class="sub">
+      多行多列结构化笔记。每行一个对象，每列一个维度。<strong>demo 行</strong>给学生看示例，<strong>practice 行</strong>让学生填。LLM 评分三维度（place / practice / reason）质量。<strong>cellQualities</strong> 返回每格 0-100 分。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/matrix.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "matrix"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> MatrixAnswerItemSchema = z.<span class="n">object</span>({
+  rowIdx:     z.<span class="n">number</span>(),
+  place:      z.<span class="n">string</span>().<span class="n">min</span>(1),
+  isDemo:     z.<span class="n">boolean</span>().<span class="n">optional</span>(),
+  practice:   z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// non-demo 必填</span>
+  reason:     z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// non-demo 必填</span>
+  hint:       z.<span class="n">string</span>().<span class="n">optional</span>(),
+  paraRef:    z.<span class="n">array</span>(z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">positive</span>()).<span class="n">optional</span>(),
+  whatPrompt: z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// "What practice did they have?"</span>
+  whyPrompt:  z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// "Why did they have it?"</span>
+}).<span class="n">refine</span>(
+  (row) => row.isDemo || (row.practice &amp;&amp; row.reason),
+  { message: <span class="s">'matrix: non-demo rows must have practice and reason'</span> },
+);
+
+<span class="k">const</span> MatrixAnswerKeySchema = z.<span class="n">object</span>({
+  type:          z.<span class="n">literal</span>(<span class="s">'matrix'</span>),
+  answers:       z.<span class="n">array</span>(MatrixAnswerItemSchema).<span class="n">nonempty</span>(),
+  practiceCount: z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1).<span class="n">optional</span>(),
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>answers[].rowIdx</td><td>number</td><td>行顺序索引</td></tr>
+      <tr><td>answers[].place</td><td>string</td><td>第一列固定值（学生看，不填）</td></tr>
+      <tr><td>answers[].isDemo</td><td>boolean?</td><td>true = 示范行，practice/reason 给学生看；false = 学生要填</td></tr>
+      <tr><td>answers[].practice</td><td>string?</td><td>正确答案 — 第二列（What/Practice）</td></tr>
+      <tr><td>answers[].reason</td><td>string?</td><td>正确答案 — 第三列（Why/Reason）</td></tr>
+      <tr><td>answers[].whatPrompt</td><td>string?</td><td>第二列的引导问题（如 "What practice?"）</td></tr>
+      <tr><td>answers[].whyPrompt</td><td>string?</td><td>第三列的引导问题（如 "Why this practice?"）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"matrix"</span>,
+  <span class="s">"answers"</span>: [
+    {
+      <span class="s">"rowIdx"</span>: 0, <span class="s">"isDemo"</span>: <span class="k">true</span>,
+      <span class="s">"place"</span>: <span class="s">"Africa"</span>,
+      <span class="s">"practice"</span>: <span class="s">"Fattening room for teenagers"</span>,
+      <span class="s">"reason"</span>: <span class="s">"Being fat shows attractiveness and wealth"</span>,
+      <span class="s">"paraRef"</span>: [1]
+    },
+    {
+      <span class="s">"rowIdx"</span>: 1, <span class="s">"isDemo"</span>: <span class="k">false</span>,
+      <span class="s">"place"</span>: <span class="s">"Egypt"</span>,
+      <span class="s">"practice"</span>: <span class="s">"Paintings show slim dark-haired women"</span>,
+      <span class="s">"reason"</span>: <span class="s">"Slim was the cultural norm"</span>,
+      <span class="s">"whatPrompt"</span>: <span class="s">"What did ancient Egyptian art show?"</span>,
+      <span class="s">"whyPrompt"</span>: <span class="s">"Why is this evidence of beauty standards?"</span>,
+      <span class="s">"paraRef"</span>: [3]
+    }
+  ]
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>demo 行保留 <code>practice</code>+<code>reason</code>（学生看示例）；non-demo 行<strong>只保留 place</strong>，剥离答案。保留 whatPrompt/whyPrompt 引导。</p>
+      <pre>// 学生看到的 non-demo 行
+{
+  idx: 1,
+  place: "Egypt",
+  isDemo: false,
+  whatPrompt: "What...?",
+  whyPrompt: "Why...?"
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p>跳过 demo 行。对每行 practice / reason 各调一次 LLM，返回 0-100 质量分。<code>cellQualities</code> 包含每格分数：<code>{ rowIdx: { whatQ, whyQ } }</code>。</p>
+      <pre>// 输出
+{
+  total: 85,
+  byDimension: {
+    place: 100, practice: 80, reason: 75
+  },
+  cellQualities: {
+    "1": { whatQ: 80, whyQ: 75 }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Matrix</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>结构化笔记：地点-实践-理由 / 主语-动作-结果</td><td>简单事实回忆（用 quiz）</td></tr>
+      <tr><td>对比类阅读：3+ 案例的特征矩阵</td><td>单一立场表达（用 stance）</td></tr>
+      <tr><td>初次接触结构化思维（demo 行降低门槛）</td><td>无法 LLM 准确评分的极开放问题</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。当前 legacy <code>MatrixGrader</code> 用 AiPromptBuilder 调 LLM。<strong>Stage 3</strong> 迁移时 plugin 用 NestJS DI 自动注入。</div></div>
+    <div><div class="note-h">复杂度 · Complexity</div><div class="note-b">B 组（受控+异步）。LLM 调用 2N 次（N 行 × 2 列）。可优化为<strong>批量调用</strong>。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>ideal-beauty-reading</code> 的 Scan &amp; Build 步骤被使用。是<strong>阅读策略训练</strong>的核心题型。</div></div>
+  </div>
+
+  <footer>matrix plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

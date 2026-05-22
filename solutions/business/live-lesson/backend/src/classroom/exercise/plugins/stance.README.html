@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>StancePlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: stance</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">A · Simple</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">None</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">2 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill green">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Synchronous · 2-dimension scoring
+    </div>
+    <h1>Stance<br><em class="green">立场论证题</em></h1>
+    <p class="sub">
+      学生选 <strong>agree / disagree</strong> 并给出至少 N 条文本证据。<strong>2 维评分</strong>：立场正确性 + 证据数量。<strong>软完成</strong>模式（位置对+证据不足仍允许提交，total 50）。批判性阅读必备题型。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/stance.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "stance"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> StanceAnswerKeySchema = z.<span class="n">object</span>({
+  type:           z.<span class="n">literal</span>(<span class="s">'stance'</span>),
+  validPositions: z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(1),  <span class="c">// 可接受的立场，可单个或多个</span>
+  minEvidence:    z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1),       <span class="c">// 最少证据数</span>
+  stanceQ:        z.<span class="n">string</span>().<span class="n">optional</span>(),       <span class="c">// 立场问题（英）</span>
+  stanceQZh:      z.<span class="n">string</span>().<span class="n">optional</span>(),
+  stanceOpts:     z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(2),  <span class="c">// 立场选项</span>
+  evidence:       z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(1),  <span class="c">// 学生可选的证据池</span>
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>validPositions</td><td>string[]</td><td>所有可接受的立场（通常 ["agree"] 或 ["agree","disagree"] 都行）</td></tr>
+      <tr><td>minEvidence</td><td>number</td><td>最少证据条数，达不到 evidence 维度不得满分</td></tr>
+      <tr><td>stanceQ / stanceQZh</td><td>string?</td><td>立场问题（如 "Is one beauty ideal more attractive?"）</td></tr>
+      <tr><td>stanceOpts</td><td>string[]</td><td>立场单选选项（agree / disagree / neutral）</td></tr>
+      <tr><td>evidence</td><td>string[]</td><td>课文中的可选证据条目（学生勾选）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"stance"</span>,
+  <span class="s">"stanceQ"</span>: <span class="s">"Is one idea of physical beauty really more attractive than another?"</span>,
+  <span class="s">"stanceOpts"</span>: [<span class="s">"Agree"</span>, <span class="s">"Disagree"</span>, <span class="s">"It depends"</span>],
+  <span class="s">"validPositions"</span>: [<span class="s">"Disagree"</span>, <span class="s">"It depends"</span>],  <span class="c">// 文本暗示 disagree 更合理</span>
+  <span class="s">"minEvidence"</span>: 2,
+  <span class="s">"evidence"</span>: [
+    <span class="s">"Ideas about physical beauty change over time (¶3)"</span>,
+    <span class="s">"Venus of Hohle Fels is an overweight female (¶3)"</span>,
+    <span class="s">"Egyptian art shows slim dark-haired women (¶3)"</span>,
+    <span class="s">"Modern media bombards us with slim images (¶2)"</span>,
+    <span class="s">"Some people question shallow beauty ideals (¶2)"</span>
+  ]
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>剥离 <code>validPositions</code> 和 <code>minEvidence</code>。保留 <code>stanceQ</code> / <code>stanceOpts</code> / <code>evidence</code>。</p>
+      <pre>// 学生看到
+{
+  type: "stance",
+  stanceQ: "...",
+  stanceOpts: [...],
+  evidence: [...]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p><strong>2 维评分</strong>：position 维度 +50（在 validPositions 中），evidence 维度 +50（数量 ≥ minEvidence）。位置对+证据不足 = 50 分软完成。</p>
+      <pre>// 输出
+{
+  total: 100,  // 或 50, 0
+  byDimension: {
+    position: true,
+    evidence: true
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Stance</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>批判性阅读：要求选立场+论证</td><td>需要原文写作（用 image-upload 上传手写）</td></tr>
+      <tr><td>议论文教学：训练论证结构</td><td>事实型问题（用 quiz）</td></tr>
+      <tr><td>本课提供大量证据条目</td><td>立场没有客观正确答案的题</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移至 plugin 模式。当前使用 legacy <code>StanceGrader</code>。计划在 <strong>Stage 2</strong>（A 组其他类型）迁移。</div></div>
+    <div><div class="note-h">复杂度 · Complexity</div><div class="note-b">A 组（简单受控）。<strong>同步评分</strong>无 LLM 依赖。迁移时与 quiz/match 一样直接。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>ideal-beauty-reading</code> 的 Evaluate 步骤被使用。所有阅读类课程的 critical reading 阶段都推荐使用。</div></div>
+  </div>
+
+  <footer>stance plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

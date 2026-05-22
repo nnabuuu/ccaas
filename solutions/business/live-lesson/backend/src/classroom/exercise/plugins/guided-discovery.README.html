@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>GuidedDiscoveryPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: guided-discovery</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">C · Self-managed</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">5 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill purple">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      4 sub-step types · Progressive unlock · OCR cache
+    </div>
+    <h1>Guided-discovery<br><em class="purple">引导式探究题</em></h1>
+    <p class="sub">
+      最复杂的题型之一。一道题分 <strong>4 类子步骤</strong>，渐进解锁 + 混合判分。布鲁姆分类学的工程化：从观察 → 应用 → 分析 → 综合。配合 OCR 缓存（commit d3ded228）避免重复视觉模型调用。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/guided-discovery.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "guided-discovery"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>4 类子步骤</h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>子步类型</th><th>认知层次（布鲁姆）</th><th>核心交互</th></tr>
+      <tr><td>observation_choice</td><td>记忆 / 理解</td><td>看表格 / 高亮 → 单选判断（如"左边两个括号有什么关系？"）</td></tr>
+      <tr><td>formula_blanks</td><td>应用</td><td>公式模板填空（用 a、b 表示规律：(a+b)(a−b) = ?）</td></tr>
+      <tr><td>derivation_blank</td><td>分析</td><td>多行推导，每行可有填空（展开 (a+b)(a-b) = a²-ab+ab-b²）</td></tr>
+      <tr><td>text_blanks</td><td>综合</td><td>用文字描述规律（template + 多空 + swappable 顺序）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>Answer Key Schema (Discriminated Union)</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> GuidedDiscoveryStepSchema = z.<span class="n">discriminatedUnion</span>(<span class="s">'type'</span>, [
+  GdObservationChoiceSchema,  <span class="c">// type: 'observation_choice'</span>
+  GdFormulaBlanksSchema,       <span class="c">// type: 'formula_blanks'</span>
+  GdDerivationBlankSchema,     <span class="c">// type: 'derivation_blank'</span>
+  GdTextBlanksSchema,          <span class="c">// type: 'text_blanks'</span>
+]);
+
+<span class="k">const</span> GuidedDiscoveryAnswerKeySchema = z.<span class="n">object</span>({
+  type:    z.<span class="n">literal</span>(<span class="s">'guided-discovery'</span>),
+  title:   z.<span class="n">string</span>(),
+  steps:   z.<span class="n">array</span>(GuidedDiscoveryStepSchema).<span class="n">nonempty</span>(),
+  summary: z.<span class="n">object</span>({
+    formula:     z.<span class="n">string</span>().<span class="n">optional</span>(),
+    name:        z.<span class="n">string</span>().<span class="n">optional</span>(),
+    description: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  }).<span class="n">optional</span>(),
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>核心字段（按子步类型）</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>子步.字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>observation_choice.table</td><td>{expression, result}[]</td><td>展示给学生看的表格（如 3 道乘法及结果）</td></tr>
+      <tr><td>observation_choice.highlights</td><td>{same, opposite}</td><td>高亮"相同项"vs"相反项"用不同颜色，引导观察</td></tr>
+      <tr><td>observation_choice.choices[]</td><td>{id, options[2], correct}</td><td>2 选 1 多个判断</td></tr>
+      <tr><td>formula_blanks.blanks[]</td><td>{id, accepts, rejects, rejectHint}</td><td>每空有 accepts 数组 + rejects 数组（典型错误）+ rejectHint（错答时显示）</td></tr>
+      <tr><td>derivation_blank.lines[]</td><td>{text, blank?}</td><td>多行推导，每行可含填空</td></tr>
+      <tr><td>derivation_blank.hintSteps[]</td><td>{title, widget, props}</td><td>scaffold 提示（widget = formula-animation / solution-display）</td></tr>
+      <tr><td>text_blanks.template / swappable</td><td>string / boolean</td><td>文本模板 + 顺序可交换</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>示例 — 平方差公式 4 步</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"guided-discovery"</span>,
+  <span class="s">"title"</span>: <span class="s">"归纳平方差公式"</span>,
+  <span class="s">"steps"</span>: [
+    {
+      <span class="s">"type"</span>: <span class="s">"observation_choice"</span>, <span class="s">"id"</span>: <span class="s">"observation_1"</span>,
+      <span class="s">"title"</span>: <span class="s">"观察三道算式"</span>,
+      <span class="s">"table"</span>: [
+        { <span class="s">"expression"</span>: <span class="s">"(y+2)(y-2)"</span>, <span class="s">"result"</span>: <span class="s">"y²-4"</span> },
+        { <span class="s">"expression"</span>: <span class="s">"(3-a)(3+a)"</span>, <span class="s">"result"</span>: <span class="s">"9-a²"</span> }
+      ],
+      <span class="s">"choices"</span>: [
+        { <span class="s">"id"</span>: <span class="s">"c1"</span>, <span class="s">"options"</span>: [<span class="s">"完全相同"</span>,<span class="s">"一和一差"</span>], <span class="s">"correct"</span>: 1 }
+      ]
+    },
+    {
+      <span class="s">"type"</span>: <span class="s">"formula_blanks"</span>, <span class="s">"id"</span>: <span class="s">"formula_1"</span>,
+      <span class="s">"title"</span>: <span class="s">"用字母表示"</span>,
+      <span class="s">"blanks"</span>: [
+        { <span class="s">"id"</span>: <span class="s">"b1"</span>, <span class="s">"label"</span>: <span class="s">"="</span>,
+          <span class="s">"accepts"</span>: [<span class="s">"a^2-b^2"</span>,<span class="s">"a²-b²"</span>],
+          <span class="s">"rejects"</span>: [<span class="s">"a^2+b^2"</span>,<span class="s">"ab"</span>],
+          <span class="s">"rejectHint"</span>: <span class="s">"注意运算符号：是减不是加"</span> }
+      ]
+    },
+    { <span class="s">"type"</span>: <span class="s">"derivation_blank"</span>, <span class="s">"id"</span>: <span class="s">"derivation_1"</span>, <span class="s">"title"</span>: <span class="s">"展开验证"</span>, <span class="s">"lines"</span>: [...] },
+    { <span class="s">"type"</span>: <span class="s">"text_blanks"</span>, <span class="s">"id"</span>: <span class="s">"text_1"</span>, <span class="s">"title"</span>: <span class="s">"用文字描述"</span>, <span class="s">"template"</span>: <span class="s">"两个数的{{b1}}与{{b2}}的积..."</span> }
+  ],
+  <span class="s">"summary"</span>: {
+    <span class="s">"formula"</span>: <span class="s">"(a+b)(a-b) = a²-b²"</span>,
+    <span class="s">"name"</span>: <span class="s">"平方差公式"</span>
+  }
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离规则（per sub-step）</h4>
+      <p><strong>observation_choice 不剥离 correct</strong>（2 选 1，泄漏可忽略，换取客户端即时反馈）。其他子步剥离 accepts / rejects / rejectHint / blanks 答案。保留 hintSteps 教学脚手架。</p>
+      <pre>// 学生看到的 formula_blanks
+{
+  type: "formula_blanks",
+  blanks: [
+    { id, label, placeholder }
+    // accepts / rejects 被剥离
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>混合评分链路</h4>
+      <p>(1) <strong>客户端</strong>判断 observation_choice / formula_blanks（accepts 匹配）。<br>(2) <strong>derivation_blank 手写</strong>走视觉模型（OCR 缓存 by image hash，相同图片复用结果）。<br>(3) text_blanks 走 LLM 同义判定。</p>
+      <pre>// 输出（per sub-step）
+{
+  stepResults: {
+    observation_1: { score: 100 },
+    formula_1:     { score: 50,
+                     rejectedBlanks: ["b1"] },
+    derivation_1:  { score: 80, ocrCached: true }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>什么时候用 Guided-discovery</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>归纳公式（从具体到抽象）</td><td>单步事实回忆（用 quiz）</td></tr>
+      <tr><td>多步骤渐进推理</td><td>开放式表达（用 image-upload）</td></tr>
+      <tr><td>Productive Failure 教学场景</td><td>简单结构化笔记（用 matrix）</td></tr>
+      <tr><td>需要混合多种评分方式</td><td>不需要 OCR 的纯文本题（用 fill-blank）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。<strong>Stage 5</strong> 迁移最复杂——OCR 缓存逻辑 + 4 种子步骤 + 自管理提交。建议<strong>最后迁移</strong>，等其他类型 plugin 模式稳定。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b"><strong>swappable</strong>：text_blanks 的多个空可交换顺序（{{b1}}{{b2}} 等价于 {{b2}}{{b1}}）。<strong>rejectHint</strong> 是<strong>典型错误的领域编码</strong>——这是 GD 区别于其他题型的核心。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>math-difference-of-squares</code> 的"探索发现"步骤的最后阶段被使用。是<strong>引导发现教学</strong>的标志性题型。</div></div>
+  </div>
+
+  <footer>guided-discovery plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

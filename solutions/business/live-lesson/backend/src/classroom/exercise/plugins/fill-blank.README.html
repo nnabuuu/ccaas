@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FillBlankPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: fill-blank</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">A · w/ LLM</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder?</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">2 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill amber">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Accepts-list + fuzzy match
+    </div>
+    <h1>Fill-blank<br><em class="amber">填空题</em></h1>
+    <p class="sub">
+      模板化句子里挖空，学生填词。<strong>accepts 数组</strong>列出可接受答案，前端先严格匹配，否则后端 LLM 模糊匹配（拼写/同义/形态）。支持多句子多空，<strong>per-blank</strong> 评分。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/fill-blank.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "fill-blank"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> FillBlankBlankSchema = z.<span class="n">object</span>({
+  accepts: z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">nonempty</span>(),  <span class="c">// 可接受答案（含同义/变体）</span>
+  hint:    z.<span class="n">string</span>().<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> FillBlankSentenceSchema = z.<span class="n">object</span>({
+  id:       z.<span class="n">string</span>().<span class="n">min</span>(1),
+  template: z.<span class="n">string</span>().<span class="n">min</span>(1),       <span class="c">// 含 {{blankKey}} 占位</span>
+  blanks:   z.<span class="n">record</span>(z.<span class="n">string</span>(), FillBlankBlankSchema),
+});
+
+<span class="k">const</span> FillBlankAnswerKeySchema = z.<span class="n">object</span>({
+  type:      z.<span class="n">literal</span>(<span class="s">'fill-blank'</span>),
+  sentences: z.<span class="n">array</span>(FillBlankSentenceSchema).<span class="n">nonempty</span>(),
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>sentences[].id</td><td>string</td><td>句子唯一标识（用于结果定位）</td></tr>
+      <tr><td>sentences[].template</td><td>string</td><td>含 <code>{{blankKey}}</code> 占位的句子模板</td></tr>
+      <tr><td>sentences[].blanks</td><td>Record</td><td>键为 blankKey，值为 <code>{ accepts, hint? }</code></td></tr>
+      <tr><td>blanks[k].accepts</td><td>string[]</td><td>可接受答案数组（含拼写变体/同义词）</td></tr>
+      <tr><td>blanks[k].hint</td><td>string?</td><td>提示文本（答错时展示）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"fill-blank"</span>,
+  <span class="s">"sentences"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"s1"</span>,
+      <span class="s">"template"</span>: <span class="s">"Ideas about beauty {{verb}} over time."</span>,
+      <span class="s">"blanks"</span>: {
+        <span class="s">"verb"</span>: {
+          <span class="s">"accepts"</span>: [<span class="s">"change"</span>, <span class="s">"changes"</span>, <span class="s">"vary"</span>, <span class="s">"differ"</span>],
+          <span class="s">"hint"</span>: <span class="s">"Look at ¶3 first sentence for the main verb."</span>
+        }
+      }
+    },
+    {
+      <span class="s">"id"</span>: <span class="s">"s2"</span>,
+      <span class="s">"template"</span>: <span class="s">"The Venus of {{place}} is over {{age}} years old."</span>,
+      <span class="s">"blanks"</span>: {
+        <span class="s">"place"</span>: { <span class="s">"accepts"</span>: [<span class="s">"Hohle Fels"</span>, <span class="s">"hohlefels"</span>] },
+        <span class="s">"age"</span>:   { <span class="s">"accepts"</span>: [<span class="s">"35000"</span>, <span class="s">"35,000"</span>] }
+      }
+    }
+  ]
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>剥离 <code>accepts</code>（核心答案数据）。保留 <code>template</code>、<code>id</code>、<code>hint</code>（hint 仅在答错时展示，前期 sanitize 保留）。</p>
+      <pre>// 学生看到
+{
+  type: "fill-blank",
+  sentences: [
+    { id: "s1", template: "Ideas {{verb}}..." }
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则</h4>
+      <p><strong>两阶段</strong>：(1) 严格字符串匹配 accepts（lowercase trim）；(2) 未匹配则 LLM 判定是否同义/同形。每空独立 0/100 分。</p>
+      <pre>// 输出
+{
+  total: 75,
+  byDimension: {
+    "s1.verb": true,
+    "s2.place": true,
+    "s2.age": false
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Fill-blank</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>语法填空（动词时态、介词）</td><td>开放式表达（用 image-upload）</td></tr>
+      <tr><td>关键词复现 / 词汇验证</td><td>无标准答案的判断（用 stance）</td></tr>
+      <tr><td>数字/事实填空（含中文数字变体）</td><td>多步推理（用 guided-discovery）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。当前使用 legacy <code>FillBlankGrader</code>。<strong>Stage 2</strong> 迁移时注意：LLM fallback 需注入 AiPromptBuilder。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b">accepts 数组要<strong>预先想全</strong>变体（"change" / "changes" / "changed"）。LLM fallback 是 safety net 但准确率有限。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">推荐用于阅读理解的<strong>关键词复现</strong>题，验证学生捕捉到课文核心信息。</div></div>
+  </div>
+
+  <footer>fill-blank plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

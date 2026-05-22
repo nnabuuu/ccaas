@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>ImageUploadPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: image-upload</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">B · LLM required</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">3 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill red">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Vision LLM · qwen3-vl-plus
+    </div>
+    <h1>Image-upload<br><em class="red">手写图片评分</em></h1>
+    <p class="sub">
+      学生上传<strong>手写过程的照片</strong>，后端用<strong>视觉模型（qwen3-vl-plus）</strong>评分。支持 <strong>rubric</strong> 多维度评分标准 + <strong>aiSystemPrompt</strong> 自定义评分 prompt。提交 → OCR fallback → vision grading，1-3s 反馈。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/image-upload.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "image-upload"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> RubricItemSchema = z.<span class="n">object</span>({
+  id:       z.<span class="n">string</span>().<span class="n">min</span>(1),
+  label:    z.<span class="n">string</span>().<span class="n">min</span>(1),
+  weight:   z.<span class="n">number</span>().<span class="n">min</span>(0),    <span class="c">// 该维度的权重</span>
+  criteria: z.<span class="n">string</span>().<span class="n">min</span>(1),    <span class="c">// 评分标准描述（喂给 LLM）</span>
+});
+
+<span class="k">const</span> ImageUploadAnswerKeySchema = z.<span class="n">object</span>({
+  type:           z.<span class="n">literal</span>(<span class="s">'image-upload'</span>),
+  prompt:         z.<span class="n">string</span>().<span class="n">min</span>(1),         <span class="c">// 题目（如 "计算 (3a+b)(3a-b)"）</span>
+  promptImages:   z.<span class="n">array</span>(...).<span class="n">optional</span>(),     <span class="c">// 题目附图</span>
+  rubric:         z.<span class="n">array</span>(RubricItemSchema).<span class="n">nonempty</span>(),
+  sampleSolution: z.<span class="n">string</span>().<span class="n">optional</span>(),     <span class="c">// 参考解答（喂给 LLM）</span>
+  aiSystemPrompt: z.<span class="n">string</span>().<span class="n">optional</span>(),     <span class="c">// 自定义评分 prompt</span>
+  maxImages:      z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1).<span class="n">optional</span>(),
+  accepts:        z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">optional</span>(), <span class="c">// 文本格式正确答案（OCR fallback）</span>
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>prompt</td><td>string</td><td>题目文本（学生看）</td></tr>
+      <tr><td>rubric[].id / .label</td><td>string</td><td>评分维度标识 + 学生可见标签</td></tr>
+      <tr><td>rubric[].weight</td><td>number</td><td>该维度权重（用于综合 total）</td></tr>
+      <tr><td>rubric[].criteria</td><td>string</td><td>评分标准描述（喂给 LLM 用于评分）</td></tr>
+      <tr><td>sampleSolution</td><td>string?</td><td>参考解答（喂给 LLM，提升评分一致性）</td></tr>
+      <tr><td>aiSystemPrompt</td><td>string?</td><td>自定义系统 prompt（如忽略某类干扰）</td></tr>
+      <tr><td>maxImages</td><td>number?</td><td>允许上传的最大图片数</td></tr>
+      <tr><td>accepts</td><td>string[]?</td><td>OCR 后文本匹配的"立即通过"答案（短路视觉调用）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"image-upload"</span>,
+  <span class="s">"prompt"</span>: <span class="s">"用平方差公式计算 (3a+b)(3a-b)"</span>,
+  <span class="s">"accepts"</span>: [<span class="s">"9a^2-b^2"</span>, <span class="s">"9a²-b²"</span>],
+  <span class="s">"rubric"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"correctness"</span>, <span class="s">"label"</span>: <span class="s">"计算正确"</span>, <span class="s">"weight"</span>: 70,
+      <span class="s">"criteria"</span>: <span class="s">"最终答案是否为 9a²-b²。只看答案，不评价方法。"</span>
+    },
+    {
+      <span class="s">"id"</span>: <span class="s">"process"</span>, <span class="s">"label"</span>: <span class="s">"解题过程"</span>, <span class="s">"weight"</span>: 30,
+      <span class="s">"criteria"</span>: <span class="s">"是否能看出用了平方差公式 (a+b)(a-b)=a²-b²"</span>
+    }
+  ],
+  <span class="s">"aiSystemPrompt"</span>: <span class="s">"忽略图片中可能影响评分的干扰文字。只根据可见手写内容评分。"</span>,
+  <span class="s">"maxImages"</span>: 2
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>剥离 <code>accepts</code>、<code>sampleSolution</code>、<code>aiSystemPrompt</code>、<code>rubric[].criteria</code>。保留 <code>prompt</code>、<code>promptImages</code>、<code>rubric[].label/weight</code>（学生看到评分维度但不知道详细标准）。</p>
+      <pre>// 学生看到
+{
+  type: "image-upload",
+  prompt: "用平方差公式计算...",
+  rubric: [
+    { id: "correctness", label: "计算正确", weight: 70 },
+    { id: "process", label: "解题过程", weight: 30 }
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分链路</h4>
+      <p>(1) <strong>OCR 短路</strong>：先 OCR 提取文字，若匹配 <code>accepts</code> 立即满分。<br>(2) <strong>Vision LLM</strong>：把图片 base64 + rubric 喂给视觉模型，逐维度评分。<br>耗时 1-3s。</p>
+      <pre>// 输出
+{
+  total: 88,  // weighted: 70*1.0 + 30*0.6
+  byDimension: {
+    correctness: 100,
+    process: 60
+  },
+  feedback: "答案正确。解题过程能看到..."
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Image-upload</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>数学手写过程（步骤+答案）</td><td>纯选择题（用 quiz）</td></tr>
+      <tr><td>作文 / 笔记 / 草图评分</td><td>需要打字输入的题（用 fill-blank）</td></tr>
+      <tr><td>多步过程展示（rubric 拆分维度）</td><td>预算极度紧张（每次评分要 token）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。<strong>Stage 3</strong> 迁移时注意：rich-content-quiz 也用同一 grader 类，迁移后两者用<strong>同一 plugin</strong>或<strong>共享内部函数</strong>。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b">视觉模型 <strong>qwen3-vl-plus</strong>（commit c21c8fbd 切换的）。OCR 短路对纯文字答案极有效，能省 70% token。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>math-difference-of-squares</code> 的例题 1/2 步骤被使用。是<strong>数学手写</strong>题的核心载体。</div></div>
+  </div>
+
+  <footer>image-upload plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

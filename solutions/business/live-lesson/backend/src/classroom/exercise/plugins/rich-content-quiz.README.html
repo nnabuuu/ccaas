@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>RichContentQuizPlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: rich-content-quiz</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">C · Self-managed</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">AiPromptBuilder</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">5 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill amber">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Multi-part · Progressive scaffold · LLM
+    </div>
+    <h1>Rich-content-quiz<br><em class="amber">综合题</em></h1>
+    <p class="sub">
+      最复杂的 v1 题型之一。一道题分多个 <strong>parts</strong>，每个 part 独立 prompt + rubric + scaffold。Scaffold 在答错时<strong>渐进推送提示</strong>（思路 → 步骤 → 完整解答）。自管理提交流程 + 视觉评分。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/image-upload.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "rich-content-quiz"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> ScaffoldStepSchema = z.<span class="n">object</span>({
+  title:  z.<span class="n">string</span>().<span class="n">min</span>(1),
+  hintZh: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  widget: z.<span class="n">enum</span>([<span class="s">'formula-animation'</span>, <span class="s">'solution-display'</span>, <span class="s">'procedure-steps'</span>]).<span class="n">optional</span>(),
+  props:  z.<span class="n">record</span>(z.<span class="n">unknown</span>()).<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> ScaffoldLevelSchema = z.<span class="n">object</span>({
+  hintZh:    z.<span class="n">string</span>().<span class="n">min</span>(1),
+  hintImage: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  steps:     z.<span class="n">array</span>(ScaffoldStepSchema).<span class="n">optional</span>(),  <span class="c">// 子步骤</span>
+});
+
+<span class="k">const</span> ScaffoldSchema = z.<span class="n">object</span>({
+  threshold: z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(0),    <span class="c">// 答错几次开始 scaffold</span>
+  levels:    z.<span class="n">array</span>(ScaffoldLevelSchema).<span class="n">nonempty</span>(),  <span class="c">// 渐进级别</span>
+});
+
+<span class="k">const</span> RichContentPartSchema = z.<span class="n">object</span>({
+  id:             z.<span class="n">string</span>().<span class="n">min</span>(1),
+  prompt:         z.<span class="n">string</span>().<span class="n">min</span>(1),
+  expression:     z.<span class="n">string</span>().<span class="n">optional</span>(),
+  rubric:         z.<span class="n">array</span>(RubricItemSchema).<span class="n">nonempty</span>(),
+  sampleSolution: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  aiSystemPrompt: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  scaffold:       ScaffoldSchema.<span class="n">optional</span>(),
+  inputMethods:   z.<span class="n">array</span>(...).<span class="n">optional</span>(),
+  accepts:        z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> RichContentQuizAnswerKeySchema = z.<span class="n">object</span>({
+  type:          z.<span class="n">literal</span>(<span class="s">'rich-content-quiz'</span>),
+  subType:       z.<span class="n">enum</span>([<span class="s">'calculation'</span>]).<span class="n">optional</span>(),
+  parts:         z.<span class="n">array</span>(RichContentPartSchema).<span class="n">optional</span>(),
+  rubric:        z.<span class="n">array</span>(RubricItemSchema).<span class="n">optional</span>(),
+  aiSystemPrompt: z.<span class="n">string</span>().<span class="n">optional</span>(),
+  <span class="c">// ... 与 image-upload 共享其他字段</span>
+}).<span class="n">refine</span>(
+  (ak) => (ak.parts &amp;&amp; ak.parts.length &gt; 0) || (ak.rubric &amp;&amp; ak.rubric.length &gt; 0),
+  { message: <span class="s">'rich-content-quiz: must have either parts or rubric'</span> },
+);</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>核心字段</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>parts[]</td><td>RichContentPart[]?</td><td>多 part 模式：每个 part 独立 prompt + rubric + scaffold</td></tr>
+      <tr><td>parts[].scaffold.threshold</td><td>number</td><td>答错几次后开始推送 scaffold（通常 1）</td></tr>
+      <tr><td>parts[].scaffold.levels[]</td><td>ScaffoldLevel[]</td><td>渐进提示级别：第 1 次错给 level[0]，第 2 次错给 level[1]，依此类推</td></tr>
+      <tr><td>parts[].scaffold.levels[].steps[]</td><td>ScaffoldStep[]?</td><td>该级别的子步骤（可含交互 widget）</td></tr>
+      <tr><td>parts[].scaffold.levels[].steps[].widget</td><td>enum?</td><td>动画 widget：formula-animation / solution-display / procedure-steps</td></tr>
+      <tr><td>subType</td><td>"calculation"?</td><td>子类型，影响前端 UI（如显示公式动画）</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"rich-content-quiz"</span>,
+  <span class="s">"subType"</span>: <span class="s">"calculation"</span>,
+  <span class="s">"aiSystemPrompt"</span>: <span class="s">"批阅初中数学整式乘法手写..."</span>,
+  <span class="s">"parts"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"q1"</span>,
+      <span class="s">"prompt"</span>: <span class="s">"计算 (y+2)(y-2)"</span>,
+      <span class="s">"expression"</span>: <span class="s">"$(y+2)(y-2)$"</span>,
+      <span class="s">"rubric"</span>: [{<span class="s">"id"</span>:<span class="s">"c1"</span>,<span class="s">"label"</span>:<span class="s">"计算正确"</span>,<span class="s">"weight"</span>:100,<span class="s">"criteria"</span>:<span class="s">"最终答案为 y²-4"</span>}],
+      <span class="s">"accepts"</span>: [<span class="s">"y^2-4"</span>,<span class="s">"y²-4"</span>],
+      <span class="s">"scaffold"</span>: {
+        <span class="s">"threshold"</span>: 1,
+        <span class="s">"levels"</span>: [
+          {
+            <span class="s">"hintZh"</span>: <span class="s">"思路：把每项相乘"</span>,
+            <span class="s">"steps"</span>: [
+              { <span class="s">"title"</span>: <span class="s">"第 1 步·理思路"</span>, <span class="s">"hintZh"</span>: <span class="s">"用多项式乘法..."</span> },
+              { <span class="s">"title"</span>: <span class="s">"第 2 步·列公式"</span>, <span class="s">"hintZh"</span>: <span class="s">"(y+2)(y-2) = ..."</span> }
+            ]
+          }
+        ]
+      }
+    },
+    { <span class="s">"id"</span>: <span class="s">"q2"</span>, <span class="s">"prompt"</span>: <span class="s">"计算 (3-a)(3+a)"</span>, <span class="s">"rubric"</span>: [...] }
+  ]
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p>剥离 <code>accepts</code>、<code>sampleSolution</code>、<code>aiSystemPrompt</code>、<code>rubric[].criteria</code>。<strong>scaffold 字段保留为 hasScaffold: true</strong> 标志（学生不知道 hint 内容但前端可以触发"获取提示"按钮）。</p>
+      <pre>// 学生看到
+{
+  type: "rich-content-quiz",
+  parts: [
+    { id, prompt, rubric (no criteria),
+      hasScaffold: true }
+  ]
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分链路</h4>
+      <p>每个 part 复用 <code>ImageUploadGrader</code> 流程（OCR + Vision）。<strong>并行</strong>评分（commit d3ded228），多 part 同时调 LLM 提速。Total = 各 part 加权平均。</p>
+      <pre>// 输出（按 part）
+{
+  total: 80,
+  partResults: {
+    q1: { score: 100, feedback: "..." },
+    q2: { score: 60,  feedback: "..." }
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Rich-content-quiz</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>多小题练习（计算 3 道 + AI 评分）</td><td>单题（用 image-upload）</td></tr>
+      <tr><td>需要渐进 scaffold 的难题</td><td>不需要 scaffold（用 image-upload 更轻）</td></tr>
+      <tr><td>分阶段提交（每 part 即时反馈）</td><td>纯选择题（用 quiz）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。C 组最复杂题型之一。<strong>Stage 5</strong> 迁移时考虑与 image-upload <strong>共享内部函数</strong>（OCR + vision grading 共用）。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b">自管理提交（<code>selfManagedSubmit=true</code>），plugin 内部用 <code>ctx.submit(step, data)</code> 多次提交。Scaffold 在前端通过 <code>onScaffoldPush</code> 推送到侧边栏。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>math-difference-of-squares</code> 的"探索发现"步骤被使用（3 道乘法计算 + 渐进 scaffold）。是<strong>从具体到抽象</strong>教学的关键载体。</div></div>
+  </div>
+
+  <footer>rich-content-quiz plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>

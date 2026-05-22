@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SelectEvidencePlugin · Bundle README</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · Plugin Bundle</div>
+        <div class="brand-b">exercise-type: select-evidence</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">Category</span><span class="meta-v">C · Self-managed</span></div>
+      <div class="meta-pair"><span class="meta-lb">DI Deps</span><span class="meta-v">None</span></div>
+      <div class="meta-pair"><span class="meta-lb">Stage</span><span class="meta-v">4 · Pending</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill green">Exercise Type Plugin</span>
+      <span class="dot"></span>
+      Client-side grading · Token-level
+    </div>
+    <h1>Select-evidence<br><em class="green">点选证据题</em></h1>
+    <p class="sub">
+      在课文段落中<strong>点选 token</strong>作为证据 + 标注<strong>function</strong>（contrast / cause / example...）。<strong>客户端评分</strong>——sanitize 保留 correctFunction 等字段让前端实时反馈，无需后端往返。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../graders/select-evidence.grader.ts">查看源码 →</a>
+      <code class="code-inline">type: "select-evidence"</code>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>Answer Key Schema</h2></div>
+  </div>
+  <pre class="code-block"><span class="k">const</span> SelectEvidenceSectionSchema = z.<span class="n">object</span>({
+  id:              z.<span class="n">string</span>().<span class="n">min</span>(1),
+  label:           z.<span class="n">string</span>().<span class="n">min</span>(1),
+  range:           z.<span class="n">array</span>(z.<span class="n">number</span>()).<span class="n">min</span>(1),  <span class="c">// 段落号范围</span>
+  correctFunction: z.<span class="n">string</span>().<span class="n">min</span>(1),       <span class="c">// 该 section 的正确功能</span>
+  minHits:         z.<span class="n">number</span>().<span class="n">int</span>().<span class="n">min</span>(1).<span class="n">optional</span>(),
+  hint:            z.<span class="n">string</span>().<span class="n">optional</span>(),
+  aiCorrect:       z.<span class="n">string</span>().<span class="n">optional</span>(),
+  aiPartial:       z.<span class="n">string</span>().<span class="n">optional</span>(),
+});
+
+<span class="k">const</span> ParagraphTokenSchema = z.<span class="n">object</span>({
+  t:    z.<span class="n">string</span>(),       <span class="c">// token 文本</span>
+  kind: z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// 高亮类别</span>
+  why:  z.<span class="n">string</span>().<span class="n">optional</span>(),  <span class="c">// 该 token 的注释</span>
+});
+
+<span class="k">const</span> SelectEvidenceAnswerKeySchema = z.<span class="n">object</span>({
+  type:            z.<span class="n">literal</span>(<span class="s">'select-evidence'</span>),
+  functionOptions: z.<span class="n">array</span>(z.<span class="n">string</span>()).<span class="n">min</span>(2),
+  sections:        z.<span class="n">array</span>(SelectEvidenceSectionSchema).<span class="n">nonempty</span>(),
+  paragraphTokens: z.<span class="n">record</span>(z.<span class="n">string</span>(), z.<span class="n">array</span>(ParagraphTokenSchema)).<span class="n">optional</span>(),
+});</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>字段说明</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>字段</th><th>类型</th><th>用途</th></tr>
+      <tr><td>functionOptions</td><td>string[]</td><td>所有可选的功能标签（如 cause, effect, example, contrast）</td></tr>
+      <tr><td>sections[].id / .label</td><td>string</td><td>section 标识 + 显示名</td></tr>
+      <tr><td>sections[].range</td><td>number[]</td><td>该 section 涉及的段落号</td></tr>
+      <tr><td>sections[].correctFunction</td><td>string</td><td>该 section 的正确功能（必须在 functionOptions 中）</td></tr>
+      <tr><td>sections[].hint</td><td>string?</td><td>答错提示</td></tr>
+      <tr><td>sections[].aiCorrect / .aiPartial</td><td>string?</td><td>AI 反馈消息（答对/部分对时展示）</td></tr>
+      <tr><td>paragraphTokens</td><td>Record</td><td>段落号 → token 数组，含 kind 用于前端高亮</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>示例 Answer Key</h2></div>
+  </div>
+  <pre class="code-block">{
+  <span class="s">"type"</span>: <span class="s">"select-evidence"</span>,
+  <span class="s">"functionOptions"</span>: [<span class="s">"对比"</span>, <span class="s">"举例"</span>, <span class="s">"因果"</span>, <span class="s">"转折"</span>],
+  <span class="s">"sections"</span>: [
+    {
+      <span class="s">"id"</span>: <span class="s">"sec1"</span>, <span class="s">"label"</span>: <span class="s">"开篇对比"</span>,
+      <span class="s">"range"</span>: [1, 2],
+      <span class="s">"correctFunction"</span>: <span class="s">"对比"</span>,
+      <span class="s">"hint"</span>: <span class="s">"¶1 vs ¶2 各说一种文化"</span>,
+      <span class="s">"aiCorrect"</span>: <span class="s">"对！作者用对比开篇引发读者疑问。"</span>,
+      <span class="s">"aiPartial"</span>: <span class="s">"接近了。注意两段间的转折关系。"</span>
+    }
+  ],
+  <span class="s">"paragraphTokens"</span>: {
+    <span class="s">"1"</span>: [
+      { <span class="s">"t"</span>: <span class="s">"Nigerian"</span>, <span class="s">"kind"</span>: <span class="s">"place"</span>, <span class="s">"why"</span>: <span class="s">"地理标识"</span> },
+      { <span class="s">"t"</span>: <span class="s">"fattening room"</span>, <span class="s">"kind"</span>: <span class="s">"practice"</span>, <span class="s">"why"</span>: <span class="s">"核心实践"</span> }
+    ]
+  }
+}</pre>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>Sanitize / Grade 行为</h2></div>
+  </div>
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">sanitize</span>
+      <h4>剥离哪些字段</h4>
+      <p><strong>不剥离 correctFunction</strong>！因为客户端评分需要。也保留 hint / aiCorrect / aiPartial 和 paragraphTokens 的 kind/why。这是 <strong>故意的</strong>——见 schema 注释。</p>
+      <pre>// 学生侧也能看到正确答案
+{
+  type: "select-evidence",
+  functionOptions: [...],
+  sections: [
+    { id, label, range, correctFunction, ... }
+  ],
+  paragraphTokens: {...}
+}</pre>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">grade</span>
+      <h4>评分规则（服务端备份）</h4>
+      <p>服务端仍跑评分作为<strong>真实分数源</strong>（防止前端被改）：function 比较（case-insensitive）+ 可选 token hits 数。客户端 UI 实时反馈，但提交后服务端 score 是权威。</p>
+      <pre>// 输出
+{
+  total: 75,
+  byDimension: {
+    "sec1": true,
+    "sec2": false
+  }
+}</pre>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>什么时候用 Select-evidence</h2></div>
+  </div>
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>适合场景</th><th>不适合场景</th></tr>
+      <tr><td>修辞分析：标注课文的论证结构</td><td>需要写作输出（用 image-upload）</td></tr>
+      <tr><td>"找出文中证据"类题</td><td>事实回忆（用 quiz）</td></tr>
+      <tr><td>需要实时反馈的训练题</td><td>多步推理（用 guided-discovery）</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">迁移状态 · Status</div><div class="note-b">尚未迁移。属于 C 组（self-managed submit + 客户端评分）。<strong>Stage 4</strong> 迁移注意 <code>selfManagedSubmit=true</code> 和 <code>serverCheck=false</code>。</div></div>
+    <div><div class="note-h">特殊点 · Quirks</div><div class="note-b">这是<strong>唯一不剥离答案</strong>的 sanitize 例外。原因：客户端评分需要 correctFunction；token kind/why 用于前端 hover 提示。</div></div>
+    <div><div class="note-h">使用样本 · Usage</div><div class="note-b">在 <code>ideal-beauty-reading</code> 的 Skim 步骤被使用（标注 ¶1-2 的对比 / ¶3 的举例 / ¶8 的转折）。</div></div>
+  </div>
+
+  <footer>select-evidence plugin · pending migration · KedgeAgentic Plugin Bundle</footer>
+</div>
+</body>
+</html>
