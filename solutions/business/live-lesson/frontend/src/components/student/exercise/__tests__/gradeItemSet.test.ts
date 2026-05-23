@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { gradeItemSet, formatSubmitData } from '../gradeItemSet'
+import { gradeItemSet } from '../gradeItemSet'
+// Side-effect import: registers all 11 plugins so `getExerciseType` returns
+// the real implementations. The old per-type `formatSubmitData` switch has
+// been split into per-plugin methods — this test file now exercises them
+// through the registry instead of the deleted switch function.
+import '../plugins/built-in'
+import { getExerciseType } from '../plugins/registry'
 
 // Stub window.parent.postMessage for reportAttempt
 let origWindow: any
@@ -83,58 +89,104 @@ describe('gradeItemSet', () => {
   })
 })
 
-/* ═══ formatSubmitData ═══ */
+/* ═══ plugin.formatSubmitData (per-type) ═══
+ *
+ * Exercises each plugin's `formatSubmitData` via the registry. The shape
+ * each plugin emits is the wire format the backend graders expect, so this
+ * test pins down per-type contracts after the §B8 migration removed the
+ * monolithic gradeItemSet.formatSubmitData switch.
+ */
 
-describe('formatSubmitData', () => {
-  it('quiz: wraps answers in array', () => {
-    const result = formatSubmitData('quiz', { 0: 1, 1: 0 })
-    expect(result).toEqual({ answers: [1, 0] })
+function fmt(type: string, ans: Record<string, any>, state: Record<string, any> = {}): Record<string, any> {
+  const plugin = getExerciseType(type)
+  if (!plugin) throw new Error(`no plugin for "${type}"`)
+  return plugin.formatSubmitData(ans, state)
+}
+
+describe('plugin.formatSubmitData', () => {
+  it('quiz: numeric-key ans → answers array', () => {
+    expect(fmt('quiz', { 0: 1, 1: 0 })).toEqual({ answers: [1, 0] })
   })
 
-  it('match: wraps pairs in array', () => {
-    const result = formatSubmitData('match', { 0: 2, 1: 0 })
-    expect(result).toEqual({ pairs: [2, 0] })
+  it('match: numeric-key ans → pairs array', () => {
+    expect(fmt('match', { 0: 2, 1: 0 })).toEqual({ pairs: [2, 0] })
   })
 
   it('order: passes order array', () => {
-    const result = formatSubmitData('order', { order: [2, 0, 1] })
-    expect(result).toEqual({ order: [2, 0, 1] })
+    expect(fmt('order', { order: [2, 0, 1] })).toEqual({ order: [2, 0, 1] })
   })
 
   it('stance: maps to position + evidence', () => {
-    const result = formatSubmitData('stance', { stance: 'agree', evidence: ['e1'] })
-    expect(result).toEqual({ position: 'agree', evidence: ['e1'] })
+    expect(fmt('stance', { stance: 'agree', evidence: ['e1'] })).toEqual({
+      position: 'agree',
+      evidence: ['e1'],
+    })
   })
 
-  it('matrix: passes rows', () => {
-    const result = formatSubmitData('matrix', { rows: [{ place: 'A', answer: 'x' }] })
-    expect(result).toEqual({ rows: [{ place: 'A', answer: 'x' }] })
+  it('matrix: reads rows from per-plugin state.matrixAns slot', () => {
+    expect(fmt('matrix', {}, { matrixAns: { 0: { what: 'x', why: 'y' } } })).toEqual({
+      rows: { 0: { what: 'x', why: 'y' } },
+    })
   })
 
-  it('select-evidence: passes sections', () => {
-    const result = formatSubmitData('select-evidence', { sections: { s1: 'explain' } })
-    expect(result).toEqual({ sections: { s1: 'explain' } })
+  it('select-evidence: forwards sections + firstAttemptSections', () => {
+    expect(fmt('select-evidence', { sections: { s1: 'explain' } })).toEqual({
+      sections: { s1: 'explain' },
+    })
+    expect(
+      fmt('select-evidence', {
+        sections: { s1: 'a' },
+        firstAttemptSections: { s1: 'b' },
+      }),
+    ).toEqual({
+      sections: { s1: 'a' },
+      firstAttemptSections: { s1: 'b' },
+    })
   })
 
   it('map: passes placements + reasons', () => {
-    const result = formatSubmitData('map', { placements: { i1: { x: 0.5, y: 0.3 } }, reasons: { i1: 'because' } })
-    expect(result).toEqual({ placements: { i1: { x: 0.5, y: 0.3 } }, reasons: { i1: 'because' } })
+    expect(
+      fmt('map', { placements: { i1: { x: 0.5, y: 0.3 } }, reasons: { i1: 'because' } }),
+    ).toMatchObject({
+      placements: { i1: { x: 0.5, y: 0.3 } },
+      reasons: { i1: 'because' },
+    })
   })
 
-  it('unknown type: passes through raw', () => {
-    const result = formatSubmitData('unknown', { foo: 'bar' })
-    expect(result).toEqual({ foo: 'bar' })
+  it('image-upload: forwards images', () => {
+    expect(fmt('image-upload', { images: ['a.png'] })).toEqual({ images: ['a.png'] })
   })
 
-  it('attemptCounts appended when provided', () => {
-    const result = formatSubmitData('quiz', { 0: 1 }, { attemptCounts: { 0: 2 } })
-    expect(result.attemptCounts).toEqual({ 0: 2 })
+  it('fill-blank: only string-valued keys forwarded as blanks', () => {
+    // numeric / non-string ans values are filtered out (matches legacy behavior)
+    expect(fmt('fill-blank', { s1_0: 'foo', s1_1: 42 as any })).toEqual({ blanks: { s1_0: 'foo' } })
+  })
+
+  it('guided-discovery: forwards steps map', () => {
+    expect(fmt('guided-discovery', { steps: { s1: { answers: { a: 1 } } } })).toEqual({
+      steps: { s1: { answers: { a: 1 } } },
+    })
+  })
+
+  it('quiz: ignores non-numeric keys (firstAttemptAnswers etc.)', () => {
+    // Plugin must filter to numeric keys so PracticePhase additions like
+    // firstAttemptAnswers / questionTimes don't pollute the answers array.
+    expect(fmt('quiz', { 0: 1, 1: 0, firstAttemptAnswers: [9, 9] })).toEqual({
+      answers: [1, 0],
+    })
+  })
+
+  it('quiz: attemptCounts forwarded when present on state', () => {
+    expect(fmt('quiz', { 0: 1 }, { attemptCounts: { 0: 2 } })).toEqual({
+      answers: [1],
+      attemptCounts: { 0: 2 },
+    })
   })
 
   it('missing fields default to empty arrays/objects', () => {
-    expect(formatSubmitData('order', {})).toEqual({ order: [] })
-    expect(formatSubmitData('stance', {})).toEqual({ position: undefined, evidence: [] })
-    expect(formatSubmitData('select-evidence', {})).toEqual({ sections: {} })
-    expect(formatSubmitData('map', {})).toEqual({ placements: {}, reasons: {} })
+    expect(fmt('order', {})).toEqual({ order: [] })
+    expect(fmt('stance', {})).toEqual({ position: undefined, evidence: [] })
+    expect(fmt('select-evidence', {})).toEqual({ sections: {} })
+    expect(fmt('map', {})).toMatchObject({ placements: {}, reasons: {} })
   })
 })

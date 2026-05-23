@@ -3,24 +3,15 @@ import { linkParas } from '../utils/linkParas'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, TaskExercise, ServerHintMap } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
-import { reportAttempt, formatSubmitData } from './gradeItemSet'
+import { reportAttempt } from './gradeItemSet'
 import { checkAnswer, cacheSubmission, type CheckResult, type CachedSubmission, getCachedSubmission, getSubmission } from '../../../hooks/useClassroom'
-import { QuizExercise } from './QuizExercise'
-import { MatchExercise } from './MatchExercise'
-import { MatrixExercise } from './MatrixExercise'
-import { StanceExercise } from './StanceExercise'
-import { OrderExercise } from './OrderExercise'
-import { SelectEvidenceExercise } from './SelectEvidenceExercise'
-import { MapExercise } from './MapExercise'
-import { ImageUploadExercise } from './ImageUploadExercise'
-import { FillBlankExercise } from './FillBlankExercise'
-import { RichContentQuizExercise } from './RichContentQuizExercise'
-import { GuidedDiscoveryExercise } from './GuidedDiscoveryExercise'
 import type { ScaffoldHint } from '../ScaffoldPanel'
 import type { ReviewData } from '../../../hooks/useReviewRestore'
-import { toIdx } from '../../../utils/parse-helpers'
 import { useT, LocaleScope, type Locale } from '../../../i18n'
-// Plugin dispatch — built-in side-effect import registers all 11 plugins
+// Plugin dispatch — built-in side-effect import registers all 11 plugins.
+// Render + canSubmit + localGrade + enrich now all flow through these plugins;
+// the previous per-type render blocks have been replaced by a single
+// <PluginComp .../> call below.
 import { getExerciseType } from './plugins'
 
 export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds, locale }: {
@@ -36,15 +27,17 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [allDone, setAllDone] = useState(false)
   const [softDone, setSoftDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [serverHints, setServerHints] = useState<ServerHintMap>({})
-  const [mapFeedback, setMapFeedback] = useState<string | null>(null)
-  const [mapItemResults, setMapItemResults] = useState<Record<string, { correct: boolean; hint?: string }>>({})
-  const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
-  const [matrixRowResults, setMatrixRowResults] = useState<Record<number, boolean>>({})
-  const [imageUploadFeedback, setImageUploadFeedback] = useState<string | null>(null)
-  const [imageUploadRubricResults, setImageUploadRubricResults] = useState<Record<string, { score: number; hint?: string }>>({})
-  const [fillBlankResults, setFillBlankResults] = useState<Record<string, boolean>>({})
-  const [gdStepResults, setGdStepResults] = useState<Record<string, boolean>>({})
+  /**
+   * Per-type transient UI state lives in a single bag instead of one useState
+   * slot per type. Plugins read what they need by key (serverHints, matrixAns,
+   * rowResults, feedback, itemResults, rubricResults, blankResults,
+   * stepResults). Writes go through `setPluginState`. Keeping it as one bag
+   * means PracticePhase stays type-agnostic for render — no per-type if/else.
+   */
+  const [pluginState, setPluginState] = useState<Record<string, any>>({})
+  // Aliases used by handleCheckResult / canSub / submit (typed).
+  const serverHints = (pluginState.serverHints ?? {}) as ServerHintMap
+  const imageUploadRubricResults = (pluginState.rubricResults ?? {}) as Record<string, { score: number; hint?: string }>
 
   // Per-question timing: track when each question was first viewed
   const questionTimesRef = useRef<Record<number, number>>({})
@@ -100,8 +93,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   useEffect(() => {
     if (ex.type !== 'image-upload' || allDone) return
     if (prevImageKeyRef.current !== imageKey && hadRubricResults.current) {
-      setImageUploadFeedback(null)
-      setImageUploadRubricResults({})
+      setPluginState(prev => ({ ...prev, feedback: null, rubricResults: {} }))
     }
     prevImageKeyRef.current = imageKey
   }, [imageKey, allDone, ex.type])
@@ -136,6 +128,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   }
 
   const doSubmit = async () => {
+    // Per-question attempt counts (quiz/match only) — passed to plugin via state.
     let attemptCounts: Record<number, number> | undefined
     if (ex.type === 'quiz' || ex.type === 'match') {
       const items = ex.type === 'quiz' ? ex.questions! : ex.pairs!
@@ -149,10 +142,17 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       })
     }
 
-    const effectiveAns = ex.type === 'matrix' ? { ...ans, rows: matrixAns } : ans
-    const submitData = formatSubmitData(ex.type, effectiveAns, { attemptCounts })
+    const plugin = getExerciseType(ex.type)
+    if (!plugin) {
+      // eslint-disable-next-line no-console
+      console.error(`[PracticePhase] no plugin for "${ex.type}" formatSubmitData; submission aborted`)
+      return
+    }
+    // Wire payload comes from plugin.formatSubmitData. Per-type state
+    // (matrixAns/etc.) lives in the shared `pluginState` bag.
+    const submitData: Record<string, any> = plugin.formatSubmitData(ans, { ...pluginState, attemptCounts })
 
-    // Attach per-question timing and answer changes
+    // Attach per-question timing and answer changes (quiz/match only).
     if (ex.type === 'quiz' || ex.type === 'match') {
       const now = Date.now()
       const qTimes: Record<number, number> = {}
@@ -209,7 +209,6 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     // Local grading: dispatch to plugin.localGrade when available; otherwise
     // soft-complete (matrix/map/stance/etc. — types that don't ship a client
     // answer key, so the submission is trusted).
-    const plugin = getExerciseType(ex.type)
     const localResult = plugin?.localGrade?.(
       ex as unknown as Record<string, unknown>,
       ans,
@@ -239,131 +238,49 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     }
   }
 
-  /** Handle server-side check result — update local state based on per-item feedback */
+  /**
+   * Handle server-side check result — dispatch to the registered plugin's
+   * `handleCheckResult` and apply the returned state slots. Plugin output
+   * covers: per-question attempts, correct/wrong sets, the consolidated
+   * `pluginState` bag, ans-clear instructions, attempt reports, and the
+   * allDone/softDone flags. PracticePhase's job here is purely orchestration —
+   * no per-type branching.
+   */
   const handleCheckResult = (result: CheckResult) => {
-    if (result.allCorrect) {
-      if (ex.type === 'quiz' || ex.type === 'match') {
-        const items = ex.type === 'quiz' ? ex.questions! : ex.pairs!
-        setCorrectQs(new Set(items.map((_, i) => i)))
-      }
-      setAllDone(true); onDone()
+    const plugin = getExerciseType(ex.type)
+    if (!plugin) {
+      // eslint-disable-next-line no-console
+      console.warn(`[PracticePhase] no plugin for "${ex.type}" handleCheckResult`)
       return
     }
-
-    if (ex.type === 'quiz' || ex.type === 'match') {
-      const newCorrectQs = new Set(correctQs)
-      const newWrongQs = new Set<number>()
-      const newAttempts = { ...attempts }
-
-      const newHints = { ...serverHints }
-      result.items.forEach(item => {
-        const idx = toIdx(item.idx)
-        if (!newAttempts[idx]) newAttempts[idx] = []
-        newAttempts[idx].push({ selected: ans[idx], isCorrect: item.correct, ts: Date.now() })
-        reportAttempt(task.id, idx, newAttempts[idx].length, ans[idx], null, item.correct)
-        if (item.correct) newCorrectQs.add(idx)
-        else {
-          newWrongQs.add(idx)
-          if (item.hint || item.hintZh || item.walkthrough || item.walkthroughZh) {
-            newHints[idx] = { hint: item.hint, hintZh: item.hintZh, walkthrough: item.walkthrough, walkthroughZh: item.walkthroughZh }
-          }
-        }
-      })
-      setServerHints(newHints)
-
-      setAttempts(newAttempts); setCorrectQs(newCorrectQs); setWrongQs(newWrongQs)
-      if (newWrongQs.size > 0) {
-        const cleared = { ...ans }; newWrongQs.forEach(qi => { delete cleared[qi] }); setAns(cleared)
-      }
-      const items = ex.type === 'quiz' ? ex.questions! : ex.pairs!
-      if (newWrongQs.size === 0 && newCorrectQs.size === items.length) {
-        setAllDone(true); onDone()
-      }
-    } else if (ex.type === 'order') {
-      const newAttempts = { ...attempts }
-      if (!newAttempts[0]) newAttempts[0] = []
-      newAttempts[0].push({ selected: ans.order, isCorrect: false, ts: Date.now() })
-      reportAttempt(task.id, 0, newAttempts[0].length, ans.order, null, false)
-      setAttempts(newAttempts)
-      // Mark wrong positions from items (use item.idx, not array index)
-      const wrong = new Set<number>()
-      result.items.forEach(item => {
-        const pos = toIdx(item.idx)
-        if (!item.correct) wrong.add(pos)
-      })
-      setWrongQs(wrong); setAns({})
-    } else if (ex.type === 'matrix') {
-      const newHints = { ...serverHints }
-      const rowResults: Record<number, boolean> = {}
-      result.items.forEach(item => {
-        const idx = toIdx(item.idx)
-        rowResults[idx] = item.correct
-        if (!item.correct && (item.hint || item.hintZh)) {
-          newHints[idx] = { hint: item.hint, hintZh: item.hintZh }
-        }
-      })
-      setServerHints(newHints)
-      setMatrixRowResults(rowResults)
-      setSoftDone(true); setAllDone(true)
-      reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
-      onDone()
-    } else if (ex.type === 'map') {
-      const llmItem = result.items.find(it => it.idx === '_llm')
-      if (llmItem?.hint) setMapFeedback(llmItem.hint)
-      // Save per-item results (correct/incorrect + LLM comment)
-      const itemResults: Record<string, { correct: boolean; hint?: string }> = {}
-      result.items.forEach(item => {
-        if (item.idx === '_llm') return
-        itemResults[item.idx as string] = { correct: item.correct, hint: item.hint }
-      })
-      setMapItemResults(itemResults)
-      setSoftDone(true); setAllDone(true)
-      reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
-      onDone()
-    } else if (ex.type === 'image-upload') {
-      const llmItem = result.items.find(it => it.idx === '_llm')
-      if (llmItem?.hint) setImageUploadFeedback(llmItem.hint)
-      const rubricRes: Record<string, { score: number; hint?: string }> = {}
-      result.items.forEach(item => {
-        if (item.idx === '_llm') return
-        rubricRes[item.idx as string] = { score: item.score ?? 0, hint: item.hint }
-      })
-      setImageUploadRubricResults(rubricRes)
-      reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
-      if (result.allCorrect) {
-        setSoftDone(true); setAllDone(true)
-        onDone()
-      }
-      // else: keep UI active for re-upload
-    } else if (ex.type === 'fill-blank') {
-      const blankRes: Record<string, boolean> = {}
-      result.items.forEach(item => {
-        blankRes[item.idx as string] = item.correct
-      })
-      setFillBlankResults(blankRes)
-      if (result.allCorrect) {
-        setAllDone(true); onDone()
+    const output = plugin.handleCheckResult(result, ex as unknown as Record<string, any>, {
+      ans,
+      attempts,
+      correctQs,
+      serverHints,
+      pluginState,
+    })
+    if (output.attempts) setAttempts(output.attempts)
+    if (output.correctQs) setCorrectQs(output.correctQs)
+    if (output.wrongQs) setWrongQs(output.wrongQs)
+    setPluginState(output.checkResultState)
+    if (output.clearAnsKeys && output.clearAnsKeys.length > 0) {
+      if (output.clearAnsKeys.includes('order')) {
+        setAns({})
       } else {
-        setSoftDone(true); setAllDone(true)
-        onDone()
+        const cleared = { ...ans }
+        output.clearAnsKeys.forEach((k) => { delete cleared[k as keyof typeof cleared] })
+        setAns(cleared)
       }
-    } else if (ex.type === 'guided-discovery') {
-      const stepRes: Record<string, boolean> = {}
-      result.items.forEach(item => {
-        stepRes[item.idx as string] = item.correct
-      })
-      setGdStepResults(stepRes)
-      setSoftDone(true); setAllDone(true)
-      onDone()
-    } else {
-      // stance — soft done
-      setSoftDone(true); setAllDone(true)
-      reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
-      onDone()
     }
+    if (output.reportItems) {
+      output.reportItems.forEach((r) => {
+        reportAttempt(task.id, r.qi, r.attemptNum, r.selected, r.expected, r.isCorrect)
+      })
+    }
+    if (output.softDone) setSoftDone(true)
+    if (output.allDone) { setAllDone(true); onDone() }
   }
-
-  const attemptCount = (qi: number) => (attempts[qi] || []).length
 
   // Loading state: revisit/recovery requested but submission not yet loaded from API
   if (shouldRestore && !submissionChecked) {
@@ -408,139 +325,49 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       <div className="stu-section-label"><span>{t('phase.practice')}</span><div className="stu-section-line" /></div>
       <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
-      {ex.type === 'quiz' && (
-        <QuizExercise
-          questions={ex.questions!}
-          ans={ans}
-          setAns={guardedSetAns}
-          correctQs={correctQs}
-          wrongQs={wrongQs}
-          attemptCount={attemptCount}
-          serverHints={serverHints}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'match' && (
-        <MatchExercise
-          pairs={ex.pairs!}
-          ans={ans}
-          setAns={guardedSetAns}
-          correctQs={correctQs}
-          wrongQs={wrongQs}
-          attemptCount={attemptCount}
-          serverHints={serverHints}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'matrix' && (
-        <MatrixExercise
-          rows={ex.rows ?? []}
-          practiceCount={ex.practiceCount}
-          studentId={ctx.studentId}
-          stepIdx={stepIdx}
-          serverHints={serverHints}
-          ans={matrixAns}
-          onAnsChange={reviewMode
-            ? (() => {})
-            : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))}
-          disabled={effectiveAllDone}
-          rowResults={Object.keys(matrixRowResults).length > 0 ? matrixRowResults : undefined}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={ans} setAns={guardedSetAns} softDone={effectiveSoftDone} reviewData={reviewPayload} />}
-      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={ans} setAns={guardedSetAns} done={effectiveAllDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} reviewData={reviewPayload} />}
-      {ex.type === 'map' && ex.axes && ex.mapItems && (
-        <MapExercise
-          prompt={ex.prompt || ''}
-          axes={ex.axes}
-          mapItems={ex.mapItems}
-          minReasonLength={ex.minReasonLength || 8}
-          ans={ans}
-          setAns={guardedSetAns}
-          allDone={effectiveAllDone}
-          feedback={mapFeedback}
-          givenPlacements={ex.givenPlacements}
-          practiceCount={ex.practiceCount}
-          practiceItemIds={ex.practiceItemIds}
-          itemResults={Object.keys(mapItemResults).length > 0 ? mapItemResults : undefined}
-          reviewData={reviewPayload}
-          onActiveChange={(refs) => {
-            if (!onOverlayChange) return
-            if (refs.length > 0) {
-              onOverlayChange({ tokens: {}, activeParagraphs: refs, tokenStates: {} })
-            } else {
-              onOverlayChange(null)
-            }
-          }}
-        />
-      )}
-      {ex.type === 'image-upload' && ex.rubric && (
-        <ImageUploadExercise
-          prompt={ex.prompt || ''}
-          promptImages={ex.promptImages}
-          rubric={ex.rubric}
-          maxImages={ex.maxImages ?? 1}
-          ans={ans}
-          setAns={guardedSetAns}
-          allDone={effectiveAllDone}
-          feedback={imageUploadFeedback}
-          rubricResults={Object.keys(imageUploadRubricResults).length > 0 ? imageUploadRubricResults : undefined}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'fill-blank' && ex.sentences && (
-        <FillBlankExercise
-          sentences={ex.sentences}
-          ans={ans as Record<string, string>}
-          setAns={guardedSetAns}
-          blankResults={Object.keys(fillBlankResults).length > 0 ? fillBlankResults : undefined}
-          allDone={effectiveAllDone}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'guided-discovery' && ex.gdSteps && (
-        <GuidedDiscoveryExercise
-          steps={ex.gdSteps}
-          title={ex.gdTitle}
-          summary={ex.gdSummary}
-          ans={ans}
-          setAns={guardedSetAns}
-          stepResults={Object.keys(gdStepResults).length > 0 ? gdStepResults : undefined}
-          allDone={effectiveAllDone}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'rich-content-quiz' && ex.parts && ex.parts.length > 0 && (
-        <RichContentQuizExercise
-          parts={partIds ? ex.parts.filter(p => partIds.includes(p.id)) : ex.parts}
-          subType={ex.subType}
-          prompt={ex.prompt}
-          promptImages={ex.promptImages}
-          maxImages={ex.maxImages ?? 1}
-          stepIdx={stepIdx}
-          taskId={task.id}
-          onScaffoldPush={onScaffoldPush}
-          onDone={() => { setAllDone(true); onDone() }}
-          reviewData={reviewPayload}
-        />
-      )}
-      {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (
-        <SelectEvidenceExercise
-          exercise={ex}
-          onOverlayChange={onOverlayChange || (() => {})}
-          onSubmit={(data) => {
-            if (stepIdx !== undefined && ctx.submit) {
-              ctx.submit(stepIdx, formatSubmitData('select-evidence', data))
-            }
-          }}
-          onDone={() => { setAllDone(true); onDone() }}
-          reviewData={reviewPayload}
-        />
-      )}
+      {(() => {
+        // Single plugin dispatch — replaces the previous 11 per-type render
+        // blocks. Plugin Component receives the consolidated `pluginState`
+        // bag plus the shared {ans, attempts, correctQs, wrongQs} aliased
+        // into the bag so plugins can stay type-agnostic.
+        const plugin = getExerciseType(ex.type)
+        if (!plugin) {
+          return (
+            <div style={{ fontSize: 13, color: 'var(--red)' }}>
+              [PracticePhase] no plugin registered for type &quot;{ex.type}&quot;
+            </div>
+          )
+        }
+        const PluginComp = plugin.Component
+        return (
+          <PluginComp
+            exercise={ex as unknown as Record<string, any>}
+            ans={ans}
+            setAns={guardedSetAns as any}
+            allDone={effectiveAllDone}
+            softDone={effectiveSoftDone}
+            reviewData={reviewPayload}
+            checkResultState={{ ...pluginState, correctQs, wrongQs, attempts }}
+            setCheckResultState={setPluginState}
+            onDone={() => { setAllDone(true); onDone() }}
+            stepIdx={stepIdx}
+            taskId={task.id}
+            locale={locale}
+            onOverlayChange={onOverlayChange}
+            onScaffoldPush={onScaffoldPush}
+            submit={ctx.submit}
+            studentId={ctx.studentId}
+            sessionCode={ctx.sessionCode}
+            partIds={partIds}
+          />
+        )
+      })()}
 
-      {/* Submit/Done — rich-content-quiz and select-evidence manage their own buttons */}
-      {ex.type !== 'rich-content-quiz' && ex.type !== 'select-evidence' && (
+      {/* Submit/Done — plugins with selfManagedSubmit own their button. */}
+      {(() => {
+        const plugin = getExerciseType(ex.type)
+        return !plugin?.selfManagedSubmit
+      })() && (
         <div style={{ marginTop: 16 }}>
           {effectiveAllDone ? (
             <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>

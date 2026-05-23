@@ -9,6 +9,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ComponentType } from 'react'
+import type { ReviewData } from '../../../../hooks/useReviewRestore'
+import type { ScaffoldHint } from '../../ScaffoldPanel'
 
 /** Props passed to every plugin's render component. */
 export interface ExercisePluginProps {
@@ -16,8 +18,16 @@ export interface ExercisePluginProps {
   exercise: Record<string, any>
   ans: Record<string, any>
   setAns: (updater: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void
+  /** True once exercise is fully complete (advances to next phase). */
   allDone: boolean
-  reviewData?: { data: Record<string, unknown>; checkItems?: Array<Record<string, unknown>> }
+  /**
+   * True after submission was accepted but before "fully complete" — set for
+   * types where the student can move on even with a non-100 score
+   * (matrix/map/stance/image-upload/etc.). Use when the underlying component
+   * needs to know "user is past the editing stage".
+   */
+  softDone: boolean
+  reviewData?: ReviewData
   /**
    * Per-plugin transient state managed by PracticePhase. Plugin reads from
    * `checkResultState[plugin.type]` and writes via `setCheckResultState`.
@@ -38,7 +48,7 @@ export interface ExercisePluginProps {
 
   // ── Optional capabilities (parent provides on demand) ──
   onOverlayChange?: (overlay: any | null) => void
-  onScaffoldPush?: (hint: Record<string, any>) => void
+  onScaffoldPush?: (hint: ScaffoldHint) => void
   submit?: (step: number, data: Record<string, any>) => void
   studentId?: string
   sessionCode?: string
@@ -47,6 +57,12 @@ export interface ExercisePluginProps {
   uploadFile?: (file: File) => Promise<{ url: string }>
   /** Resolve a resource relative path to an absolute URL */
   resolveResourceUrl?: (relativePath: string) => string
+
+  /**
+   * For rich-content-quiz only: subset of part IDs the student should solve in
+   * this view (the rest are hidden). Plugin filters `exercise.parts` itself.
+   */
+  partIds?: string[]
 }
 
 export interface CheckResultLike {
@@ -66,6 +82,20 @@ export interface CheckResultHandlerOutput {
   softDone: boolean
   /** Keys in ans to clear (used for retry-after-wrong patterns) */
   clearAnsKeys?: Array<string | number>
+  /** Updated per-question attempts map (PracticePhase replaces its state). */
+  attempts?: Record<number, any[]>
+  /** Updated correct-question set. */
+  correctQs?: Set<number>
+  /** Updated wrong-question set. */
+  wrongQs?: Set<number>
+  /** Per-item attempt reports — PracticePhase loops these and calls reportAttempt. */
+  reportItems?: Array<{
+    qi: number
+    attemptNum: number
+    selected: any
+    expected: any | null
+    isCorrect: boolean
+  }>
 }
 
 /** Local grade result (when serverCheck=false and localGrade is implemented) */
@@ -116,7 +146,15 @@ export interface ExerciseUIPlugin {
     checkResultState: Record<string, any>,
   ): Record<string, any>
 
-  /** Process a /check response into PracticePhase state */
+  /**
+   * Process a /check response into PracticePhase state.
+   *
+   * `currentState` carries everything the plugin might need to compute a new
+   * state without round-tripping through PracticePhase:
+   *  - ans / attempts / correctQs: shared state
+   *  - serverHints: current hint bag (plugins for quiz/match/matrix merge in)
+   *  - pluginState: full per-type bag (so e.g. matrix can read prior rowResults)
+   */
   handleCheckResult(
     result: CheckResultLike,
     exercise: Record<string, any>,
@@ -124,6 +162,8 @@ export interface ExerciseUIPlugin {
       ans: Record<string, any>
       attempts: Record<number, any[]>
       correctQs: Set<number>
+      serverHints?: Record<string, any>
+      pluginState?: Record<string, any>
     },
   ): CheckResultHandlerOutput
 

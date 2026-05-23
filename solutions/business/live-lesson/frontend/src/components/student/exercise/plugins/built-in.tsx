@@ -17,6 +17,7 @@ import type {
 } from './types'
 
 import { gradeItemSet, reportAttempt } from '../gradeItemSet'
+import { toIdx } from '../../../../utils/parse-helpers'
 import { QuizExercise } from '../QuizExercise'
 import { MatchExercise } from '../MatchExercise'
 import { OrderExercise } from '../OrderExercise'
@@ -31,13 +32,59 @@ import { GuidedDiscoveryExercise } from '../GuidedDiscoveryExercise'
 
 // ─────────────────────────── helpers ───────────────────────────
 
-function partialOrAllDone(items: Array<{ correct: boolean }> | undefined): {
-  allDone: boolean
-  softDone: boolean
-} {
-  if (!items || items.length === 0) return { allDone: false, softDone: false }
-  const allCorrect = items.every((i) => i.correct)
-  return { allDone: allCorrect, softDone: true }
+/**
+ * Shared per-item check handler used by quiz + match (they have the same
+ * shape: indexed items + correctQs/wrongQs/serverHints). `itemsField` picks
+ * the source array on `exercise` (`questions` for quiz, `pairs` for match).
+ */
+function buildIndexedCheckResult(
+  result: any,
+  exercise: Record<string, any>,
+  current: { ans: Record<string, any>; attempts: Record<number, any[]>; correctQs: Set<number>; serverHints?: Record<string, any>; pluginState?: Record<string, any> },
+  itemsField: 'questions' | 'pairs',
+): CheckResultHandlerOutput {
+  const allItems = (exercise[itemsField] ?? []) as Array<unknown>
+  if (result.allCorrect) {
+    return {
+      checkResultState: { ...(current.pluginState ?? {}) },
+      allDone: true,
+      softDone: true,
+      correctQs: new Set(allItems.map((_, i) => i)),
+    }
+  }
+  const items = (result?.items as Array<{ idx: any; correct: boolean; hint?: string; hintZh?: string; walkthrough?: string; walkthroughZh?: string }>) ?? []
+  const newCorrectQs = new Set<number>(current.correctQs)
+  const newWrongQs = new Set<number>()
+  const newAttempts = { ...current.attempts }
+  const newHints = { ...((current.serverHints as Record<number, any>) ?? {}) }
+  const reportItems: NonNullable<CheckResultHandlerOutput['reportItems']> = []
+  const clearAnsKeys: Array<string | number> = []
+  items.forEach((it) => {
+    const idx = toIdx(it.idx)
+    if (!newAttempts[idx]) newAttempts[idx] = []
+    newAttempts[idx].push({ selected: current.ans[idx], isCorrect: it.correct, ts: Date.now() })
+    reportItems.push({ qi: idx, attemptNum: newAttempts[idx].length, selected: current.ans[idx], expected: null, isCorrect: it.correct })
+    if (it.correct) {
+      newCorrectQs.add(idx)
+    } else {
+      newWrongQs.add(idx)
+      clearAnsKeys.push(idx)
+      if (it.hint || it.hintZh || it.walkthrough || it.walkthroughZh) {
+        newHints[idx] = { hint: it.hint, hintZh: it.hintZh, walkthrough: it.walkthrough, walkthroughZh: it.walkthroughZh }
+      }
+    }
+  })
+  const allDone = newWrongQs.size === 0 && newCorrectQs.size === allItems.length
+  return {
+    checkResultState: { ...(current.pluginState ?? {}), serverHints: newHints },
+    allDone,
+    softDone: allDone,
+    clearAnsKeys,
+    attempts: newAttempts,
+    correctQs: newCorrectQs,
+    wrongQs: newWrongQs,
+    reportItems,
+  }
 }
 
 // ─────────────────────────── quiz ───────────────────────────
@@ -45,7 +92,7 @@ function partialOrAllDone(items: Array<{ correct: boolean }> | undefined): {
 const quizPlugin: ExerciseUIPlugin = {
   type: 'quiz',
   observeType: 'mc',
-  Component: function QuizPluginComp({ exercise, ans, setAns, checkResultState }: ExercisePluginProps) {
+  Component: function QuizPluginComp({ exercise, ans, setAns, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <QuizExercise
         questions={exercise.questions}
@@ -53,8 +100,9 @@ const quizPlugin: ExerciseUIPlugin = {
         setAns={setAns as any}
         correctQs={(checkResultState.correctQs as Set<number>) ?? new Set<number>()}
         wrongQs={(checkResultState.wrongQs as Set<number>) ?? new Set<number>()}
-        attemptCount={(qi: number) => (checkResultState.attempts?.[qi] ?? []).length + 1}
+        attemptCount={(qi: number) => (checkResultState.attempts?.[qi] ?? []).length}
         serverHints={checkResultState.serverHints}
+        reviewData={reviewData}
       />
     )
   },
@@ -72,32 +120,8 @@ const quizPlugin: ExerciseUIPlugin = {
       .map((k) => ans[k])
     return { answers, ...(attemptCounts && { attemptCounts }) }
   },
-  handleCheckResult(result, _exercise, current): CheckResultHandlerOutput {
-    const items = (result?.items as Array<{ idx: any; correct: boolean; hint?: string; hintZh?: string; walkthrough?: string; walkthroughZh?: string }>) ?? []
-    const correctQs = new Set<number>(current.correctQs)
-    const wrongQs = new Set<number>()
-    const serverHints: Record<number, any> = { ...(((current as any).serverHints) ?? {}) }
-    const clearAnsKeys: Array<string | number> = []
-    items.forEach((it) => {
-      const idx = Number(it.idx)
-      if (it.correct) {
-        correctQs.add(idx)
-        wrongQs.delete(idx)
-      } else {
-        wrongQs.add(idx)
-        clearAnsKeys.push(idx)
-        if (it.hint || it.hintZh || it.walkthrough || it.walkthroughZh) {
-          serverHints[idx] = it
-        }
-      }
-    })
-    const allCorrect = items.length > 0 && items.every((i) => i.correct)
-    return {
-      checkResultState: { ...current, correctQs, wrongQs, serverHints },
-      allDone: allCorrect,
-      softDone: allCorrect,
-      clearAnsKeys,
-    }
+  handleCheckResult(result, exercise, current): CheckResultHandlerOutput {
+    return buildIndexedCheckResult(result, exercise, current, 'questions')
   },
   localGrade(exercise, ans, prev, taskId) {
     const items = exercise.questions as Array<{ correct: number }> | undefined
@@ -164,7 +188,7 @@ const quizPlugin: ExerciseUIPlugin = {
 const matchPlugin: ExerciseUIPlugin = {
   type: 'match',
   observeType: 'mc',
-  Component: function MatchPluginComp({ exercise, ans, setAns, checkResultState }: ExercisePluginProps) {
+  Component: function MatchPluginComp({ exercise, ans, setAns, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <MatchExercise
         pairs={exercise.pairs}
@@ -172,8 +196,9 @@ const matchPlugin: ExerciseUIPlugin = {
         setAns={setAns as any}
         correctQs={(checkResultState.correctQs as Set<number>) ?? new Set<number>()}
         wrongQs={(checkResultState.wrongQs as Set<number>) ?? new Set<number>()}
-        attemptCount={(qi: number) => (checkResultState.attempts?.[qi] ?? []).length + 1}
+        attemptCount={(qi: number) => (checkResultState.attempts?.[qi] ?? []).length}
         serverHints={checkResultState.serverHints}
+        reviewData={reviewData}
       />
     )
   },
@@ -191,7 +216,9 @@ const matchPlugin: ExerciseUIPlugin = {
       .map((k) => ans[k])
     return { pairs, ...(attemptCounts && { attemptCounts }) }
   },
-  handleCheckResult: quizPlugin.handleCheckResult, // identical pattern (idx + correct + hint)
+  handleCheckResult(result, exercise, current): CheckResultHandlerOutput {
+    return buildIndexedCheckResult(result, exercise, current, 'pairs')
+  },
   localGrade(exercise, ans, prev, taskId) {
     const items = exercise.pairs as Array<{ correct: number }> | undefined
     if (!items) return null
@@ -254,15 +281,16 @@ const matchPlugin: ExerciseUIPlugin = {
 
 const orderPlugin: ExerciseUIPlugin = {
   type: 'order',
-  Component: function OrderPluginComp({ exercise, ans, setAns, allDone, checkResultState }: ExercisePluginProps) {
+  Component: function OrderPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <OrderExercise
         items={exercise.items}
         ans={ans}
         setAns={setAns as any}
         done={allDone}
-        wrongPositions={(checkResultState.wrongPositions as Set<number>) ?? new Set<number>()}
-        attemptCount={(checkResultState.attempts?.[0] ?? []).length + 1}
+        wrongPositions={(checkResultState.wrongQs as Set<number>) ?? new Set<number>()}
+        attemptCount={(checkResultState.attempts?.[0] ?? []).length}
+        reviewData={reviewData}
       />
     )
   },
@@ -273,17 +301,29 @@ const orderPlugin: ExerciseUIPlugin = {
     return { order: ans.order ?? [] }
   },
   handleCheckResult(result, _exercise, current) {
+    if (result.allCorrect) {
+      return {
+        checkResultState: { ...(current.pluginState ?? {}) },
+        allDone: true,
+        softDone: true,
+      }
+    }
     const items = (result?.items as Array<{ idx: any; correct: boolean }>) ?? []
-    const wrongPositions = new Set<number>()
+    const wrongQs = new Set<number>()
     items.forEach((it) => {
-      if (!it.correct) wrongPositions.add(Number(it.idx))
+      if (!it.correct) wrongQs.add(toIdx(it.idx))
     })
-    const allCorrect = items.length > 0 && items.every((i) => i.correct)
+    const newAttempts = { ...current.attempts }
+    if (!newAttempts[0]) newAttempts[0] = []
+    newAttempts[0].push({ selected: current.ans.order, isCorrect: false, ts: Date.now() })
     return {
-      checkResultState: { ...current, wrongPositions },
-      allDone: allCorrect,
-      softDone: allCorrect,
-      clearAnsKeys: allCorrect ? [] : ['order'],
+      checkResultState: { ...(current.pluginState ?? {}) },
+      allDone: false,
+      softDone: false,
+      attempts: newAttempts,
+      wrongQs,
+      clearAnsKeys: ['order'],
+      reportItems: [{ qi: 0, attemptNum: newAttempts[0].length, selected: current.ans.order, expected: null, isCorrect: false }],
     }
   },
   localGrade(exercise, ans, prev, taskId) {
@@ -325,7 +365,7 @@ const orderPlugin: ExerciseUIPlugin = {
 
 const stancePlugin: ExerciseUIPlugin = {
   type: 'stance',
-  Component: function StancePluginComp({ exercise, ans, setAns, allDone }: ExercisePluginProps) {
+  Component: function StancePluginComp({ exercise, ans, setAns, softDone, reviewData }: ExercisePluginProps) {
     return (
       <StanceExercise
         stanceQ={exercise.stanceQ}
@@ -334,7 +374,8 @@ const stancePlugin: ExerciseUIPlugin = {
         evidence={exercise.evidence}
         ans={ans}
         setAns={setAns as any}
-        softDone={allDone}
+        softDone={softDone}
+        reviewData={reviewData}
       />
     )
   },
@@ -345,15 +386,12 @@ const stancePlugin: ExerciseUIPlugin = {
     return { position: ans.stance, evidence: ans.evidence ?? [] }
   },
   handleCheckResult(result, _exercise, current) {
-    const items = (result?.items as Array<{ idx: any; correct: boolean }>) ?? []
-    const positionItem = items.find((i) => String(i.idx) === 'position')
-    const evidenceItem = items.find((i) => String(i.idx) === 'evidence')
-    const positionOk = !!positionItem?.correct
-    const evidenceOk = !!evidenceItem?.correct
+    // Stance "submits and is done" regardless of correctness.
     return {
-      checkResultState: { ...current, positionOk, evidenceOk },
-      allDone: positionOk && evidenceOk,
-      softDone: true, // stance always considered soft-completed after submit
+      checkResultState: { ...(current.pluginState ?? {}) },
+      allDone: true,
+      softDone: true,
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -374,14 +412,16 @@ const stancePlugin: ExerciseUIPlugin = {
 
 const fillBlankPlugin: ExerciseUIPlugin = {
   type: 'fill-blank',
-  Component: function FillBlankPluginComp({ exercise, ans, setAns, allDone, checkResultState }: ExercisePluginProps) {
+  Component: function FillBlankPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
+    const blankResults = (checkResultState.blankResults as Record<string, boolean>) ?? {}
     return (
       <FillBlankExercise
         sentences={exercise.sentences}
         ans={ans as Record<string, string>}
         setAns={setAns as any}
-        blankResults={checkResultState.blankResults}
+        blankResults={Object.keys(blankResults).length > 0 ? blankResults : undefined}
         allDone={allDone}
+        reviewData={reviewData}
       />
     )
   },
@@ -393,18 +433,33 @@ const fillBlankPlugin: ExerciseUIPlugin = {
     })
   },
   formatSubmitData(ans) {
-    return { blanks: { ...ans } }
+    // Only forward string-valued keys; matches legacy gradeItemSet behavior
+    // which guards against accidental leakage of non-blank ans fields
+    // (e.g. firstAttemptAnswers added by PracticePhase later).
+    const blanks: Record<string, string> = {}
+    for (const [k, v] of Object.entries(ans)) {
+      if (typeof v === 'string') blanks[k] = v
+    }
+    return { blanks }
   },
   handleCheckResult(result, _exercise, current) {
+    if (result.allCorrect) {
+      return {
+        checkResultState: { ...(current.pluginState ?? {}) },
+        allDone: true,
+        softDone: true,
+      }
+    }
     const items = (result?.items as Array<{ idx: string; correct: boolean }>) ?? []
     const blankResults: Record<string, boolean> = {}
     items.forEach((it) => {
       blankResults[String(it.idx)] = !!it.correct
     })
-    const all = items.length > 0 && items.every((i) => i.correct)
     return {
-      checkResultState: { ...current, blankResults },
-      allDone: all,
+      checkResultState: { ...(current.pluginState ?? {}), blankResults },
+      // Fill-blank uses a soft-pass: once submitted, advance even if some
+      // blanks were wrong (legacy PracticePhase L342-344 behavior).
+      allDone: true,
       softDone: true,
     }
   },
@@ -420,7 +475,7 @@ const fillBlankPlugin: ExerciseUIPlugin = {
 
 const matrixPlugin: ExerciseUIPlugin = {
   type: 'matrix',
-  Component: function MatrixPluginComp({ exercise, allDone, checkResultState, setCheckResultState, stepIdx, studentId }: ExercisePluginProps) {
+  Component: function MatrixPluginComp({ exercise, allDone, checkResultState, setCheckResultState, stepIdx, studentId, reviewData }: ExercisePluginProps) {
     const matrixAns = (checkResultState.matrixAns as Record<number, Record<string, string>>) ?? {}
     return (
       <MatrixExercise
@@ -428,11 +483,9 @@ const matrixPlugin: ExerciseUIPlugin = {
         practiceCount={exercise.practiceCount}
         studentId={studentId}
         stepIdx={stepIdx}
+        serverHints={checkResultState.serverHints}
         ans={matrixAns}
         onAnsChange={(ri, field, val) => {
-          // Push the row delta into the dedicated per-plugin slot. Never into
-          // the shared `ans` bag — that's reserved for the canonical answer
-          // payload and gets keyed by question idx by other plugins.
           if (!setCheckResultState) return
           setCheckResultState((prev) => ({
             ...prev,
@@ -451,6 +504,7 @@ const matrixPlugin: ExerciseUIPlugin = {
             ? checkResultState.rowResults
             : undefined
         }
+        reviewData={reviewData}
       />
     )
   },
@@ -458,24 +512,38 @@ const matrixPlugin: ExerciseUIPlugin = {
     return true
   },
   formatSubmitData(_ans, state) {
-    // NOTE (followup B8): this plugin method is currently dead code — PracticePhase.tsx still
-    // routes through the legacy gradeItemSet.formatSubmitData which produces
-    // `{rows: Record<rowIdx, fields>}`. The shape here `{rows: Array<{rowIdx, ...fields}>}` is
-    // the target wire format once PracticePhase migrates render+submit through plugin.Component
-    // and plugin.formatSubmitData. Until then DO NOT swap the call site without also updating
-    // the backend matrix grader's expected shape.
-    const matrixAns = (state.matrixAns as Record<number, Record<string, string>>) ?? {}
-    const rows = Object.entries(matrixAns).map(([ri, fields]) => ({ rowIdx: Number(ri), ...fields }))
-    return { rows }
+    // Matrix reads rows from the per-plugin slot (`state.matrixAns`), keyed by
+    // rowIdx → field map. Backend MatrixGrader (matrix.grader.ts:21) accepts
+    // this shape (it indexes `studentRows[a.rowIdx]`, which works for both
+    // Record and Array thanks to JS coercion). Don't change to an Array
+    // without aligning the backend contract.
+    return { rows: (state.matrixAns as Record<number, Record<string, string>>) ?? {} }
   },
   handleCheckResult(result, _exercise, current) {
-    const items = (result?.items as Array<{ idx: number; correct: boolean }>) ?? []
+    if (result.allCorrect) {
+      return {
+        checkResultState: { ...(current.pluginState ?? {}) },
+        allDone: true,
+        softDone: true,
+      }
+    }
+    const items = (result?.items as Array<{ idx: number; correct: boolean; hint?: string; hintZh?: string }>) ?? []
     const rowResults: Record<number, boolean> = {}
+    const newHints = { ...((current.serverHints as Record<number, any>) ?? {}) }
     items.forEach((it) => {
-      rowResults[Number(it.idx)] = !!it.correct
+      const idx = toIdx(it.idx)
+      rowResults[idx] = !!it.correct
+      if (!it.correct && (it.hint || it.hintZh)) {
+        newHints[idx] = { hint: it.hint, hintZh: it.hintZh }
+      }
     })
-    const { allDone, softDone } = partialOrAllDone(items)
-    return { checkResultState: { ...current, rowResults }, allDone, softDone }
+    return {
+      checkResultState: { ...(current.pluginState ?? {}), serverHints: newHints, rowResults },
+      // Matrix is always "done after submit" — partial credit is fine.
+      allDone: true,
+      softDone: true,
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
+    }
   },
   enrichFromApi(ex, spec) {
     if (spec.rows) {
@@ -538,7 +606,7 @@ const matrixPlugin: ExerciseUIPlugin = {
 
 const mapPlugin: ExerciseUIPlugin = {
   type: 'map',
-  Component: function MapPluginComp({ exercise, ans, setAns, allDone, checkResultState, onOverlayChange }: ExercisePluginProps) {
+  Component: function MapPluginComp({ exercise, ans, setAns, allDone, checkResultState, onOverlayChange, reviewData }: ExercisePluginProps) {
     return (
       <MapExercise
         prompt={exercise.prompt ?? ''}
@@ -557,10 +625,13 @@ const mapPlugin: ExerciseUIPlugin = {
             ? checkResultState.itemResults
             : undefined
         }
+        reviewData={reviewData}
         onActiveChange={(refs: number[]) => {
           if (!onOverlayChange) return
           if (refs.length > 0) {
-            onOverlayChange({ paragraphIdx: refs[0], tokens: [] } as any)
+            // Match the shape PracticePhase used inline (TextOverlay with
+            // activeParagraphs + empty tokens/tokenStates).
+            onOverlayChange({ tokens: {}, activeParagraphs: refs, tokenStates: {} } as any)
           } else {
             onOverlayChange(null)
           }
@@ -591,16 +662,29 @@ const mapPlugin: ExerciseUIPlugin = {
     }
   },
   handleCheckResult(result, _exercise, current) {
-    const items = (result?.items as Array<{ idx: string; correct: boolean }>) ?? []
-    const itemResults: Record<string, boolean> = {}
+    if (result.allCorrect) {
+      return {
+        checkResultState: { ...(current.pluginState ?? {}) },
+        allDone: true,
+        softDone: true,
+      }
+    }
+    const items = (result?.items as Array<{ idx: string; correct: boolean; hint?: string }>) ?? []
+    const llmItem = items.find((it) => it.idx === '_llm')
+    const itemResults: Record<string, { correct: boolean; hint?: string }> = {}
     items.forEach((it) => {
-      itemResults[String(it.idx)] = !!it.correct
+      if (it.idx === '_llm') return
+      itemResults[String(it.idx)] = { correct: it.correct, hint: it.hint }
     })
-    const { allDone, softDone } = partialOrAllDone(items)
     return {
-      checkResultState: { ...current, itemResults, feedback: (result as any).llmFeedback },
-      allDone,
-      softDone,
+      checkResultState: {
+        ...(current.pluginState ?? {}),
+        ...(llmItem?.hint ? { feedback: llmItem.hint } : {}),
+        itemResults,
+      },
+      allDone: true,
+      softDone: true,
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -628,7 +712,7 @@ const mapPlugin: ExerciseUIPlugin = {
 
 const imageUploadPlugin: ExerciseUIPlugin = {
   type: 'image-upload',
-  Component: function ImageUploadPluginComp({ exercise, ans, setAns, allDone, checkResultState }: ExercisePluginProps) {
+  Component: function ImageUploadPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <ImageUploadExercise
         prompt={exercise.prompt ?? ''}
@@ -644,6 +728,7 @@ const imageUploadPlugin: ExerciseUIPlugin = {
             ? checkResultState.rubricResults
             : undefined
         }
+        reviewData={reviewData}
       />
     )
   },
@@ -654,16 +739,30 @@ const imageUploadPlugin: ExerciseUIPlugin = {
     return { images: ans.images ?? [] }
   },
   handleCheckResult(result, _exercise, current) {
-    const items = (result?.items as Array<{ idx: string; correct: boolean }>) ?? []
-    const rubricResults: Record<string, boolean> = {}
+    if (result.allCorrect) {
+      return {
+        checkResultState: { ...(current.pluginState ?? {}) },
+        allDone: true,
+        softDone: true,
+      }
+    }
+    const items = (result?.items as Array<{ idx: string; correct: boolean; score?: number; hint?: string }>) ?? []
+    const llmItem = items.find((it) => it.idx === '_llm')
+    const rubricResults: Record<string, { score: number; hint?: string }> = {}
     items.forEach((it) => {
-      rubricResults[String(it.idx)] = !!it.correct
+      if (it.idx === '_llm') return
+      rubricResults[String(it.idx)] = { score: it.score ?? 0, hint: it.hint }
     })
-    const { allDone, softDone } = partialOrAllDone(items)
     return {
-      checkResultState: { ...current, rubricResults, feedback: (result as any).llmFeedback },
-      allDone,
-      softDone,
+      checkResultState: {
+        ...(current.pluginState ?? {}),
+        ...(llmItem?.hint ? { feedback: llmItem.hint } : {}),
+        rubricResults,
+      },
+      // Image-upload keeps UI active when not allCorrect so student can retry.
+      allDone: false,
+      softDone: false,
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -688,15 +787,20 @@ const selectEvidencePlugin: ExerciseUIPlugin = {
   selfManagedSubmit: true,
   serverCheck: false,
   Component: function SelectEvidencePluginComp(props: ExercisePluginProps) {
-    const { exercise, onOverlayChange, onDone, submit, stepIdx } = props
+    const { exercise, onOverlayChange, onDone, submit, stepIdx, reviewData } = props
     return (
       <SelectEvidenceExercise
         exercise={exercise as any}
         onOverlayChange={onOverlayChange || (() => {})}
         onSubmit={(data: any) => {
-          if (stepIdx !== undefined && submit) submit(stepIdx, data)
+          if (stepIdx !== undefined && submit) {
+            const payload: Record<string, any> = { sections: data.sections ?? {} }
+            if (data.firstAttemptSections) payload.firstAttemptSections = data.firstAttemptSections
+            submit(stepIdx, payload)
+          }
         }}
         onDone={onDone}
+        reviewData={reviewData}
       />
     )
   },
@@ -704,7 +808,9 @@ const selectEvidencePlugin: ExerciseUIPlugin = {
     return false // self-managed
   },
   formatSubmitData(ans) {
-    return ans
+    const payload: Record<string, any> = { sections: ans.sections ?? {} }
+    if (ans.firstAttemptSections) payload.firstAttemptSections = ans.firstAttemptSections
+    return payload
   },
   handleCheckResult(_result, _exercise, current) {
     return { checkResultState: current, allDone: true, softDone: true }
@@ -729,10 +835,12 @@ const richContentQuizPlugin: ExerciseUIPlugin = {
   observeType: 'image-upload',
   selfManagedSubmit: true,
   Component: function RcqPluginComp(props: ExercisePluginProps) {
-    const { exercise, onScaffoldPush, onDone, stepIdx, taskId } = props
+    const { exercise, onScaffoldPush, onDone, stepIdx, taskId, partIds, reviewData } = props
+    const allParts = (exercise.parts as Array<{ id: string }>) ?? []
+    const parts = partIds ? allParts.filter((p) => partIds.includes(p.id)) : allParts
     return (
       <RichContentQuizExercise
-        parts={exercise.parts ?? []}
+        parts={parts as any}
         subType={exercise.subType}
         prompt={exercise.prompt}
         promptImages={exercise.promptImages}
@@ -741,6 +849,7 @@ const richContentQuizPlugin: ExerciseUIPlugin = {
         taskId={taskId}
         onScaffoldPush={onScaffoldPush}
         onDone={onDone}
+        reviewData={reviewData}
       />
     )
   },
@@ -791,7 +900,8 @@ const richContentQuizPlugin: ExerciseUIPlugin = {
 const guidedDiscoveryPlugin: ExerciseUIPlugin = {
   type: 'guided-discovery',
   selfManagedSubmit: true,
-  Component: function GdPluginComp({ exercise, ans, setAns, allDone, checkResultState }: ExercisePluginProps) {
+  Component: function GdPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
+    const stepResults = (checkResultState.stepResults as Record<string, boolean>) ?? {}
     return (
       <GuidedDiscoveryExercise
         steps={exercise.gdSteps}
@@ -799,8 +909,9 @@ const guidedDiscoveryPlugin: ExerciseUIPlugin = {
         summary={exercise.gdSummary}
         ans={ans}
         setAns={setAns as any}
-        stepResults={checkResultState.stepResults}
+        stepResults={Object.keys(stepResults).length > 0 ? stepResults : undefined}
         allDone={allDone}
+        reviewData={reviewData}
       />
     )
   },
@@ -832,8 +943,12 @@ const guidedDiscoveryPlugin: ExerciseUIPlugin = {
     items.forEach((it) => {
       stepResults[String(it.idx)] = !!it.correct
     })
-    const { allDone, softDone } = partialOrAllDone(items)
-    return { checkResultState: { ...current, stepResults }, allDone, softDone }
+    return {
+      checkResultState: { ...(current.pluginState ?? {}), stepResults },
+      // Guided-discovery is always done after submit, partial OK.
+      allDone: true,
+      softDone: true,
+    }
   },
   enrichFromApi(ex, spec) {
     if (spec.gdTitle) ex.gdTitle = spec.gdTitle

@@ -1,63 +1,14 @@
-/* ═══ Shared grading logic for Quiz & Match exercises ═══ */
+/**
+ * Shared grading helpers for quiz / match plugins.
+ *
+ * `formatSubmitData` (the legacy per-type switch) used to live here; it has
+ * been replaced by per-plugin `plugin.formatSubmitData` implementations in
+ * `plugins/built-in.tsx`. PracticePhase now dispatches through the registry,
+ * so no caller of the old dispatcher remains.
+ */
 
 export function reportAttempt(taskId: number, questionIdx: number, attempt: number, selected: any, correct: any, isCorrect: boolean) {
   try { window.parent.postMessage({ type: 'student_attempt', taskId, questionIdx, attempt, selected, correct, isCorrect, ts: Date.now() }, window.location.origin) } catch { /* noop */ }
-}
-
-export function formatSubmitData(
-  type: string,
-  ans: Record<string, any>,
-  meta?: { attemptCounts?: Record<number, number> },
-): Record<string, any> {
-  let result: Record<string, any>
-  switch (type) {
-    case 'quiz': {
-      const answers: any[] = []
-      for (const k of Object.keys(ans)) answers[+k] = ans[k]
-      result = { answers }
-      break
-    }
-    case 'match': {
-      const pairs: any[] = []
-      for (const k of Object.keys(ans)) pairs[+k] = ans[k]
-      result = { pairs }
-      break
-    }
-    case 'order':
-      result = { order: ans.order || [] }
-      break
-    case 'stance':
-      result = { position: ans.stance, evidence: ans.evidence || [] }
-      break
-    case 'matrix':
-      result = { rows: ans.rows || [] }
-      break
-    case 'select-evidence':
-      result = { sections: ans.sections || {} }
-      if (ans.firstAttemptSections) result.firstAttemptSections = ans.firstAttemptSections
-      break
-    case 'map':
-      result = { placements: ans.placements || {}, reasons: ans.reasons || {} }
-      break
-    case 'image-upload':
-      result = { images: ans.images || [] }
-      break
-    case 'fill-blank': {
-      const blanks: Record<string, string> = {}
-      for (const [k, v] of Object.entries(ans)) {
-        if (typeof v === 'string') blanks[k] = v
-      }
-      result = { blanks }
-      break
-    }
-    case 'guided-discovery':
-      result = { steps: ans.steps || {} }
-      break
-    default:
-      result = ans
-  }
-  if (meta?.attemptCounts) result.attemptCounts = meta.attemptCounts
-  return result
 }
 
 export interface GradeResult {
@@ -67,6 +18,11 @@ export interface GradeResult {
   allDone: boolean
 }
 
+/**
+ * Per-item check used by quiz + match plugins' `localGrade`. Compares each
+ * indexed answer against `item.correct`, accumulates attempts, and reports
+ * each attempt via `reportAttempt` (for teacher-observe telemetry).
+ */
 export function gradeItemSet(
   items: Array<{ correct: number }>,
   ans: Record<string, any>,
