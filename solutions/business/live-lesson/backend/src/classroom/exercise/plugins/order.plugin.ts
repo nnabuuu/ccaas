@@ -6,6 +6,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -86,5 +87,18 @@ export class OrderPlugin implements ExerciseTypePlugin {
             : '';
       return { idx: pos, correct: studentLabel === expectedLabel };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Order is pure index/label comparison — no LLM call. buildGradePrompt
+  // returns [] so the Inspector renders "no LLM prompts" instead of 400;
+  // parseGradeResponse ignores responses and re-runs the deterministic
+  // grader (grade is sync, so direct delegation is safe).
+  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
+    return [];
+  }
+
+  parseGradeResponse(_responses: string[], ctx: GradeContext): GradeResult {
+    return this.grade(ctx);
   }
 }

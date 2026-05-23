@@ -440,10 +440,16 @@ async function handleRequest(
         });
       }
       try {
-        const parsed = pluginRef.parseGradeResponse(editedResponses, {
-          key: session.story.answerKey,
-          data: session.ans,
-        });
+        // parseGradeResponse may return GradeResult OR Promise<GradeResult>
+        // (guided-discovery and other vision-LLM plugins re-run grade()
+        // internally which is async). Await unconditionally — sync values
+        // pass through Promise.resolve identically.
+        const parsed = await Promise.resolve(
+          pluginRef.parseGradeResponse(editedResponses, {
+            key: session.story.answerKey,
+            data: session.ans,
+          }),
+        );
         return sendJson(res, 200, { ok: true, result: parsed });
       } catch (e) {
         return sendJson(res, 500, {

@@ -15,8 +15,9 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
-import type { GradeResult } from '../../../schemas';
+import type { GradeResult, ImageUploadAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 import { AiPromptBuilder } from '../../ai-prompt-builder';
 import { ImageUploadGrader } from '../graders/image-upload.grader';
@@ -168,5 +169,95 @@ export class RichContentQuizPlugin implements ExerciseTypePlugin {
       const correct = score === true || (typeof score === 'number' && score >= 80);
       return { idx: id, correct };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // rich-content-quiz delegates to ImageUploadGrader's vision rubric. We
+  // expose one GradePromptSpec per part (or one for the flat-rubric mode);
+  // each part is treated as a separate vision-rubric scoring call so the
+  // inspector can iterate on a single part's rubric without touching the
+  // others. Images themselves are not editable through L3 (same constraint
+  // as image-upload).
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const ak = ctx.key as { type: string; parts?: Array<Record<string, unknown>>; rubric?: unknown };
+    const parts = ak.parts;
+    if (parts && parts.length > 0) {
+      const specs: GradePromptSpec[] = [];
+      for (const p of parts) {
+        // Build a synthetic image-upload-shaped key per part — same trick the
+        // StudentSubmissionService.submitRichContentPart flow uses at runtime.
+        const syntheticKey = {
+          type: 'image-upload',
+          prompt: p.prompt,
+          rubric: p.rubric,
+          sampleSolution: (p as Record<string, unknown>).sampleSolution,
+          aiSystemPrompt: (p as Record<string, unknown>).aiSystemPrompt,
+        } as unknown as ImageUploadAnswerKey;
+        const spec = this.legacyGrader.buildVisionRubricPromptText(syntheticKey);
+        if (!spec) continue;
+        specs.push({
+          systemPrompt: spec.systemPrompt,
+          userMessage: `[part: ${p.id as string}]\n\n${spec.userText}`,
+          options: { maxTokens: 1024, temperature: 0, responseFormat: { type: 'json_object' } },
+        });
+      }
+      return specs;
+    }
+    // Flat rubric (no parts) — delegate to ImageUploadGrader as before.
+    const spec = this.legacyGrader.buildVisionRubricPromptText(ak as unknown as ImageUploadAnswerKey);
+    if (!spec) return [];
+    return [
+      {
+        systemPrompt: spec.systemPrompt,
+        userMessage: spec.userText,
+        options: { maxTokens: 1024, temperature: 0, responseFormat: { type: 'json_object' } },
+      },
+    ];
+  }
+
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const ak = ctx.key as { type: string; parts?: Array<Record<string, unknown>>; rubric?: unknown };
+    const parts = ak.parts;
+    if (parts && parts.length > 0) {
+      // Parse each response under its own synthetic per-part key; merge
+      // byDimension under the canonical `partId.rubricId` keys (the same
+      // shape buildCheckItems expects — see prior B8 contract test).
+      const merged: Record<string, number> = {};
+      let totalSum = 0;
+      let totalCount = 0;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        const syntheticKey = {
+          type: 'image-upload',
+          rubric: p.rubric,
+        } as unknown as ImageUploadAnswerKey;
+        const raw = responses[i] ?? '';
+        if (!raw) continue;
+        try {
+          const partResult = this.legacyGrader.parseVisionRubricResponse(raw, syntheticKey);
+          for (const [k, v] of Object.entries(partResult.byDimension ?? {})) {
+            if (typeof v === 'number') merged[`${p.id}.${k}`] = v;
+          }
+          if (typeof partResult.total === 'number') {
+            totalSum += partResult.total;
+            totalCount++;
+          }
+        } catch {
+          // Skip malformed part responses; the inspector author can fix
+          // and rerun. The empty merged entry signals "not graded yet".
+        }
+      }
+      return {
+        total: totalCount > 0 ? Math.round(totalSum / totalCount) : 0,
+        byDimension: merged,
+      };
+    }
+    if (responses.length === 0) {
+      return { total: 0, byDimension: {} };
+    }
+    return this.legacyGrader.parseVisionRubricResponse(
+      responses[0],
+      ak as unknown as ImageUploadAnswerKey,
+    );
   }
 }

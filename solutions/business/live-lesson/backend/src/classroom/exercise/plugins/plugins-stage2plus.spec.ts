@@ -592,3 +592,246 @@ describe('§14 L3: MatrixPlugin', () => {
     expect(result.cellQualities!['0']).toEqual({ whatQ: 1, whyQ: 1 });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// §14 L3 contracts for the remaining 7 plugins (P1+ extension)
+// ─────────────────────────────────────────────────────────────────────────
+//
+// All 11 backend plugins now implement buildGradePrompt + parseGradeResponse.
+// Three behavior buckets:
+//   • Deterministic (order/stance/select-evidence/guided-discovery):
+//     no LLM. buildGradePrompt returns []; parseGradeResponse re-runs grade().
+//   • LLM-text (map):
+//     one prompt when ≥1 item has a long-enough reason; parse merges LLM
+//     score into rule-based composite.
+//   • LLM-vision (image-upload, rich-content-quiz):
+//     text portion of vision prompt is exposed; images aren't re-uploadable
+//     via L3 so the inspector is for prompt + parse iteration only.
+
+describe('§14 L3: OrderPlugin', () => {
+  const plugin = new OrderPlugin();
+
+  it('buildGradePrompt returns [] (deterministic, no LLM)', () => {
+    expect(plugin.buildGradePrompt({ key: {} as any, data: {} })).toEqual([]);
+  });
+
+  it('parseGradeResponse([]) re-runs grade()', () => {
+    const ak = { type: 'order', items: ['A', 'B'], correctOrder: [1, 0] };
+    const result = plugin.parseGradeResponse([], { key: ak as any, data: { order: ['B', 'A'] } });
+    expect(result.total).toBe(100);
+  });
+});
+
+describe('§14 L3: StancePlugin', () => {
+  const plugin = new StancePlugin();
+
+  it('buildGradePrompt returns [] (deterministic, no LLM)', () => {
+    expect(plugin.buildGradePrompt({ key: {} as any, data: {} })).toEqual([]);
+  });
+
+  it('parseGradeResponse re-runs grade() against the deterministic rules', () => {
+    const ak = {
+      type: 'stance',
+      validPositions: ['agree'],
+      minEvidence: 2,
+      stanceOpts: ['agree', 'disagree'],
+      evidence: ['e1', 'e2'],
+    };
+    const result = plugin.parseGradeResponse([], {
+      key: ak as any,
+      data: { position: 'agree', evidence: ['e1', 'e2'] },
+    });
+    expect(result.total).toBe(100);
+  });
+});
+
+describe('§14 L3: SelectEvidencePlugin', () => {
+  const plugin = new SelectEvidencePlugin();
+
+  it('buildGradePrompt returns [] (client-side / no LLM)', () => {
+    expect(plugin.buildGradePrompt({ key: {} as any, data: {} })).toEqual([]);
+  });
+
+  it('parseGradeResponse re-runs grade() (returns a numeric total)', () => {
+    const ak = {
+      type: 'select-evidence',
+      sections: [{ id: 's1', label: 'sec', range: [1, 1], correctFunction: 'cause' }],
+    };
+    const result = plugin.parseGradeResponse([], {
+      key: ak as any,
+      data: { sections: { s1: { function: 'cause', picked: [] } } },
+    });
+    // Select-evidence's grader weights function-match + evidence picks; the
+    // exact value depends on the rule. The contract here is "no LLM, same
+    // result as grade()" — pin the type, not the exact score.
+    expect(typeof result.total).toBe('number');
+  });
+});
+
+describe('§14 L3: MapPlugin', () => {
+  const plugin = new MapPlugin(mockAiPromptBuilder);
+  const ak = {
+    type: 'map',
+    axes: {
+      x: { neg: 'L', pos: 'R', label: 'x' },
+      y: { neg: 'D', pos: 'U', label: 'y' },
+    },
+    items: [{ id: 'a', label: 'Alpha' }],
+    minReasonLength: 8,
+  };
+
+  it('buildGradePrompt returns one spec when an item has a long-enough reason', () => {
+    const data = {
+      placements: { a: { x: 0.5, y: 0.5 } },
+      reasons: { a: 'this is a long enough reason' },
+    };
+    const prompts = plugin.buildGradePrompt({ key: ak as any, data });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0].systemPrompt).toContain('坐标图');
+    expect(prompts[0].userMessage).toContain('Alpha');
+  });
+
+  it('buildGradePrompt returns [] when no item has a long-enough reason', () => {
+    const data = { placements: { a: { x: 0.5, y: 0.5 } }, reasons: { a: 'short' } };
+    expect(plugin.buildGradePrompt({ key: ak as any, data })).toEqual([])
+  });
+
+  it('parseGradeResponse merges an edited LLM response into rule-based score', () => {
+    const data = {
+      placements: { a: { x: 0.5, y: 0.5 } },
+      reasons: { a: 'this is a long enough reason that meets minReasonLength' },
+    };
+    const edited = JSON.stringify({
+      items: [{ id: 'a', relevant: true, comment: 'good' }],
+      overall: 'overall ok',
+    });
+    const result = plugin.parseGradeResponse([edited], { key: ak as any, data });
+    expect(result.llmFeedback).toBe('overall ok');
+    expect(result.llmItems?.[0].relevant).toBe(true);
+  });
+
+  it('parseGradeResponse falls back to rule-only on malformed JSON', () => {
+    const data = {
+      placements: { a: { x: 0.5, y: 0.5 } },
+      reasons: { a: 'this is a long enough reason' },
+    };
+    const result = plugin.parseGradeResponse(['not json'], { key: ak as any, data });
+    expect(result.llmFeedback).toBeUndefined();
+    expect(typeof result.total).toBe('number');
+  });
+});
+
+describe('§14 L3: ImageUploadPlugin', () => {
+  const plugin = new ImageUploadPlugin(mockAiPromptBuilder);
+  const ak = {
+    type: 'image-upload',
+    prompt: 'Solve the equation',
+    rubric: [
+      { id: 'method', label: 'Method', weight: 1, criteria: 'shows clear steps' },
+      { id: 'answer', label: 'Answer', weight: 1, criteria: 'correct final answer' },
+    ],
+  };
+
+  it('buildGradePrompt returns the text portion of the vision rubric', () => {
+    const prompts = plugin.buildGradePrompt({ key: ak as any, data: { images: ['data:image/jpeg;base64,x'] } });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0].userMessage).toContain('Method');
+    expect(prompts[0].userMessage).toContain('Answer');
+    expect(prompts[0].options?.responseFormat).toEqual({ type: 'json_object' });
+  });
+
+  it('parseGradeResponse uses the edited response to score', () => {
+    const edited = JSON.stringify({
+      dimensions: [
+        { id: 'method', score: 3, comment: 'clear' },
+        { id: 'answer', score: 2, comment: 'mostly right' },
+      ],
+      feedback: 'good work',
+      errorTags: [],
+    });
+    const result = plugin.parseGradeResponse([edited], { key: ak as any, data: { images: [] } });
+    expect(result.byDimension?.method).toBe(3);
+    expect(result.byDimension?.answer).toBe(2);
+    expect(result.llmFeedback).toBe('good work');
+  });
+
+  it('parseGradeResponse([]) returns zero-score fallback for empty rubric path', () => {
+    const result = plugin.parseGradeResponse([], { key: ak as any, data: { images: [] } });
+    expect(result.total).toBe(0);
+    expect(result.byDimension?.method).toBe(0);
+  });
+});
+
+describe('§14 L3: RichContentQuizPlugin', () => {
+  const plugin = new RichContentQuizPlugin(mockAiPromptBuilder);
+  const ak = {
+    type: 'rich-content-quiz',
+    parts: [
+      {
+        id: 'p1',
+        prompt: 'Part 1',
+        rubric: [{ id: 'c1', label: 'L1', weight: 1, criteria: 'crit1' }],
+      },
+      {
+        id: 'p2',
+        prompt: 'Part 2',
+        rubric: [{ id: 'c1', label: 'L2', weight: 1, criteria: 'crit2' }],
+      },
+    ],
+  };
+
+  it('buildGradePrompt returns one spec per part', () => {
+    const prompts = plugin.buildGradePrompt({ key: ak as any, data: {} });
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0].userMessage).toContain('[part: p1]');
+    expect(prompts[1].userMessage).toContain('[part: p2]');
+  });
+
+  it('parseGradeResponse merges per-part byDimension under partId.rubricId keys', () => {
+    const responses = [
+      JSON.stringify({
+        dimensions: [{ id: 'c1', score: 3, comment: 'ok' }],
+        feedback: 'p1 ok',
+        errorTags: [],
+      }),
+      JSON.stringify({
+        dimensions: [{ id: 'c1', score: 2, comment: 'mid' }],
+        feedback: 'p2 mid',
+        errorTags: [],
+      }),
+    ];
+    const result = plugin.parseGradeResponse(responses, { key: ak as any, data: {} });
+    expect(result.byDimension?.['p1.c1']).toBe(3);
+    expect(result.byDimension?.['p2.c1']).toBe(2);
+  });
+});
+
+describe('§14 L3: GuidedDiscoveryPlugin', () => {
+  const plugin = new GuidedDiscoveryPlugin(mockAiPromptBuilder);
+
+  it('buildGradePrompt returns [] (per-blank vision OCR not exposed via L3)', () => {
+    expect(plugin.buildGradePrompt({ key: {} as any, data: {} })).toEqual([]);
+  });
+
+  it('parseGradeResponse re-runs grade() end-to-end (returns a Promise)', async () => {
+    const ak = {
+      type: 'guided-discovery',
+      title: 'T',
+      steps: [
+        {
+          type: 'observation_choice',
+          id: 'obs',
+          title: 'Obs',
+          table: [{ expression: '(a+b)(a-b)', result: 'a²-b²' }],
+          choices: [{ id: 'c1', label: 'L', correct: 0 }],
+        },
+      ],
+      summary: { formula: 'x', name: 'y', description: 'z' },
+    };
+    const result = await plugin.parseGradeResponse([], {
+      key: ak as any,
+      data: { steps: { obs: { answers: { c1: 0 } } } },
+    });
+    expect(typeof result.total).toBe('number');
+  });
+});

@@ -18,6 +18,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -125,5 +126,17 @@ export class SelectEvidencePlugin implements ExerciseTypePlugin {
         ...(!functionCorrect && s.aiPartial && { aiMessage: s.aiPartial }),
       };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Select-evidence is client-side / deterministic — picked-token comparison
+  // against the sanitized answerKey. No LLM. buildGradePrompt returns [];
+  // parseGradeResponse re-runs the deterministic grader.
+  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
+    return [];
+  }
+
+  parseGradeResponse(_responses: string[], ctx: GradeContext): GradeResult {
+    return this.grade(ctx);
   }
 }

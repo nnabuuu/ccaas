@@ -101,6 +101,60 @@ export class ImageUploadGrader implements Grader {
     return { total: 100, byDimension, llmFeedback };
   }
 
+  /**
+   * §14 L3 — Stage 1: build the text portion of the vision rubric prompt.
+   * Pure function; images themselves are referenced by the content array at
+   * LLM-call time but aren't part of the editable prompt (the L3 inspector
+   * can't re-upload images via JSON, so vision replay is text-only).
+   */
+  buildVisionRubricPromptText(
+    key: ImageUploadAnswerKey | RichContentQuizAnswerKey,
+  ): { systemPrompt: string; userText: string } | null {
+    const rubric = key.rubric;
+    if (!rubric || rubric.length === 0) return null;
+    const effectiveKey = key as GradeableKey;
+    const systemPrompt = effectiveKey.aiSystemPrompt || this.buildDefaultSystemPrompt();
+
+    const rubricText = effectiveKey.rubric.map(r =>
+      `- ${r.id} (${r.label}, 权重${r.weight}): ${r.criteria}`,
+    ).join('\n');
+
+    const userText = `请根据以下评分标准批阅学生的手写解题图片。
+
+【评分标准】
+${rubricText}
+
+${effectiveKey.sampleSolution ? `【参考答案】\n${effectiveKey.sampleSolution}\n` : ''}【评分等级】每个维度打0-3分：
+- 3 = 优秀（准确、完整、规范）
+- 2 = 良好（基本正确，略有不足）
+- 1 = 基本（思路对但不完整，或有计算错误）
+- 0 = 缺失（未作答或完全错误）
+
+请输出JSON：
+{
+  "dimensions": [
+    { "id": "维度id", "score": 0-3, "comment": "简短评语" }
+  ],
+  "feedback": "整体反馈(50字内)",
+  "errorTags": ["错误类型标签"]
+}
+
+errorTags说明：如果学生答案有错误，请用1-3个简短标签描述错误类型（如"符号错误"、"展开不完整"、"合并错误"、"计算错误"、"概念混淆"等）。如果完全正确则返回空数组。`;
+    return { systemPrompt, userText };
+  }
+
+  /**
+   * §14 L3 — Stage 2: parse an LLM rubric response into a GradeResult.
+   * Throws on malformed JSON (caller decides whether to fall back to "AI
+   * 暂时无法批阅" or surface the error to the inspector).
+   */
+  parseVisionRubricResponse(rawResponse: string, key: ImageUploadAnswerKey | RichContentQuizAnswerKey): GradeResult {
+    if (!key.rubric || key.rubric.length === 0) {
+      return { total: 0, byDimension: {} };
+    }
+    return this.parseResponse(rawResponse, key as GradeableKey);
+  }
+
   private async gradeWithVision(key: GradeableKey, images: string[]): Promise<GradeResult> {
     const systemPrompt = key.aiSystemPrompt || this.buildDefaultSystemPrompt();
 

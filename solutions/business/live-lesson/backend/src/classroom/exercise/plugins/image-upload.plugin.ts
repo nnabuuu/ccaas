@@ -14,8 +14,9 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
-import type { GradeResult } from '../../../schemas';
+import type { GradeResult, ImageUploadAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 import { AiPromptBuilder } from '../../ai-prompt-builder';
 import { ImageUploadGrader } from '../graders/image-upload.grader';
@@ -87,5 +88,37 @@ export class ImageUploadPlugin implements ExerciseTypePlugin {
       const correct = score === true || (typeof score === 'number' && score >= 80);
       return { idx: id, correct };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // image-upload runs a vision LLM rubric. L3 exposes only the *text*
+  // portion (system prompt + user rubric) since the inspector can't re-upload
+  // images by editing JSON. parseGradeResponse takes the (possibly edited)
+  // LLM JSON output and re-grades via the existing parseVisionRubricResponse
+  // pipeline. Returns [] when there's no rubric to score.
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const key = ctx.key as unknown as ImageUploadAnswerKey;
+    const spec = this.legacyGrader.buildVisionRubricPromptText(key);
+    if (!spec) return [];
+    return [
+      {
+        systemPrompt: spec.systemPrompt,
+        userMessage: spec.userText,
+        options: { maxTokens: 1024, temperature: 0, responseFormat: { type: 'json_object' } },
+      },
+    ];
+  }
+
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const key = ctx.key as unknown as ImageUploadAnswerKey;
+    if (responses.length === 0) {
+      // No edited response — return the no-image / empty fallback that grade()
+      // would return when images is empty.
+      const rubric = key.rubric || [];
+      const byDimension: Record<string, number> = {};
+      for (const r of rubric) byDimension[r.id] = 0;
+      return { total: 0, byDimension };
+    }
+    return this.legacyGrader.parseVisionRubricResponse(responses[0], key);
   }
 }

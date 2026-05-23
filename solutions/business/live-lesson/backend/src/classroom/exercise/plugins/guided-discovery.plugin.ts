@@ -15,6 +15,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -260,5 +261,25 @@ export class GuidedDiscoveryPlugin implements ExerciseTypePlugin {
       result.push({ idx: '_llm', correct: true, hint: ctx.gradeResult.llmFeedback });
     }
     return result;
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // guided-discovery makes one vision-OCR call PER image blank in the
+  // submission (could be 0-N depending on which steps use the photo input
+  // method). Exposing each blank as a separate GradePromptSpec would
+  // require restructuring the grader's per-step recursion, AND the
+  // inspector can't replay vision calls without re-uploading images.
+  //
+  // Honest minimum (matches deterministic plugins' contract): return [] so
+  // the inspector renders "no LLM prompts editable for this type" rather
+  // than 400, and parseGradeResponse re-runs the deterministic + vision
+  // grader end-to-end. Refactoring per-blank L3 is documented as a future
+  // task in docs/exercise-plugin-extension-guide.md.
+  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
+    return [];
+  }
+
+  async parseGradeResponse(_responses: string[], ctx: GradeContext): Promise<GradeResult> {
+    return this.grade(ctx);
   }
 }

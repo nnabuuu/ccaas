@@ -104,7 +104,7 @@ export interface ExerciseTypePlugin {
    * Called by the L3 prompt debugger with possibly edited responses so plugin
    * authors can iterate on parse logic without burning tokens.
    */
-  parseGradeResponse?(responses: string[], ctx: GradeContext): GradeResult;
+  parseGradeResponse?(responses: string[], ctx: GradeContext): GradeResult | Promise<GradeResult>;
 }
 
 /** A single LLM call specification (§14.4) */

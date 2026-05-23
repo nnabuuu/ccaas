@@ -14,8 +14,9 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
-import type { GradeResult } from '../../../schemas';
+import type { GradeResult, MapAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 import { AiPromptBuilder } from '../../ai-prompt-builder';
 import { MapGrader } from '../graders/map.grader';
@@ -155,5 +156,35 @@ export class MapPlugin implements ExerciseTypePlugin {
     }
 
     return result;
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Map makes one LLM reason-evaluation call when ≥1 item has a reason long
+  // enough to evaluate. The Inspector surfaces it as a single GradePromptSpec.
+  // When no items qualify, buildGradePrompt returns [] and parseGradeResponse
+  // falls back to pure rule-based scoring.
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const key = ctx.key as unknown as MapAnswerKey;
+    const spec = this.legacyGrader.buildReasonEvalPrompt(key, ctx.data);
+    if (!spec) return [];
+    return [
+      {
+        systemPrompt: spec.systemPrompt,
+        userMessage: spec.userMessage,
+        options: {
+          maxTokens: spec.maxTokens,
+          temperature: spec.temperature,
+          responseFormat: { type: 'json_object' },
+        },
+      },
+    ];
+  }
+
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const key = ctx.key as unknown as MapAnswerKey;
+    const llmResult = responses.length > 0
+      ? this.legacyGrader.parseReasonEvalResponse(responses[0])
+      : null;
+    return this.legacyGrader.gradeWithLlmEval(key, ctx.data, llmResult);
   }
 }
