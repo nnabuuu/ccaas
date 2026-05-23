@@ -18,6 +18,7 @@ const SessionListPage = lazy(() => import('@/pages/sessions/list').then((m) => (
 const SessionDetailPage = lazy(() => import('@/pages/sessions/detail').then((m) => ({ default: m.SessionDetailPage })))
 const SkillListPage = lazy(() => import('@/pages/skills/list').then((m) => ({ default: m.SkillListPage })))
 const SkillEditorPage = lazy(() => import('@/pages/skills/editor').then((m) => ({ default: m.SkillEditorPage })))
+const PlaygroundPage = lazy(() => import('@/pages/playground').then((m) => ({ default: m.PlaygroundPage })))
 const TenantListPage = lazy(() => import('@/pages/tenants/list').then((m) => ({ default: m.TenantListPage })))
 const TenantDetailPage = lazy(() => import('@/pages/tenants/detail').then((m) => ({ default: m.TenantDetailPage })))
 const CreateTenantPage = lazy(() => import('@/pages/tenants/create').then((m) => ({ default: m.CreateTenantPage })))
@@ -138,6 +139,7 @@ function App() {
               <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
               <Route path="/skills" element={<SkillListPage />} />
               <Route path="/skills/:idOrSlug" element={<SkillEditorPage />} />
+              <Route path="/playground" element={<PlaygroundPage />} />
               <Route path="/tenants" element={<TenantListPage />} />
               <Route path="/tenants/create" element={<CreateTenantPage />} />
               <Route path="/tenants/:tenantId" element={<TenantDetailPage />} />
