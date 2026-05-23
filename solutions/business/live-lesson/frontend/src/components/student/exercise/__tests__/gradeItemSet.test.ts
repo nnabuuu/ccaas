@@ -190,3 +190,90 @@ describe('plugin.formatSubmitData', () => {
     expect(fmt('map', {})).toMatchObject({ placements: {}, reasons: {} })
   })
 })
+
+/* ═══ plugin.handleCheckResult — telemetry contract ═══
+ *
+ * Code-review caught that the matrix/map/image-upload handlers used to drop
+ * `reportAttempt` on the allCorrect short-circuit path — a silent telemetry
+ * regression vs the legacy PracticePhase (which called reportAttempt
+ * unconditionally before checking allCorrect). These tests pin the contract
+ * down so the regression can't return.
+ */
+
+const baseCurrent = {
+  ans: { foo: 'bar' },
+  attempts: {} as Record<number, any[]>,
+  correctQs: new Set<number>(),
+}
+
+describe('plugin.handleCheckResult — reportItems on allCorrect', () => {
+  it.each(['matrix', 'map', 'image-upload', 'stance'])(
+    '%s: emits reportItems with isCorrect:true on allCorrect',
+    (type) => {
+      const plugin = getExerciseType(type)
+      if (!plugin) throw new Error(`no plugin for ${type}`)
+      const out = plugin.handleCheckResult(
+        { allCorrect: true, items: [] } as any,
+        {},
+        baseCurrent,
+      )
+      expect(out.reportItems).toBeDefined()
+      expect(out.reportItems!).toHaveLength(1)
+      expect(out.reportItems![0]).toMatchObject({ qi: 0, attemptNum: 1, isCorrect: true })
+    },
+  )
+
+  it.each(['matrix', 'map', 'image-upload'])(
+    '%s: emits reportItems with isCorrect:false on !allCorrect',
+    (type) => {
+      const plugin = getExerciseType(type)
+      if (!plugin) throw new Error(`no plugin for ${type}`)
+      const out = plugin.handleCheckResult(
+        { allCorrect: false, items: [] } as any,
+        {},
+        baseCurrent,
+      )
+      expect(out.reportItems).toBeDefined()
+      expect(out.reportItems!).toHaveLength(1)
+      expect(out.reportItems![0]).toMatchObject({ qi: 0, attemptNum: 1, isCorrect: false })
+    },
+  )
+
+  it.each(['fill-blank', 'guided-discovery'])(
+    '%s: emits NO reportItems (matches legacy "no reportAttempt for this type")',
+    (type) => {
+      const plugin = getExerciseType(type)
+      if (!plugin) throw new Error(`no plugin for ${type}`)
+      const out = plugin.handleCheckResult(
+        { allCorrect: true, items: [] } as any,
+        {},
+        baseCurrent,
+      )
+      expect(out.reportItems).toBeUndefined()
+    },
+  )
+
+  it('order: allCorrect emits no reportItems (matches legacy short-circuit)', () => {
+    const plugin = getExerciseType('order')
+    if (!plugin) throw new Error('no plugin for order')
+    const out = plugin.handleCheckResult(
+      { allCorrect: true, items: [] } as any,
+      {},
+      baseCurrent,
+    )
+    expect(out.reportItems).toBeUndefined()
+  })
+
+  it('order: !allCorrect emits one reportItems entry with isCorrect:false', () => {
+    const plugin = getExerciseType('order')
+    if (!plugin) throw new Error('no plugin for order')
+    const out = plugin.handleCheckResult(
+      { allCorrect: false, items: [{ idx: 0, correct: false }] } as any,
+      {},
+      { ...baseCurrent, ans: { order: [1, 0, 2] } },
+    )
+    expect(out.reportItems).toBeDefined()
+    expect(out.reportItems!).toHaveLength(1)
+    expect(out.reportItems![0].isCorrect).toBe(false)
+  })
+})

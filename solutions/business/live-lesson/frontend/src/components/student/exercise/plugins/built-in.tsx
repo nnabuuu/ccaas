@@ -525,6 +525,10 @@ const matrixPlugin: ExerciseUIPlugin = {
         checkResultState: { ...(current.pluginState ?? {}) },
         allDone: true,
         softDone: true,
+        // Telemetry: matrix originally reported a single attempt regardless
+        // of allCorrect (PracticePhase HEAD~1:307 — `reportAttempt(...)` was
+        // unconditional). Keep it so teacher-observe sees first-try wins.
+        reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: true }],
       }
     }
     const items = (result?.items as Array<{ idx: number; correct: boolean; hint?: string; hintZh?: string }>) ?? []
@@ -542,7 +546,7 @@ const matrixPlugin: ExerciseUIPlugin = {
       // Matrix is always "done after submit" — partial credit is fine.
       allDone: true,
       softDone: true,
-      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: false }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -667,6 +671,9 @@ const mapPlugin: ExerciseUIPlugin = {
         checkResultState: { ...(current.pluginState ?? {}) },
         allDone: true,
         softDone: true,
+        // Preserve the original unconditional reportAttempt
+        // (HEAD~1 PracticePhase L319-321) for first-try-correct telemetry.
+        reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: true }],
       }
     }
     const items = (result?.items as Array<{ idx: string; correct: boolean; hint?: string }>) ?? []
@@ -684,7 +691,7 @@ const mapPlugin: ExerciseUIPlugin = {
       },
       allDone: true,
       softDone: true,
-      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: false }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -744,6 +751,9 @@ const imageUploadPlugin: ExerciseUIPlugin = {
         checkResultState: { ...(current.pluginState ?? {}) },
         allDone: true,
         softDone: true,
+        // Telemetry must fire on first-try-correct too (HEAD~1 L327
+        // called reportAttempt unconditionally before the allCorrect check).
+        reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: true }],
       }
     }
     const items = (result?.items as Array<{ idx: string; correct: boolean; score?: number; hint?: string }>) ?? []
@@ -762,7 +772,7 @@ const imageUploadPlugin: ExerciseUIPlugin = {
       // Image-upload keeps UI active when not allCorrect so student can retry.
       allDone: false,
       softDone: false,
-      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: false }],
     }
   },
   enrichFromApi(ex, spec) {
@@ -812,8 +822,16 @@ const selectEvidencePlugin: ExerciseUIPlugin = {
     if (ans.firstAttemptSections) payload.firstAttemptSections = ans.firstAttemptSections
     return payload
   },
-  handleCheckResult(_result, _exercise, current) {
-    return { checkResultState: current, allDone: true, softDone: true }
+  handleCheckResult(result, _exercise, current) {
+    // Dead path under normal use (selfManagedSubmit + serverCheck:false), but
+    // honoring the contract: emit reportItems so any future caller routing a
+    // check result through this plugin still sees telemetry.
+    return {
+      checkResultState: { ...(current.pluginState ?? {}) },
+      allDone: true,
+      softDone: true,
+      reportItems: [{ qi: 0, attemptNum: 1, selected: current.ans, expected: null, isCorrect: !!result.allCorrect }],
+    }
   },
   enrichFromApi(ex, spec) {
     if (spec.functionOptions) ex.functionOptions = spec.functionOptions
@@ -860,7 +878,14 @@ const richContentQuizPlugin: ExerciseUIPlugin = {
     return ans
   },
   handleCheckResult(_result, _exercise, current) {
-    return { checkResultState: current, allDone: true, softDone: true }
+    // Rich-content-quiz is selfManagedSubmit + has its own multi-part scoring
+    // flow — this handler is a no-op contract stub that returns a clean state
+    // bag (not the merged current{ans,attempts,...}).
+    return {
+      checkResultState: { ...(current.pluginState ?? {}) },
+      allDone: true,
+      softDone: true,
+    }
   },
   enrichFromApi(ex, spec) {
     if (spec.prompt) ex.prompt = spec.prompt
