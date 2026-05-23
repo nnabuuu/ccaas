@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
@@ -6,8 +6,8 @@ import * as path from 'path';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
-import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
@@ -38,8 +38,8 @@ export class ClassroomStateService {
     private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(ClassroomSession)
     private readonly sessionRepo: Repository<ClassroomSession>,
-    @InjectRepository(AiQuestion)
-    private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @Inject(AI_QUESTION_REPO_PORT)
+    private readonly aiQuestionRepo: AiQuestionRepoPort,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
     private readonly observationQuery: ObservationQueryService,
@@ -108,7 +108,7 @@ export class ClassroomStateService {
       this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } }),
       this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } }),
       this.sessionRepo.findOne({ where: { id: sessionId } }),
-      this.aiQuestionRepo.find({ where: { sessionId }, order: { askedAt: 'ASC' } }),
+      this.aiQuestionRepo.findBySession(sessionId),
     ]);
 
     const subsByStudent = new Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>();

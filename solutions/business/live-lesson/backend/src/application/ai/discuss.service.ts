@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
-import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
@@ -27,8 +27,8 @@ export class DiscussService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
-    @InjectRepository(AiQuestion)
-    private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @Inject(AI_QUESTION_REPO_PORT)
+    private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationQuery: ObservationQueryService,
@@ -105,7 +105,7 @@ export class DiscussService {
       const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
       const taskMap = manifest ? buildTaskMap(manifest) : null;
       const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
-      await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
+      await this.aiQuestionRepo.insert({
         sessionId: session.id,
         studentId,
         studentName: student.name,
@@ -113,7 +113,7 @@ export class DiscussService {
         question: `[discuss:socratic:r${round}] ${lastStudentMsg}`,
         answer: reply,
         category: 'discuss',
-      }));
+      });
 
       // Await extraction result before persisting (may block up to 10s worst-case on 2 retries)
       const imageDescription = await imageDescriptionPromise;
@@ -212,15 +212,15 @@ export class DiscussService {
       const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo).catch(() => null);
       const taskMap = manifest ? buildTaskMap(manifest) : null;
       const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
-      await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
+      await this.aiQuestionRepo.insert({
         sessionId: session.id,
         studentId,
         studentName: student.name,
         step: stepIdx,
         question: `[discuss:socratic:r${round}] ${lastStudentMsg}`,
-        answer: null,
+        answer: null as any,
         category: 'discuss',
-      })).catch(saveErr => this.logger.warn(`Failed to save AiQuestion on error: ${saveErr}`));
+      }).catch(saveErr => this.logger.warn(`Failed to save AiQuestion on error: ${saveErr}`));
       this.stateCache.markDirty(session.id);
 
       return {

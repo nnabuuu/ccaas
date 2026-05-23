@@ -16,6 +16,8 @@ import { ChatMessage } from '../../adapters/persistence/entities/chat-message.en
 import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+import { AI_QUESTION_REPO_PORT } from '../../domain/ports/ai-question-repo.port';
+import { TypeOrmAiQuestionRepository } from '../../adapters/persistence/repositories/ai-question.repository';
 
 const ASK_MANIFEST = {
   id: 'ask-lesson',
@@ -65,6 +67,8 @@ describe('AiAskService', () => {
       ],
       providers: [
         AiAskService, AiPromptBuilder, ManifestCacheService, StateCacheService,
+        TypeOrmAiQuestionRepository,
+        { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

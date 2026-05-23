@@ -1,6 +1,8 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
 import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
 import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
+import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port";
+import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -99,6 +101,8 @@ describe('PersonalizationService', () => {
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussHighlightRepository,
         { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
+        TypeOrmAiQuestionRepository,
+        { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         ...PLUGIN_PROVIDERS,PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
     }).compile();
 

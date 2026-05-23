@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
 import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
+import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port";
+import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -71,7 +73,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(Submission), useValue: {} },
         { provide: getRepositoryToken(ClassroomSession), useValue: {} },
-        { provide: getRepositoryToken(AiQuestion), useValue: {} },
+        { provide: AI_QUESTION_REPO_PORT, useValue: { findBySession: jest.fn().mockResolvedValue([]) } },
         { provide: ObservationQueryService, useValue: mockObservationQuery },
         { provide: MetricsAggregator, useValue: {} },
         { provide: ClusterAggregator, useValue: mockClusterAggregator },
@@ -253,6 +255,8 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         TypeOrmDiscussTargetHitRepository,
         TypeOrmDiscussHighlightRepository,
         { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
+        TypeOrmAiQuestionRepository,
+        { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         MetricsAggregator,
         ClusterAggregator,

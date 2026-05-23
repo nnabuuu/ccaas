@@ -1,6 +1,8 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
 import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
 import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
+import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port";
+import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
@@ -182,6 +184,8 @@ describe('Classroom polling — HTTP integration', () => {
         TypeOrmDiscussTargetHitRepository,
         TypeOrmDiscussHighlightRepository,
         { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
+        TypeOrmAiQuestionRepository,
+        { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },

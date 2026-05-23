@@ -1,12 +1,12 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThanOrEqual, Not, Or, Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -41,8 +41,8 @@ export class PersonalizationService {
     private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(ClassroomSession)
     private readonly sessionRepo: Repository<ClassroomSession>,
-    @InjectRepository(AiQuestion)
-    private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @Inject(AI_QUESTION_REPO_PORT)
+    private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly gradingService: GradingService,
@@ -253,10 +253,8 @@ export class PersonalizationService {
 
     // ── Parallelized DB queries ──
     const [askCount, translateRow, discussRounds, lastSubArr, bonusCount] = await Promise.all([
-      // AI Ask count — include NULL category rows (Or handles SQL NULL correctly)
-      this.aiQuestionRepo.count({
-        where: { sessionId: session.id, studentId, category: Or(Not('discuss'), IsNull()) },
-      }),
+      // AI Ask count — include NULL category rows
+      this.aiQuestionRepo.countAskByStudent(session.id, studentId),
       // Translate thread count
       this.chatMessageRepo
         .createQueryBuilder('m')

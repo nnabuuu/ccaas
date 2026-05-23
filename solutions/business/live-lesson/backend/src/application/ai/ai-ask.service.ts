@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
-import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
@@ -21,8 +21,8 @@ export class AiAskService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
-    @InjectRepository(AiQuestion)
-    private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @Inject(AI_QUESTION_REPO_PORT)
+    private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly aiPromptBuilder: AiPromptBuilder,
@@ -69,7 +69,7 @@ export class AiAskService {
 
     const parsed = this.aiPromptBuilder.parseCategoryFromResponse(rawAnswer);
 
-    const aiQuestion = this.aiQuestionRepo.create({
+    await this.aiQuestionRepo.insert({
       sessionId: session.id,
       studentId,
       studentName: student.name,
@@ -78,7 +78,6 @@ export class AiAskService {
       answer: parsed.answer,
       category: parsed.category,
     });
-    await this.aiQuestionRepo.save(aiQuestion);
     this.stateCache.markDirty(session.id);
 
     if (messages && messages.length > 0) {
