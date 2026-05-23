@@ -166,4 +166,72 @@ describe('PreviewServer (smoke)', () => {
     const res = await request(port, 'GET', '/no/such/route');
     expect(res.status).toBe(404);
   });
+
+  // ── §18 short-codes routes ──
+  // Default config: file-backed store at <uploadDir>/../shortcodes.json.
+  // These tests share the smoke server's store; tests are sequential so the
+  // list assertions are stable.
+
+  it('POST /preview/shortcodes creates a code and GET /:code resolves it', async () => {
+    const create = await request(port, 'POST', '/preview/shortcodes', {
+      bundleId: 'quiz',
+      storyName: 'Default',
+      notes: 'demo link',
+    });
+    expect(create.status).toBe(200);
+    const code = (create.body as { code: string }).code;
+    expect(typeof code).toBe('string');
+    expect(code.length).toBeGreaterThan(4);
+
+    const resolve = await request(port, 'GET', `/preview/shortcodes/${code}`);
+    expect(resolve.status).toBe(200);
+    const entry = resolve.body as Record<string, unknown>;
+    expect(entry.bundleId).toBe('quiz');
+    expect(entry.storyName).toBe('Default');
+    expect(entry.notes).toBe('demo link');
+    expect(typeof entry.createdAt).toBe('number');
+  });
+
+  it('POST /preview/shortcodes rejects unknown bundleId with 404', async () => {
+    const res = await request(port, 'POST', '/preview/shortcodes', {
+      bundleId: 'nonexistent',
+      storyName: 'Default',
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('POST /preview/shortcodes rejects empty payload with 400', async () => {
+    const res = await request(port, 'POST', '/preview/shortcodes', {});
+    expect(res.status).toBe(400);
+  });
+
+  it('GET /preview/shortcodes lists codes (newest first)', async () => {
+    const res = await request(port, 'GET', '/preview/shortcodes');
+    expect(res.status).toBe(200);
+    const codes = (res.body as { codes: Array<{ createdAt: number }> }).codes;
+    expect(codes.length).toBeGreaterThan(0);
+    // Newest first
+    for (let i = 1; i < codes.length; i++) {
+      expect(codes[i - 1].createdAt).toBeGreaterThanOrEqual(codes[i].createdAt);
+    }
+  });
+
+  it('DELETE /preview/shortcodes/:code removes it and 404s on the resolve', async () => {
+    const create = await request(port, 'POST', '/preview/shortcodes', {
+      bundleId: 'quiz',
+      storyName: 'Default',
+    });
+    const code = (create.body as { code: string }).code;
+
+    const del = await request(port, 'DELETE', `/preview/shortcodes/${code}`);
+    expect(del.status).toBe(204);
+
+    const resolve = await request(port, 'GET', `/preview/shortcodes/${code}`);
+    expect(resolve.status).toBe(404);
+  });
+
+  it('GET /preview/shortcodes/:unknown returns 404', async () => {
+    const res = await request(port, 'GET', '/preview/shortcodes/nonexistent');
+    expect(res.status).toBe(404);
+  });
 });

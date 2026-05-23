@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api-client'
 import { InspectorPane } from './InspectorPane'
+import { ShortCodesDialog } from './ShortCodesDialog'
 
 const DEFAULT_PREVIEW_URL = (() => {
   try {
@@ -71,6 +72,19 @@ export function PlaygroundPage() {
   const [rightTab, setRightTab] = useState<'preview' | 'inspector'>('preview')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [inspectorRefresh, setInspectorRefresh] = useState(0)
+  // Locale switcher — persisted to localStorage and synced to preview via
+  // postMessage ('set-locale'). Today the preview iframe stores the locale
+  // on state.story.locale (visible in Inspector metadata) but its hardcoded
+  // zh-CN strings don't actually retranslate. The i18n.ts contract is the
+  // foothold for v2 when the public demo lands.
+  const [locale, setLocale] = useState<'zh-CN' | 'en'>(() => {
+    try {
+      const v = localStorage.getItem('playground.locale')
+      return v === 'en' ? 'en' : 'zh-CN'
+    } catch {
+      return 'zh-CN'
+    }
+  })
 
   // Load bundle list
   useEffect(() => {
@@ -237,6 +251,53 @@ export function PlaygroundPage() {
     return () => clearTimeout(timer)
   }, [activeBundleId, activeStory, previewOrigin])
 
+  // Push locale to preview iframe whenever it changes (debounced — typing in
+  // localStorage shouldn't burn extra postMessages).
+  useEffect(() => {
+    if (!previewOrigin) return
+    sendToPreview('set-locale', { locale })
+    try {
+      localStorage.setItem('playground.locale', locale)
+    } catch {
+      /* ignore */
+    }
+  }, [locale, previewOrigin])
+
+  /**
+   * Live-sync: when the AnswerKey JSON parses cleanly, push it to the preview
+   * iframe automatically (debounced 350ms after typing stops). Authors no
+   * longer have to click "Push to Preview" every time — invalid intermediate
+   * states are simply skipped without firing.
+   *
+   * Skipped on the first render for a story (the `open-story` message above
+   * already loaded the canonical answerKey — re-pushing it would be wasteful
+   * but harmless; we still guard against it to keep the postMessage trace
+   * clean during a fresh story load).
+   */
+  useEffect(() => {
+    if (!activeBundleId || !activeStory || !draftJson) return
+    // Skip the auto-push if the editor still holds exactly the canonical
+    // answerKey (just opened — open-story already loaded it).
+    const initial = bundleDetail?.stories.find((s) => s.name === activeStory)?.answerKey
+    if (initial && JSON.stringify(initial, null, 2) === draftJson) return
+
+    const timer = setTimeout(() => {
+      try {
+        const ak = JSON.parse(draftJson)
+        sendToPreview('set-answer-key', {
+          bundleId: activeBundleId,
+          storyName: activeStory,
+          answerKey: ak,
+        })
+        setDraftError(null)
+      } catch {
+        // Intermediate edit state — silent. The Validate button surfaces
+        // explicit errors when the user wants them.
+      }
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [draftJson, activeBundleId, activeStory, bundleDetail, previewOrigin])
+
   // Listen for preview messages
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -302,6 +363,34 @@ export function PlaygroundPage() {
         <h1 className="text-base font-semibold">Bundle Playground</h1>
         <span className="text-xs text-muted-foreground">{status}</span>
         <div className="ml-auto flex gap-2 items-center">
+          {/* Share-link dialog (§18) — mint deterministic / random short
+              codes for the current story; copy public URL; prune old codes. */}
+          <ShortCodesDialog
+            previewUrl={previewUrl}
+            bundleId={activeBundleId}
+            storyName={activeStory}
+          />
+          {/* Locale toggle — persists to localStorage and posts to the
+              preview iframe via 'set-locale'. Preview today only updates
+              the metadata display; full i18n re-render is a v2 follow-up. */}
+          <div className="inline-flex rounded border bg-background text-[11px]">
+            <button
+              type="button"
+              onClick={() => setLocale('zh-CN')}
+              className={`px-2 py-1 ${locale === 'zh-CN' ? 'bg-foreground text-background' : ''}`}
+              title="Set preview locale to Chinese"
+            >
+              中
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocale('en')}
+              className={`px-2 py-1 ${locale === 'en' ? 'bg-foreground text-background' : ''}`}
+              title="Set preview locale to English"
+            >
+              EN
+            </button>
+          </div>
           <Input
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}

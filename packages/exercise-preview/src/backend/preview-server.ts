@@ -8,6 +8,7 @@ import { InMemoryState } from './in-memory-state';
 import { runGrade } from './grade-runner';
 import { createTracer, instrumentPlugin } from './instrument';
 import { createRateLimiter, type RateLimiter } from './rate-limiter';
+import { FileShortCodesStore, MemoryShortCodesStore, type ShortCodesStore } from './shortcodes-store';
 import type { LoadedBundle } from '../core/types';
 
 const DEFAULT_UPLOAD_MIME_ALLOWLIST = [
@@ -52,6 +53,13 @@ export interface PreviewServerOptions {
    * per minute. Set to `null` to disable.
    */
   uploadRateLimit?: { max: number; windowMs: number } | null;
+  /**
+   * Short-codes store backing /preview/shortcodes routes. When omitted,
+   * defaults to a file-backed store at `<uploadDir>/../shortcodes.json` so
+   * codes survive server restarts. Pass `null` to disable the routes (they
+   * return 404), or a custom ShortCodesStore for prod backends.
+   */
+  shortCodes?: ShortCodesStore | null;
 }
 
 export interface PreviewServer {
@@ -109,6 +117,15 @@ export function createPreviewServer(options: PreviewServerOptions): PreviewServe
     ? createRateLimiter(uploadRateLimitConfig)
     : null;
 
+  // Short-codes store: caller-provided wins; otherwise file-backed at
+  // <uploadDir>/../shortcodes.json so codes persist across restarts.
+  // `null` (intentional) disables the routes entirely.
+  const shortCodes: ShortCodesStore | null =
+    options.shortCodes === null
+      ? null
+      : options.shortCodes ??
+        new FileShortCodesStore(path.join(path.dirname(uploadDir), 'shortcodes.json'));
+
   const opts: FullOptions = {
     ...options,
     host,
@@ -117,6 +134,7 @@ export function createPreviewServer(options: PreviewServerOptions): PreviewServe
     uploadMimeAllowlist: options.uploadMimeAllowlist ?? DEFAULT_UPLOAD_MIME_ALLOWLIST,
     fixturesMap,
     uploadLimiter,
+    shortCodes,
   };
 
   const server = http.createServer(async (req, res) => {
@@ -150,6 +168,7 @@ interface FullOptions extends PreviewServerOptions {
   uploadMimeAllowlist: string[];
   fixturesMap: Map<string, string>;
   uploadLimiter: RateLimiter | null;
+  shortCodes: ShortCodesStore | null;
 }
 
 async function handleRequest(
@@ -247,6 +266,55 @@ async function handleRequest(
       meta: bundle.meta,
       stories: bundle.stories,
     });
+  }
+
+  // ── Short codes (§18 / P4) ──
+  // Routes are only mounted when a store is configured (caller can opt out).
+  if (pathname === '/preview/shortcodes' && options.shortCodes) {
+    if (method === 'GET') {
+      const list = await options.shortCodes.list();
+      // Newest first so the admin UI doesn't need to sort.
+      list.sort((a, b) => b.createdAt - a.createdAt);
+      return sendJson(res, 200, { codes: list });
+    }
+    if (method === 'POST') {
+      const body = await readJson(req);
+      const bundleId = String(body.bundleId ?? '');
+      const storyName = String(body.storyName ?? '');
+      if (!bundleId || !storyName) {
+        return sendJson(res, 400, { error: 'bundleId + storyName required' });
+      }
+      if (!state.getBundle(bundleId)) {
+        return sendJson(res, 404, { error: `unknown bundle "${bundleId}"` });
+      }
+      const entry: { bundleId: string; storyName: string; expiresAt?: number; notes?: string } = {
+        bundleId,
+        storyName,
+      };
+      if (typeof body.expiresAt === 'number') entry.expiresAt = body.expiresAt;
+      if (typeof body.notes === 'string' && body.notes) entry.notes = body.notes;
+      const createOpts: { length?: number; deterministic?: boolean } = {};
+      if (typeof body.length === 'number') createOpts.length = body.length;
+      if (body.deterministic) createOpts.deterministic = true;
+      const code = await options.shortCodes.create(entry, createOpts);
+      return sendJson(res, 200, { code });
+    }
+  }
+  const shortCodeMatch = pathname.match(/^\/preview\/shortcodes\/([^/]+)$/);
+  if (shortCodeMatch && options.shortCodes) {
+    const code = shortCodeMatch[1];
+    if (method === 'GET') {
+      const entry = await options.shortCodes.resolve(code);
+      if (!entry) return sendJson(res, 404, { error: 'code not found or expired' });
+      return sendJson(res, 200, entry);
+    }
+    if (method === 'DELETE') {
+      const ok = await options.shortCodes.delete(code);
+      if (!ok) return sendJson(res, 404, { error: 'code not found' });
+      res.writeHead(204);
+      res.end();
+      return;
+    }
   }
 
   if (pathname === '/preview/sessions' && method === 'POST') {

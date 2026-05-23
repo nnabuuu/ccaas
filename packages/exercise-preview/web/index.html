@@ -168,6 +168,11 @@ const state = {
   story: null,
   ans: {},
   role: 'student',  // student | teacher | inspector
+  // Locale switcher (set via admin playground postMessage). Today only
+  // affects the Inspector "locale" metadata display — the bundled web UI
+  // strings are still hardcoded zh-CN. Wiring those through i18n.ts is a
+  // v2 task; preserving the locale on the state object is the foothold.
+  locale: 'zh-CN',
   lastGrade: null,
   history: [],
 };
@@ -487,6 +492,13 @@ window.addEventListener('message', async (event) => {
       postToParent('story-loaded', { sessionId: state.sessionId })
     } else if (msg.type === 'set-answer-key' && msg.payload && state.story) {
       state.story = { ...state.story, answerKey: msg.payload.answerKey }
+      renderStage()
+    } else if (msg.type === 'set-locale' && msg.payload) {
+      // Stash the locale on state + the active story (Inspector reads it for
+      // its metadata display). UI strings are still hardcoded zh-CN today;
+      // see i18n.ts §16.4 for the v2 plan.
+      state.locale = msg.payload.locale
+      if (state.story) state.story = { ...state.story, locale: msg.payload.locale }
       renderStage()
     } else if (msg.type === 'submit') {
       await onCheck()
