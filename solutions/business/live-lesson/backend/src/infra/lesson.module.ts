@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
-import { LessonService } from './lesson.service';
-import { LessonController } from './lesson.controller';
-import { ClassroomModule } from '../classroom/classroom.module';
+import { LessonService } from '../application/lesson/lesson.service';
+import { LessonController } from '../adapters/http/lesson.controller';
+import { ClassroomModule } from './classroom.module';
 
 @Module({
   // ClassroomModule is imported for its exported ExerciseTypeRegistry —

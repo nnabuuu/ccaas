@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException, BadRequestException } from '@nestjs/common';

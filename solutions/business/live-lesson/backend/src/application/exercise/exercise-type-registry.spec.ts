@@ -13,7 +13,7 @@
 import { Test } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
-import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 
 const mockAi = {

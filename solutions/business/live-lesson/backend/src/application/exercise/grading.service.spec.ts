@@ -5,7 +5,7 @@ import { MatrixGrader } from '../../domain/exercise-types/matrix/matrix.grader';
 import { StanceGrader } from '../../domain/exercise-types/stance/stance.grader';
 import { OrderGrader } from '../../domain/exercise-types/order/order.grader';
 
-import { createPluginRegistryTestingModule } from '../../classroom/exercise/plugins/test-utils';
+import { createPluginRegistryTestingModule } from '../exercise/test-utils';
 
 describe('GradingService (dispatcher)', () => {
   let service: GradingService;

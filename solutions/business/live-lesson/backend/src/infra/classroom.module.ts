@@ -35,7 +35,7 @@ import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
 import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
 import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
 import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.observe';
-import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
+import { DiscussObserveHandler } from '../application/observation/discuss.observe';
 import { ImageUploadObserveHandler } from '../domain/exercise-types/image-upload/image-upload.observe';
 import { GuidedDiscoveryObserveHandler } from '../domain/exercise-types/guided-discovery/guided-discovery.observe';
 
@@ -67,32 +67,32 @@ import { DepthRankingService } from '../application/observation/depth-ranking.se
 
 // ── Socratic Discuss component ──
 import { DiscussService } from '../application/ai/discuss.service';
-import { DiscussController } from './socratic-discuss/discuss.controller';
+import { DiscussController } from '../adapters/http/discuss.controller';
 import { ClusterClassifier } from '../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 
 // ── AI Ask component ──
 import { AiAskService } from '../application/ai/ai-ask.service';
-import { AiAskController } from './ai-ask/ai-ask.controller';
+import { AiAskController } from '../adapters/http/ai-ask.controller';
 
 // ── Translate component ──
 import { TranslateService } from '../application/ai/translate.service';
-import { TranslateController } from './translate/translate.controller';
+import { TranslateController } from '../adapters/http/translate.controller';
 
 // ── Personal Touch component ──
 import { PersonalizationService } from '../application/ai/personalization.service';
-import { PersonalTouchController } from './personal-touch/personal-touch.controller';
+import { PersonalTouchController } from '../adapters/http/personal-touch.controller';
 
 // ── Observation component ──
 import { ObservationQueryService } from '../application/observation/observation-query.service';
-import { OpenAiLlmGateway } from './observation/adapters/openai-llm-gateway';
-import { ClassroomNotifySink } from './observation/adapters/classroom-notify-sink';
-import { JoinHandler } from './observation/handlers/join-handler';
-import { ExerciseHandler } from './observation/handlers/exercise-handler';
-import { StepCompleteHandler } from './observation/handlers/step-complete-handler';
-import { ChatTurnHandler } from './observation/handlers/chat-turn-handler';
-import { StatusChangeHandler } from './observation/handlers/status-change-handler';
-import { SystemEventHandler } from './observation/handlers/system-event-handler';
+import { OpenAiLlmGateway } from '../adapters/observer-engine/openai-llm-gateway';
+import { ClassroomNotifySink } from '../adapters/observer-engine/classroom-notify-sink';
+import { JoinHandler } from '../adapters/observer-engine/handlers/join-handler';
+import { ExerciseHandler } from '../adapters/observer-engine/handlers/exercise-handler';
+import { StepCompleteHandler } from '../adapters/observer-engine/handlers/step-complete-handler';
+import { ChatTurnHandler } from '../adapters/observer-engine/handlers/chat-turn-handler';
+import { StatusChangeHandler } from '../adapters/observer-engine/handlers/status-change-handler';
+import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-event-handler';
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 import { GuidedDiscoveryGrader } from '../guided-discovery.grader';
 import type { GuidedDiscoveryAnswerKey, GradeResult } from '../../../../schemas';
 import { AnswerKeySchema, validateAnswerKey } from '../../../../schemas';
-import { createPluginRegistryTestingModule } from '../../../../classroom/exercise/plugins/test-utils';
+import { createPluginRegistryTestingModule } from '../../../../application/exercise/test-utils';
 import { ExerciseTypeRegistry } from '../../../../application/exercise/exercise-type-registry';
 
 // Local sanitize wrapper — dispatches through the shared `registry`

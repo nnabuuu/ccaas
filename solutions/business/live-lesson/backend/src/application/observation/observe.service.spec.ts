@@ -8,7 +8,7 @@ import { QuizObserveHandler } from '../../domain/exercise-types/quiz/quiz.observ
 import { SelectEvidenceObserveHandler } from '../../domain/exercise-types/select-evidence/select-evidence.observe';
 import { MapObserveHandler } from '../../domain/exercise-types/map/map.observe';
 import { MatrixObserveHandler } from '../../domain/exercise-types/matrix/matrix.observe';
-import { DiscussObserveHandler } from '../../classroom/observe/handlers/discuss.handler';
+import { DiscussObserveHandler } from './discuss.observe';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';

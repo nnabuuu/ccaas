@@ -51,7 +51,7 @@ function makeRepoMock() {
 }
 
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 
 async function buildService(repo: ReturnType<typeof makeRepoMock>): Promise<LessonService> {

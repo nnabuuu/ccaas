@@ -7,7 +7,7 @@
  * The `seededShuffle` tests at the bottom are unchanged — that helper still
  * lives in manifest.utils.
  */
-import { createPluginRegistryTestingModule } from '../classroom/exercise/plugins/test-utils';
+import { createPluginRegistryTestingModule } from '../application/exercise/test-utils';
 import type { ExerciseTypeRegistry } from '../application/exercise/exercise-type-registry';
 import { seededShuffle } from './manifest.utils';
 

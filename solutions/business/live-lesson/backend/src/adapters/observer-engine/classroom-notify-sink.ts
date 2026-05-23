@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { NotifySink } from '@kedge-agentic/observer-engine';
-import { ClassroomService } from '../../classroom.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
 
 @Injectable()
 export class ClassroomNotifySink implements NotifySink, OnModuleInit {
