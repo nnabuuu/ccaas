@@ -35,7 +35,7 @@ If you can't write these six bullets in 10 lines on a scratch pad, the design is
 
 ### 3.1 Exercise type plugin (the main case)
 
-Both halves are described step-by-step in [`docs/exercise-plugin-extension-guide.md`](../../../docs/exercise-plugin-extension-guide.md). Highlights:
+Both halves are described step-by-step in [`exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md). Highlights:
 
 - Backend plugin file (one): implements `ExerciseTypePlugin` and is auto-discovered via `@ExerciseType('<type>')`. The methods you implement: `answerKeySchema`, `sanitize`, `grade`, `buildCheckItems`, optionally `buildGradePrompt` + `parseGradeResponse` (the §14 L3 contract).
 - Frontend UI plugin entry (one): exports an `ExerciseUIPlugin` with `Component`, `canSubmit`, optionally `localGrade`, `enrichFromApi`/`enrichFromManifest`, `formatSubmitData`, `handleCheckResult`, and the observe lazy components.

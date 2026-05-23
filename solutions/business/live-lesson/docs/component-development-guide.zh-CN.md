@@ -35,7 +35,7 @@
 
 ### 3.1 Exercise type plugin (主战场)
 
-后端 + 前端两半的逐步骤指南在 [`docs/exercise-plugin-extension-guide.md`](../../../docs/exercise-plugin-extension-guide.md)。重点:
+后端 + 前端两半的逐步骤指南在同目录的 [`exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md)。重点:
 
 - 后端 plugin 文件 (1 个): 实现 `ExerciseTypePlugin`, 用 `@ExerciseType('<type>')` 装饰让 registry 自动发现。要实现的方法: `answerKeySchema`、`sanitize`、`grade`、`buildCheckItems`, 可选实现 `buildGradePrompt` + `parseGradeResponse` (§14 L3 契约)。
 - 前端 UI plugin entry (1 个): export 一个 `ExerciseUIPlugin`, 包含 `Component`、`canSubmit`, 可选 `localGrade`、`enrichFromApi`/`enrichFromManifest`、`formatSubmitData`、`handleCheckResult`, 以及两个 observe lazy component。

@@ -26,7 +26,7 @@ Open the URL in a browser, or embed the iframe in the admin playground
 
 ## Writing your own
 
-See [`docs/exercise-plugin-extension-guide.md`](../../../docs/exercise-plugin-extension-guide.md)
+See [`exercise-plugin-extension-guide.md`](../../../solutions/business/live-lesson/docs/exercise-plugin-extension-guide.md)
 for the end-to-end walkthrough on adding a new exercise type. The short
 version: implement `ExerciseTypePlugin` (backend) + `ExerciseUIPlugin`
 (frontend), then drop a `*.stories.ts` next to it.
