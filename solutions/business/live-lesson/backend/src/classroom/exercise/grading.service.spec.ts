@@ -1,11 +1,9 @@
 import { GradingService } from './grading.service';
-import { AiPromptBuilder } from '../ai-prompt-builder';
 import { QuizGrader } from './graders/quiz.grader';
 import { MatchGrader } from './graders/match.grader';
 import { MatrixGrader } from './graders/matrix.grader';
 import { StanceGrader } from './graders/stance.grader';
 import { OrderGrader } from './graders/order.grader';
-import { ExerciseTypeRegistry } from './exercise-type-registry';
 
 import { createPluginRegistryTestingModule } from './plugins/test-utils';
 
@@ -13,9 +11,8 @@ describe('GradingService (dispatcher)', () => {
   let service: GradingService;
 
   beforeEach(async () => {
-    const { module, registry, aiPromptBuilder } = await createPluginRegistryTestingModule();
-    service = new GradingService(aiPromptBuilder, registry);
-    // Hold a reference so jest doesn't close the module too early
+    const { module, registry } = await createPluginRegistryTestingModule();
+    service = new GradingService(registry);
     void module;
   });
 

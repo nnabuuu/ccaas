@@ -1,3 +1,14 @@
+/**
+ * MatrixPlugin — DELEGATING plugin.
+ *
+ * Grading is implemented in `../graders/matrix.grader.ts` (the source of
+ * truth). This plugin owns the Zod schema, sanitize(), and the wiring to
+ * MatrixGrader inside grade()/buildCheckItems() — no scoring logic should
+ * live in this file. If you change the grading rule, edit MatrixGrader and
+ * keep `graders/matrix.grader.spec.ts` honest; the parity spec for this
+ * plugin only proves schema + sanitize + wiring are intact (see
+ * `plugins-stage2plus.spec.ts` header comment).
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

@@ -204,9 +204,23 @@ export function PlaygroundPage() {
   }
 
   // postMessage protocol — see web/index.html docstring
+  // We target the iframe's exact origin (parsed from `previewUrl`) so messages
+  // can't leak to a window that navigated mid-session, and we validate
+  // `event.origin` on receipt to block hostile parents.
+  const previewOrigin = (() => {
+    try {
+      return new URL(previewUrl).origin
+    } catch {
+      return null
+    }
+  })()
   const sendToPreview = (type: string, payload?: unknown) => {
+    if (!previewOrigin) return
     const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement | null
-    iframe?.contentWindow?.postMessage({ source: 'kedge-playground', type, payload }, '*')
+    iframe?.contentWindow?.postMessage(
+      { source: 'kedge-playground', type, payload },
+      previewOrigin,
+    )
   }
 
   // Auto-open story in iframe when selection changes
@@ -216,11 +230,14 @@ export function PlaygroundPage() {
       sendToPreview('open-story', { bundleId: activeBundleId, storyName: activeStory })
     }, 200) // small delay to let iframe load
     return () => clearTimeout(timer)
-  }, [activeBundleId, activeStory])
+  }, [activeBundleId, activeStory, previewOrigin])
 
   // Listen for preview messages
   useEffect(() => {
     const handler = (event: MessageEvent) => {
+      // Validate origin first — block messages from any window other than the
+      // configured preview iframe origin.
+      if (previewOrigin && event.origin !== previewOrigin) return
       const msg = event.data
       if (!msg || msg.source !== 'kedge-preview') return
       if (msg.type === 'grade-result') {
@@ -233,7 +250,7 @@ export function PlaygroundPage() {
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
-  }, [])
+  }, [previewOrigin])
 
   const pushDraftToPreview = () => {
     try {
@@ -410,7 +427,8 @@ export function PlaygroundPage() {
           {activeBundleId ? (
             <iframe
               id="preview-iframe"
-              src={previewUrl}
+              // Pass parentOrigin so the preview can authorize our postMessage
+              src={`${previewUrl}${previewUrl.includes('?') ? '&' : '?'}parentOrigin=${encodeURIComponent(window.location.origin)}`}
               title="Exercise Preview"
               className="flex-1 border-0"
               sandbox="allow-scripts allow-same-origin allow-forms"

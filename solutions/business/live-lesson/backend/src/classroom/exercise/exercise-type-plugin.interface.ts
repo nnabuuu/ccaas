@@ -11,10 +11,26 @@ import type { z } from 'zod';
 import type { GradeResult } from '../../schemas';
 import type { ExerciseSpec } from '../../schemas/exercise-spec.schema';
 
+/**
+ * Schema contract for plugin authors:
+ *
+ * `answerKeySchema` MUST be a structural schema only — no `.transform()`,
+ * `.preprocess()`, or `.pipe()` that changes the output type vs. the input
+ * type. The registry parses using the composed union and forwards the raw
+ * (validated) object to plugin methods as `Record<string, unknown>`. If a
+ * plugin emits a different output type, the runtime shape will diverge from
+ * what callers see, breaking sanitize/grade/buildCheckItems. Use refinements
+ * (`.refine()`, `.superRefine()`) for validation; don't rewrite the shape.
+ *
+ * Plugins can opt into narrower types via the generic `K` parameter
+ * (e.g. `GradeContext<QuizAnswerKey>`) — but the runtime guarantee is only
+ * that the object matches `answerKeySchema.safeParse()`.
+ */
+
 /** Context passed to plugin.sanitize() */
-export interface SanitizeContext {
+export interface SanitizeContext<K extends Record<string, unknown> = Record<string, unknown>> {
   /** Raw answer key (parsed JSON, may not yet be schema-validated) */
-  answerKey: Record<string, unknown>;
+  answerKey: K;
   /** Display label for the exercise (from manifest readingStep.exerciseLabel) */
   exerciseLabel?: string;
   /** For 'map' type with random practice — IDs of items the student must place */
@@ -22,17 +38,17 @@ export interface SanitizeContext {
 }
 
 /** Context passed to plugin.grade() */
-export interface GradeContext {
+export interface GradeContext<K extends Record<string, unknown> = Record<string, unknown>> {
   /** Validated answer key (after answerKeySchema.parse) */
-  key: Record<string, unknown>;
+  key: K;
   /** Student submission data */
   data: Record<string, unknown>;
 }
 
 /** Context passed to plugin.buildCheckItems() */
-export interface CheckItemContext {
+export interface CheckItemContext<K extends Record<string, unknown> = Record<string, unknown>> {
   /** Validated answer key */
-  key: Record<string, unknown>;
+  key: K;
   /** Student submission data */
   data: Record<string, unknown>;
   /** Result from plugin.grade() */

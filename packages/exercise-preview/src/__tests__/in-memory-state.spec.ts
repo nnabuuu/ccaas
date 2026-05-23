@@ -66,6 +66,57 @@ describe('InMemoryState', () => {
     expect(after?.gradeHistory).toHaveLength(0);
   });
 
+  it('history is bounded — recordGrade/recordPrompt/recordLifecycle drop oldest past the limit', () => {
+    const state = new InMemoryState({ limits: { grade: 3, prompt: 3, lifecycle: 3 } });
+    const bundle = makeBundle();
+    state.registerBundle(bundle);
+    const s = state.createSession(bundle, 'Default');
+    for (let i = 0; i < 10; i++) {
+      state.recordGrade(s.sessionId, { ans: { i } }, { total: i * 10 }, i);
+      state.recordPrompt({
+        callId: `c${i}`,
+        sessionId: s.sessionId,
+        systemPrompt: 'sys',
+        userMessage: `u${i}`,
+        response: 'r',
+        durationMs: 1,
+        timestamp: Date.now(),
+      });
+      state.recordLifecycle(s.sessionId, {
+        phase: 'grade.start',
+        sessionId: s.sessionId,
+        pluginType: 'quiz',
+        timestamp: Date.now(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payload: { i },
+      } as any);
+    }
+    const after = state.getSession(s.sessionId);
+    expect(after?.gradeHistory).toHaveLength(3);
+    expect(after?.gradeHistory[0].input).toEqual({ ans: { i: 7 } });
+    expect(state.getPromptTrace(s.sessionId)).toHaveLength(3);
+    expect(state.getPromptTrace(s.sessionId)[0].userMessage).toBe('u7');
+    expect(state.getLifecycle(s.sessionId)).toHaveLength(3);
+  });
+
+  it('resetSession also clears lifecycle events', () => {
+    const state = new InMemoryState();
+    const bundle = makeBundle();
+    state.registerBundle(bundle);
+    const s = state.createSession(bundle, 'Default');
+    state.recordLifecycle(s.sessionId, {
+      phase: 'grade.start',
+      sessionId: s.sessionId,
+      pluginType: 'quiz',
+      timestamp: Date.now(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      payload: {},
+    } as any);
+    expect(state.getLifecycle(s.sessionId)).toHaveLength(1);
+    state.resetSession(s.sessionId);
+    expect(state.getLifecycle(s.sessionId)).toHaveLength(0);
+  });
+
   it('prompt trace is per-session', () => {
     const state = new InMemoryState();
     const bundle = makeBundle();

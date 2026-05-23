@@ -28,6 +28,8 @@ export class ExerciseTypeRegistry implements OnModuleInit {
   private readonly logger = new Logger(ExerciseTypeRegistry.name);
   private readonly plugins = new Map<string, ExerciseTypePlugin>();
   private composedSchema: z.ZodType<unknown> | null = null;
+  /** Re-entrancy guard so ensureInitialized() called during onModuleInit() no-ops */
+  private initializing = false;
 
   constructor(
     private readonly discoveryService: DiscoveryService,
@@ -35,31 +37,37 @@ export class ExerciseTypeRegistry implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    for (const wrapper of this.discoveryService.getProviders()) {
-      if (!wrapper.metatype) continue;
-      const type = this.reflector.get<string>(EXERCISE_TYPE_KEY, wrapper.metatype);
-      if (type && wrapper.instance) {
-        const plugin = wrapper.instance as ExerciseTypePlugin;
-        if (this.plugins.has(type)) {
-          this.logger.warn(`Duplicate exercise type "${type}" — overriding`);
+    if (this.composedSchema !== null || this.initializing) return;
+    this.initializing = true;
+    try {
+      for (const wrapper of this.discoveryService.getProviders()) {
+        if (!wrapper.metatype) continue;
+        const type = this.reflector.get<string>(EXERCISE_TYPE_KEY, wrapper.metatype);
+        if (type && wrapper.instance) {
+          const plugin = wrapper.instance as ExerciseTypePlugin;
+          if (this.plugins.has(type)) {
+            this.logger.warn(`Duplicate exercise type "${type}" — overriding`);
+          }
+          this.plugins.set(type, plugin);
+          this.logger.log(`Registered exercise type plugin "${type}": ${wrapper.metatype.name}`);
         }
-        this.plugins.set(type, plugin);
-        this.logger.log(`Registered exercise type plugin "${type}": ${wrapper.metatype.name}`);
       }
+      this.composedSchema = this.buildComposedSchema();
+      this.logger.log(
+        `ExerciseTypeRegistry initialized with ${this.plugins.size} plugin(s): [${[...this.plugins.keys()].join(', ')}]`,
+      );
+    } finally {
+      this.initializing = false;
     }
-    this.composedSchema = this.buildComposedSchema();
-    this.logger.log(
-      `ExerciseTypeRegistry initialized with ${this.plugins.size} plugin(s): [${this.getRegisteredTypes().join(', ')}]`,
-    );
   }
 
   /**
    * Lazy initialization fallback: if onModuleInit hasn't fired yet (e.g., in
    * TestingModule.compile() without explicit .init()), discover plugins on
-   * first access. Idempotent.
+   * first access. Idempotent + re-entrancy safe via `initializing` guard.
    */
   private ensureInitialized(): void {
-    if (this.composedSchema !== null) return;
+    if (this.composedSchema !== null || this.initializing) return;
     this.onModuleInit();
   }
 
@@ -83,6 +91,7 @@ export class ExerciseTypeRegistry implements OnModuleInit {
 
   /** Composed answer key schema (z.union of all registered plugins' schemas) */
   getAnswerKeySchema(): z.ZodType<unknown> {
+    this.ensureInitialized();
     if (!this.composedSchema) {
       throw new Error('ExerciseTypeRegistry not initialized — call onModuleInit first');
     }
@@ -105,6 +114,7 @@ export class ExerciseTypeRegistry implements OnModuleInit {
    * does not implement sanitize() (caller should fall back to legacy).
    */
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {
+    this.ensureInitialized();
     const type = (ctx.answerKey as { type?: string })?.type;
     if (!type) return null;
     const plugin = this.plugins.get(type);
@@ -117,6 +127,7 @@ export class ExerciseTypeRegistry implements OnModuleInit {
    * Returns null when no plugin is registered for the type (caller should fall back).
    */
   async grade(rawKey: unknown, data: Record<string, unknown>): Promise<GradeResult | null> {
+    this.ensureInitialized();
     if (!rawKey || typeof rawKey !== 'object') return null;
     const type = (rawKey as { type?: string }).type;
     if (!type) return null;
@@ -138,6 +149,7 @@ export class ExerciseTypeRegistry implements OnModuleInit {
     data: Record<string, unknown>,
     gradeResult: GradeResult,
   ): Array<Record<string, unknown>> | null {
+    this.ensureInitialized();
     const type = ak.type as string | undefined;
     if (!type) return null;
     const plugin = this.plugins.get(type);

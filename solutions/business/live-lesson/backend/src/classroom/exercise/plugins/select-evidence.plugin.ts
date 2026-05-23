@@ -1,3 +1,15 @@
+/**
+ * SelectEvidencePlugin — DELEGATING plugin.
+ *
+ * Grading is implemented in `../graders/select-evidence.grader.ts` (source
+ * of truth). This plugin owns the Zod schema, sanitize(), and the wiring
+ * to SelectEvidenceGrader. Do not duplicate scoring logic here.
+ *
+ * Note: this is the only plugin whose sanitize() intentionally retains
+ * answer-bearing fields (correctFunction, hint, kind/why) so the frontend
+ * can perform client-side grading. See the comment in sanitize() for the
+ * full keep-list and why.
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

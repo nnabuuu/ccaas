@@ -449,39 +449,43 @@ function escape(s) {
 
 // ──────────────── postMessage protocol (Admin Playground embed) ────────────────
 //
-// Parent windows (e.g. admin-next /playground page) can drive the preview by
-// sending typed messages. Schema:
-//   { source: 'kedge-playground', type: 'open-story',
-//     payload: { bundleId, storyName } }
-//   { source: 'kedge-playground', type: 'set-answer-key',
-//     payload: { bundleId, storyName, answerKey } }
-//   { source: 'kedge-playground', type: 'submit' }
-//   { source: 'kedge-playground', type: 'reset' }
-//
-// Preview emits these back to the parent:
-//   { source: 'kedge-preview', type: 'grade-result', payload: { result } }
-//   { source: 'kedge-preview', type: 'story-loaded', payload: { sessionId } }
-//   { source: 'kedge-preview', type: 'error', payload: { message } }
+// SECURITY: the iframe only accepts messages whose `event.origin` is either
+// the same origin as the iframe itself OR matches the explicit allow-list
+// passed via `?parentOrigin=...` in the iframe src. Replies are posted to the
+// recorded parent origin, NOT '*'.
 
 const PARENT_SOURCE = 'kedge-playground'
 const PREVIEW_SOURCE = 'kedge-preview'
 
+let trustedParentOrigin = null
+
+function isAllowedParentOrigin(origin) {
+  if (!origin) return false
+  if (origin === window.location.origin) return true
+  const allow = new URLSearchParams(window.location.search).get('parentOrigin')
+  if (allow && origin === allow) return true
+  return false
+}
+
 function postToParent(type, payload) {
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ source: PREVIEW_SOURCE, type, payload }, '*')
-  }
+  if (!(window.parent && window.parent !== window)) return
+  const target = trustedParentOrigin ?? window.location.origin
+  window.parent.postMessage({ source: PREVIEW_SOURCE, type, payload }, target)
 }
 
 window.addEventListener('message', async (event) => {
   const msg = event.data
   if (!msg || msg.source !== PARENT_SOURCE) return
+  if (!isAllowedParentOrigin(event.origin)) {
+    console.warn('[preview] rejected postMessage from origin', event.origin)
+    return
+  }
+  trustedParentOrigin = event.origin
   try {
     if (msg.type === 'open-story' && msg.payload) {
       await openStory(msg.payload.bundleId, msg.payload.storyName)
       postToParent('story-loaded', { sessionId: state.sessionId })
     } else if (msg.type === 'set-answer-key' && msg.payload && state.story) {
-      // Override the in-memory story's answerKey for what-if exploration.
-      // Does not persist server-side; the server still has the original.
       state.story = { ...state.story, answerKey: msg.payload.answerKey }
       renderStage()
     } else if (msg.type === 'submit') {
@@ -497,10 +501,18 @@ window.addEventListener('message', async (event) => {
 
 // ──────────────── Init ────────────────
 (async function init() {
+  // Skip the ready broadcast if we don't yet have a trusted parent — the
+  // first valid 'open-story' message will set trustedParentOrigin, after
+  // which subsequent posts will reach the parent. If the page is opened
+  // standalone (not embedded), there is no parent and postToParent no-ops.
   try {
     state.bundles = await api.bundles()
     renderBundleList()
-    postToParent('ready', { bundleCount: state.bundles.length })
+    // Only post 'ready' when we already have a trusted origin (the parent
+    // sent us 'configure' beforehand). Otherwise we miss the first message
+    // race, which is fine — the parent will still get story-loaded on its
+    // first open-story call.
+    if (trustedParentOrigin) postToParent('ready', { bundleCount: state.bundles.length })
   } catch (e) {
     document.getElementById('bundle-list').innerHTML =
       `<div class="empty"><strong>Failed to load</strong>${escape(e.message || String(e))}</div>`

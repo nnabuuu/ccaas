@@ -7,7 +7,15 @@ import { randomUUID } from 'node:crypto';
 import { InMemoryState } from './in-memory-state';
 import { runGrade } from './grade-runner';
 import { createTracer, instrumentPlugin } from './instrument';
+import { createRateLimiter, type RateLimiter } from './rate-limiter';
 import type { LoadedBundle } from '../core/types';
+
+const DEFAULT_UPLOAD_MIME_ALLOWLIST = [
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+];
 
 export interface FixturesEntry {
   /** Bundle id that owns these fixtures (used as URL path segment) */
@@ -18,6 +26,13 @@ export interface FixturesEntry {
 
 export interface PreviewServerOptions {
   port: number;
+  /**
+   * Hostname to bind to. Defaults to `'127.0.0.1'` (localhost only).
+   * Set to `'0.0.0.0'` deliberately when you want the dev server accessible
+   * from other machines on the LAN. Public-facing demos must front this with
+   * an auth proxy.
+   */
+  host?: string;
   staticDir?: string; // path to PreviewApp built UI assets
   bundles: LoadedBundle[];
   /** Fixtures registries (§15 resource mock) — auto-detected from bundles when omitted */
@@ -26,6 +41,17 @@ export interface PreviewServerOptions {
   uploadDir?: string;
   /** Max upload size in bytes (default: 10 MB) */
   maxUploadBytes?: number;
+  /**
+   * Allowed upload MIME prefixes. Defaults to images-only (image/*). Including
+   * 'text/html' or 'image/svg+xml' would allow stored XSS through served
+   * /preview/uploads/<id>, so they are excluded from the default allowlist.
+   */
+  uploadMimeAllowlist?: string[];
+  /**
+   * Rate limit for /preview/upload (per remote address). Default 30 uploads
+   * per minute. Set to `null` to disable.
+   */
+  uploadRateLimit?: { max: number; windowMs: number } | null;
 }
 
 export interface PreviewServer {
@@ -74,11 +100,23 @@ export function createPreviewServer(options: PreviewServerOptions): PreviewServe
     }
   }
 
-  const opts = {
+  const host = options.host ?? '127.0.0.1';
+  const uploadRateLimitConfig =
+    options.uploadRateLimit === undefined
+      ? { max: 30, windowMs: 60_000 }
+      : options.uploadRateLimit;
+  const uploadLimiter: RateLimiter | null = uploadRateLimitConfig
+    ? createRateLimiter(uploadRateLimitConfig)
+    : null;
+
+  const opts: FullOptions = {
     ...options,
+    host,
     uploadDir,
     maxUploadBytes: options.maxUploadBytes ?? 10 * 1024 * 1024,
+    uploadMimeAllowlist: options.uploadMimeAllowlist ?? DEFAULT_UPLOAD_MIME_ALLOWLIST,
     fixturesMap,
+    uploadLimiter,
   };
 
   const server = http.createServer(async (req, res) => {
@@ -95,9 +133,9 @@ export function createPreviewServer(options: PreviewServerOptions): PreviewServe
     async start() {
       await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
-        server.listen(options.port, () => resolve());
+        server.listen(options.port, host, () => resolve());
       });
-      return { port: options.port, url: `http://localhost:${options.port}` };
+      return { port: options.port, url: `http://${host}:${options.port}` };
     },
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -106,9 +144,12 @@ export function createPreviewServer(options: PreviewServerOptions): PreviewServe
 }
 
 interface FullOptions extends PreviewServerOptions {
+  host: string;
   uploadDir: string;
   maxUploadBytes: number;
+  uploadMimeAllowlist: string[];
   fixturesMap: Map<string, string>;
+  uploadLimiter: RateLimiter | null;
 }
 
 async function handleRequest(
@@ -162,7 +203,13 @@ async function handleRequest(
     if (!fs.existsSync(full) || !fs.statSync(full).isFile()) {
       return sendJson(res, 404, { error: 'upload not found' });
     }
-    res.writeHead(200, { 'Content-Type': mimeFromExt(path.extname(full)) });
+    // Use the strict uploads MIME table — html/svg are blocked even if a
+    // file with that extension somehow landed in uploadDir.
+    res.writeHead(200, {
+      'Content-Type': uploadMimeFromExt(path.extname(full)),
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'",
+    });
     fs.createReadStream(full).pipe(res);
     return;
   }
@@ -368,6 +415,23 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
   res.end(JSON.stringify(body));
 }
 
+/**
+ * Strict MIME table for the served /preview/uploads/<id> endpoint.
+ * Only image MIMEs that match our upload allowlist. Everything else gets
+ * application/octet-stream so the browser downloads rather than renders.
+ */
+function uploadMimeFromExt(ext: string): string {
+  const e = ext.toLowerCase().replace(/^\./, '');
+  switch (e) {
+    case 'png': return 'image/png';
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    case 'gif': return 'image/gif';
+    case 'webp': return 'image/webp';
+    default: return 'application/octet-stream';
+  }
+}
+
 function mimeFromExt(ext: string): string {
   const e = ext.toLowerCase().replace(/^\./, '');
   switch (e) {
@@ -395,7 +459,7 @@ function mimeFromExt(ext: string): string {
 async function readMultipartFile(
   req: http.IncomingMessage,
   maxBytes: number,
-): Promise<{ buffer: Buffer; filename: string } | null> {
+): Promise<{ buffer: Buffer; filename: string; contentType: string } | null> {
   const ct = req.headers['content-type'] ?? '';
   const m = /boundary=([^;]+)/i.exec(String(ct));
   if (!m) return null;
@@ -428,14 +492,23 @@ async function readMultipartFile(
     const dispMatch = /filename="([^"]+)"/.exec(header);
     if (!dispMatch) continue;
     const filename = path.basename(dispMatch[1]);
+    const ctMatch = /Content-Type:\s*([^\r\n;]+)/i.exec(header);
+    const contentType = (ctMatch?.[1] ?? 'application/octet-stream').trim().toLowerCase();
     // Strip leading \r\n + trailing \r\n--
     let content = part.slice(headerEnd + 4);
     if (content.length >= 2 && content[content.length - 2] === 13 && content[content.length - 1] === 10) {
       content = content.slice(0, -2);
     }
-    return { buffer: content, filename };
+    return { buffer: content, filename, contentType };
   }
   return null;
+}
+
+function clientKey(req: http.IncomingMessage): string {
+  // Prefer X-Forwarded-For (single hop) → socket address
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string' && xff) return xff.split(',')[0].trim();
+  return req.socket.remoteAddress ?? 'unknown';
 }
 
 async function handleUpload(
@@ -443,21 +516,56 @@ async function handleUpload(
   res: http.ServerResponse,
   options: FullOptions,
 ): Promise<void> {
+  // Per-IP rate limit
+  if (options.uploadLimiter) {
+    const key = clientKey(req);
+    if (!options.uploadLimiter.hit(key)) {
+      res.setHeader('Retry-After', '60');
+      return sendJson(res, 429, { error: 'upload rate limit exceeded' });
+    }
+  }
   try {
     const file = await readMultipartFile(req, options.maxUploadBytes);
     if (!file) return sendJson(res, 400, { error: 'no file in upload' });
-    const ext = path.extname(file.filename);
+
+    // MIME allowlist — guards against stored XSS via served back uploads.
+    // The browser's claimed Content-Type isn't trustworthy on its own (a
+    // malicious client can claim image/png and ship html), but combined with
+    // (a) re-serving with the allowlisted MIME, not the uploaded one, and
+    // (b) inferring serve-time MIME purely from the random extension, we
+    // ensure /preview/uploads/<id>.png is always served as image/png.
+    const allowed = options.uploadMimeAllowlist.some((prefix) =>
+      file.contentType.startsWith(prefix),
+    );
+    if (!allowed) {
+      return sendJson(res, 415, {
+        error: `MIME type "${file.contentType}" not allowed. Allowed: ${options.uploadMimeAllowlist.join(', ')}`,
+      });
+    }
+
+    // Pick a safe extension based on the trusted MIME map, not the filename.
+    const safeExt = extFromAllowedMime(file.contentType);
     const id = randomUUID();
-    const filename = `${id}${ext}`;
+    const filename = `${id}${safeExt}`;
     fs.writeFileSync(path.join(options.uploadDir, filename), file.buffer);
     return sendJson(res, 200, {
       url: `/preview/uploads/${filename}`,
       filename,
       size: file.buffer.length,
+      contentType: file.contentType,
     });
   } catch (e) {
     return sendJson(res, 400, { error: e instanceof Error ? e.message : String(e) });
   }
+}
+
+/** Map an allowlisted MIME to a canonical extension (so we never trust the upload's filename ext). */
+function extFromAllowedMime(mime: string): string {
+  if (mime.startsWith('image/png')) return '.png';
+  if (mime.startsWith('image/jpeg')) return '.jpg';
+  if (mime.startsWith('image/gif')) return '.gif';
+  if (mime.startsWith('image/webp')) return '.webp';
+  return '.bin';
 }
 
 async function readJson(req: http.IncomingMessage): Promise<Record<string, unknown>> {

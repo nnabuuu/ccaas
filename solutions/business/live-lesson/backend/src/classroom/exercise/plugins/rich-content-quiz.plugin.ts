@@ -1,3 +1,12 @@
+/**
+ * RichContentQuizPlugin — DELEGATING plugin.
+ *
+ * Grading composes the existing QuizGrader (text-based scoring) with
+ * ImageUploadGrader (vision-based rubric) per-part. The per-modality
+ * scoring rules are owned by those graders — this plugin's job is to
+ * carry the rich-content schema, sanitize(), part-fanout, and the
+ * wiring. No scoring logic should live in this file beyond aggregation.
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

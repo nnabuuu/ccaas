@@ -18,8 +18,17 @@ export interface ExercisePluginProps {
   setAns: (updater: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void
   allDone: boolean
   reviewData?: { data: Record<string, unknown>; checkItems?: Array<Record<string, unknown>> }
-  /** Opaque state bag managed by PracticePhase (per-type internal state lives here) */
+  /**
+   * Per-plugin transient state managed by PracticePhase. Plugin reads from
+   * `checkResultState[plugin.type]` and writes via `setCheckResultState`.
+   * Never use the `ans` bag for transient per-type UI state — that bag is
+   * reserved for the actual student answer payload.
+   */
   checkResultState: Record<string, any>
+  /** Update the per-plugin transient state slot. */
+  setCheckResultState?: (
+    updater: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>),
+  ) => void
 
   // ── Platform capabilities (always passed) ──
   onDone: () => void

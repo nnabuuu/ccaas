@@ -1,3 +1,12 @@
+/**
+ * GuidedDiscoveryPlugin — DELEGATING plugin.
+ *
+ * Grading is implemented in `../graders/guided-discovery.grader.ts` (source
+ * of truth — implements the 4-step discovery rule: observation_choice →
+ * formula_blanks → derivation_blank → text_blanks). This plugin owns the
+ * Zod schema, sanitize(), and the wiring to GuidedDiscoveryGrader. Do not
+ * duplicate the discovery scoring logic here.
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

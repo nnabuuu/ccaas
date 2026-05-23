@@ -1,3 +1,11 @@
+/**
+ * ImageUploadPlugin — DELEGATING plugin.
+ *
+ * Grading is implemented in `../graders/image-upload.grader.ts` (source of
+ * truth — runs the vision LLM rubric). This plugin owns the Zod schema,
+ * sanitize(), and the wiring to ImageUploadGrader. No scoring logic in
+ * this file.
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

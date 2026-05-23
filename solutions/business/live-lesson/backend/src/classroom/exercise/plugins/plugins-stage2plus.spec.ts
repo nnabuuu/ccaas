@@ -2,11 +2,24 @@
 /**
  * Parity tests for Stage 2-5 plugin migrations.
  *
- * For each migrated plugin, verifies:
- *   - answerKeySchema accepts representative valid keys
- *   - sanitize() output matches the legacy `sanitizeAnswerKey()` output
- *   - For plugins that delegate grade to legacy graders, those graders
- *     continue to be invoked correctly via the plugin.
+ * Plugins fall into two categories — read the describe block's first comment
+ * to know which kind you're looking at:
+ *
+ *   • Native plugins (stance, order, fill-blank, select-evidence) —
+ *     grade() is reimplemented inside the plugin. Parity tests compare
+ *     plugin output to the legacy grader output to confirm behavioural
+ *     equivalence.
+ *
+ *   • Delegating plugins (matrix, map, image-upload, rich-content-quiz,
+ *     guided-discovery) — grade() literally calls a legacy grader instance
+ *     held inside the plugin. A grade-parity assertion here is tautological
+ *     (it compares the legacy grader to itself). What these tests actually
+ *     guarantee is:
+ *       - answerKeySchema accepts representative valid keys
+ *       - sanitize() output matches the legacy `sanitizeAnswerKey()` output
+ *       - The grade() call wires through (i.e. returns a GradeResult shape)
+ *     The legacy grader's own spec file (graders/*.spec.ts) remains the
+ *     source of truth for grading behaviour for delegating plugins.
  */
 import { sanitizeAnswerKey } from '../../../schemas/manifest.utils';
 import { StancePlugin } from './stance.plugin';
@@ -27,6 +40,7 @@ const mockAiPromptBuilder = {
   callVisionLlm: jest.fn().mockRejectedValue(new Error('not configured in test')),
 } as unknown as AiPromptBuilder;
 
+// Native plugin — grade() reimplemented; parity assertions are real.
 describe('StancePlugin (parity)', () => {
   const plugin = new StancePlugin();
   const legacy = new StanceGrader();
@@ -84,6 +98,7 @@ describe('StancePlugin (parity)', () => {
   });
 });
 
+// Native plugin — grade() reimplemented; parity assertions are real.
 describe('OrderPlugin (parity for verifying registry path)', () => {
   const plugin = new OrderPlugin();
   const legacy = new OrderGrader();
@@ -95,6 +110,7 @@ describe('OrderPlugin (parity for verifying registry path)', () => {
   });
 });
 
+// Native plugin — grade() reimplemented; parity assertions are real.
 describe('FillBlankPlugin (parity)', () => {
   const plugin = new FillBlankPlugin(mockAiPromptBuilder);
 
@@ -141,6 +157,8 @@ describe('FillBlankPlugin (parity)', () => {
   });
 });
 
+// Delegating plugin — grade() forwards to MatrixGrader. Grade-parity is
+// tautological; this test covers schema, sanitize, and wiring only.
 describe('MatrixPlugin (parity)', () => {
   const plugin = new MatrixPlugin(mockAiPromptBuilder);
 
@@ -189,6 +207,8 @@ describe('MatrixPlugin (parity)', () => {
   });
 });
 
+// Delegating plugin — grade() forwards to MapGrader. Grade-parity is
+// tautological; this test covers schema, sanitize, and wiring only.
 describe('MapPlugin (parity)', () => {
   const plugin = new MapPlugin(mockAiPromptBuilder);
 
@@ -217,6 +237,8 @@ describe('MapPlugin (parity)', () => {
   });
 });
 
+// Delegating plugin — grade() forwards to ImageUploadGrader. Grade-parity is
+// tautological; this test covers schema, sanitize, and wiring only.
 describe('ImageUploadPlugin (parity)', () => {
   const plugin = new ImageUploadPlugin(mockAiPromptBuilder);
 
@@ -247,6 +269,7 @@ describe('ImageUploadPlugin (parity)', () => {
   });
 });
 
+// Native plugin — grade() reimplemented; parity assertions are real.
 describe('SelectEvidencePlugin (parity)', () => {
   const plugin = new SelectEvidencePlugin();
 
@@ -290,6 +313,8 @@ describe('SelectEvidencePlugin (parity)', () => {
   });
 });
 
+// Delegating plugin — grade() forwards to RichContentQuizGrader. Grade-parity
+// is tautological; this test covers schema, sanitize, and wiring only.
 describe('RichContentQuizPlugin (parity)', () => {
   const plugin = new RichContentQuizPlugin(mockAiPromptBuilder);
 
@@ -323,8 +348,96 @@ describe('RichContentQuizPlugin (parity)', () => {
     expect(spec.parts[0].hasScaffold).toBe(true);
     expect(spec.parts[0].scaffold).toBeUndefined();
   });
+
+  // §14: RichContentQuiz parts contract.
+  //
+  // Parts grading happens in `StudentSubmissionService.submitRichContentPart`
+  // (per-part synthetic image-upload calls), NOT in `plugin.grade()`. The
+  // plugin's grade() forwards to ImageUploadGrader which only reads the
+  // TOP-LEVEL rubric — for a parts-style key without top-level rubric, that
+  // returns `{ total: 0, byDimension: {} }`. The test below pins this so a
+  // future caller doesn't mistakenly assume parts auto-fan-out from grade().
+  it('grade() on parts-only key returns empty byDimension (parts grading lives in StudentSubmissionService)', async () => {
+    const ak = {
+      type: 'rich-content-quiz',
+      parts: [
+        {
+          id: 'p1',
+          prompt: 'P1',
+          rubric: [{ id: 'clarity', label: 'L', weight: 100, criteria: 'crit' }],
+        },
+      ],
+    };
+    const result = await plugin.grade({ key: ak as any, data: { images: ['data:image/jpeg;base64,x'] } });
+    expect(result.total).toBe(0);
+    expect(result.byDimension).toEqual({});
+  });
+
+  // buildCheckItems for parts-style consumes dotted byDimension keys
+  // (`<partId>.<rubricId>`). The dotted shape is the contract a future
+  // multi-part grader must emit; we test that contract here so the plugin
+  // and any orchestrator stay in agreement.
+  it('buildCheckItems aggregates per-part correctness from dotted byDimension keys', () => {
+    const ak = {
+      type: 'rich-content-quiz',
+      parts: [
+        {
+          id: 'p1',
+          prompt: 'P1',
+          rubric: [
+            { id: 'clarity', label: 'L', weight: 50, criteria: 'crit' },
+            { id: 'rigor', label: 'L', weight: 50, criteria: 'crit' },
+          ],
+        },
+        {
+          id: 'p2',
+          prompt: 'P2',
+          rubric: [{ id: 'clarity', label: 'L', weight: 100, criteria: 'crit' }],
+        },
+      ],
+    };
+    const items = plugin.buildCheckItems({
+      key: ak as any,
+      data: {},
+      gradeResult: {
+        total: 0,
+        byDimension: {
+          'p1.clarity': 90,
+          'p1.rigor': 85,
+          'p2.clarity': 40,
+        },
+      },
+    });
+    expect(items).toEqual([
+      { idx: 'p1', correct: true },
+      { idx: 'p2', correct: false },
+    ]);
+  });
+
+  // Without dotted keys (e.g. plugin.grade() output unchanged), every part
+  // resolves to `correct: false` — documents the failure mode.
+  it('buildCheckItems with parts but flat byDimension yields all parts wrong', () => {
+    const ak = {
+      type: 'rich-content-quiz',
+      parts: [
+        {
+          id: 'p1',
+          prompt: 'P1',
+          rubric: [{ id: 'clarity', label: 'L', weight: 100, criteria: 'crit' }],
+        },
+      ],
+    };
+    const items = plugin.buildCheckItems({
+      key: ak as any,
+      data: {},
+      gradeResult: { total: 100, byDimension: { clarity: 95 } },
+    });
+    expect(items).toEqual([{ idx: 'p1', correct: false }]);
+  });
 });
 
+// Delegating plugin — grade() forwards to GuidedDiscoveryGrader. Grade-parity
+// is tautological; this test covers schema, sanitize, and wiring only.
 describe('GuidedDiscoveryPlugin (parity)', () => {
   const plugin = new GuidedDiscoveryPlugin(mockAiPromptBuilder);
 

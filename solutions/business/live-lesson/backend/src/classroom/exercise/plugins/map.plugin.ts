@@ -1,3 +1,11 @@
+/**
+ * MapPlugin — DELEGATING plugin.
+ *
+ * Grading is implemented in `../graders/map.grader.ts` (the source of truth).
+ * This plugin owns the Zod schema, sanitize(), and the wiring to MapGrader —
+ * no scoring logic in this file. If you change grading, edit MapGrader; the
+ * plugin's parity spec only proves schema + sanitize + wiring are intact.
+ */
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { ExerciseType } from '../exercise-type.decorator';

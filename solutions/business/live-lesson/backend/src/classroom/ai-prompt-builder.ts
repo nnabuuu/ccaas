@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**
  * Tracer hook for §14 AI Prompt debugger.
@@ -29,13 +30,46 @@ export interface PromptTracer {
 @Injectable()
 export class AiPromptBuilder {
   private readonly logger = new Logger(AiPromptBuilder.name);
-  private tracer: PromptTracer | null = null;
+  /**
+   * Global fallback tracer. Set via setTracer() for tests / single-request
+   * smoke harnesses. Production callers should prefer `runWithTracer` —
+   * see the JSDoc on that method for the multi-request race rationale.
+   */
+  private globalTracer: PromptTracer | null = null;
+  /**
+   * Per-request tracer scope. AsyncLocalStorage keeps each request's tracer
+   * isolated even when concurrent requests share this singleton. Without
+   * this, two students hitting the same endpoint concurrently would see
+   * each other's traces (or worse, race on `setTracer` and mix them).
+   */
+  private readonly tracerStorage = new AsyncLocalStorage<PromptTracer | null>();
 
   constructor(private readonly configService: ConfigService) {}
 
-  /** L1+: attach a tracer to capture all LLM calls. Pass null to detach. */
+  /**
+   * Set a process-wide fallback tracer. Use only for single-request contexts
+   * (tests, scripts). For request-scoped tracing inside a multi-tenant
+   * server, use `runWithTracer` instead — `setTracer` is racy across
+   * concurrent requests because every request shares the same field.
+   */
   setTracer(tracer: PromptTracer | null): void {
-    this.tracer = tracer;
+    this.globalTracer = tracer;
+  }
+
+  /**
+   * Run `fn` with `tracer` active only for callbacks spawned inside it.
+   * The tracer is bound to AsyncLocalStorage so concurrent requests stay
+   * isolated. Returns whatever `fn` returns. Safe to nest.
+   */
+  runWithTracer<T>(tracer: PromptTracer | null, fn: () => Promise<T> | T): Promise<T> | T {
+    return this.tracerStorage.run(tracer, fn);
+  }
+
+  /** Currently active tracer for this async scope, or the global fallback. */
+  private currentTracer(): PromptTracer | null {
+    const scoped = this.tracerStorage.getStore();
+    if (scoped !== undefined) return scoped;
+    return this.globalTracer;
   }
 
   /** Shared L1-L3 context layers for AI prompts */
@@ -672,7 +706,7 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
     },
   ): Promise<string> {
     const callId = randomUUID();
-    const tracer = this.tracer;
+    const tracer = this.currentTracer();
     const t0 = Date.now();
 
     // L2 replay short-circuit (record-and-replay record-and-replay): when a

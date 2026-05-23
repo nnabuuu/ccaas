@@ -138,4 +138,186 @@ describe('Resource mock: fixtures + uploads', () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it('rejects upload with text/html MIME (XSS guard)', async () => {
+    const boundary = '----xss';
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="evil.html"\r\nContent-Type: text/html\r\n\r\n`,
+        'utf-8',
+      ),
+      Buffer.from('<script>alert(1)</script>', 'utf-8'),
+      Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'),
+    ]);
+    const res = await request(port, 'POST', '/preview/upload', body, {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length.toString(),
+    });
+    expect(res.status).toBe(415);
+  });
+
+  it('uploads with image/jpeg MIME succeed (positive control for the allowlist)', async () => {
+    const boundary = '----jpeg-ok';
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="ok.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`,
+        'utf-8',
+      ),
+      Buffer.from('\xff\xd8\xff\xe0', 'binary'),
+      Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'),
+    ]);
+    const res = await request(port, 'POST', '/preview/upload', body, {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length.toString(),
+    });
+    expect(res.status).toBe(200);
+    const json = JSON.parse(res.body.toString('utf-8'));
+    // Server-issued extension must come from the canonical MIME map — even if
+    // the upload claimed .jpg, served URL ends in .jpg/.jpeg (allowlist ext).
+    expect(json.url).toMatch(/\.jpe?g$/);
+  });
+
+  it('returned upload URL is served back with X-Content-Type-Options: nosniff', async () => {
+    const boundary = '----nosniff';
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="x.png"\r\nContent-Type: image/png\r\n\r\n`,
+        'utf-8',
+      ),
+      Buffer.from('PNGBYTES', 'utf-8'),
+      Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'),
+    ]);
+    const upRes = await request(port, 'POST', '/preview/upload', body, {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length.toString(),
+    });
+    expect(upRes.status).toBe(200);
+    const json = JSON.parse(upRes.body.toString('utf-8'));
+
+    // Fetch and inspect the upload response headers.
+    const getResHeaders = await new Promise<Record<string, string>>((resolve, reject) => {
+      const req = http.request(
+        { host: 'localhost', port, method: 'GET', path: json.url },
+        (res) => {
+          const h: Record<string, string> = {};
+          for (const [k, v] of Object.entries(res.headers)) {
+            if (typeof v === 'string') h[k] = v;
+          }
+          res.resume();
+          res.on('end', () => resolve(h));
+        },
+      );
+      req.on('error', reject);
+      req.end();
+    });
+    expect(getResHeaders['x-content-type-options']).toBe('nosniff');
+  });
+
+  it('rejects upload with image/svg+xml MIME (XSS guard)', async () => {
+    const boundary = '----svg';
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="evil.svg"\r\nContent-Type: image/svg+xml\r\n\r\n`,
+        'utf-8',
+      ),
+      Buffer.from('<svg><script>alert(1)</script></svg>', 'utf-8'),
+      Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'),
+    ]);
+    const res = await request(port, 'POST', '/preview/upload', body, {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': body.length.toString(),
+    });
+    expect(res.status).toBe(415);
+  });
+});
+
+/**
+ * Rate-limit spec runs on a dedicated server with a tight cap so we don't
+ * have to fire 30 uploads to exercise the limiter (production default).
+ */
+describe('Upload rate limiting', () => {
+  const port = 43221;
+  let rlServer: ReturnType<typeof createPreviewServer>;
+  let rlUploadDir: string;
+
+  beforeAll(async () => {
+    rlUploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'preview-rl-'));
+    rlServer = createPreviewServer({
+      port,
+      bundles: [buildBundle()],
+      uploadDir: rlUploadDir,
+      uploadRateLimit: { max: 2, windowMs: 60_000 },
+    });
+    await rlServer.start();
+  });
+  afterAll(async () => {
+    await rlServer.stop();
+    fs.rmSync(rlUploadDir, { recursive: true, force: true });
+  });
+
+  function makePngUpload(): { body: Buffer; headers: Record<string, string> } {
+    const boundary = '----rl' + Math.random().toString(36).slice(2);
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="x.png"\r\nContent-Type: image/png\r\n\r\n`,
+        'utf-8',
+      ),
+      Buffer.from('PNGDATA', 'utf-8'),
+      Buffer.from(`\r\n--${boundary}--\r\n`, 'utf-8'),
+    ]);
+    return {
+      body,
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': body.length.toString(),
+        // Pin all calls to the same simulated client IP so they hit the same bucket.
+        'X-Forwarded-For': '203.0.113.42',
+      },
+    };
+  }
+
+  it('returns 429 after the third upload from the same client (max=2)', async () => {
+    const u1 = makePngUpload();
+    const r1 = await request(port, 'POST', '/preview/upload', u1.body, u1.headers);
+    expect(r1.status).toBe(200);
+
+    const u2 = makePngUpload();
+    const r2 = await request(port, 'POST', '/preview/upload', u2.body, u2.headers);
+    expect(r2.status).toBe(200);
+
+    const u3 = makePngUpload();
+    const r3 = await request(port, 'POST', '/preview/upload', u3.body, u3.headers);
+    expect(r3.status).toBe(429);
+    const errJson = JSON.parse(r3.body.toString('utf-8'));
+    expect(errJson.error).toMatch(/rate limit/i);
+  });
+
+  it('distinct client IPs each get their own bucket', async () => {
+    const fresh = createPreviewServer({
+      port: 43222,
+      bundles: [buildBundle()],
+      uploadDir: rlUploadDir,
+      uploadRateLimit: { max: 1, windowMs: 60_000 },
+    });
+    await fresh.start();
+    try {
+      const a = makePngUpload();
+      a.headers['X-Forwarded-For'] = '10.0.0.1';
+      const ra = await request(43222, 'POST', '/preview/upload', a.body, a.headers);
+      expect(ra.status).toBe(200);
+
+      const b = makePngUpload();
+      b.headers['X-Forwarded-For'] = '10.0.0.2';
+      const rb = await request(43222, 'POST', '/preview/upload', b.body, b.headers);
+      expect(rb.status).toBe(200);
+
+      // Repeat from client A — its bucket is full, B's is not.
+      const a2 = makePngUpload();
+      a2.headers['X-Forwarded-For'] = '10.0.0.1';
+      const ra2 = await request(43222, 'POST', '/preview/upload', a2.body, a2.headers);
+      expect(ra2.status).toBe(429);
+    } finally {
+      await fresh.stop();
+    }
+  });
 });

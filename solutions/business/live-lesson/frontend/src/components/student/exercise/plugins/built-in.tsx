@@ -254,7 +254,7 @@ const fillBlankPlugin: ExerciseUIPlugin = {
 
 const matrixPlugin: ExerciseUIPlugin = {
   type: 'matrix',
-  Component: function MatrixPluginComp({ exercise, allDone, setAns, checkResultState, stepIdx, studentId }: ExercisePluginProps) {
+  Component: function MatrixPluginComp({ exercise, allDone, checkResultState, setCheckResultState, stepIdx, studentId }: ExercisePluginProps) {
     const matrixAns = (checkResultState.matrixAns as Record<number, Record<string, string>>) ?? {}
     return (
       <MatrixExercise
@@ -264,13 +264,20 @@ const matrixPlugin: ExerciseUIPlugin = {
         stepIdx={stepIdx}
         ans={matrixAns}
         onAnsChange={(ri, field, val) => {
-          // Push the row delta back into checkResultState via setAns shim — caller
-          // (PracticePhase) keeps matrixAns inside checkResultState bag.
-          const next = {
-            ...matrixAns,
-            [ri]: { ...(matrixAns[ri] ?? {}), [field]: val },
-          }
-          ;(setAns as any)((prev: any) => ({ ...prev, _matrixAns: next }))
+          // Push the row delta into the dedicated per-plugin slot. Never into
+          // the shared `ans` bag — that's reserved for the canonical answer
+          // payload and gets keyed by question idx by other plugins.
+          if (!setCheckResultState) return
+          setCheckResultState((prev) => ({
+            ...prev,
+            matrixAns: {
+              ...((prev.matrixAns as Record<number, Record<string, string>>) ?? {}),
+              [ri]: {
+                ...(((prev.matrixAns as Record<number, Record<string, string>>) ?? {})[ri] ?? {}),
+                [field]: val,
+              },
+            },
+          }))
         }}
         disabled={allDone}
         rowResults={
@@ -284,9 +291,9 @@ const matrixPlugin: ExerciseUIPlugin = {
   canSubmit() {
     return true
   },
-  formatSubmitData(ans, _state) {
-    // matrix accumulates rows in ans._matrixAns
-    const matrixAns = (ans._matrixAns as Record<number, Record<string, string>>) ?? {}
+  formatSubmitData(_ans, state) {
+    // matrix reads rows from its dedicated pluginState slot, NOT from `ans`
+    const matrixAns = (state.matrixAns as Record<number, Record<string, string>>) ?? {}
     const rows = Object.entries(matrixAns).map(([ri, fields]) => ({ rowIdx: Number(ri), ...fields }))
     return { rows }
   },
