@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ObserveType } from '../observe-handler.interface';
-import type { ObserveHandler, ObserveContext } from '../observe-handler.interface';
+import { ObserveType } from '../../../domain/shared/observe-handler.interface';
+import type { ObserveHandler, ObserveContext } from '../../../domain/shared/observe-handler.interface';
 import type { DiscussObserveData } from '../../../schemas/classroom/observe-data';
 import { ChatMessage } from '../../../entities/chat-message.entity';
 import { ClusterAggregator } from '../../socratic-discuss/cluster-aggregator';

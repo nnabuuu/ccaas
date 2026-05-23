@@ -5,12 +5,12 @@
  * These tests are the safety net for the Stage 1 migration. As long as they pass,
  * the GradingService fallback path stays compatible.
  */
-import { QuizPlugin } from './quiz.plugin';
-import { MatchPlugin } from './match.plugin';
-import { OrderPlugin } from './order.plugin';
-import { QuizGrader } from '../graders/quiz.grader';
-import { MatchGrader } from '../graders/match.grader';
-import { OrderGrader } from '../graders/order.grader';
+import { QuizPlugin } from '../../../domain/exercise-types/quiz/quiz.plugin';
+import { MatchPlugin } from '../../../domain/exercise-types/match/match.plugin';
+import { OrderPlugin } from '../../../domain/exercise-types/order/order.plugin';
+import { QuizGrader } from '../../../domain/exercise-types/quiz/quiz.grader';
+import { MatchGrader } from '../../../domain/exercise-types/match/match.grader';
+import { OrderGrader } from '../../../domain/exercise-types/order/order.grader';
 
 describe('QuizPlugin', () => {
   const plugin = new QuizPlugin();

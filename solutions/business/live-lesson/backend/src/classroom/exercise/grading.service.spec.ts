@@ -1,9 +1,9 @@
 import { GradingService } from './grading.service';
-import { QuizGrader } from './graders/quiz.grader';
-import { MatchGrader } from './graders/match.grader';
-import { MatrixGrader } from './graders/matrix.grader';
-import { StanceGrader } from './graders/stance.grader';
-import { OrderGrader } from './graders/order.grader';
+import { QuizGrader } from '../../domain/exercise-types/quiz/quiz.grader';
+import { MatchGrader } from '../../domain/exercise-types/match/match.grader';
+import { MatrixGrader } from '../../domain/exercise-types/matrix/matrix.grader';
+import { StanceGrader } from '../../domain/exercise-types/stance/stance.grader';
+import { OrderGrader } from '../../domain/exercise-types/order/order.grader';
 
 import { createPluginRegistryTestingModule } from './plugins/test-utils';
 

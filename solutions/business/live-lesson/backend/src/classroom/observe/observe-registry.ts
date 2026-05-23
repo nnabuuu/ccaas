@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
-import { OBSERVE_TYPE_KEY } from './observe-handler.interface';
-import type { ObserveHandler, ObserveContext } from './observe-handler.interface';
+import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';
+import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 
 @Injectable()
 export class ObserveRegistry implements OnModuleInit {

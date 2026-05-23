@@ -19,10 +19,10 @@ import { AiAskService } from './ai-ask/ai-ask.service';
 import { PersonalizationService } from './personal-touch/personalization.service';
 import { ObservationQueryService } from './observation/observation-query.service';
 import { ObserveRegistry } from './observe/observe-registry';
-import { McObserveHandler } from './observe/handlers/mc.handler';
-import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
-import { MapObserveHandler } from './observe/handlers/map.handler';
-import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
+import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
+import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
+import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.observe';
 import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { GradingService } from './exercise/grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
@@ -174,7 +174,7 @@ describe('Classroom polling — HTTP integration', () => {
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, ObserveRegistry, McObserveHandler, EvidenceObserveHandler,
+        ObservationQueryService, ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler,
         MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
         AiPromptBuilder, MetricsAggregator, ClusterClassifier,
         ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService, TranslateService,

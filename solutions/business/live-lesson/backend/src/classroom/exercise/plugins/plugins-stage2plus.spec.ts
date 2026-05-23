@@ -21,17 +21,17 @@
  *     The legacy grader's own spec file (graders/*.spec.ts) remains the
  *     source of truth for grading behaviour for delegating plugins.
  */
-import { StancePlugin } from './stance.plugin';
-import { OrderPlugin } from './order.plugin';
-import { MatrixPlugin } from './matrix.plugin';
-import { MapPlugin } from './map.plugin';
-import { ImageUploadPlugin } from './image-upload.plugin';
-import { SelectEvidencePlugin } from './select-evidence.plugin';
-import { RichContentQuizPlugin } from './rich-content-quiz.plugin';
-import { GuidedDiscoveryPlugin } from './guided-discovery.plugin';
-import { FillBlankPlugin } from './fill-blank.plugin';
-import { StanceGrader } from '../graders/stance.grader';
-import { OrderGrader } from '../graders/order.grader';
+import { StancePlugin } from '../../../domain/exercise-types/stance/stance.plugin';
+import { OrderPlugin } from '../../../domain/exercise-types/order/order.plugin';
+import { MatrixPlugin } from '../../../domain/exercise-types/matrix/matrix.plugin';
+import { MapPlugin } from '../../../domain/exercise-types/map/map.plugin';
+import { ImageUploadPlugin } from '../../../domain/exercise-types/image-upload/image-upload.plugin';
+import { SelectEvidencePlugin } from '../../../domain/exercise-types/select-evidence/select-evidence.plugin';
+import { RichContentQuizPlugin } from '../../../domain/exercise-types/rich-content-quiz/rich-content-quiz.plugin';
+import { GuidedDiscoveryPlugin } from '../../../domain/exercise-types/guided-discovery/guided-discovery.plugin';
+import { FillBlankPlugin } from '../../../domain/exercise-types/fill-blank/fill-blank.plugin';
+import { StanceGrader } from '../../../domain/exercise-types/stance/stance.grader';
+import { OrderGrader } from '../../../domain/exercise-types/order/order.grader';
 import type { AiPromptBuilder } from '../../ai-prompt-builder';
 
 const mockAiPromptBuilder = {
@@ -473,7 +473,7 @@ describe('GuidedDiscoveryPlugin (parity)', () => {
 
 describe('§14 L3: QuizPlugin', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { QuizPlugin } = require('./quiz.plugin');
+  const { QuizPlugin } = require('../../../domain/exercise-types/quiz/quiz.plugin');
   const plugin = new QuizPlugin();
 
   it('buildGradePrompt returns [] (no LLM call needed for quiz)', () => {
@@ -501,7 +501,7 @@ describe('§14 L3: QuizPlugin', () => {
 
 describe('§14 L3: MatchPlugin', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { MatchPlugin } = require('./match.plugin');
+  const { MatchPlugin } = require('../../../domain/exercise-types/match/match.plugin');
   const plugin = new MatchPlugin();
 
   it('buildGradePrompt returns [] (no LLM call needed for match)', () => {

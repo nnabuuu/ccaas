@@ -31,30 +31,30 @@ import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
 import { ManifestCacheService } from './manifest-cache.service';
 import { ObserveRegistry } from './observe/observe-registry';
-import { McObserveHandler } from './observe/handlers/mc.handler';
-import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
-import { MapObserveHandler } from './observe/handlers/map.handler';
-import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
+import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
+import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
+import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.observe';
 import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
-import { ImageUploadObserveHandler } from './observe/handlers/image-upload.handler';
-import { GuidedDiscoveryObserveHandler } from './observe/handlers/guided-discovery.handler';
+import { ImageUploadObserveHandler } from '../domain/exercise-types/image-upload/image-upload.observe';
+import { GuidedDiscoveryObserveHandler } from '../domain/exercise-types/guided-discovery/guided-discovery.observe';
 
 // ── Exercise component ──
 import { ExerciseService } from './exercise/exercise.service';
 import { ExerciseController } from './exercise/exercise.controller';
 import { GradingService } from './exercise/grading.service';
 import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
-import { QuizPlugin } from './exercise/plugins/quiz.plugin';
-import { MatchPlugin } from './exercise/plugins/match.plugin';
-import { OrderPlugin } from './exercise/plugins/order.plugin';
-import { StancePlugin } from './exercise/plugins/stance.plugin';
-import { FillBlankPlugin } from './exercise/plugins/fill-blank.plugin';
-import { MatrixPlugin } from './exercise/plugins/matrix.plugin';
-import { MapPlugin } from './exercise/plugins/map.plugin';
-import { ImageUploadPlugin } from './exercise/plugins/image-upload.plugin';
-import { SelectEvidencePlugin } from './exercise/plugins/select-evidence.plugin';
-import { RichContentQuizPlugin } from './exercise/plugins/rich-content-quiz.plugin';
-import { GuidedDiscoveryPlugin } from './exercise/plugins/guided-discovery.plugin';
+import { QuizPlugin } from '../domain/exercise-types/quiz/quiz.plugin';
+import { MatchPlugin } from '../domain/exercise-types/match/match.plugin';
+import { OrderPlugin } from '../domain/exercise-types/order/order.plugin';
+import { StancePlugin } from '../domain/exercise-types/stance/stance.plugin';
+import { FillBlankPlugin } from '../domain/exercise-types/fill-blank/fill-blank.plugin';
+import { MatrixPlugin } from '../domain/exercise-types/matrix/matrix.plugin';
+import { MapPlugin } from '../domain/exercise-types/map/map.plugin';
+import { ImageUploadPlugin } from '../domain/exercise-types/image-upload/image-upload.plugin';
+import { SelectEvidencePlugin } from '../domain/exercise-types/select-evidence/select-evidence.plugin';
+import { RichContentQuizPlugin } from '../domain/exercise-types/rich-content-quiz/rich-content-quiz.plugin';
+import { GuidedDiscoveryPlugin } from '../domain/exercise-types/guided-discovery/guided-discovery.plugin';
 
 // ── State Cache ──
 import { StateCacheService } from './state-cache.service';
@@ -112,7 +112,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
     // Infra
     ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService,
     // Observe handlers + registry
-    ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
+    ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
     ExerciseService, GradingService,
     // Exercise type plugins — all 11 types migrated (Stage 1-5)

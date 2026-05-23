@@ -4,10 +4,10 @@ import { DiscoveryModule } from '@nestjs/core';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ObserveRegistry } from './observe/observe-registry';
-import { McObserveHandler } from './observe/handlers/mc.handler';
-import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
-import { MapObserveHandler } from './observe/handlers/map.handler';
-import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
+import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
+import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
+import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.observe';
 import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -119,8 +119,8 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
   let chatRepo: Repository<ChatMessage>;
 
   // Direct handler references for tests that call compute directly
-  let mcHandler: McObserveHandler;
-  let evidenceHandler: EvidenceObserveHandler;
+  let quizHandler: QuizObserveHandler;
+  let selectEvidenceHandler: SelectEvidenceObserveHandler;
   let mapHandler: MapObserveHandler;
   let matrixHandler: MatrixObserveHandler;
   let discussHandler: DiscussObserveHandler;
@@ -140,7 +140,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
       ],
       providers: [
         ObserveRegistry,
-        McObserveHandler, EvidenceObserveHandler, MapObserveHandler,
+        QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler,
         MatrixObserveHandler, DiscussObserveHandler,
         ClusterAggregator, ManifestCacheService,
       ],
@@ -151,8 +151,8 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
     registry = module.get(ObserveRegistry);
     chatRepo = module.get(getRepositoryToken(ChatMessage));
 
-    mcHandler = module.get(McObserveHandler);
-    evidenceHandler = module.get(EvidenceObserveHandler);
+    quizHandler = module.get(QuizObserveHandler);
+    selectEvidenceHandler = module.get(SelectEvidenceObserveHandler);
     mapHandler = module.get(MapObserveHandler);
     matrixHandler = module.get(MatrixObserveHandler);
     discussHandler = module.get(DiscussObserveHandler);
@@ -177,13 +177,13 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
 
   // ── computeMcObserve ──
 
-  describe('McObserveHandler', () => {
+  describe('QuizObserveHandler', () => {
     const STEP = 1;
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
       ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MC_KEY, view });
 
     it('empty class → all stats zero', () => {
-      const r = mcHandler.compute(ctx([], new Map()));
+      const r = quizHandler.compute(ctx([], new Map()));
       expect(r.stats).toEqual({ totalStudents: 0, submitted: 0, avgScore: 0, perfectCount: 0, zeroCount: 0, avgTime: 0, fastestTime: 0, slowestTime: 0 });
       expect(r.students).toEqual([]);
       expect(r.misconceptions).toEqual([]);
@@ -196,7 +196,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
         makeMcSub('mc-b', 's1', STEP, [0, 0], 50, { questionTimes: { 0: 15, 1: 15 } }),
         makeMcSub('mc-c', 's1', STEP, [1, 1], 50),
       );
-      const r = mcHandler.compute(ctx([sA, sB, sC], subs));
+      const r = quizHandler.compute(ctx([sA, sB, sC], subs));
       expect(r.stats.totalStudents).toBe(3);
       expect(r.stats.submitted).toBe(3);
       expect(r.stats.avgScore).toBeCloseTo(200 / 3);
@@ -211,7 +211,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
         makeMcSub('qd-a', 's1', STEP, [1, 0], 100),
         makeMcSub('qd-b', 's1', STEP, [0, 0], 50),
       );
-      const r = mcHandler.compute(ctx([sA, sB], subs));
+      const r = quizHandler.compute(ctx([sA, sB], subs));
       expect(r.questions[0].distribution[0].count).toBe(1);
       expect(r.questions[0].distribution[1].count).toBe(1);
       expect(r.questions[0].correctRate).toBe(50);
@@ -221,7 +221,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
     it('misconception ≥3 same wrong option; severity=high when ≥5', () => {
       const students = Array.from({ length: 5 }, (_, i) => makeStudent('s1', { id: `mis-${i}`, name: `S${i}` }));
       const subs = buildSubsMap(...students.map(s => makeMcSub(s.id, 's1', STEP, [0, 0], 50)));
-      const r = mcHandler.compute(ctx(students, subs));
+      const r = quizHandler.compute(ctx(students, subs));
       const mc = r.misconceptions.find(m => m.id === 'q0_opt0');
       expect(mc).toBeDefined();
       expect(mc!.count).toBe(5);
@@ -231,14 +231,14 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
     it('misconception severity=medium when count 3–4', () => {
       const students = Array.from({ length: 3 }, (_, i) => makeStudent('s1', { id: `med-${i}`, name: `S${i}` }));
       const subs = buildSubsMap(...students.map(s => makeMcSub(s.id, 's1', STEP, [0, 0], 50)));
-      const r = mcHandler.compute(ctx(students, subs));
+      const r = quizHandler.compute(ctx(students, subs));
       const mc = r.misconceptions.find(m => m.id === 'q0_opt0');
       expect(mc!.severity).toBe('medium');
     });
 
     it('student with no submission → skipped in results', () => {
       const sA = makeStudent('s1', { id: 'no-sub', name: 'NoSub' });
-      const r = mcHandler.compute(ctx([sA], new Map()));
+      const r = quizHandler.compute(ctx([sA], new Map()));
       expect(r.stats.totalStudents).toBe(1);
       expect(r.stats.submitted).toBe(0);
       expect(r.students).toHaveLength(0);
@@ -249,7 +249,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
       const subs = buildSubsMap(
         makeMcSub('chg', 's1', STEP, [1, 0], 100, { answerChanges: [{ qi: 0, from: 0, to: 1 }] }),
       );
-      const r = mcHandler.compute(ctx([sA], subs));
+      const r = quizHandler.compute(ctx([sA], subs));
       expect(r.students[0].answers['0'].changed).toBe(true);
       expect(r.students[0].answers['1'].changed).toBe(false);
     });
@@ -259,7 +259,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
       const subs = buildSubsMap(
         makeMcSub('ins', 's1', STEP, [0, 1], 0, { answerChanges: [{ qi: 0, from: 1, to: 0 }] }),
       );
-      const r = mcHandler.compute(ctx([sA], subs));
+      const r = quizHandler.compute(ctx([sA], subs));
       expect(r.students[0].keyInsights).toContain('2 题答错');
       expect(r.students[0].keyInsights).toContain('改过 1 次答案');
     });
@@ -267,13 +267,13 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
 
   // ── computeEvidenceObserve ──
 
-  describe('EvidenceObserveHandler', () => {
+  describe('SelectEvidenceObserveHandler', () => {
     const STEP = 2;
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
       ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: EV_KEY, view });
 
     it('empty class → stats zero', () => {
-      const r = evidenceHandler.compute(ctx([], new Map()));
+      const r = selectEvidenceHandler.compute(ctx([], new Map()));
       expect(r.stats.totalStudents).toBe(0);
       expect(r.stats.allDone).toBe(0);
       expect(r.stats.funcWrongCount).toBe(0);
@@ -291,7 +291,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
           sec2: { function: 'cause-effect', picked: [] },
         }),
       );
-      const r = evidenceHandler.compute(ctx([sA, sB], subs));
+      const r = selectEvidenceHandler.compute(ctx([sA, sB], subs));
       expect(r.stats.allDone).toBe(2);
       expect(r.sections[0].funcCorrectRate).toBe(100);
       expect(r.sections[1].funcCorrectRate).toBe(50);
@@ -306,7 +306,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
           sec2: { function: 'WRONG', picked: [] },
         }),
       );
-      const r = evidenceHandler.compute(ctx([sA], subs));
+      const r = selectEvidenceHandler.compute(ctx([sA], subs));
       expect(r.stats.funcWrongCount).toBe(1);
     });
 
@@ -315,7 +315,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
       const subs = buildSubsMap(
         makeEvSub('miss', 's1', STEP, { sec1: { function: 'cause-effect', picked: ['sec1:0'] } }),
       );
-      const r = evidenceHandler.compute(ctx([sA], subs));
+      const r = selectEvidenceHandler.compute(ctx([sA], subs));
       expect(r.students[0].completed).toBe(false);
       expect(r.stats.perfectAll).toBe(0);
     });
@@ -328,7 +328,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
           sec2: { function: 'compare-contrast', picked: ['sec2:0'] },
         }),
       );
-      const r = evidenceHandler.compute(ctx([sA], subs));
+      const r = selectEvidenceHandler.compute(ctx([sA], subs));
       expect(r.students[0].sections['sec1'].missed).toContain('rain');
     });
   });

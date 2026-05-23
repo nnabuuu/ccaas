@@ -1,13 +1,13 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { z } from 'zod';
-import { EXERCISE_TYPE_KEY } from './exercise-type.decorator';
+import { EXERCISE_TYPE_KEY } from '../../domain/shared/exercise-type.decorator';
 import type {
   ExerciseTypePlugin,
   GradeContext,
   CheckItemContext,
   SanitizeContext,
-} from './exercise-type-plugin.interface';
+} from '../../domain/shared/exercise-type-plugin.interface';
 import type { GradeResult } from '../../schemas';
 import type { ExerciseSpec } from '../../schemas/exercise-spec.schema';
 
