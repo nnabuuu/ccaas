@@ -29,6 +29,8 @@ import { StudentSubmissionService } from '../application/classroom/student-submi
 import { ClassroomController } from '../adapters/http/classroom.controller';
 import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
 import { LLM_PORT } from '../domain/ports/llm.port';
+import { OBSERVATION_RECORD_REPO_PORT } from '../domain/ports/observation-record-repo.port';
+import { TypeOrmObservationRecordRepository } from '../adapters/persistence/repositories/observation-record.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -112,10 +114,12 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
   providers: [
     // Infra
     ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService,
-    // Domain port bindings — keep these grouped so the LLM_PORT consumer in
-    // domain/exercise-types/<type>/<type>.plugin.ts resolves to AiPromptBuilder
-    // without domain ever importing from application directly.
+    // Domain port bindings — keep domain free of imports from application/adapters.
+    // The consumer in domain/* injects the symbol token; the module decides which
+    // concrete class fulfils the contract.
     { provide: LLM_PORT, useExisting: AiPromptBuilder },
+    TypeOrmObservationRecordRepository,
+    { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

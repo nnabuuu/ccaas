@@ -18,6 +18,8 @@ import { ExerciseService } from '../../application/exercise/exercise.service';
 import { DiscussService } from '../../application/ai/discuss.service';
 import { AiAskService } from '../../application/ai/ai-ask.service';
 import { PersonalizationService } from '../../application/ai/personalization.service';
+import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
+import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
 import { ObservationQueryService } from '../../application/observation/observation-query.service';
 import { ObserveRegistry } from '../../application/observation/observe-registry';
 import { QuizObserveHandler } from '../../domain/exercise-types/quiz/quiz.observe';
@@ -173,6 +175,8 @@ describe('Classroom polling — HTTP integration', () => {
       controllers: [ClassroomController, ExerciseController],
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
+        TypeOrmObservationRecordRepository,
+        { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,

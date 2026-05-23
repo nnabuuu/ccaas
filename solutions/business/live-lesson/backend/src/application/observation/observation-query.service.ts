@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ObservationRecord } from '@kedge-agentic/observer-engine';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  OBSERVATION_RECORD_REPO_PORT,
+  type ObservationRecordRepoPort,
+} from '../../domain/ports/observation-record-repo.port';
+import type { ObservationRecordView } from '../../domain/types/observation-record';
 import type { Observation } from '@kedge-agentic/observer-engine';
 import type {
   StudentLog,
@@ -25,8 +27,8 @@ export class ObservationQueryService {
   private readonly sessionIndicators = new Map<string, IndicatorDef[]>();
 
   constructor(
-    @InjectRepository(ObservationRecord)
-    private readonly observationRepo: Repository<ObservationRecord>,
+    @Inject(OBSERVATION_RECORD_REPO_PORT)
+    private readonly observationRepo: ObservationRecordRepoPort,
   ) {}
 
   setIndicators(sessionId: string, indicators: IndicatorDef[]): void {
@@ -56,10 +58,7 @@ export class ObservationQueryService {
   }
 
   private async loadGroupedObservations(sessionId: string): Promise<Map<string, Observation[]>> {
-    const records = await this.observationRepo.find({
-      where: { sessionId },
-      order: { createdAtEpoch: 'ASC' },
-    });
+    const records = await this.observationRepo.findSessionObservations(sessionId);
 
     const byStudent = new Map<string, Observation[]>();
     for (const r of records) {
@@ -263,10 +262,10 @@ export class ObservationQueryService {
   async computeIndicatorStats(sessionId: string): Promise<IndicatorStats[]> {
     const indicators = this.getIndicators(sessionId);
 
-    const records = await this.observationRepo.find({
-      where: { sessionId, type: 'indicator_hit' },
-      order: { createdAtEpoch: 'ASC' },
-    });
+    const records = await this.observationRepo.findSessionObservationsByType(
+      sessionId,
+      'indicator_hit',
+    );
 
     const statsMap = new Map<string, {
       students: Set<string>;
@@ -356,7 +355,7 @@ export class ObservationQueryService {
   }
 }
 
-function toObservation(record: ObservationRecord): Observation {
+function toObservation(record: ObservationRecordView): Observation {
   return {
     id: record.id,
     sessionId: record.sessionId,

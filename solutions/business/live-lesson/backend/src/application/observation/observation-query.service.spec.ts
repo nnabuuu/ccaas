@@ -5,6 +5,8 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ObservationQueryService } from './observation-query.service';
+import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
+import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
 import type { IndicatorDef } from '../../schemas/classroom/observation';
 
 // ── Helpers ──
@@ -54,7 +56,11 @@ describe('ObservationQueryService', () => {
         }),
         TypeOrmModule.forFeature([ObservationRecord]),
       ],
-      providers: [ObservationQueryService],
+      providers: [
+        ObservationQueryService,
+        TypeOrmObservationRecordRepository,
+        { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
+      ],
     }).compile();
 
     await module.init();
