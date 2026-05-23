@@ -1,5 +1,10 @@
 import type { ClassroomState } from '../../hooks/useClassroom'
 import type { ReadingManifest, ReadingStep, PhaseConfig } from '../../types/reading'
+// Side-effect import: populates the exercise plugin registry. We dispatch
+// `getObserveType` through the registry below so each plugin owns its own
+// `observeType` declaration — no hardcoded switch in this file.
+import '../student/exercise/plugins/built-in'
+import { getExerciseType } from '../student/exercise/plugins'
 
 export const STUCK_THRESHOLD_MS = 180_000 // 3 minutes
 export const HIGHLIGHT_MATCH_TOLERANCE_MS = 120_000 // 2 minutes
@@ -234,18 +239,24 @@ export function getPhaseIcon(phaseId: string): string {
   return '📋'
 }
 
-/** Map answerKey type to observe drawer type */
+/**
+ * Map an answerKey type to its teacher-observe drawer type.
+ *
+ * Routes through the exercise plugin registry — each plugin's `observeType`
+ * declaration is the source of truth. Returns:
+ *  - `null` when there's no registered plugin or the plugin opts out
+ *    (e.g. stance / fill-blank declare `observeType: null`)
+ *  - the plugin's `observeType` when set (e.g. quiz/match/order → 'mc',
+ *    select-evidence → 'evidence', rich-content-quiz → 'image-upload')
+ *  - the plugin's own `type` as a fallback (matrix/map/guided-discovery/
+ *    image-upload — where observe drawer name == plugin type)
+ */
 export function getObserveType(answerKeyType?: string): string | null {
   if (!answerKeyType) return null
-  switch (answerKeyType) {
-    case 'quiz': case 'match': case 'order': return 'mc'
-    case 'select-evidence': return 'evidence'
-    case 'map': return 'map'
-    case 'matrix': return 'matrix'
-    case 'guided-discovery': return 'guided-discovery'
-    case 'rich-content-quiz': case 'image-upload': return 'image-upload'
-    default: return null
-  }
+  const plugin = getExerciseType(answerKeyType)
+  if (!plugin) return null
+  if (plugin.observeType === null) return null
+  return plugin.observeType ?? plugin.type
 }
 
 /** Count all isHighlight observations across all cluster stats */

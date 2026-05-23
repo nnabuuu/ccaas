@@ -430,6 +430,15 @@ describe('getObserveType', () => {
   it('returns null for undefined', () => {
     expect(getObserveType(undefined)).toBeNull()
   })
+
+  it.each([
+    ['stance'],
+    ['fill-blank'],
+  ])('returns null for opt-out plugin "%s" (observeType: null)', (type) => {
+    // These plugins explicitly set `observeType: null` to suppress the
+    // teacher-observe button — verify the registry-backed helper honors that.
+    expect(getObserveType(type)).toBeNull()
+  })
 })
 
 // ── getCatBadgeClass ──

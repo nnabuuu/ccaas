@@ -6,12 +6,12 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { GradingService } from './exercise/grading.service';
+import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
 import { ManifestCacheService } from './manifest-cache.service';
 import { StateCacheService } from './state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
-import { buildCheckItems } from './exercise/build-check-items';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../schemas/classroom';
 
 @Injectable()
@@ -24,6 +24,7 @@ export class StudentSubmissionService {
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
     private readonly gradingService: GradingService,
+    private readonly registry: ExerciseTypeRegistry,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -558,9 +559,13 @@ export class StudentSubmissionService {
         const stepDef = readingSteps.find((s) => s.idx === sub.step);
         if (stepDef?.answerKey) {
           try {
-            checkItems = buildCheckItems(stepDef.answerKey as Record<string, unknown>, sub.dataJson as Record<string, unknown>, score);
+            checkItems = this.registry.buildCheckItems(
+              stepDef.answerKey as Record<string, unknown>,
+              sub.dataJson as Record<string, unknown>,
+              score,
+            ) ?? undefined;
           } catch (e) {
-            this.logger.debug(`buildCheckItems failed for step ${sub.step}: ${e}`);
+            this.logger.debug(`registry.buildCheckItems failed for step ${sub.step}: ${e}`);
           }
         }
       }

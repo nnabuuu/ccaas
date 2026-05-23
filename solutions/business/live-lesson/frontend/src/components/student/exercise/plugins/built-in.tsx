@@ -281,6 +281,7 @@ const matchPlugin: ExerciseUIPlugin = {
 
 const orderPlugin: ExerciseUIPlugin = {
   type: 'order',
+  observeType: 'mc',
   Component: function OrderPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <OrderExercise
@@ -365,6 +366,7 @@ const orderPlugin: ExerciseUIPlugin = {
 
 const stancePlugin: ExerciseUIPlugin = {
   type: 'stance',
+  observeType: null, // no teacher-observe surface for stance
   Component: function StancePluginComp({ exercise, ans, setAns, softDone, reviewData }: ExercisePluginProps) {
     return (
       <StanceExercise
@@ -412,6 +414,7 @@ const stancePlugin: ExerciseUIPlugin = {
 
 const fillBlankPlugin: ExerciseUIPlugin = {
   type: 'fill-blank',
+  observeType: null, // no teacher-observe surface for fill-blank
   Component: function FillBlankPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     const blankResults = (checkResultState.blankResults as Record<string, boolean>) ?? {}
     return (

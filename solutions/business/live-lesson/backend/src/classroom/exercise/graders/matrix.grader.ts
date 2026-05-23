@@ -11,12 +11,35 @@ export function textQuality(text: string | undefined): number {
   return 3;
 }
 
+export type CellQualities = Record<string, { whatQ: number; whyQ: number }>;
+
+export interface CellQualitiesPromptSpec {
+  systemPrompt: string;
+  userMessage: string;
+  maxTokens: number;
+  temperature: number;
+}
+
 export class MatrixGrader implements Grader {
   private readonly logger = new Logger(MatrixGrader.name);
 
   constructor(private readonly aiPromptBuilder?: AiPromptBuilder) {}
 
   async grade(key: MatrixAnswerKey, data: Record<string, unknown>): Promise<GradeResult> {
+    const cellQualities = await this.computeCellQualities(key, data);
+    return this.gradeWithCellQualities(key, data, cellQualities);
+  }
+
+  /**
+   * Compose the final GradeResult given pre-computed cell qualities. Pure /
+   * synchronous — exposed for §14 L3 so the inspector can supply an edited
+   * LLM response without re-running the LLM call.
+   */
+  gradeWithCellQualities(
+    key: MatrixAnswerKey,
+    data: Record<string, unknown>,
+    cellQualities: CellQualities,
+  ): GradeResult {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
     const studentRows = (data.rows || []) as Array<Record<string, string>>;
     let placeCorrect = 0, practiceCorrect = 0, reasonCorrect = 0;
@@ -43,53 +66,21 @@ export class MatrixGrader implements Grader {
 
     const total = Math.round((byDimension.place + byDimension.practice + byDimension.reason) / 3);
 
-    // Per-cell quality scoring
-    const cellQualities = await this.computeCellQualities(key, data);
-
     return { total, byDimension, cellQualities };
   }
 
-  private async computeCellQualities(
+  /**
+   * §14 L3 — Stage 1: build the LLM prompt that scores cell qualities. Returns
+   * `null` when there are no non-demo answers to score (no prompt needed).
+   * Pure function: callers can inspect / edit the prompt before re-running.
+   */
+  buildCellQualitiesPrompt(
     key: MatrixAnswerKey,
     data: Record<string, unknown>,
-  ): Promise<Record<string, { whatQ: number; whyQ: number }>> {
+  ): CellQualitiesPromptSpec | null {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
+    if (answers.length === 0) return null;
     const studentRows = (data.rows || []) as Array<Record<string, string>>;
-
-    if (this.aiPromptBuilder) {
-      try {
-        return await this.llmCellQualities(key, answers, studentRows);
-      } catch (e) {
-        this.logger.warn(`LLM cell quality evaluation failed, using heuristic: ${e}`);
-      }
-    }
-
-    return this.heuristicCellQualities(answers, studentRows);
-  }
-
-  private heuristicCellQualities(
-    answers: MatrixAnswerKey['answers'][number][],
-    studentRows: Array<Record<string, string>>,
-  ): Record<string, { whatQ: number; whyQ: number }> {
-    const result: Record<string, { whatQ: number; whyQ: number }> = {};
-    for (const a of answers) {
-      const row = studentRows[a.rowIdx] || {};
-      const what = row.practice || row.what || '';
-      const why = row.reason || row.why || '';
-      result[String(a.rowIdx)] = {
-        whatQ: textQuality(what),
-        whyQ: textQuality(why),
-      };
-    }
-    return result;
-  }
-
-  private async llmCellQualities(
-    key: MatrixAnswerKey,
-    answers: MatrixAnswerKey['answers'][number][],
-    studentRows: Array<Record<string, string>>,
-  ): Promise<Record<string, { whatQ: number; whyQ: number }>> {
-    const builder = this.aiPromptBuilder!;
 
     const systemPrompt = `你是一位阅读课教师助手。请评估学生的矩阵填空回答质量。
 
@@ -115,17 +106,27 @@ export class MatrixGrader implements Grader {
 
     const userMessage = `参考答案：\n${refLines.join('\n')}\n\n学生回答：\n${stuLines.join('\n')}\n\n返回格式：{"rows":{"${answers[0]?.rowIdx}":{"whatQ":2,"whyQ":1}}}`;
 
-    const raw = await builder.callLlm(systemPrompt, userMessage, {
-      maxTokens: 512,
-      temperature: 0.3,
-      responseFormat: { type: 'json_object' },
-    });
+    return { systemPrompt, userMessage, maxTokens: 512, temperature: 0.3 };
+  }
+
+  /**
+   * §14 L3 — Stage 2: parse the LLM response into cell qualities. Falls back
+   * to the heuristic scorer when the response is malformed (matching the
+   * production grade() resilience). Pure: no LLM call.
+   */
+  parseCellQualitiesResponse(
+    rawResponse: string,
+    key: MatrixAnswerKey,
+    data: Record<string, unknown>,
+  ): CellQualities {
+    const answers = (key.answers || []).filter((a) => !a.isDemo);
+    const studentRows = (data.rows || []) as Array<Record<string, string>>;
 
     let parsed: { rows?: Record<string, { whatQ?: number; whyQ?: number }> };
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(rawResponse);
     } catch {
-      this.logger.warn(`LLM returned unparseable JSON for matrix cell qualities: ${raw.slice(0, 200)}`);
+      this.logger.warn(`LLM returned unparseable JSON for matrix cell qualities: ${rawResponse.slice(0, 200)}`);
       return this.heuristicCellQualities(answers, studentRows);
     }
 
@@ -134,7 +135,7 @@ export class MatrixGrader implements Grader {
       return this.heuristicCellQualities(answers, studentRows);
     }
 
-    const result: Record<string, { whatQ: number; whyQ: number }> = {};
+    const result: CellQualities = {};
     for (const a of answers) {
       const rid = String(a.rowIdx);
       const llmRow = parsed.rows[rid];
@@ -150,6 +151,48 @@ export class MatrixGrader implements Grader {
           whyQ: textQuality(row.reason || row.why || ''),
         };
       }
+    }
+    return result;
+  }
+
+  private async computeCellQualities(
+    key: MatrixAnswerKey,
+    data: Record<string, unknown>,
+  ): Promise<CellQualities> {
+    const answers = (key.answers || []).filter((a) => !a.isDemo);
+    const studentRows = (data.rows || []) as Array<Record<string, string>>;
+
+    if (this.aiPromptBuilder) {
+      try {
+        const prompt = this.buildCellQualitiesPrompt(key, data);
+        if (!prompt) return {};
+        const raw = await this.aiPromptBuilder.callLlm(prompt.systemPrompt, prompt.userMessage, {
+          maxTokens: prompt.maxTokens,
+          temperature: prompt.temperature,
+          responseFormat: { type: 'json_object' },
+        });
+        return this.parseCellQualitiesResponse(raw, key, data);
+      } catch (e) {
+        this.logger.warn(`LLM cell quality evaluation failed, using heuristic: ${e}`);
+      }
+    }
+
+    return this.heuristicCellQualities(answers, studentRows);
+  }
+
+  private heuristicCellQualities(
+    answers: MatrixAnswerKey['answers'][number][],
+    studentRows: Array<Record<string, string>>,
+  ): CellQualities {
+    const result: CellQualities = {};
+    for (const a of answers) {
+      const row = studentRows[a.rowIdx] || {};
+      const what = row.practice || row.what || '';
+      const why = row.reason || row.why || '';
+      result[String(a.rowIdx)] = {
+        whatQ: textQuality(what),
+        whyQ: textQuality(why),
+      };
     }
     return result;
   }

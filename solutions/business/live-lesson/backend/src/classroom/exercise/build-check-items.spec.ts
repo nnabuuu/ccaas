@@ -1,7 +1,29 @@
-import { buildCheckItems } from './build-check-items';
+/**
+ * Per-type buildCheckItems contract tests.
+ *
+ * The legacy `build-check-items.ts` switch was deleted (B6 — all callers
+ * now go through `ExerciseTypeRegistry.buildCheckItems`). This spec runs
+ * the same fixtures via the registry so the canonical per-type shape is
+ * still pinned down in one place.
+ */
+import { ExerciseTypeRegistry } from './exercise-type-registry';
+import { createPluginRegistryTestingModule } from './plugins/test-utils';
 import type { GradeResult } from '../../schemas';
 
-describe('buildCheckItems', () => {
+let registry: ExerciseTypeRegistry;
+
+beforeAll(async () => {
+  const handle = await createPluginRegistryTestingModule();
+  registry = handle.registry;
+});
+
+function buildCheckItems(ak: Record<string, unknown>, data: Record<string, unknown>, gr: GradeResult): Array<Record<string, unknown>> {
+  const items = registry.buildCheckItems(ak, data, gr);
+  if (!items) throw new Error(`no buildCheckItems impl for type "${ak.type}"`);
+  return items;
+}
+
+describe('buildCheckItems (via registry)', () => {
   // ── quiz ──
 
   describe('quiz', () => {
@@ -249,13 +271,16 @@ describe('buildCheckItems', () => {
   // ── default / unknown type ──
 
   describe('unknown type', () => {
-    it('returns empty array', () => {
-      const items = buildCheckItems(
+    it('returns null from the registry (caller responsibility to default to [])', () => {
+      const items = registry.buildCheckItems(
         { type: 'unknown-type' },
         {},
         { total: 0, byDimension: {} },
       );
-      expect(items).toEqual([]);
+      // Legacy returned `[]`; registry returns `null` so callers can decide
+      // whether to fall back. ExerciseService + StudentSubmissionService
+      // both coerce null → [].
+      expect(items).toBeNull();
     });
   });
 });

@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ExerciseService } from './exercise.service';
 import { GradingService } from './grading.service';
-import { buildCheckItems } from './build-check-items';
+import { ExerciseTypeRegistry } from './exercise-type-registry';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { Student } from '../../entities/student.entity';
@@ -116,6 +116,7 @@ const NO_KEY_MANIFEST = {
 describe('ExerciseService', () => {
   let module: TestingModule;
   let service: ExerciseService;
+  let registry: ExerciseTypeRegistry;
   let studentRepo: Repository<Student>;
   let lessonRepo: Repository<Lesson>;
   let sessionRepo: Repository<ClassroomSession>;
@@ -147,6 +148,7 @@ describe('ExerciseService', () => {
     }).compile();
 
     service = module.get(ExerciseService);
+    registry = module.get(ExerciseTypeRegistry);
     studentRepo = module.get(getRepositoryToken(Student));
     lessonRepo = module.get(getRepositoryToken(Lesson));
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
@@ -361,7 +363,7 @@ describe('ExerciseService', () => {
           d_placed: true, d_reasoned: true, d_positionScore: 100,
         },
       };
-      const items = buildCheckItems(ak as any, data, gradeResult);
+      const items = registry.buildCheckItems(ak as any, data, gradeResult)!;
       const gradeItems = items.filter(i => i.idx !== '_llm');
       expect(gradeItems).toHaveLength(2);
       expect(gradeItems.map(i => i.idx).sort()).toEqual(['b', 'd']);
@@ -382,7 +384,7 @@ describe('ExerciseService', () => {
           c_placed: true, c_reasoned: true, c_positionScore: 100,
         },
       };
-      const items = buildCheckItems(ak as any, data, gradeResult);
+      const items = registry.buildCheckItems(ak as any, data, gradeResult)!;
       const gradeItems = items.filter(i => i.idx !== '_llm');
       // practiceCount=3, sequential: first 3 items (a, b, c)
       expect(gradeItems).toHaveLength(3);
@@ -393,7 +395,7 @@ describe('ExerciseService', () => {
       const ak = QUIZ_MANIFEST.readingSteps[0].answerKey;
       const data = { answers: [0, 1] };
       const gradeResult = { total: 0, byDimension: { q0: false, q1: false } };
-      const items = buildCheckItems(ak as any, data, gradeResult);
+      const items = registry.buildCheckItems(ak as any, data, gradeResult)!;
       expect(items[0].correct).toBe(false);
       expect(items[0].hint).toBe('Think again');
       expect(items[0].walkthrough).toBe('Answer is B');
@@ -403,7 +405,7 @@ describe('ExerciseService', () => {
       const ak = SE_MANIFEST.readingSteps[0].answerKey;
       const data = { sections: { sec1: { function: 'cause-effect', picked: ['1:1'] } } };
       const gradeResult = { total: 100, byDimension: {} };
-      const items = buildCheckItems(ak as any, data, gradeResult);
+      const items = registry.buildCheckItems(ak as any, data, gradeResult)!;
       expect(items[0].idx).toBe('sec1');
       expect(items[0].correct).toBe(true);
       expect(items[0].aiMessage).toBe('Great!');
@@ -413,7 +415,7 @@ describe('ExerciseService', () => {
       const ak = SE_MANIFEST.readingSteps[0].answerKey;
       const data = { sections: { sec1: { function: 'compare-contrast', picked: [] } } };
       const gradeResult = { total: 0, byDimension: {} };
-      const items = buildCheckItems(ak as any, data, gradeResult);
+      const items = registry.buildCheckItems(ak as any, data, gradeResult)!;
       expect(items[0].correct).toBe(false);
       expect(items[0].hint).toBe('Try cause');
       expect(items[0].aiMessage).toBe('Not quite');

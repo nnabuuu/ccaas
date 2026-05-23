@@ -6,6 +6,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -104,5 +105,18 @@ export class QuizPlugin implements ExerciseTypePlugin {
         ...(!correct && a.walkthroughZh && { walkthroughZh: a.walkthroughZh }),
       };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Quiz grading is pure index comparison — no LLM call required.
+  // buildGradePrompt returns [] (no prompts to inspect) and
+  // parseGradeResponse simply re-runs grade() since the (empty) responses
+  // are irrelevant. The L3 inspector renders "no LLM prompts" rather than 400.
+  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
+    return [];
+  }
+
+  parseGradeResponse(_responses: string[], ctx: GradeContext): GradeResult {
+    return this.grade(ctx);
   }
 }

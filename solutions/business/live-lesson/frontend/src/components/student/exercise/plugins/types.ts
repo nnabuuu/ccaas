@@ -184,6 +184,12 @@ export interface ExerciseUIPlugin {
   // ── Teacher observe ──
   readonly ObserveClassView?: ComponentType<ObserveClassViewProps>
   readonly ObserveStudentView?: ComponentType<ObserveStudentViewProps>
-  /** Backend observe-type alias (e.g. 'quiz' → 'mc'). Defaults to `type`. */
-  readonly observeType?: string
+  /**
+   * Backend observe-type alias.
+   * - `undefined` → defaults to plugin.type (e.g. `'matrix'` → `'matrix'`).
+   * - `string`    → overrides (e.g. quiz declares `'mc'`).
+   * - `null`      → explicitly no observe surface for this type
+   *                 (teacher dashboard hides the observe button).
+   */
+  readonly observeType?: string | null
 }

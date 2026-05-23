@@ -16,8 +16,8 @@ import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../
 import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
+import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { StateCacheService } from '../state-cache.service';
-import { buildCheckItems } from '../exercise/build-check-items';
 import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
 
 const BONUS_STEP_OFFSET = 100;
@@ -47,6 +47,7 @@ export class PersonalizationService {
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly gradingService: GradingService,
+    private readonly registry: ExerciseTypeRegistry,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     private readonly exerciseService: ExerciseService,
@@ -217,7 +218,7 @@ export class PersonalizationService {
     this.stateCache.markDirty(session.id);
 
     const ak = stepDef.answerKey as Record<string, unknown>;
-    const items = gradeResult ? buildCheckItems(ak, data, gradeResult) : [];
+    const items = gradeResult ? (this.registry.buildCheckItems(ak, data, gradeResult) ?? []) : [];
     const allCorrect = gradeResult ? gradeResult.total === 100 : false;
 
     return { type: stepDef.answerKey.type, allCorrect, items };

@@ -17,8 +17,9 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
-import type { GradeResult } from '../../../schemas';
+import type { GradeResult, MatrixAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 import { AiPromptBuilder } from '../../ai-prompt-builder';
 import { MatrixGrader } from '../graders/matrix.grader';
@@ -100,5 +101,37 @@ export class MatrixPlugin implements ExerciseTypePlugin {
           ...(!correct && a.hintZh && { hintZh: a.hintZh }),
         };
       });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Matrix makes one LLM call (cell-quality scoring per row). The L3 inspector
+  // surfaces it as a single GradePromptSpec; the prompt builder + response
+  // parser live on MatrixGrader (single source of truth — production grade()
+  // uses the same pair internally).
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const key = ctx.key as unknown as MatrixAnswerKey;
+    const spec = this.legacyGrader.buildCellQualitiesPrompt(key, ctx.data);
+    if (!spec) return [];
+    return [
+      {
+        systemPrompt: spec.systemPrompt,
+        userMessage: spec.userMessage,
+        options: {
+          maxTokens: spec.maxTokens,
+          temperature: spec.temperature,
+          responseFormat: { type: 'json_object' },
+        },
+      },
+    ];
+  }
+
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const key = ctx.key as unknown as MatrixAnswerKey;
+    // If there were no prompts (no non-demo rows), fall back to empty cell
+    // qualities so the heuristic path runs end-to-end.
+    const cellQualities = responses.length > 0
+      ? this.legacyGrader.parseCellQualitiesResponse(responses[0], key, ctx.data)
+      : {};
+    return this.legacyGrader.gradeWithCellQualities(key, ctx.data, cellQualities);
   }
 }

@@ -248,11 +248,17 @@ export class GuidedDiscoveryPlugin implements ExerciseTypePlugin {
 
   buildCheckItems(ctx: CheckItemContext): Array<Record<string, unknown>> {
     const steps = (ctx.key.steps as Array<Record<string, unknown>>) || [];
-    return steps.map((s) => {
+    const result: Array<Record<string, unknown>> = steps.map((s) => {
       const id = s.id as string;
       const val = ctx.gradeResult.byDimension?.[id];
       const correct = val === true || val === 100;
       return { idx: id, correct };
     });
+    // Append the trailing _llm feedback item when present — matches the
+    // legacy build-check-items.ts behavior for guided-discovery.
+    if (ctx.gradeResult.llmFeedback) {
+      result.push({ idx: '_llm', correct: true, hint: ctx.gradeResult.llmFeedback });
+    }
+    return result;
   }
 }

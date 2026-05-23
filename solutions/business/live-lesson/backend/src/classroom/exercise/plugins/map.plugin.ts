@@ -127,16 +127,33 @@ export class MapPlugin implements ExerciseTypePlugin {
           ? items.slice(0, practiceCount)
           : items;
 
-    return itemsToCheck.map((it) => {
+    // Per-item LLM commentary keyed by id (from MapGrader vision pass).
+    const llmItemsMap = new Map<string, { relevant: boolean; comment: string }>();
+    if (ctx.gradeResult.llmItems) {
+      for (const li of ctx.gradeResult.llmItems) {
+        if (li.id) llmItemsMap.set(li.id, { relevant: li.relevant, comment: li.reason });
+      }
+    }
+
+    const result: Array<Record<string, unknown>> = itemsToCheck.map((it) => {
       const id = it.id as string;
       const placed = ctx.gradeResult.byDimension?.[`${id}_placed`] === true;
       const reasoned = ctx.gradeResult.byDimension?.[`${id}_reasoned`] === true;
-      const correct = placed && reasoned;
+      // Position score must clear 50/100 to count as correct — matches
+      // the legacy build-check-items.ts behavior the registry replaces.
+      const posScore = (ctx.gradeResult.byDimension?.[`${id}_positionScore`] as number) ?? 0;
+      const llmItem = llmItemsMap.get(id);
       return {
         idx: id,
-        correct,
-        ...(!correct && it.hint && { hint: it.hint }),
+        correct: placed && reasoned && posScore >= 50,
+        ...(llmItem?.comment && { hint: llmItem.comment }),
       };
     });
+
+    if (ctx.gradeResult.llmFeedback) {
+      result.push({ idx: '_llm', correct: true, hint: ctx.gradeResult.llmFeedback });
+    }
+
+    return result;
   }
 }

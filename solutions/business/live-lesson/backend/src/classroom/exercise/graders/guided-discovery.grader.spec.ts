@@ -1,9 +1,25 @@
 import { GuidedDiscoveryGrader } from './guided-discovery.grader';
-import type { GuidedDiscoveryAnswerKey } from '../../../schemas';
+import type { GuidedDiscoveryAnswerKey, GradeResult } from '../../../schemas';
 import { AnswerKeySchema, validateAnswerKey } from '../../../schemas';
 import { sanitizeAnswerKey } from '../../../schemas/manifest.utils';
-import { buildCheckItems } from '../build-check-items';
+import { createPluginRegistryTestingModule } from '../plugins/test-utils';
+import { ExerciseTypeRegistry } from '../exercise-type-registry';
 import type { AiPromptBuilder } from '../../ai-prompt-builder';
+
+// Registry shared by the buildCheckItems tests below — built once for the
+// whole file. Hoisted via top-level `let` + `beforeAll` so individual `it`s
+// stay synchronous-looking.
+let registry: ExerciseTypeRegistry;
+beforeAll(async () => {
+  const handle = await createPluginRegistryTestingModule();
+  registry = handle.registry;
+});
+
+function buildCheckItems(ak: Record<string, unknown>, data: Record<string, unknown>, gr: GradeResult): Array<Record<string, unknown>> {
+  const items = registry.buildCheckItems(ak, data, gr);
+  if (!items) throw new Error(`no buildCheckItems impl for type "${ak.type}"`);
+  return items;
+}
 
 const grader = new GuidedDiscoveryGrader();
 

@@ -5,11 +5,11 @@ import { Student } from '../../entities/student.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
+import { ExerciseTypeRegistry } from './exercise-type-registry';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { sanitizeAnswerKey, seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
 import type { CheckResultResponse } from '../../schemas/classroom';
-import { buildCheckItems } from './build-check-items';
 
 @Injectable()
 export class ExerciseService {
@@ -19,6 +19,7 @@ export class ExerciseService {
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
     private readonly gradingService: GradingService,
+    private readonly registry: ExerciseTypeRegistry,
     private readonly manifestCache: ManifestCacheService,
   ) {}
 
@@ -93,7 +94,7 @@ export class ExerciseService {
 
     const gradeResult = await this.gradingService.grade(ak, data as Record<string, unknown>);
 
-    const items = gradeResult ? buildCheckItems(ak, data, gradeResult) : [];
+    const items = gradeResult ? (this.registry.buildCheckItems(ak, data, gradeResult) ?? []) : [];
     const allCorrect = gradeResult ? gradeResult.total === 100 : false;
 
     return { type: ak.type as string, allCorrect, items };

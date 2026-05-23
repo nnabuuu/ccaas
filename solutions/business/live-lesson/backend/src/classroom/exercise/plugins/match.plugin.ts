@@ -6,6 +6,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -104,5 +105,17 @@ export class MatchPlugin implements ExerciseTypePlugin {
         ...(!correct && a.walkthroughZh && { walkthroughZh: a.walkthroughZh }),
       };
     });
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Match grading is a pure case-insensitive string comparison — no LLM call.
+  // L3 inspector sees an empty prompt list; re-grade ignores the (empty)
+  // responses and just re-runs the deterministic grader.
+  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
+    return [];
+  }
+
+  parseGradeResponse(_responses: string[], ctx: GradeContext): GradeResult {
+    return this.grade(ctx);
   }
 }

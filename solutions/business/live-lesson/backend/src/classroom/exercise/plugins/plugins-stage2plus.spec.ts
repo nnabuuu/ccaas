@@ -474,3 +474,121 @@ describe('GuidedDiscoveryPlugin (parity)', () => {
     expect(spec.gdSteps[0].choices[0].correct).toBe(1); // intentional leakage per design
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// §14 L3 two-stage grade contract
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Pin down `buildGradePrompt` + `parseGradeResponse` shapes per plugin so the
+// preview-server L3 inspector endpoint can rely on the contract. Three
+// categories:
+//   - Trivial (no LLM): quiz, match → buildGradePrompt returns [];
+//     parseGradeResponse falls back to grade()
+//   - LLM-backed: matrix → buildGradePrompt returns 1 spec from MatrixGrader;
+//     parseGradeResponse uses the edited response to skip the LLM call
+//
+// fill-blank already had L3 (pre-existing), guided-discovery / map / image-
+// upload / rich-content-quiz / order / stance / select-evidence are out of
+// scope for this commit — backend endpoints return 400 "not available" for
+// those types until someone implements them.
+
+describe('§14 L3: QuizPlugin', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { QuizPlugin } = require('./quiz.plugin');
+  const plugin = new QuizPlugin();
+
+  it('buildGradePrompt returns [] (no LLM call needed for quiz)', () => {
+    const ak = {
+      type: 'quiz',
+      answers: [{ questionIdx: 0, correct: 1, questionText: 'Q', options: ['A', 'B'] }],
+    };
+    const prompts = plugin.buildGradePrompt({ key: ak, data: { answers: [0] } });
+    expect(prompts).toEqual([]);
+  });
+
+  it('parseGradeResponse ignores responses and re-runs grade()', () => {
+    const ak = {
+      type: 'quiz',
+      answers: [
+        { questionIdx: 0, correct: 1, questionText: 'Q1', options: ['A', 'B'] },
+        { questionIdx: 1, correct: 0, questionText: 'Q2', options: ['X', 'Y'] },
+      ],
+    };
+    const result = plugin.parseGradeResponse([], { key: ak, data: { answers: [1, 0] } });
+    expect(result.total).toBe(100);
+    expect(result.byDimension).toEqual({ q0: true, q1: true });
+  });
+});
+
+describe('§14 L3: MatchPlugin', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { MatchPlugin } = require('./match.plugin');
+  const plugin = new MatchPlugin();
+
+  it('buildGradePrompt returns [] (no LLM call needed for match)', () => {
+    const ak = {
+      type: 'match',
+      answers: [{ pairIdx: 0, left: 'L', correct: 'X' }],
+      options: ['X', 'Y'],
+    };
+    const prompts = plugin.buildGradePrompt({ key: ak, data: { pairs: ['x'] } });
+    expect(prompts).toEqual([]);
+  });
+
+  it('parseGradeResponse ignores responses and re-runs grade()', () => {
+    const ak = {
+      type: 'match',
+      answers: [{ pairIdx: 0, left: 'L', correct: 'Hello' }],
+      options: ['Hello', 'World'],
+    };
+    const result = plugin.parseGradeResponse([], { key: ak, data: { pairs: ['hello'] } });
+    expect(result.total).toBe(100);
+  });
+});
+
+describe('§14 L3: MatrixPlugin', () => {
+  const plugin = new MatrixPlugin(mockAiPromptBuilder);
+  const ak = {
+    type: 'matrix',
+    answers: [
+      { rowIdx: 0, place: 'Rome', practice: 'bathing', reason: 'hygiene', isDemo: false },
+    ],
+  };
+  const data = { rows: { 0: { place: 'Rome', practice: 'bath', reason: 'clean' } } };
+
+  it('buildGradePrompt returns one spec covering all non-demo rows', () => {
+    const prompts = plugin.buildGradePrompt({ key: ak as any, data });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0].systemPrompt).toContain('阅读课教师助手');
+    expect(prompts[0].userMessage).toContain('Rome');
+    expect(prompts[0].userMessage).toContain('bath'); // student input
+    expect(prompts[0].options?.responseFormat).toEqual({ type: 'json_object' });
+  });
+
+  it('buildGradePrompt returns [] when there are no non-demo rows', () => {
+    const demoOnlyAk = {
+      type: 'matrix',
+      answers: [{ rowIdx: 0, place: 'X', isDemo: true }],
+    };
+    const prompts = plugin.buildGradePrompt({ key: demoOnlyAk as any, data: { rows: {} } });
+    expect(prompts).toEqual([]);
+  });
+
+  it('parseGradeResponse uses the edited LLM response (no live LLM call)', () => {
+    // Inspector workflow: edit the LLM output → rerun → see new grade.
+    const editedResponse = JSON.stringify({ rows: { '0': { whatQ: 3, whyQ: 3 } } });
+    const result = plugin.parseGradeResponse([editedResponse], { key: ak as any, data });
+    expect(result.cellQualities).toBeDefined();
+    expect(result.cellQualities!['0']).toEqual({ whatQ: 3, whyQ: 3 });
+    // Heuristic place/practice/reason scoring still runs; total should reflect
+    // partial match (place == "Rome" exact, practice/reason fuzzy).
+    expect(result.byDimension?.place).toBe(100);
+    expect(typeof result.total).toBe('number');
+  });
+
+  it('parseGradeResponse falls back to heuristic on malformed response', () => {
+    const result = plugin.parseGradeResponse(['not json'], { key: ak as any, data });
+    // Heuristic uses textQuality(text.length): "bath"=4 chars → 1, "clean"=5 → 1
+    expect(result.cellQualities!['0']).toEqual({ whatQ: 1, whyQ: 1 });
+  });
+});
