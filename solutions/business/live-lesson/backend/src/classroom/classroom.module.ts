@@ -162,6 +162,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
       ],
     },
   ],
+  exports: [ExerciseTypeRegistry],
 })
 export class ClassroomModule implements OnModuleInit {
   private readonly logger = new Logger(ClassroomModule.name);

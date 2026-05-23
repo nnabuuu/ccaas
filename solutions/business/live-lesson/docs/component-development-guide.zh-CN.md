@@ -80,7 +80,7 @@
 ### 校验 + 脱敏
 
 - **Seed 时校验:** `lesson.service.ts` 在 seed lessons 时, 对每一步调用 `validateAnswerKey()`。失败会 **打 warning 但不阻塞 seed** —— 对教师用户来说要明确知道这一点。(见 `schemas/answer-key.schema.ts`。)
-- **发给学生时脱敏:** `backend/src/schemas/manifest.utils.ts` 的 `sanitizeAnswerKey()` 在学生拿到 manifest 之前剥离答案数据。`rich-content-quiz` 会被剥掉 `aiSystemPrompt`、每个 part 的 `accepts[]`、rubric 的 `criteria` 和 `sampleSolution`。例外是 `select-evidence` —— 它客户端打分, 答案数据要保留。
+- **发给学生时脱敏:** 通过 `ExerciseTypeRegistry.sanitize()` (per-type 走 plugin 的 `sanitize()`) 和 `ExerciseTypeRegistry.sanitizeManifest()` (遍历 `readingSteps`) 分发。三个调用点: `lesson.service.ts:124` (serve manifest)、`exercise.service.ts:56` (单 step spec)、`personalization.service.ts:157` (bonus)。`rich-content-quiz` 会被剥掉 `aiSystemPrompt`、每个 part 的 `accepts[]`、rubric 的 `criteria` 和 `sampleSolution`。例外是 `select-evidence` —— 它客户端打分, 答案数据要保留。
 
 ---
 
@@ -109,7 +109,7 @@ export interface ExerciseTypePlugin {
 ```
 
 **必填:** `type`、`answerKeySchema`、`grade`。
-**期望填:** `sanitize`、`buildCheckItems`。接口里标成 optional 只是因为迁移期 `schemas/manifest.utils.ts` 还留了一条 legacy fallback —— 对任何新题型都要实现。
+**期望填:** `sanitize`、`buildCheckItems`。接口里标成 optional, 但所有现有题型都实现了 —— registry 没有 fallback, plugin 没实现 `sanitize()` 会让学生拿到 `NotFoundException: Unsupported exercise type`。
 **推荐填 (复杂题型):** `buildGradePrompt` + `parseGradeResponse` —— §14 L3 两阶段契约。admin playground 的 "改 LLM prompt、不烧 token 重新 parse" inspector 流就靠它驱动。
 
 ### 调度

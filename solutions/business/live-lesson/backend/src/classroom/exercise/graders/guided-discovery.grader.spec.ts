@@ -1,9 +1,18 @@
 import { GuidedDiscoveryGrader } from './guided-discovery.grader';
 import type { GuidedDiscoveryAnswerKey, GradeResult } from '../../../schemas';
 import { AnswerKeySchema, validateAnswerKey } from '../../../schemas';
-import { sanitizeAnswerKey } from '../../../schemas/manifest.utils';
 import { createPluginRegistryTestingModule } from '../plugins/test-utils';
 import { ExerciseTypeRegistry } from '../exercise-type-registry';
+
+// Local sanitize wrapper — dispatches through the shared `registry`
+// (initialized in beforeAll below). Replaces the old top-level
+// `sanitizeAnswerKey` import after manifest.utils dropped its hardcoded dict.
+function sanitizeAnswerKey(ak: unknown, exerciseLabel?: string) {
+  return registry.sanitize({
+    answerKey: ak as Record<string, unknown>,
+    exerciseLabel,
+  });
+}
 import type { AiPromptBuilder } from '../../ai-prompt-builder';
 
 // Registry shared by the buildCheckItems tests below — built once for the

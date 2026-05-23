@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from '../entities/lesson.entity';
 import { validateAnswerKey, ManifestSchema } from '../schemas';
-import { sanitizeManifest } from '../schemas/manifest.utils';
+import { ExerciseTypeRegistry } from '../classroom/exercise/exercise-type-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,6 +14,7 @@ export class LessonService implements OnModuleInit {
   constructor(
     @InjectRepository(Lesson)
     private readonly repo: Repository<Lesson>,
+    private readonly registry: ExerciseTypeRegistry,
   ) {}
 
   async onModuleInit() {
@@ -120,7 +121,7 @@ export class LessonService implements OnModuleInit {
     }
     try {
       const manifest = JSON.parse(lesson.manifestJson);
-      return sanitizeManifest(manifest);
+      return this.registry.sanitizeManifest(manifest);
     } catch {
       throw new InternalServerErrorException(`Lesson ${id} has corrupted manifest data`);
     }

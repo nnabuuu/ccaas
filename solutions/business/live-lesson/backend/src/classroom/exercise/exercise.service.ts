@@ -7,7 +7,7 @@ import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
 import { ManifestCacheService } from '../manifest-cache.service';
-import { sanitizeAnswerKey, seededShuffle } from '../../schemas/manifest.utils';
+import { seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
 import type { CheckResultResponse } from '../../schemas/classroom';
 
@@ -53,7 +53,11 @@ export class ExerciseService {
       practiceItemIds = shuffled.slice(0, ak.practiceCount as number);
     }
 
-    const spec = sanitizeAnswerKey(rawKey, stepDef.exerciseLabel as string | undefined, practiceItemIds);
+    const spec = this.registry.sanitize({
+      answerKey: ak,
+      exerciseLabel: stepDef.exerciseLabel as string | undefined,
+      practiceItemIds,
+    });
     if (!spec) throw new NotFoundException(`Unsupported exercise type at step ${step}`);
     return spec;
   }

@@ -80,7 +80,7 @@ Design rule of thumb: keep teacher-authored property names natural and self-docu
 ### Validation + sanitization
 
 - **Validation at seed time:** `lesson.service.ts` calls `validateAnswerKey()` per step when seeding lessons. Failures **log a warning but do not block seeding** — be honest about this with your teacher users. (See `schemas/answer-key.schema.ts`.)
-- **Sanitization at serve time:** `sanitizeAnswerKey()` in `backend/src/schemas/manifest.utils.ts` strips answer data before the student sees the manifest. For `rich-content-quiz`, that means dropping `aiSystemPrompt`, per-part `accepts[]`, rubric `criteria`, and `sampleSolution`. The exception is `select-evidence`, which keeps grading data on the wire because it grades client-side.
+- **Sanitization at serve time:** dispatched through `ExerciseTypeRegistry.sanitize()` (per-type via your plugin's `sanitize()` method) and `ExerciseTypeRegistry.sanitizeManifest()` (walks all `readingSteps`). Three call sites: `lesson.service.ts:124` (serving the manifest), `exercise.service.ts:56` (per-step spec), `personalization.service.ts:157` (bonus exercise). For `rich-content-quiz`, sanitize drops `aiSystemPrompt`, per-part `accepts[]`, rubric `criteria`, and `sampleSolution`. The exception is `select-evidence`, which keeps grading data on the wire because it grades client-side.
 
 ---
 
@@ -109,7 +109,7 @@ export interface ExerciseTypePlugin {
 ```
 
 **Required:** `type`, `answerKeySchema`, `grade`.
-**Expected:** `sanitize`, `buildCheckItems`. They're typed as optional only because the migration left a legacy fallback in `schemas/manifest.utils.ts` — for any new type, implement them.
+**Expected:** `sanitize`, `buildCheckItems`. They're typed as optional in the interface, but every shipping type implements both — the registry has no fallback, an unimplemented `sanitize()` means the student gets nothing (`NotFoundException: Unsupported exercise type`).
 **Recommended (for richer types):** `buildGradePrompt` + `parseGradeResponse` — the §14 L3 two-stage contract. This is what powers the admin playground's "edit the LLM prompt, re-parse without burning tokens" inspector loop.
 
 ### Dispatch

@@ -1,4 +1,36 @@
-import { sanitizeAnswerKey, sanitizeManifest, seededShuffle } from './manifest.utils';
+/**
+ * Sanitize used to live in this file as a hardcoded dict; it's now dispatched
+ * through ExerciseTypeRegistry per-type. The original assertions are still
+ * valuable regression coverage, so we keep them all but route the
+ * `sanitizeAnswerKey` / `sanitizeManifest` calls through a registry bootstrap.
+ *
+ * The `seededShuffle` tests at the bottom are unchanged — that helper still
+ * lives in manifest.utils.
+ */
+import { createPluginRegistryTestingModule } from '../classroom/exercise/plugins/test-utils';
+import type { ExerciseTypeRegistry } from '../classroom/exercise/exercise-type-registry';
+import { seededShuffle } from './manifest.utils';
+
+let registry: ExerciseTypeRegistry;
+beforeAll(async () => {
+  const handle = await createPluginRegistryTestingModule();
+  registry = handle.registry;
+});
+
+function sanitizeAnswerKey(
+  ak: unknown,
+  exerciseLabel?: string,
+  practiceItemIds?: string[],
+) {
+  return registry.sanitize({
+    answerKey: ak as Record<string, unknown>,
+    exerciseLabel,
+    practiceItemIds,
+  });
+}
+function sanitizeManifest(manifest: unknown) {
+  return registry.sanitizeManifest(manifest);
+}
 
 describe('sanitizeAnswerKey', () => {
   it('returns null for invalid input', () => {

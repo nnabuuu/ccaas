@@ -11,7 +11,6 @@ import { OrderPlugin } from './order.plugin';
 import { QuizGrader } from '../graders/quiz.grader';
 import { MatchGrader } from '../graders/match.grader';
 import { OrderGrader } from '../graders/order.grader';
-import { sanitizeAnswerKey } from '../../../schemas/manifest.utils';
 
 describe('QuizPlugin', () => {
   const plugin = new QuizPlugin();
@@ -65,18 +64,6 @@ describe('QuizPlugin', () => {
     expect(plugin.grade({ key: ak, data })).toEqual(legacy.grade(ak as any, data));
   });
 
-  it('sanitize output matches legacy sanitizeAnswerKey', () => {
-    const ak = {
-      type: 'quiz',
-      answers: [
-        { questionIdx: 0, questionText: 'Q?', options: ['A', 'B'], correct: 1, hint: 'try again' },
-      ],
-    };
-    const pluginSpec = plugin.sanitize({ answerKey: ak, exerciseLabel: 'Test' });
-    const legacySpec = sanitizeAnswerKey(ak, 'Test');
-    expect(pluginSpec).toEqual(legacySpec);
-  });
-
   it('sanitize strips correct + hint + walkthrough', () => {
     const ak = {
       type: 'quiz',
@@ -124,15 +111,6 @@ describe('MatchPlugin', () => {
     const data = { pairs: ['hello'] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(plugin.grade({ key: ak, data })).toEqual(legacy.grade(ak as any, data));
-  });
-
-  it('sanitize matches legacy', () => {
-    const ak = {
-      type: 'match',
-      answers: [{ pairIdx: 0, left: 'L', correct: 'Hello' }],
-      options: ['Hello', 'World'],
-    };
-    expect(plugin.sanitize({ answerKey: ak })).toEqual(sanitizeAnswerKey(ak));
   });
 
   it('sanitize strips `correct` field from each pair', () => {

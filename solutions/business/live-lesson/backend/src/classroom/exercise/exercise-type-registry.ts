@@ -110,8 +110,8 @@ export class ExerciseTypeRegistry implements OnModuleInit {
 
   /**
    * Sanitize answerKey using the registered plugin for its type.
-   * Returns null when no plugin is registered for the type, or when the plugin
-   * does not implement sanitize() (caller should fall back to legacy).
+   * Returns null when no plugin is registered, or when the plugin's sanitize()
+   * returns null. This is the canonical dispatch — no legacy fallback.
    */
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {
     this.ensureInitialized();
@@ -120,6 +120,40 @@ export class ExerciseTypeRegistry implements OnModuleInit {
     const plugin = this.plugins.get(type);
     if (!plugin || !plugin.sanitize) return null;
     return plugin.sanitize(ctx);
+  }
+
+  /**
+   * Walk a full manifest, sanitizing every readingStep.answerKey + discoveryKey
+   * via the per-type plugin. Also strips discuss.systemPrompt / discuss.goal.
+   * Returns a deep clone of the manifest with answer data removed.
+   */
+  sanitizeManifest(manifest: unknown): unknown {
+    if (!manifest) return manifest;
+    const clone = JSON.parse(JSON.stringify(manifest));
+    const steps: Array<Record<string, unknown>> = clone.readingSteps || [];
+
+    for (const step of steps) {
+      if (step.answerKey) {
+        const spec = this.sanitize({
+          answerKey: step.answerKey as Record<string, unknown>,
+          exerciseLabel: step.exerciseLabel as string | undefined,
+        });
+        if (spec) step.answerKey = spec;
+      }
+      if (step.discoveryKey) {
+        const spec = this.sanitize({
+          answerKey: step.discoveryKey as Record<string, unknown>,
+        });
+        if (spec) step.discoveryKey = spec;
+      }
+      if (step.discuss && typeof step.discuss === 'object') {
+        const d = step.discuss as Record<string, unknown>;
+        delete d.systemPrompt;
+        delete d.goal;
+      }
+    }
+
+    return clone;
   }
 
   /**

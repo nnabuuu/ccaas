@@ -50,13 +50,27 @@ function makeRepoMock() {
   };
 }
 
+import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from '../classroom/exercise/plugins/test-utils';
+import { AiPromptBuilder } from '../classroom/ai-prompt-builder';
+
 async function buildService(repo: ReturnType<typeof makeRepoMock>): Promise<LessonService> {
+  // LessonService now depends on ExerciseTypeRegistry (for sanitizeManifest).
+  // Bootstrap the full plugin registry so the service can dispatch sanitize.
+  const mockAi = {
+    callLlm: () => Promise.reject(new Error('mock')),
+    callVisionLlm: () => Promise.reject(new Error('mock')),
+  } as unknown as AiPromptBuilder;
   const module = await Test.createTestingModule({
+    imports: [DiscoveryModule],
     providers: [
       LessonService,
       { provide: getRepositoryToken(Lesson), useValue: repo },
+      { provide: AiPromptBuilder, useValue: mockAi },
+      ...PLUGIN_PROVIDERS,
     ],
   }).compile();
+  await module.init();
   return module.get(LessonService);
 }
 

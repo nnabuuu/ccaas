@@ -21,7 +21,6 @@
  *     The legacy grader's own spec file (graders/*.spec.ts) remains the
  *     source of truth for grading behaviour for delegating plugins.
  */
-import { sanitizeAnswerKey } from '../../../schemas/manifest.utils';
 import { StancePlugin } from './stance.plugin';
 import { OrderPlugin } from './order.plugin';
 import { MatrixPlugin } from './matrix.plugin';
@@ -86,16 +85,6 @@ describe('StancePlugin (parity)', () => {
     expect(spec.stanceOpts).toEqual(['Agree', 'Disagree']);
   });
 
-  it('sanitize output matches legacy sanitizeAnswerKey', () => {
-    const ak = {
-      type: 'stance',
-      validPositions: ['Agree'],
-      minEvidence: 2,
-      stanceOpts: ['Agree', 'Disagree'],
-      evidence: ['e1'],
-    };
-    expect(plugin.sanitize({ answerKey: ak })).toEqual(sanitizeAnswerKey(ak));
-  });
 });
 
 // Native plugin — grade() reimplemented; parity assertions are real.
@@ -195,16 +184,6 @@ describe('MatrixPlugin (parity)', () => {
     expect(spec.rows[1].isDemo).toBe(false);
   });
 
-  it('sanitize matches legacy sanitizeAnswerKey', () => {
-    const ak = {
-      type: 'matrix',
-      answers: [
-        { rowIdx: 0, place: 'Demo', isDemo: true, practice: 'pd', reason: 'rd' },
-        { rowIdx: 1, place: 'P', isDemo: false, practice: 'pp', reason: 'rp' },
-      ],
-    };
-    expect(plugin.sanitize({ answerKey: ak })).toEqual(sanitizeAnswerKey(ak));
-  });
 });
 
 // Delegating plugin — grade() forwards to MapGrader. Grade-parity is

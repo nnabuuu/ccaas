@@ -11,7 +11,6 @@ import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { CoachingService } from '../coaching.service';
-import { sanitizeAnswerKey } from '../../schemas/manifest.utils';
 import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../schemas';
 import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../task-map.utils';
@@ -154,7 +153,10 @@ export class PersonalizationService {
     }
     const stepDef = parsed.data;
 
-    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel);
+    const spec = this.registry.sanitize({
+      answerKey: stepDef.answerKey as Record<string, unknown>,
+      exerciseLabel: stepDef.exerciseLabel,
+    });
     if (!spec) throw new NotFoundException(`Unsupported bonus exercise type`);
 
     const articleParsed = BonusArticleSchema.safeParse(manifest.bonusArticle);

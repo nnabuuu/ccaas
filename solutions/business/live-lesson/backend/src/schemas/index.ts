@@ -41,8 +41,9 @@ export {
   type Manifest, type ReadingStep, type PersonalTouch, type BonusArticle, type BonusStep,
 } from './manifest.schema';
 
-// Sanitize utilities
-export { sanitizeAnswerKey, sanitizeManifest } from './manifest.utils';
+// Manifest helpers (sanitize moved to ExerciseTypeRegistry — see
+// classroom/exercise/exercise-type-registry.ts for the canonical dispatch)
+export { seededShuffle } from './manifest.utils';
 
 // Observation (unified observability)
 export {
