@@ -26,11 +26,11 @@
 
 | # | Surface | 主要文件 | 是否必须 | 一行契约 |
 | - | --- | --- | --- | --- |
-| 1 | [Schema](#3-surface-1--schema-教师手写) | `backend/src/schemas/answer-key.schema.ts` + plugin 的 `answerKeySchema` | ✅ | 以 `type: z.literal('<type>')` 为判别字段的 Zod schema |
-| 2 | [后端 plugin](#4-surface-2--后端-plugin) | `backend/src/classroom/exercise/plugins/<type>.plugin.ts` | ✅ | `@Injectable() @ExerciseType('<type>')` 实现 `ExerciseTypePlugin` |
+| 1 | [Schema](#3-surface-1--schema-教师手写) | `backend/src/domain/exercise-types/<type>/<type>.plugin.ts` 的 `answerKeySchema` 字段 — 组合到 `backend/src/schemas/answer-key.schema.ts` | ✅ | 以 `type: z.literal('<type>')` 为判别字段的 Zod schema |
+| 2 | [后端 plugin](#4-surface-2--后端-plugin) | `backend/src/domain/exercise-types/<type>/<type>.plugin.ts` | ✅ | `@Injectable() @ExerciseType('<type>')` 实现 `ExerciseTypePlugin` |
 | 3 | [前端任务区](#5-surface-3--前端任务区左边一列) | `frontend/src/components/student/exercise/<Type>Exercise.tsx` + `plugins/built-in.tsx` 里的 entry | ✅ | `ExerciseUIPlugin` 提供 `Component` + `canSubmit` |
 | 4 | [前端右边一列](#6-surface-4--前端右边一列guide--文本面板) | `<Type>Guide.tsx`; 极少数情况 `TextPanel.tsx` | 可选/特例 | per-type guide 是约定, 不是框架 |
-| 5 | [Observe 管道 + drawer](#7-surface-5--observation--教师端-observe-drawer) | `backend/src/classroom/observe/handlers/<type>.handler.ts` + plugin 的 `ObserveClassView/StudentView` | 可选 | plugin 声明 `observeType` + lazy views; 后端用 `@ObserveType('<type>')` |
+| 5 | [Observe 管道 + drawer](#7-surface-5--observation--教师端-observe-drawer) | `backend/src/domain/exercise-types/<type>/<type>.observe.ts` + plugin 的 `ObserveClassView/StudentView` | 可选 | plugin 声明 `observeType` + lazy views; 后端用 `@ObserveType('<type>')` |
 
 **不在**列表里、**也不能扩展**的: 教师端 dashboard 的 tab 栏。详见 [§8](#8-边界拿不动的几样)。
 
@@ -72,25 +72,25 @@
 ### Schema 在哪
 
 - Zod schema 通过两个入口暴露:
-  - 作为 plugin 的 `answerKeySchema` 字段 (source of truth, 跟 plugin 同文件, 在 `backend/src/classroom/exercise/plugins/<type>.plugin.ts`)。
-  - 从 `backend/src/schemas/answer-key.schema.ts` 重新 export, 让调用方不用拉整个 plugin。
+  - 作为 plugin 的 `answerKeySchema` 字段 (source of truth, 跟 plugin 同文件, 在 `backend/src/domain/exercise-types/<type>/<type>.plugin.ts`)。
+  - 组合到 `backend/src/schemas/answer-key.schema.ts` 的判别 union, 让调用方能引到跨题型的 `AnswerKey` 类型 (per-type 单独成文件 `<type>.schema.ts` 在 backlog 上)。
 - schema 必须以 `z.literal('<type>')` 作为 `type` 字段的判别 —— 组合 union dispatcher 依赖这一点。
 - **不要**用 `.transform()` / `.preprocess()` / `.pipe()` 改变输出类型。registry 把校验后的原对象直接转发给 plugin 方法; transform 会让 plugin 看到的形状跟调用方看到的不一致。只用 `.refine()` 做校验。
 
 ### 校验 + 脱敏
 
 - **Seed 时校验:** `lesson.service.ts` 在 seed lessons 时, 对每一步调用 `validateAnswerKey()`。失败会 **打 warning 但不阻塞 seed** —— 对教师用户来说要明确知道这一点。(见 `schemas/answer-key.schema.ts`。)
-- **发给学生时脱敏:** 通过 `ExerciseTypeRegistry.sanitize()` (per-type 走 plugin 的 `sanitize()`) 和 `ExerciseTypeRegistry.sanitizeManifest()` (遍历 `readingSteps`) 分发。三个调用点: `lesson.service.ts:124` (serve manifest)、`exercise.service.ts:56` (单 step spec)、`personalization.service.ts:157` (bonus)。`rich-content-quiz` 会被剥掉 `aiSystemPrompt`、每个 part 的 `accepts[]`、rubric 的 `criteria` 和 `sampleSolution`。例外是 `select-evidence` —— 它客户端打分, 答案数据要保留。
+- **发给学生时脱敏:** 通过 `ExerciseTypeRegistry.sanitize()` (per-type 走 plugin 的 `sanitize()`) 和 `ExerciseTypeRegistry.sanitizeManifest()` (遍历 `readingSteps`) 分发。三个调用点: `application/lesson/lesson.service.ts` (serve manifest)、`application/exercise/exercise.service.ts` (单 step spec)、`application/ai/personalization.service.ts` (bonus)。`rich-content-quiz` 会被剥掉 `aiSystemPrompt`、每个 part 的 `accepts[]`、rubric 的 `criteria` 和 `sampleSolution`。例外是 `select-evidence` —— 它客户端打分, 答案数据要保留。
 
 ---
 
 ## §4. Surface 2 — 后端 plugin
 
-一个文件: `backend/src/classroom/exercise/plugins/<type>.plugin.ts`。通过 `@Injectable()` + `@ExerciseType('<type>')` 装饰器自动发现 —— `ExerciseTypeRegistry.onModuleInit()` 用 NestJS 的 `DiscoveryService` 扫描 providers, 把带装饰器的类注册进 registry。
+一个文件: `backend/src/domain/exercise-types/<type>/<type>.plugin.ts`。通过 `@Injectable()` + `@ExerciseType('<type>')` 装饰器自动发现 —— `ExerciseTypeRegistry.onModuleInit()` (在 `backend/src/application/exercise/exercise-type-registry.ts`) 用 NestJS 的 `DiscoveryService` 扫描 providers, 把带装饰器的类注册进 registry。
 
 ### 契约 — `ExerciseTypePlugin`
 
-来自 `backend/src/classroom/exercise/exercise-type-plugin.interface.ts:65`:
+来自 `backend/src/domain/shared/exercise-type-plugin.interface.ts:65`:
 
 ```ts
 export interface ExerciseTypePlugin {
@@ -207,13 +207,13 @@ Recipe: 复制 `RcqGuide.tsx`, 改文案, 在你的 `<Type>Exercise.tsx` 里 imp
 
 ### 事件发射 (新题型一般不动)
 
-`student-submission.service.ts` 在每次打分后通过 `@kedge-agentic/observer-engine` dispatch `exercise_result` 事件。`backend/src/classroom/observation/handlers/` 下的 observation handler (`ExerciseHandler`、`JoinHandler` 等) 是**全局的**, 不是 per-type 的。新题型通常不在这里加新文件。
+`application/classroom/student-submission.service.ts` 在每次打分后通过 `@kedge-agentic/observer-engine` dispatch `exercise_result` 事件。`backend/src/adapters/observer-engine/handlers/` 下的 observation handler (`ExerciseHandler`、`JoinHandler` 等) 是**全局的**, 不是 per-type 的。新题型通常不在这里加新文件。
 
 ### 后端 observe handler (per-type 教师数据)
 
-这是"老师在 observe drawer 看到的这一步的数据"的 per-type surface。文件: `backend/src/classroom/observe/handlers/<type>.handler.ts`。
+这是"老师在 observe drawer 看到的这一步的数据"的 per-type surface。文件: `backend/src/domain/exercise-types/<type>/<type>.observe.ts` (discuss-observe 不是题型, 而是讨论 phase, 住在 `backend/src/application/observation/discuss.observe.ts`)。
 
-自动注册跟 plugin registry 同模式。`backend/src/classroom/observe/observe-registry.ts:24`:
+自动注册跟 plugin registry 同模式。`backend/src/application/observation/observe-registry.ts:24`:
 
 ```ts
 onModuleInit() {
@@ -226,7 +226,7 @@ onModuleInit() {
 }
 ```
 
-参考实现: `matrix.handler.ts`、`mc.handler.ts`。各自是 `@Injectable() @ObserveType('<type>')` 实现 `ObserveHandler.compute(ctx) → <Type>ObserveData`。聚合时一次性给出班级整体 + 每个学生的明细。
+参考实现: `domain/exercise-types/matrix/matrix.observe.ts`、`domain/exercise-types/quiz/quiz.observe.ts`。各自是 `@Injectable() @ObserveType('<type>')` 实现 `ObserveHandler.compute(ctx) → <Type>ObserveData`。聚合时一次性给出班级整体 + 每个学生的明细。(历史注: 重构前这两个叫 `mc.handler.ts` 和 `evidence.handler.ts`, `@ObserveType('mc')` / `@ObserveType('evidence')` 装饰器字符串保留, 只是文件 + 类名改了。)
 
 两种 opt-out:
 - **复用另一种 type 的 handler**: 在 plugin 上设 `observeType` 为字符串别名 (比如 `rich-content-quiz` 别名到 `'image-upload'` —— 见 `observe-registry.ts:52`)。

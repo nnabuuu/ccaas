@@ -1,6 +1,18 @@
 # Exercise Type Plugin Architecture
 
 > 设计文档 — 从手动注册到自注册插件的全栈架构重构蓝图
+>
+> **⚠️ 历史路径注记 (2026-05):** 本文档是 plugin 系统 *最初* 的设计文档,
+> 文中很多 `backend/src/classroom/exercise/plugins/<type>.plugin.ts` 等路径反映的是
+> 文档撰写时的目录布局。一次后续的 clean-architecture 重构已经把后端整体迁移到
+> `domain/` + `application/` + `adapters/` + `infra/` 四层结构 —
+>   - per-type 文件全部进入 `backend/src/domain/exercise-types/<type>/`
+>   - registry / use cases 在 `application/`
+>   - controllers / entities / observer 在 `adapters/`
+>   - NestJS 模块 wiring 在 `infra/`
+>
+> 路径速查请看 [CLAUDE.md](../CLAUDE.md) "Backend Architecture" 表 + [component-development-guide.md](./component-development-guide.md)。
+> 本文档的 *设计契约* (auto-discovery、composed schema、registry dispatch) 没变 — 只是文件位置变了。
 
 ## 1. Problem Statement
 

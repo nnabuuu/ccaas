@@ -14,7 +14,7 @@ A complete exercise type has three artifacts living in three different packages:
 
 | Artifact | Lives in | Implements | Required? |
 | --- | --- | --- | --- |
-| **Backend plugin** | `solutions/business/live-lesson/backend/src/classroom/exercise/plugins/<type>.plugin.ts` | `ExerciseTypePlugin` | Yes — grading + sanitize + checkItems happen here |
+| **Backend plugin** | `solutions/business/live-lesson/backend/src/domain/exercise-types/<type>/<type>.plugin.ts` (+ sibling `<type>.grader.ts`, `<type>.observe.ts`, `__tests__/`) | `ExerciseTypePlugin` | Yes — grading + sanitize + checkItems happen here |
 | **Frontend UI plugin** | `solutions/business/live-lesson/frontend/src/components/student/exercise/plugins/built-in.tsx` (one entry per type) | `ExerciseUIPlugin` | Yes — render + canSubmit + localGrade + enrich + handleCheckResult |
 | **Stories file** *(optional)* | next to the plugin source, suffix `.stories.ts` | `defineStories` + named `Story` exports | Optional — only needed to preview in `exercise-preview` |
 
@@ -35,17 +35,17 @@ Conventions:
 ## Step 2 — Backend plugin
 
 ```ts
-// solutions/business/live-lesson/backend/src/classroom/exercise/plugins/long-division.plugin.ts
+// solutions/business/live-lesson/backend/src/domain/exercise-types/long-division/long-division.plugin.ts
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { ExerciseType } from '../exercise-type.decorator';
+import { ExerciseType } from '../../shared/exercise-type.decorator';
 import type {
   ExerciseTypePlugin,
   GradeContext,
   CheckItemContext,
   SanitizeContext,
   GradePromptSpec,
-} from '../exercise-type-plugin.interface';
+} from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 
@@ -125,7 +125,7 @@ export class LongDivisionPlugin implements ExerciseTypePlugin {
 }
 ```
 
-Then register the class with the NestJS module so the discovery scan picks it up. Open `solutions/business/live-lesson/backend/src/classroom/exercise/exercise.module.ts` (or whichever module hosts the plugins — search the codebase for an existing `*.plugin.ts` import) and add `LongDivisionPlugin` to its `providers` array.
+Then register the class with the NestJS module so the discovery scan picks it up. Open `solutions/business/live-lesson/backend/src/infra/classroom.module.ts` and add `LongDivisionPlugin` to its `providers` array (alongside the existing `QuizPlugin`, `MatchPlugin`, etc. imports from `../domain/exercise-types/<type>/<type>.plugin`).
 
 **That's it on the backend.** No edits in `GradingService`, no edits in `student-submission.service.ts`, no edits in `exercise.service.ts` — they all dispatch through `ExerciseTypeRegistry`.
 
@@ -283,11 +283,11 @@ The plugin should now appear:
 
 For the audit to stay honest, this is the list of files **a new exercise type should not require you to open**:
 
-- `solutions/business/live-lesson/backend/src/classroom/exercise/exercise-type-registry.ts` — autoregisters via `@ExerciseType()`
-- `solutions/business/live-lesson/backend/src/classroom/exercise/grading.service.ts` — dispatches through registry
-- `solutions/business/live-lesson/backend/src/classroom/exercise/exercise.service.ts` — dispatches through registry
-- `solutions/business/live-lesson/backend/src/classroom/student-submission.service.ts` — dispatches through registry
-- `solutions/business/live-lesson/backend/src/classroom/personal-touch/personalization.service.ts` — dispatches through registry
+- `solutions/business/live-lesson/backend/src/application/exercise/exercise-type-registry.ts` — autoregisters via `@ExerciseType()`
+- `solutions/business/live-lesson/backend/src/application/exercise/grading.service.ts` — dispatches through registry
+- `solutions/business/live-lesson/backend/src/application/exercise/exercise.service.ts` — dispatches through registry
+- `solutions/business/live-lesson/backend/src/application/classroom/student-submission.service.ts` — dispatches through registry
+- `solutions/business/live-lesson/backend/src/application/ai/personalization.service.ts` — dispatches through registry
 - `solutions/business/live-lesson/frontend/src/components/student/exercise/PracticePhase.tsx` — single `<PluginComp/>` call drives render/submit/check
 - `solutions/business/live-lesson/frontend/src/components/student/exercise/enrich-exercise.ts` — dispatches through registry
 - `solutions/business/live-lesson/frontend/src/components/student/StudentShell.tsx` — unchanged
@@ -311,6 +311,6 @@ If you find yourself editing any of these to wire a new type in, that file likel
 
 - Architecture: `solutions/business/live-lesson/docs/exercise-plugin-architecture.md`
 - Preview platform design: `solutions/business/live-lesson/docs/exercise-plugin-preview-design.md`
-- Existing plugins to crib from: `solutions/business/live-lesson/backend/src/classroom/exercise/plugins/*.plugin.ts`
+- Existing plugins to crib from: `solutions/business/live-lesson/backend/src/domain/exercise-types/*/.plugin.ts` (each type folder is a self-contained example — `quiz/` is the simplest, `rich-content-quiz/` shows delegating composition)
 - Example bundle: `packages/exercise-preview/bundles/quiz-demo/`
 - §14 L3 (Inspector debugging contract): `exercise-plugin-preview-design.md §14`

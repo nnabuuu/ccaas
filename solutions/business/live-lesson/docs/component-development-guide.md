@@ -26,11 +26,11 @@ Authoring a one-off React widget or a backend service is a strict subset — if 
 
 | # | Surface | Primary file(s) | Required? | One-line contract |
 | - | --- | --- | --- | --- |
-| 1 | [Schema](#3-surface-1--schema-teacher-authoring) | `backend/src/schemas/answer-key.schema.ts` + plugin's `answerKeySchema` | ✅ | A Zod schema discriminated by `type: z.literal('<type>')` |
-| 2 | [Backend plugin](#4-surface-2--backend-plugin) | `backend/src/classroom/exercise/plugins/<type>.plugin.ts` | ✅ | `@Injectable() @ExerciseType('<type>')` implementing `ExerciseTypePlugin` |
+| 1 | [Schema](#3-surface-1--schema-teacher-authoring) | `backend/src/domain/exercise-types/<type>/<type>.plugin.ts` (the plugin's `answerKeySchema` field) — composed into `backend/src/schemas/answer-key.schema.ts` | ✅ | A Zod schema discriminated by `type: z.literal('<type>')` |
+| 2 | [Backend plugin](#4-surface-2--backend-plugin) | `backend/src/domain/exercise-types/<type>/<type>.plugin.ts` | ✅ | `@Injectable() @ExerciseType('<type>')` implementing `ExerciseTypePlugin` |
 | 3 | [Frontend task area](#5-surface-3--frontend-task-area-left-column) | `frontend/src/components/student/exercise/<Type>Exercise.tsx` + plugin entry in `plugins/built-in.tsx` | ✅ | `ExerciseUIPlugin` with `Component` + `canSubmit` |
 | 4 | [Frontend right side](#6-surface-4--frontend-right-side-guide--text-panel) | `<Type>Guide.tsx`; rarely `TextPanel.tsx` | optional / bespoke | Per-type guide is a convention, not a framework |
-| 5 | [Observe pipeline + drawer](#7-surface-5--observation--teacher-observe-drawer) | `backend/src/classroom/observe/handlers/<type>.handler.ts` + plugin's `ObserveClassView/StudentView` | optional | Plugin declares `observeType` + lazy views; backend declares `@ObserveType('<type>')` |
+| 5 | [Observe pipeline + drawer](#7-surface-5--observation--teacher-observe-drawer) | `backend/src/domain/exercise-types/<type>/<type>.observe.ts` + plugin's `ObserveClassView/StudentView` | optional | Plugin declares `observeType` + lazy views; backend declares `@ObserveType('<type>')` |
 
 What is **not** on this list and **cannot be extended**: the teacher dashboard's tab strip. See [§8](#8-boundaries-what-you-cannot-extend).
 
@@ -72,25 +72,25 @@ Design rule of thumb: keep teacher-authored property names natural and self-docu
 ### Where the schema lives
 
 - The Zod schema is exposed two ways:
-  - As the plugin's `answerKeySchema` field (the source of truth, lives next to the plugin in `backend/src/classroom/exercise/plugins/<type>.plugin.ts`).
-  - Re-exported from `backend/src/schemas/answer-key.schema.ts` so callers can import it without pulling the whole plugin.
+  - As the plugin's `answerKeySchema` field (the source of truth, lives next to the plugin in `backend/src/domain/exercise-types/<type>/<type>.plugin.ts`).
+  - Composed into the union at `backend/src/schemas/answer-key.schema.ts` so callers can import the cross-type `AnswerKey` discriminated union without pulling the whole plugin (per-type schema split into separate `<type>.schema.ts` files is on the backlog).
 - The schema **must** start with a `z.literal('<type>')` discriminator on the `type` field — the composed union dispatcher needs this.
 - **Don't** use `.transform()` / `.preprocess()` / `.pipe()` that changes the output type. The registry forwards the raw validated object to plugin methods; transforms would cause a divergence between what the plugin sees and what callers see. Use `.refine()` for validation only.
 
 ### Validation + sanitization
 
-- **Validation at seed time:** `lesson.service.ts` calls `validateAnswerKey()` per step when seeding lessons. Failures **log a warning but do not block seeding** — be honest about this with your teacher users. (See `schemas/answer-key.schema.ts`.)
-- **Sanitization at serve time:** dispatched through `ExerciseTypeRegistry.sanitize()` (per-type via your plugin's `sanitize()` method) and `ExerciseTypeRegistry.sanitizeManifest()` (walks all `readingSteps`). Three call sites: `lesson.service.ts:124` (serving the manifest), `exercise.service.ts:56` (per-step spec), `personalization.service.ts:157` (bonus exercise). For `rich-content-quiz`, sanitize drops `aiSystemPrompt`, per-part `accepts[]`, rubric `criteria`, and `sampleSolution`. The exception is `select-evidence`, which keeps grading data on the wire because it grades client-side.
+- **Validation at seed time:** `application/lesson/lesson.service.ts` calls `validateAnswerKey()` per step when seeding lessons. Failures **log a warning but do not block seeding** — be honest about this with your teacher users. (See `schemas/answer-key.schema.ts`.)
+- **Sanitization at serve time:** dispatched through `ExerciseTypeRegistry.sanitize()` (per-type via your plugin's `sanitize()` method) and `ExerciseTypeRegistry.sanitizeManifest()` (walks all `readingSteps`). Three call sites: `application/lesson/lesson.service.ts` (serving the manifest), `application/exercise/exercise.service.ts` (per-step spec), `application/ai/personalization.service.ts` (bonus exercise). For `rich-content-quiz`, sanitize drops `aiSystemPrompt`, per-part `accepts[]`, rubric `criteria`, and `sampleSolution`. The exception is `select-evidence`, which keeps grading data on the wire because it grades client-side.
 
 ---
 
 ## §4. Surface 2 — Backend plugin
 
-One file: `backend/src/classroom/exercise/plugins/<type>.plugin.ts`. Auto-discovered through `@Injectable()` + `@ExerciseType('<type>')` decorators — the `ExerciseTypeRegistry.onModuleInit()` walks NestJS providers with `DiscoveryService` and registers anything decorated.
+One file: `backend/src/domain/exercise-types/<type>/<type>.plugin.ts`. Auto-discovered through `@Injectable()` + `@ExerciseType('<type>')` decorators — the `ExerciseTypeRegistry.onModuleInit()` (`backend/src/application/exercise/exercise-type-registry.ts`) walks NestJS providers with `DiscoveryService` and registers anything decorated.
 
 ### The contract — `ExerciseTypePlugin`
 
-From `backend/src/classroom/exercise/exercise-type-plugin.interface.ts:65`:
+From `backend/src/domain/shared/exercise-type-plugin.interface.ts:65`:
 
 ```ts
 export interface ExerciseTypePlugin {
@@ -207,13 +207,13 @@ If your new type needs the right-side text to react to student actions in the le
 
 ### Event emission (no per-type work)
 
-`student-submission.service.ts` dispatches `exercise_result` events through `@kedge-agentic/observer-engine` after every grade. The observation handlers under `backend/src/classroom/observation/handlers/` (`ExerciseHandler`, `JoinHandler`, etc.) are **global**, not per-type. You normally don't add a new file here.
+`application/classroom/student-submission.service.ts` dispatches `exercise_result` events through `@kedge-agentic/observer-engine` after every grade. The observation handlers under `backend/src/adapters/observer-engine/handlers/` (`ExerciseHandler`, `JoinHandler`, etc.) are **global**, not per-type. You normally don't add a new file here.
 
 ### Backend observe handler (per-type teacher data)
 
-This is the per-type surface for "what the teacher sees in the observe drawer for this step." File: `backend/src/classroom/observe/handlers/<type>.handler.ts`.
+This is the per-type surface for "what the teacher sees in the observe drawer for this step." File: `backend/src/domain/exercise-types/<type>/<type>.observe.ts` (the discuss-observe handler — for the discussion phase, not a type — lives at `backend/src/application/observation/discuss.observe.ts`).
 
-Auto-registration mirrors the plugin registry. From `backend/src/classroom/observe/observe-registry.ts:24`:
+Auto-registration mirrors the plugin registry. From `backend/src/application/observation/observe-registry.ts:24`:
 
 ```ts
 onModuleInit() {
@@ -226,7 +226,7 @@ onModuleInit() {
 }
 ```
 
-Reference impl: `matrix.handler.ts` and `mc.handler.ts`. Each is `@Injectable() @ObserveType('<type>')` implementing `ObserveHandler.compute(ctx) → <Type>ObserveData`. The aggregation does roll-ups across all students for the step — class-wide stats + per-student detail in one return value.
+Reference impl: `domain/exercise-types/matrix/matrix.observe.ts` and `domain/exercise-types/quiz/quiz.observe.ts`. Each is `@Injectable() @ObserveType('<type>')` implementing `ObserveHandler.compute(ctx) → <Type>ObserveData`. The aggregation does roll-ups across all students for the step — class-wide stats + per-student detail in one return value. (Historical note: pre-refactor these were `mc.handler.ts` and `evidence.handler.ts`. The `@ObserveType('mc')` / `@ObserveType('evidence')` decorator *strings* were kept for routing compatibility; only the file + class names changed.)
 
 Two opt-out paths:
 - **Reuse another type's handler** by setting the plugin's `observeType` to a string alias (e.g. `rich-content-quiz` aliases to `'image-upload'` — see `observe-registry.ts:52`).

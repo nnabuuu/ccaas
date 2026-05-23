@@ -27,35 +27,60 @@ CCAAS SDK (`useLiveLesson.ts`) still uses Socket.IO/SSE to connect to CCAAS back
 ## Session Model
 Each lesson run creates a **ClassroomSession** with a 6-char code (e.g. `HX3KM7`). All classroom operations (join, submit, stream, etc.) use the session code instead of lessonId. This enables multiple instances of the same lesson running concurrently.
 
-## Backend Service Decomposition
+## Backend Architecture (Clean Architecture Layers)
 
-The classroom module is split into focused services:
+`backend/src/` is organized into four layers — see `docs/component-development-guide.md` for the rationale:
+
+```
+backend/src/
+├── domain/                 # Pure business — no I/O, no NestJS framework concerns
+│   ├── exercise-types/     # 11 per-type folders (quiz, match, matrix, ...) each holding
+│   │                       #   plugin + grader + observe + sanitizer + spec + tests
+│   ├── classroom/          # Session/metrics/validate-code/task-map/cluster-classifier
+│   ├── discussion/         # cluster-aggregator
+│   └── shared/             # Plugin/observe interfaces + decorators + grader interface
+├── application/            # Use cases — orchestrate domain via repos and ports
+│   ├── classroom/          # Session lifecycle, state, submission, manifest cache
+│   ├── exercise/           # Type registry, grading, exercise-spec/check, plugin tests
+│   ├── observation/        # Observe registry, query, coaching, depth, discuss-observe
+│   ├── ai/                 # Prompt builder, discuss, ai-ask, translate, personal-touch
+│   └── lesson/             # Lesson seeding + manifest serving
+├── adapters/               # Outside-world I/O
+│   ├── http/               # 7 controllers + dto/
+│   ├── persistence/        # TypeORM entities
+│   ├── observer-engine/    # Handlers + sinks + gateways
+│   └── transport/          # SSE broadcast + state cache
+├── infra/                  # NestJS module wiring (app.module, classroom.module, lesson.module)
+└── schemas/                # Shared cross-module Zod (single answer-key union, per-type
+                            #   split deferred)
+```
 
 | Service | File | Purpose |
 |---------|------|---------|
-| `ClassroomService` | `classroom.service.ts` | Session lifecycle (create, start, end), step transitions, notify |
-| `ClassroomStateService` | `classroom-state.service.ts` | State aggregation — `getState()`, surfaces, observe registry |
-| `ClassroomBroadcastService` | `classroom-broadcast.service.ts` | SSE transport (dead code), snapshot persistence |
-| `StudentSubmissionService` | `student-submission.service.ts` | Join, submit, grade, progress — emits observer events |
-| `ManifestCacheService` | `manifest-cache.service.ts` | Cached manifest/taskMap lookups |
-| `MetricsAggregator` | `metrics-aggregator.ts` | Per-step metrics: completion rate, score, dimension breakdown |
-| `CoachingService` | `coaching.service.ts` | Discussion highlights + LLM-generated coaching insights |
-| `AiPromptBuilder` | `ai-prompt-builder.ts` | Shared prompt construction for all AI features |
-| `GradingService` | `exercise/grading.service.ts` | Type-safe grading dispatch to 7 graders |
-| `ObserveRegistry` | `observe/observe-registry.ts` | Auto-discovers observe handlers by exercise type |
-| `ObservationQueryService` | `observation/observation-query.service.ts` | Aggregates observation records into dashboard data |
-| `ClusterClassifier` | `socratic-discuss/cluster-classifier.ts` | LLM-based classification of student discuss messages |
-| `ClusterAggregator` | `socratic-discuss/cluster-aggregator.ts` | Aggregates classify results into cluster stats per step |
-| `DiscussService` | `socratic-discuss/discuss.service.ts` | Socratic discussion turn logic |
-| `PersonalizationService` | `personal-touch/personalization.service.ts` | Per-student personalized feedback |
-| `TranslateService` | `translate/translate.service.ts` | Vocabulary translation + follow-up chat |
-| `AiAskService` | `ai-ask/ai-ask.service.ts` | Student AI question answering |
+| `ClassroomService` | `application/classroom/classroom.service.ts` | Session lifecycle (create, start, end), step transitions, notify |
+| `ClassroomStateService` | `application/classroom/classroom-state.service.ts` | State aggregation — `getState()`, surfaces, observe registry |
+| `ClassroomBroadcastService` | `adapters/transport/classroom-broadcast.service.ts` | SSE transport (dead code), snapshot persistence |
+| `StudentSubmissionService` | `application/classroom/student-submission.service.ts` | Join, submit, grade, progress — emits observer events |
+| `ManifestCacheService` | `application/classroom/manifest-cache.service.ts` | Cached manifest/taskMap lookups |
+| `MetricsAggregator` | `domain/classroom/metrics-aggregator.ts` | Per-step metrics: completion rate, score, dimension breakdown |
+| `CoachingService` | `application/observation/coaching.service.ts` | Discussion highlights + LLM-generated coaching insights |
+| `AiPromptBuilder` | `application/ai/ai-prompt-builder.ts` | Shared prompt construction for all AI features |
+| `GradingService` | `application/exercise/grading.service.ts` | Dispatches grade to ExerciseTypeRegistry |
+| `ExerciseTypeRegistry` | `application/exercise/exercise-type-registry.ts` | Auto-discovers `@ExerciseType('<type>')` plugins, dispatches sanitize/grade/checkItems |
+| `ObserveRegistry` | `application/observation/observe-registry.ts` | Auto-discovers observe handlers by exercise type |
+| `ObservationQueryService` | `application/observation/observation-query.service.ts` | Aggregates observation records into dashboard data |
+| `ClusterClassifier` | `domain/classroom/cluster-classifier.ts` | LLM-based classification of student discuss messages |
+| `ClusterAggregator` | `domain/discussion/cluster-aggregator.ts` | Aggregates classify results into cluster stats per step |
+| `DiscussService` | `application/ai/discuss.service.ts` | Socratic discussion turn logic |
+| `PersonalizationService` | `application/ai/personalization.service.ts` | Per-student personalized feedback |
+| `TranslateService` | `application/ai/translate.service.ts` | Vocabulary translation + follow-up chat |
+| `AiAskService` | `application/ai/ai-ask.service.ts` | Student AI question answering |
 
 ## Observation Engine
 
 Integrates `@kedge-agentic/observer-engine` to monitor classroom events in real-time.
 
-### Event Handlers (`observation/handlers/`)
+### Event Handlers (`adapters/observer-engine/handlers/`)
 
 6 handlers process different classroom events:
 
@@ -68,17 +93,21 @@ Integrates `@kedge-agentic/observer-engine` to monitor classroom events in real-
 | `StepCompleteHandler` | Student completes a step |
 | `SystemEventHandler` | System-level events (session start/end) |
 
-### Observe Handlers (`observe/handlers/`)
+### Observe Handlers (per-type, inside `domain/exercise-types/<type>/<type>.observe.ts`)
 
-Per-exercise-type observation renderers for the teacher's observe drawer:
+Per-exercise-type observation renderers for the teacher's observe drawer. Each lives in its own type folder; the discuss observe handler (not type-specific) lives in `application/observation/discuss.observe.ts`.
 
-| Handler | Exercise Type |
-|---------|---------------|
-| `McHandler` | Quiz (multiple choice) |
-| `MatrixHandler` | Matrix exercises |
-| `EvidenceHandler` | Select-evidence |
-| `MapHandler` | Map exercises |
-| `DiscussHandler` | Socratic discussion |
+| Handler | File |
+|---------|------|
+| `QuizObserveHandler` | `domain/exercise-types/quiz/quiz.observe.ts` |
+| `MatrixObserveHandler` | `domain/exercise-types/matrix/matrix.observe.ts` |
+| `SelectEvidenceObserveHandler` | `domain/exercise-types/select-evidence/select-evidence.observe.ts` |
+| `MapObserveHandler` | `domain/exercise-types/map/map.observe.ts` |
+| `ImageUploadObserveHandler` | `domain/exercise-types/image-upload/image-upload.observe.ts` |
+| `GuidedDiscoveryObserveHandler` | `domain/exercise-types/guided-discovery/guided-discovery.observe.ts` |
+| `DiscussObserveHandler` | `application/observation/discuss.observe.ts` |
+
+Note: the `@ObserveType('mc')` and `@ObserveType('evidence')` decorator strings are preserved for routing-contract compatibility — the file/class names changed (`mc.handler` → `quiz.observe`, `evidence.handler` → `select-evidence.observe`) but the string IDs sent over the wire did not.
 
 ### ObservationQueryService
 
@@ -174,15 +203,18 @@ Each exercise component self-manages its review restore via the `useReviewRestor
 - `mcp-server/src/state-manager.ts` - Factory-based state machine with DB persistence
 - `mcp-server/src/index.ts` - 8 MCP tools, DB init + session restore on startup
 - `backend/src/main.ts` - NestJS bootstrap (port 3007)
-- `backend/src/entities/classroom-session.entity.ts` - Session entity (code, lessonId, status)
-- `backend/src/classroom/classroom.service.ts` - Session lifecycle, step transitions, notify
-- `backend/src/classroom/classroom-state.service.ts` - State aggregation, getState(), surfaces
-- `backend/src/classroom/student-submission.service.ts` - Join, submit, grade, progress
-- `backend/src/classroom/metrics-aggregator.ts` - Per-step metrics computation
-- `backend/src/classroom/coaching.service.ts` - Discussion highlights + coaching insights
-- `backend/src/classroom/observe/observe-registry.ts` - Auto-discover observe handlers
-- `backend/src/classroom/observation/observation-query.service.ts` - Observation dashboard aggregation
-- `backend/src/lesson/lesson.controller.ts` - Lesson list + manifest API
+- `backend/src/infra/app.module.ts` - top-level NestJS module composition
+- `backend/src/adapters/persistence/entities/classroom-session.entity.ts` - Session entity (code, lessonId, status)
+- `backend/src/application/classroom/classroom.service.ts` - Session lifecycle, step transitions, notify
+- `backend/src/application/classroom/classroom-state.service.ts` - State aggregation, getState(), surfaces
+- `backend/src/application/classroom/student-submission.service.ts` - Join, submit, grade, progress
+- `backend/src/domain/classroom/metrics-aggregator.ts` - Per-step metrics computation
+- `backend/src/application/observation/coaching.service.ts` - Discussion highlights + coaching insights
+- `backend/src/application/observation/observe-registry.ts` - Auto-discover observe handlers
+- `backend/src/application/observation/observation-query.service.ts` - Observation dashboard aggregation
+- `backend/src/application/exercise/exercise-type-registry.ts` - Auto-discover `@ExerciseType` plugins
+- `backend/src/adapters/http/lesson.controller.ts` - Lesson list + manifest API
+- `backend/src/application/lesson/lesson.service.ts` - Lesson seeding + sanitize-manifest dispatch
 - `frontend/src/hooks/useClassroom.ts` - Session create/lookup, student/teacher polling hooks (3s)
 - `frontend/src/hooks/useLiveLesson.ts` - boardState accumulation hook
 - `frontend/src/pages/JoinPage.tsx` - Student entry: code input → name input → classroom
@@ -209,7 +241,7 @@ db.close(); console.log('updated',m.id);
 # Then restart the backend
 ```
 
-The seed logic (`lesson.service.ts`) only inserts if the row doesn't exist — it never updates. So manifest edits require manual DB update or deleting the row first.
+The seed logic (`application/lesson/lesson.service.ts`) only inserts if the row doesn't exist — it never updates. So manifest edits require manual DB update or deleting the row first.
 
 **Frontend reads manifest from the backend API** (`/api/lessons/<id>/manifest`), proxied via Vite dev server. There is no static copy — the DB is the single source of truth.
 
@@ -390,15 +422,17 @@ src/schemas/
 - **Each grader's `key` param is typed** to its specific subtype (e.g. `QuizGrader.grade(key: QuizAnswerKey, ...)`). No `any`.
 - **`GradeResult.byDimension`** is `Record<string, boolean | number>`, not `Record<string, any>`.
 - **Select-evidence uses client-side grading** — `sanitizeAnswerKey` intentionally keeps `correctFunction`, `hint`, `aiCorrect`/`aiPartial` on sections and `kind`/`why` on tokens. Frontend `_serverCheck` is NOT set for select-evidence. Server `/submit` grade is the source of truth.
-- **Old files** (`classroom/schemas/answer-key.schema.ts`, `classroom/exercise-sanitizer.ts`) are thin re-exports — do not add new code there.
-
-### Dependency Direction
+### Dependency Direction (clean-arch layers)
 
 ```
-src/schemas/           ← shared, imports nothing from lesson/ or classroom/
-src/lesson/            → imports from src/schemas/ only
-src/classroom/         → imports types from src/schemas/, owns graders + metrics
+domain/        ← pure business; depends on nothing
+schemas/       ← shared Zod definitions; depends on nothing
+application/   → domain + schemas (use cases orchestrating domain)
+adapters/      → application + domain + schemas (controllers / IO)
+infra/         → everything (NestJS module wiring)
 ```
+
+`schemas/answer-key.schema.ts` is still a single union file (per-type split into `domain/exercise-types/<type>/<type>.schema.ts` is on the backlog). Until that lands, plugin authors define their schema inline in `<type>.plugin.ts` and the shared union stays in `schemas/`.
 
 ## Frontend Routes
 | Route | Component | Description |
