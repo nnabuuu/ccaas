@@ -630,7 +630,7 @@ window.addEventListener('message', async (event) => {
   } catch (e) {
     postToParent('error', { message: e instanceof Error ? e.message : String(e) })
   }
-})
+});
 
 // ──────────────── Init ────────────────
 (async function init() {
