@@ -34,6 +34,8 @@ import { AdminApiKeysController } from './controllers/admin-api-keys.controller'
 import { AdminSessionTemplatesController } from './controllers/admin-session-templates.controller';
 import { AdminMcpServersController } from './controllers/admin-mcp-servers.controller';
 import { AdminBundlesController } from './controllers/admin-bundles.controller';
+import { AdminPlaygroundDraftsController } from './controllers/admin-playground-drafts.controller';
+import { PlaygroundDraft } from './entities/playground-draft.entity';
 import { AdminBuilderUsersController } from './controllers/admin-builder-users.controller';
 import { AdminSolutionsController } from './controllers/admin-solutions.controller';
 import { AdminUsersController } from './controllers/admin-users.controller';
@@ -67,6 +69,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       SessionAlert,
       TenantQuota,
       Session,
+      PlaygroundDraft,
       // Turn removed - now in TurnsModule
       // External entities for queries
       Message,
@@ -100,6 +103,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminSessionTemplatesController,
     AdminMcpServersController,
     AdminBundlesController,
+    AdminPlaygroundDraftsController,
     AdminBuilderUsersController,
     AdminSolutionsController,
     AdminUsersController,

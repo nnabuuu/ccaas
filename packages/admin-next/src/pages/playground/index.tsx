@@ -4,15 +4,18 @@
  * Connects to a running exercise-preview dev server (default http://localhost:4321),
  * lists its bundles + stories, and provides a three-pane workspace:
  *   - Left: bundle/story tree
- *   - Middle: AnswerKey JSON editor (textarea, monaco upgrade path noted)
+ *   - Middle: AnswerKey JSON editor (Monaco)
  *   - Right: live preview iframe + draft save
  *
- * Drafts are persisted to localStorage as a v1 quick-win; the full
- * playground_drafts DB table is a v2 follow-up (see exercise-plugin-preview-design §17).
+ * Drafts persist to the admin backend's playground_drafts table via
+ * /api/v1/admin/playground-drafts (§17). LocalStorage fallback keeps work
+ * available when offline / backend unreachable.
  */
 import { useEffect, useState } from 'react'
+import Editor, { type OnMount } from '@monaco-editor/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { apiClient } from '@/lib/api-client'
 
 const DEFAULT_PREVIEW_URL = (() => {
   try {
@@ -106,41 +109,87 @@ export function PlaygroundPage() {
     }
   }, [activeBundleId, previewUrl])
 
-  // Seed draft from story or localStorage on selection
+  // Seed draft from server (then localStorage fallback) on selection
   useEffect(() => {
     if (!activeBundleId || !activeStory || !bundleDetail) return
     const story = bundleDetail.stories.find((s) => s.name === activeStory)
     if (!story) return
-    const key = draftKey(activeBundleId, activeStory)
-    let initial = JSON.stringify(story.answerKey, null, 2)
-    try {
-      const saved = localStorage.getItem(key)
-      if (saved) initial = saved
-    } catch {
-      /* ignore */
+    let cancelled = false
+    const fallback = JSON.stringify(story.answerKey, null, 2)
+    ;(async () => {
+      const key = draftKey(activeBundleId, activeStory)
+      // Try server first
+      try {
+        const res = await apiClient.get(`/admin/playground-drafts/${encodeURIComponent(activeBundleId)}/${encodeURIComponent(activeStory)}`)
+        if (cancelled) return
+        if (res.status === 200 && res.data?.payload) {
+          setDraftJson(JSON.stringify(res.data.payload, null, 2))
+          setDraftError(null)
+          setStatus(`Loaded draft from server`)
+          return
+        }
+      } catch {
+        // 404 or network error — fall through to localStorage
+      }
+      if (cancelled) return
+      try {
+        const saved = localStorage.getItem(key)
+        setDraftJson(saved ?? fallback)
+      } catch {
+        setDraftJson(fallback)
+      }
+      setDraftError(null)
+    })()
+    return () => {
+      cancelled = true
     }
-    setDraftJson(initial)
-    setDraftError(null)
   }, [activeBundleId, activeStory, bundleDetail])
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (!activeBundleId || !activeStory) return
+    let parsed: Record<string, unknown>
     try {
-      JSON.parse(draftJson) // validate
-      localStorage.setItem(draftKey(activeBundleId, activeStory), draftJson)
-      setDraftError(null)
-      setStatus(`Draft saved · ${new Date().toLocaleTimeString()}`)
+      parsed = JSON.parse(draftJson)
     } catch (e) {
       setDraftError(`Invalid JSON: ${e instanceof Error ? e.message : String(e)}`)
+      return
+    }
+    setDraftError(null)
+    // Always update localStorage as offline cache
+    try {
+      localStorage.setItem(draftKey(activeBundleId, activeStory), draftJson)
+    } catch {
+      /* quota / private mode */
+    }
+    // Persist to backend
+    try {
+      await apiClient.put(
+        `/admin/playground-drafts/${encodeURIComponent(activeBundleId)}/${encodeURIComponent(activeStory)}`,
+        { payload: parsed },
+      )
+      setStatus(`Draft saved · ${new Date().toLocaleTimeString()}`)
+    } catch (e) {
+      setStatus(`Saved locally (backend unreachable): ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 
-  const resetDraft = () => {
+  const resetDraft = async () => {
     if (!activeBundleId || !activeStory || !bundleDetail) return
     const story = bundleDetail.stories.find((s) => s.name === activeStory)
     if (!story) return
     setDraftJson(JSON.stringify(story.answerKey, null, 2))
-    localStorage.removeItem(draftKey(activeBundleId, activeStory))
+    try {
+      localStorage.removeItem(draftKey(activeBundleId, activeStory))
+    } catch {
+      /* ignore */
+    }
+    try {
+      await apiClient.delete(
+        `/admin/playground-drafts/${encodeURIComponent(activeBundleId)}/${encodeURIComponent(activeStory)}`,
+      )
+    } catch {
+      /* draft might not exist server-side */
+    }
     setDraftError(null)
     setStatus('Draft reset to original')
   }
@@ -198,6 +247,21 @@ export function PlaygroundPage() {
 
   const submitInPreview = () => sendToPreview('submit')
   const resetInPreview = () => sendToPreview('reset')
+
+  // Monaco editor mount hook — enables JSON validation diagnostics
+  const handleEditorMount: OnMount = (editor, monaco) => {
+    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+      validate: true,
+      allowComments: false,
+      schemaValidation: 'error',
+      trailingCommas: 'error',
+    })
+    // Format on Cmd/Ctrl+Shift+F via built-in action.
+    // Ctrl+S triggers save draft.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      saveDraft()
+    })
+  }
 
   return (
     <div className="flex flex-col h-screen">
@@ -302,13 +366,28 @@ export function PlaygroundPage() {
                   </Button>
                 </div>
               </div>
-              <textarea
-                value={draftJson}
-                onChange={(e) => setDraftJson(e.target.value)}
-                spellCheck={false}
-                className="flex-1 font-mono text-xs p-3 outline-none resize-none"
-                style={{ tabSize: 2 }}
-              />
+              <div className="flex-1 overflow-hidden">
+                <Editor
+                  defaultLanguage="json"
+                  value={draftJson}
+                  theme="vs"
+                  onChange={(value) => setDraftJson(value ?? '')}
+                  onMount={handleEditorMount}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 12,
+                    lineNumbers: 'on',
+                    folding: true,
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    formatOnPaste: true,
+                    formatOnType: false,
+                    tabSize: 2,
+                    bracketPairColorization: { enabled: true },
+                    wordWrap: 'on',
+                  }}
+                />
+              </div>
               {draftError && (
                 <div className="px-4 py-2 text-xs text-red-600 bg-red-50 border-t">
                   {draftError}
