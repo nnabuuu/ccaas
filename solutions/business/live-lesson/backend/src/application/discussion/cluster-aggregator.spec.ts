@@ -1,4 +1,6 @@
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
+import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
+import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 
 function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
@@ -14,7 +16,13 @@ function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
 }
 
 function makeMockTargetHitRepo() {
-  return { upsert: jest.fn().mockResolvedValue(undefined), find: jest.fn().mockResolvedValue([]) } as any;
+  // Mock the DiscussTargetHitRepoPort surface (was Repository<DiscussTargetHit> pre-Phase-2b)
+  return {
+    findBySession: jest.fn().mockResolvedValue([]),
+    findTargetPointIdsBySessionAndStudent: jest.fn().mockResolvedValue([]),
+    upsertHit: jest.fn().mockResolvedValue(undefined),
+    countBySessionGroupByStudent: jest.fn().mockResolvedValue([]),
+  } as never;
 }
 
 describe('ClusterAggregator', () => {

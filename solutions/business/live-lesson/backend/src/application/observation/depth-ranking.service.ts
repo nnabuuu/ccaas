@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
-import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
+import {
+  DISCUSS_TARGET_HIT_REPO_PORT,
+  type DiscussTargetHitRepoPort,
+} from '../../domain/ports/discuss-target-hit-repo.port';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import type { DepthLeaderboard } from '../../schemas/classroom/depth-ranking';
@@ -32,7 +35,7 @@ export class DepthRankingService {
   constructor(
     private readonly aiPromptBuilder: AiPromptBuilder,
     @InjectRepository(DiscussHighlight) private readonly highlightRepo: Repository<DiscussHighlight>,
-    @InjectRepository(DiscussTargetHit) private readonly targetHitRepo: Repository<DiscussTargetHit>,
+    @Inject(DISCUSS_TARGET_HIT_REPO_PORT) private readonly targetHitRepo: DiscussTargetHitRepoPort,
     @InjectRepository(ChatMessage) private readonly chatMessageRepo: Repository<ChatMessage>,
     @InjectRepository(ClassroomSession) private readonly sessionRepo: Repository<ClassroomSession>,
   ) {}
@@ -138,15 +141,7 @@ export class DepthRankingService {
         .addGroupBy('h.studentName')
         .getRawMany<{ studentId: string; studentName: string; cnt: string }>(),
 
-      this.targetHitRepo
-        .createQueryBuilder('t')
-        .select('t.studentId', 'studentId')
-        .addSelect('t.studentName', 'studentName')
-        .addSelect('COUNT(*)', 'cnt')
-        .where('t.sessionId = :sessionId', { sessionId })
-        .groupBy('t.studentId')
-        .addGroupBy('t.studentName')
-        .getRawMany<{ studentId: string; studentName: string; cnt: string }>(),
+      this.targetHitRepo.countBySessionGroupByStudent(sessionId),
 
       this.chatMessageRepo
         .createQueryBuilder('m')
@@ -213,10 +208,7 @@ export class DepthRankingService {
               order: { detectedAt: 'DESC' },
               take: 3,
             }),
-            this.targetHitRepo.find({
-              where: { sessionId, studentId: s.studentId },
-              select: ['targetPointId'],
-            }),
+            this.targetHitRepo.findTargetPointIdsBySessionAndStudent(sessionId, s.studentId),
           ]);
 
           const gists = highlights.map(h => h.gist).join('；');

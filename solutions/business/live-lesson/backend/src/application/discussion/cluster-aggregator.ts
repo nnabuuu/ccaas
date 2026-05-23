@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  DISCUSS_TARGET_HIT_REPO_PORT,
+  type DiscussTargetHitRepoPort,
+} from '../../domain/ports/discuss-target-hit-repo.port';
 import type { ObservationState, ClusterStats, ClassifyResult } from '../../schemas/classroom/clustering';
 
 interface TargetPointState {
@@ -26,7 +27,7 @@ export class ClusterAggregator {
   private targetPointSessions = new Map<string, Map<number, Map<string, TargetPointState>>>();
 
   constructor(
-    @InjectRepository(DiscussTargetHit) private readonly targetHitRepo: Repository<DiscussTargetHit>,
+    @Inject(DISCUSS_TARGET_HIT_REPO_PORT) private readonly targetHitRepo: DiscussTargetHitRepoPort,
   ) {}
 
   ingest(
@@ -248,7 +249,7 @@ export class ClusterAggregator {
   /** Restore target point hits from DB if not already in memory. */
   async restoreIfNeeded(sessionId: string): Promise<void> {
     if (this.targetPointSessions.has(sessionId)) return;
-    const rows = await this.targetHitRepo.find({ where: { sessionId } });
+    const rows = await this.targetHitRepo.findBySession(sessionId);
     if (rows.length === 0) return;
 
     for (const row of rows) {
@@ -307,15 +308,12 @@ export class ClusterAggregator {
     sessionId: string, studentId: string, studentName: string,
     taskNum: number, hit: { targetPointId: string; evidenceSpan: string },
   ): void {
-    this.targetHitRepo.upsert(
-      {
-        sessionId, studentId, studentName, taskNum,
-        targetPointId: hit.targetPointId,
-        evidenceSpan: hit.evidenceSpan || '',
-        hitAt: Date.now(),
-      },
-      ['sessionId', 'studentId', 'taskNum', 'targetPointId'],
-    ).catch(e => this.logger.warn('Failed to persist target hit', e));
+    this.targetHitRepo.upsertHit({
+      sessionId, studentId, studentName, taskNum,
+      targetPointId: hit.targetPointId,
+      evidenceSpan: hit.evidenceSpan || '',
+      hitAt: Date.now(),
+    }).catch(e => this.logger.warn('Failed to persist target hit', e));
   }
 
   private handleStateChange(

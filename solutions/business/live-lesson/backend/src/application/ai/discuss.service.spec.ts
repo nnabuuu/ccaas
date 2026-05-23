@@ -1,4 +1,6 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
+import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
+import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -86,6 +88,8 @@ describe('DiscussService', () => {
       ],
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
+        TypeOrmDiscussTargetHitRepository,
+        { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         DiscussService, ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },

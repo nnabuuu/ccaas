@@ -31,6 +31,8 @@ import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
 import { LLM_PORT } from '../domain/ports/llm.port';
 import { OBSERVATION_RECORD_REPO_PORT } from '../domain/ports/observation-record-repo.port';
 import { TypeOrmObservationRecordRepository } from '../adapters/persistence/repositories/observation-record.repository';
+import { DISCUSS_TARGET_HIT_REPO_PORT } from '../domain/ports/discuss-target-hit-repo.port';
+import { TypeOrmDiscussTargetHitRepository } from '../adapters/persistence/repositories/discuss-target-hit.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -120,6 +122,8 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     { provide: LLM_PORT, useExisting: AiPromptBuilder },
     TypeOrmObservationRecordRepository,
     { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
+    TypeOrmDiscussTargetHitRepository,
+    { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

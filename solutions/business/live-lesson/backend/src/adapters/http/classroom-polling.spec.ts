@@ -1,4 +1,6 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
+import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
+import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../../application/exercise/test-utils';
@@ -175,6 +177,8 @@ describe('Classroom polling — HTTP integration', () => {
       controllers: [ClassroomController, ExerciseController],
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
+        TypeOrmDiscussTargetHitRepository,
+        { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
         ...PLUGIN_PROVIDERS,

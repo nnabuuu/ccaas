@@ -5,6 +5,8 @@ import { LLM_PORT } from '../../domain/ports/llm.port';
  * Was 35.71% covered. Exercises the throttle/warmup gates, computeScores
  * merge logic, summary-cache reuse, cleanup, and the malformed-LLM fallback.
  */
+import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
+import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DepthRankingService } from '../observation/depth-ranking.service';
@@ -47,13 +49,19 @@ async function buildService(over: {
   llmResponse?: string
 } = {}) {
   const highlightRepo = makeRepoMock<DiscussHighlight>();
-  const targetHitRepo = makeRepoMock<DiscussTargetHit>();
   const chatMessageRepo = makeRepoMock<ChatMessage>();
   const sessionRepo = makeRepoMock<ClassroomSession>();
 
-  // Query builders for computeScores
+  // Port-shaped mock for DISCUSS_TARGET_HIT_REPO_PORT (replaces Repository<DiscussTargetHit> as of Phase 2b/2)
+  const targetHitRepo = {
+    findBySession: jest.fn(async () => []),
+    findTargetPointIdsBySessionAndStudent: jest.fn(async () => over.tpHitDetail ?? []),
+    upsertHit: jest.fn(async () => undefined),
+    countBySessionGroupByStudent: jest.fn(async () => over.tpHits ?? []),
+  };
+
+  // Query builders for computeScores (highlight + chatMessage still use Repository<X> + QB)
   highlightRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.highlights ?? []) as never);
-  targetHitRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.tpHits ?? []) as never);
   chatMessageRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.msgs ?? []) as never);
 
   // findOne for session warmup
@@ -61,9 +69,8 @@ async function buildService(over: {
     sessionRepo.findOne.mockResolvedValue(over.session as never);
   }
 
-  // .find() for per-student gists/targetPoints
+  // .find() for per-student gists
   highlightRepo.find.mockResolvedValue((over.highlightDetail ?? []) as never);
-  targetHitRepo.find.mockResolvedValue((over.tpHitDetail ?? []) as never);
 
   const ai = {
     callLlm: jest.fn(async () => over.llmResponse ?? '{}'),
@@ -76,7 +83,7 @@ async function buildService(over: {
       { provide: AiPromptBuilder, useValue: ai },
       { provide: LLM_PORT, useValue: ai },
       { provide: getRepositoryToken(DiscussHighlight), useValue: highlightRepo },
-      { provide: getRepositoryToken(DiscussTargetHit), useValue: targetHitRepo },
+      { provide: DISCUSS_TARGET_HIT_REPO_PORT, useValue: targetHitRepo },
       { provide: getRepositoryToken(ChatMessage), useValue: chatMessageRepo },
       { provide: getRepositoryToken(ClassroomSession), useValue: sessionRepo },
     ],

@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
+import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
@@ -246,6 +248,8 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         ObservationQueryService,
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
+        TypeOrmDiscussTargetHitRepository,
+        { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         MetricsAggregator,
         ClusterAggregator,
         CoachingService,
