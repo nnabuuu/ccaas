@@ -154,6 +154,51 @@ export function PlaygroundPage() {
     }
   }
 
+  // postMessage protocol — see web/index.html docstring
+  const sendToPreview = (type: string, payload?: unknown) => {
+    const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement | null
+    iframe?.contentWindow?.postMessage({ source: 'kedge-playground', type, payload }, '*')
+  }
+
+  // Auto-open story in iframe when selection changes
+  useEffect(() => {
+    if (!activeBundleId || !activeStory) return
+    const timer = setTimeout(() => {
+      sendToPreview('open-story', { bundleId: activeBundleId, storyName: activeStory })
+    }, 200) // small delay to let iframe load
+    return () => clearTimeout(timer)
+  }, [activeBundleId, activeStory])
+
+  // Listen for preview messages
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const msg = event.data
+      if (!msg || msg.source !== 'kedge-preview') return
+      if (msg.type === 'grade-result') {
+        setStatus(`Last grade: ${JSON.stringify(msg.payload?.result?.total ?? '?')}`)
+      } else if (msg.type === 'ready') {
+        setStatus(`Preview ready · ${msg.payload?.bundleCount ?? 0} bundles`)
+      } else if (msg.type === 'error') {
+        setStatus(`Preview error: ${msg.payload?.message ?? 'unknown'}`)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
+
+  const pushDraftToPreview = () => {
+    try {
+      const ak = JSON.parse(draftJson)
+      sendToPreview('set-answer-key', { bundleId: activeBundleId, storyName: activeStory, answerKey: ak })
+      setStatus(`Pushed draft to preview · ${new Date().toLocaleTimeString()}`)
+    } catch (e) {
+      setDraftError(`Invalid JSON: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  const submitInPreview = () => sendToPreview('submit')
+  const resetInPreview = () => sendToPreview('reset')
+
   return (
     <div className="flex flex-col h-screen">
       {/* Top bar */}
@@ -243,6 +288,15 @@ export function PlaygroundPage() {
                   <Button size="sm" variant="outline" onClick={resetDraft}>
                     Reset
                   </Button>
+                  <Button size="sm" variant="outline" onClick={pushDraftToPreview}>
+                    Push to Preview
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={submitInPreview}>
+                    Submit
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={resetInPreview}>
+                    Reset Preview
+                  </Button>
                   <Button size="sm" onClick={saveDraft}>
                     Save Draft
                   </Button>
@@ -276,6 +330,7 @@ export function PlaygroundPage() {
           </div>
           {activeBundleId ? (
             <iframe
+              id="preview-iframe"
               src={previewUrl}
               title="Exercise Preview"
               className="flex-1 border-0"
