@@ -47,6 +47,14 @@ import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
 import { QuizPlugin } from './exercise/plugins/quiz.plugin';
 import { MatchPlugin } from './exercise/plugins/match.plugin';
 import { OrderPlugin } from './exercise/plugins/order.plugin';
+import { StancePlugin } from './exercise/plugins/stance.plugin';
+import { FillBlankPlugin } from './exercise/plugins/fill-blank.plugin';
+import { MatrixPlugin } from './exercise/plugins/matrix.plugin';
+import { MapPlugin } from './exercise/plugins/map.plugin';
+import { ImageUploadPlugin } from './exercise/plugins/image-upload.plugin';
+import { SelectEvidencePlugin } from './exercise/plugins/select-evidence.plugin';
+import { RichContentQuizPlugin } from './exercise/plugins/rich-content-quiz.plugin';
+import { GuidedDiscoveryPlugin } from './exercise/plugins/guided-discovery.plugin';
 
 // ── State Cache ──
 import { StateCacheService } from './state-cache.service';
@@ -107,8 +115,10 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
     ExerciseService, GradingService,
-    // Exercise type plugins (Stage 1: quiz/match/order)
-    ExerciseTypeRegistry, QuizPlugin, MatchPlugin, OrderPlugin,
+    // Exercise type plugins — all 11 types migrated (Stage 1-5)
+    ExerciseTypeRegistry, QuizPlugin, MatchPlugin, OrderPlugin, StancePlugin, FillBlankPlugin,
+    MatrixPlugin, MapPlugin, ImageUploadPlugin, SelectEvidencePlugin,
+    RichContentQuizPlugin, GuidedDiscoveryPlugin,
     // Socratic Discuss
     DiscussService, ClusterClassifier, ClusterAggregator,
     // AI Ask
