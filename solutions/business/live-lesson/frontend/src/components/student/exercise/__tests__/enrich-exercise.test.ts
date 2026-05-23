@@ -1,4 +1,8 @@
 import { describe, it, expect } from 'vitest'
+// Side-effect import: registers all 11 ExerciseUIPlugin entries (each carrying
+// its own enrichFromApi / enrichFromManifest). enrichExerciseFromSpec dispatches
+// through that registry, so without this import the dispatcher would no-op.
+import '../plugins/built-in'
 import { enrichExerciseFromSpec } from '../enrich-exercise'
 import type { TaskExercise } from '../../task-data'
 import type { ExerciseSpec } from '../../../../hooks/useClassroom'

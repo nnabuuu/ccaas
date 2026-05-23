@@ -3,7 +3,7 @@ import { linkParas } from '../utils/linkParas'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, TaskExercise, ServerHintMap } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
-import { gradeItemSet, reportAttempt, formatSubmitData } from './gradeItemSet'
+import { reportAttempt, formatSubmitData } from './gradeItemSet'
 import { checkAnswer, cacheSubmission, type CheckResult, type CachedSubmission, getCachedSubmission, getSubmission } from '../../../hooks/useClassroom'
 import { QuizExercise } from './QuizExercise'
 import { MatchExercise } from './MatchExercise'
@@ -112,62 +112,19 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const effectiveSoftDone = reviewMode || softDone
 
   const canSub = () => {
-    // Plugin dispatch: prefer plugin.canSubmit when registered
     const plugin = getExerciseType(ex.type)
-    if (plugin) {
-      const checkResultState = {
-        correctQs,
-        wrongQs,
-        attempts,
-        attemptCounts: undefined as Record<number, number> | undefined,
-      }
-      return plugin.canSubmit(ex as unknown as Record<string, unknown>, ans, checkResultState)
+    if (!plugin) {
+      // eslint-disable-next-line no-console
+      console.warn(`[PracticePhase] no plugin registered for "${ex.type}"`)
+      return false
     }
-    // Legacy fallback (kept for safety; trigger-able if registry is empty)
-    if (ex.type === 'quiz') return !ex.questions!.some((_, qi) => !correctQs.has(qi) && ans[qi] === undefined)
-    if (ex.type === 'match') return !ex.pairs!.some((_, pi) => !correctQs.has(pi) && ans[pi] === undefined)
-    if (ex.type === 'matrix') return true
-    if (ex.type === 'stance') return ans.stance !== undefined && (ans.evidence || []).length >= 1
-    if (ex.type === 'order') return (ans.order || []).length === ex.items!.length
-    if (ex.type === 'select-evidence') return false // handled internally
-    if (ex.type === 'map') {
-      const items = ex.mapItems || []
-      const practiceSet = ex.practiceItemIds ? new Set(ex.practiceItemIds) : null
-      const practice = practiceSet
-        ? items.filter(it => practiceSet.has(it.id))
-        : ex.practiceCount ? items.slice(0, ex.practiceCount) : items
-      const pl = ans.placements || {}
-      const rs = ans.reasons || {}
-      const min = ex.minReasonLength || 8
-      return practice.every(it => pl[it.id] && (rs[it.id] || '').trim().length >= min)
+    const checkResultState = {
+      correctQs,
+      wrongQs,
+      attempts,
+      attemptCounts: undefined as Record<number, number> | undefined,
     }
-    if (ex.type === 'image-upload') return (ans.images || []).length > 0
-    if (ex.type === 'fill-blank') {
-      if (!ex.sentences) return false
-      return ex.sentences.every(s => {
-        const blankIds = [...s.template.matchAll(/\{\{(\d+)\}\}/g)].map(m => m[1])
-        return blankIds.every(id => (ans[`${s.id}_${id}`] || '').trim().length > 0)
-      })
-    }
-    if (ex.type === 'guided-discovery') {
-      if (!ex.gdSteps) return false
-      const steps = ans.steps || {}
-      return ex.gdSteps.every(step => {
-        const sd = steps[step.id]?.answers || {}
-        switch (step.type) {
-          case 'observation_choice':
-            return step.choices.every(c => sd[c.id] !== undefined)
-          case 'formula_blanks':
-            return step.blanks.every(b => (sd[b.id] || '').trim().length > 0)
-          case 'derivation_blank':
-            return step.lines.every(l => !l.blank || (sd[l.blank.id] || '').trim().length > 0)
-          case 'text_blanks':
-            return step.textBlanks.every(b => (sd[b.id] || '').trim().length > 0)
-          default: return false
-        }
-      })
-    }
-    return true
+    return plugin.canSubmit(ex as unknown as Record<string, unknown>, ans, checkResultState)
   }
 
   const useServerCheck = !!(ex as TaskExercise & { _serverCheck?: boolean })._serverCheck && ctx.sessionCode && ctx.studentId
@@ -249,31 +206,33 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       ctx.submit(stepIdx, submitData)
     }
 
-    // Local grading fallback
-    if (ex.type === 'quiz' || ex.type === 'match') {
-      const items = ex.type === 'quiz' ? ex.questions! : ex.pairs!
-      const result = gradeItemSet(items as { correct: number }[], ans, { correctQs, attempts }, task.id)
-      setAttempts(result.attempts); setCorrectQs(result.correctQs); setWrongQs(result.wrongQs)
-      if (result.wrongQs.size > 0) {
-        const cleared = { ...ans }; result.wrongQs.forEach(qi => { delete cleared[qi] }); setAns(cleared)
+    // Local grading: dispatch to plugin.localGrade when available; otherwise
+    // soft-complete (matrix/map/stance/etc. — types that don't ship a client
+    // answer key, so the submission is trusted).
+    const plugin = getExerciseType(ex.type)
+    const localResult = plugin?.localGrade?.(
+      ex as unknown as Record<string, unknown>,
+      ans,
+      { correctQs, attempts },
+      task.id,
+    )
+    if (localResult) {
+      if (localResult.attempts) setAttempts(localResult.attempts)
+      if (localResult.correctQs) setCorrectQs(localResult.correctQs)
+      if (localResult.wrongQs) setWrongQs(localResult.wrongQs)
+      if (localResult.clearAnsKeys && localResult.clearAnsKeys.length > 0) {
+        if (localResult.clearAnsKeys.includes('order')) {
+          setAns({})
+        } else {
+          const cleared = { ...ans }
+          localResult.clearAnsKeys.forEach((k) => { delete cleared[k as keyof typeof cleared] })
+          setAns(cleared)
+        }
       }
-      if (result.allDone) { setAllDone(true); onDone() }
-    } else if (ex.type === 'order') {
-      const order = ans.order || []
-      const isOk = order.every((idx: number, pos: number) => ex.correctOrder![pos] === idx)
-      const newAttempts = { ...attempts }
-      if (!newAttempts[0]) newAttempts[0] = []
-      newAttempts[0].push({ selected: [...order], correct: ex.correctOrder, isCorrect: isOk, ts: Date.now() })
-      reportAttempt(task.id, 0, newAttempts[0].length, order, ex.correctOrder, isOk)
-      setAttempts(newAttempts)
-      if (isOk) {
-        setAllDone(true); onDone()
-      } else {
-        const wrong = new Set<number>()
-        order.forEach((idx: number, pos: number) => { if (ex.correctOrder![pos] !== idx) wrong.add(pos) })
-        setWrongQs(wrong); setAns({})
-      }
+      if (localResult.softDone) setSoftDone(true)
+      if (localResult.allDone) { setAllDone(true); onDone() }
     } else {
+      // No localGrade implementation → trust the submission.
       setSoftDone(true); setAllDone(true)
       reportAttempt(task.id, 0, 1, ans, null, true)
       onDone()
