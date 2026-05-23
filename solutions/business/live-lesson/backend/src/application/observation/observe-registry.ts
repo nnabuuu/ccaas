@@ -2,8 +2,8 @@ import { Injectable, OnModuleInit, BadRequestException, Logger } from '@nestjs/c
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 

@@ -1,12 +1,12 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
-import { AiQuestion } from '../../entities/ai-question.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
-import { Lesson } from '../../entities/lesson.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
+import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -16,7 +16,7 @@ import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
 import { StudentSubmissionService } from '../classroom/student-submission.service';
 import { CoachingService } from '../observation/coaching.service';
-import { StateCacheService } from '../../classroom/state-cache.service';
+import { StateCacheService } from '../../adapters/transport/state-cache.service';
 
 @Injectable()
 export class DiscussService {

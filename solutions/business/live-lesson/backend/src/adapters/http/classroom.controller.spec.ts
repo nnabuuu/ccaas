@@ -10,11 +10,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { Response } from 'express';
 import { ClassroomController } from './classroom.controller';
-import { ClassroomService } from '../application/classroom/classroom.service';
-import { StudentSubmissionService } from '../application/classroom/student-submission.service';
-import { ObserveRegistry } from '../application/observation/observe-registry';
-import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
-import { Lesson } from '../entities/lesson.entity';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { StudentSubmissionService } from '../../application/classroom/student-submission.service';
+import { ObserveRegistry } from '../../application/observation/observe-registry';
+import { ManifestCacheService } from '../../application/classroom/manifest-cache.service';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 
 const VALID_CODE = 'HX3KM7'; // 6 chars, matches /^[A-Z2-9]{6}$/
 const VALID_UUID = '11111111-2222-3333-4444-555555555555';

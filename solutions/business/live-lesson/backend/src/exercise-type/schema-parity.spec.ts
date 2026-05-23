@@ -9,7 +9,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ExerciseTypeDef } from '../entities/exercise-type-def.entity';
+import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
 import { ExerciseTypeRegistryService } from './exercise-type-registry.service';
 import { validateAnswerKey } from '../schemas/answer-key.schema';
 

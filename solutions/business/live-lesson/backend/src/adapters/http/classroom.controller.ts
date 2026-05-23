@@ -3,19 +3,19 @@ import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Response } from 'express';
-import { ClassroomService } from '../application/classroom/classroom.service';
-import { StudentSubmissionService } from '../application/classroom/student-submission.service';
-import { ObserveRegistry } from '../application/observation/observe-registry';
-import { Lesson } from '../entities/lesson.entity';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { StudentSubmissionService } from '../../application/classroom/student-submission.service';
+import { ObserveRegistry } from '../../application/observation/observe-registry';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
 import { PhaseDto } from './dto/phase.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
-import { validateCode } from '../domain/classroom/validate-code';
-import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
-import { buildTaskMap } from '../domain/classroom/task-map.utils';
+import { validateCode } from '../../domain/classroom/validate-code';
+import { ManifestCacheService } from '../../application/classroom/manifest-cache.service';
+import { buildTaskMap } from '../../domain/classroom/task-map.utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -216,11 +216,11 @@ export class ClassroomController {
     const stepDef = readingSteps.find(s => s.idx === stepIdx);
 
     // When type='guided-discovery', prefer discoveryKey over answerKey
-    let answerKey: import('../schemas/answer-key.schema').AnswerKey | null;
+    let answerKey: import('../../schemas/answer-key.schema').AnswerKey | null;
     if (type === 'guided-discovery' && stepDef?.discoveryKey) {
-      answerKey = (stepDef.discoveryKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
+      answerKey = (stepDef.discoveryKey as import('../../schemas/answer-key.schema').AnswerKey) ?? null;
     } else {
-      answerKey = (stepDef?.answerKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
+      answerKey = (stepDef?.answerKey as import('../../schemas/answer-key.schema').AnswerKey) ?? null;
     }
 
     const partIds = partIdsRaw ? partIdsRaw.split(',').filter(Boolean) : undefined;

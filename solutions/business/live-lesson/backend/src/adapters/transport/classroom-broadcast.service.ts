@@ -1,12 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
-import { CoachingService } from '../application/observation/coaching.service';
-import { DepthRankingService } from '../application/observation/depth-ranking.service';
-import { ClassroomStateService } from '../application/classroom/classroom-state.service';
+import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
+import { CoachingService } from '../../application/observation/coaching.service';
+import { DepthRankingService } from '../../application/observation/depth-ranking.service';
+import { ClassroomStateService } from '../../application/classroom/classroom-state.service';
 import type { Response } from 'express';
-import type { ClassroomStateResponse, SnapshotEntry } from '../schemas/classroom';
+import type { ClassroomStateResponse, SnapshotEntry } from '../../schemas/classroom';
 
 /**
  * SSE transport layer + snapshot persistence.

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Student } from '../../entities/student.entity';
-import { AiQuestion } from '../../entities/ai-question.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import type { TaskMap, ResolvedObserve, ObserveSurface } from '../../schemas';
 import type { StepMetrics, HealthCards } from '../../schemas/classroom';
 

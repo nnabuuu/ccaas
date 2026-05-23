@@ -1,6 +1,6 @@
 import { ExerciseTypeController } from './exercise-type.controller';
 import { ExerciseTypeRegistryService } from './exercise-type-registry.service';
-import { ExerciseTypeDef } from '../entities/exercise-type-def.entity';
+import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
 
 function makeDef(type: string): ExerciseTypeDef {
   return {

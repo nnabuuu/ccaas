@@ -8,10 +8,10 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DepthRankingService } from '../observation/depth-ranking.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
-import { DiscussHighlight } from '../../entities/discuss-highlight.entity';
-import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 
 /** Minimal query-builder stub returning the rows we hand it. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

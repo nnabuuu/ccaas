@@ -2,9 +2,9 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as posixPath from 'path/posix';
-import { CourseProject } from '../entities/course-project.entity';
-import { ProjectFile } from '../entities/project-file.entity';
-import { Lesson } from '../entities/lesson.entity';
+import { CourseProject } from '../adapters/persistence/entities/course-project.entity';
+import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
+import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { ManifestSchema } from '../schemas';
 import { CreateProjectDto, CreateFileDto } from './project.dto';
 

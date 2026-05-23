@@ -11,17 +11,17 @@ import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
 import { DepthRankingService } from '../observation/depth-ranking.service';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
-import { StateCacheService } from '../../classroom/state-cache.service';
+import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { AiQuestion } from '../../entities/ai-question.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
-import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
-import { Lesson } from '../../entities/lesson.entity';
-import { DiscussHighlight } from '../../entities/discuss-highlight.entity';
-import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
+import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 
 const mockObserverEngine = {

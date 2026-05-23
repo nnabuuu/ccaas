@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ClassroomStateResponse } from '../schemas/classroom';
+import type { ClassroomStateResponse } from '../../schemas/classroom';
 
 @Injectable()
 export class StateCacheService {

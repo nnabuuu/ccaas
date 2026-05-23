@@ -2,15 +2,15 @@ import { Module, Logger, OnModuleInit } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { DiscoveryModule, DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
-import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import { AiQuestion } from '../entities/ai-question.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
-import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
-import { Lesson } from '../entities/lesson.entity';
-import { DiscussHighlight } from '../entities/discuss-highlight.entity';
-import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
+import { Student } from '../adapters/persistence/entities/student.entity';
+import { Submission } from '../adapters/persistence/entities/submission.entity';
+import { ClassroomSession } from '../adapters/persistence/entities/classroom-session.entity';
+import { AiQuestion } from '../adapters/persistence/entities/ai-question.entity';
+import { ChatMessage } from '../adapters/persistence/entities/chat-message.entity';
+import { ClassroomSnapshot } from '../adapters/persistence/entities/classroom-snapshot.entity';
+import { Lesson } from '../adapters/persistence/entities/lesson.entity';
+import { DiscussHighlight } from '../adapters/persistence/entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../adapters/persistence/entities/discuss-target-hit.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import {
   ObserverEngine,
@@ -23,10 +23,10 @@ import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySi
 
 // ── Infra ──
 import { ClassroomService } from '../application/classroom/classroom.service';
-import { ClassroomBroadcastService } from './classroom-broadcast.service';
+import { ClassroomBroadcastService } from '../adapters/transport/classroom-broadcast.service';
 import { ClassroomStateService } from '../application/classroom/classroom-state.service';
 import { StudentSubmissionService } from '../application/classroom/student-submission.service';
-import { ClassroomController } from './classroom.controller';
+import { ClassroomController } from '../adapters/http/classroom.controller';
 import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
@@ -41,7 +41,7 @@ import { GuidedDiscoveryObserveHandler } from '../domain/exercise-types/guided-d
 
 // ── Exercise component ──
 import { ExerciseService } from '../application/exercise/exercise.service';
-import { ExerciseController } from './exercise/exercise.controller';
+import { ExerciseController } from '../adapters/http/exercise.controller';
 import { GradingService } from '../application/exercise/grading.service';
 import { ExerciseTypeRegistry } from '../application/exercise/exercise-type-registry';
 import { QuizPlugin } from '../domain/exercise-types/quiz/quiz.plugin';
@@ -57,7 +57,7 @@ import { RichContentQuizPlugin } from '../domain/exercise-types/rich-content-qui
 import { GuidedDiscoveryPlugin } from '../domain/exercise-types/guided-discovery/guided-discovery.plugin';
 
 // ── State Cache ──
-import { StateCacheService } from './state-cache.service';
+import { StateCacheService } from '../adapters/transport/state-cache.service';
 
 // ── Coaching ──
 import { CoachingService } from '../application/observation/coaching.service';

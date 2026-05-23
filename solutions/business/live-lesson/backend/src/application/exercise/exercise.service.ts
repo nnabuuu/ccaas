@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../../entities/student.entity';
-import { Lesson } from '../../entities/lesson.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { GradingService } from './grading.service';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';

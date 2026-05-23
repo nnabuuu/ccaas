@@ -17,7 +17,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { LessonService } from './lesson.service';
-import { Lesson } from '../../entities/lesson.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 
 // `fs.existsSync`/`readdirSync`/`readFileSync` aren't spyable in newer Node
 // (they're non-configurable). Use jest.mock('fs') for the whole module so

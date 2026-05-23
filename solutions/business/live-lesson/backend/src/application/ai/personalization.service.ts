@@ -1,12 +1,12 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThanOrEqual, Not, Or, Repository } from 'typeorm';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { Lesson } from '../../entities/lesson.entity';
-import { AiQuestion } from '../../entities/ai-question.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -16,7 +16,7 @@ import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../../domain/classroom/task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
-import { StateCacheService } from '../../classroom/state-cache.service';
+import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
 
 const BONUS_STEP_OFFSET = 100;

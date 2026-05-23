@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import Ajv, { ValidateFunction } from 'ajv';
-import { ExerciseTypeDef } from '../entities/exercise-type-def.entity';
+import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
 import { evaluateRefinement, RefinementDef, RefinementResult } from './refinement-evaluator';
 import * as fs from 'fs';
 import * as path from 'path';

@@ -9,11 +9,11 @@ import { SelectEvidenceObserveHandler } from '../../domain/exercise-types/select
 import { MapObserveHandler } from '../../domain/exercise-types/map/map.observe';
 import { MatrixObserveHandler } from '../../domain/exercise-types/matrix/matrix.observe';
 import { DiscussObserveHandler } from '../../classroom/observe/handlers/discuss.handler';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
-import { Lesson } from '../../entities/lesson.entity';
-import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import type { AnswerKey } from '../../schemas/answer-key.schema';

@@ -1,6 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
-import type { Student } from '../../entities/student.entity';
-import type { Submission } from '../../entities/submission.entity';
+import type { Student } from '../../adapters/persistence/entities/student.entity';
+import type { Submission } from '../../adapters/persistence/entities/submission.entity';
 import type { AnswerKey } from '../../schemas/answer-key.schema';
 
 export interface ObserveContext {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ExerciseTypeDef } from '../entities/exercise-type-def.entity';
+import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
 import { ExerciseTypeRegistryService } from './exercise-type-registry.service';
 import * as path from 'path';
 

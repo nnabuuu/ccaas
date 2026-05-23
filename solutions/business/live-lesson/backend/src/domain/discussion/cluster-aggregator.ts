@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
+import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import type { ObservationState, ClusterStats, ClassifyResult } from '../../schemas/classroom/clustering';
 
 interface TargetPointState {

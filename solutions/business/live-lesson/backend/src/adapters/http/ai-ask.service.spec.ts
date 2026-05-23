@@ -7,14 +7,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { AiAskService } from '../../application/ai/ai-ask.service';
 import { AiPromptBuilder } from '../../application/ai/ai-prompt-builder';
 import { ManifestCacheService } from '../../application/classroom/manifest-cache.service';
-import { StateCacheService } from '../state-cache.service';
-import { Student } from '../../entities/student.entity';
-import { Submission } from '../../entities/submission.entity';
-import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { AiQuestion } from '../../entities/ai-question.entity';
-import { ChatMessage } from '../../entities/chat-message.entity';
-import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
-import { Lesson } from '../../entities/lesson.entity';
+import { StateCacheService } from '../../adapters/transport/state-cache.service';
+import { Student } from '../../adapters/persistence/entities/student.entity';
+import { Submission } from '../../adapters/persistence/entities/submission.entity';
+import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
+import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
+import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
+import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 
 const ASK_MANIFEST = {
