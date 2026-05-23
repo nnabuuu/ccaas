@@ -72,4 +72,33 @@ export interface ExerciseTypePlugin {
    * function in `exercise/build-check-items.ts` is used.
    */
   buildCheckItems?(ctx: CheckItemContext): Array<Record<string, unknown>>;
+
+  // ── §14 L3: Two-stage grade (optional, see exercise-plugin-preview-design.md §14.4) ──
+
+  /**
+   * Stage 1 of two-stage grade: construct LLM prompt specs from answerKey + data.
+   * Returns an array because some plugins (e.g. rich-content-quiz) make multiple
+   * parallel LLM calls. Plugins that don't implement this fall back to single-stage
+   * grade() and L3 prompt editing isn't available for them.
+   */
+  buildGradePrompt?(ctx: GradeContext): GradePromptSpec[];
+
+  /**
+   * Stage 2 of two-stage grade: parse LLM responses into a GradeResult.
+   * Called by the L3 prompt debugger with possibly edited responses so plugin
+   * authors can iterate on parse logic without burning tokens.
+   */
+  parseGradeResponse?(responses: string[], ctx: GradeContext): GradeResult;
+}
+
+/** A single LLM call specification (§14.4) */
+export interface GradePromptSpec {
+  systemPrompt: string;
+  userMessage: string;
+  options?: {
+    maxTokens?: number;
+    temperature?: number;
+    responseFormat?: { type: 'json_object' };
+    model?: string;
+  };
 }

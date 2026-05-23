@@ -32,7 +32,6 @@ describe('GradingService (dispatcher)', () => {
   });
 
   it('returns null for invalid schema (safeParse rejects)', async () => {
-    // Empty object has no type field — safeParse fails
     expect(await service.grade({}, {})).toBeNull();
   });
 

@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
+// Plugin architecture: `type` is now an open string so extension bundles can
+// register new exercise types without modifying this schema. Validation of
+// type-specific fields happens inside each plugin's answerKeySchema.
 export const ExerciseSpecSchema = z.object({
-  type: z.enum(['quiz', 'match', 'matrix', 'stance', 'order', 'select-evidence', 'map', 'image-upload', 'rich-content-quiz', 'fill-blank', 'guided-discovery']),
+  type: z.string(),
   subType: z.string().optional(),
   label: z.string(),
   // quiz

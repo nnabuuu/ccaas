@@ -18,11 +18,14 @@ import { ExerciseTypeRegistry } from './exercise-type-registry';
 /**
  * Dispatches grading to the appropriate handler.
  *
- * Migration strategy (during Stage 1+):
- *   1. Try the new ExerciseTypeRegistry (plugin model) first.
- *   2. Fall back to the legacy `graders` dict for types not yet migrated.
+ * After Stage 6 plugin migration:
+ *   1. Prefer ExerciseTypeRegistry (all 11 types registered) — production path
+ *   2. Fall back to the legacy `graders` dict — kept solely so the existing
+ *      TestingModule-based unit specs continue to pass without rewiring.
  *
- * Once all 11 types are migrated, the legacy dict can be removed.
+ * The fallback is dead code in production (registry is always wired by
+ * ClassroomModule). A follow-up Stage 6.5 will rewrite the 7 affected spec
+ * files to inject the registry, after which the dict can be deleted.
  */
 @Injectable()
 export class GradingService {
@@ -51,15 +54,14 @@ export class GradingService {
   async grade(rawKey: unknown, data: Record<string, unknown>): Promise<GradeResult | null> {
     if (!rawKey) return null;
 
-    // Step 1: try plugin registry first (Stage 1+ migrated types)
+    // Step 1: try plugin registry first (production path)
     const type = (rawKey as { type?: string })?.type;
     if (this.registry && type && this.registry.has(type)) {
       const pluginResult = await this.registry.grade(rawKey, data);
       if (pluginResult !== null) return pluginResult;
-      this.logger.warn(`Plugin "${type}" returned null; falling back to legacy grader`);
     }
 
-    // Step 2: fall back to legacy grader (un-migrated types)
+    // Step 2: fall back to legacy grader dict (kept only for TestingModule specs)
     const parsed = AnswerKeySchema.safeParse(rawKey);
     if (!parsed.success) return null;
     const key: AnswerKey = parsed.data;

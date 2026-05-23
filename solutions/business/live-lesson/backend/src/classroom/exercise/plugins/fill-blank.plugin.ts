@@ -6,6 +6,7 @@ import type {
   GradeContext,
   CheckItemContext,
   SanitizeContext,
+  GradePromptSpec,
 } from '../exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
@@ -143,5 +144,97 @@ ${items.map((it, i) => `${i + 1}. 学生答案："${it.studentAnswer}"，标准�
       items.push({ idx: dimKey, correct });
     }
     return items;
+  }
+
+  // ── §14 L3: two-stage grade ──
+  // Returns the pending LLM check (semantic equivalence) as a single prompt spec.
+  // When all student answers match accepts[] exactly, returns an empty array
+  // (no LLM call needed) and parseGradeResponse simply computes scores.
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const key = ctx.key as FillBlankKey;
+    const studentBlanks = (ctx.data.blanks || {}) as Record<string, string>;
+    const pending: Array<{ dimKey: string; studentAnswer: string; accepts: string[] }> = [];
+
+    for (const sentence of key.sentences) {
+      for (const [blankId, blank] of Object.entries(sentence.blanks)) {
+        const dimKey = `${sentence.id}_${blankId}`;
+        const studentAnswer = (studentBlanks[dimKey] || '').trim();
+        if (!studentAnswer) continue;
+        const normalized = studentAnswer.toLowerCase();
+        const isExact = blank.accepts.some((a) => a.trim().toLowerCase() === normalized);
+        if (!isExact) pending.push({ dimKey, studentAnswer, accepts: blank.accepts });
+      }
+    }
+    if (pending.length === 0) return [];
+
+    const userMessage = `判断每组中学生答案与标准答案是否语义等价。
+
+${pending.map((it, i) => `${i + 1}. 学生答案："${it.studentAnswer}"，标准答案：${it.accepts.map((a) => `"${a}"`).join('、')}`).join('\n')}
+
+输出JSON：{ "results": [{ "index": 0, "equivalent": true/false }] }
+仅判断语义是否等价，不要求完全相同的表述。`;
+
+    return [
+      {
+        systemPrompt: '你是一位教学评估助手。请严格判断语义等价性。',
+        userMessage,
+        options: { maxTokens: 256, temperature: 0, responseFormat: { type: 'json_object' } },
+      },
+    ];
+  }
+
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const key = ctx.key as FillBlankKey;
+    const studentBlanks = (ctx.data.blanks || {}) as Record<string, string>;
+    const byDimension: Record<string, boolean> = {};
+    let correct = 0;
+    let total = 0;
+    const pendingIndices: string[] = [];
+
+    for (const sentence of key.sentences) {
+      for (const [blankId, blank] of Object.entries(sentence.blanks)) {
+        const dimKey = `${sentence.id}_${blankId}`;
+        total++;
+        const studentAnswer = (studentBlanks[dimKey] || '').trim();
+        if (!studentAnswer) {
+          byDimension[dimKey] = false;
+          continue;
+        }
+        const normalized = studentAnswer.toLowerCase();
+        const isExact = blank.accepts.some((a) => a.trim().toLowerCase() === normalized);
+        if (isExact) {
+          byDimension[dimKey] = true;
+          correct++;
+        } else {
+          pendingIndices.push(dimKey);
+        }
+      }
+    }
+
+    // Apply LLM response (if any)
+    if (responses.length > 0 && pendingIndices.length > 0) {
+      try {
+        const raw = responses[0].replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();
+        const parsed = JSON.parse(raw) as {
+          results?: Array<{ index: number; equivalent: boolean }>;
+        };
+        const results = parsed.results || [];
+        pendingIndices.forEach((dimKey, i) => {
+          const found = results.find((r) => r.index === i);
+          const equivalent = found?.equivalent ?? false;
+          byDimension[dimKey] = equivalent;
+          if (equivalent) correct++;
+        });
+      } catch {
+        for (const dimKey of pendingIndices) byDimension[dimKey] = false;
+      }
+    } else {
+      for (const dimKey of pendingIndices) byDimension[dimKey] = false;
+    }
+
+    return {
+      total: total > 0 ? Math.round((correct / total) * 100) : 0,
+      byDimension,
+    };
   }
 }

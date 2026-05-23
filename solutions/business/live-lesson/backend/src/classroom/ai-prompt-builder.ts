@@ -1,5 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'node:crypto';
+
+/**
+ * Tracer hook for §14 AI Prompt debugger.
+ *
+ * Implementations capture every LLM call's prompt + response + timing.
+ * L1 (read-only display): just record events. L2 (record-and-replay):
+ * implementations may consult `replayCache` to short-circuit calls. L3
+ * (two-stage grade): handled at the plugin contract level, see §14.4.
+ */
+export interface PromptTracer {
+  recordStart(callId: string, payload: {
+    kind: 'text' | 'vision';
+    systemPrompt: string;
+    userMessage: string;
+    options?: Record<string, unknown>;
+  }): void;
+  recordEnd(callId: string, payload: { response: string; durationMs: number }): void;
+  /** Optional replay hook: return a cached response or null. Used by L2. */
+  lookupReplay?(callKey: string): string | null;
+}
 
 /**
  * Builds AI prompts and handles LLM API calls.
@@ -8,8 +29,14 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AiPromptBuilder {
   private readonly logger = new Logger(AiPromptBuilder.name);
+  private tracer: PromptTracer | null = null;
 
   constructor(private readonly configService: ConfigService) {}
+
+  /** L1+: attach a tracer to capture all LLM calls. Pass null to detach. */
+  setTracer(tracer: PromptTracer | null): void {
+    this.tracer = tracer;
+  }
 
   /** Shared L1-L3 context layers for AI prompts */
   buildBaseContextLayers(manifest: any, stepDef: any): string[] {
@@ -644,8 +671,26 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       model?: string;
     },
   ): Promise<string> {
+    const callId = randomUUID();
+    const tracer = this.tracer;
+    const t0 = Date.now();
+
+    // L2 replay short-circuit (record-and-replay record-and-replay): when a
+    // tracer exposes a lookupReplay hook, consult it before making the real
+    // call. Used by the prompt debugger's "rerun with edited prompt" feature.
+    if (tracer?.lookupReplay) {
+      const replayKey = hashPrompt(systemPrompt, userMessage);
+      const cached = tracer.lookupReplay(replayKey);
+      if (cached !== null && cached !== undefined) {
+        tracer.recordStart(callId, { kind: 'text', systemPrompt, userMessage, options });
+        tracer.recordEnd(callId, { response: cached, durationMs: Date.now() - t0 });
+        return cached;
+      }
+    }
+
+    tracer?.recordStart(callId, { kind: 'text', systemPrompt, userMessage, options });
     const cfg = this.getTextLlmConfig(options);
-    return this.callOpenAiCompatible({
+    const response = await this.callOpenAiCompatible({
       ...cfg,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -655,6 +700,8 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       temperature: options?.temperature ?? 0.7,
       responseFormat: options?.responseFormat,
     });
+    tracer?.recordEnd(callId, { response, durationMs: Date.now() - t0 });
+    return response;
   }
 
   /** Multi-turn vision conversation — user messages may contain images */
@@ -702,4 +749,15 @@ ${isReading ? '- 结合课文语境解释' : '- 结合当前学习内容解释'}
       temperature: options?.temperature ?? 0.75,
     });
   }
+}
+
+/** Simple FNV-1a hash for prompt → cache key (no crypto needed) */
+function hashPrompt(systemPrompt: string, userMessage: string): string {
+  const s = `${systemPrompt}${userMessage}`;
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h.toString(36);
 }
