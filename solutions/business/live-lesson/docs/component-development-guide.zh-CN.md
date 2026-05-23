@@ -259,7 +259,7 @@ for (const type of getRegisteredTypes()) {
 - **`PracticePhase` / `StudentShell` / `enrich-exercise.ts` / `gradeItemSet` / `teacher-helpers`。** 新题型对它们 off-limits。如果发现自己为了上一种 exercise 要动这几个, 说明 plugin 契约有缺口 —— 去修契约, 不要绕过它。
 - **Observation 事件类型。** 加新事件 (在 `exercise_result`、`chat_turn` 之外) 是 `@kedge-agentic/observer-engine` 的框架级改动, 不要作为新题型的一部分顺手做。
 
-> **层级规则现状 (2026-05):** domain 已经严格干净 (没有从 `application/` 或 `adapters/` 的 import)。application service 还在直接 inject TypeORM `Repository<X>` —— 这是一个已知的偏差, 在 [`backlog/backlog-strict-layer-application-repo-ports.md`](./backlog/backlog-strict-layer-application-repo-ports.md) 里跟踪。如果你在改 application 层代码并且想守规矩, 先读这份 backlog。
+> **层级规则现状 (2026-05):** 依赖规则 `domain ← application ← adapters ← infra` 现在两端都严格。domain 没有从 `application/` 或 `adapters/` 的 import；application 也不再从 `adapters/persistence/entities/*` import 实体类。每个实体都通过 `domain/ports/` 里定义的 `*RepoPort` symbol 访问，由 `infra/classroom.module.ts` 绑定到 `TypeOrm*Repository` 适配器。新增实体时：在 `domain/types/` 定义 `Record` 类型 + 在 `domain/ports/` 定义 `RepoPort` 接口、实现 TypeORM 适配器、用 `{ provide: X_REPO_PORT, useExisting: TypeOrmXRepository }` 把 port 接进 module。
 
 ---
 

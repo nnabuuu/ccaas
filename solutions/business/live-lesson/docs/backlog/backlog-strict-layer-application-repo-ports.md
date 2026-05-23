@@ -1,9 +1,18 @@
 # Backlog: Strict-Layer Phase 2b — Application Repository Ports
 
-**Status**: Backlog (deferred)
+**Status**: ✅ Done (2026-05-24, commits `a8fe3309..71a7df95`)
 **Created**: 2026-05-24
 **Filed by**: Code review on `505e94e7` (post clean-arch refactor)
 **Blocks**: nothing; honors the dependency rule already published in `CLAUDE.md`
+
+> **Resolution.** All 9 entity migrations shipped across 9 commits (one per
+> entity, smallest-blast-radius-first: ObservationRecord, DiscussTargetHit,
+> DiscussHighlight, AiQuestion, ClassroomSession, Submission, ChatMessage,
+> Student, Lesson). 1431 backend tests pass; `grep` returns zero hits for
+> `from .*adapters/persistence/entities` inside non-test `application/`
+> files. `ClassroomSnapshot` is intentionally left as `Repository<X>` since
+> it is only used inside `adapters/transport/classroom-broadcast.service.ts`,
+> which is the persistence-adjacent adapter layer.
 
 ## Context
 

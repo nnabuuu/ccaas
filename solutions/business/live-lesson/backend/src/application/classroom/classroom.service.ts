@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { randomInt } from 'crypto';
-import { Student } from '../../adapters/persistence/entities/student.entity';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';
 import {
@@ -20,7 +19,6 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { ClassroomBroadcastService } from '../../adapters/transport/classroom-broadcast.service';
 import { ClassroomStateService } from './classroom-state.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
-import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { TranslateService } from '../ai/translate.service';

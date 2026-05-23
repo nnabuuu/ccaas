@@ -6,7 +6,6 @@ import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe
 import type { DiscussObserveData } from '../../schemas/classroom/observe-data';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
-import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';
 import {

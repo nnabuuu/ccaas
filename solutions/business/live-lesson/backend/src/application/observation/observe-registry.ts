@@ -2,7 +2,6 @@ import { Inject, Injectable, OnModuleInit, BadRequestException, Logger } from '@
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../../adapters/persistence/entities/student.entity';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';
 import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';
@@ -36,7 +35,7 @@ export class ObserveRegistry implements OnModuleInit {
   }
 
   async loadObserveData(sessionId: string): Promise<{
-    students: Student[];
+    students: StudentRecord[];
     subsByStudent: Map<string, Record<number, SubmissionRecord>>;
   }> {
     const students = await this.studentRepo.findBySession(sessionId);

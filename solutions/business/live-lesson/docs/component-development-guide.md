@@ -259,7 +259,7 @@ Be honest with yourself about these before you start. None of them are pluggable
 - **`PracticePhase` / `StudentShell` / `enrich-exercise.ts` / `gradeItemSet` / `teacher-helpers`.** Off-limits for new types. If you find yourself editing any of these to ship a new exercise, the plugin contract has a gap — fix the contract, don't bypass it.
 - **Observation event types.** Adding a new event kind (beyond `exercise_result`, `chat_turn`, etc.) is a framework-level change to `@kedge-agentic/observer-engine`. Don't do it as part of a new exercise type.
 
-> **Layer rule status (2026-05):** domain is strictly clean (no imports from `application/` or `adapters/`). Application services still inject TypeORM `Repository<X>` directly — a known relaxation tracked in [`backlog/backlog-strict-layer-application-repo-ports.md`](./backlog/backlog-strict-layer-application-repo-ports.md). If you're touching application-layer code and want to be a good citizen, read that backlog first.
+> **Layer rule status (2026-05):** the dependency rule `domain ← application ← adapters ← infra` is now strict in both directions. Domain has zero imports from `application/` or `adapters/`, and application has zero imports from `adapters/persistence/entities/*`. Every entity is accessed through a `*RepoPort` symbol defined in `domain/ports/` and bound to a `TypeOrm*Repository` adapter in `infra/classroom.module.ts`. When you add a new entity, define a domain `Record` type + `RepoPort` interface, implement a TypeORM adapter, and wire the port via `{ provide: X_REPO_PORT, useExisting: TypeOrmXRepository }`.
 
 ---
 
