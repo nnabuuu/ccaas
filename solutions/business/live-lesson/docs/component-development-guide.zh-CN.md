@@ -4,7 +4,7 @@
 
 读者: 在 `solutions/business/live-lesson/` (及周边 packages) 里写新题型、observe handler、scaffold widget、学生端/教师端 UI 片段的内部工程师。
 
-底层架构请先读 `solutions/business/live-lesson/docs/exercise-plugin-architecture.zh-CN.md`。这份文档是 *怎么做*, 那份是 *为什么*。
+底层架构请先读同目录的 [`exercise-plugin-architecture.zh-CN.md`](./exercise-plugin-architecture.zh-CN.md)。这份文档是 *怎么做*, 那份是 *为什么*。
 
 ---
 
@@ -35,7 +35,7 @@
 
 ### 3.1 Exercise type plugin (主战场)
 
-后端 + 前端两半的逐步骤指南在 [`docs/exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md)。重点:
+后端 + 前端两半的逐步骤指南在 [`docs/exercise-plugin-extension-guide.md`](../../../docs/exercise-plugin-extension-guide.md)。重点:
 
 - 后端 plugin 文件 (1 个): 实现 `ExerciseTypePlugin`, 用 `@ExerciseType('<type>')` 装饰让 registry 自动发现。要实现的方法: `answerKeySchema`、`sanitize`、`grade`、`buildCheckItems`, 可选实现 `buildGradePrompt` + `parseGradeResponse` (§14 L3 契约)。
 - 前端 UI plugin entry (1 个): export 一个 `ExerciseUIPlugin`, 包含 `Component`、`canSubmit`, 可选 `localGrade`、`enrichFromApi`/`enrichFromManifest`、`formatSubmitData`、`handleCheckResult`, 以及两个 observe lazy component。
@@ -171,7 +171,7 @@ review 发现问题先修再继续。harness 是 commit 出门前的最后一道
 ## 7. 还是卡住时
 
 - Memory 和约定: `/Users/niex/.claude/projects/.../memory/MEMORY.md` 每次 Claude 会话都会加载, 里面列了所有反复出现的坑 (serverUrl 陷阱、commit 格式、harness 规则)。
-- 架构决策: `docs/adr/` 和 `solutions/business/live-lesson/docs/exercise-plugin-architecture.md`。
+- 架构决策: repo 根目录的 `docs/adr/` 和同目录的 [`exercise-plugin-architecture.md`](./exercise-plugin-architecture.md)。
 - 某次具体 PR 的原因: `git log -p` 是唯一真相; 这个 repo 的 commit message 是按 load-bearing 标准写的, 信息量足够。
 
 实在卡住的话, 最优解是约一个 15 分钟 pairing —— 三只眼睛打败任何文档。

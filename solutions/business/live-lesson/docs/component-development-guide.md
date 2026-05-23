@@ -4,7 +4,7 @@
 
 Audience: internal engineers writing new exercise types, observe handlers, scaffold widgets, or student/teacher UI fragments inside `solutions/business/live-lesson/` (and the supporting packages).
 
-For the underlying architecture, read `solutions/business/live-lesson/docs/exercise-plugin-architecture.md` first. This guide is the *how*, that one is the *why*.
+For the underlying architecture, read [`exercise-plugin-architecture.md`](./exercise-plugin-architecture.md) (alongside this file). This guide is the *how*, that one is the *why*.
 
 ---
 
@@ -35,7 +35,7 @@ If you can't write these six bullets in 10 lines on a scratch pad, the design is
 
 ### 3.1 Exercise type plugin (the main case)
 
-Both halves are described step-by-step in [`docs/exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md). Highlights:
+Both halves are described step-by-step in [`docs/exercise-plugin-extension-guide.md`](../../../docs/exercise-plugin-extension-guide.md). Highlights:
 
 - Backend plugin file (one): implements `ExerciseTypePlugin` and is auto-discovered via `@ExerciseType('<type>')`. The methods you implement: `answerKeySchema`, `sanitize`, `grade`, `buildCheckItems`, optionally `buildGradePrompt` + `parseGradeResponse` (the §14 L3 contract).
 - Frontend UI plugin entry (one): exports an `ExerciseUIPlugin` with `Component`, `canSubmit`, optionally `localGrade`, `enrichFromApi`/`enrichFromManifest`, `formatSubmitData`, `handleCheckResult`, and the observe lazy components.
@@ -171,7 +171,7 @@ If review finds issues, fix before proceeding. The harness step is the final gat
 ## 7. When in doubt
 
 - Memory and conventions: `/Users/niex/.claude/projects/.../memory/MEMORY.md` is loaded into every Claude session and lists the recurring gotchas (serverUrl pitfall, commit-message format, harness rule).
-- Architectural decisions: `docs/adr/` and `solutions/business/live-lesson/docs/exercise-plugin-architecture.md`.
+- Architectural decisions: repo-root `docs/adr/` and the sibling [`exercise-plugin-architecture.md`](./exercise-plugin-architecture.md).
 - A specific past PR's reasoning: `git log -p` is the truth; commit messages in this repo are written to be load-bearing.
 
 If you're still stuck, the right move is to spin up a 15-minute pairing block — three eyes beat a tutorial.
