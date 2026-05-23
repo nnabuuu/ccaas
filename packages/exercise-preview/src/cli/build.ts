@@ -90,7 +90,7 @@ export async function buildStaticDemo(options: BuildOptions): Promise<BuildResul
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(
         path.join(dir, 'index.html'),
-        renderDemoPage(bundle, storyName, story),
+        renderDemoPage(bundle, storyName, story, code),
       );
     }
   }
@@ -151,6 +151,7 @@ function renderDemoPage(
   bundle: LoadedBundle,
   storyName: string,
   story: { name: string; answerKey: Record<string, unknown>; initialAns?: Record<string, unknown> },
+  shortCode: string,
 ): string {
   const data = {
     bundleId: bundle.plugin.type,
@@ -160,6 +161,7 @@ function renderDemoPage(
     storyDisplayName: story.name,
     answerKey: story.answerKey,
     initialAns: story.initialAns ?? {},
+    shortCode,
   };
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
 <title>${escape(story.name)} · ${escape(bundle.meta.title)}</title>
@@ -179,7 +181,7 @@ footer{margin-top:40px;text-align:center;color:#9c9a92;font-size:10px}
 <header>
   <div class="crumb">Exercise Demo · ${escape(data.pluginDisplayName)}</div>
   <h1>${escape(data.storyDisplayName)}</h1>
-  <div style="font-size:13px;color:#5c5b56">${escape(data.bundleTitle)} · short-code <code>${path.basename('')}</code></div>
+  <div style="font-size:13px;color:#5c5b56">${escape(data.bundleTitle)} · short-code <code>${escape(data.shortCode)}</code></div>
 </header>
 
 <div class="note"><strong>Static demo mode.</strong> AnswerKey is read-only and grading is disabled — this is a showcase preview. For live grading, run <code>npx exercise-preview .</code> on the bundle source.</div>

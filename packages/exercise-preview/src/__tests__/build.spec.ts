@@ -75,4 +75,37 @@ export const Hidden = { name: 'Hidden', answerKey: { type: 'quiz' }, skipInDemo:
   it('throws when no bundles found', async () => {
     await expect(buildStaticDemo({ cwd: tmpCwd, outDir: tmpOut })).rejects.toThrow(/No bundles/);
   });
+
+  it('per-story HTML embeds the short-code label (regression for empty <code></code>)', async () => {
+    fs.writeFileSync(
+      path.join(tmpCwd, 'quiz.stories.mjs'),
+      `
+import { defineStories } from '${path.resolve(__dirname, '..', '..', 'dist', 'index.js')}';
+export default defineStories({ plugin: { type: 'quiz' }, meta: { title: 'Quiz' } });
+export const Default = { name: 'Default', answerKey: { type: 'quiz' } };
+`,
+    );
+    const result = await buildStaticDemo({ cwd: tmpCwd, outDir: tmpOut });
+    const code = Object.keys(result.shortCodes)[0];
+    const html = fs.readFileSync(path.join(tmpOut, 'p', code, 'index.html'), 'utf-8');
+    // Pre-fix, the page rendered `short-code <code></code>` (path.basename('')).
+    // The short code must appear in the demo header now.
+    expect(html).toContain(`short-code <code>${code}</code>`);
+  });
+
+  it('landing index.html links to each story by short code', async () => {
+    fs.writeFileSync(
+      path.join(tmpCwd, 'quiz.stories.mjs'),
+      `
+import { defineStories } from '${path.resolve(__dirname, '..', '..', 'dist', 'index.js')}';
+export default defineStories({ plugin: { type: 'quiz' }, meta: { title: 'Quiz', description: 'A bundle' } });
+export const Default = { name: 'Default', answerKey: { type: 'quiz' } };
+`,
+    );
+    const result = await buildStaticDemo({ cwd: tmpCwd, outDir: tmpOut, baseUrl: 'https://demo.example.com' });
+    const code = Object.keys(result.shortCodes)[0];
+    const landing = fs.readFileSync(path.join(tmpOut, 'index.html'), 'utf-8');
+    expect(landing).toContain(`https://demo.example.com/p/${code}/`);
+    expect(landing).toContain('A bundle'); // description rendered
+  });
 });

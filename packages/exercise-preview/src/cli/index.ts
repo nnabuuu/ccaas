@@ -3,9 +3,9 @@
  * exercise-preview CLI entry.
  *
  * Usage:
- *   exercise-preview [cwd]            start dev server (default cwd = process.cwd())
- *   exercise-preview --port 4321 .    explicit port + path
- *   exercise-preview build            (P4) static demo build — not yet wired
+ *   exercise-preview [cwd]                            start dev server (default cwd = process.cwd())
+ *   exercise-preview --port 4321 .                    explicit port + path
+ *   exercise-preview build [cwd] --out <dir>          static demo build (P4)
  */
 import { startDevServer } from './dev-server';
 import { buildStaticDemo } from './build';
