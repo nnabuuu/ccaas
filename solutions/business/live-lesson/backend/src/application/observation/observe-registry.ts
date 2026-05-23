@@ -1,11 +1,12 @@
-import { Injectable, OnModuleInit, BadRequestException, Logger } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, BadRequestException, Logger } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
+import type { SubmissionRecord } from '../../domain/types/submission';
+import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 
 @Injectable()
 export class ObserveRegistry implements OnModuleInit {
@@ -17,8 +18,8 @@ export class ObserveRegistry implements OnModuleInit {
     private readonly reflector: Reflector,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
+    @Inject(SUBMISSION_REPO_PORT)
+    private readonly submissionRepo: SubmissionRepoPort,
   ) {}
 
   onModuleInit() {
@@ -34,11 +35,11 @@ export class ObserveRegistry implements OnModuleInit {
 
   async loadObserveData(sessionId: string): Promise<{
     students: Student[];
-    subsByStudent: Map<string, Record<number, Submission>>;
+    subsByStudent: Map<string, Record<number, SubmissionRecord>>;
   }> {
     const students = await this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } });
-    const submissions = await this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } });
-    const subsByStudent = new Map<string, Record<number, Submission>>();
+    const submissions = await this.submissionRepo.findExerciseBySession(sessionId);
+    const subsByStudent = new Map<string, Record<number, SubmissionRecord>>();
     for (const sub of submissions) {
       if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});
       subsByStudent.get(sub.studentId)![sub.step] = sub;

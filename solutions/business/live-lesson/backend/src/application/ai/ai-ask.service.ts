@@ -3,7 +3,6 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
@@ -19,8 +18,6 @@ export class AiAskService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)

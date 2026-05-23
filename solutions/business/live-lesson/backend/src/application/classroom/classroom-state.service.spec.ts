@@ -5,6 +5,8 @@ import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port"
 import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
 import { CLASSROOM_SESSION_REPO_PORT } from "../../domain/ports/classroom-session-repo.port";
 import { TypeOrmClassroomSessionRepository } from "../../adapters/persistence/repositories/classroom-session.repository";
+import { SUBMISSION_REPO_PORT } from "../../domain/ports/submission-repo.port";
+import { TypeOrmSubmissionRepository } from "../../adapters/persistence/repositories/submission.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -73,7 +75,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         ClassroomStateService,
         StateCacheService,
         { provide: getRepositoryToken(Student), useValue: {} },
-        { provide: getRepositoryToken(Submission), useValue: {} },
+        { provide: SUBMISSION_REPO_PORT, useValue: { findExerciseBySession: jest.fn().mockResolvedValue([]) } },
         { provide: getRepositoryToken(Lesson), useValue: {} },
         { provide: CLASSROOM_SESSION_REPO_PORT, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: AI_QUESTION_REPO_PORT, useValue: { findBySession: jest.fn().mockResolvedValue([]) } },
@@ -262,6 +264,8 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         TypeOrmClassroomSessionRepository,
         { provide: CLASSROOM_SESSION_REPO_PORT, useExisting: TypeOrmClassroomSessionRepository },
+        TypeOrmSubmissionRepository,
+        { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         MetricsAggregator,
         ClusterAggregator,

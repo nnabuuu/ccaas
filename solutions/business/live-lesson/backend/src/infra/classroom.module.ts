@@ -39,6 +39,8 @@ import { AI_QUESTION_REPO_PORT } from '../domain/ports/ai-question-repo.port';
 import { TypeOrmAiQuestionRepository } from '../adapters/persistence/repositories/ai-question.repository';
 import { CLASSROOM_SESSION_REPO_PORT } from '../domain/ports/classroom-session-repo.port';
 import { TypeOrmClassroomSessionRepository } from '../adapters/persistence/repositories/classroom-session.repository';
+import { SUBMISSION_REPO_PORT } from '../domain/ports/submission-repo.port';
+import { TypeOrmSubmissionRepository } from '../adapters/persistence/repositories/submission.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -136,6 +138,8 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
     TypeOrmClassroomSessionRepository,
     { provide: CLASSROOM_SESSION_REPO_PORT, useExisting: TypeOrmClassroomSessionRepository },
+    TypeOrmSubmissionRepository,
+    { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

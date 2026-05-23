@@ -3,6 +3,8 @@ import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highligh
 import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
 import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port";
 import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
+import { SUBMISSION_REPO_PORT } from "../../domain/ports/submission-repo.port";
+import { TypeOrmSubmissionRepository } from "../../adapters/persistence/repositories/submission.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
@@ -97,6 +99,8 @@ describe('DiscussService', () => {
         { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         TypeOrmAiQuestionRepository,
         { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
+        TypeOrmSubmissionRepository,
+        { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         DiscussService, ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,

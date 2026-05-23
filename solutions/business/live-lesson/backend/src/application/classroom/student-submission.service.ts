@@ -3,8 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { GradingService } from '../exercise/grading.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -21,8 +21,8 @@ export class StudentSubmissionService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
+    @Inject(SUBMISSION_REPO_PORT)
+    private readonly submissionRepo: SubmissionRepoPort,
     private readonly gradingService: GradingService,
     private readonly registry: ExerciseTypeRegistry,
     private readonly manifestCache: ManifestCacheService,
@@ -85,18 +85,15 @@ export class StudentSubmissionService {
       ? await this.gradeSubmission(session.lessonId, step, data)
       : null;
 
-    await this.submissionRepo.upsert(
-      {
-        sessionId: session.id,
-        lessonId: session.lessonId,
-        studentId,
-        step,
-        phase,
-        dataJson: data as any,
-        scoreJson: score as any,
-      },
-      ['sessionId', 'studentId', 'step', 'phase'],
-    );
+    await this.submissionRepo.upsert({
+      sessionId: session.id,
+      lessonId: session.lessonId,
+      studentId,
+      step,
+      phase,
+      dataJson: data as any,
+      scoreJson: score as any,
+    });
     this.stateCache.markDirty(session.id);
 
     // Observation events only for exercise submissions — discuss has its own events in DiscussService
@@ -144,9 +141,7 @@ export class StudentSubmissionService {
     }
 
     // Load existing submission to get parts progress
-    const existingSub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId: student.id, step, phase: 'exercise' },
-    });
+    const existingSub = await this.submissionRepo.findOneBySessionStudentStepPhase(session.id, student.id, step, 'exercise');
     const existingData = (existingSub?.dataJson as Record<string, unknown>) ?? {};
     const partsProgress: Record<string, any> = (existingData.parts as Record<string, any>) ?? {};
     const partProgress = partsProgress[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
@@ -259,9 +254,7 @@ export class StudentSubmissionService {
         phase: 'exercise',
         dataJson: mergedData as any,
         scoreJson: (allCompleted ? aggregateScore : partScore) as any,
-      },
-      ['sessionId', 'studentId', 'step', 'phase'],
-    );
+      });
     this.stateCache.markDirty(session.id);
 
     if (allCompleted) {
@@ -320,9 +313,7 @@ export class StudentSubmissionService {
     }
 
     // Load existing submission
-    const existingSub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId: student.id, step, phase: 'exercise' },
-    });
+    const existingSub = await this.submissionRepo.findOneBySessionStudentStepPhase(session.id, student.id, step, 'exercise');
     const existingData = (existingSub?.dataJson as Record<string, unknown>) ?? {};
     const partsProgress: Record<string, any> = (existingData.parts as Record<string, any>) ?? {};
     const partProgress = partsProgress[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
@@ -362,8 +353,7 @@ export class StudentSubmissionService {
       currentPartId: nextPartId ?? partId,
     };
 
-    await this.submissionRepo.upsert(
-      {
+    await this.submissionRepo.upsert({
         sessionId: session.id,
         lessonId: session.lessonId,
         studentId: student.id,
@@ -371,9 +361,7 @@ export class StudentSubmissionService {
         phase: 'exercise',
         dataJson: mergedData as any,
         scoreJson: (allCompleted ? aggregateScore : (partProgress.score ?? null)) as any,
-      },
-      ['sessionId', 'studentId', 'step', 'phase'],
-    );
+      });
     this.stateCache.markDirty(session.id);
 
     if (allCompleted) {
@@ -542,9 +530,7 @@ export class StudentSubmissionService {
   private async buildSubmissionMap(
     sessionId: string, lessonId: string, studentId: string,
   ): Promise<Record<number, { data: unknown; score: GradeResult | null; checkItems?: Array<Record<string, unknown>> }>> {
-    const submissions = await this.submissionRepo.find({
-      where: { sessionId, studentId, phase: 'exercise' },
-    });
+    const submissions = await this.submissionRepo.findExerciseBySessionAndStudent(sessionId, studentId);
 
     // Load manifest once to recompute checkItems from persisted data
     const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
@@ -576,9 +562,7 @@ export class StudentSubmissionService {
   }
 
   async getSubmission(session: ClassroomSessionRecord, studentId: string, step: number): Promise<SubmissionResponse | null> {
-    const sub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step, phase: 'exercise' },
-    });
+    const sub = await this.submissionRepo.findOneBySessionStudentStepPhase(session.id, studentId, step, 'exercise');
     if (!sub) return null;
     return {
       data: sub.dataJson,

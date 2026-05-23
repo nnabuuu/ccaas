@@ -4,10 +4,10 @@ import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { CLASSROOM_SESSION_REPO_PORT, type ClassroomSessionRepoPort } from '../../domain/ports/classroom-session-repo.port';
+import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
@@ -34,8 +34,8 @@ export class ClassroomStateService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
+    @Inject(SUBMISSION_REPO_PORT)
+    private readonly submissionRepo: SubmissionRepoPort,
     @Inject(CLASSROOM_SESSION_REPO_PORT)
     private readonly sessionRepo: ClassroomSessionRepoPort,
     @InjectRepository(Lesson)
@@ -104,7 +104,7 @@ export class ClassroomStateService {
     // Step 1: 4 independent queries in parallel
     const [students, submissions, session, questions] = await Promise.all([
       this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } }),
-      this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } }),
+      this.submissionRepo.findExerciseBySession(sessionId),
       this.sessionRepo.findById(sessionId),
       this.aiQuestionRepo.findBySession(sessionId),
     ]);
@@ -337,7 +337,7 @@ export class ClassroomStateService {
     if (resolved.surfaces.length === 0) return {};
 
     const students = await this.studentRepo.find({ where: { sessionId } });
-    const submissions = await this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } });
+    const submissions = await this.submissionRepo.findExerciseBySession(sessionId);
     const subsByStudent = new Map<string, Record<number, { step: number; data: unknown; score: unknown; submittedAt: string }>>();
     for (const sub of submissions) {
       if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});

@@ -3,9 +3,9 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
+import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
@@ -25,8 +25,8 @@ export class DiscussService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
+    @Inject(SUBMISSION_REPO_PORT)
+    private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
@@ -378,9 +378,9 @@ export class DiscussService {
     const stepIdx = taskMap.taskToStep[taskNum] ?? taskNum;
     const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
 
-    const submission = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step: stepIdx, phase: 'exercise' },
-    });
+    const submission = await this.submissionRepo.findOneBySessionStudentStepPhase(
+      session.id, studentId, stepIdx, 'exercise',
+    );
 
     const allLogs = await this.observationQuery.getStudentLogs(session.id);
     const studentLog = allLogs.find(l => l.studentId === studentId) ?? null;

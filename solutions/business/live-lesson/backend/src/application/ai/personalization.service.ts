@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
+import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -37,8 +37,8 @@ export class PersonalizationService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
+    @Inject(SUBMISSION_REPO_PORT)
+    private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
@@ -70,9 +70,7 @@ export class PersonalizationService {
     if (!ptParsed.success) return null;
     const personalTouch: PersonalTouch = ptParsed.data;
 
-    const allSubs = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId, phase: 'exercise' },
-    });
+    const allSubs = await this.submissionRepo.findExerciseBySessionAndStudent(session.id, studentId);
     const subsByStep = new Map(allSubs.map(s => [s.step, s]));
 
     const strategies: Array<{ task: number; strategy: string; score: number; attempts: number }> = [];
@@ -120,9 +118,7 @@ export class PersonalizationService {
     }
 
     const BONUS_TIME_LIMIT_MIN = 15;
-    const allSubs = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId, phase: 'exercise' },
-    });
+    const allSubs = await this.submissionRepo.findExerciseBySessionAndStudent(session.id, studentId);
     const lastSub = allSubs.length > 0
       ? allSubs.reduce((latest, s) => s.submittedAt > latest.submittedAt ? s : latest)
       : null;
@@ -196,25 +192,15 @@ export class PersonalizationService {
     const gradeResult = await this.gradingService.grade(stepDef.answerKey, data);
 
     const virtualStep = BONUS_STEP_OFFSET + bonusStep;
-    const existing = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step: virtualStep, phase: 'exercise' },
+    await this.submissionRepo.upsert({
+      sessionId: session.id,
+      lessonId: session.lessonId,
+      studentId,
+      step: virtualStep,
+      phase: 'exercise',
+      dataJson: data,
+      scoreJson: gradeResult,
     });
-    if (existing) {
-      existing.dataJson = data;
-      existing.scoreJson = gradeResult;
-      await this.submissionRepo.save(existing);
-    } else {
-      const submission = this.submissionRepo.create({
-        sessionId: session.id,
-        lessonId: session.lessonId,
-        studentId,
-        step: virtualStep,
-        phase: 'exercise',
-        dataJson: data,
-        scoreJson: gradeResult,
-      });
-      await this.submissionRepo.save(submission);
-    }
     this.stateCache.markDirty(session.id);
 
     const ak = stepDef.answerKey as Record<string, unknown>;
@@ -262,19 +248,11 @@ export class PersonalizationService {
         })
         .getRawOne() as Promise<{ cnt: string } | undefined>,
       // Discuss rounds
-      this.submissionRepo.count({
-        where: { sessionId: session.id, studentId, phase: 'discuss' },
-      }),
+      this.submissionRepo.countDiscussBySessionAndStudent(session.id, studentId),
       // Last submission (for total time)
-      this.submissionRepo.find({
-        where: { sessionId: session.id, studentId },
-        order: { submittedAt: 'DESC' },
-        take: 1,
-      }),
+      this.submissionRepo.findRecentBySessionAndStudent(session.id, studentId, 1),
       // Bonus completed
-      this.submissionRepo.count({
-        where: { sessionId: session.id, studentId, step: MoreThanOrEqual(BONUS_STEP_OFFSET + 1) },
-      }),
+      this.submissionRepo.countBonusBySessionAndStudent(session.id, studentId, BONUS_STEP_OFFSET + 1),
     ]);
 
     const translateCount = parseInt(translateRow?.cnt ?? '0', 10);
