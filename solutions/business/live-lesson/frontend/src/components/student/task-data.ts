@@ -80,7 +80,9 @@ export interface GdTextBlanksStep extends GdStepBase {
 export type GdStep = GdObservationStep | GdFormulaBlanksStep | GdDerivationBlankStep | GdTextBlanksStep
 
 export interface TaskExercise {
-  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map' | 'image-upload' | 'fill-blank' | 'rich-content-quiz' | 'guided-discovery'
+  // Plugin architecture: open string so extension bundles can add new types.
+  // Specific type-narrowing happens inside each plugin's Component.
+  type: string
   label: string
   questions?: TaskQuestion[]
   pairs?: TaskMatchPair[]

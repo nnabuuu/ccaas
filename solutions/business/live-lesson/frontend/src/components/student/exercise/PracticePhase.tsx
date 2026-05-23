@@ -20,6 +20,8 @@ import type { ScaffoldHint } from '../ScaffoldPanel'
 import type { ReviewData } from '../../../hooks/useReviewRestore'
 import { toIdx } from '../../../utils/parse-helpers'
 import { useT, LocaleScope, type Locale } from '../../../i18n'
+// Plugin dispatch — built-in side-effect import registers all 11 plugins
+import { getExerciseType } from './plugins'
 
 export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds, locale }: {
   task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void; partIds?: string[]; locale?: Locale
@@ -110,6 +112,18 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const effectiveSoftDone = reviewMode || softDone
 
   const canSub = () => {
+    // Plugin dispatch: prefer plugin.canSubmit when registered
+    const plugin = getExerciseType(ex.type)
+    if (plugin) {
+      const checkResultState = {
+        correctQs,
+        wrongQs,
+        attempts,
+        attemptCounts: undefined as Record<number, number> | undefined,
+      }
+      return plugin.canSubmit(ex as unknown as Record<string, unknown>, ans, checkResultState)
+    }
+    // Legacy fallback (kept for safety; trigger-able if registry is empty)
     if (ex.type === 'quiz') return !ex.questions!.some((_, qi) => !correctQs.has(qi) && ans[qi] === undefined)
     if (ex.type === 'match') return !ex.pairs!.some((_, pi) => !correctQs.has(pi) && ans[pi] === undefined)
     if (ex.type === 'matrix') return true

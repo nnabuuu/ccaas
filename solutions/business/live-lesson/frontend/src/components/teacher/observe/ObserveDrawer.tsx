@@ -1,22 +1,8 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import type { ReadingManifest } from '../../../types/reading'
 import { getStepName } from '../teacher-helpers'
 import OverlayShell from './OverlayShell'
-
-const McClassView = lazy(() => import('./mc/McClassView'))
-const McStudentView = lazy(() => import('./mc/McStudentView'))
-const EvidenceClassView = lazy(() => import('./evidence/EvidenceClassView'))
-const EvidenceStudentView = lazy(() => import('./evidence/EvidenceStudentView'))
-const MapClassView = lazy(() => import('./map/MapClassView'))
-const MapStudentView = lazy(() => import('./map/MapStudentView'))
-const DiscussClassView = lazy(() => import('./discuss/DiscussClassView'))
-const DiscussStudentView = lazy(() => import('./discuss/DiscussStudentView'))
-const MatrixClassView = lazy(() => import('./matrix/MatrixClassView'))
-const MatrixStudentView = lazy(() => import('./matrix/MatrixStudentView'))
-const ImageUploadClassView = lazy(() => import('./image-upload/ImageUploadClassView'))
-const ImageUploadStudentView = lazy(() => import('./image-upload/ImageUploadStudentView'))
-const GdClassView = lazy(() => import('./guided-discovery/GdClassView'))
-const GdStudentView = lazy(() => import('./guided-discovery/GdStudentView'))
+import { getObserveView } from './observe-view-registry'
 
 export interface ObserveData {
   stats: Record<string, unknown>
@@ -142,17 +128,17 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, pa
         <div className="observe-body">
           {loading && <LoadingView />}
           {error && <ErrorView error={error} />}
-          {data && !loading && (
-            <Suspense fallback={<LoadingView />}>
-              {type === 'mc' && <McClassView data={data} onStudentSelect={handleStudentSelect} />}
-              {type === 'evidence' && <EvidenceClassView data={data} onStudentSelect={handleStudentSelect} />}
-              {type === 'map' && <MapClassView data={mapData!} onStudentSelect={handleStudentSelect} />}
-              {type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
-              {type === 'matrix' && <MatrixClassView data={data} onStudentSelect={handleStudentSelect} />}
-              {type === 'image-upload' && <ImageUploadClassView data={data} onStudentSelect={handleStudentSelect} />}
-              {type === 'guided-discovery' && <GdClassView data={data} onStudentSelect={handleStudentSelect} />}
-            </Suspense>
-          )}
+          {data && !loading && (() => {
+            const entry = getObserveView(type)
+            if (!entry) return null
+            const ClassView = entry.ClassView
+            const cvData = entry.useMapData ? mapData! : data
+            return (
+              <Suspense fallback={<LoadingView />}>
+                <ClassView data={cvData} onStudentSelect={handleStudentSelect} />
+              </Suspense>
+            )
+          })()}
         </div>
       </OverlayShell>
 
@@ -173,17 +159,17 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, pa
           <button className="observe-band-close" onClick={handleCloseStudent}>✕</button>
         </div>
         <div className="observe-body">
-          {data && selectedStudent && (
-            <Suspense fallback={<LoadingView />}>
-              {type === 'mc' && <McStudentView data={data} studentId={selectedStudent} />}
-              {type === 'evidence' && <EvidenceStudentView data={data} studentId={selectedStudent} />}
-              {type === 'map' && <MapStudentView data={mapData!} studentId={selectedStudent} />}
-              {type === 'discuss' && <DiscussStudentView data={data} studentId={selectedStudent} />}
-              {type === 'matrix' && <MatrixStudentView data={data} studentId={selectedStudent} />}
-              {type === 'image-upload' && <ImageUploadStudentView data={data} studentId={selectedStudent} />}
-              {type === 'guided-discovery' && <GdStudentView data={data} studentId={selectedStudent} />}
-            </Suspense>
-          )}
+          {data && selectedStudent && (() => {
+            const entry = getObserveView(type)
+            if (!entry) return null
+            const StudentView = entry.StudentView
+            const svData = entry.useMapData ? mapData! : data
+            return (
+              <Suspense fallback={<LoadingView />}>
+                <StudentView data={svData} studentId={selectedStudent} />
+              </Suspense>
+            )
+          })()}
         </div>
       </OverlayShell>
     </>
