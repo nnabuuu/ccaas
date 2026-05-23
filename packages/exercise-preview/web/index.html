@@ -447,16 +447,65 @@ function escape(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ──────────────── postMessage protocol (Admin Playground embed) ────────────────
+//
+// Parent windows (e.g. admin-next /playground page) can drive the preview by
+// sending typed messages. Schema:
+//   { source: 'kedge-playground', type: 'open-story',
+//     payload: { bundleId, storyName } }
+//   { source: 'kedge-playground', type: 'set-answer-key',
+//     payload: { bundleId, storyName, answerKey } }
+//   { source: 'kedge-playground', type: 'submit' }
+//   { source: 'kedge-playground', type: 'reset' }
+//
+// Preview emits these back to the parent:
+//   { source: 'kedge-preview', type: 'grade-result', payload: { result } }
+//   { source: 'kedge-preview', type: 'story-loaded', payload: { sessionId } }
+//   { source: 'kedge-preview', type: 'error', payload: { message } }
+
+const PARENT_SOURCE = 'kedge-playground'
+const PREVIEW_SOURCE = 'kedge-preview'
+
+function postToParent(type, payload) {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ source: PREVIEW_SOURCE, type, payload }, '*')
+  }
+}
+
+window.addEventListener('message', async (event) => {
+  const msg = event.data
+  if (!msg || msg.source !== PARENT_SOURCE) return
+  try {
+    if (msg.type === 'open-story' && msg.payload) {
+      await openStory(msg.payload.bundleId, msg.payload.storyName)
+      postToParent('story-loaded', { sessionId: state.sessionId })
+    } else if (msg.type === 'set-answer-key' && msg.payload && state.story) {
+      // Override the in-memory story's answerKey for what-if exploration.
+      // Does not persist server-side; the server still has the original.
+      state.story = { ...state.story, answerKey: msg.payload.answerKey }
+      renderStage()
+    } else if (msg.type === 'submit') {
+      await onCheck()
+      postToParent('grade-result', { result: state.lastGrade })
+    } else if (msg.type === 'reset') {
+      await onReset()
+    }
+  } catch (e) {
+    postToParent('error', { message: e instanceof Error ? e.message : String(e) })
+  }
+})
+
 // ──────────────── Init ────────────────
 (async function init() {
   try {
-    state.bundles = await api.bundles();
-    renderBundleList();
+    state.bundles = await api.bundles()
+    renderBundleList()
+    postToParent('ready', { bundleCount: state.bundles.length })
   } catch (e) {
     document.getElementById('bundle-list').innerHTML =
-      `<div class="empty"><strong>Failed to load</strong>${escape(e.message || String(e))}</div>`;
+      `<div class="empty"><strong>Failed to load</strong>${escape(e.message || String(e))}</div>`
   }
-})();
+})()
 </script>
 </body>
 </html>

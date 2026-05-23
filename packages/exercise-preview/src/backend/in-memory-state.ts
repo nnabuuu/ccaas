@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Story, LoadedBundle } from '../core/types';
+import type { LifecycleEvent } from './instrument';
 
 /**
  * Per-session preview state.
@@ -37,6 +38,7 @@ export interface PromptTraceEntry {
 export class InMemoryState {
   private sessions = new Map<string, PreviewSession>();
   private prompts = new Map<string, PromptTraceEntry[]>(); // sessionId → traces
+  private lifecycle = new Map<string, LifecycleEvent[]>(); // sessionId → events
   private bundles = new Map<string, LoadedBundle>(); // bundleId → bundle
 
   registerBundle(bundle: LoadedBundle): void {
@@ -105,5 +107,15 @@ export class InMemoryState {
 
   getPromptTrace(sessionId: string): PromptTraceEntry[] {
     return this.prompts.get(sessionId) ?? [];
+  }
+
+  recordLifecycle(sessionId: string, event: LifecycleEvent): void {
+    const arr = this.lifecycle.get(sessionId) ?? [];
+    arr.push(event);
+    this.lifecycle.set(sessionId, arr);
+  }
+
+  getLifecycle(sessionId: string): LifecycleEvent[] {
+    return this.lifecycle.get(sessionId) ?? [];
   }
 }
