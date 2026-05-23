@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from './exercise/plugins/test-utils';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -156,6 +157,7 @@ describe('Classroom polling — HTTP integration', () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [
         DiscoveryModule,
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -169,6 +171,7 @@ describe('Classroom polling — HTTP integration', () => {
       ],
       controllers: [ClassroomController, ExerciseController],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, ObserveRegistry, McObserveHandler, EvidenceObserveHandler,

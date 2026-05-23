@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from '../exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
@@ -68,6 +70,7 @@ describe('DiscussService', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -79,6 +82,7 @@ describe('DiscussService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         DiscussService, ObservationQueryService, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],

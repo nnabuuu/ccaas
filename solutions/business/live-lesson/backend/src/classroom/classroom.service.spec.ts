@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from './exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ClassroomService } from './classroom.service';
@@ -212,6 +214,7 @@ describe('ClassroomService — persistence', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -224,6 +227,8 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
+         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -440,6 +445,7 @@ describe('ClassroomService — extended coverage', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -452,6 +458,7 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -3091,6 +3098,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -3103,6 +3111,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -3246,6 +3255,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -3258,6 +3268,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -3570,6 +3581,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -3582,6 +3594,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -3818,6 +3831,7 @@ describe('ClassroomService — snapshots', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -3830,6 +3844,7 @@ describe('ClassroomService — snapshots', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -3986,6 +4001,7 @@ describe('StudentSubmissionService — getSubmission', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -3998,6 +4014,7 @@ describe('StudentSubmissionService — getSubmission', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4095,6 +4112,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -4107,6 +4125,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4376,6 +4395,7 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -4388,6 +4408,7 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4556,6 +4577,7 @@ describe('Submission phase separation — cross-module', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -4568,6 +4590,7 @@ describe('Submission phase separation — cross-module', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4792,6 +4815,7 @@ describe('REST polling scenarios — student', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -4804,6 +4828,7 @@ describe('REST polling scenarios — student', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4866,6 +4891,7 @@ describe('REST polling scenarios — teacher getState', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -4878,6 +4904,7 @@ describe('REST polling scenarios — teacher getState', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
@@ -4987,7 +5014,8 @@ describe('REST polling scenarios — teacher getState', () => {
 async function buildAntiPatternTestModule(): Promise<TestingModule> {
   return Test.createTestingModule({
     imports: [
-      CacheModule.register(),
+        DiscoveryModule,
+        CacheModule.register(),
       ConfigModule.forRoot({ isGlobal: true }),
       TypeOrmModule.forRoot({
         type: 'better-sqlite3',
@@ -4999,7 +5027,8 @@ async function buildAntiPatternTestModule(): Promise<TestingModule> {
       TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
     ],
     providers: [
-      ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ...PLUGIN_PROVIDERS,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
       ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
       { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
     ],

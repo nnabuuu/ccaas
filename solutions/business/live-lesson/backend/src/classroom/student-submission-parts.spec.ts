@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from './exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { Repository } from 'typeorm';
@@ -72,6 +74,7 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -83,6 +86,7 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ClassroomSnapshot]),
       ],
       providers: [
+        ...PLUGIN_PROVIDERS,
         StudentSubmissionService,
         GradingService,
         ManifestCacheService,

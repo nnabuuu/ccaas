@@ -7,19 +7,16 @@ import { StanceGrader } from './graders/stance.grader';
 import { OrderGrader } from './graders/order.grader';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
 
+import { createPluginRegistryTestingModule } from './plugins/test-utils';
+
 describe('GradingService (dispatcher)', () => {
   let service: GradingService;
 
-  beforeEach(() => {
-    const mockAiPromptBuilder = {
-      callLlm: jest.fn().mockRejectedValue(new Error('not configured in test')),
-    } as unknown as AiPromptBuilder;
-    // Empty registry — falls through to legacy graders dict (preserves old behavior)
-    const mockRegistry = {
-      has: () => false,
-      grade: async () => null,
-    } as unknown as ExerciseTypeRegistry;
-    service = new GradingService(mockAiPromptBuilder, mockRegistry);
+  beforeEach(async () => {
+    const { module, registry, aiPromptBuilder } = await createPluginRegistryTestingModule();
+    service = new GradingService(aiPromptBuilder, registry);
+    // Hold a reference so jest doesn't close the module too early
+    void module;
   });
 
   it('returns null for missing answerKey', async () => {
@@ -31,11 +28,11 @@ describe('GradingService (dispatcher)', () => {
     expect(await service.grade({ type: 'unknown' }, {})).toBeNull();
   });
 
-  it('returns null for invalid schema (safeParse rejects)', async () => {
+  it('returns null when answerKey has no type', async () => {
     expect(await service.grade({}, {})).toBeNull();
   });
 
-  it('dispatches to correct grader', async () => {
+  it('dispatches to correct plugin via registry', async () => {
     const result = await service.grade(
       { type: 'quiz', answers: [{ questionIdx: 0, correct: 0, questionText: 'Q?', options: ['A', 'B'] }] },
       { answers: [0] },

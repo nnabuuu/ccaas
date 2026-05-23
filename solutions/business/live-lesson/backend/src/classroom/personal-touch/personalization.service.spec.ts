@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
+import { PLUGIN_PROVIDERS } from '../exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
@@ -79,6 +81,7 @@ describe('PersonalizationService', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -89,7 +92,8 @@ describe('PersonalizationService', () => {
         }),
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight]),
       ],
-      providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
+      providers: [
+        ...PLUGIN_PROVIDERS,PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
     }).compile();
 
     service = module.get(PersonalizationService);

@@ -53,18 +53,31 @@ export class ExerciseTypeRegistry implements OnModuleInit {
     );
   }
 
+  /**
+   * Lazy initialization fallback: if onModuleInit hasn't fired yet (e.g., in
+   * TestingModule.compile() without explicit .init()), discover plugins on
+   * first access. Idempotent.
+   */
+  private ensureInitialized(): void {
+    if (this.composedSchema !== null) return;
+    this.onModuleInit();
+  }
+
   /** Get a plugin by its exercise type string */
   get(type: string): ExerciseTypePlugin | undefined {
+    this.ensureInitialized();
     return this.plugins.get(type);
   }
 
   /** Whether the given type has a registered plugin */
   has(type: string): boolean {
+    this.ensureInitialized();
     return this.plugins.has(type);
   }
 
   /** All registered type identifiers */
   getRegisteredTypes(): string[] {
+    this.ensureInitialized();
     return [...this.plugins.keys()];
   }
 
