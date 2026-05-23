@@ -13,7 +13,7 @@ import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { StudentSubmissionService } from '../classroom/student-submission.service';
 import { CoachingService } from '../observation/coaching.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';

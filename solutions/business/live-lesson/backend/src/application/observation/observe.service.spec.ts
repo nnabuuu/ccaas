@@ -14,7 +14,7 @@ import { Submission } from '../../adapters/persistence/entities/submission.entit
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import type { AnswerKey } from '../../schemas/answer-key.schema';
 

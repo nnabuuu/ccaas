@@ -5,7 +5,7 @@ import { ObserveType } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 import type { DiscussObserveData } from '../../schemas/classroom/observe-data';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';

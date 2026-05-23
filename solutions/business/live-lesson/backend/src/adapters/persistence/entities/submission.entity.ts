@@ -1,9 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique, Index } from 'typeorm';
+import type { SubmissionRecord } from '../../../domain/types/submission';
 
 @Entity('reading_submissions')
 @Unique(['sessionId', 'studentId', 'step', 'phase'])
 @Index(['sessionId', 'phase'])
-export class Submission {
+export class Submission implements SubmissionRecord {
   @PrimaryGeneratedColumn()
   id: number;
 

@@ -70,7 +70,7 @@ import { DepthRankingService } from '../application/observation/depth-ranking.se
 import { DiscussService } from '../application/ai/discuss.service';
 import { DiscussController } from '../adapters/http/discuss.controller';
 import { ClusterClassifier } from '../domain/classroom/cluster-classifier';
-import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../application/discussion/cluster-aggregator';
 
 // ── AI Ask component ──
 import { AiAskService } from '../application/ai/ai-ask.service';

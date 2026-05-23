@@ -11,7 +11,7 @@ import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../../schemas';
-import { getCachedTaskMap } from '../../domain/classroom/task-map.utils';
+import { getCachedTaskMap } from './task-map-cache';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../../schemas/classroom';
 
 @Injectable()

@@ -10,7 +10,7 @@ import { AiQuestion } from '../../adapters/persistence/entities/ai-question.enti
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
 import { DepthRankingService } from '../observation/depth-ranking.service';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';

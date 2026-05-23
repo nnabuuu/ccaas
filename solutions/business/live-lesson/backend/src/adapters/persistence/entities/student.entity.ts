@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, VersionColumn, Unique } from 'typeorm';
+import type { StudentRecord } from '../../../domain/types/student';
 
 @Entity('reading_students')
 @Unique(['sessionId', 'name'])
-export class Student {
+export class Student implements StudentRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

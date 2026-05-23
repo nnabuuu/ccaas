@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { ClassroomStateService } from './classroom-state.service';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
 import { DepthRankingService } from '../observation/depth-ranking.service';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';

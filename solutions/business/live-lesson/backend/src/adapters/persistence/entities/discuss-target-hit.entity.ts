@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import type { DiscussTargetHitRecord } from '../../../domain/types/discuss-target-hit';
 
 @Entity('discuss_target_hits')
 @Unique(['sessionId', 'studentId', 'taskNum', 'targetPointId'])
-export class DiscussTargetHit {
+export class DiscussTargetHit implements DiscussTargetHitRecord {
   @PrimaryGeneratedColumn()
   id: number;
 

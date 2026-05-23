@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import type { AiQuestionRecord } from '../../../domain/types/ai-question';
 
 @Entity('reading_ai_questions')
 @Index(['sessionId', 'askedAt'])
-export class AiQuestion {
+export class AiQuestion implements AiQuestionRecord {
   @PrimaryGeneratedColumn()
   id: number;
 

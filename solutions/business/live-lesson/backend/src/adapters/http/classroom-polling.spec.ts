@@ -29,7 +29,7 @@ import { GradingService } from '../../application/exercise/grading.service';
 import { AiPromptBuilder } from '../../application/ai/ai-prompt-builder';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../../application/observation/coaching.service';
 import { DepthRankingService } from '../../application/observation/depth-ranking.service';
 import { ManifestCacheService } from '../../application/classroom/manifest-cache.service';

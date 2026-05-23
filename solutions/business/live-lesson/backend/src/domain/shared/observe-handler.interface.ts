@@ -1,13 +1,13 @@
 import { SetMetadata } from '@nestjs/common';
-import type { Student } from '../../adapters/persistence/entities/student.entity';
-import type { Submission } from '../../adapters/persistence/entities/submission.entity';
+import type { StudentRecord } from '../types/student';
+import type { SubmissionRecord } from '../types/submission';
 import type { AnswerKey } from '../../schemas/answer-key.schema';
 
 export interface ObserveContext {
   sessionId: string;
   lessonId: string;
-  students: Student[];
-  subsByStudent: Map<string, Record<number, Submission>>;
+  students: StudentRecord[];
+  subsByStudent: Map<string, Record<number, SubmissionRecord>>;
   stepIdx: number;
   answerKey: AnswerKey | null;
   view: 'first' | 'latest';

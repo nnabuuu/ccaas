@@ -22,7 +22,7 @@ import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-hi
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
 import { StudentSubmissionService } from '../classroom/student-submission.service';
 import { GradingService } from '../exercise/grading.service';

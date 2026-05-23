@@ -32,7 +32,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
-import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
 import { DepthRankingService } from '../observation/depth-ranking.service';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';

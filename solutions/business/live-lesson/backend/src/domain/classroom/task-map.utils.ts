@@ -1,12 +1,21 @@
+/**
+ * TaskMap — derived from a lesson manifest.
+ *
+ * Pure helper. The caching/Repository wrapper (`getCachedTaskMap`) lives in
+ * `application/classroom/task-map-cache.ts` because it reaches into the
+ * persistence layer.
+ */
 import type { TaskMap } from '../../schemas';
-import { Repository } from 'typeorm';
-import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 
 /** Build TaskMap from manifest. Fallback: steps with answerKey are tasks. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildTaskMap(manifest: any): TaskMap {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readingSteps: any[] = manifest?.readingSteps || [];
   const taskDefs = readingSteps
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((s: any) => s.type === 'task' || (!s.type && s.answerKey))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .sort((a: any, b: any) => a.idx - b.idx);
 
   const stepToTask: Record<number, number> = {};
@@ -14,6 +23,7 @@ export function buildTaskMap(manifest: any): TaskMap {
   const taskSteps: number[] = [];
   const advanceOn: Record<number, 'submit' | 'confirm'> = {};
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   taskDefs.forEach((def: any, i: number) => {
     const taskNum = i + 1;
     stepToTask[def.idx] = taskNum;
@@ -23,30 +33,4 @@ export function buildTaskMap(manifest: any): TaskMap {
   });
 
   return { stepToTask, taskToStep, taskSteps, maxTask: taskDefs.length, advanceOn };
-}
-
-const MAX_CACHE_SIZE = 100;
-const TTL_MS = 5 * 60_000;
-const taskMapCache = new Map<string, { map: TaskMap; cachedAt: number }>();
-
-/** Get TaskMap for a lesson, with caching and TTL. */
-export async function getCachedTaskMap(
-  lessonId: string,
-  lessonRepo: Repository<Lesson>,
-): Promise<TaskMap> {
-  const cached = taskMapCache.get(lessonId);
-  if (cached && Date.now() - cached.cachedAt < TTL_MS) return cached.map;
-
-  const lesson = await lessonRepo.findOne({ where: { id: lessonId } });
-  let manifest: any = null;
-  if (lesson) {
-    try { manifest = JSON.parse(lesson.manifestJson); } catch { /* caller handles null manifest */ }
-  }
-  const taskMap = buildTaskMap(manifest);
-  if (taskMapCache.size >= MAX_CACHE_SIZE) {
-    const firstKey = taskMapCache.keys().next().value;
-    if (firstKey !== undefined) taskMapCache.delete(firstKey);
-  }
-  taskMapCache.set(lessonId, { map: taskMap, cachedAt: Date.now() });
-  return taskMap;
 }

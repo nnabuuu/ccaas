@@ -1,7 +1,8 @@
 import { Entity, PrimaryColumn, Column } from 'typeorm';
+import type { LessonRecord } from '../../../domain/types/lesson';
 
 @Entity('lessons')
-export class Lesson {
+export class Lesson implements LessonRecord {
   @PrimaryColumn()
   id: string;
 
