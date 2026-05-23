@@ -1,93 +1,284 @@
 # 组件开发指南
 
-> KedgeAgentic monorepo 中**新增、调试、预览组件**的内部开发者入门文档。Day-One 新人入职时直接发这份。
+> live-lesson 中**新增一个交互/题型 (interaction type)** 的内部开发者入门文档。Day-One 新人入职时直接发这份。
 
-读者: 在 `solutions/business/live-lesson/` (及周边 packages) 里写新题型、observe handler、scaffold widget、学生端/教师端 UI 片段的内部工程师。
+读者: 在 `solutions/business/live-lesson/` 里新加一种 `<type>` (例如 `rich-content-quiz`、`guided-discovery`) 的内部工程师。
 
-底层架构请先读同目录的 [`exercise-plugin-architecture.zh-CN.md`](./exercise-plugin-architecture.zh-CN.md)。这份文档是 *怎么做*, 那份是 *为什么*。
+底层架构请读同目录的 [`exercise-plugin-architecture.zh-CN.md`](./exercise-plugin-architecture.zh-CN.md)。逐步骤代码骨架请读同目录的 [`exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md) (英文)。这份文档是 *地图*: 告诉你新加一种交互类型要碰哪些 surface、按什么顺序、哪些边界是动不了的。
 
 ---
 
-## 1. 这里说的"组件"是什么
+## §1. 这里"组件"是什么
 
-代码库里有三种东西都被叫做"组件"。动手前先确认你做的是哪种:
+在 live-lesson 里, **组件 = 一种新的交互/题型 (exercise type)**。做一个不是一个文件就能搞定的事 —— 它跨越**五个 surface**:
 
-| 类型 | 位置 | 真实例子 | 增加一个意味着 |
-| --- | --- | --- | --- |
-| **Exercise type plugin** | `backend/src/classroom/exercise/plugins/*.plugin.ts` + `frontend/.../plugins/built-in.tsx` | `quiz`、`matrix`、`guided-discovery` | 一个后端文件 + 一个前端 entry + (可选) 一个 stories 文件 |
-| **React UI 片段** | `frontend/src/components/<area>/*.tsx` | `HelpButton`、`Timeline`、`Band` | 纯 React + Tailwind/CSS, 不走 registry |
-| **后端 service / handler** | `backend/src/classroom/observe/handlers/*.handler.ts`、`observation/handlers/*.ts` 等 | `MatrixObserveHandler`、`JoinHandler` | `@Injectable()` 类, 挂到对应模块上 |
+1. 教师端的**手写 schema** (老师在 `manifest.json` 里写什么)。
+2. **后端 plugin** (校验、脱敏、打分、可选的 §14 L3 prompts)。
+3. **学生端前端, 左边任务区** (练习/做题区)。
+4. **学生端前端, 右边 guide + 阅读文本区** (per-type guide modal, 个别题型还会跟右边文本交互)。
+5. **observation 管道 + 教师端 observe drawer** (老师看每个学生这题做得怎么样)。
 
-代码库强制的最重要的一条设计规则:**新题型禁止修改 `PracticePhase`、`StudentShell`、`enrich-exercise.ts`、`gradeItemSet`、`teacher-helpers`**。如果发现自己为了新题型动了上面任一文件, 你已经偏离了插件契约 —— 这时候要做的是修正契约, 而不是继续往里塞代码。
+如果你只是写一个独立的 React 小组件或一个后端 service, 那是上述五件事的子集 —— 这种情况只需要执行 §5 或 §4 即可。但大部分实际工作是"我要加一种新题型, 完整地告诉我要改哪些文件"。
 
-## 2. 设计 checklist (动手写代码前)
+---
 
-1. **确定 scope**: 对照上表选清楚是三种里的哪一种。不确定就先草拟最小可见产出, 反向推。
-2. **取名**: 小写 kebab-case 标识符; 前后端字符串完全一致。例如 `match`、`select-evidence`、`rich-content-quiz`。按*题型*命名, 不按实现命名 (`'matching-pairs'` ✅, `'two-column-drag'` ❌)。
-3. **先写 answerKey schema**: 题型用 Zod schema, handler 用 TS interface。Schema 本身就是给老师写 manifest 的最强文档。
-4. **标注信任边界**: spec 里有没有"学生不能看到"的答案数据? 有的话 plugin 的 `sanitize()` 负责剥离。(select-evidence 是故意的例外, 它是客户端打分。)
-5. **判断是否需要 LLM 打分**: 像 `quiz`、`order` 这种确定性题型不需要。更复杂的走 §14 L3 (`buildGradePrompt` + `parseGradeResponse`) 路径。默认"不要 LLM", 只在确实需要文字等价判断或视觉评分时才 opt-in。
-6. **列出 observe 表面**: 教师 `ObserveDrawer` 里要不要看这种题型? 要的话, 前端 UI plugin 同时实现 `ObserveClassView` + `ObserveStudentView`。
+## §2. 五个 surface 速览
 
-写不出上面六条 (10 行内) 就说明设计还没准备好。
+| # | Surface | 主要文件 | 是否必须 | 一行契约 |
+| - | --- | --- | --- | --- |
+| 1 | [Schema](#3-surface-1--schema-教师手写) | `backend/src/schemas/answer-key.schema.ts` + plugin 的 `answerKeySchema` | ✅ | 以 `type: z.literal('<type>')` 为判别字段的 Zod schema |
+| 2 | [后端 plugin](#4-surface-2--后端-plugin) | `backend/src/classroom/exercise/plugins/<type>.plugin.ts` | ✅ | `@Injectable() @ExerciseType('<type>')` 实现 `ExerciseTypePlugin` |
+| 3 | [前端任务区](#5-surface-3--前端任务区左边一列) | `frontend/src/components/student/exercise/<Type>Exercise.tsx` + `plugins/built-in.tsx` 里的 entry | ✅ | `ExerciseUIPlugin` 提供 `Component` + `canSubmit` |
+| 4 | [前端右边一列](#6-surface-4--前端右边一列guide--文本面板) | `<Type>Guide.tsx`; 极少数情况 `TextPanel.tsx` | 可选/特例 | per-type guide 是约定, 不是框架 |
+| 5 | [Observe 管道 + drawer](#7-surface-5--observation--教师端-observe-drawer) | `backend/src/classroom/observe/handlers/<type>.handler.ts` + plugin 的 `ObserveClassView/StudentView` | 可选 | plugin 声明 `observeType` + lazy views; 后端用 `@ObserveType('<type>')` |
 
-## 3. 实现走查
+**不在**列表里、**也不能扩展**的: 教师端 dashboard 的 tab 栏。详见 [§8](#8-边界拿不动的几样)。
 
-### 3.1 Exercise type plugin (主战场)
+---
 
-后端 + 前端两半的逐步骤指南在同目录的 [`exercise-plugin-extension-guide.md`](./exercise-plugin-extension-guide.md)。重点:
+## §3. Surface 1 — Schema (教师手写)
 
-- 后端 plugin 文件 (1 个): 实现 `ExerciseTypePlugin`, 用 `@ExerciseType('<type>')` 装饰让 registry 自动发现。要实现的方法: `answerKeySchema`、`sanitize`、`grade`、`buildCheckItems`, 可选实现 `buildGradePrompt` + `parseGradeResponse` (§14 L3 契约)。
-- 前端 UI plugin entry (1 个): export 一个 `ExerciseUIPlugin`, 包含 `Component`、`canSubmit`, 可选 `localGrade`、`enrichFromApi`/`enrichFromManifest`、`formatSubmitData`、`handleCheckResult`, 以及两个 observe lazy component。
-- 可选的 `.stories.mjs` 文件放在 plugin 同目录, 用于在 `exercise-preview` 沙箱里预览。
+### 老师写的是什么
 
-一个完整 plugin 两个文件加起来大约 200–400 行。超过 600 行的话, 这个题型很可能是两个题型套了同一个壳。
+`manifest.json` 里 `type: "task"` 的 `readingStep` 带一个 `answerKey`, `answerKey.type` 字段选择你的题型。`data/lessons/math-difference-of-squares/manifest.json` 里 `rich-content-quiz` 步骤的真实片段:
 
-### 3.2 后端 handler / service
+```json
+{
+  "answerKey": {
+    "type": "rich-content-quiz",
+    "subType": "calculation",
+    "aiSystemPrompt": "你是一位初中数学教师助手...",
+    "parts": [
+      {
+        "id": "q1",
+        "prompt": "(1) 计算 $(y+2)(y-2)$",
+        "expression": "$(y+2)(y-2)$",
+        "rubric": [
+          { "id": "c1", "label": "计算正确", "weight": 100,
+            "criteria": "最终答案为 y²-4 即满分。" }
+        ],
+        "sampleSolution": "$$ y^2 - 4 $$",
+        "accepts": ["y^2-4", "y²-4"],
+        "maxImages": 1,
+        "scaffold": { "threshold": 1, "levels": [ /* 提示等级 */ ] }
+      }
+    ]
+  }
+}
+```
 
-标准 NestJS。要遵守的约定:
+设计 rule of thumb: 教师可写的属性名要自然、自解释 (`prompt`、`rubric`、`sampleSolution`), 不要暴露实现 (`promptString`、`rubricArr`)。
 
-- 每个文件一个 `@Injectable()`; 每个文件一种职责。
-- 通过注入 `AiPromptBuilder` 调 LLM —— 永远不要直接 `fetch` 到模型端点。
-- 新 controller 必须加 `@ApiTags(...)`。Swagger 漂移是 code review 里最常见的 nit。
-- 仓储用 TypeORM; 测试里用 `getRepositoryToken(Entity)`, 永远不要手工实例化 Repository。
+### Schema 在哪
 
-打分器放在 `classroom/exercise/graders/`; observe handler (教师 drawer 的数据) 放在 `classroom/observe/handlers/`; observation handler (LLM 驱动的 dashboard) 放在 `classroom/observation/handlers/`。这三类长得很像, 区别在触发它们的事件不同。
+- Zod schema 通过两个入口暴露:
+  - 作为 plugin 的 `answerKeySchema` 字段 (source of truth, 跟 plugin 同文件, 在 `backend/src/classroom/exercise/plugins/<type>.plugin.ts`)。
+  - 从 `backend/src/schemas/answer-key.schema.ts` 重新 export, 让调用方不用拉整个 plugin。
+- schema 必须以 `z.literal('<type>')` 作为 `type` 字段的判别 —— 组合 union dispatcher 依赖这一点。
+- **不要**用 `.transform()` / `.preprocess()` / `.pipe()` 改变输出类型。registry 把校验后的原对象直接转发给 plugin 方法; transform 会让 plugin 看到的形状跟调用方看到的不一致。只用 `.refine()` 做校验。
 
-### 3.3 React UI 片段
+### 校验 + 脱敏
 
-学生树在 `frontend/src/components/student/`, 教师在 `components/teacher/`。两边遵循同一种模式:
+- **Seed 时校验:** `lesson.service.ts` 在 seed lessons 时, 对每一步调用 `validateAnswerKey()`。失败会 **打 warning 但不阻塞 seed** —— 对教师用户来说要明确知道这一点。(见 `schemas/answer-key.schema.ts`。)
+- **发给学生时脱敏:** `backend/src/schemas/manifest.utils.ts` 的 `sanitizeAnswerKey()` 在学生拿到 manifest 之前剥离答案数据。`rich-content-quiz` 会被剥掉 `aiSystemPrompt`、每个 part 的 `accepts[]`、rubric 的 `criteria` 和 `sampleSolution`。例外是 `select-evidence` —— 它客户端打分, 答案数据要保留。
 
-- 状态逻辑和副作用 → `hooks/` 里的 custom hook (这样没 DOM 也能单测)。
-- 纯解析/格式化 helper → 跟组件同目录的独立 `*.ts` (这样不依赖 React 也能单测)。
-- 组件文件 import 上面两个, 自己保持声明式。
+---
 
-改组件时同时检查父组件有没有重复渲染 —— 这是个反复出现的 bug。如果组件要支持 review-restore 流程, 走 `frontend/CLAUDE.md` 里的菜谱 (`useReviewRestore` hook + 一个纯的 `parseXxxReview` export + 在 `exercise/__tests__/review-restore.test.ts` 加单测)。
+## §4. Surface 2 — 后端 plugin
 
-### 3.4 测试不是可选项
+一个文件: `backend/src/classroom/exercise/plugins/<type>.plugin.ts`。通过 `@Injectable()` + `@ExerciseType('<type>')` 装饰器自动发现 —— `ExerciseTypeRegistry.onModuleInit()` 用 NestJS 的 `DiscoveryService` 扫描 providers, 把带装饰器的类注册进 registry。
 
-约定:
-- **后端**: Jest。spec 跟源代码并列 (`foo.service.ts` ↔ `foo.service.spec.ts`)。新文件 statement coverage ≥80%; 整个项目目前在 ~91%。
-- **前端**: Vitest。测试放在 `__tests__/` 文件夹。没有 DOM 测试的 UI 组件可以接受; 纯 helper 和 hook 必须有测试。
-- **E2E**: Playwright。新增的可观测行为要在 `e2e/specs/` 加一个 spec。`e2e/helpers/api-client.ts` 跟前端 API 表面对齐 —— 新加 endpoint 时一并扩展。
-- 非平凡修改前后都要跑完整测试套件。根目录 `CLAUDE.md` 的 post-implementation checklist 是唯一权威。
+### 契约 — `ExerciseTypePlugin`
 
-## 4. 调试
+来自 `backend/src/classroom/exercise/exercise-type-plugin.interface.ts:65`:
 
-### 4.1 后端
+```ts
+export interface ExerciseTypePlugin {
+  readonly type: string;
+  readonly answerKeySchema: z.ZodType<unknown>;
+  grade(ctx: GradeContext): GradeResult | Promise<GradeResult>;
+
+  sanitize?(ctx: SanitizeContext): ExerciseSpec | null;
+  buildCheckItems?(ctx: CheckItemContext): Array<Record<string, unknown>>;
+
+  // §14 L3 两阶段打分 (可选)
+  buildGradePrompt?(ctx: GradeContext): GradePromptSpec[];
+  parseGradeResponse?(responses: string[], ctx: GradeContext):
+    GradeResult | Promise<GradeResult>;
+}
+```
+
+**必填:** `type`、`answerKeySchema`、`grade`。
+**期望填:** `sanitize`、`buildCheckItems`。接口里标成 optional 只是因为迁移期 `schemas/manifest.utils.ts` 还留了一条 legacy fallback —— 对任何新题型都要实现。
+**推荐填 (复杂题型):** `buildGradePrompt` + `parseGradeResponse` —— §14 L3 两阶段契约。admin playground 的 "改 LLM prompt、不烧 token 重新 parse" inspector 流就靠它驱动。
+
+### 调度
+
+`GradingService.grade(type, key, data)` 从 registry 拿 plugin, 用 `plugin.answerKeySchema` 校验 `key`, 调用 `plugin.grade(ctx)`。后端没有任何一处再有 per-type `switch` —— registry 迁移已经把那些都删了。
+
+### 复用 (Composition)
+
+可以在 plugin 内部直接复用另一个 plugin 的 grader。`rich-content-quiz` 就在 constructor 里 new 出 `ImageUploadGrader`, `grade()` 直接委托过去:
+
+```ts
+// rich-content-quiz.plugin.ts:95-148 (节选)
+constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
+  this.legacyGrader = new ImageUploadGrader(aiPromptBuilder);
+}
+grade(ctx: GradeContext): Promise<GradeResult> {
+  return this.legacyGrader.grade(ctx.key as any, ctx.data);
+}
+```
+
+新题型如果是 "X 但 schema/sanitize 不同", 先想能不能用这个 pattern, 而不是从头写 grader。
+
+---
+
+## §5. Surface 3 — 前端任务区 (左边一列)
+
+学生做题时看到的练习区。
+
+### 在哪渲染
+
+`frontend/src/components/student/exercise/PracticePhase.tsx:333` 是唯一的 dispatch 点:
+
+```tsx
+const plugin = getExerciseType(ex.type)
+if (!plugin) return <div>...no plugin registered...</div>
+const PluginComp = plugin.Component
+return <PluginComp exercise={ex} ans={ans} setAns={...} ... />
+```
+
+`PracticePhase` 里没有 per-type 的 switch。如果你发现自己为了新题型在 `PracticePhase` 里加分支, 停手 —— 这正是 plugin 契约要阻止的回归。
+
+### 契约 — `ExerciseUIPlugin`
+
+来自 `frontend/src/components/student/exercise/plugins/types.ts:128`:
+
+```ts
+export interface ExerciseUIPlugin {
+  readonly type: string                    // 跟后端 @ExerciseType 一致
+  readonly Component: ComponentType<ExercisePluginProps>
+  canSubmit(...): boolean
+  formatSubmitData(...): Record<string, any>
+  handleCheckResult(...): CheckResultHandlerOutput
+
+  readonly selfManagedSubmit?: boolean     // plugin 自己管理 submit 按钮
+  readonly serverCheck?: boolean           // false → 客户端打分, 跳过 /check
+  localGrade?(...): LocalGradeResult | null
+  enrichFromApi?(exercise, spec): void     // API spec → component 字段
+  enrichFromManifest?(exercise, ak): void  // 原 manifest → component 字段
+
+  readonly ObserveClassView?: ComponentType<ObserveClassViewProps>
+  readonly ObserveStudentView?: ComponentType<ObserveStudentViewProps>
+  readonly observeType?: string | null
+}
+```
+
+参考实现: `built-in.tsx:889` 注册了 `richContentQuizPlugin`, 设 `selfManagedSubmit: true`、`observeType: 'image-upload'` (别名, 复用 image-upload 的 observe views), `enrichFromApi` + `enrichFromManifest` 把每个 part 的 schema 复制成可渲染的 exercise 字段。
+
+### 新题型 recipe
+
+1. 在 `<Type>Exercise.tsx` 旁边新建一个 —— 纯渲染组件, 接收 ans / setAns / allDone / reviewData 等 props。
+2. 在 `built-in.tsx` 加 plugin entry。这个文件故意写得长 —— 让所有 entry 紧挨着, 你找一个相似的 type, 复制结构改一下就行。
+3. 如果组件支持 review-restore (大部分都要), 走 `frontend/CLAUDE.md` 里的菜谱: `useReviewRestore` hook + 纯 `parseXxxReview` 函数 export 在组件旁, 再在 `exercise/__tests__/review-restore.test.ts` 加一行单测。
+
+---
+
+## §6. Surface 4 — 前端右边一列 (guide + 文本面板)
+
+学生屏幕的右边一列有两个新题型可能要碰的东西。两个都**不**自动发现。
+
+### Per-type guide modal (常见)
+
+`RcqGuide.tsx`、`MapGuide.tsx`、`MatrixGuide.tsx` 等 —— 一个**由 exercise 组件自己 import 的**上下文帮助层。没有中央 registry; 你的组件自己持有 `const [guideOpen, setGuideOpen] = useState(false)` 和工具栏的 `<HelpButton>` 触发器。
+
+Recipe: 复制 `RcqGuide.tsx`, 改文案, 在你的 `<Type>Exercise.tsx` 里 import 进来, 在工具栏接一个 `HelpButton`。50–80 行的事; 类型安全通过 guide 组件的 props 来保证。
+
+### 右边阅读文本面板 (罕见)
+
+`TextPanel.tsx` + `BoardInline.tsx` 渲染阅读内容。大部分题型不碰这块。例外是 `select-evidence` —— 它从脱敏后的 spec 里读 `paragraphTokens`, 把右边文本里的 span 标成可高亮。
+
+如果你的新题型需要"学生在左边操作 → 右边阅读文本响应" (比如"高亮学生刚点的那句"), 这种连线**今天是 bespoke 的** —— 没有通用 surface。**不要**在没有架构 review 的情况下自己造一个; 先研究现有的 select-evidence 路径作为参考。
+
+---
+
+## §7. Surface 5 — Observation + 教师端 observe drawer
+
+### 事件发射 (新题型一般不动)
+
+`student-submission.service.ts` 在每次打分后通过 `@kedge-agentic/observer-engine` dispatch `exercise_result` 事件。`backend/src/classroom/observation/handlers/` 下的 observation handler (`ExerciseHandler`、`JoinHandler` 等) 是**全局的**, 不是 per-type 的。新题型通常不在这里加新文件。
+
+### 后端 observe handler (per-type 教师数据)
+
+这是"老师在 observe drawer 看到的这一步的数据"的 per-type surface。文件: `backend/src/classroom/observe/handlers/<type>.handler.ts`。
+
+自动注册跟 plugin registry 同模式。`backend/src/classroom/observe/observe-registry.ts:24`:
+
+```ts
+onModuleInit() {
+  for (const wrapper of this.discoveryService.getProviders()) {
+    const type = this.reflector.get<string>(OBSERVE_TYPE_KEY, wrapper.metatype);
+    if (type && wrapper.instance) {
+      this.handlers.set(type, wrapper.instance as ObserveHandler);
+    }
+  }
+}
+```
+
+参考实现: `matrix.handler.ts`、`mc.handler.ts`。各自是 `@Injectable() @ObserveType('<type>')` 实现 `ObserveHandler.compute(ctx) → <Type>ObserveData`。聚合时一次性给出班级整体 + 每个学生的明细。
+
+两种 opt-out:
+- **复用另一种 type 的 handler**: 在 plugin 上设 `observeType` 为字符串别名 (比如 `rich-content-quiz` 别名到 `'image-upload'` —— 见 `observe-registry.ts:52`)。
+- **完全隐藏 observe 按钮**: 在 plugin 设 `observeType: null` (`fill-blank` 就是这样做的)。
+
+### 前端 observe drawer 集成
+
+`frontend/src/components/teacher/observe/ObserveDrawer.tsx` 通过 `observe-view-registry.tsx` 里的 `getObserveView(type)` 取视图。registry 走 plugin registry, 按 `observeType ?? plugin.type` 查找:
+
+```ts
+// observe-view-registry.tsx — findPluginByObserveType()
+for (const type of getRegisteredTypes()) {
+  const plugin = getExerciseType(type)
+  if (plugin.observeType === null) continue
+  const effective = plugin.observeType ?? plugin.type
+  if (effective !== observeType) continue
+  if (plugin.ObserveClassView && plugin.ObserveStudentView) return plugin
+}
+```
+
+所以前端这边的契约是: 在 plugin 上声明 lazy-loaded 的 `ObserveClassView` + `ObserveStudentView`, 设对的 `observeType`, drawer 自动拿到。鼓励别名 (alias) 而不是重复实现。
+
+---
+
+## §8. 边界 — 拿不动的几样
+
+动手前先对照自己, 下面这些今天都不是可插拔的:
+
+- **教师端 dashboard tab 栏。** `TeacherShell.tsx:415–448` 把右侧 tab 结构写死 (`DiscussInsightTab`、`SummaryTab`、`ClassroomStatusTab`, 再加一个 `depth` 面板)。新题型能贡献*数据* —— `stepMetrics`、`clusterStats`、`observation.indicatorStats` 等都会汇入现有 tab —— 但加不了第五个 tab。如果你觉得需要, 那是框架级修改, 不是 plugin 修改。
+- **`PracticePhase` / `StudentShell` / `enrich-exercise.ts` / `gradeItemSet` / `teacher-helpers`。** 新题型对它们 off-limits。如果发现自己为了上一种 exercise 要动这几个, 说明 plugin 契约有缺口 —— 去修契约, 不要绕过它。
+- **Observation 事件类型。** 加新事件 (在 `exercise_result`、`chat_turn` 之外) 是 `@kedge-agentic/observer-engine` 的框架级改动, 不要作为新题型的一部分顺手做。
+
+---
+
+## §9. 调试
+
+### 后端
 
 | 现象 | 第一现场 |
 | --- | --- |
-| Endpoint 500 | `backend.log` (`tail -f`), NestJS 会打完整堆栈 |
-| 打分错误 | 看 grader 的 `grade()` 返回值 + manifest 里 `answerKey` 形状; 99% 是 schema 漂移 |
-| Observe 数据缺失 | handler 的 `compute()` 在 `ctx.answerKey?.type !== '<expected>'` 时早返回; 检查类型守卫 |
-| LLM 没被调到 | `AiPromptBuilder.callLlm` / `callVisionLlm` 每次都打 log; 日志里没看到你的 prompt 就说明代码路径没走到调用点 |
+| Endpoint 500 | `backend.log` (`tail -f`), NestJS 打完整 stack |
+| 打分错误 | plugin 的 `grade()` 返回值 + manifest 的 `answerKey` 形状; 99% 是 schema 漂移 |
+| Observe 数据缺失 | handler 的 `compute()` 在 `ctx.answerKey?.type !== '<expected>'` 时早返回, 检查类型守卫 |
+| LLM 没被调到 | `AiPromptBuilder.callLlm` / `callVisionLlm` 每次都打 log; 日志里看不到你的 prompt 就是代码路径没走到 |
+| Type 注册了但没被 dispatch | registry 只看到 Nest 真正构造过的类。如果你的 `.module.ts` 没把 plugin 放进 `providers`, 装饰器扫描就触发不了 |
 
-`AiPromptBuilder` 会把每次请求的 trace 写到 `data/llm-trace/`。LLM 相关功能行为异常时, 把最近的文件拉出来 —— 输入、响应、模型名都在里面。
+`AiPromptBuilder` 把每次请求的 trace 写到 `data/llm-trace/`。LLM 行为异常时拉一份最近的, 输入、响应、模型名都在里面。
 
 常用单次命令:
+
 ```bash
-# 改完 manifest.json 后重新 seed (seed 逻辑只 insert, 不 update):
+# 改完 manifest.json 后重新 seed (seed 只 insert, 不 update):
 cd solutions/business/live-lesson/backend
 node -e "const fs=require('fs'),p=require('path'),DB=require('better-sqlite3');\
   const raw=fs.readFileSync(p.resolve('..','data/lessons/ideal-beauty-reading/manifest.json'),'utf-8');\
@@ -98,26 +289,27 @@ node -e "const fs=require('fs'),p=require('path'),DB=require('better-sqlite3');\
 cd solutions/business/live-lesson/backend && npx jest <文件 pattern> --watch
 ```
 
-### 4.2 前端
+### 前端
 
-- Vite HMR 改代码时一般保持状态。状态恢复出现异常时, 强制完整刷新 (`Cmd+Shift+R`)。
-- React DevTools 里可以看到 `ExerciseHost` 上 `useExerciseUIPlugin(type)` 的结果; 如果题型显示为 fallback 的 "未实现" 占位符, 说明 plugin 没注册。
+- React DevTools 里能看到 `PracticePhase` 的 `getExerciseType()` 查找结果。如果题型显示 "no plugin registered" fallback, 说明 `built-in.tsx` 里的 side-effect import 没走到 `registerExerciseType()`。
 - 浏览器 Network 面板是验证前后端契约最便宜的方式。如果请求打到 `http://localhost:3001` 而不是 3007, 说明 CCAAS SDK 的 `serverUrl` 配错了 (规则见 `CLAUDE.md`)。
-- SSE / 轮询调试: polling endpoint (`GET /:code/state`) 幂等, 在 DevTools Console 手动刷一下:
+- 调试轮询: polling endpoint 幂等, DevTools Console 里手动刷:
   ```js
   await (await fetch('/api/classroom/<CODE>/state')).json()
   ```
 
-### 4.3 常见踩坑
+### 常见踩坑
 
-- **Jest 测试里 `Cannot find module 'fs'`**: 你用了 `import` 来 mock `fs`。改成文件顶部 `jest.mock('fs')` + `const fs = require('fs') as jest.Mocked<typeof import('fs')>`。新版 Node 把 `existsSync` 设为 non-configurable, 所以 `jest.spyOn` 会失败。
-- **localStorage `'sub:CODE:0'` 跨测试残留**: 在 `beforeEach` 里 `vi.stubGlobal('localStorage', …)`, `afterEach` 里 restore (参考 `submission-cache.test.ts`)。
-- **Playwright 报 `400 name must be ≤20 characters`**: 后端学生名长度限制 20 字符; 测试 fixture 取短一点。
-- **E2E 点 FAB 卡住**: StudentGuide 弹窗大概率盖住了。交互前先显式关闭它。
+- **Jest 测试 `Cannot find module 'fs'`**: 文件顶部用 `jest.mock('fs')` + `const fs = require('fs') as jest.Mocked<typeof import('fs')>`。新版 Node 的 `existsSync` non-configurable, `jest.spyOn` 会失败。
+- **localStorage `'sub:CODE:0'` 跨 vitest run 残留**: 在 `beforeEach` 里 `vi.stubGlobal('localStorage', …)`, `afterEach` restore。见 `submission-cache.test.ts`。
+- **Playwright 报 `400 name must be ≤20 characters`**: 后端学生名上限 20 字符; 测试 fixture 取短一点。
+- **E2E 点 FAB 卡住**: StudentGuide 弹窗大概率盖住了, 交互前先显式关闭它。
 
-## 5. 预览
+---
 
-### 5.1 本地 dev (日常迭代)
+## §10. 预览
+
+### 本地 dev (日常迭代)
 
 ```bash
 # Terminal 1 — solution backend (port 3007)
@@ -130,11 +322,11 @@ cd solutions/business/live-lesson/frontend && npm install && npm run dev
 npm run dev:backend
 ```
 
-浏览器打开 `http://localhost:5283/`, 选一节课, 拿到的 join code 在第二个标签页打开 `http://localhost:5283/join`。你现在同一间教室里既是老师又是学生 —— 两侧都能回放完整流程。
+浏览器打开 `http://localhost:5283/`, 选一节课, 拿到 join code 后第二个标签页打开 `/join`。你现在同一间教室里既是老师又是学生 —— 两侧都能回放完整流程。
 
-### 5.2 Exercise plugin preview (不开整个 app)
+### 题型 plugin preview (不开整套 app)
 
-`packages/exercise-preview` 这个包提供一个轻量 iframe 沙箱, 根据 `.stories.mjs` 文件渲染任意 plugin。迭代新题型 UI 时用它, 不用启整套课堂:
+`packages/exercise-preview` 提供一个轻量 iframe 沙箱, 用 `.stories.mjs` 文件渲染任意 plugin。新题型 UI 迭代时用它, 不用开整个课堂:
 
 ```bash
 cd packages/exercise-preview
@@ -143,9 +335,9 @@ node dist/cli/index.js --port 43451 bundles/<你的 bundle>
 # 打开 http://127.0.0.1:43451
 ```
 
-admin playground 里有个 `Share Link` 按钮可以生成短码, 贴到 Slack 就能分享某个 story 的 snapshot。
+admin playground 里 `Share Link` 按钮能生成短码, 贴到 Slack 就能分享 story snapshot。
 
-### 5.3 E2E 预览 (Playwright UI)
+### E2E 预览 (Playwright UI)
 
 ```bash
 cd solutions/business/live-lesson/e2e
@@ -153,25 +345,29 @@ npm install
 BACKEND_URL=http://localhost:3007 FRONTEND_URL=http://localhost:5283 npx playwright test --ui
 ```
 
-`--ui` 模式会启 Playwright 的时间回放调试器 —— 选一个 spec, 看浏览器自动操作, 逐帧看 DOM snapshot。需要验证新 endpoint 真的通过线上模型走通时, real-LLM 集成 spec (`14-real-llm-integration.spec.ts`) 是一个很好的模板。
+`--ui` 模式打开 Playwright 时间回放调试器。需要验证新 endpoint 真的通过线上模型走通时, `14-real-llm-integration.spec.ts` 是一个很好的模板。
 
-## 6. 提交前 checklist (强制)
+---
 
-任何代码改动之后, 都要按这个顺序跑完三步才能认为 task 完成。根目录 `CLAUDE.md` 明确把跳过任一步定义成"流程违规":
+## §11. 提交前 checklist (强制)
+
+任何代码改动之后, 按这个顺序跑完三步才能认为 task 完成 —— 跳过任一步在根 `CLAUDE.md` 里明确定义为"流程违规":
 
 1. **跑测试**
-   - 后端: `cd packages/backend && npx jest --no-coverage` (或 `solutions/business/live-lesson/backend`)
+   - 后端: `cd solutions/business/live-lesson/backend && npx jest --no-coverage`
    - 前端: `cd solutions/business/live-lesson/frontend && npm test`
-   - E2E (动了任何用户可见的东西时): `cd solutions/business/live-lesson/e2e && npx playwright test`
+   - E2E (动了用户可见行为时): `cd solutions/business/live-lesson/e2e && npx playwright test`
 2. **Code review**: 对所有改动文件跑 `code-reviewer` agent。
-3. **Harness**: 在 repo 根跑 `bash scripts/harness-checks.sh`。
+3. **Harness**: repo 根跑 `bash scripts/harness-checks.sh`。
 
-review 发现问题先修再继续。harness 是 commit 出门前的最后一道闸。
+review 发现问题先修再继续。harness 是最后一道闸。
 
-## 7. 还是卡住时
+---
 
-- Memory 和约定: `/Users/niex/.claude/projects/.../memory/MEMORY.md` 每次 Claude 会话都会加载, 里面列了所有反复出现的坑 (serverUrl 陷阱、commit 格式、harness 规则)。
-- 架构决策: repo 根目录的 `docs/adr/` 和同目录的 [`exercise-plugin-architecture.md`](./exercise-plugin-architecture.md)。
+## §12. 还是卡住时
+
+- Memory 和约定: `/Users/niex/.claude/projects/.../memory/MEMORY.md` 每次 Claude 会话都加载, 里面列了所有反复出现的坑 (serverUrl 陷阱、commit 格式、harness 规则)。
+- 架构决策: repo 根 `docs/adr/` 和同目录的 [`exercise-plugin-architecture.md`](./exercise-plugin-architecture.md)。
 - 某次具体 PR 的原因: `git log -p` 是唯一真相; 这个 repo 的 commit message 是按 load-bearing 标准写的, 信息量足够。
 
-实在卡住的话, 最优解是约一个 15 分钟 pairing —— 三只眼睛打败任何文档。
+实在卡住的话, 约一个 15 分钟 pairing —— 三只眼睛胜过任何文档。
