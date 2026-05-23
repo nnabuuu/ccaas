@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
-import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
+import {
+  DISCUSS_HIGHLIGHT_REPO_PORT,
+  type DiscussHighlightRepoPort,
+} from '../../domain/ports/discuss-highlight-repo.port';
 import type { DiscussionHighlight, CoachingStateInput, CoachingInsight } from '../../schemas/classroom/coaching';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class CoachingService {
 
   constructor(
     private readonly aiPromptBuilder: AiPromptBuilder,
-    @InjectRepository(DiscussHighlight) private readonly highlightRepo: Repository<DiscussHighlight>,
+    @Inject(DISCUSS_HIGHLIGHT_REPO_PORT) private readonly highlightRepo: DiscussHighlightRepoPort,
   ) {}
 
   // ── Highlight management ──
@@ -35,15 +36,12 @@ export class CoachingService {
     this.logger.log(`Highlight detected for ${h.studentName} in session ${sessionId}: ${h.gist}`);
 
     // Persist to DB (fire-and-forget)
-    this.highlightRepo.upsert(
-      {
-        sessionId, studentId: h.studentId, studentName: h.studentName,
-        taskNum: h.taskNum, clusterId: h.clusterId,
-        message: h.message, gist: h.gist, evidenceSpan: h.evidenceSpan,
-        detectedAt: now,
-      },
-      ['sessionId', 'studentId', 'taskNum', 'clusterId'],
-    ).catch(e => this.logger.warn('Failed to persist highlight', e));
+    this.highlightRepo.upsertHighlight({
+      sessionId, studentId: h.studentId, studentName: h.studentName,
+      taskNum: h.taskNum, clusterId: h.clusterId,
+      message: h.message, gist: h.gist, evidenceSpan: h.evidenceSpan,
+      detectedAt: now,
+    }).catch(e => this.logger.warn('Failed to persist highlight', e));
   }
 
   async getHighlights(sessionId: string): Promise<DiscussionHighlight[]> {
@@ -51,10 +49,7 @@ export class CoachingService {
     if (cached) return cached;
 
     // Restore from DB
-    const rows = await this.highlightRepo.find({
-      where: { sessionId },
-      order: { detectedAt: 'ASC' },
-    });
+    const rows = await this.highlightRepo.findBySession(sessionId);
     if (rows.length > 0) {
       const restored = rows.map(r => ({
         studentId: r.studentId, studentName: r.studentName,

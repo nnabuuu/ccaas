@@ -7,10 +7,13 @@ function makeMockAiPromptBuilder(response = '{"insights":[]}') {
 }
 
 function makeMockHighlightRepo() {
+  // DiscussHighlightRepoPort mock (was Repository<DiscussHighlight> pre-Phase-2b/3)
   return {
-    upsert: jest.fn().mockResolvedValue(undefined),
-    find: jest.fn().mockResolvedValue([]),
-  } as any;
+    findBySession: jest.fn().mockResolvedValue([]),
+    findTopGistsBySessionAndStudent: jest.fn().mockResolvedValue([]),
+    upsertHighlight: jest.fn().mockResolvedValue(undefined),
+    countBySessionGroupByStudent: jest.fn().mockResolvedValue([]),
+  } as never;
 }
 
 describe('CoachingService', () => {

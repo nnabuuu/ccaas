@@ -1,9 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique, Index } from 'typeorm';
+import type { DiscussHighlightRecord } from '../../../domain/types/discuss-highlight';
 
 @Entity('discuss_highlights')
 @Unique(['sessionId', 'studentId', 'taskNum', 'clusterId'])
 @Index(['sessionId', 'detectedAt'])
-export class DiscussHighlight {
+export class DiscussHighlight implements DiscussHighlightRecord {
   @PrimaryGeneratedColumn()
   id: number;
 

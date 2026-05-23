@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
+import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -249,6 +251,8 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         MetricsAggregator,
         ClusterAggregator,

@@ -1,4 +1,6 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
+import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
+import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
@@ -234,10 +236,14 @@ describe('ClassroomService — persistence', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
          { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -471,6 +477,8 @@ describe('ClassroomService — extended coverage', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3127,6 +3135,8 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3287,6 +3297,8 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3616,6 +3628,8 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3869,6 +3883,8 @@ describe('ClassroomService — snapshots', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4042,6 +4058,8 @@ describe('StudentSubmissionService — getSubmission', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4156,6 +4174,8 @@ describe('Phase sync integration — student ↔ teacher', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4442,6 +4462,8 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4627,6 +4649,8 @@ describe('Submission phase separation — cross-module', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4868,6 +4892,8 @@ describe('REST polling scenarios — student', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -4947,6 +4973,8 @@ describe('REST polling scenarios — teacher getState', () => {
       providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -5073,6 +5101,8 @@ async function buildAntiPatternTestModule(): Promise<TestingModule> {
     providers: [
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmDiscussTargetHitRepository,
+        TypeOrmDiscussHighlightRepository,
+        { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,

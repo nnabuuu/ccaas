@@ -2,7 +2,10 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
-import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
+import {
+  DISCUSS_HIGHLIGHT_REPO_PORT,
+  type DiscussHighlightRepoPort,
+} from '../../domain/ports/discuss-highlight-repo.port';
 import {
   DISCUSS_TARGET_HIT_REPO_PORT,
   type DiscussTargetHitRepoPort,
@@ -34,7 +37,7 @@ export class DepthRankingService {
 
   constructor(
     private readonly aiPromptBuilder: AiPromptBuilder,
-    @InjectRepository(DiscussHighlight) private readonly highlightRepo: Repository<DiscussHighlight>,
+    @Inject(DISCUSS_HIGHLIGHT_REPO_PORT) private readonly highlightRepo: DiscussHighlightRepoPort,
     @Inject(DISCUSS_TARGET_HIT_REPO_PORT) private readonly targetHitRepo: DiscussTargetHitRepoPort,
     @InjectRepository(ChatMessage) private readonly chatMessageRepo: Repository<ChatMessage>,
     @InjectRepository(ClassroomSession) private readonly sessionRepo: Repository<ClassroomSession>,
@@ -131,15 +134,7 @@ export class DepthRankingService {
 
   private async computeScores(sessionId: string): Promise<StudentDepthScore[]> {
     const [highlightRows, tpHitRows, msgRows] = await Promise.all([
-      this.highlightRepo
-        .createQueryBuilder('h')
-        .select('h.studentId', 'studentId')
-        .addSelect('h.studentName', 'studentName')
-        .addSelect('COUNT(*)', 'cnt')
-        .where('h.sessionId = :sessionId', { sessionId })
-        .groupBy('h.studentId')
-        .addGroupBy('h.studentName')
-        .getRawMany<{ studentId: string; studentName: string; cnt: string }>(),
+      this.highlightRepo.countBySessionGroupByStudent(sessionId),
 
       this.targetHitRepo.countBySessionGroupByStudent(sessionId),
 
@@ -202,12 +197,7 @@ export class DepthRankingService {
       const studentDataParts = await Promise.all(
         students.map(async (s) => {
           const [highlights, tpHits] = await Promise.all([
-            this.highlightRepo.find({
-              where: { sessionId, studentId: s.studentId },
-              select: ['gist'],
-              order: { detectedAt: 'DESC' },
-              take: 3,
-            }),
+            this.highlightRepo.findTopGistsBySessionAndStudent(sessionId, s.studentId, 3),
             this.targetHitRepo.findTargetPointIdsBySessionAndStudent(sessionId, s.studentId),
           ]);
 

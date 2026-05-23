@@ -1,4 +1,5 @@
 import { LLM_PORT } from '../../domain/ports/llm.port';
+import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../../domain/ports/discuss-highlight-repo.port';
 /**
  * DepthRankingService unit tests.
  *
@@ -48,29 +49,29 @@ async function buildService(over: {
   tpHitDetail?: Array<{ targetPointId: string }>
   llmResponse?: string
 } = {}) {
-  const highlightRepo = makeRepoMock<DiscussHighlight>();
   const chatMessageRepo = makeRepoMock<ChatMessage>();
   const sessionRepo = makeRepoMock<ClassroomSession>();
 
-  // Port-shaped mock for DISCUSS_TARGET_HIT_REPO_PORT (replaces Repository<DiscussTargetHit> as of Phase 2b/2)
+  // Port-shaped mocks (replace Repository<X> after Phase 2b)
   const targetHitRepo = {
     findBySession: jest.fn(async () => []),
     findTargetPointIdsBySessionAndStudent: jest.fn(async () => over.tpHitDetail ?? []),
     upsertHit: jest.fn(async () => undefined),
     countBySessionGroupByStudent: jest.fn(async () => over.tpHits ?? []),
   };
+  const highlightRepo = {
+    findBySession: jest.fn(async () => []),
+    findTopGistsBySessionAndStudent: jest.fn(async () => over.highlightDetail ?? []),
+    upsertHighlight: jest.fn(async () => undefined),
+    countBySessionGroupByStudent: jest.fn(async () => over.highlights ?? []),
+  };
 
-  // Query builders for computeScores (highlight + chatMessage still use Repository<X> + QB)
-  highlightRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.highlights ?? []) as never);
   chatMessageRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.msgs ?? []) as never);
 
   // findOne for session warmup
   if (over.session !== undefined) {
     sessionRepo.findOne.mockResolvedValue(over.session as never);
   }
-
-  // .find() for per-student gists
-  highlightRepo.find.mockResolvedValue((over.highlightDetail ?? []) as never);
 
   const ai = {
     callLlm: jest.fn(async () => over.llmResponse ?? '{}'),
@@ -82,7 +83,7 @@ async function buildService(over: {
       DepthRankingService,
       { provide: AiPromptBuilder, useValue: ai },
       { provide: LLM_PORT, useValue: ai },
-      { provide: getRepositoryToken(DiscussHighlight), useValue: highlightRepo },
+      { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useValue: highlightRepo },
       { provide: DISCUSS_TARGET_HIT_REPO_PORT, useValue: targetHitRepo },
       { provide: getRepositoryToken(ChatMessage), useValue: chatMessageRepo },
       { provide: getRepositoryToken(ClassroomSession), useValue: sessionRepo },

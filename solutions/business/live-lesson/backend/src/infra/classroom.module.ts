@@ -33,6 +33,8 @@ import { OBSERVATION_RECORD_REPO_PORT } from '../domain/ports/observation-record
 import { TypeOrmObservationRecordRepository } from '../adapters/persistence/repositories/observation-record.repository';
 import { DISCUSS_TARGET_HIT_REPO_PORT } from '../domain/ports/discuss-target-hit-repo.port';
 import { TypeOrmDiscussTargetHitRepository } from '../adapters/persistence/repositories/discuss-target-hit.repository';
+import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../domain/ports/discuss-highlight-repo.port';
+import { TypeOrmDiscussHighlightRepository } from '../adapters/persistence/repositories/discuss-highlight.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -124,6 +126,8 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
     TypeOrmDiscussTargetHitRepository,
     { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
+    TypeOrmDiscussHighlightRepository,
+    { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
