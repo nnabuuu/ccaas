@@ -14,7 +14,7 @@ import { Submission } from '../entities/submission.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
-import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 import { ManifestCacheService } from './manifest-cache.service';
 import type { AnswerKey } from '../schemas/answer-key.schema';
 

@@ -1,6 +1,6 @@
-import type { TaskMap } from '../schemas';
+import type { TaskMap } from '../../schemas';
 import { Repository } from 'typeorm';
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson } from '../../entities/lesson.entity';
 
 /** Build TaskMap from manifest. Fallback: steps with answerKey are tasks. */
 export function buildTaskMap(manifest: any): TaskMap {

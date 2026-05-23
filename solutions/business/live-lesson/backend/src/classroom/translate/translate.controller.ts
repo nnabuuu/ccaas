@@ -4,7 +4,7 @@ import { ClassroomService } from '../classroom.service';
 import { TranslateService } from './translate.service';
 import { TranslateDto } from './dto/translate.dto';
 import { TranslateChatDto } from './dto/translate-chat.dto';
-import { validateCode } from '../validate-code';
+import { validateCode } from '../../domain/classroom/validate-code';
 
 @ApiTags('classroom')
 @Controller('classroom')

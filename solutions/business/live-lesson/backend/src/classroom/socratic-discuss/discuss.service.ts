@@ -11,9 +11,9 @@ import { ObservationQueryService } from '../observation/observation-query.servic
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import { buildTaskMap } from '../task-map.utils';
-import { ClusterClassifier } from './cluster-classifier';
-import { ClusterAggregator } from './cluster-aggregator';
+import { buildTaskMap } from '../../domain/classroom/task-map.utils';
+import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
+import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
 import { StudentSubmissionService } from '../student-submission.service';
 import { CoachingService } from '../coaching.service';
 import { StateCacheService } from '../state-cache.service';

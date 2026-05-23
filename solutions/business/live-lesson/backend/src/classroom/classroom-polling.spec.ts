@@ -26,9 +26,9 @@ import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.obs
 import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { GradingService } from './exercise/grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
-import { MetricsAggregator } from './metrics-aggregator';
-import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
-import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
+import { ClusterClassifier } from '../domain/classroom/cluster-classifier';
+import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 import { CoachingService } from './coaching.service';
 import { DepthRankingService } from './depth-ranking.service';
 import { ManifestCacheService } from './manifest-cache.service';

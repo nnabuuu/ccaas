@@ -13,9 +13,9 @@ import { SubmitDto } from './dto/submit.dto';
 import { PhaseDto } from './dto/phase.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
-import { validateCode } from './validate-code';
+import { validateCode } from '../domain/classroom/validate-code';
 import { ManifestCacheService } from './manifest-cache.service';
-import { buildTaskMap } from './task-map.utils';
+import { buildTaskMap } from '../domain/classroom/task-map.utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

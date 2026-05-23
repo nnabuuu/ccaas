@@ -1,4 +1,4 @@
-import { ClusterAggregator } from './cluster-aggregator';
+import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
 import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 
 function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {

@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { ClassroomService } from '../classroom.service';
 import { DiscussService } from './discuss.service';
 import { AiDiscussDto, DiscussCompleteDto } from './dto/ai-discuss.dto';
-import { validateCode } from '../validate-code';
+import { validateCode } from '../../domain/classroom/validate-code';
 
 @ApiTags('classroom')
 @Controller('classroom')

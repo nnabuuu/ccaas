@@ -13,7 +13,7 @@ import { ManifestCacheService } from '../manifest-cache.service';
 import { CoachingService } from '../coaching.service';
 import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../schemas';
 import type { PersonalTouch, GradeResult } from '../../schemas';
-import { getCachedTaskMap } from '../task-map.utils';
+import { getCachedTaskMap } from '../../domain/classroom/task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { StateCacheService } from '../state-cache.service';

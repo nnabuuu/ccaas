@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AiPromptBuilder } from '../ai-prompt-builder';
+import { AiPromptBuilder } from '../../classroom/ai-prompt-builder';
 import type { DiscussCluster, TargetPoint } from '../../schemas/manifest.schema';
 import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 

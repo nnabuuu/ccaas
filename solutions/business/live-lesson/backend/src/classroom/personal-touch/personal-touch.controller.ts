@@ -4,7 +4,7 @@ import { ClassroomService } from '../classroom.service';
 import { PersonalizationService } from './personalization.service';
 import { PersonalTouchDto } from './dto/personal-touch.dto';
 import { BonusCheckDto } from './dto/bonus-check.dto';
-import { validateCode } from '../validate-code';
+import { validateCode } from '../../domain/classroom/validate-code';
 
 @ApiTags('classroom')
 @Controller('classroom')

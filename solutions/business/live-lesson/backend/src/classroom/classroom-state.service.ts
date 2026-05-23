@@ -9,13 +9,13 @@ import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationQueryService } from './observation/observation-query.service';
-import { MetricsAggregator } from './metrics-aggregator';
-import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
+import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 import { CoachingService } from './coaching.service';
 import { DepthRankingService } from './depth-ranking.service';
 import { ManifestCacheService } from './manifest-cache.service';
 import { StateCacheService } from './state-cache.service';
-import { buildTaskMap } from './task-map.utils';
+import { buildTaskMap } from '../domain/classroom/task-map.utils';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type {
   ClassroomStateResponse,

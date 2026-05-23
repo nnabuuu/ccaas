@@ -28,7 +28,7 @@ import { ClassroomStateService } from './classroom-state.service';
 import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
 import { AiPromptBuilder } from './ai-prompt-builder';
-import { MetricsAggregator } from './metrics-aggregator';
+import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from './manifest-cache.service';
 import { ObserveRegistry } from './observe/observe-registry';
 import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
@@ -68,8 +68,8 @@ import { DepthRankingService } from './depth-ranking.service';
 // ── Socratic Discuss component ──
 import { DiscussService } from './socratic-discuss/discuss.service';
 import { DiscussController } from './socratic-discuss/discuss.controller';
-import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
-import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { ClusterClassifier } from '../domain/classroom/cluster-classifier';
+import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 
 // ── AI Ask component ──
 import { AiAskService } from './ai-ask/ai-ask.service';

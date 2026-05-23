@@ -1,4 +1,4 @@
-import { ClusterClassifier } from './cluster-classifier';
+import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import type { ClassifyResult } from '../../schemas/classroom/clustering';
 import type { DiscussCluster } from '../../schemas/manifest.schema';
