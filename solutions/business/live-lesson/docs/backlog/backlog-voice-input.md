@@ -3,6 +3,8 @@
 **Status**: Backlog (deferred)
 **Created**: 2026-05-01
 
+> **⚠️ Note (2026-05-24):** This backlog was written before the clean-arch refactor. Paths like `backend/src/classroom/asr.service.ts` should now target `backend/src/application/ai/asr.service.ts` (or wherever an ASR service naturally fits in the new layout). Controllers go in `backend/src/adapters/http/`. Module wiring goes in `backend/src/infra/classroom.module.ts`. See [CLAUDE.md](../../CLAUDE.md) "Backend Architecture" for the current layer map.
+
 ## Summary
 
 Add an actual microphone button to student text inputs using **Doubao-ASR (火山引擎大模型语音识别)** for speech-to-text. Push-to-talk interaction, bilingual (en/zh) auto-detect.

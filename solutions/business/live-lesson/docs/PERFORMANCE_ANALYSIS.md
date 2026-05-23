@@ -3,6 +3,8 @@
 > **场景**: 40 名学生 + 1 名教师，教育网 → 阿里云，REST polling 每 3 秒
 > **日期**: 2026-05-14
 > **状态**: 分析完成，待团队评审
+>
+> **⚠️ 历史路径注记 (2026-05-24):** 本文档撰写时后端还在 `classroom/` god-module 结构。文中 `backend/src/classroom/...` 路径已迁移到 clean-arch 布局 (`application/`, `domain/`, `adapters/`, `infra/`)。最新映射见 [CLAUDE.md](../CLAUDE.md) "Backend Architecture" 表。性能分析结论本身不受影响 — 文件位置变了, 算法没变。
 
 ---
 

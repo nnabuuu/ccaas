@@ -21,7 +21,7 @@ import {
 } from '@kedge-agentic/observer-engine';
 import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySink } from '@kedge-agentic/observer-engine';
 
-// ── Infra ──
+// ── Application services + the controller that fronts them ──
 import { ClassroomService } from '../application/classroom/classroom.service';
 import { ClassroomBroadcastService } from '../adapters/transport/classroom-broadcast.service';
 import { ClassroomStateService } from '../application/classroom/classroom-state.service';
