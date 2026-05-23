@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
+import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
@@ -41,8 +41,8 @@ export class PersonalizationService {
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly gradingService: GradingService,
     private readonly registry: ExerciseTypeRegistry,
     private readonly aiPromptBuilder: AiPromptBuilder,
@@ -236,17 +236,11 @@ export class PersonalizationService {
       .map(h => ({ taskNum: h.taskNum, gist: h.gist, evidenceSpan: h.evidenceSpan }));
 
     // ── Parallelized DB queries ──
-    const [askCount, translateRow, discussRounds, lastSubArr, bonusCount] = await Promise.all([
+    const [askCount, translateCount, discussRounds, lastSubArr, bonusCount] = await Promise.all([
       // AI Ask count — include NULL category rows
       this.aiQuestionRepo.countAskByStudent(session.id, studentId),
       // Translate thread count
-      this.chatMessageRepo
-        .createQueryBuilder('m')
-        .select('COUNT(DISTINCT m.threadId)', 'cnt')
-        .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId LIKE :prefix', {
-          sid: session.id, stid: studentId, prefix: 'translate:%',
-        })
-        .getRawOne() as Promise<{ cnt: string } | undefined>,
+      this.chatMessageRepo.countTranslateThreadsBySessionAndStudent(session.id, studentId),
       // Discuss rounds
       this.submissionRepo.countDiscussBySessionAndStudent(session.id, studentId),
       // Last submission (for total time)
@@ -255,7 +249,6 @@ export class PersonalizationService {
       this.submissionRepo.countBonusBySessionAndStudent(session.id, studentId, BONUS_STEP_OFFSET + 1),
     ]);
 
-    const translateCount = parseInt(translateRow?.cnt ?? '0', 10);
 
     // ── Total time ──
     let totalTime: number | null = null;

@@ -1,14 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ObserveType } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 import type { DiscussObserveData } from '../../schemas/classroom/observe-data';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';
+import {
+  CHAT_MESSAGE_REPO_PORT,
+  type ChatMessageRepoPort,
+} from '../../domain/ports/chat-message-repo.port';
 
 @Injectable()
 @ObserveType('discuss')
@@ -16,8 +19,8 @@ export class DiscussObserveHandler implements ObserveHandler {
   private readonly logger = new Logger(DiscussObserveHandler.name);
 
   constructor(
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     @InjectRepository(Lesson)
     private readonly lessonRepo: Repository<Lesson>,
     private readonly clusterAggregator: ClusterAggregator,
@@ -31,10 +34,7 @@ export class DiscussObserveHandler implements ObserveHandler {
     const totalStudents = ctx.students.length;
 
     const threadId = `discuss:${ctx.stepIdx}`;
-    const messages = await this.chatMessageRepo.find({
-      where: { sessionId: ctx.sessionId, threadId },
-      order: { seq: 'ASC' },
-    });
+    const messages = await this.chatMessageRepo.findByThread(ctx.sessionId, threadId);
 
     const msgsByStudent = new Map<string, typeof messages>();
     for (const m of messages) {

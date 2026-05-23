@@ -15,6 +15,8 @@ import { ChatMessage } from '../../adapters/persistence/entities/chat-message.en
 import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+import { CHAT_MESSAGE_REPO_PORT } from '../../domain/ports/chat-message-repo.port';
+import { TypeOrmChatMessageRepository } from '../../adapters/persistence/repositories/chat-message.repository';
 
 const TRANSLATE_MANIFEST = {
   id: 'translate-lesson',
@@ -62,6 +64,8 @@ describe('TranslateService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot]),
       ],
       providers: [
+        TypeOrmChatMessageRepository,
+        { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
         TranslateService, AiPromptBuilder, ManifestCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],

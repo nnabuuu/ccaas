@@ -3,8 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
+import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -20,8 +20,8 @@ export class AiAskService {
     private readonly studentRepo: Repository<Student>,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
@@ -79,15 +79,10 @@ export class AiAskService {
 
     if (messages && messages.length > 0) {
       const threadId = `continue:${step}`;
-      await this.chatMessageRepo.manager.transaction(async (em) => {
-        const repo = em.getRepository(ChatMessage);
-        const existingCount = await repo.count({
-          where: { sessionId: session.id, studentId, threadId },
-        });
-        await repo.save([
-          repo.create({ sessionId: session.id, studentId, threadId, role: 'student', content: question, seq: existingCount }),
-          repo.create({ sessionId: session.id, studentId, threadId, role: 'ai', content: parsed.answer, seq: existingCount + 1 }),
-        ]);
+      await this.chatMessageRepo.appendContinueChatTurn({
+        sessionId: session.id, studentId, threadId,
+        studentContent: question,
+        aiContent: parsed.answer,
       });
 
       this.engine.dispatch({

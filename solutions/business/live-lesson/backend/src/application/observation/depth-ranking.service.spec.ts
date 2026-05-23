@@ -9,6 +9,7 @@ import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../../domain/ports/discuss-highligh
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { CLASSROOM_SESSION_REPO_PORT } from "../../domain/ports/classroom-session-repo.port";
+import { CHAT_MESSAGE_REPO_PORT } from "../../domain/ports/chat-message-repo.port";
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DepthRankingService } from '../observation/depth-ranking.service';
@@ -50,7 +51,10 @@ async function buildService(over: {
   tpHitDetail?: Array<{ targetPointId: string }>
   llmResponse?: string
 } = {}) {
-  const chatMessageRepo = makeRepoMock<ChatMessage>();
+  // Port-shaped chat message repo
+  const chatMessageRepo = {
+    countDiscussBySessionGroupByStudent: jest.fn(async () => over.msgs ?? []),
+  };
 
   // Port-shaped session repo
   const sessionRepo = {
@@ -71,8 +75,6 @@ async function buildService(over: {
     countBySessionGroupByStudent: jest.fn(async () => over.highlights ?? []),
   };
 
-  chatMessageRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.msgs ?? []) as never);
-
   const ai = {
     callLlm: jest.fn(async () => over.llmResponse ?? '{}'),
     callVisionLlm: jest.fn(),
@@ -85,7 +87,7 @@ async function buildService(over: {
       { provide: LLM_PORT, useValue: ai },
       { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useValue: highlightRepo },
       { provide: DISCUSS_TARGET_HIT_REPO_PORT, useValue: targetHitRepo },
-      { provide: getRepositoryToken(ChatMessage), useValue: chatMessageRepo },
+      { provide: CHAT_MESSAGE_REPO_PORT, useValue: chatMessageRepo },
       { provide: CLASSROOM_SESSION_REPO_PORT, useValue: sessionRepo },
     ],
   }).compile();

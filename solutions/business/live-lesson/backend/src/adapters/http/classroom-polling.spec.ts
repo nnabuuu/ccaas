@@ -7,6 +7,8 @@ import { CLASSROOM_SESSION_REPO_PORT } from "../../domain/ports/classroom-sessio
 import { TypeOrmClassroomSessionRepository } from "../../adapters/persistence/repositories/classroom-session.repository";
 import { SUBMISSION_REPO_PORT } from "../../domain/ports/submission-repo.port";
 import { TypeOrmSubmissionRepository } from "../../adapters/persistence/repositories/submission.repository";
+import { CHAT_MESSAGE_REPO_PORT } from "../../domain/ports/chat-message-repo.port";
+import { TypeOrmChatMessageRepository } from "../../adapters/persistence/repositories/chat-message.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { Test, TestingModule } from '@nestjs/testing';
@@ -194,6 +196,8 @@ describe('Classroom polling — HTTP integration', () => {
         { provide: CLASSROOM_SESSION_REPO_PORT, useExisting: TypeOrmClassroomSessionRepository },
         TypeOrmSubmissionRepository,
         { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
+        TypeOrmChatMessageRepository,
+        { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },

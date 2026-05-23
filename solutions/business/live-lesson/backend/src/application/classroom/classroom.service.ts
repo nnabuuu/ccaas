@@ -6,11 +6,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { randomInt } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import {
   CLASSROOM_SESSION_REPO_PORT,
   type ClassroomSessionRepoPort,
 } from '../../domain/ports/classroom-session-repo.port';
+import {
+  CHAT_MESSAGE_REPO_PORT,
+  type ChatMessageRepoPort,
+} from '../../domain/ports/chat-message-repo.port';
 import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { ClassroomBroadcastService } from '../../adapters/transport/classroom-broadcast.service';
 import { ClassroomStateService } from './classroom-state.service';
@@ -44,8 +47,8 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly sessionRepo: ClassroomSessionRepoPort,
     @InjectRepository(Lesson)
     private readonly lessonRepo: Repository<Lesson>,
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly broadcastService: ClassroomBroadcastService,
     private readonly stateService: ClassroomStateService,
     private readonly stateCache: StateCacheService,
@@ -279,9 +282,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     studentId: string,
     threadId?: string,
   ): Promise<Record<string, ChatMessageResponse[]>> {
-    const where: { sessionId: string; studentId: string; threadId?: string } = { sessionId, studentId };
-    if (threadId) where.threadId = threadId;
-    const messages = await this.chatMessageRepo.find({ where, order: { seq: 'ASC' } });
+    const messages = await this.chatMessageRepo.findBySessionAndStudent(sessionId, studentId, threadId);
     const grouped: Record<string, ChatMessageResponse[]> = {};
     for (const m of messages) {
       if (!grouped[m.threadId]) grouped[m.threadId] = [];

@@ -3,9 +3,9 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
+import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
@@ -29,8 +29,8 @@ export class DiscussService {
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly observationQuery: ObservationQueryService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
@@ -316,7 +316,7 @@ export class DiscussService {
     return { ok: true, mcCorrect };
   }
 
-  private async persistThread(
+  private persistThread(
     sessionId: string,
     studentId: string,
     threadId: string,
@@ -324,23 +324,11 @@ export class DiscussService {
     aiReply: string,
     imageDescription?: string,
   ): Promise<void> {
-    await this.chatMessageRepo.manager.transaction(async (em) => {
-      const repo = em.getRepository(ChatMessage);
-      const existingCount = await repo.count({
-        where: { sessionId, studentId, threadId },
-      });
-      const fullThread = [...messages, { role: 'ai' as const, text: aiReply }];
-      const newMsgs = fullThread.slice(existingCount);
-      if (!newMsgs.length) return;
-      await repo.save(
-        newMsgs.map((m, i) => repo.create({
-          sessionId, studentId, threadId,
-          role: m.role, content: m.text,
-          images: m.images?.length ? JSON.stringify(m.images) : null,
-          imageDescription: m.images?.length ? (imageDescription ?? null) : null,
-          seq: existingCount + i,
-        })),
-      );
+    return this.chatMessageRepo.appendDiscussThread({
+      sessionId, studentId, threadId,
+      messages,
+      aiReply,
+      imageDescription,
     });
   }
 

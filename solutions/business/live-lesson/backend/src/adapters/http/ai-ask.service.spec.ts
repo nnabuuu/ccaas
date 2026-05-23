@@ -18,6 +18,8 @@ import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 import { AI_QUESTION_REPO_PORT } from '../../domain/ports/ai-question-repo.port';
 import { TypeOrmAiQuestionRepository } from '../../adapters/persistence/repositories/ai-question.repository';
+import { CHAT_MESSAGE_REPO_PORT } from '../../domain/ports/chat-message-repo.port';
+import { TypeOrmChatMessageRepository } from '../../adapters/persistence/repositories/chat-message.repository';
 
 const ASK_MANIFEST = {
   id: 'ask-lesson',
@@ -69,6 +71,8 @@ describe('AiAskService', () => {
         AiAskService, AiPromptBuilder, ManifestCacheService, StateCacheService,
         TypeOrmAiQuestionRepository,
         { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
+        TypeOrmChatMessageRepository,
+        { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

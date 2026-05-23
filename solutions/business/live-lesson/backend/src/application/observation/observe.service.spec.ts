@@ -3,6 +3,8 @@ import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { SUBMISSION_REPO_PORT } from "../../domain/ports/submission-repo.port";
 import { TypeOrmSubmissionRepository } from "../../adapters/persistence/repositories/submission.repository";
+import { CHAT_MESSAGE_REPO_PORT } from "../../domain/ports/chat-message-repo.port";
+import { TypeOrmChatMessageRepository } from "../../adapters/persistence/repositories/chat-message.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DiscoveryModule } from '@nestjs/core';
 import { Repository } from 'typeorm';
@@ -151,6 +153,8 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         TypeOrmSubmissionRepository,
         { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
+        TypeOrmChatMessageRepository,
+        { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
       ],
     }).compile();
 

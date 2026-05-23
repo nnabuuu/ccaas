@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -50,8 +50,8 @@ export class TranslateService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(ChatMessage)
-    private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT)
+    private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -171,10 +171,7 @@ export class TranslateService {
 
     // Load chat history (cap at 20 messages = 10 turns to bound context window)
     const MAX_CHAT_HISTORY = 20;
-    const history = await this.chatMessageRepo.find({
-      where: { sessionId: session.id, studentId, threadId },
-      order: { seq: 'ASC' },
-    });
+    const history = await this.chatMessageRepo.findBySessionAndStudent(session.id, studentId, threadId);
     const trimmedHistory = history.slice(-MAX_CHAT_HISTORY);
 
     // Load manifest + stepDef
@@ -220,32 +217,9 @@ export class TranslateService {
     }
 
     // Persist student message + AI reply (seq computed inside transaction to avoid races)
-    await this.chatMessageRepo.manager.transaction(async em => {
-      const repo = em.getRepository(ChatMessage);
-      const maxResult = await repo
-        .createQueryBuilder('m')
-        .select('MAX(m.seq)', 'max')
-        .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId = :tid', {
-          sid: session.id, stid: studentId, tid: threadId,
-        })
-        .getRawOne();
-      const nextSeq = (maxResult?.max ?? -1) + 1;
-      await repo.save(repo.create({
-        sessionId: session.id,
-        studentId,
-        threadId,
-        role: 'student',
-        content: question,
-        seq: nextSeq,
-      }));
-      await repo.save(repo.create({
-        sessionId: session.id,
-        studentId,
-        threadId,
-        role: 'ai',
-        content: reply,
-        seq: nextSeq + 1,
-      }));
+    await this.chatMessageRepo.appendTranslateTurn({
+      sessionId: session.id, studentId, threadId,
+      question, reply,
     });
 
     this.engine.dispatch({

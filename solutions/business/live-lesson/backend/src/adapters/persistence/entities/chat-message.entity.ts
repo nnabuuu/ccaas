@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, BeforeInsert, BeforeUpdate } from 'typeorm';
+import type { ChatMessageRecord } from '../../../domain/types/chat-message';
 
 /** Hard cap per message — prevents DB bloat and SSE serialization issues */
 export const CHAT_MESSAGE_MAX_LENGTH = 10000;
@@ -6,7 +7,7 @@ export const CHAT_MESSAGE_MAX_LENGTH = 10000;
 @Entity('chat_messages')
 @Index(['sessionId', 'studentId', 'threadId', 'seq'], { unique: true })
 @Index(['sessionId'])
-export class ChatMessage {
+export class ChatMessage implements ChatMessageRecord {
   @PrimaryGeneratedColumn()
   id: number;
 

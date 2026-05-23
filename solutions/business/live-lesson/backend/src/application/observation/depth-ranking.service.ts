@@ -14,7 +14,10 @@ import {
   CLASSROOM_SESSION_REPO_PORT,
   type ClassroomSessionRepoPort,
 } from '../../domain/ports/classroom-session-repo.port';
-import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import {
+  CHAT_MESSAGE_REPO_PORT,
+  type ChatMessageRepoPort,
+} from '../../domain/ports/chat-message-repo.port';
 import type { DepthLeaderboard } from '../../schemas/classroom/depth-ranking';
 
 interface StudentDepthScore {
@@ -42,7 +45,7 @@ export class DepthRankingService {
     private readonly aiPromptBuilder: AiPromptBuilder,
     @Inject(DISCUSS_HIGHLIGHT_REPO_PORT) private readonly highlightRepo: DiscussHighlightRepoPort,
     @Inject(DISCUSS_TARGET_HIT_REPO_PORT) private readonly targetHitRepo: DiscussTargetHitRepoPort,
-    @InjectRepository(ChatMessage) private readonly chatMessageRepo: Repository<ChatMessage>,
+    @Inject(CHAT_MESSAGE_REPO_PORT) private readonly chatMessageRepo: ChatMessageRepoPort,
     @Inject(CLASSROOM_SESSION_REPO_PORT) private readonly sessionRepo: ClassroomSessionRepoPort,
   ) {}
 
@@ -141,15 +144,7 @@ export class DepthRankingService {
 
       this.targetHitRepo.countBySessionGroupByStudent(sessionId),
 
-      this.chatMessageRepo
-        .createQueryBuilder('m')
-        .select('m.studentId', 'studentId')
-        .addSelect('COUNT(*)', 'cnt')
-        .where('m.sessionId = :sessionId', { sessionId })
-        .andWhere('m.role = :role', { role: 'user' })
-        .andWhere('m.threadId LIKE :prefix', { prefix: 'discuss-%' })
-        .groupBy('m.studentId')
-        .getRawMany<{ studentId: string; cnt: string }>(),
+      this.chatMessageRepo.countDiscussBySessionGroupByStudent(sessionId),
     ]);
 
     // Merge into a single map — seed from all three sources

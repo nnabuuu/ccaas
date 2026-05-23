@@ -5,6 +5,8 @@ import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port"
 import { TypeOrmAiQuestionRepository } from "../../adapters/persistence/repositories/ai-question.repository";
 import { SUBMISSION_REPO_PORT } from "../../domain/ports/submission-repo.port";
 import { TypeOrmSubmissionRepository } from "../../adapters/persistence/repositories/submission.repository";
+import { CHAT_MESSAGE_REPO_PORT } from "../../domain/ports/chat-message-repo.port";
+import { TypeOrmChatMessageRepository } from "../../adapters/persistence/repositories/chat-message.repository";
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -107,6 +109,8 @@ describe('PersonalizationService', () => {
         { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         TypeOrmSubmissionRepository,
         { provide: SUBMISSION_REPO_PORT, useExisting: TypeOrmSubmissionRepository },
+        TypeOrmChatMessageRepository,
+        { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
         ...PLUGIN_PROVIDERS,PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
     }).compile();
 
