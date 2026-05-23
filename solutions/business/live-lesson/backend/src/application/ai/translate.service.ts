@@ -1,11 +1,11 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -58,7 +58,7 @@ export class TranslateService {
   ) {}
 
   async translate(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     text: string,
     step: number,
@@ -151,7 +151,7 @@ export class TranslateService {
   }
 
   async translateChat(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     step: number,
     originalText: string,

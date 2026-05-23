@@ -37,6 +37,8 @@ import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../domain/ports/discuss-highlight-r
 import { TypeOrmDiscussHighlightRepository } from '../adapters/persistence/repositories/discuss-highlight.repository';
 import { AI_QUESTION_REPO_PORT } from '../domain/ports/ai-question-repo.port';
 import { TypeOrmAiQuestionRepository } from '../adapters/persistence/repositories/ai-question.repository';
+import { CLASSROOM_SESSION_REPO_PORT } from '../domain/ports/classroom-session-repo.port';
+import { TypeOrmClassroomSessionRepository } from '../adapters/persistence/repositories/classroom-session.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -132,6 +134,8 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },
     TypeOrmAiQuestionRepository,
     { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
+    TypeOrmClassroomSessionRepository,
+    { provide: CLASSROOM_SESSION_REPO_PORT, useExisting: TypeOrmClassroomSessionRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

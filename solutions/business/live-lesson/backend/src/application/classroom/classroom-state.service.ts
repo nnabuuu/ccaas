@@ -5,9 +5,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
+import { CLASSROOM_SESSION_REPO_PORT, type ClassroomSessionRepoPort } from '../../domain/ports/classroom-session-repo.port';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
@@ -36,8 +36,10 @@ export class ClassroomStateService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
-    @InjectRepository(ClassroomSession)
-    private readonly sessionRepo: Repository<ClassroomSession>,
+    @Inject(CLASSROOM_SESSION_REPO_PORT)
+    private readonly sessionRepo: ClassroomSessionRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     private readonly metricsAggregator: MetricsAggregator,
@@ -48,10 +50,6 @@ export class ClassroomStateService {
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
   ) {}
-
-  private get lessonRepo(): Repository<Lesson> {
-    return this.sessionRepo.manager.getRepository(Lesson);
-  }
 
   // ── Notification map operations ──
 
@@ -107,7 +105,7 @@ export class ClassroomStateService {
     const [students, submissions, session, questions] = await Promise.all([
       this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } }),
       this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } }),
-      this.sessionRepo.findOne({ where: { id: sessionId } }),
+      this.sessionRepo.findById(sessionId),
       this.aiQuestionRepo.findBySession(sessionId),
     ]);
 
@@ -317,7 +315,7 @@ export class ClassroomStateService {
   // ── Surfaces (on-demand observe data) ──
 
   async getSurfaces(sessionId: string, taskNum: number) {
-    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    const session = await this.sessionRepo.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
 
     let manifest: Record<string, unknown> | null = null;

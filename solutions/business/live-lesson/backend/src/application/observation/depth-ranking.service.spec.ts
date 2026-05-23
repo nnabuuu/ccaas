@@ -8,6 +8,7 @@ import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../../domain/ports/discuss-highligh
  */
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
+import { CLASSROOM_SESSION_REPO_PORT } from "../../domain/ports/classroom-session-repo.port";
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DepthRankingService } from '../observation/depth-ranking.service';
@@ -50,7 +51,11 @@ async function buildService(over: {
   llmResponse?: string
 } = {}) {
   const chatMessageRepo = makeRepoMock<ChatMessage>();
-  const sessionRepo = makeRepoMock<ClassroomSession>();
+
+  // Port-shaped session repo
+  const sessionRepo = {
+    findStartedAtById: jest.fn(async () => (over.session ?? null) as { startedAt: Date | null } | null),
+  };
 
   // Port-shaped mocks (replace Repository<X> after Phase 2b)
   const targetHitRepo = {
@@ -68,11 +73,6 @@ async function buildService(over: {
 
   chatMessageRepo.createQueryBuilder.mockReturnValue(qbWithRows(over.msgs ?? []) as never);
 
-  // findOne for session warmup
-  if (over.session !== undefined) {
-    sessionRepo.findOne.mockResolvedValue(over.session as never);
-  }
-
   const ai = {
     callLlm: jest.fn(async () => over.llmResponse ?? '{}'),
     callVisionLlm: jest.fn(),
@@ -86,7 +86,7 @@ async function buildService(over: {
       { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useValue: highlightRepo },
       { provide: DISCUSS_TARGET_HIT_REPO_PORT, useValue: targetHitRepo },
       { provide: getRepositoryToken(ChatMessage), useValue: chatMessageRepo },
-      { provide: getRepositoryToken(ClassroomSession), useValue: sessionRepo },
+      { provide: CLASSROOM_SESSION_REPO_PORT, useValue: sessionRepo },
     ],
   }).compile();
 

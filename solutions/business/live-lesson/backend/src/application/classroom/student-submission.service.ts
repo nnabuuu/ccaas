@@ -1,9 +1,9 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { GradingService } from '../exercise/grading.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
@@ -34,7 +34,7 @@ export class StudentSubmissionService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async join(session: ClassroomSession, name: string): Promise<JoinResponse> {
+  async join(session: ClassroomSessionRecord, name: string): Promise<JoinResponse> {
     const existing = await this.studentRepo.findOne({
       where: { sessionId: session.id, name },
     });
@@ -61,7 +61,7 @@ export class StudentSubmissionService {
     return { studentId: saved.id, name: saved.name, lessonId: session.lessonId, _broadcast: true };
   }
 
-  async submit(session: ClassroomSession, studentId: string, step: number, data: Record<string, unknown>): Promise<SubmitResponse> {
+  async submit(session: ClassroomSessionRecord, studentId: string, step: number, data: Record<string, unknown>): Promise<SubmitResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -121,7 +121,7 @@ export class StudentSubmissionService {
    * Grades only the specified part, manages scaffold attempts, merges into submission.
    */
   private async submitPart(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     student: Student,
     step: number,
     data: Record<string, unknown>,
@@ -298,7 +298,7 @@ export class StudentSubmissionService {
    * Marks the part as completed without grading.
    */
   private async passPart(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     student: Student,
     step: number,
     partId: string,
@@ -432,7 +432,7 @@ export class StudentSubmissionService {
 
   /** Dispatch observer events for exercise submission. */
   private dispatchExerciseEvents(
-    session: ClassroomSession, studentId: string, step: number,
+    session: ClassroomSessionRecord, studentId: string, step: number,
     score: GradeResult | null, data: Record<string, unknown>,
   ): void {
     this.engine.dispatch({
@@ -474,7 +474,7 @@ export class StudentSubmissionService {
    * Compute phase rank dynamically — supports step-level phaseConfig (e.g. practice-1, practice-2).
    * Falls back to lesson-level phaseConfig, then static PHASE_RANK.
    */
-  private async getPhaseRank(session: ClassroomSession, task: number, phase: string): Promise<number> {
+  private async getPhaseRank(session: ClassroomSessionRecord, task: number, phase: string): Promise<number> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
     if (manifest) {
       const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
@@ -496,7 +496,7 @@ export class StudentSubmissionService {
     return StudentSubmissionService.PHASE_RANK[phase] ?? 0;
   }
 
-  async updatePhase(session: ClassroomSession, studentId: string, task: number, phase: string) {
+  async updatePhase(session: ClassroomSessionRecord, studentId: string, task: number, phase: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const student = await this.studentRepo.findOne({
         where: { id: studentId, sessionId: session.id },
@@ -526,7 +526,7 @@ export class StudentSubmissionService {
     this.logger.warn(`updatePhase failed after 3 retries for student ${studentId}`);
   }
 
-  async getProgress(session: ClassroomSession, studentId: string, includeSubmissions?: boolean): Promise<StudentProgressResponse | null> {
+  async getProgress(session: ClassroomSessionRecord, studentId: string, includeSubmissions?: boolean): Promise<StudentProgressResponse | null> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -575,7 +575,7 @@ export class StudentSubmissionService {
     return map;
   }
 
-  async getSubmission(session: ClassroomSession, studentId: string, step: number): Promise<SubmissionResponse | null> {
+  async getSubmission(session: ClassroomSessionRecord, studentId: string, step: number): Promise<SubmissionResponse | null> {
     const sub = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId, step, phase: 'exercise' },
     });

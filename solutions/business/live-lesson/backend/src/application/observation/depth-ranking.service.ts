@@ -10,8 +10,11 @@ import {
   DISCUSS_TARGET_HIT_REPO_PORT,
   type DiscussTargetHitRepoPort,
 } from '../../domain/ports/discuss-target-hit-repo.port';
+import {
+  CLASSROOM_SESSION_REPO_PORT,
+  type ClassroomSessionRepoPort,
+} from '../../domain/ports/classroom-session-repo.port';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import type { DepthLeaderboard } from '../../schemas/classroom/depth-ranking';
 
 interface StudentDepthScore {
@@ -40,7 +43,7 @@ export class DepthRankingService {
     @Inject(DISCUSS_HIGHLIGHT_REPO_PORT) private readonly highlightRepo: DiscussHighlightRepoPort,
     @Inject(DISCUSS_TARGET_HIT_REPO_PORT) private readonly targetHitRepo: DiscussTargetHitRepoPort,
     @InjectRepository(ChatMessage) private readonly chatMessageRepo: Repository<ChatMessage>,
-    @InjectRepository(ClassroomSession) private readonly sessionRepo: Repository<ClassroomSession>,
+    @Inject(CLASSROOM_SESSION_REPO_PORT) private readonly sessionRepo: ClassroomSessionRepoPort,
   ) {}
 
   getCached(sessionId: string): DepthLeaderboard | null {
@@ -57,7 +60,7 @@ export class DepthRankingService {
     // Warmup: skip first 5 minutes after session start
     let startedAt = this.sessionStartedAt.get(sessionId);
     if (startedAt === undefined) {
-      const session = await this.sessionRepo.findOne({ where: { id: sessionId }, select: ['startedAt'] });
+      const session = await this.sessionRepo.findStartedAtById(sessionId);
       startedAt = session?.startedAt ? new Date(session.startedAt).getTime() : now;
       this.sessionStartedAt.set(sessionId, startedAt);
     }

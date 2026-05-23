@@ -1,4 +1,5 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
@@ -6,7 +7,6 @@ import { Submission } from '../../adapters/persistence/entities/submission.entit
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -47,7 +47,7 @@ export class DiscussService {
   }
 
   async aiDiscuss(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     taskNum: number,
     messages: Array<{ role: 'ai' | 'student'; text: string; images?: string[] }>,
@@ -258,7 +258,7 @@ export class DiscussService {
   }
 
   async discussComplete(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     taskNum: number,
     completionType: 'goal_reached' | 'fallback_rounds' | 'fallback_time',
@@ -366,7 +366,7 @@ export class DiscussService {
   }
 
   private async buildSocraticSystemPrompt(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     taskNum: number,
   ): Promise<string> {

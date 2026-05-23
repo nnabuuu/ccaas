@@ -1,8 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import type { ClassroomSessionRecord } from '../../../domain/types/classroom-session';
 
 @Entity('classroom_sessions')
 @Unique(['code'])
-export class ClassroomSession {
+export class ClassroomSession implements ClassroomSessionRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

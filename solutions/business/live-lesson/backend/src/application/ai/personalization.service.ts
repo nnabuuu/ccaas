@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
@@ -39,8 +39,6 @@ export class PersonalizationService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
-    @InjectRepository(ClassroomSession)
-    private readonly sessionRepo: Repository<ClassroomSession>,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @InjectRepository(ChatMessage)
@@ -59,7 +57,7 @@ export class PersonalizationService {
   }
 
   private async computeTierAndStrategies(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
   ): Promise<{
     strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>;
@@ -98,7 +96,7 @@ export class PersonalizationService {
     return { strategies, tier: { label: tier.label, labelEn: tier.labelEn, tone: tier.tone as 'gold' | 'blue' | 'neutral' } };
   }
 
-  async getPersonalTouch(session: ClassroomSession, studentId: string): Promise<PersonalTouchResponse> {
+  async getPersonalTouch(session: ClassroomSessionRecord, studentId: string): Promise<PersonalTouchResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -137,7 +135,7 @@ export class PersonalizationService {
     return { strategies, tier, aiComment, bonusUnlocked };
   }
 
-  async getBonusExercise(session: ClassroomSession, bonusStep: number) {
+  async getBonusExercise(session: ClassroomSessionRecord, bonusStep: number) {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
     if (!manifest) throw new NotFoundException('Lesson not found');
 
@@ -170,7 +168,7 @@ export class PersonalizationService {
   }
 
   async checkBonusAnswer(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     bonusStep: number,
     data: Record<string, unknown>,
@@ -226,7 +224,7 @@ export class PersonalizationService {
     return { type: stepDef.answerKey.type, allCorrect, items };
   }
 
-  async getStudentRecap(session: ClassroomSession, studentId: string): Promise<RecapResponse> {
+  async getStudentRecap(session: ClassroomSessionRecord, studentId: string): Promise<RecapResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });

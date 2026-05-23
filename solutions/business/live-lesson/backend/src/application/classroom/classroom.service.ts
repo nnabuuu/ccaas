@@ -3,11 +3,15 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan, LessThan } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { randomInt } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
+import {
+  CLASSROOM_SESSION_REPO_PORT,
+  type ClassroomSessionRepoPort,
+} from '../../domain/ports/classroom-session-repo.port';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { ClassroomBroadcastService } from '../../adapters/transport/classroom-broadcast.service';
 import { ClassroomStateService } from './classroom-state.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
@@ -36,8 +40,10 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly configService: ConfigService,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(ClassroomSession)
-    private readonly sessionRepo: Repository<ClassroomSession>,
+    @Inject(CLASSROOM_SESSION_REPO_PORT)
+    private readonly sessionRepo: ClassroomSessionRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly broadcastService: ClassroomBroadcastService,
@@ -46,10 +52,6 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly translateService: TranslateService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
-
-  private get lessonRepo(): Repository<Lesson> {
-    return this.sessionRepo.manager.getRepository(Lesson);
-  }
 
   onModuleInit() {
     this.cleanupTimer = setInterval(() => {
@@ -68,10 +70,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
 
   private async cleanupStaleSessions(): Promise<void> {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60_000);
-    const staleSessions = await this.sessionRepo.find({
-      where: { status: 'ended', endedAt: LessThan(tenMinutesAgo) },
-      select: ['id', 'lessonId'],
-    });
+    const staleSessions = await this.sessionRepo.findStaleEnded(tenMinutesAgo);
     for (const session of staleSessions) {
       this.stateService.cleanupSession(session.id, session.lessonId);
       this.broadcastService.cleanupSession(session.id);
@@ -87,8 +86,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     for (let attempt = 0; attempt < 10; attempt++) {
       const code = this.generateCode();
       try {
-        const session = this.sessionRepo.create({ code, lessonId, status: 'waiting' });
-        const saved = await this.sessionRepo.save(session);
+        const saved = await this.sessionRepo.insert({ code, lessonId, status: 'waiting' });
         this.logger.log(`Session created: ${saved.code} for lesson ${lessonId}`);
         await this.stateService.initObservation(saved.id, lessonId);
         return { sessionId: saved.id, code: saved.code, lessonId: saved.lessonId, status: saved.status };
@@ -100,17 +98,17 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     throw new ConflictException('Failed to generate unique session code');
   }
 
-  async resolveSession(codeOrId: string): Promise<ClassroomSession> {
+  async resolveSession(codeOrId: string): Promise<ClassroomSessionRecord> {
     const session = codeOrId.length > 6
-      ? await this.sessionRepo.findOne({ where: { id: codeOrId } })
-      : await this.sessionRepo.findOne({ where: { code: codeOrId } });
+      ? await this.sessionRepo.findById(codeOrId)
+      : await this.sessionRepo.findByCode(codeOrId);
     if (!session) {
       throw new NotFoundException('Session not found');
     }
     return session;
   }
 
-  async resolveActiveSession(code: string): Promise<ClassroomSession> {
+  async resolveActiveSession(code: string): Promise<ClassroomSessionRecord> {
     const session = await this.resolveSession(code);
     if (session.status === 'ended') {
       throw new BadRequestException('Session has ended');
@@ -118,7 +116,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     return session;
   }
 
-  async resolveStartedSession(code: string): Promise<ClassroomSession> {
+  async resolveStartedSession(code: string): Promise<ClassroomSessionRecord> {
     const session = await this.resolveSession(code);
     if (session.status !== 'active') {
       throw new BadRequestException(
@@ -154,15 +152,11 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     const SESSION_TTL_MS = 60 * 60 * 1000; // 60 min
     const cutoff = new Date(Date.now() - SESSION_TTL_MS);
 
-    const whereClauses = [];
-    if (!statusFilter || statusFilter === 'waiting') {
-      whereClauses.push({ id: In(sessionIds), status: 'waiting' as const, createdAt: MoreThan(cutoff) });
-    }
-    if (!statusFilter || statusFilter === 'active') {
-      whereClauses.push({ id: In(sessionIds), status: 'active' as const, createdAt: MoreThan(cutoff) });
-    }
+    const statuses: Array<'waiting' | 'active'> = !statusFilter
+      ? ['waiting', 'active']
+      : [statusFilter];
 
-    const sessions = await this.sessionRepo.find({ where: whereClauses });
+    const sessions = await this.sessionRepo.findForBatchCheck(sessionIds, statuses, cutoff);
     if (!sessions.length) return [];
 
     const lessonIds = [...new Set(sessions.map(s => s.lessonId))];
@@ -179,15 +173,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
   }
 
   async listSessions(status?: SessionStatus, limit = 50, offset = 0): Promise<SessionListResponse> {
-    const where: Record<string, unknown> = {};
-    if (status) where.status = status;
-
-    const [sessions, total] = await this.sessionRepo.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip: offset,
-    });
+    const [sessions, total] = await this.sessionRepo.findAndCount({ status, limit, offset });
     if (!sessions.length) return { items: [], total };
 
     const sessionIds = sessions.map(s => s.id);
@@ -240,9 +226,8 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     if (session.status === 'active') {
       return { ok: true, status: 'active', startedAt: session.startedAt };
     }
-    session.status = 'active';
-    session.startedAt = new Date();
-    await this.sessionRepo.save(session);
+    const startedAt = new Date();
+    await this.sessionRepo.update(session.id, { status: 'active', startedAt });
     this.stateCache.markDirty(session.id);
     await this.cache.del(this.sessionInfoKey(code));
 
@@ -252,7 +237,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
 
     this.broadcast(session.id);
     this.logger.log(`Session started: ${code}`);
-    return { ok: true, status: 'active', startedAt: session.startedAt };
+    return { ok: true, status: 'active', startedAt };
   }
 
   async endSession(code: string): Promise<EndSessionResponse> {
@@ -260,9 +245,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     if (session.status === 'ended') {
       return { ok: true, status: 'ended' };
     }
-    session.status = 'ended';
-    session.endedAt = new Date();
-    await this.sessionRepo.save(session);
+    await this.sessionRepo.update(session.id, { status: 'ended', endedAt: new Date() });
     this.stateCache.markDirty(session.id);
     await this.cache.del(this.sessionInfoKey(code));
 
@@ -328,10 +311,9 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
   // ── Teacher control ──
 
   async setStep(sessionId: string, step: number): Promise<SetStepResponse> {
-    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    const session = await this.sessionRepo.findById(sessionId);
     if (session) {
-      session.currentStep = step;
-      await this.sessionRepo.save(session);
+      await this.sessionRepo.update(session.id, { currentStep: step });
     }
     this.stateCache.markDirty(sessionId);
     const state = await this.getState(sessionId, step);
