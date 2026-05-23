@@ -21,7 +21,8 @@ import type { GuidedDiscoveryAnswerKey } from '../../../schemas';
 import type { ImageGradeResult } from './guided-discovery.grader';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../../ports/llm.port';
 import { GuidedDiscoveryGrader } from './guided-discovery.grader';
 
 const InputMethodsSchema = z.array(z.enum(['keyboard', 'handwrite', 'photo'])).optional();
@@ -151,8 +152,8 @@ export class GuidedDiscoveryPlugin implements ExerciseTypePlugin {
   readonly answerKeySchema = GuidedDiscoveryAnswerKeySchema;
   private readonly legacyGrader: GuidedDiscoveryGrader;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
-    this.legacyGrader = new GuidedDiscoveryGrader(aiPromptBuilder);
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {
+    this.legacyGrader = new GuidedDiscoveryGrader(llm);
   }
 
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {

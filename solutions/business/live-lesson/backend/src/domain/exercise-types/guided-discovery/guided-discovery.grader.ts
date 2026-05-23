@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { GuidedDiscoveryAnswerKey, GuidedDiscoveryStep } from '../../../schemas';
 import { matchesAny } from '../../../schemas/normalize-math';
-import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../ports/llm.port';
 
 function isDataUri(v: string): boolean {
   return v.startsWith('data:image/');
@@ -52,18 +52,18 @@ export class GuidedDiscoveryGrader implements Grader {
   private static readonly OCR_SYSTEM_PROMPT =
     '你是一个 OCR 文字提取工具。忠实转录图片中的手写内容，原样输出，不要修正任何错误。如果有涂改或划掉的内容，忽略被划掉的部分。';
 
-  constructor(private readonly aiPromptBuilder?: AiPromptBuilder) {}
+  constructor(private readonly llm?: LlmPort) {}
 
   async grade(key: GuidedDiscoveryAnswerKey, data: Record<string, unknown>): Promise<GradeResult> {
     // 1) Find every image blank in the submission and fire its OCR call in
     //    parallel. Text blanks are handled in step 2 without LLM.
     const prompts = this.buildImageBlankPrompts(key, data);
     const ocrCache = new Map<string, ImageGradeResult>();
-    if (this.aiPromptBuilder && prompts.length > 0) {
+    if (this.llm && prompts.length > 0) {
       const responses = await Promise.all(
         prompts.map(async (p) => {
           try {
-            const raw = await this.aiPromptBuilder!.callVisionLlm(
+            const raw = await this.llm!.callVisionLlm(
               p.systemPrompt,
               [
                 { type: 'image_url', image_url: { url: p.imageUri } },

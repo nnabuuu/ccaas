@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 /**
  * ExerciseTypeRegistry init guard tests (§17 — re-entrancy).
  *
@@ -24,7 +25,8 @@ const mockAi = {
 async function buildRegistry(): Promise<ExerciseTypeRegistry> {
   const module = await Test.createTestingModule({
     imports: [DiscoveryModule],
-    providers: [{ provide: AiPromptBuilder, useValue: mockAi }, ...PLUGIN_PROVIDERS],
+    providers: [{ provide: AiPromptBuilder, useValue: mockAi },
+      { provide: LLM_PORT, useValue: mockAi }, ...PLUGIN_PROVIDERS],
   }).compile();
   return module.get(ExerciseTypeRegistry);
 }

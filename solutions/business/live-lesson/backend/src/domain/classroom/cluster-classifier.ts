@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AiPromptBuilder } from '../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../ports/llm.port';
 import type { DiscussCluster, TargetPoint } from '../../schemas/manifest.schema';
 import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 
@@ -7,7 +8,7 @@ import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clu
 export class ClusterClassifier {
   private readonly logger = new Logger(ClusterClassifier.name);
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {}
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {}
 
   async classify(
     studentMessage: string,
@@ -68,7 +69,7 @@ ${outputFormat}
 
 ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
 
-    const raw = await this.aiPromptBuilder.callLlm(systemPrompt, studentMessage, {
+    const raw = await this.llm.callLlm(systemPrompt, studentMessage, {
       responseFormat: { type: 'json_object' },
       maxTokens: targetPoints?.length ? 300 : 200,
       temperature: 0,

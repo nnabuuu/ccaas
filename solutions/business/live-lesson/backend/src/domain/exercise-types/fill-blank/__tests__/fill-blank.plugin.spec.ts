@@ -10,17 +10,17 @@
  *   - §14 L3: buildGradePrompt emits one spec when LLM check is needed;
  *     parseGradeResponse re-runs grading with the edited LLM response
  */
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 import { FillBlankPlugin } from '../fill-blank.plugin';
 
-function makeMockAi(responses: string[]): AiPromptBuilder {
+function makeMockAi(responses: string[]): LlmPort {
   let i = 0;
   return {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callLlm: jest.fn(async (..._args: any[]) => responses[i++] ?? '{}'),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callVisionLlm: jest.fn(),
-  } as unknown as AiPromptBuilder;
+  } as unknown as LlmPort;
 }
 
 const AK = {

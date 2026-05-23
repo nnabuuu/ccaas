@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../../application/exercise/test-utils';
@@ -171,6 +172,7 @@ describe('Classroom polling — HTTP integration', () => {
       ],
       controllers: [ClassroomController, ExerciseController],
       providers: [
+        { provide: LLM_PORT, useExisting: AiPromptBuilder },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,

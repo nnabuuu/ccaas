@@ -1,10 +1,11 @@
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
-import { AiPromptBuilder } from '../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../ports/llm.port';
 import type { ClassifyResult } from '../../schemas/classroom/clustering';
 import type { DiscussCluster } from '../../schemas/manifest.schema';
 
 function makeMockAi(response: string) {
-  return { callLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;
+  return { callLlm: jest.fn().mockResolvedValue(response) } as unknown as LlmPort;
 }
 
 const CLUSTERS: DiscussCluster[] = [

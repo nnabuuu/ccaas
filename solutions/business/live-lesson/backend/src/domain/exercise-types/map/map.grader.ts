@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { MapAnswerKey } from '../../../schemas';
-import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../ports/llm.port';
 
 export interface MapReasonEvalItem {
   id: string;
@@ -26,10 +26,10 @@ export interface MapReasonEvalPromptSpec {
 export class MapGrader implements Grader {
   private readonly logger = new Logger(MapGrader.name);
 
-  constructor(private readonly aiPromptBuilder?: AiPromptBuilder) {}
+  constructor(private readonly llm?: LlmPort) {}
 
   async grade(key: MapAnswerKey, data: Record<string, unknown>): Promise<GradeResult> {
-    const builder = this.aiPromptBuilder;
+    const builder = this.llm;
     let llmResult: MapReasonEval | null = null;
     if (builder) {
       try {

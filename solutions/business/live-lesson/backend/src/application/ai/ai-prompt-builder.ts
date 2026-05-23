@@ -27,8 +27,10 @@ export interface PromptTracer {
  * Builds AI prompts and handles LLM API calls.
  * Owns all prompt construction logic (ask + discuss) and response parsing.
  */
+import type { LlmPort } from '../../domain/ports/llm.port';
+
 @Injectable()
-export class AiPromptBuilder {
+export class AiPromptBuilder implements LlmPort {
   private readonly logger = new Logger(AiPromptBuilder.name);
   /**
    * Global fallback tracer. Set via setTracer() for tests / single-request

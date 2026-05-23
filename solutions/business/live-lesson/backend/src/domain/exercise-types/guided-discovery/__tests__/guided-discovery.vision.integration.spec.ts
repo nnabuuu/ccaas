@@ -11,7 +11,7 @@
 
 import { GuidedDiscoveryGrader } from '../guided-discovery.grader';
 import type { GuidedDiscoveryAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 
 const API_KEY = process.env.LLM_VISION_API_KEY;
 const MODEL = process.env.LLM_VISION_MODEL || 'qwen-vl-plus';
@@ -55,8 +55,8 @@ async function callVisionLlm(
   return json.choices[0].message.content;
 }
 
-function makeAiPromptBuilder(): AiPromptBuilder {
-  return { callVisionLlm } as unknown as AiPromptBuilder;
+function makeAiPromptBuilder(): LlmPort {
+  return { callVisionLlm } as unknown as LlmPort;
 }
 
 // ── Image generation helpers (node-canvas) ──

@@ -19,7 +19,8 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, ImageUploadAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../../ports/llm.port';
 import { ImageUploadGrader } from '../image-upload/image-upload.grader';
 
 const InputMethodsSchema = z.array(z.enum(['keyboard', 'handwrite', 'photo'])).optional();
@@ -92,9 +93,9 @@ export class RichContentQuizPlugin implements ExerciseTypePlugin {
   readonly answerKeySchema = RichContentQuizAnswerKeySchema;
   private readonly legacyGrader: ImageUploadGrader;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {
     // rich-content-quiz reuses ImageUploadGrader (parts → image-upload semantics)
-    this.legacyGrader = new ImageUploadGrader(aiPromptBuilder);
+    this.legacyGrader = new ImageUploadGrader(llm);
   }
 
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {

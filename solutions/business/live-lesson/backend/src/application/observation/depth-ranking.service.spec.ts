@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 /**
  * DepthRankingService unit tests.
  *
@@ -73,6 +74,7 @@ async function buildService(over: {
     providers: [
       DepthRankingService,
       { provide: AiPromptBuilder, useValue: ai },
+      { provide: LLM_PORT, useValue: ai },
       { provide: getRepositoryToken(DiscussHighlight), useValue: highlightRepo },
       { provide: getRepositoryToken(DiscussTargetHit), useValue: targetHitRepo },
       { provide: getRepositoryToken(ChatMessage), useValue: chatMessageRepo },

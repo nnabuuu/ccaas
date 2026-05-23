@@ -21,6 +21,7 @@ import { SelectEvidencePlugin } from '../../domain/exercise-types/select-evidenc
 import { RichContentQuizPlugin } from '../../domain/exercise-types/rich-content-quiz/rich-content-quiz.plugin';
 import { GuidedDiscoveryPlugin } from '../../domain/exercise-types/guided-discovery/guided-discovery.plugin';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { LLM_PORT } from '../../domain/ports/llm.port';
 
 /** Providers needed to bootstrap a fully-populated ExerciseTypeRegistry. */
 export const PLUGIN_PROVIDERS = [
@@ -64,7 +65,11 @@ export async function createPluginRegistryTestingModule(
 
   const module = await Test.createTestingModule({
     imports: [DiscoveryModule],
-    providers: [{ provide: AiPromptBuilder, useValue: mockAi }, ...PLUGIN_PROVIDERS],
+    providers: [
+      { provide: AiPromptBuilder, useValue: mockAi },
+      { provide: LLM_PORT, useValue: mockAi }, // plugins inject LLM_PORT, not AiPromptBuilder
+      ...PLUGIN_PROVIDERS,
+    ],
   }).compile();
 
   // Trigger onModuleInit lifecycle so the registry discovers plugins

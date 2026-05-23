@@ -18,7 +18,8 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, ImageUploadAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../../ports/llm.port';
 import { ImageUploadGrader } from './image-upload.grader';
 
 const PromptImageSchema = z.object({
@@ -51,8 +52,8 @@ export class ImageUploadPlugin implements ExerciseTypePlugin {
   readonly answerKeySchema = ImageUploadAnswerKeySchema;
   private readonly legacyGrader: ImageUploadGrader;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
-    this.legacyGrader = new ImageUploadGrader(aiPromptBuilder);
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {
+    this.legacyGrader = new ImageUploadGrader(llm);
   }
 
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {

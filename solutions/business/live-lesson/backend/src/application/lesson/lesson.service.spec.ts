@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 /**
  * LessonService unit tests.
  *
@@ -67,6 +68,7 @@ async function buildService(repo: ReturnType<typeof makeRepoMock>): Promise<Less
       LessonService,
       { provide: getRepositoryToken(Lesson), useValue: repo },
       { provide: AiPromptBuilder, useValue: mockAi },
+      { provide: LLM_PORT, useValue: mockAi },
       ...PLUGIN_PROVIDERS,
     ],
   }).compile();

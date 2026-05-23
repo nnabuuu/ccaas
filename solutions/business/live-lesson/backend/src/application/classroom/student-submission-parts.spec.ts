@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -87,6 +88,7 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
       ],
       providers: [
         ...PLUGIN_PROVIDERS,
+        { provide: LLM_PORT, useExisting: AiPromptBuilder },
         StudentSubmissionService,
         GradingService,
         ManifestCacheService,

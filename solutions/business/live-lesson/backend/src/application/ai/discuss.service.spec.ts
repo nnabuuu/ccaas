@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -82,6 +83,7 @@ describe('DiscussService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit]),
       ],
       providers: [
+        { provide: LLM_PORT, useExisting: AiPromptBuilder },
         ...PLUGIN_PROVIDERS,
         DiscussService, ObservationQueryService, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },

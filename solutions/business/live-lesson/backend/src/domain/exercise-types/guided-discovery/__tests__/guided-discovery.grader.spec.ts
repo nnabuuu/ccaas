@@ -13,7 +13,7 @@ function sanitizeAnswerKey(ak: unknown, exerciseLabel?: string) {
     exerciseLabel,
   });
 }
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 
 // Registry shared by the buildCheckItems tests below — built once for the
 // whole file. Hoisted via top-level `let` + `beforeAll` so individual `it`s
@@ -613,10 +613,10 @@ describe('buildCheckItems — guided-discovery', () => {
 describe('GuidedDiscoveryGrader — image blanks', () => {
   const FAKE_IMAGE = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
 
-  function mockAiPromptBuilder(response: string): AiPromptBuilder {
+  function mockAiPromptBuilder(response: string): LlmPort {
     return {
       callVisionLlm: jest.fn().mockResolvedValue(response),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
   }
 
   const imageKey: GuidedDiscoveryAnswerKey = {
@@ -682,7 +682,7 @@ describe('GuidedDiscoveryGrader — image blanks', () => {
   it('marks step incorrect on LLM failure', async () => {
     const ai = {
       callVisionLlm: jest.fn().mockRejectedValue(new Error('LLM timeout')),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const data = {
       steps: { sym: { answers: { lhs: FAKE_IMAGE, rhs: 'a²-b²' } } },
@@ -796,7 +796,7 @@ describe('GuidedDiscoveryGrader — image blanks', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: '(a+b)(a-b)' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'a²-b²' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const data = {
       steps: { sym: { answers: { lhs: FAKE_IMAGE, rhs: FAKE_IMAGE } } },
@@ -813,7 +813,7 @@ describe('GuidedDiscoveryGrader — image blanks', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'x' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'y' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const data = {
       steps: { sym: { answers: { lhs: FAKE_IMAGE, rhs: FAKE_IMAGE } } },
@@ -839,7 +839,7 @@ describe('GuidedDiscoveryGrader — image blanks', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'x' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'y' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const multiImageKey: GuidedDiscoveryAnswerKey = {
       type: 'guided-discovery',
@@ -988,8 +988,8 @@ describe('GuidedDiscoveryGrader — image OCR prompt & params', () => {
   const IMG_JPEG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==';
   const IMG_WEBP = 'data:image/webp;base64,UklGRgAAAABXRUJQ';
 
-  function mockAi(response: string): AiPromptBuilder {
-    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;
+  function mockAi(response: string): LlmPort {
+    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as LlmPort;
   }
 
   const singleBlankKey: GuidedDiscoveryAnswerKey = {
@@ -1078,8 +1078,8 @@ describe('GuidedDiscoveryGrader — image OCR prompt & params', () => {
 describe('GuidedDiscoveryGrader — image OCR → matchesAny edge cases', () => {
   const IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC';
 
-  function mockAi(response: string): AiPromptBuilder {
-    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;
+  function mockAi(response: string): LlmPort {
+    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as LlmPort;
   }
 
   // ── Normalization on recognized text ──
@@ -1366,7 +1366,7 @@ describe('GuidedDiscoveryGrader — image OCR → matchesAny edge cases', () => 
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'a+b' }))    // rejects match
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'xyz' })),   // generic wrong
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const result = await g.grade(key, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
     expect(result.byDimension.s).toBe(false);
@@ -1387,7 +1387,7 @@ describe('GuidedDiscoveryGrader — image OCR → matchesAny edge cases', () => 
       callVisionLlm: jest.fn()
         .mockRejectedValueOnce(new Error('timeout'))
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'a²-b²' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const result = await g.grade(key, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
     expect(result.byDimension.s).toBe(false);
@@ -1474,8 +1474,8 @@ describe('GuidedDiscoveryGrader — image OCR → matchesAny edge cases', () => 
 describe('GuidedDiscoveryGrader — image OCR allText fallback', () => {
   const IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC';
 
-  function mockAi(response: string): AiPromptBuilder {
-    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;
+  function mockAi(response: string): LlmPort {
+    return { callVisionLlm: jest.fn().mockResolvedValue(response) } as unknown as LlmPort;
   }
 
   const fallbackKey: GuidedDiscoveryAnswerKey = {
@@ -1573,7 +1573,7 @@ describe('GuidedDiscoveryGrader — swappable image blanks (ocrCache)', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: '差' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: '和' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     // b1 answers '差' (wrong for b1.accepts=['和']), b2 answers '和' (wrong for b2.accepts=['差'])
     // but swapped: b1.accepts=['差'] matches '差', b2.accepts=['和'] matches '和'
@@ -1588,7 +1588,7 @@ describe('GuidedDiscoveryGrader — swappable image blanks (ocrCache)', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'x' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: 'y' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
     expect(result.byDimension.s).toBe(false);
@@ -1599,7 +1599,7 @@ describe('GuidedDiscoveryGrader — swappable image blanks (ocrCache)', () => {
     const ai = {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: '差' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     // b1=image('差'), b2=text('和') — original order wrong, swapped correct
     const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: '和' } } } });
@@ -1612,7 +1612,7 @@ describe('GuidedDiscoveryGrader — swappable image blanks (ocrCache)', () => {
       callVisionLlm: jest.fn()
         .mockResolvedValueOnce(JSON.stringify({ recognized: '和' }))
         .mockResolvedValueOnce(JSON.stringify({ recognized: '差' })),
-    } as unknown as AiPromptBuilder;
+    } as unknown as LlmPort;
     const g = new GuidedDiscoveryGrader(ai);
     const result = await g.grade(swappableKey, { steps: { s: { answers: { b1: IMG, b2: IMG } } } });
     expect(result.byDimension.s).toBe(true);

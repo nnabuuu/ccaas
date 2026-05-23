@@ -1,6 +1,6 @@
 import { FillBlankGrader } from '../fill-blank.grader';
 import type { FillBlankAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 
 const baseKey: FillBlankAnswerKey = {
   type: 'fill-blank',
@@ -121,11 +121,11 @@ describe('FillBlankGrader (no LLM)', () => {
 });
 
 describe('FillBlankGrader (with LLM)', () => {
-  function mockBuilder(response: string | Error): AiPromptBuilder {
+  function mockBuilder(response: string | Error): LlmPort {
     const callLlm = response instanceof Error
       ? jest.fn().mockRejectedValue(response)
       : jest.fn().mockResolvedValue(response);
-    return { callLlm } as unknown as AiPromptBuilder;
+    return { callLlm } as unknown as LlmPort;
   }
 
   it('uses LLM for non-exact matches and accepts equivalent', async () => {

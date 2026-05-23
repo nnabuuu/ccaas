@@ -1,6 +1,6 @@
 import { MapGrader } from '../map.grader';
 import type { MapAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 
 const baseKey: MapAnswerKey = {
   type: 'map',
@@ -260,11 +260,11 @@ describe('MapGrader with practiceItemIds — partial completion', () => {
 });
 
 describe('MapGrader (with LLM)', () => {
-  function mockBuilder(response: string | Error): AiPromptBuilder {
+  function mockBuilder(response: string | Error): LlmPort {
     const callLlm = response instanceof Error
       ? jest.fn().mockRejectedValue(response)
       : jest.fn().mockResolvedValue(response);
-    return { callLlm } as unknown as AiPromptBuilder;
+    return { callLlm } as unknown as LlmPort;
   }
 
   const llmSuccess = JSON.stringify({

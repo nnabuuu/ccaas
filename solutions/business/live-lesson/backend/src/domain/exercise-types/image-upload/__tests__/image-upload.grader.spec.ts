@@ -1,6 +1,6 @@
 import { ImageUploadGrader } from '../image-upload.grader';
 import type { ImageUploadAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../../ports/llm.port';
 
 const baseKey: ImageUploadAnswerKey = {
   type: 'image-upload',
@@ -49,11 +49,11 @@ const poorLlmResponse = JSON.stringify({
   feedback: '需要重新学习',
 });
 
-function mockBuilder(response: string | Error): AiPromptBuilder {
+function mockBuilder(response: string | Error): LlmPort {
   const callVisionLlm = response instanceof Error
     ? jest.fn().mockRejectedValue(response)
     : jest.fn().mockResolvedValue(response);
-  return { callVisionLlm } as unknown as AiPromptBuilder;
+  return { callVisionLlm } as unknown as LlmPort;
 }
 
 describe('ImageUploadGrader — no images', () => {
@@ -264,13 +264,13 @@ const ocrMatchResponse = JSON.stringify({ recognized: '4x²-9', allText: '(2x+3)
 const ocrNoMatchResponse = JSON.stringify({ recognized: '4x-9', allText: '4x-9' });
 const ocrEmptyRecognized = JSON.stringify({ recognized: '', allText: '' });
 
-function mockBuilderSequence(...responses: (string | Error)[]): AiPromptBuilder {
+function mockBuilderSequence(...responses: (string | Error)[]): LlmPort {
   const fn = jest.fn();
   for (const r of responses) {
     if (r instanceof Error) fn.mockRejectedValueOnce(r);
     else fn.mockResolvedValueOnce(r);
   }
-  return { callVisionLlm: fn } as unknown as AiPromptBuilder;
+  return { callVisionLlm: fn } as unknown as LlmPort;
 }
 
 describe('ImageUploadGrader — OCR fast-path', () => {

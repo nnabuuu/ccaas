@@ -18,7 +18,8 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, MapAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../../ports/llm.port';
 import { MapGrader } from './map.grader';
 
 const MapAxisSchema = z.object({
@@ -54,8 +55,8 @@ export class MapPlugin implements ExerciseTypePlugin {
   readonly answerKeySchema = MapAnswerKeySchema;
   private readonly legacyGrader: MapGrader;
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {
-    this.legacyGrader = new MapGrader(aiPromptBuilder);
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {
+    this.legacyGrader = new MapGrader(llm);
   }
 
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {

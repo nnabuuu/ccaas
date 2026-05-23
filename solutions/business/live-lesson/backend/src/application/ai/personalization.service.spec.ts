@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -93,6 +94,7 @@ describe('PersonalizationService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight]),
       ],
       providers: [
+        { provide: LLM_PORT, useExisting: AiPromptBuilder },
         ...PLUGIN_PROVIDERS,PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService, StateCacheService],
     }).compile();
 

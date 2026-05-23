@@ -10,7 +10,8 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import { Inject } from '@nestjs/common';
+import { LLM_PORT, type LlmPort } from '../../ports/llm.port';
 
 const FillBlankBlankSchema = z.object({
   accepts: z.array(z.string()).nonempty(),
@@ -37,7 +38,7 @@ export class FillBlankPlugin implements ExerciseTypePlugin {
   readonly answerKeySchema = FillBlankAnswerKeySchema;
   private readonly logger = new Logger(FillBlankPlugin.name);
 
-  constructor(private readonly aiPromptBuilder: AiPromptBuilder) {}
+  constructor(@Inject(LLM_PORT) private readonly llm: LlmPort) {}
 
   sanitize(ctx: SanitizeContext): ExerciseSpec | null {
     const ak = ctx.answerKey;
@@ -83,7 +84,7 @@ export class FillBlankPlugin implements ExerciseTypePlugin {
       }
     }
 
-    if (pendingLlm.length > 0 && this.aiPromptBuilder) {
+    if (pendingLlm.length > 0 && this.llm) {
       try {
         const llmResults = await this.checkSemanticEquivalence(pendingLlm);
         for (const { dimKey, equivalent } of llmResults) {
@@ -114,7 +115,7 @@ ${items.map((it, i) => `${i + 1}. 学生答案："${it.studentAnswer}"，标准�
 输出JSON：{ "results": [{ "index": 0, "equivalent": true/false }] }
 仅判断语义是否等价，不要求完全相同的表述。`;
 
-    const raw = await this.aiPromptBuilder.callLlm(
+    const raw = await this.llm.callLlm(
       '你是一位教学评估助手。请严格判断语义等价性。',
       prompt,
       { maxTokens: 256, temperature: 0, responseFormat: { type: 'json_object' } },

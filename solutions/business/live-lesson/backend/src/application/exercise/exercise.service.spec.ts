@@ -1,3 +1,4 @@
+import { LLM_PORT } from '../../domain/ports/llm.port';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { PLUGIN_PROVIDERS } from '../exercise/test-utils';
@@ -137,6 +138,7 @@ describe('ExerciseService', () => {
       ],
       providers: [
         ...PLUGIN_PROVIDERS,
+        { provide: LLM_PORT, useExisting: AiPromptBuilder },
         ExerciseService,
         GradingService,
         ManifestCacheService,

@@ -28,6 +28,7 @@ import { ClassroomStateService } from '../application/classroom/classroom-state.
 import { StudentSubmissionService } from '../application/classroom/student-submission.service';
 import { ClassroomController } from '../adapters/http/classroom.controller';
 import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
+import { LLM_PORT } from '../domain/ports/llm.port';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -111,6 +112,10 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
   providers: [
     // Infra
     ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService,
+    // Domain port bindings — keep these grouped so the LLM_PORT consumer in
+    // domain/exercise-types/<type>/<type>.plugin.ts resolves to AiPromptBuilder
+    // without domain ever importing from application directly.
+    { provide: LLM_PORT, useExisting: AiPromptBuilder },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

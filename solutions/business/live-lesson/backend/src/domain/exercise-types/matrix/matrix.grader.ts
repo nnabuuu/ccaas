@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { MatrixAnswerKey } from '../../../schemas';
-import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../ports/llm.port';
 
 export function textQuality(text: string | undefined): number {
   if (!text || text.trim().length === 0) return 0;
@@ -33,7 +33,7 @@ export interface CellQualitiesPromptSpec {
 export class MatrixGrader implements Grader {
   private readonly logger = new Logger(MatrixGrader.name);
 
-  constructor(private readonly aiPromptBuilder?: AiPromptBuilder) {}
+  constructor(private readonly llm?: LlmPort) {}
 
   async grade(key: MatrixAnswerKey, data: Record<string, unknown>): Promise<GradeResult> {
     const cellQualities = await this.computeCellQualities(key, data);
@@ -172,11 +172,11 @@ export class MatrixGrader implements Grader {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
     const studentRows = (data.rows || {}) as MatrixStudentRows;
 
-    if (this.aiPromptBuilder) {
+    if (this.llm) {
       try {
         const prompt = this.buildCellQualitiesPrompt(key, data);
         if (!prompt) return {};
-        const raw = await this.aiPromptBuilder.callLlm(prompt.systemPrompt, prompt.userMessage, {
+        const raw = await this.llm.callLlm(prompt.systemPrompt, prompt.userMessage, {
           maxTokens: prompt.maxTokens,
           temperature: prompt.temperature,
           responseFormat: { type: 'json_object' },

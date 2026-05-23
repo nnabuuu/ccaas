@@ -1,12 +1,12 @@
 import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { FillBlankAnswerKey } from '../../../schemas';
-import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
+import type { LlmPort } from '../../ports/llm.port';
 
 export class FillBlankGrader implements Grader {
   private readonly logger = new Logger(FillBlankGrader.name);
 
-  constructor(private readonly aiPromptBuilder?: AiPromptBuilder) {}
+  constructor(private readonly llm?: LlmPort) {}
 
   async grade(key: FillBlankAnswerKey, data: Record<string, unknown>): Promise<GradeResult> {
     const studentBlanks = (data.blanks || {}) as Record<string, string>;
@@ -38,7 +38,7 @@ export class FillBlankGrader implements Grader {
       }
     }
 
-    if (pendingLlm.length > 0 && this.aiPromptBuilder) {
+    if (pendingLlm.length > 0 && this.llm) {
       try {
         const llmResults = await this.checkSemanticEquivalence(pendingLlm);
         for (const { dimKey, equivalent } of llmResults) {
@@ -73,7 +73,7 @@ ${items.map((it, i) => `${i + 1}. 学生答案："${it.studentAnswer}"，标准�
 输出JSON：{ "results": [{ "index": 0, "equivalent": true/false }] }
 仅判断语义是否等价，不要求完全相同的表述。`;
 
-    const raw = await this.aiPromptBuilder!.callLlm(
+    const raw = await this.llm!.callLlm(
       '你是一位教学评估助手。请严格判断语义等价性。',
       prompt,
       { maxTokens: 256, temperature: 0, responseFormat: { type: 'json_object' } },
