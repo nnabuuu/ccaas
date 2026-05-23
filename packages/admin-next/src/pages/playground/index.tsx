@@ -16,6 +16,7 @@ import Editor, { type OnMount } from '@monaco-editor/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api-client'
+import { InspectorPane } from './InspectorPane'
 
 const DEFAULT_PREVIEW_URL = (() => {
   try {
@@ -66,6 +67,10 @@ export function PlaygroundPage() {
   const [draftJson, setDraftJson] = useState<string>('')
   const [draftError, setDraftError] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('Connecting...')
+  // Right-pane mode + sessionId/refresh used by the Inspector tab.
+  const [rightTab, setRightTab] = useState<'preview' | 'inspector'>('preview')
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [inspectorRefresh, setInspectorRefresh] = useState(0)
 
   // Load bundle list
   useEffect(() => {
@@ -242,6 +247,16 @@ export function PlaygroundPage() {
       if (!msg || msg.source !== 'kedge-preview') return
       if (msg.type === 'grade-result') {
         setStatus(`Last grade: ${JSON.stringify(msg.payload?.result?.total ?? '?')}`)
+        // Bump the inspector refresh signal so L1/L2 panels re-fetch after
+        // every grade — no need for the user to click Refresh.
+        setInspectorRefresh((n) => n + 1)
+      } else if (msg.type === 'story-loaded') {
+        // Preview hands back the new sessionId after open-story. Captured
+        // here so the Inspector pane can hit /preview/sessions/:id endpoints.
+        if (msg.payload?.sessionId) {
+          setSessionId(msg.payload.sessionId as string)
+          setInspectorRefresh((n) => n + 1)
+        }
       } else if (msg.type === 'ready') {
         setStatus(`Preview ready · ${msg.payload?.bundleCount ?? 0} bundles`)
       } else if (msg.type === 'error') {
@@ -418,26 +433,72 @@ export function PlaygroundPage() {
           )}
         </main>
 
-        {/* Right: live preview iframe */}
+        {/* Right: live preview iframe ↔ Inspector tab.
+            Both stay mounted (CSS-hidden when inactive) so the iframe doesn't
+            lose state and the inspector can re-poll silently. */}
         <section className="flex flex-col overflow-hidden">
-          <div className="flex items-center px-4 py-2 border-b bg-muted/50">
-            <span className="text-xs font-semibold">Live Preview</span>
-            <span className="ml-2 text-[11px] text-muted-foreground">embedded from {previewUrl}</span>
-          </div>
-          {activeBundleId ? (
-            <iframe
-              id="preview-iframe"
-              // Pass parentOrigin so the preview can authorize our postMessage
-              src={`${previewUrl}${previewUrl.includes('?') ? '&' : '?'}parentOrigin=${encodeURIComponent(window.location.origin)}`}
-              title="Exercise Preview"
-              className="flex-1 border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-              Pick a story to load the preview.
+          <div className="flex items-center px-4 py-2 border-b bg-muted/50 gap-2">
+            <div className="inline-flex rounded border bg-background">
+              <button
+                onClick={() => setRightTab('preview')}
+                className={`text-[11px] px-3 py-1 ${
+                  rightTab === 'preview' ? 'bg-foreground text-background' : ''
+                }`}
+              >
+                Preview
+              </button>
+              <button
+                onClick={() => setRightTab('inspector')}
+                className={`text-[11px] px-3 py-1 ${
+                  rightTab === 'inspector' ? 'bg-foreground text-background' : ''
+                }`}
+              >
+                Inspector
+              </button>
             </div>
-          )}
+            {rightTab === 'preview' && (
+              <span className="text-[11px] text-muted-foreground">
+                embedded from {previewUrl}
+              </span>
+            )}
+            {rightTab === 'inspector' && !sessionId && (
+              <span className="text-[11px] text-muted-foreground">
+                no session yet — open a story first
+              </span>
+            )}
+          </div>
+
+          {/* Preview pane (always mounted) */}
+          <div
+            className="flex-1 flex flex-col"
+            style={{ display: rightTab === 'preview' ? 'flex' : 'none' }}
+          >
+            {activeBundleId ? (
+              <iframe
+                id="preview-iframe"
+                src={`${previewUrl}${previewUrl.includes('?') ? '&' : '?'}parentOrigin=${encodeURIComponent(window.location.origin)}`}
+                title="Exercise Preview"
+                className="flex-1 border-0"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+              />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                Pick a story to load the preview.
+              </div>
+            )}
+          </div>
+
+          {/* Inspector pane */}
+          <div
+            className="flex-1 flex flex-col"
+            style={{ display: rightTab === 'inspector' ? 'flex' : 'none' }}
+          >
+            <InspectorPane
+              previewUrl={previewUrl}
+              sessionId={sessionId}
+              refreshTrigger={inspectorRefresh}
+            />
+          </div>
         </section>
       </div>
     </div>
