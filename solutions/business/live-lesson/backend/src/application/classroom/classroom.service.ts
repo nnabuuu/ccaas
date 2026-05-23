@@ -6,6 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { randomInt } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import {
   CLASSROOM_SESSION_REPO_PORT,
   type ClassroomSessionRepoPort,
@@ -41,8 +43,8 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly configService: ConfigService,
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
     @Inject(CLASSROOM_SESSION_REPO_PORT)
     private readonly sessionRepo: ClassroomSessionRepoPort,
     @InjectRepository(Lesson)
@@ -187,13 +189,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     const titleMap = new Map(lessons.map(l => [l.id, l.title]));
 
     // Batch count students per session
-    const studentCounts: Array<{ sessionId: string; count: string }> = await this.studentRepo
-      .createQueryBuilder('s')
-      .select('s.sessionId', 'sessionId')
-      .addSelect('COUNT(*)', 'count')
-      .where('s.sessionId IN (:...ids)', { ids: sessionIds })
-      .groupBy('s.sessionId')
-      .getRawMany();
+    const studentCounts = await this.studentRepo.countBySessionInIds(sessionIds);
     const countMap = new Map(studentCounts.map(r => [r.sessionId, Number(r.count)]));
 
     const now = Date.now();

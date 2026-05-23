@@ -3,6 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
@@ -23,8 +25,10 @@ export class DiscussService {
   private readonly logger = new Logger(DiscussService.name);
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
@@ -42,10 +46,6 @@ export class DiscussService {
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
-  private get lessonRepo(): Repository<Lesson> {
-    return this.studentRepo.manager.getRepository(Lesson);
-  }
-
   async aiDiscuss(
     session: ClassroomSessionRecord,
     studentId: string,
@@ -61,9 +61,7 @@ export class DiscussService {
     nudge?: { hint: string };
     imageDescription?: string;
   }> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }
@@ -266,9 +264,7 @@ export class DiscussService {
     timeUsedSeconds: number,
     mcSelectedIndex?: number,
   ): Promise<{ ok: boolean; mcCorrect?: boolean }> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }

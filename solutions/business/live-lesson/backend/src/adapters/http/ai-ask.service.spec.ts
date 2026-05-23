@@ -20,6 +20,8 @@ import { AI_QUESTION_REPO_PORT } from '../../domain/ports/ai-question-repo.port'
 import { TypeOrmAiQuestionRepository } from '../../adapters/persistence/repositories/ai-question.repository';
 import { CHAT_MESSAGE_REPO_PORT } from '../../domain/ports/chat-message-repo.port';
 import { TypeOrmChatMessageRepository } from '../../adapters/persistence/repositories/chat-message.repository';
+import { STUDENT_REPO_PORT } from "../../domain/ports/student-repo.port";
+import { TypeOrmStudentRepository } from "../../adapters/persistence/repositories/student.repository";
 
 const ASK_MANIFEST = {
   id: 'ask-lesson',
@@ -73,6 +75,8 @@ describe('AiAskService', () => {
         { provide: AI_QUESTION_REPO_PORT, useExisting: TypeOrmAiQuestionRepository },
         TypeOrmChatMessageRepository,
         { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
+        TypeOrmStudentRepository,
+        { provide: STUDENT_REPO_PORT, useExisting: TypeOrmStudentRepository },
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

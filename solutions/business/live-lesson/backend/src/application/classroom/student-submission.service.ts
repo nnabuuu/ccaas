@@ -3,6 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { GradingService } from '../exercise/grading.service';
@@ -19,8 +21,10 @@ export class StudentSubmissionService {
   private readonly logger = new Logger(StudentSubmissionService.name);
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     private readonly gradingService: GradingService,
@@ -30,24 +34,17 @@ export class StudentSubmissionService {
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
-  private get lessonRepo(): Repository<Lesson> {
-    return this.studentRepo.manager.getRepository(Lesson);
-  }
-
   async join(session: ClassroomSessionRecord, name: string): Promise<JoinResponse> {
-    const existing = await this.studentRepo.findOne({
-      where: { sessionId: session.id, name },
-    });
+    const existing = await this.studentRepo.findBySessionAndName(session.id, name);
     if (existing) {
       return { studentId: existing.id, name: existing.name, lessonId: session.lessonId, _broadcast: true };
     }
 
-    const student = this.studentRepo.create({
+    const saved = await this.studentRepo.insert({
       sessionId: session.id,
       lessonId: session.lessonId,
       name,
     });
-    const saved = await this.studentRepo.save(student);
     this.stateCache.markDirty(session.id);
 
     this.engine.dispatch({
@@ -62,9 +59,7 @@ export class StudentSubmissionService {
   }
 
   async submit(session: ClassroomSessionRecord, studentId: string, step: number, data: Record<string, unknown>): Promise<SubmitResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }
@@ -105,7 +100,7 @@ export class StudentSubmissionService {
       const taskNum = taskMap.stepToTask[step];
       if (score?.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
         await this.updatePhase(session, studentId, taskNum, 'discuss');
-        const updated = await this.studentRepo.findOne({ where: { id: studentId, sessionId: session.id } });
+        const updated = await this.studentRepo.findBySessionAndId(session.id, studentId);
         return { ok: true, score, currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss' };
       }
     }
@@ -264,7 +259,7 @@ export class StudentSubmissionService {
       const taskNum = taskMap.stepToTask[step];
       if (aggregateScore.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
         await this.updatePhase(session, student.id, taskNum, 'discuss');
-        const updated = await this.studentRepo.findOne({ where: { id: student.id, sessionId: session.id } });
+        const updated = await this.studentRepo.findBySessionAndId(session.id, student.id);
         return {
           ok: true, score: aggregateScore,
           currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
@@ -371,7 +366,7 @@ export class StudentSubmissionService {
       const taskNum = taskMap.stepToTask[step];
       if (aggregateScore.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
         await this.updatePhase(session, student.id, taskNum, 'discuss');
-        const updated = await this.studentRepo.findOne({ where: { id: student.id, sessionId: session.id } });
+        const updated = await this.studentRepo.findBySessionAndId(session.id, student.id);
         return {
           ok: true, score: aggregateScore,
           currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss',
@@ -433,7 +428,7 @@ export class StudentSubmissionService {
 
     getCachedTaskMap(session.lessonId, this.lessonRepo).then(taskMap => {
       const taskNum = taskMap.stepToTask[step];
-      return this.studentRepo.findOne({ where: { id: studentId, sessionId: session.id } }).then(s => {
+      return this.studentRepo.findBySessionAndId(session.id, studentId).then(s => {
         if (s && taskNum !== undefined && s.currentTask > taskNum) {
           return this.engine.dispatch({
             type: 'step_complete',
@@ -486,9 +481,7 @@ export class StudentSubmissionService {
 
   async updatePhase(session: ClassroomSessionRecord, studentId: string, task: number, phase: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const student = await this.studentRepo.findOne({
-        where: { id: studentId, sessionId: session.id },
-      });
+      const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
       if (!student) {
         throw new NotFoundException('Student not found in this session');
       }
@@ -515,12 +508,10 @@ export class StudentSubmissionService {
   }
 
   async getProgress(session: ClassroomSessionRecord, studentId: string, includeSubmissions?: boolean): Promise<StudentProgressResponse | null> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) return null;
 
-    const result: StudentProgressResponse = { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
+    const result: StudentProgressResponse = { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: (student.discussMeta as unknown as Record<string, unknown> | null) ?? null };
     if (includeSubmissions) {
       result.submissions = await this.buildSubmissionMap(session.id, session.lessonId, studentId);
     }

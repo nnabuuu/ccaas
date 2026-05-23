@@ -3,6 +3,8 @@ import { DiscoveryService, Reflector } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 import type { SubmissionRecord } from '../../domain/types/submission';
@@ -16,8 +18,8 @@ export class ObserveRegistry implements OnModuleInit {
   constructor(
     private readonly discoveryService: DiscoveryService,
     private readonly reflector: Reflector,
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
   ) {}
@@ -37,7 +39,7 @@ export class ObserveRegistry implements OnModuleInit {
     students: Student[];
     subsByStudent: Map<string, Record<number, SubmissionRecord>>;
   }> {
-    const students = await this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } });
+    const students = await this.studentRepo.findBySession(sessionId);
     const submissions = await this.submissionRepo.findExerciseBySession(sessionId);
     const subsByStudent = new Map<string, Record<number, SubmissionRecord>>();
     for (const sub of submissions) {

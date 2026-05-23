@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { CLASSROOM_SESSION_REPO_PORT, type ClassroomSessionRepoPort } from '../../domain/ports/classroom-session-repo.port';
@@ -32,8 +34,8 @@ export class ClassroomStateService {
   private observeRegistryCache = new Map<string, Record<string, ObservationDef>>();
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(CLASSROOM_SESSION_REPO_PORT)
@@ -103,7 +105,7 @@ export class ClassroomStateService {
 
     // Step 1: 4 independent queries in parallel
     const [students, submissions, session, questions] = await Promise.all([
-      this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } }),
+      this.studentRepo.findBySession(sessionId),
       this.submissionRepo.findExerciseBySession(sessionId),
       this.sessionRepo.findById(sessionId),
       this.aiQuestionRepo.findBySession(sessionId),
@@ -283,7 +285,7 @@ export class ClassroomStateService {
           status,
           submissions: enrichedSubs,
           stepHistory,
-          discussMeta: s.discussMeta ?? null,
+          discussMeta: (s.discussMeta as unknown as Record<string, unknown> | null) ?? null,
           bonusStatus,
         };
       }),
@@ -336,7 +338,7 @@ export class ClassroomStateService {
     const resolved = resolveObserve(stepDef, surfaceRegistry);
     if (resolved.surfaces.length === 0) return {};
 
-    const students = await this.studentRepo.find({ where: { sessionId } });
+    const students = await this.studentRepo.findBySession(sessionId);
     const submissions = await this.submissionRepo.findExerciseBySession(sessionId);
     const subsByStudent = new Map<string, Record<number, { step: number; data: unknown; score: unknown; submittedAt: string }>>();
     for (const sub of submissions) {

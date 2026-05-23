@@ -1,9 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
+import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
 import { GradingService } from './grading.service';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -16,18 +16,16 @@ export class ExerciseService {
   private readonly logger = new Logger(ExerciseService.name);
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     private readonly gradingService: GradingService,
     private readonly registry: ExerciseTypeRegistry,
     private readonly manifestCache: ManifestCacheService,
   ) {}
 
-  private get lessonRepo(): Repository<Lesson> {
-    return this.studentRepo.manager.getRepository(Lesson);
-  }
-
-  async getExerciseSpec(session: ClassroomSession, step: number, studentId?: string, exerciseType?: string): Promise<ExerciseSpec> {
+  async getExerciseSpec(session: ClassroomSessionRecord, step: number, studentId?: string, exerciseType?: string): Promise<ExerciseSpec> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
     if (!manifest) throw new NotFoundException('Lesson not found');
     const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
@@ -42,9 +40,7 @@ export class ExerciseService {
     let practiceItemIds: string[] | undefined;
     if (ak.type === 'map' && ak.randomPractice && ak.practiceCount && studentId) {
       // Validate studentId belongs to this session
-      const student = await this.studentRepo.findOne({
-        where: { id: studentId, sessionId: session.id },
-      });
+      const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
       if (!student) throw new NotFoundException('Student not found in this session');
 
       const items = (ak.items as Array<{ id: string }>) || [];
@@ -63,15 +59,13 @@ export class ExerciseService {
   }
 
   async checkAnswer(
-    session: ClassroomSession,
+    session: ClassroomSessionRecord,
     studentId: string,
     step: number,
     data: Record<string, unknown>,
     exerciseType?: string,
   ): Promise<CheckResultResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) throw new NotFoundException('Student not found in this session');
 
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);

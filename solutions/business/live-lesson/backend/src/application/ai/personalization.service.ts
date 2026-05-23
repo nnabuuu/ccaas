@@ -3,6 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
@@ -35,8 +37,10 @@ export class PersonalizationService {
   private readonly logger = new Logger(PersonalizationService.name);
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)
@@ -51,10 +55,6 @@ export class PersonalizationService {
     private readonly coachingService: CoachingService,
     private readonly stateCache: StateCacheService,
   ) {}
-
-  private get lessonRepo(): Repository<Lesson> {
-    return this.studentRepo.manager.getRepository(Lesson);
-  }
 
   private async computeTierAndStrategies(
     session: ClassroomSessionRecord,
@@ -95,9 +95,7 @@ export class PersonalizationService {
   }
 
   async getPersonalTouch(session: ClassroomSessionRecord, studentId: string): Promise<PersonalTouchResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) throw new NotFoundException('Student not found in this session');
 
     const computed = await this.computeTierAndStrategies(session, studentId);
@@ -169,9 +167,7 @@ export class PersonalizationService {
     bonusStep: number,
     data: Record<string, unknown>,
   ): Promise<CheckResultResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) throw new NotFoundException('Student not found in this session');
 
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
@@ -211,9 +207,7 @@ export class PersonalizationService {
   }
 
   async getStudentRecap(session: ClassroomSessionRecord, studentId: string): Promise<RecapResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) throw new NotFoundException('Student not found in this session');
 
     // ── Tier + strategies (shared logic with getPersonalTouch) ──

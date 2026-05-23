@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { jsonrepair } from 'jsonrepair';
@@ -48,8 +50,10 @@ export class TranslateService {
   private caches = new Map<string, LruCache<TranslateResponse>>();
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(CHAT_MESSAGE_REPO_PORT)
     private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly aiPromptBuilder: AiPromptBuilder,
@@ -65,9 +69,7 @@ export class TranslateService {
     sourceContext: string,
     phase?: string,
   ): Promise<TranslateResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }
@@ -81,8 +83,7 @@ export class TranslateService {
     }
 
     // Load manifest for contextual prompts
-    const lessonRepo = this.studentRepo.manager.getRepository(Lesson);
-    const manifest = await this.manifestCache.getManifest(session.lessonId, lessonRepo);
+        const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
 
     let result: TranslateResponse;
     try {
@@ -158,9 +159,7 @@ export class TranslateService {
     question: string,
     sourceContext: string,
   ): Promise<{ reply: string }> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }
@@ -175,8 +174,7 @@ export class TranslateService {
     const trimmedHistory = history.slice(-MAX_CHAT_HISTORY);
 
     // Load manifest + stepDef
-    const lessonRepo = this.studentRepo.manager.getRepository(Lesson);
-    const manifest = await this.manifestCache.getManifest(session.lessonId, lessonRepo);
+        const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
 
     // Get cached definition for system prompt context
     const normalized = originalText.trim().toLowerCase();

@@ -3,6 +3,8 @@ import type { ClassroomSessionRecord } from '../../domain/types/classroom-sessio
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../adapters/persistence/entities/student.entity';
+import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
+import type { StudentRecord } from '../../domain/types/student';
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
@@ -16,8 +18,10 @@ export class AiAskService {
   private readonly logger = new Logger(AiAskService.name);
 
   constructor(
-    @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    @Inject(STUDENT_REPO_PORT)
+    private readonly studentRepo: StudentRepoPort,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
     @Inject(AI_QUESTION_REPO_PORT)
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @Inject(CHAT_MESSAGE_REPO_PORT)
@@ -28,10 +32,6 @@ export class AiAskService {
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
-  private get lessonRepo(): Repository<Lesson> {
-    return this.studentRepo.manager.getRepository(Lesson);
-  }
-
   async aiAsk(
     session: ClassroomSessionRecord,
     studentId: string,
@@ -39,9 +39,7 @@ export class AiAskService {
     question: string,
     messages?: Array<{ role: string; text: string }>,
   ): Promise<{ answer: string; category: string }> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
+    const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) {
       throw new NotFoundException('Student not found in this session');
     }
