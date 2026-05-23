@@ -45,6 +45,8 @@ import { CHAT_MESSAGE_REPO_PORT } from '../domain/ports/chat-message-repo.port';
 import { TypeOrmChatMessageRepository } from '../adapters/persistence/repositories/chat-message.repository';
 import { STUDENT_REPO_PORT } from '../domain/ports/student-repo.port';
 import { TypeOrmStudentRepository } from '../adapters/persistence/repositories/student.repository';
+import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
+import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/lesson.repository';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
 import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
 import { ObserveRegistry } from '../application/observation/observe-registry';
@@ -148,6 +150,8 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
     TypeOrmStudentRepository,
     { provide: STUDENT_REPO_PORT, useExisting: TypeOrmStudentRepository },
+    TypeOrmLessonRepository,
+    { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
     // Observe handlers + registry
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise

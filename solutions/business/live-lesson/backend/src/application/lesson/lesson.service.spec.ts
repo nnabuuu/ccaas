@@ -15,10 +15,10 @@ import { LLM_PORT } from '../../domain/ports/llm.port';
  * `readFileSync` and the repository via an in-memory map.
  */
 import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT } from '../../domain/ports/lesson-repo.port';
 
 // `fs.existsSync`/`readdirSync`/`readFileSync` aren't spyable in newer Node
 // (they're non-configurable). Use jest.mock('fs') for the whole module so
@@ -33,21 +33,30 @@ function makeRepoMock() {
   const store = new Map<string, LessonRow>();
   return {
     store,
-    create: jest.fn((row: LessonRow) => row),
+    findById: jest.fn(async (id: string) => store.get(id) ?? null),
+    findByIds: jest.fn(async (ids: string[]) => ids.map(id => store.get(id)).filter(Boolean) as LessonRow[]),
+    findAllSeedFields: jest.fn(async () =>
+      [...store.values()].map(r => ({
+        id: r.id, lessonType: r.lessonType, description: r.description,
+      })),
+    ),
+    findAllForList: jest.fn(async () =>
+      [...store.values()].map(r => ({
+        id: r.id, title: r.title, subject: r.subject, gradeLevel: r.gradeLevel,
+        description: r.description, emoji: r.emoji, lessonType: r.lessonType,
+      })),
+    ),
+    insert: jest.fn(async (row: LessonRow) => {
+      store.set(row.id, row);
+    }),
     save: jest.fn(async (row: LessonRow) => {
       store.set(row.id, row);
       return row;
     }),
-    find: jest.fn(async (opts?: { select?: string[] }) => {
-      const rows = [...store.values()];
-      if (!opts?.select) return rows;
-      return rows.map((r) => {
-        const out: Record<string, unknown> = {};
-        for (const k of opts.select!) out[k] = (r as Record<string, unknown>)[k];
-        return out;
-      });
+    update: jest.fn(async (id: string, patch: Partial<LessonRow>) => {
+      const existing = store.get(id);
+      if (existing) store.set(id, { ...existing, ...patch });
     }),
-    findOne: jest.fn(async ({ where }: { where: { id: string } }) => store.get(where.id) ?? null),
   };
 }
 
@@ -66,7 +75,7 @@ async function buildService(repo: ReturnType<typeof makeRepoMock>): Promise<Less
     imports: [DiscoveryModule],
     providers: [
       LessonService,
-      { provide: getRepositoryToken(Lesson), useValue: repo },
+      { provide: LESSON_REPO_PORT, useValue: repo },
       { provide: AiPromptBuilder, useValue: mockAi },
       { provide: LLM_PORT, useValue: mockAi },
       ...PLUGIN_PROVIDERS,
@@ -206,7 +215,8 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     const repo = makeRepoMock();
     const svc = await buildService(repo);
     await svc.onModuleInit();
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
   });
 
   it('seeds a new lesson from a valid manifest.json', async () => {
@@ -223,7 +233,7 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     const svc = await buildService(repo);
 
     await svc.onModuleInit();
-    expect(repo.save).toHaveBeenCalledTimes(1);
+    expect(repo.insert).toHaveBeenCalledTimes(1);
     expect(repo.store.get('demo-lesson')).toBeTruthy();
     expect(repo.store.get('demo-lesson')?.title).toBe('Demo Lesson');
     expect(repo.store.get('demo-lesson')?.lessonType).toBe('interactive');
@@ -251,7 +261,7 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     const svc = await buildService(repo);
 
     await svc.onModuleInit();
-    expect(repo.save).toHaveBeenCalledTimes(1);
+    expect(repo.update).toHaveBeenCalledTimes(1);
     const updated = repo.store.get('demo-lesson')!;
     expect(updated.lessonType).toBe('interactive');
     expect(updated.description).toBe('A demo lesson');
@@ -279,7 +289,8 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     const svc = await buildService(repo);
 
     await svc.onModuleInit();
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
   });
 
   it('logs but does not throw on malformed JSON', async () => {
@@ -293,7 +304,8 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     const svc = await buildService(repo);
 
     await expect(svc.onModuleInit()).resolves.not.toThrow();
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
   });
 
   it('skips directories without a manifest.json', async () => {
@@ -309,7 +321,8 @@ describe('LessonService.onModuleInit / seedLessons', () => {
     ] as any);
     const svc = await buildService(repo);
     await svc.onModuleInit();
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.update).not.toHaveBeenCalled();
   });
 
   it('logs validation warnings but still seeds the lesson when manifest has soft issues', async () => {

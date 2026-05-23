@@ -6,6 +6,7 @@ import { Student } from '../../adapters/persistence/entities/student.entity';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { GradingService } from '../exercise/grading.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
@@ -23,8 +24,8 @@ export class StudentSubmissionService {
   constructor(
     @Inject(STUDENT_REPO_PORT)
     private readonly studentRepo: StudentRepoPort,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     private readonly gradingService: GradingService,

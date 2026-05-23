@@ -9,6 +9,7 @@ import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/por
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
@@ -27,8 +28,8 @@ export class DiscussService {
   constructor(
     @Inject(STUDENT_REPO_PORT)
     private readonly studentRepo: StudentRepoPort,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
     @Inject(SUBMISSION_REPO_PORT)
     private readonly submissionRepo: SubmissionRepoPort,
     @Inject(AI_QUESTION_REPO_PORT)

@@ -15,6 +15,7 @@ import { StudentSubmissionService } from '../../application/classroom/student-su
 import { ObserveRegistry } from '../../application/observation/observe-registry';
 import { ManifestCacheService } from '../../application/classroom/manifest-cache.service';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT } from '../../domain/ports/lesson-repo.port';
 
 const VALID_CODE = 'HX3KM7'; // 6 chars, matches /^[A-Z2-9]{6}$/
 const VALID_UUID = '11111111-2222-3333-4444-555555555555';
@@ -66,7 +67,7 @@ async function buildController(over: Partial<{
       : (over.manifest ?? { readingSteps: [{ idx: 1, answerKey: { type: 'quiz' } }] })),
     ...over.manifestCache,
   };
-  const lessonRepo = { findOne: jest.fn(), find: jest.fn() };
+  const lessonRepo = { findById: jest.fn(), findByIds: jest.fn() };
 
   const module = await Test.createTestingModule({
     controllers: [ClassroomController],
@@ -75,7 +76,7 @@ async function buildController(over: Partial<{
       { provide: StudentSubmissionService, useValue: submission },
       { provide: ObserveRegistry, useValue: observeRegistry },
       { provide: ManifestCacheService, useValue: manifestCache },
-      { provide: getRepositoryToken(Lesson), useValue: lessonRepo },
+      { provide: LESSON_REPO_PORT, useValue: lessonRepo },
     ],
   }).compile();
 

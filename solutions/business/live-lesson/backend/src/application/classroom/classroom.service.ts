@@ -21,6 +21,7 @@ import { ClassroomBroadcastService } from '../../adapters/transport/classroom-br
 import { ClassroomStateService } from './classroom-state.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { TranslateService } from '../ai/translate.service';
 import type { Response } from 'express';
@@ -47,8 +48,8 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly studentRepo: StudentRepoPort,
     @Inject(CLASSROOM_SESSION_REPO_PORT)
     private readonly sessionRepo: ClassroomSessionRepoPort,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
     @Inject(CHAT_MESSAGE_REPO_PORT)
     private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly broadcastService: ClassroomBroadcastService,
@@ -165,7 +166,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     if (!sessions.length) return [];
 
     const lessonIds = [...new Set(sessions.map(s => s.lessonId))];
-    const lessons = await this.lessonRepo.find({ where: { id: In(lessonIds) } });
+    const lessons = await this.lessonRepo.findByIds(lessonIds);
     const titleMap = new Map(lessons.map(l => [l.id, l.title]));
 
     return sessions.map(s => ({
@@ -185,7 +186,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
 
     // Batch fetch lesson titles
     const lessonIds = [...new Set(sessions.map(s => s.lessonId))];
-    const lessons = await this.lessonRepo.find({ where: { id: In(lessonIds) } });
+    const lessons = await this.lessonRepo.findByIds(lessonIds);
     const titleMap = new Map(lessons.map(l => [l.id, l.title]));
 
     // Batch count students per session

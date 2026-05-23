@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Inject, Post, Param, Body, Res, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,6 +7,7 @@ import { ClassroomService } from '../../application/classroom/classroom.service'
 import { StudentSubmissionService } from '../../application/classroom/student-submission.service';
 import { ObserveRegistry } from '../../application/observation/observe-registry';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
@@ -35,8 +36,8 @@ export class ClassroomController {
     private readonly studentSubmission: StudentSubmissionService,
     private readonly observeRegistry: ObserveRegistry,
     private readonly manifestCache: ManifestCacheService,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
   ) {}
 
   // ── Session lifecycle ──

@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { validateAnswerKey, ManifestSchema } from '../../schemas';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import * as fs from 'fs';
@@ -12,8 +13,8 @@ export class LessonService implements OnModuleInit {
   private readonly logger = new Logger(LessonService.name);
 
   constructor(
-    @InjectRepository(Lesson)
-    private readonly repo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly repo: LessonRepoPort,
     private readonly registry: ExerciseTypeRegistry,
   ) {}
 
@@ -31,7 +32,7 @@ export class LessonService implements OnModuleInit {
     const dirs = fs.readdirSync(dataDir, { withFileTypes: true })
       .filter(d => d.isDirectory());
 
-    const existingLessons = await this.repo.find({ select: ['id', 'lessonType', 'description'] });
+    const existingLessons = await this.repo.findAllSeedFields();
     const existingMap = new Map(existingLessons.map(l => [l.id, l]));
 
     for (const dir of dirs) {
@@ -44,18 +45,16 @@ export class LessonService implements OnModuleInit {
         try {
           const raw = fs.readFileSync(manifestPath, 'utf-8');
           const manifest = JSON.parse(raw);
-          let changed = false;
+          const patch: Partial<{ lessonType: string; description: string }> = {};
           if (manifest.lessonType && existing.lessonType !== manifest.lessonType) {
-            existing.lessonType = manifest.lessonType;
-            changed = true;
+            patch.lessonType = manifest.lessonType;
           }
           const newDesc = manifest.description || manifest.teachingNotes || '';
           if (newDesc && (!existing.description || existing.description !== newDesc)) {
-            existing.description = newDesc;
-            changed = true;
+            patch.description = newDesc;
           }
-          if (changed) {
-            await this.repo.save(existing);
+          if (Object.keys(patch).length) {
+            await this.repo.update(existing.id, patch);
             this.logger.log(`Updated fields for ${existing.id}`);
           }
         } catch { /* skip */ }
@@ -85,8 +84,9 @@ export class LessonService implements OnModuleInit {
           }
         }
 
-        const lesson = this.repo.create({
-          id: manifest.id || dir.name,
+        const lessonId = manifest.id || dir.name;
+        await this.repo.insert({
+          id: lessonId,
           title: manifest.title || dir.name,
           subject: manifest.subject || '',
           gradeLevel: manifest.gradeLevel || '',
@@ -96,8 +96,7 @@ export class LessonService implements OnModuleInit {
           teachingNotes: manifest.teachingNotes || '',
           manifestJson: raw,
         });
-        await this.repo.save(lesson);
-        this.logger.log(`Seeded lesson: ${lesson.id}`);
+        this.logger.log(`Seeded lesson: ${lessonId}`);
       } catch (e) {
         this.logger.error(`Failed to seed lesson ${dir.name}: ${e}`);
       }
@@ -105,9 +104,7 @@ export class LessonService implements OnModuleInit {
   }
 
   async findAll() {
-    const rows = await this.repo.find({
-      select: ['id', 'title', 'subject', 'gradeLevel', 'description', 'emoji', 'lessonType'],
-    });
+    const rows = await this.repo.findAllForList();
     return { lessons: rows };
   }
 
@@ -115,7 +112,7 @@ export class LessonService implements OnModuleInit {
     if (!/^[a-zA-Z0-9-]+$/.test(id)) {
       throw new NotFoundException('Invalid lesson ID format');
     }
-    const lesson = await this.repo.findOne({ where: { id } });
+    const lesson = await this.repo.findById(id);
     if (!lesson) {
       throw new NotFoundException(`Lesson ${id} not found`);
     }

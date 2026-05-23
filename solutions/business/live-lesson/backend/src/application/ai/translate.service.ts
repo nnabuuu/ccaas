@@ -7,6 +7,7 @@ import { Student } from '../../adapters/persistence/entities/student.entity';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
@@ -52,8 +53,8 @@ export class TranslateService {
   constructor(
     @Inject(STUDENT_REPO_PORT)
     private readonly studentRepo: StudentRepoPort,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
     @Inject(CHAT_MESSAGE_REPO_PORT)
     private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly aiPromptBuilder: AiPromptBuilder,

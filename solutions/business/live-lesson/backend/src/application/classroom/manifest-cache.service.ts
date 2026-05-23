@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
+import type { LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 
 @Injectable()
 export class ManifestCacheService {
@@ -8,11 +7,11 @@ export class ManifestCacheService {
   private readonly TTL_MS = 60_000;
   private readonly MAX_SIZE = 50;
 
-  async getManifest(lessonId: string, lessonRepo: Repository<Lesson>): Promise<any | null> {
+  async getManifest(lessonId: string, lessonRepo: LessonRepoPort): Promise<any | null> {
     const cached = this.cache.get(lessonId);
     if (cached && Date.now() - cached.fetchedAt < this.TTL_MS) return cached.manifest;
 
-    const lesson = await lessonRepo.findOne({ where: { id: lessonId } });
+    const lesson = await lessonRepo.findById(lessonId);
     if (!lesson) return null;
 
     try {

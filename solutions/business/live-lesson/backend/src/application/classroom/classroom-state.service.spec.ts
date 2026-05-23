@@ -11,6 +11,8 @@ import { CHAT_MESSAGE_REPO_PORT } from "../../domain/ports/chat-message-repo.por
 import { TypeOrmChatMessageRepository } from "../../adapters/persistence/repositories/chat-message.repository";
 import { STUDENT_REPO_PORT } from "../../domain/ports/student-repo.port";
 import { TypeOrmStudentRepository } from "../../adapters/persistence/repositories/student.repository";
+import { LESSON_REPO_PORT } from "../../domain/ports/lesson-repo.port";
+import { TypeOrmLessonRepository } from "../../adapters/persistence/repositories/lesson.repository";
 import { DISCUSS_TARGET_HIT_REPO_PORT } from "../../domain/ports/discuss-target-hit-repo.port";
 import { TypeOrmDiscussTargetHitRepository } from "../../adapters/persistence/repositories/discuss-target-hit.repository";
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -80,7 +82,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         StateCacheService,
         { provide: STUDENT_REPO_PORT, useValue: { findBySession: jest.fn().mockResolvedValue([]) } },
         { provide: SUBMISSION_REPO_PORT, useValue: { findExerciseBySession: jest.fn().mockResolvedValue([]) } },
-        { provide: getRepositoryToken(Lesson), useValue: {} },
+        { provide: LESSON_REPO_PORT, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: CLASSROOM_SESSION_REPO_PORT, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: AI_QUESTION_REPO_PORT, useValue: { findBySession: jest.fn().mockResolvedValue([]) } },
         { provide: ObservationQueryService, useValue: mockObservationQuery },
@@ -274,6 +276,8 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         { provide: CHAT_MESSAGE_REPO_PORT, useExisting: TypeOrmChatMessageRepository },
         TypeOrmStudentRepository,
         { provide: STUDENT_REPO_PORT, useExisting: TypeOrmStudentRepository },
+        TypeOrmLessonRepository,
+        { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         MetricsAggregator,
         ClusterAggregator,

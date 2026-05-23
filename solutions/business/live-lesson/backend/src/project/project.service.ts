@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as posixPath from 'path/posix';
 import { CourseProject } from '../adapters/persistence/entities/course-project.entity';
 import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../domain/ports/lesson-repo.port';
 import { ManifestSchema } from '../schemas';
 import { CreateProjectDto, CreateFileDto } from './project.dto';
 
@@ -17,8 +18,8 @@ export class ProjectService {
     private readonly projectRepo: Repository<CourseProject>,
     @InjectRepository(ProjectFile)
     private readonly fileRepo: Repository<ProjectFile>,
-    @InjectRepository(Lesson)
-    private readonly lessonRepo: Repository<Lesson>,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
   ) {}
 
   // ── Project CRUD ──
@@ -170,20 +171,21 @@ export class ProjectService {
     const manifestRaw = JSON.stringify(manifest, null, 2);
 
     // Upsert into lessons table
-    const existing = await this.lessonRepo.findOne({ where: { id: lessonId } });
+    const existing = await this.lessonRepo.findById(lessonId);
     if (existing) {
-      existing.title = validated.title || project.title;
-      existing.subject = validated.subject || '';
-      existing.gradeLevel = validated.gradeLevel || '';
-      existing.description = (validated as any).description || validated.teachingNotes || '';
-      existing.lessonType = validated.lessonType || 'interactive';
-      existing.teachingNotes = validated.teachingNotes || '';
-      existing.manifestJson = manifestRaw;
-      existing.updatedAt = this.now();
-      await this.lessonRepo.save(existing);
+      await this.lessonRepo.update(lessonId, {
+        title: validated.title || project.title,
+        subject: validated.subject || '',
+        gradeLevel: validated.gradeLevel || '',
+        description: (validated as any).description || validated.teachingNotes || '',
+        lessonType: validated.lessonType || 'interactive',
+        teachingNotes: validated.teachingNotes || '',
+        manifestJson: manifestRaw,
+        updatedAt: this.now(),
+      });
       this.logger.log(`Updated lesson: ${lessonId}`);
     } else {
-      const lesson = this.lessonRepo.create({
+      await this.lessonRepo.insert({
         id: lessonId,
         title: validated.title || project.title,
         subject: validated.subject || '',
@@ -194,7 +196,6 @@ export class ProjectService {
         teachingNotes: validated.teachingNotes || '',
         manifestJson: manifestRaw,
       });
-      await this.lessonRepo.save(lesson);
       this.logger.log(`Created lesson: ${lessonId}`);
     }
 

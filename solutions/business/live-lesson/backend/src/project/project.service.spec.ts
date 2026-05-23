@@ -5,6 +5,7 @@ import { ProjectService } from './project.service';
 import { CourseProject } from '../adapters/persistence/entities/course-project.entity';
 import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
+import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 
 // ── Mock repository factory ──
 
@@ -14,6 +15,11 @@ function mockRepo() {
     save: jest.fn((entity) => Promise.resolve(Array.isArray(entity) ? entity : { id: 'uuid-1', ...entity })),
     find: jest.fn(() => Promise.resolve([])),
     findOne: jest.fn(() => Promise.resolve(null)),
+    findById: jest.fn(() => Promise.resolve(null)),
+    findByIds: jest.fn(() => Promise.resolve([])),
+    findAllSeedFields: jest.fn(() => Promise.resolve([])),
+    findAllForList: jest.fn(() => Promise.resolve([])),
+    insert: jest.fn(() => Promise.resolve()),
     update: jest.fn(() => Promise.resolve()),
     remove: jest.fn(() => Promise.resolve()),
   };
@@ -35,7 +41,7 @@ describe('ProjectService', () => {
         ProjectService,
         { provide: getRepositoryToken(CourseProject), useValue: projectRepo },
         { provide: getRepositoryToken(ProjectFile), useValue: fileRepo },
-        { provide: getRepositoryToken(Lesson), useValue: lessonRepo },
+        { provide: LESSON_REPO_PORT, useValue: lessonRepo },
       ],
     }).compile();
 
@@ -216,11 +222,11 @@ describe('ProjectService', () => {
       fileRepo.findOne.mockResolvedValueOnce({
         content: JSON.stringify(validManifest),
       });
-      lessonRepo.findOne.mockResolvedValueOnce(null); // no existing lesson
+      lessonRepo.findById.mockResolvedValueOnce(null); // no existing lesson
 
       const result = await service.publish('p1');
       expect(result.lessonId).toBe('p1'); // uses projectId, not manifest.id
-      expect(lessonRepo.create).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1' }));
+      expect(lessonRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1' }));
     });
 
     it('updates existing lesson on re-publish', async () => {
@@ -229,11 +235,11 @@ describe('ProjectService', () => {
         content: JSON.stringify(validManifest),
       });
       const existing = { id: 'p1', manifestJson: '{}' };
-      lessonRepo.findOne.mockResolvedValueOnce(existing);
+      lessonRepo.findById.mockResolvedValueOnce(existing);
 
       const result = await service.publish('p1');
       expect(result.lessonId).toBe('p1');
-      expect(lessonRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', title: 'Lesson' }));
+      expect(lessonRepo.update).toHaveBeenCalledWith('p1', expect.objectContaining({ title: 'Lesson' }));
     });
 
     it('always uses projectId as lessonId (prevents hijack)', async () => {
@@ -242,7 +248,7 @@ describe('ProjectService', () => {
       fileRepo.findOne.mockResolvedValueOnce({
         content: JSON.stringify(hijackManifest),
       });
-      lessonRepo.findOne.mockResolvedValueOnce(null);
+      lessonRepo.findById.mockResolvedValueOnce(null);
 
       const result = await service.publish('p1');
       expect(result.lessonId).toBe('p1'); // NOT "someone-elses-lesson"
@@ -277,7 +283,7 @@ describe('ProjectService', () => {
       fileRepo.findOne.mockResolvedValueOnce({
         content: JSON.stringify(validManifest),
       });
-      lessonRepo.findOne.mockResolvedValueOnce(null);
+      lessonRepo.findById.mockResolvedValueOnce(null);
 
       await service.publish('p1');
       expect(projectRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'published' }));

@@ -15,6 +15,8 @@ import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Student } from '../../adapters/persistence/entities/student.entity';
 import { STUDENT_REPO_PORT } from '../../domain/ports/student-repo.port';
 import { TypeOrmStudentRepository } from '../../adapters/persistence/repositories/student.repository';
+import { LESSON_REPO_PORT } from "../../domain/ports/lesson-repo.port";
+import { TypeOrmLessonRepository } from "../../adapters/persistence/repositories/lesson.repository";
 import { Submission } from '../../adapters/persistence/entities/submission.entity';
 import { ClassroomSession } from '../../adapters/persistence/entities/classroom-session.entity';
 import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
@@ -143,6 +145,8 @@ describe('ExerciseService', () => {
         { provide: LLM_PORT, useExisting: AiPromptBuilder },
         TypeOrmStudentRepository,
         { provide: STUDENT_REPO_PORT, useExisting: TypeOrmStudentRepository },
+        TypeOrmLessonRepository,
+        { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
         ExerciseService,
         GradingService,
         ManifestCacheService,
