@@ -1,31 +1,24 @@
 /**
- * Observe view registry.
+ * Observe view registry — thin dispatcher.
  *
- * Replaces 14 conditional renders in ObserveDrawer with a table-driven
- * lookup keyed on observeType. Maps each observe type to its ClassView and
- * StudentView components (lazy-loaded). Aliases (e.g. quiz → mc) are handled
- * upstream by the call site or by ExerciseUIPlugin.observeType.
+ * Each exercise-type plugin now declares its own `ObserveClassView` +
+ * `ObserveStudentView` (see `student/exercise/plugins/built-in.tsx`). This
+ * file routes a given observeType to the right pair by walking the plugin
+ * registry first; only the discuss observe drawer (not an exercise type)
+ * still lives in the local fallback table.
  *
- * Adding a new observe type requires only one entry here (and the
- * corresponding components on disk).
+ * Adding a new exercise observe type: declare the views on the plugin —
+ * nothing to add here.
  */
 import { lazy } from 'react'
 import type { ComponentType } from 'react'
+// Side-effect: register all built-in exercise plugins so their observe
+// views are reachable via getExerciseType().
+import '../../student/exercise/plugins/built-in'
+import { getRegisteredTypes, getExerciseType } from '../../student/exercise/plugins'
 
-const McClassView = lazy(() => import('./mc/McClassView'))
-const McStudentView = lazy(() => import('./mc/McStudentView'))
-const EvidenceClassView = lazy(() => import('./evidence/EvidenceClassView'))
-const EvidenceStudentView = lazy(() => import('./evidence/EvidenceStudentView'))
-const MapClassView = lazy(() => import('./map/MapClassView'))
-const MapStudentView = lazy(() => import('./map/MapStudentView'))
 const DiscussClassView = lazy(() => import('./discuss/DiscussClassView'))
 const DiscussStudentView = lazy(() => import('./discuss/DiscussStudentView'))
-const MatrixClassView = lazy(() => import('./matrix/MatrixClassView'))
-const MatrixStudentView = lazy(() => import('./matrix/MatrixStudentView'))
-const ImageUploadClassView = lazy(() => import('./image-upload/ImageUploadClassView'))
-const ImageUploadStudentView = lazy(() => import('./image-upload/ImageUploadStudentView'))
-const GdClassView = lazy(() => import('./guided-discovery/GdClassView'))
-const GdStudentView = lazy(() => import('./guided-discovery/GdStudentView'))
 
 export interface ObserveClassViewProps {
   data: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -44,31 +37,53 @@ export interface ObserveViewEntry {
   useMapData?: boolean
 }
 
-const registry: Record<string, ObserveViewEntry> = {
-  mc: { ClassView: McClassView, StudentView: McStudentView },
-  evidence: { ClassView: EvidenceClassView, StudentView: EvidenceStudentView },
-  map: { ClassView: MapClassView, StudentView: MapStudentView, useMapData: true },
+/**
+ * Fallback registry for observe types that aren't exercise plugins —
+ * `discuss` is a phase, not a question type, so it has no
+ * ExerciseUIPlugin to attach to.
+ */
+const fallbackRegistry: Record<string, ObserveViewEntry> = {
   discuss: { ClassView: DiscussClassView, StudentView: DiscussStudentView },
-  matrix: { ClassView: MatrixClassView, StudentView: MatrixStudentView },
-  'image-upload': { ClassView: ImageUploadClassView, StudentView: ImageUploadStudentView },
-  'guided-discovery': { ClassView: GdClassView, StudentView: GdStudentView },
 }
 
-/** Look up the observe view pair for a given observe type. Returns null when none. */
+/** Find the plugin whose observeType (defaulting to plugin.type) matches. */
+function findPluginByObserveType(observeType: string): ReturnType<typeof getExerciseType> | undefined {
+  for (const type of getRegisteredTypes()) {
+    const plugin = getExerciseType(type)
+    if (!plugin) continue
+    if (plugin.observeType === null) continue
+    const effective = plugin.observeType ?? plugin.type
+    if (effective !== observeType) continue
+    if (plugin.ObserveClassView && plugin.ObserveStudentView) return plugin
+  }
+  return undefined
+}
+
+/**
+ * Look up the observe view pair for a given observe type.
+ * Plugin registry wins; falls back to the local table (discuss only).
+ * Returns null when nothing matches.
+ */
 export function getObserveView(type: string | undefined | null): ObserveViewEntry | null {
   if (!type) return null
-  return registry[type] ?? null
-}
-
-/** Register an observe view (used by plugins / extension packs). */
-export function registerObserveView(type: string, entry: ObserveViewEntry): void {
-  if (registry[type]) {
-    // eslint-disable-next-line no-console
-    console.warn(`[observe-view-registry] duplicate observe type "${type}" — overriding`)
+  const plugin = findPluginByObserveType(type)
+  if (plugin?.ObserveClassView && plugin?.ObserveStudentView) {
+    return {
+      ClassView: plugin.ObserveClassView as ComponentType<ObserveClassViewProps>,
+      StudentView: plugin.ObserveStudentView as ComponentType<ObserveStudentViewProps>,
+      ...(plugin.observeUseMapData && { useMapData: true }),
+    }
   }
-  registry[type] = entry
+  return fallbackRegistry[type] ?? null
 }
 
 export function getRegisteredObserveTypes(): string[] {
-  return Object.keys(registry)
+  const fromPlugins = new Set<string>()
+  for (const type of getRegisteredTypes()) {
+    const plugin = getExerciseType(type)
+    if (!plugin || plugin.observeType === null) continue
+    if (!plugin.ObserveClassView || !plugin.ObserveStudentView) continue
+    fromPlugins.add(plugin.observeType ?? plugin.type)
+  }
+  return [...fromPlugins, ...Object.keys(fallbackRegistry)]
 }

@@ -49,12 +49,12 @@ const strings: Record<Locale, Record<string, string>> = {
     'preview.insp.lastDuration': '上次耗时',
     'preview.insp.status': '状态',
     // Teacher
-    'preview.teacher.empty': '此 story 未提供 classSubmissions。在 story 中加入数组以预览教师面板。',
+    'preview.teacher.empty': '该 story 未提供 classSubmissions。在 story 中加入数组以预览教师面板。',
     'preview.teacher.id': 'ID',
     'preview.teacher.name': '姓名',
     'preview.teacher.score': '得分',
     'preview.teacher.submittedAt': '提交时间',
-    'preview.teacher.students': '学生',
+    'preview.teacher.students': '名学生',
   },
   en: {
     'preview.brand': 'Exercise Preview',
@@ -65,7 +65,7 @@ const strings: Record<Locale, Record<string, string>> = {
     'preview.panel.bundles': 'Bundles',
     'preview.panel.inspector': 'Inspector',
     'preview.empty.bundles': 'No bundles found. Add *.stories.ts (defineStories).',
-    'preview.empty.story': 'Pick a story on the left.',
+    'preview.empty.story': 'Pick a bundle and story from the left.',
     'preview.stage.studentTitle': 'Student View',
     'preview.stage.teacherTitle': 'Teacher View',
     'preview.stage.inspectorTitle': 'Inspector Stage',

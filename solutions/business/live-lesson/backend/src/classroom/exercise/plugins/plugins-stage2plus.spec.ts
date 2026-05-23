@@ -809,11 +809,7 @@ describe('§14 L3: RichContentQuizPlugin', () => {
 describe('§14 L3: GuidedDiscoveryPlugin', () => {
   const plugin = new GuidedDiscoveryPlugin(mockAiPromptBuilder);
 
-  it('buildGradePrompt returns [] (per-blank vision OCR not exposed via L3)', () => {
-    expect(plugin.buildGradePrompt({ key: {} as any, data: {} })).toEqual([]);
-  });
-
-  it('parseGradeResponse re-runs grade() end-to-end (returns a Promise)', async () => {
+  it('buildGradePrompt returns [] when there are no image blanks (deterministic submission)', () => {
     const ak = {
       type: 'guided-discovery',
       title: 'T',
@@ -828,10 +824,86 @@ describe('§14 L3: GuidedDiscoveryPlugin', () => {
       ],
       summary: { formula: 'x', name: 'y', description: 'z' },
     };
-    const result = await plugin.parseGradeResponse([], {
-      key: ak as any,
-      data: { steps: { obs: { answers: { c1: 0 } } } },
-    });
-    expect(typeof result.total).toBe('number');
+    expect(
+      plugin.buildGradePrompt({ key: ak as any, data: { steps: { obs: { answers: { c1: 0 } } } } }),
+    ).toEqual([]);
+  });
+
+  it('buildGradePrompt returns one spec per image blank in the submission', () => {
+    const ak = {
+      type: 'guided-discovery',
+      title: 'T',
+      steps: [
+        {
+          type: 'text_blanks',
+          id: 's1',
+          title: 'Sym',
+          template: '{{a}} 与 {{b}}',
+          blanks: [
+            { id: 'a', accepts: ['和'] },
+            { id: 'b', accepts: ['差'] },
+          ],
+        },
+      ],
+      summary: { formula: 'x', name: 'y', description: 'z' },
+    };
+    const data = {
+      steps: {
+        s1: {
+          answers: {
+            a: 'data:image/jpeg;base64,FAKE_A',
+            b: 'data:image/jpeg;base64,FAKE_B',
+          },
+        },
+      },
+    };
+    const prompts = plugin.buildGradePrompt({ key: ak as any, data });
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0].userMessage).toContain('[step:s1 blank:a]');
+    expect(prompts[1].userMessage).toContain('[step:s1 blank:b]');
+    expect(prompts[0].systemPrompt).toContain('OCR');
+    expect(prompts[0].options?.responseFormat).toEqual({ type: 'json_object' });
+  });
+
+  it('parseGradeResponse: edited OCR responses produce a grade without LLM calls', () => {
+    const ak = {
+      type: 'guided-discovery',
+      title: 'T',
+      steps: [
+        {
+          type: 'text_blanks',
+          id: 's1',
+          title: 'Sym',
+          template: '{{a}}',
+          blanks: [{ id: 'a', accepts: ['和'] }],
+        },
+      ],
+      summary: { formula: 'x', name: 'y', description: 'z' },
+    };
+    const data = { steps: { s1: { answers: { a: 'data:image/jpeg;base64,FAKE' } } } };
+    const editedResponse = JSON.stringify({ allText: '和', recognized: '和' });
+    const result = plugin.parseGradeResponse([editedResponse], { key: ak as any, data });
+    expect(result.byDimension?.s1).toBe(true);
+  });
+
+  it('parseGradeResponse: malformed edited response yields "图片识别失败" feedback', () => {
+    const ak = {
+      type: 'guided-discovery',
+      title: 'T',
+      steps: [
+        {
+          type: 'text_blanks',
+          id: 's1',
+          title: 'Sym',
+          template: '{{a}}',
+          blanks: [{ id: 'a', accepts: ['和'] }],
+        },
+      ],
+      summary: { formula: 'x', name: 'y', description: 'z' },
+    };
+    const data = { steps: { s1: { answers: { a: 'data:image/jpeg;base64,FAKE' } } } };
+    const result = plugin.parseGradeResponse(['not json'], { key: ak as any, data });
+    expect(result.byDimension?.s1).toBe(false);
+    expect(result.llmFeedback).toContain('图片识别失败');
   });
 });

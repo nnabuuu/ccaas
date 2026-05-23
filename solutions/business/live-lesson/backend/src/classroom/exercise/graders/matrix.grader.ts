@@ -13,6 +13,16 @@ export function textQuality(text: string | undefined): number {
 
 export type CellQualities = Record<string, { whatQ: number; whyQ: number }>;
 
+/**
+ * Wire shape for `data.rows`. The frontend matrix plugin emits a
+ * `Record<rowIdx, fields>` keyed by stringified row indexes (see
+ * matrixPlugin.formatSubmitData in built-in.tsx). The legacy contract
+ * documented Array<...> but the actual JSON over the wire is an object;
+ * the previous cast-as-Array lied but worked because JS coerces numeric
+ * property access (`obj[0]` ≡ `obj['0']`). This alias models the truth.
+ */
+type MatrixStudentRows = Record<string | number, Record<string, string>>;
+
 export interface CellQualitiesPromptSpec {
   systemPrompt: string;
   userMessage: string;
@@ -41,7 +51,7 @@ export class MatrixGrader implements Grader {
     cellQualities: CellQualities,
   ): GradeResult {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
-    const studentRows = (data.rows || []) as Array<Record<string, string>>;
+    const studentRows = (data.rows || {}) as MatrixStudentRows;
     let placeCorrect = 0, practiceCorrect = 0, reasonCorrect = 0;
     const totalRows = answers.length;
     const byDimension: Record<string, number> = {};
@@ -80,7 +90,7 @@ export class MatrixGrader implements Grader {
   ): CellQualitiesPromptSpec | null {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
     if (answers.length === 0) return null;
-    const studentRows = (data.rows || []) as Array<Record<string, string>>;
+    const studentRows = (data.rows || {}) as MatrixStudentRows;
 
     const systemPrompt = `你是一位阅读课教师助手。请评估学生的矩阵填空回答质量。
 
@@ -120,7 +130,7 @@ export class MatrixGrader implements Grader {
     data: Record<string, unknown>,
   ): CellQualities {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
-    const studentRows = (data.rows || []) as Array<Record<string, string>>;
+    const studentRows = (data.rows || {}) as MatrixStudentRows;
 
     let parsed: { rows?: Record<string, { whatQ?: number; whyQ?: number }> };
     try {
@@ -160,7 +170,7 @@ export class MatrixGrader implements Grader {
     data: Record<string, unknown>,
   ): Promise<CellQualities> {
     const answers = (key.answers || []).filter((a) => !a.isDemo);
-    const studentRows = (data.rows || []) as Array<Record<string, string>>;
+    const studentRows = (data.rows || {}) as MatrixStudentRows;
 
     if (this.aiPromptBuilder) {
       try {
@@ -182,7 +192,7 @@ export class MatrixGrader implements Grader {
 
   private heuristicCellQualities(
     answers: MatrixAnswerKey['answers'][number][],
-    studentRows: Array<Record<string, string>>,
+    studentRows: MatrixStudentRows,
   ): CellQualities {
     const result: CellQualities = {};
     for (const a of answers) {

@@ -9,6 +9,7 @@
  * Importing this file (side effects) is sufficient to populate the registry.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { lazy } from 'react'
 import { registerExerciseType } from './registry'
 import type {
   ExerciseUIPlugin,
@@ -29,6 +30,23 @@ import { ImageUploadExercise } from '../ImageUploadExercise'
 import { SelectEvidenceExercise } from '../SelectEvidenceExercise'
 import { RichContentQuizExercise } from '../RichContentQuizExercise'
 import { GuidedDiscoveryExercise } from '../GuidedDiscoveryExercise'
+
+// ── Teacher observe view components (lazy — only fetched when ObserveDrawer
+//    actually opens for a given exercise type). Migrating these into the
+//    plugin contract (was: a separate observe-view-registry.tsx table) makes
+//    "add a new exercise type" a one-file change.
+const McClassView = lazy(() => import('../../../teacher/observe/mc/McClassView'))
+const McStudentView = lazy(() => import('../../../teacher/observe/mc/McStudentView'))
+const EvidenceClassView = lazy(() => import('../../../teacher/observe/evidence/EvidenceClassView'))
+const EvidenceStudentView = lazy(() => import('../../../teacher/observe/evidence/EvidenceStudentView'))
+const MapClassView = lazy(() => import('../../../teacher/observe/map/MapClassView'))
+const MapStudentView = lazy(() => import('../../../teacher/observe/map/MapStudentView'))
+const MatrixClassView = lazy(() => import('../../../teacher/observe/matrix/MatrixClassView'))
+const MatrixStudentView = lazy(() => import('../../../teacher/observe/matrix/MatrixStudentView'))
+const ImageUploadClassView = lazy(() => import('../../../teacher/observe/image-upload/ImageUploadClassView'))
+const ImageUploadStudentView = lazy(() => import('../../../teacher/observe/image-upload/ImageUploadStudentView'))
+const GdClassView = lazy(() => import('../../../teacher/observe/guided-discovery/GdClassView'))
+const GdStudentView = lazy(() => import('../../../teacher/observe/guided-discovery/GdStudentView'))
 
 // ─────────────────────────── helpers ───────────────────────────
 
@@ -92,6 +110,11 @@ function buildIndexedCheckResult(
 const quizPlugin: ExerciseUIPlugin = {
   type: 'quiz',
   observeType: 'mc',
+  // Canonical 'mc' observe view owner — match/order alias to this via
+  // their `observeType: 'mc'` declarations. Lookup walks the registry by
+  // observeType, so only one plugin needs to declare the view pair.
+  ObserveClassView: McClassView,
+  ObserveStudentView: McStudentView,
   Component: function QuizPluginComp({ exercise, ans, setAns, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <QuizExercise
@@ -478,6 +501,8 @@ const fillBlankPlugin: ExerciseUIPlugin = {
 
 const matrixPlugin: ExerciseUIPlugin = {
   type: 'matrix',
+  ObserveClassView: MatrixClassView,
+  ObserveStudentView: MatrixStudentView,
   Component: function MatrixPluginComp({ exercise, allDone, checkResultState, setCheckResultState, stepIdx, studentId, reviewData }: ExercisePluginProps) {
     const matrixAns = (checkResultState.matrixAns as Record<number, Record<string, string>>) ?? {}
     return (
@@ -515,11 +540,10 @@ const matrixPlugin: ExerciseUIPlugin = {
     return true
   },
   formatSubmitData(_ans, state) {
-    // Matrix reads rows from the per-plugin slot (`state.matrixAns`), keyed by
-    // rowIdx → field map. Backend MatrixGrader (matrix.grader.ts:21) accepts
-    // this shape (it indexes `studentRows[a.rowIdx]`, which works for both
-    // Record and Array thanks to JS coercion). Don't change to an Array
-    // without aligning the backend contract.
+    // Matrix reads rows from the per-plugin slot (`state.matrixAns`), keyed
+    // by rowIdx → field map. Backend's MatrixGrader now declares the type
+    // alias `MatrixStudentRows = Record<string | number, Record<string,
+    // string>>` so this Record shape is the contract — no Array coercion.
     return { rows: (state.matrixAns as Record<number, Record<string, string>>) ?? {} }
   },
   handleCheckResult(result, _exercise, current) {
@@ -613,6 +637,11 @@ const matrixPlugin: ExerciseUIPlugin = {
 
 const mapPlugin: ExerciseUIPlugin = {
   type: 'map',
+  ObserveClassView: MapClassView,
+  ObserveStudentView: MapStudentView,
+  // Map's observe drawer wants `axes` injected from the manifest answerKey
+  // before render — ObserveDrawer reads this flag to decide.
+  observeUseMapData: true,
   Component: function MapPluginComp({ exercise, ans, setAns, allDone, checkResultState, onOverlayChange, reviewData }: ExercisePluginProps) {
     return (
       <MapExercise
@@ -722,6 +751,10 @@ const mapPlugin: ExerciseUIPlugin = {
 
 const imageUploadPlugin: ExerciseUIPlugin = {
   type: 'image-upload',
+  // Canonical 'image-upload' observe view owner — rich-content-quiz
+  // aliases to this via `observeType: 'image-upload'`.
+  ObserveClassView: ImageUploadClassView,
+  ObserveStudentView: ImageUploadStudentView,
   Component: function ImageUploadPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     return (
       <ImageUploadExercise
@@ -799,6 +832,8 @@ const selectEvidencePlugin: ExerciseUIPlugin = {
   observeType: 'evidence',
   selfManagedSubmit: true,
   serverCheck: false,
+  ObserveClassView: EvidenceClassView,
+  ObserveStudentView: EvidenceStudentView,
   Component: function SelectEvidencePluginComp(props: ExercisePluginProps) {
     const { exercise, onOverlayChange, onDone, submit, stepIdx, reviewData } = props
     return (
@@ -928,6 +963,8 @@ const richContentQuizPlugin: ExerciseUIPlugin = {
 const guidedDiscoveryPlugin: ExerciseUIPlugin = {
   type: 'guided-discovery',
   selfManagedSubmit: true,
+  ObserveClassView: GdClassView,
+  ObserveStudentView: GdStudentView,
   Component: function GdPluginComp({ exercise, ans, setAns, allDone, checkResultState, reviewData }: ExercisePluginProps) {
     const stepResults = (checkResultState.stepResults as Record<string, boolean>) ?? {}
     return (

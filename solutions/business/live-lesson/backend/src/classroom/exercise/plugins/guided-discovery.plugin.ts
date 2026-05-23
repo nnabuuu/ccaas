@@ -17,6 +17,8 @@ import type {
   SanitizeContext,
   GradePromptSpec,
 } from '../exercise-type-plugin.interface';
+import type { GuidedDiscoveryAnswerKey } from '../../../schemas';
+import type { ImageGradeResult } from '../graders/guided-discovery.grader';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
 import { AiPromptBuilder } from '../../ai-prompt-builder';
@@ -264,22 +266,39 @@ export class GuidedDiscoveryPlugin implements ExerciseTypePlugin {
   }
 
   // ── §14 L3: two-stage grade ──
-  // guided-discovery makes one vision-OCR call PER image blank in the
-  // submission (could be 0-N depending on which steps use the photo input
-  // method). Exposing each blank as a separate GradePromptSpec would
-  // require restructuring the grader's per-step recursion, AND the
-  // inspector can't replay vision calls without re-uploading images.
-  //
-  // Honest minimum (matches deterministic plugins' contract): return [] so
-  // the inspector renders "no LLM prompts editable for this type" rather
-  // than 400, and parseGradeResponse re-runs the deterministic + vision
-  // grader end-to-end. Refactoring per-blank L3 is documented as a future
-  // task in docs/exercise-plugin-extension-guide.md.
-  buildGradePrompt(_ctx: GradeContext): GradePromptSpec[] {
-    return [];
+  // guided-discovery fires ONE vision-OCR LLM call per image blank in the
+  // submission (0-N depending on which blanks use the photo input method).
+  // L3 exposes one GradePromptSpec per blank carrying the TEXT portion of
+  // the OCR prompt. Images aren't included in the spec — the inspector
+  // can't re-upload them via editable JSON, but the system prompt + user
+  // text + LLM response are all editable. The blank id is encoded in
+  // `userMessage` so the inspector author can tell which blank is which.
+  buildGradePrompt(ctx: GradeContext): GradePromptSpec[] {
+    const key = ctx.key as unknown as GuidedDiscoveryAnswerKey;
+    const prompts = this.legacyGrader.buildImageBlankPrompts(key, ctx.data);
+    return prompts.map((p) => ({
+      systemPrompt: p.systemPrompt,
+      userMessage: `[step:${p.stepId} blank:${p.blankId}]\n\n${p.userText}`,
+      options: {
+        maxTokens: 200,
+        temperature: 0,
+        responseFormat: { type: 'json_object' },
+      },
+    }));
   }
 
-  async parseGradeResponse(_responses: string[], ctx: GradeContext): Promise<GradeResult> {
-    return this.grade(ctx);
+  parseGradeResponse(responses: string[], ctx: GradeContext): GradeResult {
+    const key = ctx.key as unknown as GuidedDiscoveryAnswerKey;
+    const prompts = this.legacyGrader.buildImageBlankPrompts(key, ctx.data);
+    const cache = new Map<string, ImageGradeResult>();
+    for (let i = 0; i < prompts.length; i++) {
+      const raw = responses[i];
+      if (!raw) continue;
+      cache.set(
+        prompts[i].blankId,
+        this.legacyGrader.parseImageBlankResponse(raw, prompts[i]),
+      );
+    }
+    return this.legacyGrader.gradeWithImageBlankResponses(key, ctx.data, cache);
   }
 }

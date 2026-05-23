@@ -108,15 +108,20 @@ export interface LocalGradeResult {
   clearAnsKeys?: Array<string | number>
 }
 
-/** Props for the observe ClassView (teacher dashboard, class-wide) */
+/**
+ * Props for the observe ClassView (teacher dashboard, class-wide).
+ * `data` is typed `any` because each observe surface has its own narrower
+ * shape (McObserveData, MapObserveData, etc.) and the plugin contract has
+ * no business knowing which one the underlying component expects.
+ */
 export interface ObserveClassViewProps {
-  data: Record<string, any>
+  data: any
   onStudentSelect: (studentId: string) => void
 }
 
 /** Props for the observe StudentView (teacher dashboard, single student) */
 export interface ObserveStudentViewProps {
-  data: Record<string, any>
+  data: any
   studentId: string
 }
 
@@ -184,6 +189,12 @@ export interface ExerciseUIPlugin {
   // ── Teacher observe ──
   readonly ObserveClassView?: ComponentType<ObserveClassViewProps>
   readonly ObserveStudentView?: ComponentType<ObserveStudentViewProps>
+  /**
+   * When true, ObserveDrawer enriches `data` with the manifest `axes` field
+   * before passing it to ClassView/StudentView. Legacy quirk for the map
+   * observe drawer — most plugins leave this undefined.
+   */
+  readonly observeUseMapData?: boolean
   /**
    * Backend observe-type alias.
    * - `undefined` → defaults to plugin.type (e.g. `'matrix'` → `'matrix'`).

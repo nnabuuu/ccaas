@@ -130,35 +130,141 @@ textarea.ans-input:focus{outline:2px solid var(--teal);outline-offset:-1px}
 <div class="app">
 
   <div class="topbar">
-    <div class="brand">Exercise <em>Preview</em></div>
-    <div class="crumb" id="crumb">no bundle loaded</div>
+    <div class="brand"><span data-i18n="preview.brand">Exercise Preview</span></div>
+    <div class="crumb" id="crumb" data-i18n="preview.noBundle">no bundle loaded</div>
     <div class="role-toggle" id="role-toggle">
-      <button data-role="student" class="active">Student</button>
-      <button data-role="teacher">Teacher</button>
-      <button data-role="inspector">Inspector</button>
+      <button data-role="student" class="active" data-i18n="preview.role.student">Student</button>
+      <button data-role="teacher" data-i18n="preview.role.teacher">Teacher</button>
+      <button data-role="inspector" data-i18n="preview.role.inspector">Inspector</button>
     </div>
   </div>
 
   <!-- LEFT: bundle/story list -->
   <div class="pane left">
-    <h2>Bundles</h2>
-    <div id="bundle-list"><div class="empty">Loading...</div></div>
+    <h2 data-i18n="preview.panel.bundles">Bundles</h2>
+    <div id="bundle-list"><div class="empty" data-i18n="preview.stage.loading">Loading...</div></div>
   </div>
 
   <!-- MIDDLE: stage -->
   <div class="pane middle">
-    <div id="stage"><div class="empty"><strong>Select a story</strong>Pick a bundle and story from the left.</div></div>
+    <div id="stage"><div class="empty"><strong data-i18n="preview.empty.storyHead">Select a story</strong><span data-i18n="preview.empty.story">Pick a bundle and story from the left.</span></div></div>
   </div>
 
   <!-- RIGHT: inspector -->
   <div class="pane right">
-    <h2>Inspector</h2>
-    <div id="inspector"><div class="insp-empty">No session yet. Pick a story to start.</div></div>
+    <h2 data-i18n="preview.panel.inspector">Inspector</h2>
+    <div id="inspector"><div class="insp-empty" data-i18n="preview.insp.empty">No session yet. Pick a story to start.</div></div>
   </div>
 
 </div>
 
 <script type="module">
+// ──────────────── i18n ────────────────
+//
+// Mirrors the canonical strings table in `src/core/i18n.ts`. The web
+// bundle is served as static HTML (no bundler), so we can't `import { t }`
+// at runtime — the strings are inlined here. A parity test
+// (`src/__tests__/i18n-html-parity.spec.ts`) asserts the two tables stay
+// in sync; if you add a key to i18n.ts, add it here too (or vice versa).
+const STRINGS = {
+  'zh-CN': {
+    'preview.brand': 'Exercise Preview',
+    'preview.noBundle': '尚未加载 bundle',
+    'preview.role.student': '学生视角',
+    'preview.role.teacher': '教师视角',
+    'preview.role.inspector': 'Inspector',
+    'preview.panel.bundles': 'Bundles',
+    'preview.panel.inspector': 'Inspector',
+    'preview.empty.bundles': '未找到 bundle。添加 *.stories.ts (defineStories)。',
+    'preview.empty.story': '从左侧选择一个 story 开始。',
+    'preview.empty.storyHead': '选择一个 story',
+    'preview.empty.bundlesHead': '未找到 bundle',
+    'preview.stage.studentTitle': '学生视图',
+    'preview.stage.teacherTitle': '教师视图',
+    'preview.stage.inspectorTitle': 'Inspector 视图',
+    'preview.stage.answerKey': 'AnswerKey（学生可见的安全字段）',
+    'preview.stage.answerEdit': '学生答案 (data) — 编辑 JSON 模拟输入',
+    'preview.stage.lastGrade': '上次评分结果',
+    'preview.stage.storyMetadata': 'Story 元数据',
+    'preview.stage.gradeHistory': '完整评分历史',
+    'preview.stage.loading': '加载中…',
+    'preview.btn.submit': '提交 / 检查',
+    'preview.btn.reset': '重置',
+    'preview.btn.validate': '校验',
+    'preview.insp.empty': '尚无 session。选择一个 story 开始。',
+    'preview.insp.session': '会话',
+    'preview.insp.lifecycle': 'Plugin 生命周期',
+    'preview.insp.lastGrade': '上次评分',
+    'preview.insp.lastError': '上次错误',
+    'preview.insp.totalCalls': '总调用',
+    'preview.insp.lastDuration': '上次耗时',
+    'preview.insp.status': '状态',
+    'preview.insp.sessionId': 'sessionId',
+    'preview.insp.bundle': 'bundle',
+    'preview.insp.story': 'story',
+    'preview.insp.gradeCalls': 'grade 调用',
+    'preview.insp.total': '总分',
+    'preview.insp.byDimension': 'byDimension',
+    'preview.teacher.empty': '该 story 未提供 classSubmissions。在 story 中加入数组以预览教师面板。',
+    'preview.teacher.emptyHead': '无模拟提交',
+    'preview.teacher.id': 'ID',
+    'preview.teacher.name': '姓名',
+    'preview.teacher.score': '得分',
+    'preview.teacher.submittedAt': '提交时间',
+    'preview.teacher.students': '名学生',
+  },
+  en: {
+    'preview.brand': 'Exercise Preview',
+    'preview.noBundle': 'no bundle loaded',
+    'preview.role.student': 'Student',
+    'preview.role.teacher': 'Teacher',
+    'preview.role.inspector': 'Inspector',
+    'preview.panel.bundles': 'Bundles',
+    'preview.panel.inspector': 'Inspector',
+    'preview.empty.bundles': 'No bundles found. Add *.stories.ts (defineStories).',
+    'preview.empty.story': 'Pick a bundle and story from the left.',
+    'preview.empty.storyHead': 'Select a story',
+    'preview.empty.bundlesHead': 'No bundles found',
+    'preview.stage.studentTitle': 'Student View',
+    'preview.stage.teacherTitle': 'Teacher View',
+    'preview.stage.inspectorTitle': 'Inspector Stage',
+    'preview.stage.answerKey': 'AnswerKey (student-safe sanitized)',
+    'preview.stage.answerEdit': 'Student Answer (data) — edit JSON to simulate input',
+    'preview.stage.lastGrade': 'Last Grade Result',
+    'preview.stage.storyMetadata': 'Story metadata',
+    'preview.stage.gradeHistory': 'Full Grade History',
+    'preview.stage.loading': 'Loading…',
+    'preview.btn.submit': 'Submit / Check',
+    'preview.btn.reset': 'Reset',
+    'preview.btn.validate': 'Validate',
+    'preview.insp.empty': 'No session yet. Pick a story to start.',
+    'preview.insp.session': 'Session',
+    'preview.insp.lifecycle': 'Plugin Lifecycle',
+    'preview.insp.lastGrade': 'Last Grade',
+    'preview.insp.lastError': 'Last Error',
+    'preview.insp.totalCalls': 'total calls',
+    'preview.insp.lastDuration': 'last duration',
+    'preview.insp.status': 'status',
+    'preview.insp.sessionId': 'sessionId',
+    'preview.insp.bundle': 'bundle',
+    'preview.insp.story': 'story',
+    'preview.insp.gradeCalls': 'grade calls',
+    'preview.insp.total': 'total',
+    'preview.insp.byDimension': 'byDimension',
+    'preview.teacher.empty': 'No classSubmissions on this story. Add an array to preview the teacher panel.',
+    'preview.teacher.emptyHead': 'No mock submissions',
+    'preview.teacher.id': 'ID',
+    'preview.teacher.name': 'Name',
+    'preview.teacher.score': 'Score',
+    'preview.teacher.submittedAt': 'Submitted',
+    'preview.teacher.students': 'students',
+  },
+};
+function t(key) {
+  const loc = state.locale;
+  return (STRINGS[loc] && STRINGS[loc][key]) || STRINGS['zh-CN'][key] || key;
+}
+
 // ──────────────── State ────────────────
 const state = {
   bundles: [],
@@ -168,14 +274,29 @@ const state = {
   story: null,
   ans: {},
   role: 'student',  // student | teacher | inspector
-  // Locale switcher (set via admin playground postMessage). Today only
-  // affects the Inspector "locale" metadata display — the bundled web UI
-  // strings are still hardcoded zh-CN. Wiring those through i18n.ts is a
-  // v2 task; preserving the locale on the state object is the foothold.
+  /**
+   * Locale switcher (set via admin playground postMessage 'set-locale').
+   * Drives `t(key)` lookups across the entire iframe UI: top-bar role
+   * toggle, panel headings, stage headers, all dynamically-rendered
+   * sections + buttons + section labels, and the Inspector cards.
+   */
   locale: 'zh-CN',
   lastGrade: null,
   history: [],
 };
+
+/**
+ * Re-translate every element marked with `data-i18n` (static labels in the
+ * body) + re-run the dynamic renderers that hold their own template strings.
+ * Called once on init and again on every 'set-locale' message.
+ */
+function applyLocale() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  renderStage();
+  renderInspector();
+}
 
 // ──────────────── API ────────────────
 const api = {
@@ -213,7 +334,7 @@ const api = {
 function renderBundleList() {
   const el = document.getElementById('bundle-list');
   if (state.bundles.length === 0) {
-    el.innerHTML = '<div class="empty"><strong>No bundles found</strong>Add *.stories.ts files with defineStories().</div>';
+    el.innerHTML = `<div class="empty"><strong>${escape(t('preview.empty.bundlesHead'))}</strong>${escape(t('preview.empty.bundles'))}</div>`;
     return;
   }
   el.innerHTML = state.bundles.map(b => `
@@ -238,7 +359,7 @@ function renderBundleList() {
 function renderStage() {
   const stage = document.getElementById('stage');
   if (!state.story) {
-    stage.innerHTML = '<div class="empty"><strong>Select a story</strong>Pick a bundle and story from the left.</div>';
+    stage.innerHTML = `<div class="empty"><strong>${escape(t('preview.empty.storyHead'))}</strong>${escape(t('preview.empty.story'))}</div>`;
     return;
   }
   document.getElementById('crumb').textContent = `${state.activeBundleId} · ${state.activeStoryName}`;
@@ -257,26 +378,26 @@ function renderStudentStage(stage) {
   const ansJson = JSON.stringify(state.ans, null, 2);
   stage.innerHTML = `
     <div class="stage-header">
-      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · Student View</div>
+      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.studentTitle'))}</div>
       <div>
-        <button class="btn sec" id="reset-btn">Reset</button>
-        <button class="btn pri" id="check-btn">Submit / Check</button>
+        <button class="btn sec" id="reset-btn">${escape(t('preview.btn.reset'))}</button>
+        <button class="btn pri" id="check-btn">${escape(t('preview.btn.submit'))}</button>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-label">Sanitized AnswerKey (server-safe)</div>
+      <div class="section-label">${escape(t('preview.stage.answerKey'))}</div>
       <pre class="json">${escape(JSON.stringify(story.answerKey, null, 2))}</pre>
     </div>
 
     <div class="section">
-      <div class="section-label">Student Answer (data) — edit JSON to simulate input</div>
+      <div class="section-label">${escape(t('preview.stage.answerEdit'))}</div>
       <textarea class="ans-input" id="ans-input">${escape(ansJson)}</textarea>
     </div>
 
     ${state.lastGrade ? `
       <div class="section">
-        <div class="section-label">Last Grade Result</div>
+        <div class="section-label">${escape(t('preview.stage.lastGrade'))}</div>
         <pre class="json">${escape(JSON.stringify(state.lastGrade, null, 2))}</pre>
       </div>
     ` : ''}
@@ -297,9 +418,9 @@ function renderTeacherStage(stage) {
   if (submissions.length === 0) {
     stage.innerHTML = `
       <div class="stage-header">
-        <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · Teacher View</div>
+        <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.teacherTitle'))}</div>
       </div>
-      <div class="empty"><strong>No mock submissions</strong>This story has no classSubmissions array. Add one to preview the teacher dashboard.</div>
+      <div class="empty"><strong>${escape(t('preview.teacher.emptyHead'))}</strong>${escape(t('preview.teacher.empty'))}</div>
     `;
     return;
   }
@@ -315,11 +436,11 @@ function renderTeacherStage(stage) {
   }).join('');
   stage.innerHTML = `
     <div class="stage-header">
-      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · Teacher View</div>
-      <div>${submissions.length} students</div>
+      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.teacherTitle'))}</div>
+      <div>${submissions.length} ${escape(t('preview.teacher.students'))}</div>
     </div>
     <div class="section" style="padding:0">
-      <div class="teacher-row head"><span>ID</span><span>Name</span><span>Score</span><span>Submitted</span></div>
+      <div class="teacher-row head"><span>${escape(t('preview.teacher.id'))}</span><span>${escape(t('preview.teacher.name'))}</span><span>${escape(t('preview.teacher.score'))}</span><span>${escape(t('preview.teacher.submittedAt'))}</span></div>
       ${rows}
     </div>
   `;
@@ -328,10 +449,10 @@ function renderTeacherStage(stage) {
 function renderInspectorStage(stage) {
   stage.innerHTML = `
     <div class="stage-header">
-      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · Inspector Stage</div>
+      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.inspectorTitle'))}</div>
     </div>
     <div class="section">
-      <div class="section-label">Story metadata</div>
+      <div class="section-label">${escape(t('preview.stage.storyMetadata'))}</div>
       <pre class="json">${escape(JSON.stringify({
         name: state.story.name,
         locale: state.story.locale,
@@ -343,7 +464,7 @@ function renderInspectorStage(stage) {
       }, null, 2))}</pre>
     </div>
     <div class="section">
-      <div class="section-label">Full Grade History</div>
+      <div class="section-label">${escape(t('preview.stage.gradeHistory'))}</div>
       <pre class="json">${escape(JSON.stringify(state.history, null, 2))}</pre>
     </div>
   `;
@@ -352,33 +473,33 @@ function renderInspectorStage(stage) {
 function renderInspector() {
   const el = document.getElementById('inspector');
   if (!state.sessionId) {
-    el.innerHTML = '<div class="insp-empty">No session yet. Pick a story to start.</div>';
+    el.innerHTML = `<div class="insp-empty">${escape(t('preview.insp.empty'))}</div>`;
     return;
   }
   const lg = state.lastGrade;
   const sections = [
     `<div class="insp-card">
-      <div class="insp-card-title">Session</div>
-      <div class="insp-row"><span class="k">sessionId</span><span class="v" title="${state.sessionId}">${state.sessionId.slice(0,8)}…</span></div>
-      <div class="insp-row"><span class="k">bundle</span><span class="v">${escape(state.activeBundleId)}</span></div>
-      <div class="insp-row"><span class="k">story</span><span class="v">${escape(state.activeStoryName)}</span></div>
+      <div class="insp-card-title">${escape(t('preview.insp.session'))}</div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.sessionId'))}</span><span class="v" title="${state.sessionId}">${state.sessionId.slice(0,8)}…</span></div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.bundle'))}</span><span class="v">${escape(state.activeBundleId)}</span></div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.story'))}</span><span class="v">${escape(state.activeStoryName)}</span></div>
     </div>`,
     `<div class="insp-card">
-      <div class="insp-card-title">Plugin Lifecycle</div>
-      <div class="insp-row"><span class="k">grade calls</span><span class="v">${state.history.length}</span></div>
-      <div class="insp-row"><span class="k">last duration</span><span class="v">${lg?.durationMs ?? '—'}ms</span></div>
-      <div class="insp-row"><span class="k">last status</span><span class="v ${lg?.ok === true ? 'ok' : lg?.ok === false ? 'wrong' : ''}">${lg?.ok === true ? 'ok' : lg?.ok === false ? (lg.reason || 'error') : '—'}</span></div>
+      <div class="insp-card-title">${escape(t('preview.insp.lifecycle'))}</div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.gradeCalls'))}</span><span class="v">${state.history.length}</span></div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.lastDuration'))}</span><span class="v">${lg?.durationMs ?? '—'}ms</span></div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.status'))}</span><span class="v ${lg?.ok === true ? 'ok' : lg?.ok === false ? 'wrong' : ''}">${lg?.ok === true ? 'ok' : lg?.ok === false ? (lg.reason || 'error') : '—'}</span></div>
     </div>`,
   ];
   if (lg && lg.ok) {
     const total = lg.total;
     const cls = typeof total === 'number' ? (total >= 80 ? 'ok' : total >= 50 ? 'partial' : 'wrong') : '';
     sections.push(`<div class="insp-card">
-      <div class="insp-card-title">Last Grade Result</div>
-      <div class="insp-row"><span class="k">total</span><span class="v ${cls}">${total ?? '—'}</span></div>
+      <div class="insp-card-title">${escape(t('preview.insp.lastGrade'))}</div>
+      <div class="insp-row"><span class="k">${escape(t('preview.insp.total'))}</span><span class="v ${cls}">${total ?? '—'}</span></div>
       ${lg.byDimension ? `
         <div class="insp-row" style="display:block">
-          <span class="k">byDimension</span>
+          <span class="k">${escape(t('preview.insp.byDimension'))}</span>
           <pre class="json" style="margin-top:6px">${escape(JSON.stringify(lg.byDimension, null, 2))}</pre>
         </div>
       ` : ''}
@@ -494,12 +615,12 @@ window.addEventListener('message', async (event) => {
       state.story = { ...state.story, answerKey: msg.payload.answerKey }
       renderStage()
     } else if (msg.type === 'set-locale' && msg.payload) {
-      // Stash the locale on state + the active story (Inspector reads it for
-      // its metadata display). UI strings are still hardcoded zh-CN today;
-      // see i18n.ts §16.4 for the v2 plan.
+      // Apply the new locale: re-translate static labels (data-i18n) AND
+      // re-render the dynamic stage/inspector templates (they pull their
+      // visible strings through t()).
       state.locale = msg.payload.locale
       if (state.story) state.story = { ...state.story, locale: msg.payload.locale }
-      renderStage()
+      applyLocale()
     } else if (msg.type === 'submit') {
       await onCheck()
       postToParent('grade-result', { result: state.lastGrade })
@@ -513,6 +634,10 @@ window.addEventListener('message', async (event) => {
 
 // ──────────────── Init ────────────────
 (async function init() {
+  // Apply default-locale translations before any data fetches so the
+  // "Loading…" placeholder and panel headings render in the right language
+  // even if /preview/bundles is slow.
+  applyLocale()
   // Skip the ready broadcast if we don't yet have a trusted parent — the
   // first valid 'open-story' message will set trustedParentOrigin, after
   // which subsequent posts will reach the parent. If the page is opened
