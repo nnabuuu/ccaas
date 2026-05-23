@@ -13,8 +13,8 @@
 import { Test } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
-import { PLUGIN_PROVIDERS } from './plugins/test-utils';
-import { AiPromptBuilder } from '../ai-prompt-builder';
+import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 
 const mockAi = {
   callLlm: () => Promise.reject(new Error('mock — not configured')),

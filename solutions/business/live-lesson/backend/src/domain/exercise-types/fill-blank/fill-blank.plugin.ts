@@ -10,7 +10,7 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 const FillBlankBlankSchema = z.object({
   accepts: z.array(z.string()).nonempty(),

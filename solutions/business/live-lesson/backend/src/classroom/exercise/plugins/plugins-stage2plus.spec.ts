@@ -32,7 +32,7 @@ import { GuidedDiscoveryPlugin } from '../../../domain/exercise-types/guided-dis
 import { FillBlankPlugin } from '../../../domain/exercise-types/fill-blank/fill-blank.plugin';
 import { StanceGrader } from '../../../domain/exercise-types/stance/stance.grader';
 import { OrderGrader } from '../../../domain/exercise-types/order/order.grader';
-import type { AiPromptBuilder } from '../../ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 const mockAiPromptBuilder = {
   callLlm: jest.fn().mockRejectedValue(new Error('not configured in test')),

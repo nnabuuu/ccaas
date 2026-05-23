@@ -1,18 +1,18 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import { Lesson } from '../entities/lesson.entity';
-import { GradingService } from './exercise/grading.service';
-import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
-import { ManifestCacheService } from './manifest-cache.service';
-import { StateCacheService } from './state-cache.service';
+import { Student } from '../../entities/student.entity';
+import { Submission } from '../../entities/submission.entity';
+import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { Lesson } from '../../entities/lesson.entity';
+import { GradingService } from '../exercise/grading.service';
+import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../schemas';
-import { getCachedTaskMap } from '../domain/classroom/task-map.utils';
-import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../schemas/classroom';
+import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../../schemas';
+import { getCachedTaskMap } from '../../domain/classroom/task-map.utils';
+import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../../schemas/classroom';
 
 @Injectable()
 export class StudentSubmissionService {

@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { AiPromptBuilder } from './ai-prompt-builder';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 
 describe('AiPromptBuilder', () => {
   let builder: AiPromptBuilder;

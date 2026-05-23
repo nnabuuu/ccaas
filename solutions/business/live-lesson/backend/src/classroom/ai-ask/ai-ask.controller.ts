@@ -1,7 +1,7 @@
 import { Controller, Post, Param, Body } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ClassroomService } from '../classroom.service';
-import { AiAskService } from './ai-ask.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { AiAskService } from '../../application/ai/ai-ask.service';
 import { AiAskDto } from './dto/ai-ask.dto';
 import { validateCode } from '../../domain/classroom/validate-code';
 

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ClassroomService } from '../classroom.service';
-import { DiscussService } from './discuss.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { DiscussService } from '../../application/ai/discuss.service';
 import { AiDiscussDto, DiscussCompleteDto } from './dto/ai-discuss.dto';
 import { validateCode } from '../../domain/classroom/validate-code';
 

@@ -10,7 +10,7 @@
  *   - §14 L3: buildGradePrompt emits one spec when LLM check is needed;
  *     parseGradeResponse re-runs grading with the edited LLM response
  */
-import type { AiPromptBuilder } from '../../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
 import { FillBlankPlugin } from '../fill-blank.plugin';
 
 function makeMockAi(responses: string[]): AiPromptBuilder {

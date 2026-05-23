@@ -11,7 +11,7 @@
 
 import { GuidedDiscoveryGrader } from '../guided-discovery.grader';
 import type { GuidedDiscoveryAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
 
 const API_KEY = process.env.LLM_VISION_API_KEY;
 const MODEL = process.env.LLM_VISION_MODEL || 'qwen-vl-plus';

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ClassroomService } from '../classroom.service';
-import { PersonalizationService } from './personalization.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { PersonalizationService } from '../../application/ai/personalization.service';
 import { PersonalTouchDto } from './dto/personal-touch.dto';
 import { BonusCheckDto } from './dto/bonus-check.dto';
 import { validateCode } from '../../domain/classroom/validate-code';

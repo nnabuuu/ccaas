@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AiPromptBuilder } from './ai-prompt-builder';
-import { DiscussHighlight } from '../entities/discuss-highlight.entity';
-import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import type { DepthLeaderboard } from '../schemas/classroom/depth-ranking';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { DiscussHighlight } from '../../entities/discuss-highlight.entity';
+import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
+import { ClassroomSession } from '../../entities/classroom-session.entity';
+import type { DepthLeaderboard } from '../../schemas/classroom/depth-ranking';
 
 interface StudentDepthScore {
   studentId: string;

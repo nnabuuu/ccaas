@@ -1,6 +1,6 @@
 import { FillBlankGrader } from '../fill-blank.grader';
 import type { FillBlankAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
 
 const baseKey: FillBlankAnswerKey = {
   type: 'fill-blank',

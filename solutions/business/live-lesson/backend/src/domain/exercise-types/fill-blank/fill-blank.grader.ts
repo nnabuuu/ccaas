@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { FillBlankAnswerKey } from '../../../schemas';
-import type { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 export class FillBlankGrader implements Grader {
   private readonly logger = new Logger(FillBlankGrader.name);

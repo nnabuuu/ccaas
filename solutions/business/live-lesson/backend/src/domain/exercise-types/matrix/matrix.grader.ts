@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { MatrixAnswerKey } from '../../../schemas';
-import type { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 export function textQuality(text: string | undefined): number {
   if (!text || text.trim().length === 0) return 0;

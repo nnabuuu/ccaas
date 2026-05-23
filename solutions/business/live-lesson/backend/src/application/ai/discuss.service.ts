@@ -8,15 +8,15 @@ import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
-import { AiPromptBuilder } from '../ai-prompt-builder';
-import { ManifestCacheService } from '../manifest-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
-import { StudentSubmissionService } from '../student-submission.service';
-import { CoachingService } from '../coaching.service';
-import { StateCacheService } from '../state-cache.service';
+import { StudentSubmissionService } from '../classroom/student-submission.service';
+import { CoachingService } from '../observation/coaching.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
 
 @Injectable()
 export class DiscussService {

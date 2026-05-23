@@ -21,7 +21,7 @@ import type { GuidedDiscoveryAnswerKey } from '../../../schemas';
 import type { ImageGradeResult } from './guided-discovery.grader';
 import type { GradeResult } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 import { GuidedDiscoveryGrader } from './guided-discovery.grader';
 
 const InputMethodsSchema = z.array(z.enum(['keyboard', 'handwrite', 'photo'])).optional();

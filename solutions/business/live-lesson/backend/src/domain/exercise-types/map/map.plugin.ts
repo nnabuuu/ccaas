@@ -18,7 +18,7 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, MapAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 import { MapGrader } from './map.grader';
 
 const MapAxisSchema = z.object({

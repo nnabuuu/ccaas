@@ -1,6 +1,6 @@
-import { CoachingService } from './coaching.service';
-import { AiPromptBuilder } from './ai-prompt-builder';
-import type { DiscussionHighlight, CoachingStateInput, CoachingInsight } from '../schemas/classroom/coaching';
+import { CoachingService } from '../observation/coaching.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import type { DiscussionHighlight, CoachingStateInput, CoachingInsight } from '../../schemas/classroom/coaching';
 
 function makeMockAiPromptBuilder(response = '{"insights":[]}') {
   return { callLlm: jest.fn().mockResolvedValue(response) } as unknown as AiPromptBuilder;

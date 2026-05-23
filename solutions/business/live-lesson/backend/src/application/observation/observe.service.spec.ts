@@ -3,20 +3,20 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DiscoveryModule } from '@nestjs/core';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ObserveRegistry } from './observe/observe-registry';
-import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
-import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
-import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
-import { MatrixObserveHandler } from '../domain/exercise-types/matrix/matrix.observe';
-import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
-import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
-import { Lesson } from '../entities/lesson.entity';
-import { DiscussTargetHit } from '../entities/discuss-target-hit.entity';
-import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
-import { ManifestCacheService } from './manifest-cache.service';
-import type { AnswerKey } from '../schemas/answer-key.schema';
+import { ObserveRegistry } from '../observation/observe-registry';
+import { QuizObserveHandler } from '../../domain/exercise-types/quiz/quiz.observe';
+import { SelectEvidenceObserveHandler } from '../../domain/exercise-types/select-evidence/select-evidence.observe';
+import { MapObserveHandler } from '../../domain/exercise-types/map/map.observe';
+import { MatrixObserveHandler } from '../../domain/exercise-types/matrix/matrix.observe';
+import { DiscussObserveHandler } from '../../classroom/observe/handlers/discuss.handler';
+import { Student } from '../../entities/student.entity';
+import { Submission } from '../../entities/submission.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
+import { Lesson } from '../../entities/lesson.entity';
+import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
+import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
+import type { AnswerKey } from '../../schemas/answer-key.schema';
 
 // ── Factory helpers ──
 

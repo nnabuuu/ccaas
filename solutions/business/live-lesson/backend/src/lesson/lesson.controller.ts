@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Res, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
-import { LessonService } from './lesson.service';
+import { LessonService } from '../application/lesson/lesson.service';
 import * as path from 'path';
 import * as fs from 'fs';
 

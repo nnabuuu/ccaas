@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from '../exercise/plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
@@ -8,8 +8,8 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DiscussService } from './discuss.service';
 import { ObservationQueryService } from '../observation/observation-query.service';
-import { AiPromptBuilder } from '../ai-prompt-builder';
-import { ManifestCacheService } from '../manifest-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
@@ -22,10 +22,10 @@ import { DiscussTargetHit } from '../../entities/discuss-target-hit.entity';
 import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
-import { CoachingService } from '../coaching.service';
-import { StudentSubmissionService } from '../student-submission.service';
+import { CoachingService } from '../observation/coaching.service';
+import { StudentSubmissionService } from '../classroom/student-submission.service';
 import { GradingService } from '../exercise/grading.service';
-import { StateCacheService } from '../state-cache.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
 
 const DISCUSS_MANIFEST = {
   id: 'discuss-lesson',

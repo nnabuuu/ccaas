@@ -3,23 +3,23 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import { AiQuestion } from '../entities/ai-question.entity';
-import { Lesson } from '../entities/lesson.entity';
-import { ObservationQueryService } from './observation/observation-query.service';
-import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
-import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
-import { CoachingService } from './coaching.service';
-import { DepthRankingService } from './depth-ranking.service';
-import { ManifestCacheService } from './manifest-cache.service';
-import { StateCacheService } from './state-cache.service';
-import { buildTaskMap } from '../domain/classroom/task-map.utils';
-import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
+import { Student } from '../../entities/student.entity';
+import { Submission } from '../../entities/submission.entity';
+import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { AiQuestion } from '../../entities/ai-question.entity';
+import { Lesson } from '../../entities/lesson.entity';
+import { ObservationQueryService } from '../observation/observation-query.service';
+import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
+import { ClusterAggregator } from '../../domain/discussion/cluster-aggregator';
+import { CoachingService } from '../observation/coaching.service';
+import { DepthRankingService } from '../observation/depth-ranking.service';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
+import { buildTaskMap } from '../../domain/classroom/task-map.utils';
+import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../../schemas';
 import type {
   ClassroomStateResponse,
-} from '../schemas/classroom';
+} from '../../schemas/classroom';
 
 /**
  * State aggregation layer for the classroom.

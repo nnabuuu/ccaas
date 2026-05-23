@@ -6,7 +6,7 @@ import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
-import { ManifestCacheService } from '../manifest-cache.service';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
 import type { CheckResultResponse } from '../../schemas/classroom';

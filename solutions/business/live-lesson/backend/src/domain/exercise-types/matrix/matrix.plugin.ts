@@ -21,7 +21,7 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, MatrixAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 import { MatrixGrader } from './matrix.grader';
 
 const MatrixAnswerItemSchema = z

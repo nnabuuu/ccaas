@@ -1,6 +1,6 @@
-import { ManifestCacheService } from './manifest-cache.service';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Repository } from 'typeorm';
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson } from '../../entities/lesson.entity';
 
 function makeLessonRepo(overrides: Partial<Repository<Lesson>> = {}): Repository<Lesson> {
   return { findOne: jest.fn(), ...overrides } as any;

@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, InternalServerErrorException, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Lesson } from '../entities/lesson.entity';
-import { validateAnswerKey, ManifestSchema } from '../schemas';
-import { ExerciseTypeRegistry } from '../classroom/exercise/exercise-type-registry';
+import { Lesson } from '../../entities/lesson.entity';
+import { validateAnswerKey, ManifestSchema } from '../../schemas';
+import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 

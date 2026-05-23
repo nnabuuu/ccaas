@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Param, Body, Query, ParseIntPipe } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ClassroomService } from '../classroom.service';
-import { ExerciseService } from './exercise.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { ExerciseService } from '../../application/exercise/exercise.service';
 import { CheckDto } from './dto/check.dto';
 import { validateCode } from '../../domain/classroom/validate-code';
 

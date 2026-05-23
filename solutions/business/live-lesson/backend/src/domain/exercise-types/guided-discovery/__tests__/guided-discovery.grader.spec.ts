@@ -2,7 +2,7 @@ import { GuidedDiscoveryGrader } from '../guided-discovery.grader';
 import type { GuidedDiscoveryAnswerKey, GradeResult } from '../../../../schemas';
 import { AnswerKeySchema, validateAnswerKey } from '../../../../schemas';
 import { createPluginRegistryTestingModule } from '../../../../classroom/exercise/plugins/test-utils';
-import { ExerciseTypeRegistry } from '../../../../classroom/exercise/exercise-type-registry';
+import { ExerciseTypeRegistry } from '../../../../application/exercise/exercise-type-registry';
 
 // Local sanitize wrapper — dispatches through the shared `registry`
 // (initialized in beforeAll below). Replaces the old top-level
@@ -13,7 +13,7 @@ function sanitizeAnswerKey(ak: unknown, exerciseLabel?: string) {
     exerciseLabel,
   });
 }
-import type { AiPromptBuilder } from '../../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
 
 // Registry shared by the buildCheckItems tests below — built once for the
 // whole file. Hoisted via top-level `let` + `beforeAll` so individual `it`s

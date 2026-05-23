@@ -5,23 +5,23 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan, LessThan } from 'typeorm';
 import { randomInt } from 'crypto';
-import { Student } from '../entities/student.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
-import { ClassroomBroadcastService } from './classroom-broadcast.service';
+import { Student } from '../../entities/student.entity';
+import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
+import { ClassroomBroadcastService } from '../../classroom/classroom-broadcast.service';
 import { ClassroomStateService } from './classroom-state.service';
-import { StateCacheService } from './state-cache.service';
-import { Lesson } from '../entities/lesson.entity';
+import { StateCacheService } from '../../classroom/state-cache.service';
+import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import { TranslateService } from './translate/translate.service';
+import { TranslateService } from '../ai/translate.service';
 import type { Response } from 'express';
 import type {
   CreateSessionResponse, SessionInfoResponse, StartSessionResponse,
   EndSessionResponse, BatchCheckItem, SetStepResponse, NotifyResponse,
   SessionListItem, SessionListResponse,
   ClassroomStateResponse, ChatMessageResponse, SnapshotEntry,
-} from '../schemas/classroom';
-import type { SessionStatus } from '../schemas/classroom/session';
+} from '../../schemas/classroom';
+import type { SessionStatus } from '../../schemas/classroom/session';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;

@@ -1,6 +1,6 @@
 import { ImageUploadGrader } from '../image-upload.grader';
 import type { ImageUploadAnswerKey } from '../../../../schemas';
-import type { AiPromptBuilder } from '../../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../../application/ai/ai-prompt-builder';
 
 const baseKey: ImageUploadAnswerKey = {
   type: 'image-upload',

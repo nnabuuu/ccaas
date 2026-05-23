@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from './plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
@@ -9,8 +9,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ExerciseService } from './exercise.service';
 import { GradingService } from './grading.service';
 import { ExerciseTypeRegistry } from './exercise-type-registry';
-import { AiPromptBuilder } from '../ai-prompt-builder';
-import { ManifestCacheService } from '../manifest-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';

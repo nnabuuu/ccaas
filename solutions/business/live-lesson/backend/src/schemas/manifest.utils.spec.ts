@@ -8,7 +8,7 @@
  * lives in manifest.utils.
  */
 import { createPluginRegistryTestingModule } from '../classroom/exercise/plugins/test-utils';
-import type { ExerciseTypeRegistry } from '../classroom/exercise/exercise-type-registry';
+import type { ExerciseTypeRegistry } from '../application/exercise/exercise-type-registry';
 import { seededShuffle } from './manifest.utils';
 
 let registry: ExerciseTypeRegistry;

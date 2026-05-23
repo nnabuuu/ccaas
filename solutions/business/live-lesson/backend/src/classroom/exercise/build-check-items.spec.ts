@@ -6,7 +6,7 @@
  * the same fixtures via the registry so the canonical per-type shape is
  * still pinned down in one place.
  */
-import { ExerciseTypeRegistry } from './exercise-type-registry';
+import { ExerciseTypeRegistry } from '../../application/exercise/exercise-type-registry';
 import { createPluginRegistryTestingModule } from './plugins/test-utils';
 import type { GradeResult } from '../../schemas';
 

@@ -7,9 +7,9 @@ import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { AiPromptBuilder } from '../ai-prompt-builder';
-import { ManifestCacheService } from '../manifest-cache.service';
-import { StateCacheService } from '../state-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
 @Injectable()

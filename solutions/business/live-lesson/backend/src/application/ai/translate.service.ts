@@ -7,8 +7,8 @@ import { Lesson } from '../../entities/lesson.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { jsonrepair } from 'jsonrepair';
-import { AiPromptBuilder } from '../ai-prompt-builder';
-import { ManifestCacheService } from '../manifest-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
 export interface TranslateResponse {

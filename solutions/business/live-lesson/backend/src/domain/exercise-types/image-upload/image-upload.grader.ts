@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import type { Grader, GradeResult } from '../../shared/grader.interface';
 import type { ImageUploadAnswerKey, RichContentQuizAnswerKey } from '../../../schemas';
 import { matchesAny } from '../../../schemas/normalize-math';
-import type { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import type { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 /** Effective key shape used internally — rubric is always present when this grader runs. */
 type GradeableKey = ImageUploadAnswerKey | (RichContentQuizAnswerKey & { rubric: NonNullable<RichContentQuizAnswerKey['rubric']> });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { AiPromptBuilder, type PromptTracer } from './ai-prompt-builder';
+import { AiPromptBuilder, type PromptTracer } from '../ai/ai-prompt-builder';
 
 describe('AiPromptBuilder.setTracer (§14 L1+L2)', () => {
   let builder: AiPromptBuilder;

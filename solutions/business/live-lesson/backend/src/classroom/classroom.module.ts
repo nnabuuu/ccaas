@@ -22,15 +22,15 @@ import {
 import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySink } from '@kedge-agentic/observer-engine';
 
 // ── Infra ──
-import { ClassroomService } from './classroom.service';
+import { ClassroomService } from '../application/classroom/classroom.service';
 import { ClassroomBroadcastService } from './classroom-broadcast.service';
-import { ClassroomStateService } from './classroom-state.service';
-import { StudentSubmissionService } from './student-submission.service';
+import { ClassroomStateService } from '../application/classroom/classroom-state.service';
+import { StudentSubmissionService } from '../application/classroom/student-submission.service';
 import { ClassroomController } from './classroom.controller';
-import { AiPromptBuilder } from './ai-prompt-builder';
+import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
 import { MetricsAggregator } from '../domain/classroom/metrics-aggregator';
-import { ManifestCacheService } from './manifest-cache.service';
-import { ObserveRegistry } from './observe/observe-registry';
+import { ManifestCacheService } from '../application/classroom/manifest-cache.service';
+import { ObserveRegistry } from '../application/observation/observe-registry';
 import { QuizObserveHandler } from '../domain/exercise-types/quiz/quiz.observe';
 import { SelectEvidenceObserveHandler } from '../domain/exercise-types/select-evidence/select-evidence.observe';
 import { MapObserveHandler } from '../domain/exercise-types/map/map.observe';
@@ -40,10 +40,10 @@ import { ImageUploadObserveHandler } from '../domain/exercise-types/image-upload
 import { GuidedDiscoveryObserveHandler } from '../domain/exercise-types/guided-discovery/guided-discovery.observe';
 
 // ── Exercise component ──
-import { ExerciseService } from './exercise/exercise.service';
+import { ExerciseService } from '../application/exercise/exercise.service';
 import { ExerciseController } from './exercise/exercise.controller';
-import { GradingService } from './exercise/grading.service';
-import { ExerciseTypeRegistry } from './exercise/exercise-type-registry';
+import { GradingService } from '../application/exercise/grading.service';
+import { ExerciseTypeRegistry } from '../application/exercise/exercise-type-registry';
 import { QuizPlugin } from '../domain/exercise-types/quiz/quiz.plugin';
 import { MatchPlugin } from '../domain/exercise-types/match/match.plugin';
 import { OrderPlugin } from '../domain/exercise-types/order/order.plugin';
@@ -60,31 +60,31 @@ import { GuidedDiscoveryPlugin } from '../domain/exercise-types/guided-discovery
 import { StateCacheService } from './state-cache.service';
 
 // ── Coaching ──
-import { CoachingService } from './coaching.service';
+import { CoachingService } from '../application/observation/coaching.service';
 
 // ── Depth Ranking ──
-import { DepthRankingService } from './depth-ranking.service';
+import { DepthRankingService } from '../application/observation/depth-ranking.service';
 
 // ── Socratic Discuss component ──
-import { DiscussService } from './socratic-discuss/discuss.service';
+import { DiscussService } from '../application/ai/discuss.service';
 import { DiscussController } from './socratic-discuss/discuss.controller';
 import { ClusterClassifier } from '../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../domain/discussion/cluster-aggregator';
 
 // ── AI Ask component ──
-import { AiAskService } from './ai-ask/ai-ask.service';
+import { AiAskService } from '../application/ai/ai-ask.service';
 import { AiAskController } from './ai-ask/ai-ask.controller';
 
 // ── Translate component ──
-import { TranslateService } from './translate/translate.service';
+import { TranslateService } from '../application/ai/translate.service';
 import { TranslateController } from './translate/translate.controller';
 
 // ── Personal Touch component ──
-import { PersonalizationService } from './personal-touch/personalization.service';
+import { PersonalizationService } from '../application/ai/personalization.service';
 import { PersonalTouchController } from './personal-touch/personal-touch.controller';
 
 // ── Observation component ──
-import { ObservationQueryService } from './observation/observation-query.service';
+import { ObservationQueryService } from '../application/observation/observation-query.service';
 import { OpenAiLlmGateway } from './observation/adapters/openai-llm-gateway';
 import { ClassroomNotifySink } from './observation/adapters/classroom-notify-sink';
 import { JoinHandler } from './observation/handlers/join-handler';

@@ -2,9 +2,9 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
-import { CoachingService } from './coaching.service';
-import { DepthRankingService } from './depth-ranking.service';
-import { ClassroomStateService } from './classroom-state.service';
+import { CoachingService } from '../application/observation/coaching.service';
+import { DepthRankingService } from '../application/observation/depth-ranking.service';
+import { ClassroomStateService } from '../application/classroom/classroom-state.service';
 import type { Response } from 'express';
 import type { ClassroomStateResponse, SnapshotEntry } from '../schemas/classroom';
 

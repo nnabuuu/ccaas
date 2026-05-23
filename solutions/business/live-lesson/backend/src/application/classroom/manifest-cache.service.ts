@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson } from '../../entities/lesson.entity';
 
 @Injectable()
 export class ManifestCacheService {

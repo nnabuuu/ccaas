@@ -1,7 +1,7 @@
 import { Controller, Post, Param, Body } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ClassroomService } from '../classroom.service';
-import { TranslateService } from './translate.service';
+import { ClassroomService } from '../../application/classroom/classroom.service';
+import { TranslateService } from '../../application/ai/translate.service';
 import { TranslateDto } from './dto/translate.dto';
 import { TranslateChatDto } from './dto/translate-chat.dto';
 import { validateCode } from '../../domain/classroom/validate-code';

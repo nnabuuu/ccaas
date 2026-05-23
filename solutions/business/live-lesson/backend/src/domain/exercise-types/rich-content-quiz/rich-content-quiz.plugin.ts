@@ -19,7 +19,7 @@ import type {
 } from '../../shared/exercise-type-plugin.interface';
 import type { GradeResult, ImageUploadAnswerKey } from '../../../schemas';
 import type { ExerciseSpec } from '../../../schemas/exercise-spec.schema';
-import { AiPromptBuilder } from '../../../classroom/ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 import { ImageUploadGrader } from '../image-upload/image-upload.grader';
 
 const InputMethodsSchema = z.array(z.enum(['keyboard', 'handwrite', 'photo'])).optional();

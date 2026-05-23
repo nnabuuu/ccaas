@@ -1,21 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from './exercise/plugins/test-utils';
+import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { StudentSubmissionService } from './student-submission.service';
-import { GradingService } from './exercise/grading.service';
-import { ManifestCacheService } from './manifest-cache.service';
-import { StateCacheService } from './state-cache.service';
-import { AiPromptBuilder } from './ai-prompt-builder';
-import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
-import { ClassroomSession } from '../entities/classroom-session.entity';
-import { AiQuestion } from '../entities/ai-question.entity';
-import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
-import { Lesson } from '../entities/lesson.entity';
+import { GradingService } from '../exercise/grading.service';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
+import { StateCacheService } from '../../classroom/state-cache.service';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
+import { Student } from '../../entities/student.entity';
+import { Submission } from '../../entities/submission.entity';
+import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { AiQuestion } from '../../entities/ai-question.entity';
+import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
+import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 
 const mockObserverEngine = {

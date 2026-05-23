@@ -8,7 +8,7 @@
  */
 import { Test, type TestingModule } from '@nestjs/testing';
 import { DiscoveryModule } from '@nestjs/core';
-import { ExerciseTypeRegistry } from '../exercise-type-registry';
+import { ExerciseTypeRegistry } from '../../../application/exercise/exercise-type-registry';
 import { QuizPlugin } from '../../../domain/exercise-types/quiz/quiz.plugin';
 import { MatchPlugin } from '../../../domain/exercise-types/match/match.plugin';
 import { OrderPlugin } from '../../../domain/exercise-types/order/order.plugin';
@@ -20,7 +20,7 @@ import { ImageUploadPlugin } from '../../../domain/exercise-types/image-upload/i
 import { SelectEvidencePlugin } from '../../../domain/exercise-types/select-evidence/select-evidence.plugin';
 import { RichContentQuizPlugin } from '../../../domain/exercise-types/rich-content-quiz/rich-content-quiz.plugin';
 import { GuidedDiscoveryPlugin } from '../../../domain/exercise-types/guided-discovery/guided-discovery.plugin';
-import { AiPromptBuilder } from '../../ai-prompt-builder';
+import { AiPromptBuilder } from '../../../application/ai/ai-prompt-builder';
 
 /** Providers needed to bootstrap a fully-populated ExerciseTypeRegistry. */
 export const PLUGIN_PROVIDERS = [

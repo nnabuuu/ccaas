@@ -17,7 +17,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { LessonService } from './lesson.service';
-import { Lesson } from '../entities/lesson.entity';
+import { Lesson } from '../../entities/lesson.entity';
 
 // `fs.existsSync`/`readdirSync`/`readFileSync` aren't spyable in newer Node
 // (they're non-configurable). Use jest.mock('fs') for the whole module so
@@ -51,8 +51,8 @@ function makeRepoMock() {
 }
 
 import { DiscoveryModule } from '@nestjs/core';
-import { PLUGIN_PROVIDERS } from '../classroom/exercise/plugins/test-utils';
-import { AiPromptBuilder } from '../classroom/ai-prompt-builder';
+import { PLUGIN_PROVIDERS } from '../../classroom/exercise/plugins/test-utils';
+import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 
 async function buildService(repo: ReturnType<typeof makeRepoMock>): Promise<LessonService> {
   // LessonService now depends on ExerciseTypeRegistry (for sanitizeManifest).
