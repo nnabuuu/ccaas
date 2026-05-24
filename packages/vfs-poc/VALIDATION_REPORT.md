@@ -1,28 +1,47 @@
 # Agent Session Runtime — P0 Validation Report
 
-> **验证日期**: v1 2026-05-24, v2 2026-05-25, **v3 (本次修订) 2026-05-25**
-> **平台**: macOS 14.x (darwin arm64), agentfs NFS export
+> **验证日期**: v1 2026-05-24, v2/v3 2026-05-25, **v4 (本次修订) 2026-05-25 (Linux Docker)**
+> **平台**:
+> - macOS 14.x (darwin arm64), agentfs NFS export
+> - **NEW v4**: Linux 6.14 (orbstack VM arm64), agentfs FUSE mount, Ubuntu 24.04 Docker
 > **关联 spec**: [docs/agent-session-runtime-spec.md](../../docs/agent-session-runtime-spec.md)
 > **关联 POC**: `packages/vfs-poc/` (POC1 commit `d531540`)
-> **版本** (v3 修订时): agentfs **7f6af74** ([nnabuuu/agentfs feat/nfs-drop-appledouble 分支](https://github.com/nnabuuu/agentfs/tree/feat/nfs-drop-appledouble)), git 2.43.0, claude 2.1.148, node 22.15.1
+> **版本** (v4 修订时): agentfs **9180ed4** ([nnabuuu/agentfs feat/nfs-drop-appledouble](https://github.com/nnabuuu/agentfs/tree/feat/nfs-drop-appledouble)) + upstream **v0.6.4** (Linux baseline), git 2.43.0+, claude 2.1.148, node 20/22
 > **测试代码**: `packages/vfs-poc/validation/` (可重跑: `npm run validate:v1`, `npm run validate:v2`)
-> **原始日志**: `packages/vfs-poc/validation/logs/{V1,V2}/`
-> **机器可读结果**: `packages/vfs-poc/validation/results/{v1,v2}-darwin.json`
+> **Linux 复现**: `bash packages/vfs-poc/scripts/run-linux-v1.sh`
+> **原始日志**: `packages/vfs-poc/validation/logs/{V1,V2}/` + `/tmp/vfs-poc-linux-results/`
+> **机器可读结果**: `packages/vfs-poc/validation/results/v1-darwin.json` + `/tmp/vfs-poc-linux-results/v1-linux-*.json`
 
 ---
 
 ## Executive Summary
 
-> **本报告有三轮验证**:
-> - **v1 (2026-05-24)** 用 agentfs upstream v0.6.4 跑,V1 全 fail。
+> **本报告有四轮验证**:
+> - **v1 (2026-05-24)** 用 agentfs upstream v0.6.4 跑 macOS NFS,V1 全 fail。
 > - **v2 (2026-05-25)** 找到 [tursodatabase/agentfs#333](https://github.com/tursodatabase/agentfs/issues/333) 同问题 + @rail44 的 fix 分支,自己 build 装上重跑。V1 从 0/10 → 10/10,但仍依赖**应用层 workaround** (`.gitignore '._*'` + `cleanAppleDoubles()`)。
-> - **v3 (2026-05-25)** 在我们 fork 上加 `feat/nfs-drop-appledouble`(server 端"silent drop" AppleDouble,250 行 Rust),应用层 workaround **全部移除**(`VFS_POC_BARE=1`),V1 仍然 10/10。spec D2 在 macOS 上现在是 **clean pass**,不再需要任何 git 配置妥协。
+> - **v3 (2026-05-25)** 在我们 fork 上加 `feat/nfs-drop-appledouble`(server 端"silent drop" AppleDouble,250 行 Rust),应用层 workaround **全部移除**(`VFS_POC_BARE=1`),V1 仍然 10/10。spec D2 在 macOS 上现在是 **clean pass**。
+> - **v4 (2026-05-25, 本次)** Linux Docker (Ubuntu 24.04 + FUSE) 上跑全套矩阵:patched fork、upstream v0.6.4 bare、upstream v0.6.4 + workaround **三个配置全部 9/10 pass + 1 skip**(T1.7 macOS-only)。**结论:Linux production 部署不需要 fork** — 上游 agentfs 直接工作。fork 仅用于 macOS dev 环境。
 
-| 验证 | v1 (upstream) | v2 (rail44 fix + macOS workarounds) | **v3 (rail44 fix + nfs-drop-appledouble, bare mode)** | 对 spec 的影响 |
+### V1 跨平台终极矩阵
+
+| 平台 | agentfs | bare mode | 结果 | 备注 |
 |---|---|---|---|---|
-| **V1 — `.git` 直接放 agentfs 虚拟 FS** | ❌ 0/10 | ✅ 10/10 (需 `.gitignore '._*'` + `cleanAppleDoubles()`) | ✅ **10/10 bare** — `VFS_POC_BARE=1` 关掉所有应用层 workaround 仍 10/10 | **D2/D4 clean pass**: 现在不需要任何 git 配置或测试代码妥协。**完全不是 blocker** |
-| **V2 — just-bash 完全替代 claude shell + fs 工具** | ⚠️ 强读 1/3,弱读 3/3 | (未重跑 V2,跟 git/fs server 无关) | (同左) | **D1 措辞需修订**: 不写"完全替代",改写**两层模型** — bash 弱替代(POC1 已验证)+ 可选 fs 强替代(需要 1:1 schema 镜像) |
-| **总体** | 🚧 需要补丁 + spec 措辞修订 | 🟢 spec 主架构成立,带 macOS-only 应用层 workaround | 🟢🟢 **spec 主架构成立 + 零应用层妥协**,我们自维护的 agentfs fork 在 server 端解决所有 macOS 兼容性 | |
+| macOS NFS | v0.6.4 upstream | 1 | ❌ 0/10 | fchmod+close EACCES (issue #333) |
+| macOS NFS | 9180ed4 fork | 0 (with workaround) | ✅ 10/10 | v2 |
+| **macOS NFS** | **9180ed4 fork** | **1 (bare)** | ✅ **10/10** | **v3 canonical** |
+| Linux FUSE | 9180ed4 fork | 1 (bare) | ✅ **9/10 + 1 skip** | v4 — fork build works on Linux |
+| **Linux FUSE** | **v0.6.4 upstream** | **1 (bare)** | ✅ **9/10 + 1 skip** | **v4 critical — production candidate, no fork needed** |
+| Linux FUSE | v0.6.4 upstream | 0 (with workaround) | ✅ 9/10 + 1 skip | v4 — workarounds are harmless on Linux |
+
+`+ 1 skip` = T1.7 (Foo.md/foo.md case collision) is macOS-only — skip is intended behavior.
+
+### 总体 verdict
+
+| 验证 | 状态 | 对 spec 的影响 |
+|---|---|---|
+| **V1 — `.git` 在 agentfs** | 🟢🟢🟢 macOS + Linux 都 clean pass | **D2/D4 完全成立**。production 用上游 binary,macOS dev 用我们 fork |
+| **V2 — just-bash 替代 shell + fs** | ⚠️ 强读 1/3,弱读 3/3 (仅 macOS 测过) | **D1 措辞需修订**: 两层模型 — bash 弱替代 + 可选 fs 强替代(需要 1:1 schema 镜像) |
+| **总体** | 🟢🟢 **架构落地清晰** | macOS dev env 自带 fork,Linux production 用上游 — supply chain 干净 |
 
 **当前 blocker 状态**:
 1. ~~agentfs SETATTR-after-WRITE~~ — **已解**: rail44 fix 在我们 fork (`fix/nfs-write-owner-bypass-mode-check`),由 `feat/nfs-drop-appledouble` 继承
@@ -208,16 +227,63 @@ write undefined (22B)
 
 ---
 
+## Linux Docker (v4) 详细数据
+
+平台细节: Ubuntu 24.04 in Docker (OrbStack VM, Linux 6.14 kernel, arm64), agentfs FUSE 路径, `--privileged --device /dev/fuse`。
+
+### 性能对比 (macOS NFS vs Linux FUSE,patched-bare,9180ed4)
+
+| Test | macOS NFS | Linux FUSE | speedup |
+|---|---|---|---|
+| T1.1 baseline | 1005ms | 588ms | 1.7× |
+| T1.2 clone | 1200ms | 662ms | 1.8× |
+| T1.3 mmap pack + gc | 10949ms | 2193ms | **5.0×** |
+| T1.4 worktree | 1310ms | 647ms | 2.0× |
+| T1.5 50 concurrent add | 1883ms | 751ms | 2.5× |
+| T1.6 2 worktree merge | 1370ms | 620ms | 2.2× |
+| T1.7 case collision | 921ms | skip | — |
+| T1.8 status (cold/warm/postRemount) | 260/46/188ms | **35/21/132ms** | 7×/2×/1.4× |
+| T1.9 dir rename | 1007ms | 573ms | 1.8× |
+| T1.10 stress (10 round) | 4407ms | 1015ms | **4.3×** |
+| **total wall** | **~37s** | **~9s** | **~4×** |
+
+FUSE/Linux 显著优于 NFS/macOS — 特别是涉及多文件 op 和 mmap 的场景。
+
+### 三 config 一致性证明
+
+`upstream-bare` 和 `upstream-workaround` 在 Linux 上**完全一致 pass**,说明:
+- AppleDouble drop 在 Linux 上是 dead code(Linux kernel 不写 `._foo` sidecar,READDIR 过滤永远不命中)
+- `.gitignore '._*'` 在 Linux 上是 dead config(没有 sidecar 进 git 索引)
+- 应用层 workaround 是 macOS 专属
+
+`patched-bare` 和 `upstream-bare` 在 Linux 上**完全一致 pass**,说明:
+- rail44 NFS fix 在 Linux 上是 dead code(FUSE 路径不经过 nfsproc3_write)
+- AppleDouble drop 在 Linux 上是 dead code(同上)
+- **fork 对 Linux 而言是零差异**
+
+### 复现
+
+```bash
+bash packages/vfs-poc/scripts/run-linux-v1.sh
+# 或单跑一个 config:
+bash packages/vfs-poc/scripts/run-linux-v1.sh patched-bare
+# 结果在 /tmp/vfs-poc-linux-results/v1-linux-<config>.{json,log}
+```
+
+第一次跑会 build Ubuntu image(~30s)+ build agentfs(~3-5min,cargo target 缓存到 host `~/.cache/vfs-poc-linux/cargo-target/`)。后续重跑 build 步骤被 cargo 增量缓存,~5s。
+
 ## Out-of-scope (这次没测)
 
-- **Linux FUSE** 上跑 V1 — **优先级提到最高**: 确认 fix 在 FUSE 路径是否仍需 + 验证 AppleDouble 不存在
-- **V2 在 rail44 fix 下重跑** — 本次 v2 修订只重跑 V1。V2 结论沿用 v1 实验(理论上 V2 跟 fix 无关,V2 不涉及 git)
+- ~~Linux FUSE V1~~ — **v4 完成**
+- **V2 (claude API) 在 Linux 上** — claude CLI 没装进 image,需要 API key 配置,留下一轮
+- **非 `--privileged` 容器模式** — 留产线 security posture 评估时再细抠
 - **V3 多挂载点合成**(spec §5 的 project/skills/references/media)
 - **V4 50+ session 并发挂载密度**
 - **Skill 三层继承挂载**(spec §VIII)
 - **Object Storage 挂载**(spec §5 media)
 - **agentfs → DB 回写**(spec §VII 步骤 ⑩)
 - **conflict review session**(spec §VII 步骤 ⑧ + D7)
+- **macOS 性能基准**(我们看的是延迟差,但生产用 Linux 所以不重要)
 
 ---
 
@@ -283,3 +349,14 @@ npm run clean
   - **V1 在 bare mode 下仍 10/10 pass** → 证明 server 端拦截已替代所有应用层 workaround
   - spec D2 verdict 从 conditional pass 升级为 **clean pass** (零 git 配置妥协)
   - 不依赖 turso 上游合任何东西 — 完全在我们 fork 控制内
+  - 加 code review hardening (commit 9180ed4): RENAME 数据保护 + READDIR 死循环 guard + CREATE NOTDIR + 6 单测
+- **v4 — 2026-05-25** (Linux Docker production validation):
+  - 加 `packages/vfs-poc/docker/{Dockerfile,entrypoint.sh}` + `scripts/run-linux-v1.sh` 三 config 矩阵 runner
+  - Ubuntu 24.04 in OrbStack Docker(Linux 6.14 kernel arm64),`--privileged --device /dev/fuse`,agentfs FUSE 路径
+  - 三 config 全部 **9/10 pass + 1 skip** (T1.7 macOS-only):
+    - patched fork 9180ed4 + bare
+    - upstream v0.6.4 + bare
+    - upstream v0.6.4 + workaround
+  - **关键结论: Linux production 不需要 fork**。rail44 NFS fix 和 AppleDouble drop 都只补 NFS 服务器代码,Linux 走 FUSE,完全不经过 patched 代码
+  - Linux FUSE 性能比 macOS NFS 快 ~4× (T1.3 mmap 5×, T1.8 status 7×, T1.10 stress 4.3×)
+  - supply chain 大幅简化: 只 macOS dev 需要 build/install fork binary,production binary 直接 curl 装上游 release

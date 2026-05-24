@@ -1,0 +1,107 @@
+{
+  "suite": "V1",
+  "startedAt": "2026-05-24T23:26:52.976Z",
+  "finishedAt": "2026-05-24T23:27:02.515Z",
+  "platform": "linux arm64",
+  "versions": {
+    "agentfs": "agentfs 9180ed4",
+    "git": "git version 2.43.0",
+    "node": "v20.20.2"
+  },
+  "tests": [
+    {
+      "id": "T1.1",
+      "description": "baseline — init / add / commit / log / fsck",
+      "status": "pass",
+      "durationMs": 588,
+      "logFile": "logs/V1/T1.1.log"
+    },
+    {
+      "id": "T1.2",
+      "description": "hardlink — git clone --local from host into mount",
+      "status": "pass",
+      "durationMs": 662,
+      "notes": "--no-hardlinks required (host↔mount cross-device EXDEV); not an agentfs issue",
+      "metrics": {
+        "cloneNlink": 1,
+        "sourceNlink": 1,
+        "hardlinked": false
+      },
+      "logFile": "logs/V1/T1.2.log"
+    },
+    {
+      "id": "T1.3",
+      "description": "mmap packfile — gc + concurrent cat-file (R2, R9)",
+      "status": "pass",
+      "durationMs": 2193,
+      "metrics": {
+        "parallelCatFile": 10
+      },
+      "logFile": "logs/V1/T1.3.log"
+    },
+    {
+      "id": "T1.4",
+      "description": "worktree add → commit → merge → remove (spec ③⑧ main flow)",
+      "status": "pass",
+      "durationMs": 647,
+      "logFile": "logs/V1/T1.4.log"
+    },
+    {
+      "id": "T1.5",
+      "description": "concurrent git add — lock + atomicity stress (R1)",
+      "status": "pass",
+      "durationMs": 751,
+      "metrics": {
+        "ok": 11,
+        "lockBusy": 39,
+        "otherFail": 0
+      },
+      "logFile": "logs/V1/T1.5.log"
+    },
+    {
+      "id": "T1.6",
+      "description": "2 worktrees, parallel commits, serial merge (R1, R7)",
+      "status": "pass",
+      "durationMs": 620,
+      "logFile": "logs/V1/T1.6.log"
+    },
+    {
+      "id": "T1.7",
+      "description": "case collision Foo.md vs foo.md (macOS NFS) (R4)",
+      "status": "skip",
+      "durationMs": 0,
+      "notes": "Linux FUSE is case-sensitive by default — not a useful test here",
+      "logFile": "logs/V1/T1.7.log"
+    },
+    {
+      "id": "T1.8",
+      "description": "git status perf + stat-cache stability across remount (R5, R8)",
+      "status": "pass",
+      "durationMs": 2478,
+      "notes": "cold=35ms warm=21ms postRemount=132ms",
+      "metrics": {
+        "statusCold_ms": 35,
+        "statusWarm_ms": 21,
+        "statusAfterRemount_ms": 132
+      },
+      "logFile": "logs/V1/T1.8.log"
+    },
+    {
+      "id": "T1.9",
+      "description": "git mv directory with mixed modified entries (R10)",
+      "status": "pass",
+      "durationMs": 573,
+      "logFile": "logs/V1/T1.9.log"
+    },
+    {
+      "id": "T1.10",
+      "description": "10 rounds of full worktree lifecycle (combined stress)",
+      "status": "pass",
+      "durationMs": 1015,
+      "metrics": {
+        "roundsCompleted": 10
+      },
+      "logFile": "logs/V1/T1.10.log"
+    }
+  ]
+}

@@ -30,6 +30,12 @@ bash packages/vfs-poc/scripts/build-agentfs-fix.sh
 # 想跑"bare mode"(无应用层 workaround,验证 server 端拦截足够)?
 #   VFS_POC_BARE=1 npm run validate:v1
 
+# 想在 Linux Docker 上跑全套矩阵 (patched fork + upstream baseline)?
+# (验证 production 形态:Linux FUSE 不需要 fork)
+#   bash packages/vfs-poc/scripts/run-linux-v1.sh
+#   # 结果 in /tmp/vfs-poc-linux-results/v1-linux-*.json
+#   # 也归档在 validation/results/v1-linux-*.json (checkin'd)
+
 # 3. 装 npm 依赖
 cd packages/vfs-poc && npm install
 

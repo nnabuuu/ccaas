@@ -1,0 +1,75 @@
+==> entrypoint config=patched-bare host=Linux e30c130ba6b7 6.14.10-orbstack-00291-g1b252bd3edea #1 SMP Sat Jun  7 02:45:18 UTC 2025 aarch64 aarch64 aarch64 GNU/Linux
+==> building patched agentfs from /agentfs-src
+==> using cargo target cache at /cargo-target
+   Compiling filetime v0.2.27
+   Compiling page_size v0.6.0
+   Compiling reverie-ptrace v0.1.0 (https://github.com/facebookexperimental/reverie#0cf9bcdf)
+   Compiling turso_sync_engine v0.4.4
+   Compiling turso_sdk_kit v0.4.4
+   Compiling turso_sync_sdk_kit v0.4.4
+   Compiling turso v0.4.4
+   Compiling agentfs-sdk v0.6.4 (/tmp/agentfs-build/sdk/rust)
+   Compiling agentfs-sandbox v0.6.4 (/tmp/agentfs-build/sandbox)
+    Finished `release` profile [optimized] target(s) in 1m 06s
+agentfs 9180ed4
+==> npm install
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+
+added 179 packages in 21s
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.15.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.15.0
+npm notice To update run: npm install -g npm@11.15.0
+npm notice
+==> VFS_POC_BARE='1'
+==> running V1 suite
+
+> @kedge-agentic/vfs-poc@0.0.1 validate:v1
+> tsx validation/git/run-all.ts
+
+▶ T1.1 — baseline — init / add / commit / log / fsck
+[afs t1-1-1779665212977] [2m2026-05-24T23:26:53.083683Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+[afs t1-1-1779665212977] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+  ✓ pass in 588ms
+▶ T1.2 — hardlink — git clone --local from host into mount
+[afs t1-2-1779665213631] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-2-1779665213631] [2m2026-05-24T23:26:53.719920Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 662ms — --no-hardlinks required (host↔mount cross-device EXDEV); not an agentfs issue
+▶ T1.3 — mmap packfile — gc + concurrent cat-file (R2, R9)
+[afs t1-3-1779665214231] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-3-1779665214231] [2m2026-05-24T23:26:54.358127Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 2193ms
+▶ T1.4 — worktree add → commit → merge → remove (spec ③⑧ main flow)
+[afs t1-4-1779665216425] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-4-1779665216425] [2m2026-05-24T23:26:56.529450Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 647ms
+▶ T1.5 — concurrent git add — lock + atomicity stress (R1)
+[afs t1-5-1779665217073] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-5-1779665217073] [2m2026-05-24T23:26:57.203221Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 751ms
+▶ T1.6 — 2 worktrees, parallel commits, serial merge (R1, R7)
+[afs t1-6-1779665217825] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-6-1779665217825] [2m2026-05-24T23:26:57.905969Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 620ms
+▶ T1.7 — case collision Foo.md vs foo.md (macOS NFS) (R4)
+  ↷ skip in 0ms — Linux FUSE is case-sensitive by default — not a useful test here
+▶ T1.8 — git status perf + stat-cache stability across remount (R5, R8)
+[afs t1-8-1779665218447] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-8-1779665218447] [2m2026-05-24T23:26:58.546608Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+[afs t1-8-1779665218447] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-8-1779665218447] [2m2026-05-24T23:26:59.960583Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+[afs t1-8-1779665218447] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-8-1779665218447] [2m2026-05-24T23:27:00.398475Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 2478ms — cold=35ms warm=21ms postRemount=132ms
+▶ T1.9 — git mv directory with mixed modified entries (R10)
+[afs t1-9-1779665220926] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-9-1779665220926] [2m2026-05-24T23:27:01.046932Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 573ms
+▶ T1.10 — 10 rounds of full worktree lifecycle (combined stress)
+[afs t1-10-1779665221501] Using overlay filesystem with base: /tmp/vfs-poc-validation/base
+[afs t1-10-1779665221501] [2m2026-05-24T23:27:01.608442Z[0m [33m WARN[0m [2magentfs::fuser::session[0m[2m:[0m Given auto_unmount without allow_root or allow_other; adding allow_other, with userspace permission handling
+  ✓ pass in 1015ms
+
+results → /tmp/vfs-poc-run/validation/results/v1-linux.json
+==> validate:v1 exit=0
+==> done config=patched-bare
