@@ -4,6 +4,23 @@
 
 ---
 
+## ⚠️ 不要直接双击 HTML
+
+大多数 HTML 通过 `<script type="text/babel" src="*.jsx">` 加载 JSX 文件，浏览器在 `file://` 协议下会被 CORS 拦截 — 页面会**白屏**或**只渲染骨架**。
+
+**正确打开方式：**
+
+```bash
+./serve.sh                 # 一行启动本地 server（默认 8000 端口）
+# 然后浏览器打开 http://localhost:8000/index.html
+```
+
+可以**直接双击**的文件（自包含 HTML + CSS，无 JSX）：`Architecture Deck.html` / `Pitch Deck.html` / `index.html` / `teacher-guide.html` / `student-guide.html` / `plugin-preview-guide.html` / `guidance-system.html` / `help-patterns.html` / `student-ai-translate.html` / `demo.html`。
+
+其他所有 `Practice*.html` / `Teacher Observation*.html` / `Guided Discovery*.html` / `Lesson Builder.html` / `Architecture Map.html` / `Template Library.html` / `practice-v3.html` 都**必须**通过 server 打开。
+
+---
+
 ## 1. 项目定位 · 一句话
 
 **AI as Skill, not Chat** —— 把 AI 嵌进教师的课堂节奏里（5 步阅读策略骨架），不是一个可以"问问题"的聊天框。教师推进一步 → 学生端和投屏黑板同步进入对应状态。
