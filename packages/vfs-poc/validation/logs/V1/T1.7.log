@@ -1,0 +1,21 @@
+# T1.7 case collision Foo.md vs foo.md (macOS NFS) (R4)
+# started 2026-05-24T12:45:04.696Z
+
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779626704696 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-7-1779626704696/.git/
+  → exit 0 (79ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779626704696 && git config init.defaultBranch main
+  → exit 0 (32ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779626704696 && git add -A
+  ! 致命错误：关闭松散对象文件时出错: Permission denied
+  → exit 128 (47ms)
+
+FAIL after 770ms: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
+Error: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
+    at gitMust (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:114:11)
+    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:295:7)
+    at async withSession (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:35:12)
+    at async Object.body (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:280:5)
+    at async runTest (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:98:5)
+    at async runSuite (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:127:15)
+    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/run-all.ts:19:1)

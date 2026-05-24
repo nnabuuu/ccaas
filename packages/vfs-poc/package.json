@@ -10,6 +10,9 @@
     "demo:snapshot": "tsx scripts/run-snapshot.ts",
     "demo:concurrent": "tsx scripts/run-concurrent.ts",
     "mcp:just-bash": "tsx src/just-bash-mcp/server.ts",
+    "mcp:files": "tsx src/files-mcp/server.ts",
+    "validate:v1": "tsx validation/git/run-all.ts",
+    "validate:v2": "tsx validation/sandbox/run-configs.ts",
     "test": "node --import tsx --test test/fs-isolation.spec.ts",
     "clean": "rm -rf .delta-store /tmp/vfs-poc"
   },

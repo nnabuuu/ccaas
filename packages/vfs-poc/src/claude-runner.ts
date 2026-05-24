@@ -4,7 +4,8 @@ import { dirname, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const JUST_BASH_MCP_ENTRY = resolve(__dirname, 'just-bash-mcp/server.ts');
+export const JUST_BASH_MCP_ENTRY = resolve(__dirname, 'just-bash-mcp/server.ts');
+export const FILES_MCP_ENTRY = resolve(__dirname, 'files-mcp/server.ts');
 
 // Resolve the tsx binary from the hoisted root node_modules so the MCP server
 // inherits a working ESM+TS loader regardless of the cwd claude spawns it from.
@@ -18,7 +19,13 @@ function findTsxBin(): string {
     dir = parent;
   }
 }
-const TSX_BIN = findTsxBin();
+export const TSX_BIN = findTsxBin();
+
+export interface McpServerConfig {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
 
 export interface RunClaudeOptions {
   sessionId: string;
@@ -31,8 +38,29 @@ export interface RunClaudeOptions {
   /** Wall-clock cap. Default 90s. */
   timeoutMs?: number;
   /**
-   * Force MCP-server-only Bash, by denying the built-in Bash tool and steering
-   * the agent toward the `mcp__vfs-poc-bash__bash` tool. POC default = on.
+   * Tools to deny via `--disallowed-tools`. If omitted, defaults to ['Bash']
+   * (legacy POC1 behavior) when `forceSandboxedBash` is true.
+   */
+  disallowedTools?: string[];
+  /**
+   * MCP servers to inject via `--mcp-config`. Map key = server name, value =
+   * stdio spawn spec. If omitted, defaults to the legacy vfs-poc-bash setup
+   * when `forceSandboxedBash` is true. Pass an explicit empty object to inject
+   * nothing.
+   */
+  mcpServers?: Record<string, McpServerConfig>;
+  /**
+   * Extra text appended to the system prompt (e.g. "use this MCP tool not
+   * that"). Pass null to omit. If omitted and `forceSandboxedBash` is true,
+   * the legacy POC1 steering prompt is used.
+   */
+  appendSystemPrompt?: string | null;
+  /**
+   * POC1 legacy shorthand: when true (default), uses
+   *   - disallowedTools = ['Bash']
+   *   - mcpServers = { 'vfs-poc-bash': <local just-bash MCP> }
+   *   - appendSystemPrompt = "use mcp__vfs-poc-bash__bash"
+   * Set false to take full manual control via the fields above.
    */
   forceSandboxedBash?: boolean;
 }
@@ -59,20 +87,39 @@ export async function runClaude(opts: RunClaudeOptions): Promise<RunClaudeResult
     forceSandboxedBash = true,
   } = opts;
 
+  // Resolve the effective deny list + MCP set, with POC1 defaults preserved.
+  const disallowedTools: string[] = opts.disallowedTools
+    ?? (forceSandboxedBash ? ['Bash'] : []);
+  const mcpServers: Record<string, McpServerConfig> = opts.mcpServers
+    ?? (forceSandboxedBash
+      ? {
+          'vfs-poc-bash': {
+            command: TSX_BIN,
+            args: [JUST_BASH_MCP_ENTRY],
+            env: {
+              PATH: process.env.PATH ?? '',
+              VFS_POC_MOUNT_POINT: mountPoint,
+              VFS_POC_SESSION_ID: sessionId,
+              ...(mcpLogPath ? { VFS_POC_MCP_LOG: mcpLogPath } : {}),
+            },
+          },
+        }
+      : {});
+  const appendSystemPrompt: string | null = opts.appendSystemPrompt !== undefined
+    ? opts.appendSystemPrompt
+    : (forceSandboxedBash
+      ? 'For ANY shell command, you MUST call the MCP tool ' +
+        '`mcp__vfs-poc-bash__bash` instead of the built-in Bash tool. The ' +
+        'built-in Bash tool is disabled in this session.'
+      : null);
+
   const mcpConfig = {
-    mcpServers: {
-      'vfs-poc-bash': {
-        type: 'stdio' as const,
-        command: TSX_BIN,
-        args: [JUST_BASH_MCP_ENTRY],
-        env: {
-          PATH: process.env.PATH ?? '',
-          VFS_POC_MOUNT_POINT: mountPoint,
-          VFS_POC_SESSION_ID: sessionId,
-          ...(mcpLogPath ? { VFS_POC_MCP_LOG: mcpLogPath } : {}),
-        },
-      },
-    },
+    mcpServers: Object.fromEntries(
+      Object.entries(mcpServers).map(([name, cfg]) => [
+        name,
+        { type: 'stdio' as const, ...cfg },
+      ]),
+    ),
   };
 
   const args = [
@@ -83,17 +130,11 @@ export async function runClaude(opts: RunClaudeOptions): Promise<RunClaudeResult
     '--mcp-config', JSON.stringify(mcpConfig),
   ];
 
-  if (forceSandboxedBash) {
-    // Steer the model toward the sandboxed bash via system prompt + permission
-    // denial of the built-in Bash tool. (`--disallowed-tools` is the documented
-    // claude flag for this.)
-    args.push(
-      '--disallowed-tools', 'Bash',
-      '--append-system-prompt',
-      'For ANY shell command, you MUST call the MCP tool ' +
-        '`mcp__vfs-poc-bash__bash` instead of the built-in Bash tool. The ' +
-        'built-in Bash tool is disabled in this session.',
-    );
+  if (disallowedTools.length > 0) {
+    args.push('--disallowed-tools', disallowedTools.join(','));
+  }
+  if (appendSystemPrompt) {
+    args.push('--append-system-prompt', appendSystemPrompt);
   }
 
   const child: ChildProcess = spawn(claudeBin, args, {

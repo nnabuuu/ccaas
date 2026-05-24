@@ -1,0 +1,10 @@
+2026-05-24T12:55:32.650Z [v2-C2_4-r3-1779627331550] server starting mount=/tmp/vfs-poc-validation/mnt/v2-C2_4-r3-1779627331550
+2026-05-24T12:55:32.653Z [v2-C2_4-r3-1779627331550] server connected
+2026-05-24T12:55:50.022Z [v2-C2_4-r3-1779627331550] exec cwd=/ cmd=cd /private/tmp/vfs-poc-validation/mnt/v2-C2_4-r3-1779627331550 && grep -rl "hello" src/
+2026-05-24T12:55:50.029Z [v2-C2_4-r3-1779627331550] exec done exit=1
+2026-05-24T12:55:52.448Z [v2-C2_4-r3-1779627331550] exec cwd=/ cmd=cd /tmp/vfs-poc-validation/mnt/v2-C2_4-r3-1779627331550 && grep -rl "hello" src/
+2026-05-24T12:55:52.449Z [v2-C2_4-r3-1779627331550] exec done exit=1
+2026-05-24T12:55:54.659Z [v2-C2_4-r3-1779627331550] exec cwd=/ cmd=pwd && ls -la
+2026-05-24T12:55:54.684Z [v2-C2_4-r3-1779627331550] exec done exit=0
+2026-05-24T12:56:00.356Z [v2-C2_4-r3-1779627331550] exec cwd=/ cmd=cat undefined && echo "---" && cat ._undefined
+2026-05-24T12:56:00.367Z [v2-C2_4-r3-1779627331550] exec done exit=0

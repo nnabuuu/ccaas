@@ -1,0 +1,10 @@
+2026-05-24T12:54:01.257Z [v2-C2_4-r1-1779627240231] server connected mount=/tmp/vfs-poc-validation/mnt/v2-C2_4-r1-1779627240231
+2026-05-24T12:54:07.829Z [v2-C2_4-r1-1779627240231] write undefined (26B)
+2026-05-24T12:54:08.731Z [v2-C2_4-r1-1779627240231] write undefined (22B)
+2026-05-24T12:54:11.573Z [v2-C2_4-r1-1779627240231] grep "hello" glob=(any) → 1
+2026-05-24T12:54:16.431Z [v2-C2_4-r1-1779627240231] write undefined (12B)
+2026-05-24T12:54:17.516Z [v2-C2_4-r1-1779627240231] error edit: oldText not found in undefined
+2026-05-24T12:54:20.880Z [v2-C2_4-r1-1779627240231] read undefined (12B)
+2026-05-24T12:54:31.128Z [v2-C2_4-r1-1779627240231] read undefined (12B)
+2026-05-24T12:54:31.470Z [v2-C2_4-r1-1779627240231] read undefined (12B)
+2026-05-24T12:54:47.763Z [v2-C2_4-r1-1779627240231] write undefined (35B)

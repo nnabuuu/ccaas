@@ -1,0 +1,22 @@
+# T1.2 hardlink — git clone --local from host into mount
+# started 2026-05-24T12:44:59.414Z
+
+host source repo ready at /tmp/vfs-poc-validation/host-source-repo
+$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779626699705 && git clone --local /tmp/vfs-poc-validation/host-source-repo clone
+  ! 正克隆到 'clone'...
+  ! 致命错误：无法创建链接 'clone/.git/objects/pack/pack-aa3c4f67274c130fbbbec3535ddedff727c94a4a.idx': Cross-device link
+  → exit 128 (142ms)
+
+FAIL after 1073ms: assert: clone --local should succeed: 正克隆到 'clone'...
+致命错误：无法创建链接 'clone/.git/objects/pack/pack-aa3c4f67274c130fbbbec3535ddedff727c94a4a.idx': Cross-device link
+
+Error: assert: clone --local should succeed: 正克隆到 'clone'...
+致命错误：无法创建链接 'clone/.git/objects/pack/pack-aa3c4f67274c130fbbbec3535ddedff727c94a4a.idx': Cross-device link
+
+    at assert (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:139:20)
+    at <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:72:7)
+    at async withSession (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:35:12)
+    at async Object.body (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:69:5)
+    at async runTest (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:98:5)
+    at async runSuite (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:127:15)
+    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/run-all.ts:19:1)

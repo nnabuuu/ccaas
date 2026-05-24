@@ -1,0 +1,347 @@
+{
+  "suite": "V2",
+  "startedAt": "2026-05-24T12:56:38.303Z",
+  "platform": "darwin arm64",
+  "versions": {
+    "claude": "2.1.148 (Claude Code)",
+    "agentfs": "agentfs v0.6.4",
+    "node": "v22.15.1"
+  },
+  "runs": [
+    {
+      "config": "C2.1",
+      "round": 1,
+      "sessionId": "v2-C2_1-r1-1779627044462",
+      "durationMs": 26725,
+      "exitCode": null,
+      "assistantTextHead": "All four steps complete: created `docs/spec.md` and `src/main.ts`, wrote `src/main.ts` to `report.txt` as the sole match for \"hello\" under `src/`, and appended `- item 3` to `docs/spec.md`.",
+      "toolUseCounts": {
+        "Bash": 1,
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 1,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.1-r1.run.log"
+    },
+    {
+      "config": "C2.1",
+      "round": 2,
+      "sessionId": "v2-C2_1-r2-1779627072024",
+      "durationMs": 21219,
+      "exitCode": null,
+      "assistantTextHead": "All four steps completed:\n1. Created `docs/spec.md` with the spec content.\n2. Created `src/main.ts` with the console.log line.\n3. Searched `src/` for \"hello\" and wrote `src/main.ts` into `report.txt`.",
+      "toolUseCounts": {
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.1-r2.run.log"
+    },
+    {
+      "config": "C2.1",
+      "round": 3,
+      "sessionId": "v2-C2_1-r3-1779627094079",
+      "durationMs": 17267,
+      "exitCode": null,
+      "assistantTextHead": "All four steps completed:\n1. Created `docs/spec.md` with the spec content.\n2. Created `src/main.ts` with the console.log line.\n3. Wrote `report.txt` containing `src/main.ts` (the only file under `src/",
+      "toolUseCounts": {
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.1-r3.run.log"
+    },
+    {
+      "config": "C2.2",
+      "round": 1,
+      "sessionId": "v2-C2_2-r1-1779627112156",
+      "durationMs": 23595,
+      "exitCode": null,
+      "assistantTextHead": "All four steps complete:\n1. `docs/spec.md` created\n2. `src/main.ts` created\n3. `report.txt` written with `src/main.ts`\n4. `- item 3` appended to `docs/spec.md`",
+      "toolUseCounts": {
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.2-r1.run.log"
+    },
+    {
+      "config": "C2.2",
+      "round": 2,
+      "sessionId": "v2-C2_2-r2-1779627136560",
+      "durationMs": 22111,
+      "exitCode": null,
+      "assistantTextHead": "All four steps complete:\n1. Created `docs/spec.md` with the Spec header and items 1–2.\n2. Created `src/main.ts` with the console.log line.\n3. Grepped `src/` for \"hello\" and wrote `src/main.ts` to `rep",
+      "toolUseCounts": {
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.2-r2.run.log"
+    },
+    {
+      "config": "C2.2",
+      "round": 3,
+      "sessionId": "v2-C2_2-r3-1779627159492",
+      "durationMs": 22058,
+      "exitCode": null,
+      "assistantTextHead": "All four steps complete:\n1. Created `docs/spec.md` with the spec content.\n2. Created `src/main.ts` with the console.log line.\n3. Searched `src/` for \"hello\" and wrote `src/main.ts` to `report.txt`.\n4.",
+      "toolUseCounts": {
+        "Write": 3,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "nativeFsToolUses": 5,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 0,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.2-r3.run.log"
+    },
+    {
+      "config": "C2.3",
+      "round": 1,
+      "sessionId": "v2-C2_3-r1-1779627182361",
+      "durationMs": 16176,
+      "exitCode": null,
+      "assistantTextHead": "All four steps completed:\n\n1. `docs/spec.md` created with the spec content\n2. `src/main.ts` created with `console.log(\"hello\");`\n3. `report.txt` written with `src//main.ts` (the grep match)\n4. `- item",
+      "toolUseCounts": {
+        "ToolSearch": 1,
+        "mcp__vfs-poc-bash__bash": 1
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 1,
+      "taskCompleted": false,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": false
+      },
+      "errorMessages": [
+        "fail:reportMentionsMain"
+      ],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.3-r1.run.log"
+    },
+    {
+      "config": "C2.3",
+      "round": 2,
+      "sessionId": "v2-C2_3-r2-1779627199372",
+      "durationMs": 16800,
+      "exitCode": null,
+      "assistantTextHead": "All four steps completed:\n\n1. `docs/spec.md` created with Spec heading and items 1-2\n2. `src/main.ts` created with `console.log(\"hello\");`\n3. `report.txt` written with `src//main.ts` (the file matched",
+      "toolUseCounts": {
+        "ToolSearch": 1,
+        "mcp__vfs-poc-bash__bash": 1
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 1,
+      "taskCompleted": false,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": false
+      },
+      "errorMessages": [
+        "fail:reportMentionsMain"
+      ],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.3-r2.run.log"
+    },
+    {
+      "config": "C2.3",
+      "round": 3,
+      "sessionId": "v2-C2_3-r3-1779627217001",
+      "durationMs": 22386,
+      "exitCode": null,
+      "assistantTextHead": "All four steps complete:\n1. `docs/spec.md` created with the spec header and items 1–2.\n2. `src/main.ts` created with the `console.log` line.\n3. `report.txt` written with the grep result (`src//main.ts",
+      "toolUseCounts": {
+        "ToolSearch": 1,
+        "mcp__vfs-poc-bash__bash": 1
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 1,
+      "taskCompleted": false,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": false
+      },
+      "errorMessages": [
+        "fail:reportMentionsMain"
+      ],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.3-r3.run.log"
+    },
+    {
+      "config": "C2.4",
+      "round": 1,
+      "sessionId": "v2-C2_4-r1-1779627240231",
+      "durationMs": 53482,
+      "exitCode": null,
+      "assistantTextHead": "The VFS read tool appears buggy (returning stale content from a different file), but writes report success. Let me complete step 4 by overwriting spec.md with the full final content.All four steps com",
+      "toolUseCounts": {
+        "mcp__vfs-poc-files__write": 4,
+        "mcp__vfs-poc-files__grep": 1,
+        "mcp__vfs-poc-files__edit": 1,
+        "mcp__vfs-poc-files__read": 3,
+        "mcp__vfs-poc-bash__bash": 2
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 11,
+      "taskCompleted": false,
+      "completionDetails": {
+        "specExists": false,
+        "mainExists": false,
+        "reportExists": false,
+        "specHasItem3": false,
+        "reportMentionsMain": false
+      },
+      "errorMessages": [
+        "fail:specExists",
+        "fail:mainExists",
+        "fail:reportExists",
+        "fail:specHasItem3",
+        "fail:reportMentionsMain"
+      ],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.4-r1.run.log"
+    },
+    {
+      "config": "C2.4",
+      "round": 2,
+      "sessionId": "v2-C2_4-r2-1779627294561",
+      "durationMs": 36183,
+      "exitCode": null,
+      "assistantTextHead": "The VFS appears to have read consistency issues — reads are returning unexpected content. Let me rewrite `docs/spec.md` directly with the appended line.All four steps completed:\n\n1. Created `docs/spec",
+      "toolUseCounts": {
+        "mcp__vfs-poc-files__write": 4,
+        "mcp__vfs-poc-files__grep": 1,
+        "mcp__vfs-poc-files__edit": 1,
+        "mcp__vfs-poc-files__read": 3
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 9,
+      "taskCompleted": false,
+      "completionDetails": {
+        "specExists": false,
+        "mainExists": false,
+        "reportExists": false,
+        "specHasItem3": false,
+        "reportMentionsMain": false
+      },
+      "errorMessages": [
+        "fail:specExists",
+        "fail:mainExists",
+        "fail:reportExists",
+        "fail:specHasItem3",
+        "fail:reportMentionsMain"
+      ],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.4-r2.run.log"
+    },
+    {
+      "config": "C2.4",
+      "round": 3,
+      "sessionId": "v2-C2_4-r3-1779627331550",
+      "durationMs": 65927,
+      "exitCode": null,
+      "assistantTextHead": "There appear to be issues with the file tools. Let me investigate to find the correct interface.The schema uses `path` (not `file_path`), and paths are relative to workspace root. Let me redo the oper",
+      "toolUseCounts": {
+        "mcp__vfs-poc-files__write": 5,
+        "mcp__vfs-poc-files__grep": 4,
+        "mcp__vfs-poc-bash__bash": 4,
+        "ToolSearch": 1,
+        "mcp__vfs-poc-files__glob": 1,
+        "mcp__vfs-poc-files__edit": 1,
+        "mcp__vfs-poc-files__read": 2
+      },
+      "nativeFsToolUses": 0,
+      "nativeBashToolUses": 0,
+      "mcpToolUses": 17,
+      "taskCompleted": true,
+      "completionDetails": {
+        "specExists": true,
+        "mainExists": true,
+        "reportExists": true,
+        "specHasItem3": true,
+        "reportMentionsMain": true
+      },
+      "errorMessages": [],
+      "logFile": "/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/logs/V2/C2.4-r3.run.log"
+    }
+  ]
+}

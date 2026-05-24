@@ -1,0 +1,4 @@
+2026-05-24T12:53:20.409Z [v2-C2_3-r2-1779627199372] server starting mount=/tmp/vfs-poc-validation/mnt/v2-C2_3-r2-1779627199372
+2026-05-24T12:53:20.411Z [v2-C2_3-r2-1779627199372] server connected
+2026-05-24T12:53:31.675Z [v2-C2_3-r2-1779627199372] exec cwd=/ cmd=mkdir -p docs src && printf '# Spec\n\n- item 1\n- item 2\n' > docs/spec.md && printf 'console.log("hello");\n' > src/main.ts && grep -rl "hello" src/ > report.txt && printf -- '- item 3\n' >> docs/sp…
+2026-05-24T12:53:31.731Z [v2-C2_3-r2-1779627199372] exec done exit=0

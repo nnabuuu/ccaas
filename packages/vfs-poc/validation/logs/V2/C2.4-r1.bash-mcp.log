@@ -1,0 +1,6 @@
+2026-05-24T12:54:01.270Z [v2-C2_4-r1-1779627240231] server starting mount=/tmp/vfs-poc-validation/mnt/v2-C2_4-r1-1779627240231
+2026-05-24T12:54:01.273Z [v2-C2_4-r1-1779627240231] server connected
+2026-05-24T12:54:37.321Z [v2-C2_4-r1-1779627240231] exec cwd=/ cmd=cd /private/tmp/vfs-poc-validation/mnt/v2-C2_4-r1-1779627240231 && ls -la && echo "---spec---" && cat docs/spec.md && echo "---main---" && cat src/main.ts && echo "---report---" && cat report.txt
+2026-05-24T12:54:37.329Z [v2-C2_4-r1-1779627240231] exec done exit=1
+2026-05-24T12:54:40.789Z [v2-C2_4-r1-1779627240231] exec cwd=/ cmd=cd /tmp/vfs-poc-validation/mnt/v2-C2_4-r1-1779627240231 && ls -la && echo "---spec---" && cat docs/spec.md 2>&1 && echo "---main---" && cat src/main.ts 2>&1 && echo "---report---" && cat report.txt 2>…
+2026-05-24T12:54:40.791Z [v2-C2_4-r1-1779627240231] exec done exit=1
