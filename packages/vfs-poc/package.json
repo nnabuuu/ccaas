@@ -1,0 +1,28 @@
+{
+  "name": "@kedge-agentic/vfs-poc",
+  "private": true,
+  "version": "0.0.1",
+  "description": "POC: replace direct local-workspace mapping with agentfs overlay + just-bash sandbox, validate spawned claude-code CLI works in virtual FS",
+  "type": "module",
+  "scripts": {
+    "materialize-base": "tsx scripts/materialize-base.ts",
+    "demo:single": "tsx scripts/run-single-session.ts",
+    "demo:snapshot": "tsx scripts/run-snapshot.ts",
+    "demo:concurrent": "tsx scripts/run-concurrent.ts",
+    "mcp:just-bash": "tsx src/just-bash-mcp/server.ts",
+    "test": "node --import tsx --test test/fs-isolation.spec.ts",
+    "clean": "rm -rf .delta-store /tmp/vfs-poc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "agentfs-sdk": "^0.6.4",
+    "better-sqlite3": "^11.0.0",
+    "just-bash": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.10",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
