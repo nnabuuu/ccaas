@@ -1,21 +1,232 @@
 # T1.5 concurrent git add — lock + atomicity stress (R1)
-# started 2026-05-24T12:45:03.010Z
+# started 2026-05-24T18:04:24.993Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779626703011 && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-5-1779626703011/.git/
-  → exit 0 (58ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779626703011 && git config init.defaultBranch main
-  → exit 0 (32ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779626703011 && git add -A
-  ! 致命错误：关闭松散对象文件时出错: Permission denied
-  → exit 128 (41ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-5-1779645864995/.git/
+  → exit 0 (82ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git config init.defaultBranch main
+  → exit 0 (35ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add -A
+  → exit 0 (64ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git commit -m seed
+  | [main（根提交） e98f7ff] seed
+  |  2 files changed, 3 insertions(+)
+  |  create mode 100644 .gitignore
+  |  create mode 100644 seed.txt
+  → exit 0 (74ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f0.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f1.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f2.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f3.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f4.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f5.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f6.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f7.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f8.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f9.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f10.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f11.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f12.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f13.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f14.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f15.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f16.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f17.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f18.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f19.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f20.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f21.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f22.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f23.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f24.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f25.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f26.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f27.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f28.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f29.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f30.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f31.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f32.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f33.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f34.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f35.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f36.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f37.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f38.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f39.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f40.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f41.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f42.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f43.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f44.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f45.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f46.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f47.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f48.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add f49.txt
+  → exit 0 (42ms)
+  → exit 0 (61ms)
+  → exit 0 (80ms)
+  → exit 0 (97ms)
+  → exit 0 (115ms)
+  → exit 0 (130ms)
+  → exit 0 (146ms)
+  → exit 0 (162ms)
+  → exit 0 (177ms)
+  → exit 0 (193ms)
+  → exit 0 (212ms)
+  → exit 0 (229ms)
+  → exit 0 (244ms)
+  → exit 0 (259ms)
+  → exit 0 (277ms)
+  → exit 0 (294ms)
+  → exit 0 (310ms)
+  → exit 0 (326ms)
+  → exit 0 (341ms)
+  → exit 0 (356ms)
+  → exit 0 (372ms)
+  → exit 0 (389ms)
+  → exit 0 (408ms)
+  → exit 0 (428ms)
+  → exit 0 (450ms)
+  → exit 0 (470ms)
+  → exit 0 (512ms)
+  → exit 0 (530ms)
+  → exit 0 (547ms)
+  → exit 0 (564ms)
+  → exit 0 (582ms)
+  → exit 0 (599ms)
+  → exit 0 (619ms)
+  → exit 0 (636ms)
+  → exit 0 (653ms)
+  → exit 0 (671ms)
+  → exit 0 (687ms)
+  → exit 0 (703ms)
+  → exit 0 (721ms)
+  → exit 0 (735ms)
+  → exit 0 (751ms)
+  → exit 0 (769ms)
+  → exit 0 (786ms)
+  → exit 0 (807ms)
+  → exit 0 (828ms)
+  → exit 0 (846ms)
+  → exit 0 (868ms)
+  → exit 0 (902ms)
+  → exit 0 (929ms)
+  → exit 0 (30ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git add -A
+  → exit 0 (25ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git commit -m all-50
+  | [main 4326157] all-50
+  |  50 files changed, 50 insertions(+)
+  |  create mode 100644 f0.txt
+  |  create mode 100644 f1.txt
+  |  create mode 100644 f10.txt
+  |  create mode 100644 f11.txt
+  |  create mode 100644 f12.txt
+  |  create mode 100644 f13.txt
+  |  create mode 100644 f14.txt
+  |  create mode 100644 f15.txt
+  |  create mode 100644 f16.txt
+  |  create mode 100644 f17.txt
+  |  create mode 100644 f18.txt
+  |  create mode 100644 f19.txt
+  |  create mode 100644 f2.txt
+  |  create mode 100644 f20.txt
+  |  create mode 100644 f21.txt
+  |  create mode 100644 f22.txt
+  |  create mode 100644 f23.txt
+  |  create mode 100644 f24.txt
+  |  create mode 100644 f25.txt
+  |  create mode 100644 f26.txt
+  |  create mode 100644 f27.txt
+  |  create mode 100644 f28.txt
+  |  create mode 100644 f29.txt
+  |  create mode 100644 f3.txt
+  |  create mode 100644 f30.txt
+  |  create mode 100644 f31.txt
+  |  create mode 100644 f32.txt
+  |  create mode 100644 f33.txt
+  |  create mode 100644 f34.txt
+  |  create mode 100644 f35.txt
+  |  create mode 100644 f36.txt
+  |  create mode 100644 f37.txt
+  |  create mode 100644 f38.txt
+  |  create mode 100644 f39.txt
+  |  create mode 100644 f4.txt
+  |  create mode 100644 f40.txt
+  |  create mode 100644 f41.txt
+  |  create mode 100644 f42.txt
+  |  create mode 100644 f43.txt
+  |  create mode 100644 f44.txt
+  |  create mode 100644 f45.txt
+  |  create mode 100644 f46.txt
+  |  create mode 100644 f47.txt
+  |  create mode 100644 f48.txt
+  |  create mode 100644 f49.txt
+  |  create mode 100644 f5.txt
+  |  create mode 100644 f6.txt
+  |  create mode 100644 f7.txt
+  |  create mode 100644 f8.txt
+  |  create mode 100644 f9.txt
+  → exit 0 (55ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git ls-tree -r --name-only HEAD
+  | .gitignore
+  | f0.txt
+  | f1.txt
+  | f10.txt
+  | f11.txt
+  | f12.txt
+  | f13.txt
+  | f14.txt
+  | f15.txt
+  | f16.txt
+  | f17.txt
+  | f18.txt
+  | f19.txt
+  | f2.txt
+  | f20.txt
+  | f21.txt
+  | f22.txt
+  | f23.txt
+  | f24.txt
+  | f25.txt
+  | f26.txt
+  | f27.txt
+  | f28.txt
+  | f29.txt
+  | f3.txt
+  | f30.txt
+  | f31.txt
+  | f32.txt
+  | f33.txt
+  | f34.txt
+  | f35.txt
+  | f36.txt
+  | f37.txt
+  | f38.txt
+  | f39.txt
+  | f4.txt
+  | f40.txt
+  | f41.txt
+  | f42.txt
+  | f43.txt
+  | f44.txt
+  | f45.txt
+  | f46.txt
+  | f47.txt
+  | f48.txt
+  | f49.txt
+  | f5.txt
+  | f6.txt
+  | f7.txt
+  | f8.txt
+  | f9.txt
+  | seed.txt
+  → exit 0 (27ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779645864995 && git fsck --full
+  ! 坏的 sha1 文件：.git/objects/e9/._tmp_obj_rPGiG0
+  ! 坏的 sha1 文件：.git/objects/eb/._tmp_obj_jTBiaK
+  → exit 0 (61ms)
 
-FAIL after 888ms: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-Error: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-    at gitMust (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:114:11)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:186:7)
-    at async withSession (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:35:12)
-    at async Object.body (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:182:5)
-    at async runTest (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:98:5)
-    at async runSuite (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:127:15)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/run-all.ts:19:1)
+PASS in 2044ms

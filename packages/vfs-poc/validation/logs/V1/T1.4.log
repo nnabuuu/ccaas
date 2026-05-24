@@ -1,22 +1,44 @@
 # T1.4 worktree add → commit → merge → remove (spec ③⑧ main flow)
-# started 2026-05-24T12:45:02.201Z
+# started 2026-05-24T18:04:23.719Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779626702201/project && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-4-1779626702201/project/.git/
-  → exit 0 (85ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779626702201/project && git config init.defaultBranch main
-  → exit 0 (33ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779626702201/project && git add -A
-  ! 致命错误：关闭松散对象文件时出错: Permission denied
-  → exit 128 (65ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project/.git/
+  → exit 0 (87ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git config init.defaultBranch main
+  → exit 0 (36ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git add -A
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git commit -m initial
+  | [main（根提交） 6ef4f47] initial
+  |  2 files changed, 3 insertions(+)
+  |  create mode 100644 .gitignore
+  |  create mode 100644 shared.txt
+  → exit 0 (60ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git worktree add -b session-A /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A
+  ! 准备工作区（新分支 'session-A'）
+  | HEAD 现在位于 6ef4f47 initial
+  → exit 0 (90ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A && git add -A
+  → exit 0 (40ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A && git commit -m session-A work
+  | [session-A 665eacd] session-A work
+  |  2 files changed, 2 insertions(+), 1 deletion(-)
+  |  create mode 100644 session-only.txt
+  → exit 0 (59ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git merge --no-ff -m merge session-A session-A
+  | Merge made by the 'ort' strategy.
+  |  session-only.txt | 1 +
+  |  shared.txt       | 2 +-
+  |  2 files changed, 2 insertions(+), 1 deletion(-)
+  |  create mode 100644 session-only.txt
+  → exit 0 (95ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A
+  → exit 0 (53ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git fsck --full
+  ! 坏的 sha1 文件：.git/objects/83/._tmp_obj_IN7HqB
+  ! 坏的 sha1 文件：.git/objects/b6/._e9572c53c400eb50a6d27eca226e5f54a1a951
+  ! 坏的 sha1 文件：.git/objects/eb/._00a60a5cf4c8d382b51a1ff664213616d31bf5
+  ! 坏的 sha1 文件：.git/objects/eb/._tmp_obj_IA0sCB
+  → exit 0 (54ms)
 
-FAIL after 809ms: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-Error: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-    at gitMust (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:114:11)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:151:7)
-    at async withSession (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:35:12)
-    at async Object.body (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:145:5)
-    at async runTest (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:98:5)
-    at async runSuite (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:127:15)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/run-all.ts:19:1)
+PASS in 1273ms

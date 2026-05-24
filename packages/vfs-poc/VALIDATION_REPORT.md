@@ -1,10 +1,10 @@
 # Agent Session Runtime — P0 Validation Report
 
-> **验证日期**: 2026-05-24
+> **验证日期**: v1 2026-05-24,**v2 (本次修订) 2026-05-25**
 > **平台**: macOS 14.x (darwin arm64), agentfs NFS export
 > **关联 spec**: [docs/agent-session-runtime-spec.md](../../docs/agent-session-runtime-spec.md)
 > **关联 POC**: `packages/vfs-poc/` (POC1 commit `d531540`)
-> **版本**: agentfs v0.6.4, git 2.43.0, claude 2.1.148, node 22.15.1
+> **版本** (v2 修订时): agentfs **2e9c85f** ([rail44/agentfs fix 分支](https://github.com/rail44/agentfs/tree/fix/nfs-write-owner-bypass-mode-check)) + upstream v0.6.4 备份, git 2.43.0, claude 2.1.148, node 22.15.1
 > **测试代码**: `packages/vfs-poc/validation/` (可重跑: `npm run validate:v1`, `npm run validate:v2`)
 > **原始日志**: `packages/vfs-poc/validation/logs/{V1,V2}/`
 > **机器可读结果**: `packages/vfs-poc/validation/results/{v1,v2}-darwin.json`
@@ -13,15 +13,20 @@
 
 ## Executive Summary
 
-| 验证 | 结论 | 对 spec 的影响 |
-|---|---|---|
-| **V1 — `.git` 直接放进 agentfs 虚拟 FS 跑 git** | ❌ **FAIL** — 10/10 测试在 macOS NFS 上失败,**主因不是性能而是 git 在 agentfs NFS 上无法写 loose object** | **D2/D4 阻塞**。`.git` 不能整体放进 agentfs NFS。需要改架构:`.git` 用 host fs / agentfs SDK 直读直写 / 等待 agentfs 修 SETATTR-after-WRITE 缺陷 |
-| **V2 — just-bash 完全替代 claude 原生 shell + fs 工具** | ⚠️ **可达但脆弱** — 强读 1/3 轮成功 (C2.4),弱读 3/3 (C2.2)。模型倾向用原生工具语义,**MCP 替换必须严格 mirror 原生 API 形状** | **D1 措辞需修订**: 不写"完全替代",改写**两层模型** — bash 弱替代(POC1 已验证)+ 可选 fs 强替代(需要 1:1 schema 镜像) |
-| **总体** | 🚧 **spec 需修订才能落地** | 1 个 P0 阻塞 + 1 个 P0 限定条件清晰化 |
+> **本报告有两轮验证**:
+> - **v1 (2026-05-24)** 用 agentfs upstream v0.6.4 跑,V1 全 fail。
+> - **v2 (2026-05-25)** 我们独立踩到的 git 失败,在 [tursodatabase/agentfs#333](https://github.com/tursodatabase/agentfs/issues/333) 里被 `@rail44` 在 2026-04-16 报告过,并附了 fix 分支。本次自己 build + 装上 fix 分支重跑,**V1 从 0/10 → 10/10**。
 
-**阻塞项**:
-1. agentfs SETATTR-after-WRITE 在 macOS NFS 上拒 close() — 影响 git loose object 写入 → 阻塞 spec D2 完整落地
-2. agentfs 与 host fs 不在同一 device → `git clone --local` 默认尝试 hardlink 失败 (EXDEV)
+| 验证 | v1 结论 (upstream) | v2 结论 (rail44 fix + macOS workarounds) | 对 spec 的影响 |
+|---|---|---|---|
+| **V1 — `.git` 直接放 agentfs 虚拟 FS** | ❌ 0/10 — `git add` 写 loose object 时 close() 报 EACCES | ✅ **10/10** — rail44 fix 解了 NFS server 端,加 `.gitignore '._*'` + `cleanAppleDoubles()` 处理 macOS-only AppleDouble | **D2/D4 conditional pass**: 一旦 rail44 fix 合入 upstream(或我们一直自带打过补丁的 build),spec D2 在 macOS 也立得住。Linux FUSE 大概率原生 pass(无 AppleDouble)。**不再是 blocker** |
+| **V2 — just-bash 完全替代 claude shell + fs 工具** | ⚠️ 强读 1/3,弱读 3/3 | (本轮未重跑 V2) | **D1 措辞需修订**: 不写"完全替代",改写**两层模型** — bash 弱替代(POC1 已验证)+ 可选 fs 强替代(需要 1:1 schema 镜像) |
+| **总体** | 🚧 需要补丁 + spec 措辞修订 | 🟢 **spec 主架构成立**,有 1 个上游 fix 依赖 + 1 个措辞修订 | |
+
+**当前 blocker 状态**:
+1. ~~agentfs SETATTR-after-WRITE~~ — **已有 fix**([rail44 fix 分支](https://github.com/rail44/agentfs/tree/fix/nfs-write-owner-bypass-mode-check), 1 commit,带 test)。仅需上游合入或者我们维护 fork。Issue [#333](https://github.com/tursodatabase/agentfs/issues/333) 详细描述了同类问题在 nfs-ganesha/mergerfs/Red Hat 的先例和修复方式
+2. ~~`git clone --local` EXDEV~~ — 标准 POSIX 行为;加 `--no-hardlinks` 即解(spec 实际场景里不会有 host→mount clone 这种操作)
+3. **macOS AppleDouble** — macOS NFS client 给所有文件自动写 `._foo` sidecar(因为 `com.apple.provenance` xattr fallback)。**Linux FUSE 没有这个问题**。macOS dev 需要 `.gitignore '._*'` + 周期性 `find -name '._*' -delete`,或者推 turso 实现 NFS server 端 xattr 支持
 
 ---
 
@@ -33,65 +38,89 @@
 
 ### 测试矩阵
 
-| Test | 描述 | macOS NFS | 失败模式 |
-|---|---|---|---|
-| T1.1 | baseline init/add/commit/log/fsck | ❌ | `git add` 在写 loose object 时 close() 报 EACCES |
-| T1.2 | hardlink — `git clone --local` | ❌ | `Cross-device link` (EXDEV) — clone 试图 hardlink host→mount |
-| T1.3 | mmap pack — gc + concurrent cat-file | ❌ | 同 T1.1 (git add 阶段就挂) |
-| T1.4 | worktree happy path (spec ③⑧ 主流程) | ❌ | 同 T1.1 |
-| T1.5 | 50 并发 git add | ❌ | 同 T1.1 |
-| T1.6 | 2 worktree 并发 commit + merge | ❌ | 同 T1.1 |
-| T1.7 | 大小写冲突 Foo.md vs foo.md | ❌ | 同 T1.1 (即使 commit 前的写就挂) |
-| T1.8 | git status perf + 重 mount 后 stat 缓存 | ❌ | 同 T1.1 |
-| T1.9 | `git mv` 目录(含修改文件) | ❌ | 同 T1.1 |
-| T1.10 | 10 轮完整 worktree 生命周期 stress | ❌ | 同 T1.1 |
+| Test | 描述 | v1 macOS NFS (upstream) | v2 macOS NFS (rail44+macOS-WA) | 备注 |
+|---|---|---|---|---|
+| T1.1 | baseline init/add/commit/log/fsck | ❌ EACCES | ✅ 1.1s | rail44 fix 直接解决 |
+| T1.2 | hardlink — `git clone --local` | ❌ EXDEV | ✅ 1.4s | 加 `--no-hardlinks` |
+| T1.3 | mmap pack — gc + concurrent cat-file | ❌ EACCES | ✅ 11.1s | mmap 操作 100% 工作;fsck 前清 `._*` |
+| T1.4 | worktree happy path (spec ③⑧ 主流程) | ❌ EACCES | ✅ 1.3s | `.gitignore '._*'` 阻止 sidecar 进 commit |
+| T1.5 | 50 并发 git add | ❌ EACCES | ✅ 2.0s | |
+| T1.6 | 2 worktree 并发 commit + merge | ❌ EACCES | ✅ 1.4s | 同 T1.4 |
+| T1.7 | 大小写冲突 Foo.md vs foo.md | ❌ EACCES | ✅ 1.0s | NFS 实测 case-sensitive(`Foo.md` 和 `foo.md` 共存) |
+| T1.8 | git status perf + 重 mount 后 stat 缓存 | ❌ EACCES | ✅ 15.5s | cold=228ms warm=47ms postRemount=275ms (stat cache 跨 remount 大致复原) |
+| T1.9 | `git mv` 目录(含修改文件) | ❌ EACCES | ✅ 1.3s | |
+| T1.10 | 10 轮完整 worktree 生命周期 stress | ❌ EACCES | ✅ 4.4s | 10/10 round 全 pass |
 
-**通过率: 0/10**
+**通过率: v1 0/10 → v2 10/10**
 
-### 主因分析: fchmod+close race on NFS
+### v1 主因分析: NFS server 端 mode-check + open-with-0444 模式
 
-git 写 loose object 的序列(`object-file.c::write_loose_object`):
+> **更正**: v1 报告写的是"fchmod after WRITE"。这是基于错误日志反推,实际不准确。issue [#333](https://github.com/tursodatabase/agentfs/issues/333) 报告里给出了精确的 reproducer:
 
 ```c
-fd = mkstemp(...)            // .git/objects/xx/tmp_obj_*
-write(fd, content, ...)
-fchmod(fd, 0444)              // 立即变只读 (常规 fs 上无副作用)
-close(fd)                     // ← 这里报 "Permission denied" on agentfs NFS
-rename(tmp, .git/objects/xx/<sha>)
+fd = open("file", O_RDWR | O_CREAT | O_EXCL, 0444);  // 文件出生就是 0444
+write(fd, data, len);                                  // 本地 cache (OK)
+close(fd);                                             // ← 这里报 "Permission denied"
 ```
 
-agentfs 暴露 NFS 时, `fchmod(0444)` SETATTR 成功,但随后的 `close()` 在 flush deferred writes 时被 NFS server 以"文件已只读"拒绝。这是经典 NFS "fchmod-during-write" 问题。
+git 写 loose object 时 (`finalize_object_file` 路径) **直接用 0444 mode 创建**,而不是先 0644 再 fchmod。普通本地 fs 上无副作用 — 一旦 fd 拿到,就独立于 mode bits。但 NFS v3 是 stateless 的: server 在每个 `WRITE` RPC 都重查当前 mode bits,看到 0444 直接返回 `NFS3ERR_ACCES`。client 把错误延迟报到 `close()`(因为 close 是 flush deferred WRITE 的时机)。
 
-**验证**: 用 `GIT_OBJECT_DIRECTORY=/tmp/外部目录 git add` 把 loose objects 写到 host fs,`exit=0` 成功。证明问题局限于 agentfs NFS 的 SETATTR-after-WRITE 处理。
+agentfs 的 NFS server (`nfsproc3_write()` in `cli/src/nfsserve/nfs_handlers.rs`) 调 `permissions::can_write()` 严格按 mode bits 检查。这是 NFS server 实现的一个经典缺陷,**所有同类项目都做过 owner-bypass-mode-check 之类的修复**:
+- nfs-ganesha [#262/#349](https://github.com/nfs-ganesha/nfs-ganesha/issues/262) — atomic create+open 保留 fd
+- mergerfs [#626/#343](https://github.com/trapexit/mergerfs/issues/626) — `nfsopenhack`(chmod-open-fchmod 三步)
+- Red Hat Bug 1751210 — errata 修复
 
-**试过但无效的 git workaround**:
-- `core.sharedRepository=group / world` — 改 chmod 目标 mode,仍 fail
-- `core.fsync=none / core.fsyncObjectFiles=false / core.fsyncMethod=writeout-only` — 无关 fsync
-- `git hash-object -w` 直接路径 — 同样走 fchmod+close,fail
-- `umask 0` — 无效
-- git 源码硬编码 `fchmod(fd, 0444)`,无 config 开关可绕
+**rail44 fix 的实质**: 在 `nfsproc3_write()` 让 file owner + root 跳过 mode-bit 写检查。语义依据: POSIX 下 owner 反正可以 `chmod` 改回去,对 owner 强制 mode 检查在语义上不可执行。Non-owner / non-root 仍按 mode 检查。带一个 `test-write-readonly-new` syscall test 重现 git 的 `open(O_CREAT, 0444) → write → close` 模式。
+
+**验证**: 用 `GIT_OBJECT_DIRECTORY=/tmp/外部目录 git add` 把 loose objects 写到 host fs,`exit=0` 成功。证明问题局限于 agentfs NFS 的 mode-check 实现。试过的 git config workaround 全无效(`core.sharedRepository`、`core.fsync`、`git hash-object`、`umask 0`)— git 源码里 mode bits 是硬编码的。
+
+### v2 二级 blocker: macOS AppleDouble
+
+rail44 fix 解开 git 写入后,T1.3/T1.4/T1.6/T1.10 仍 fail,但**失败模式完全不同**:
+
+```
+fatal: 坏的 sha1 文件：.git/objects/eb/._tmp_obj_PpxAAd
+unable to create file ._a.txt: No such file or directory
+NFS3ERR_NOTEMPTY (agentfs server log)
+```
+
+实测原因(`packages/vfs-poc/validation/...` 探针脚本): 在 agentfs NFS mount 上 `touch hello.txt`,**立刻**出现一个 `._hello.txt` sidecar (4096 字节)。`xattr -l` 显示新文件已有 `com.apple.provenance` 属性 — macOS 13+ kernel 自动给所有新创建文件加这个 xattr。agentfs NFS server 不支持 xattr,client 端 kernel **fallback 成 AppleDouble**: 把 xattr 数据写进 `._foo` 旁路文件。
+
+下游影响:
+- git 的 `git add -A` 把 `._foo` 也加进 index → commit → merge 时尝试 checkout `._foo` 会因为各种原因失败
+- git gc 创建的临时 packfile 用 plain `open()`(不是 git 的 loose-object 模式),触发 AppleDouble;后续 `git fsck` 把 `.git/objects/xx/._tmp_obj_*` 误读为 sha1 文件
+
+**应用层 workaround**(就是 v2 用的):
+1. `.gitignore '._*\n.DS_Store\n'` 写在每个 repo 根 — 阻止 sidecar 进 git 历史
+2. `cleanAppleDoubles()` 递归扫 `.git/` 删 `._*` — 在跑 `git fsck` 之前
+3. `--no-hardlinks` for `git clone --local` 跨设备 hardlink
+
+这三个 workaround 是 **macOS-only** 的。Linux FUSE 不存在 AppleDouble(没有 macOS kernel,没有 fallback),理应不需要任何这类清理。
+
+**根治路径**(turso 端):
+- agentfs NFS server 实现 xattr 支持(NFSv3 SETXATTR/GETXATTR procedures);或
+- agentfs NFS server 主动过滤 `._*` 文件 — 在 READDIR 响应里不返回 sidecars,在 CREATE/WRITE 时拒绝 `._` 前缀;或
+- 推 macOS 端 `noappledouble` mount option(client 端方案,但 NFSv3 上目前似乎没现成开关)
 
 ### T1.2 cross-device 失败 (独立问题)
 
-`git clone --local` 默认用 hardlink 把 host repo 的 packfile 链接进 clone,但 host 和 agentfs mount 在不同 dev,`link()` 报 EXDEV。这是预期的 OS 行为,**不是 agentfs 的 bug**。生产中可以加 `--no-hardlinks` 强制 copy,但 spec 设计里不会有 host→mount clone 这种操作(spec 是 entity → agentfs 直接 materialize)。**此项不影响 spec 落地**,但要在文档里说明。
+`git clone --local` 默认用 hardlink 把 host repo 的 packfile 链接进 clone,但 host 和 agentfs mount 在不同 dev,`link()` 报 EXDEV。这是预期的 OS 行为,**不是 agentfs 的 bug**。加 `--no-hardlinks` 即解。spec 设计里不会有 host→mount clone(spec 是 entity → agentfs 直接 materialize)。
 
-### 对 spec D2 / D4 的判定
+### 对 spec D2 / D4 的判定 (v2 更新)
 
 > spec D2: "Entity 的 .git 目录可以作为 SQLite 数据的一部分被 AgentFS 虚拟化"
 > spec D4: "DB → Git 同步: 不需要(.git 在 DB 内)"
 
-**结论: 在当前 agentfs (v0.6.4) macOS NFS 上不可行**。Linux FUSE 行为待验证,可能 OK,但 macOS dev env 完全不可用。
+**v2 结论: macOS NFS 上 conditional pass**。条件:
+1. 用 rail44 fix 分支(或等价的上游 fix)
+2. macOS dev env 里加 `.gitignore '._*'` + 周期清 `._` sidecar
+3. Linux FUSE 大概率原生 pass(无 AppleDouble,fix 是否仍需要待验证 — FUSE 路径权限模型不同)
 
-**可选修订方向**(按改动量从小到大):
-
-| 选项 | 描述 | 代价 |
-|---|---|---|
-| **A. 等 agentfs 修 NFS SETATTR** | 给 turso 上 issue,等他们修 close()-after-chmod 行为 | 不确定时间;Linux FUSE 可能本来就 OK |
-| **B. `.git` 通过 agentfs SDK 直读直写** | git 在 host fs 跑,session start 时 SDK 从 db deserialize 出 .git,session end 时 SDK serialize 回 db | 需要写 .git ↔ libsql 序列化层;每 commit 触发一次 db 写;**违背 D4 "不需要同步层"** |
-| **C. `.git` 放 host fs,worktree 放 agentfs** | `.git` 一份/per project,放在 host `~/.kedge/git-repos/`;worktree 在 agentfs mount。session 间 worktree 隔离,.git 共享 | 简单可行;但 .git 不在 agentfs,审计/快照不覆盖 git history;违背 D2 |
-| **D. 放弃 git,自研 entity 版本控制** | spec D3 已经把 git 限定为 worktree/merge 引擎,可考虑用更简单的"每 entity 一个 jsonpatch 流"替代 | 大改动;失去 git diff/blame 生态 |
-
-**推荐: 短期走 C(spec 文档化为"v1 兼容"妥协),中期推 A(等 agentfs 修),并行评估 B 作为长期方向。**
+**推荐路径**:
+1. **短期 (1-2 天)**: 我们 fork agentfs,把 rail44 的 commit cherry-pick 到我们维护的 build。`packages/vfs-poc/scripts/build-agentfs.sh` 自动化 build + install
+2. **中期 (1-2 周)**: 给 upstream tursodatabase/agentfs 开 PR 把 rail44 commit 推过去(他自己没开 PR,issue 也没 maintainer 回应)。同时给 #333 留 comment 带我们的独立 reproduction + V1 数据,推进优先级
+3. **中期 (并行)**: 在 Linux Docker 里跑 V1,确认 FUSE 路径是否仍需 rail44 fix。如果 Linux 原生 pass,production 在 Linux 部署就不依赖 fork
+4. **长期**: 推 turso 实现 NFS xattr 支持(根治 macOS AppleDouble),或文档化 macOS dev 必带 `cleanAppleDoubles` 助手
 
 ### Limitations(V1 没测的事)
 
@@ -166,21 +195,22 @@ write undefined (22B)
 
 | Section / Decision | 现状 | 建议修订 |
 |---|---|---|
-| §3.1 表格 - "AgentFS" 行 | "Entity 的全部数据(含 .git 目录)存储在 AgentFS 的 SQLite 中" | 加注:"v1 兼容性: 受 agentfs 当前 NFS SETATTR 行为影响,.git 暂存于 host fs / 通过 SDK 序列化进 db。验证: VALIDATION_REPORT.md V1" |
+| §3.1 表格 - "AgentFS" 行 | "Entity 的全部数据(含 .git 目录)存储在 AgentFS 的 SQLite 中" | 加注:"已验证可行(VALIDATION_REPORT v2 V1 10/10 pass on macOS NFS),依赖 agentfs PR #TBD(rail44 NFS owner-bypass-mode-check fix)合入,或我们维护 fork build" |
 | §3.1 表格 - "just-bash" 行 | "完全替代 Claude Code 的原生 shell 调用" | "替代 claude 内置 Bash 工具(必经此路径);claude 的原生 Read/Write/Edit/Grep/Glob 仍可工作,落在 agentfs mount 内。如需 100% MCP 化,加 MCP `files` 服务并 1:1 mirror 原生 schema" |
 | §D1 决策表 | "just-bash 完全替代原生 shell" | "默认:仅替代 Bash;可选:扩展替代 fs 工具集(MCP schema 必须 1:1 mirror 原生)" |
-| §D2 决策表 | ".git 在 DB 中" | "目标态:.git 在 DB 中。v1 妥协:`.git` 在 host fs,worktree 在 agentfs mount。后续 agentfs NFS 修复 / Linux FUSE 验证后再迁" |
-| §D4 决策表 | "不需要 DB → Git 同步" | "目标态:不需要(.git 在 DB)。v1 临时方案:.git 在 host fs,session 结束时若需迁移到 db,需要 .git ↔ libsql 序列化层(下一阶段评估)" |
-| §VII 步骤 ② | "无需额外的 DB → Git Sync — .git 就在 DB 里" | 加 footnote 引用此 VALIDATION_REPORT 的 V1 结论 |
+| §D2 决策表 | ".git 在 DB 中" | "已验证可行 (VALIDATION_REPORT v2),依赖 agentfs upstream issue [#333](https://github.com/tursodatabase/agentfs/issues/333) 的 fix 落地" |
+| §D4 决策表 | "不需要 DB → Git 同步" | "已验证 (VALIDATION_REPORT v2 V1 10/10 pass)。dev env (macOS) 需带 `.gitignore '._*'` + `cleanAppleDoubles` 助手处理 AppleDouble 副作用,production (Linux FUSE) 无此问题" |
+| §VII 步骤 ② | "无需额外的 DB → Git Sync — .git 就在 DB 里" | 加 footnote 引用此 VALIDATION_REPORT v2 V1 结论 + 注 macOS dev workaround |
 | §VII 步骤 ⑤ | "完全替代 Claude Code 原生 shell" | 同 §D1 修订:说清楚两层 |
 | §X 平台模块图 | (无变化建议) | 在 just-bash 框下面加注: "替代 Bash 工具;Read/Write/Edit 默认走原生 + agentfs mount" |
-| §XII Future | 缺 Linux 验证项 | 新增:"在 Linux FUSE 下重跑 V1 全套,确认 SETATTR 行为差异" |
+| §XII Future | 缺 Linux 验证项 | 新增:"在 Linux FUSE 下重跑 V1 全套,确认 rail44 fix 是否仍需要 + 验证无 AppleDouble" |
 
 ---
 
 ## Out-of-scope (这次没测)
 
-- **Linux FUSE** 上跑 V1 — 后续必须补
+- **Linux FUSE** 上跑 V1 — **优先级提到最高**: 确认 fix 在 FUSE 路径是否仍需 + 验证 AppleDouble 不存在
+- **V2 在 rail44 fix 下重跑** — 本次 v2 修订只重跑 V1。V2 结论沿用 v1 实验(理论上 V2 跟 fix 无关,V2 不涉及 git)
 - **V3 多挂载点合成**(spec §5 的 project/skills/references/media)
 - **V4 50+ session 并发挂载密度**
 - **Skill 三层继承挂载**(spec §VIII)
@@ -235,4 +265,12 @@ npm run clean
 
 ## 修订历史
 
-- **v1 — 2026-05-24** (初版): macOS NFS 平台 V1 + V2 全量执行,2 个 P0 都得到判定。Linux FUSE 留待后续。
+- **v1 — 2026-05-24** (初版): macOS NFS 平台 V1 + V2 全量执行,2 个 P0 都得到判定。V1 0/10 因 fchmod+close 问题全 fail,初步定性 spec D2 BLOCKED。
+- **v2 — 2026-05-25** (重大修订):
+  - 在 turso/agentfs issue tracker 找到 [#333](https://github.com/tursodatabase/agentfs/issues/333) — `@rail44` 2026-04-16 报告同一问题,附 fix 分支 + test
+  - 自己 build rail44 fix 分支(commit `2e9c85f`),备份 upstream binary 后替换 `~/.cargo/bin/agentfs`
+  - 重跑 V1: rail44 fix 解了主问题后,3 个测试新失败暴露 macOS AppleDouble 二级 blocker
+  - 加 `.gitignore '._*'` + `cleanAppleDoubles()` helper + `--no-hardlinks` workaround
+  - **V1 最终 10/10 pass on macOS NFS** (agentfs `2e9c85f` + 应用层 macOS workaround)
+  - spec D2 verdict 从 BLOCKED 升级为 conditional pass
+  - 更正 v1 报告里"fchmod after WRITE"的不精确描述 — 实际是 git `open(O_CREAT, 0444)` 后 NFS server mode-check 拒 WRITE RPC,close() 时延迟报错

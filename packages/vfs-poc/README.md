@@ -22,10 +22,14 @@ curl -fsSL https://github.com/tursodatabase/agentfs/releases/latest/download/age
 export PATH="$HOME/.cargo/bin:$PATH"
 agentfs --version  # 应该输出 v0.6.4 或更新
 
-# 2. 装 npm 依赖
+# 2. (V1 需要) build + 装 rail44 的 NFS fix 分支 — 让 git 能在 agentfs 上跑
+#    详情见 VALIDATION_REPORT.md
+bash packages/vfs-poc/scripts/build-agentfs-fix.sh
+
+# 3. 装 npm 依赖
 cd packages/vfs-poc && npm install
 
-# 3. claude CLI 必须在 PATH 上 (ccaas 已经依赖)
+# 4. claude CLI 必须在 PATH 上 (ccaas 已经依赖)
 claude --version
 ```
 

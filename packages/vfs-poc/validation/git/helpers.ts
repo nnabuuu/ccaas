@@ -6,7 +6,7 @@
  * test's log file.
  */
 import { spawn } from 'node:child_process';
-import { mkdirSync, statSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { SessionFsManager, type SessionHandle } from '../../src/session-fs-manager.js';
@@ -135,6 +135,25 @@ export function nlinkOf(path: string): number {
   return statSync(path).nlink;
 }
 
+/**
+ * Recursively remove macOS AppleDouble (`._foo`) sidecar files from a tree.
+ * These appear on agentfs NFS mounts because macOS NFS client falls back to
+ * AppleDouble when the server doesn't support extended attributes (it
+ * silently writes `com.apple.provenance` to every new file). They are not
+ * a function of the data git stores — Linux FUSE never produces them. Use
+ * this between operations whose downstream consumers (e.g. `git fsck`)
+ * would misinterpret the sidecars.
+ */
+export function cleanAppleDoubles(dir: string): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const p = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) cleanAppleDoubles(p);
+    else if (entry.name.startsWith('._') || entry.name === '.DS_Store') {
+      try { unlinkSync(p); } catch {}
+    }
+  }
+}
+
 export function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(`assert: ${msg}`);
 }
@@ -142,6 +161,12 @@ export function assert(cond: unknown, msg: string): asserts cond {
 export async function configureRepo(ctx: TestContext, cwd: string): Promise<void> {
   // Pin to packed-refs avoidance; ensure default branch name.
   await gitMust(ctx, cwd, ['config', 'init.defaultBranch', 'main']);
+  // macOS NFS client auto-creates `._foo` AppleDouble sidecars for every file
+  // (because com.apple.provenance xattr can't be stored in agentfs NFS, kernel
+  // falls back to AppleDouble). Excluding `._*` from git prevents them from
+  // being staged/committed/merged. Does not stop their physical creation on
+  // disk, but keeps them out of the git index. Linux FUSE has no AppleDouble.
+  writeF(join(cwd, '.gitignore'), '._*\n.DS_Store\n');
 }
 
 export { wait };

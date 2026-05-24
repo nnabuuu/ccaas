@@ -1,7 +1,7 @@
 # T1.1 baseline — init / add / commit / log / fsck
-# started 2026-05-24T12:44:58.532Z
+# started 2026-05-24T18:04:10.149Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779626698532 && git init
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git init
   ! 提示：使用 'master' 作为初始分支的名称。这个默认分支名称可能会更改。要在新仓库中
   ! 提示：配置使用初始分支名，并消除这条警告，请执行：
   ! 提示：
@@ -11,21 +11,25 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-1-1779626698532 && git init
   ! 提示：可以通过以下命令重命名刚创建的分支：
   ! 提示：
   ! 提示：	git branch -m <name>
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-1-1779626698532/.git/
-  → exit 0 (95ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779626698532 && git config init.defaultBranch main
-  → exit 0 (39ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779626698532 && git add -A
-  ! 致命错误：关闭松散对象文件时出错: Permission denied
-  → exit 128 (52ms)
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-1-1779645850149/.git/
+  → exit 0 (115ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git config init.defaultBranch main
+  → exit 0 (41ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git add -A
+  → exit 0 (61ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git commit -m init
+  | [master（根提交） 5006720] init
+  |  4 files changed, 5 insertions(+)
+  |  create mode 100644 .gitignore
+  |  create mode 100644 README.md
+  |  create mode 100644 a.txt
+  |  create mode 100644 b.txt
+  → exit 0 (88ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git log --oneline
+  | 5006720 init
+  → exit 0 (62ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779645850149 && git fsck --full
+  ! 坏的 sha1 文件：.git/objects/eb/._tmp_obj_7kfGPR
+  → exit 0 (65ms)
 
-FAIL after 882ms: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-Error: git add -A exit=128: 致命错误：关闭松散对象文件时出错: Permission denied
-    at gitMust (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:114:11)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:30:7)
-    at async withSession (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/helpers.ts:35:12)
-    at async Object.body (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/tests.ts:24:5)
-    at async runTest (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:98:5)
-    at async runSuite (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/harness.ts:127:15)
-    at async <anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/vfs-poc/validation/git/run-all.ts:19:1)
+PASS in 1138ms
