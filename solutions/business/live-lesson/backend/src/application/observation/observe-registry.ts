@@ -1,7 +1,5 @@
 import { Inject, Injectable, OnModuleInit, BadRequestException, Logger } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';
 import { OBSERVE_TYPE_KEY } from '../../domain/shared/observe-handler.interface';

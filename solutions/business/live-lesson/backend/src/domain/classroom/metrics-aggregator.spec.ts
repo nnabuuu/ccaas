@@ -1,6 +1,6 @@
 import { MetricsAggregator } from './metrics-aggregator';
-import { Student } from '../../adapters/persistence/entities/student.entity';
-import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
+import type { StudentRecord as Student } from '../types/student';
+import type { AiQuestionRecord as AiQuestion } from '../types/ai-question';
 import type { TaskMap, ResolvedObserve } from '../../schemas';
 import { resolveObserve } from '../../schemas';
 

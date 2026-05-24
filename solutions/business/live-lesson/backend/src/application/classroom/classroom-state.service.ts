@@ -1,6 +1,4 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';

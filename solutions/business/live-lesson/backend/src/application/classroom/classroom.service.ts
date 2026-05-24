@@ -2,8 +2,6 @@ import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRe
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
 import { randomInt } from 'crypto';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import type { StudentRecord } from '../../domain/types/student';

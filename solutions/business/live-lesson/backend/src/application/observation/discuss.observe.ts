@@ -1,6 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { ObserveType } from '../../domain/shared/observe-handler.interface';
 import type { ObserveHandler, ObserveContext } from '../../domain/shared/observe-handler.interface';
 import type { DiscussObserveData } from '../../schemas/classroom/observe-data';

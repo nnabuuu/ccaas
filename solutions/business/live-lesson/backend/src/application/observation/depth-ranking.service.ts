@@ -1,6 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import {
   DISCUSS_HIGHLIGHT_REPO_PORT,

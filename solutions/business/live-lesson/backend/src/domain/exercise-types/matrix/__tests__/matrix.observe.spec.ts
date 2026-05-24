@@ -9,8 +9,8 @@
  */
 import { MatrixObserveHandler } from '../matrix.observe';
 import type { ObserveContext } from '../../../shared/observe-handler.interface';
-import type { Student } from '../../../../adapters/persistence/entities/student.entity';
-import type { Submission } from '../../../../adapters/persistence/entities/submission.entity';
+import type { StudentRecord as Student } from '../../../types/student';
+import type { SubmissionRecord as Submission } from '../../../types/submission';
 
 function mkStudent(id: string, name: string): Student {
   return { id, name } as Student;

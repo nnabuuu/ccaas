@@ -1,6 +1,4 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { STUDENT_REPO_PORT, type StudentRepoPort } from '../../domain/ports/student-repo.port';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import type { ClassroomSessionRecord } from '../../domain/types/classroom-session';
