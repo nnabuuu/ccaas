@@ -167,9 +167,17 @@ export async function configureRepo(ctx: TestContext, cwd: string): Promise<void
   // (because com.apple.provenance xattr can't be stored in agentfs NFS, kernel
   // falls back to AppleDouble). Excluding `._*` from git prevents them from
   // being staged/committed/merged.
-  // Skip when VFS_POC_BARE=1 — used to validate that a patched agentfs
-  // (which drops sidecars server-side, see appledouble.rs) makes the workaround
-  // unnecessary.
+  //
+  // Default = workaround ON (writes the .gitignore). Set VFS_POC_BARE=1 to
+  // skip — used to validate that the patched agentfs server (which drops
+  // sidecars itself; see ~/Documents/GitHub/agentfs/cli/src/nfsserve/appledouble.rs)
+  // makes this workaround unnecessary.
+  //
+  // Note: this flag defaults opposite of the agentfs `AGENTFS_DROP_APPLEDOUBLE`
+  // env var (which defaults to ON). The asymmetry is intentional — the Rust
+  // gate controls the server-side fix; the TS gate controls a (now-legacy)
+  // client-side mitigation. The default semantics line up: out of the box
+  // you get protection from BOTH layers, set either to 0 to test the other.
   if (process.env.VFS_POC_BARE !== '1') {
     writeF(join(cwd, '.gitignore'), '._*\n.DS_Store\n');
   }
