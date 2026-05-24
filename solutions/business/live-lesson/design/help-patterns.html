@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>学生引导模式设计 · Help Pattern Design</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{
+  --bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;
+  --t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;
+  --border:rgba(28,28,26,.07);--border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245;--teal-bg:#dfece8;
+  --purple:#3a3185;--purple-bg:#e9e7f3;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --blue:#1a5fa0;--blue-bg:#e4eff8;
+  --green:#2d6612;--green-bg:#e2f0d9;
+  --red:#941a29;--red-bg:#fce8ea;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:48px 40px 80px}
+
+/* Header */
+.page-hd{margin-bottom:56px}
+.page-hd h1{font-family:"Fraunces",Georgia,serif;font-size:48px;font-weight:500;line-height:1;letter-spacing:-1.5px;margin-bottom:12px}
+.page-hd h1 em{font-style:italic;color:var(--teal)}
+.page-hd .sub{font-size:17px;color:var(--t2);line-height:1.55;max-width:680px}
+.page-hd .sub strong{color:var(--t1);font-weight:600}
+
+/* Section heading */
+.sec{margin-bottom:56px}
+.sec-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:20px}
+.sec-num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-title{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.sec-hint{font-size:12px;color:var(--t3);font-weight:500;margin-left:auto}
+
+/* Pattern card */
+.pat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px;transition:all .18s}
+.pat:hover{border-color:var(--border-strong);box-shadow:0 8px 24px -8px rgba(28,28,26,.12)}
+.pat-info{display:flex;flex-direction:column;gap:10px}
+.pat-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:4px;width:fit-content}
+.pat-badge.teal{background:var(--teal-bg);color:var(--teal)}
+.pat-badge.purple{background:var(--purple-bg);color:var(--purple)}
+.pat-badge.amber{background:var(--amber-bg);color:var(--amber)}
+.pat-badge.blue{background:var(--blue-bg);color:var(--blue)}
+.pat-badge.green{background:var(--green-bg);color:var(--green)}
+.pat-badge.red{background:var(--red-bg);color:var(--red)}
+.pat h3{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.pat-desc{font-size:13px;color:var(--t2);line-height:1.65}
+.pat-desc strong{color:var(--t1);font-weight:600}
+.pat-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.pat-tag{font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);color:var(--t3);font-weight:500}
+
+/* Illustration */
+.pat-illust{background:var(--bg);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;min-height:200px}
+.pat-illust svg{width:100%;height:100%;display:block}
+
+/* Journey map */
+.journey{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:16px}
+.journey h3{font-size:16px;font-weight:700;margin-bottom:18px}
+.journey-row{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:8px}
+.journey-step{flex:1;min-width:140px;padding:14px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.journey-step:last-child{border-right:none}
+.journey-stage{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3)}
+.journey-action{font-size:12px;font-weight:600;color:var(--t1)}
+.journey-anxiety{font-size:11px;color:var(--amber);line-height:1.4;font-style:italic}
+.journey-help{font-size:11px;color:var(--teal);font-weight:600;line-height:1.4;margin-top:auto}
+
+/* Matrix */
+.matrix{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.matrix th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--border-strong);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);background:var(--surface2)}
+.matrix td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--t2);vertical-align:top;line-height:1.5}
+.matrix td:first-child{font-weight:600;color:var(--t1)}
+.matrix tr:hover td{background:var(--surface2)}
+
+/* Full-width pattern */
+.pat.full{grid-template-columns:1fr}
+
+/* Responsive */
+@media(max-width:768px){
+  .pat{grid-template-columns:1fr}
+  .journey-row{flex-direction:column}
+  .journey-step{border-right:none;border-bottom:1px solid var(--border)}
+}
+
+/* Animations for illustrations */
+@keyframes pulse-dot{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes slide-in{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes spotlight{0%,100%{opacity:.08}50%{opacity:.15}}
+@keyframes point-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════ HEADER ═══════ -->
+<div class="page-hd">
+  <h1>学生引导<em>模式</em>设计</h1>
+  <p class="sub">
+    学生在不同阶段有不同的困惑。<strong>一种引导方式无法解决所有问题。</strong>
+    本文档梳理 6 类场景，为每类场景选择最合适的引导模式。
+  </p>
+</div>
+
+<!-- ═══════ JOURNEY MAP ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">00 —</span>
+    <span class="sec-title">学生旅程地图</span>
+    <span class="sec-hint">焦虑随阶段变化</span>
+  </div>
+
+  <div class="journey">
+    <h3>学生心理旅程 · 从打开页面到完成课堂</h3>
+    <div class="journey-row">
+      <div class="journey-step">
+        <div class="journey-stage">① 打开 /join</div>
+        <div class="journey-action">输入课堂码</div>
+        <div class="journey-anxiety">"课堂码从哪来？几位？"</div>
+        <div class="journey-help">→ 模态引导（已实现 ✓）</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">② 等待大厅</div>
+        <div class="journey-action">等待老师开始</div>
+        <div class="journey-anxiety">"加入成功了吗？要等多久？"</div>
+        <div class="journey-help">→ 状态反馈 + 提示文案</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">③ 首次进入课堂</div>
+        <div class="journey-action">看到复杂界面</div>
+        <div class="journey-anxiety">"这些区域都是干嘛的？"</div>
+        <div class="journey-help">→ 聚光灯巡览</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">④ 做练习</div>
+        <div class="journey-action">答题、填表</div>
+        <div class="journey-anxiety">"这题要怎么操作？"</div>
+        <div class="journey-help">→ 内联提示（已有 ✓）</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">⑤ 使用工具</div>
+        <div class="journey-action">翻译、AI 助手</div>
+        <div class="journey-anxiety">"这个按钮干嘛的？怎么用？"</div>
+        <div class="journey-help">→ 功能提示 + 首次引导</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">⑥ 讨论阶段</div>
+        <div class="journey-action">与 AI 对话</div>
+        <div class="journey-anxiety">"我该说什么？说中文还是英文？"</div>
+        <div class="journey-help">→ 脚手架 chips（已有 ✓）</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-stage">⑦ 任意时刻</div>
+        <div class="journey-action">需要帮助</div>
+        <div class="journey-anxiety">"我忘了怎么操作了"</div>
+        <div class="journey-help">→ 帮助菜单（按需）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PATTERN MATRIX ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">01 —</span>
+    <span class="sec-title">六种引导模式</span>
+    <span class="sec-hint">按场景匹配</span>
+  </div>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>模式</th>
+        <th>触发时机</th>
+        <th>UI 形态</th>
+        <th>适用场景</th>
+        <th>侵入性</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A. 模态引导</td>
+        <td>用户主动点击</td>
+        <td>全屏遮罩 + 弹窗卡片</td>
+        <td>加入课堂（已实现）</td>
+        <td style="color:var(--red)">高（阻断）</td>
+      </tr>
+      <tr>
+        <td>B. 聚光灯巡览</td>
+        <td>首次进入课堂</td>
+        <td>高亮区域 + 浮动提示</td>
+        <td>界面布局认知</td>
+        <td style="color:var(--amber)">中（可跳过）</td>
+      </tr>
+      <tr>
+        <td>C. 功能气泡</td>
+        <td>功能首次出现</td>
+        <td>元素旁小气泡</td>
+        <td>翻译 FAB、AI FAB、课文面板</td>
+        <td style="color:var(--green)">低（自动消失）</td>
+      </tr>
+      <tr>
+        <td>D. 内联提示</td>
+        <td>进入特定状态</td>
+        <td>内容区内的横幅/文案</td>
+        <td>练习说明、翻译选中态</td>
+        <td style="color:var(--green)">低（融入内容）</td>
+      </tr>
+      <tr>
+        <td>E. 脚手架</td>
+        <td>需要输入时</td>
+        <td>预设 chip / placeholder</td>
+        <td>讨论对话、AI 提问</td>
+        <td style="color:var(--green)">低（可选）</td>
+      </tr>
+      <tr>
+        <td>F. 帮助菜单</td>
+        <td>用户主动呼出</td>
+        <td>顶栏 ? → 侧面板</td>
+        <td>任何时候回顾功能说明</td>
+        <td style="color:var(--teal)">零（按需）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════ A. MODAL GUIDE ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">A —</span>
+    <span class="sec-title">模态引导 · Modal Guide</span>
+    <span class="sec-hint">已实现 ✓</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge teal">已实现</div>
+      <h3>加入课堂 4 步引导</h3>
+      <p class="pat-desc">
+        用户点击<strong>「不知道怎么操作？」</strong>主动呼出。
+        全屏遮罩 + 居中弹窗，4 张 SVG 动画卡片并排展示流程。
+        底部「我知道了」按钮关闭。
+      </p>
+      <p class="pat-desc">
+        <strong>为什么用模态：</strong>加入页表单极简，但学生的焦虑是"接下来会发生什么"。
+        模态不阻断主流程（需主动点击），但提供完整的流程预览。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：用户点击</span>
+        <span class="pat-tag">关闭：按钮 / 遮罩 / Esc</span>
+        <span class="pat-tag">频率：按需</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Backdrop -->
+        <rect width="360" height="200" rx="6" fill="#1c1c1a" opacity=".25"/>
+        <!-- Modal card -->
+        <rect x="30" y="20" width="300" height="160" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="50" y="42" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#1c1c1a">四步加入课堂</text>
+        <!-- 4 mini cards -->
+        <rect x="42" y="52" width="62" height="80" rx="4" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="54" cy="64" r="6" fill="#0d5245"/><text x="54" y="67" font-size="6" fill="#f0efe8" text-anchor="middle" font-weight="700">1</text>
+        <rect x="48" y="74" width="50" height="28" rx="3" fill="#edece7"/>
+        <text x="73" y="112" font-size="5.5" fill="#5c5b56" text-anchor="middle">输入课堂码</text>
+
+        <rect x="112" y="52" width="62" height="80" rx="4" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="124" cy="64" r="6" fill="#0d5245"/><text x="124" y="67" font-size="6" fill="#f0efe8" text-anchor="middle" font-weight="700">2</text>
+        <rect x="118" y="74" width="50" height="28" rx="3" fill="#edece7"/>
+        <text x="143" y="112" font-size="5.5" fill="#5c5b56" text-anchor="middle">输入姓名</text>
+
+        <rect x="182" y="52" width="62" height="80" rx="4" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="194" cy="64" r="6" fill="#0d5245"/><text x="194" y="67" font-size="6" fill="#f0efe8" text-anchor="middle" font-weight="700">3</text>
+        <rect x="188" y="74" width="50" height="28" rx="3" fill="#edece7"/>
+        <text x="213" y="112" font-size="5.5" fill="#5c5b56" text-anchor="middle">等待大厅</text>
+
+        <rect x="252" y="52" width="62" height="80" rx="4" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="264" cy="64" r="6" fill="#0d5245"/><text x="264" y="67" font-size="6" fill="#f0efe8" text-anchor="middle" font-weight="700">4</text>
+        <rect x="258" y="74" width="50" height="28" rx="3" fill="#edece7"/>
+        <text x="283" y="112" font-size="5.5" fill="#5c5b56" text-anchor="middle">进入课堂</text>
+
+        <!-- Dismiss button -->
+        <rect x="120" y="146" width="120" height="22" rx="6" fill="#1c1c1a"/>
+        <text x="180" y="160" font-size="7" fill="#fbfaf7" text-anchor="middle" font-weight="600">我知道了</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ B. SPOTLIGHT TOUR ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">B —</span>
+    <span class="sec-title">聚光灯巡览 · Spotlight Tour</span>
+    <span class="sec-hint">首次进入课堂</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge purple">待实现</div>
+      <h3>课堂界面 3 步认知</h3>
+      <p class="pat-desc">
+        学生首次进入课堂时，界面从上到下有<strong>进度条、任务区、课文面板、两个 FAB</strong>。
+        信息密度高，需要快速建立心理地图。
+      </p>
+      <p class="pat-desc">
+        <strong>方案：</strong>半透明遮罩 + 高亮目标区域（剪切孔）+ 旁边浮动提示卡。
+        3 步自动播放（每步 3 秒），也可手动点击跳过。
+        用 <code>localStorage</code> 标记已看过，不重复弹出。
+      </p>
+      <p class="pat-desc">
+        <strong>3 步内容：</strong><br>
+        ① 「这是你的任务区」→ 高亮左侧<br>
+        ② 「点这里查看课文」→ 高亮右侧 rail<br>
+        ③ 「遇到不懂的词？选中后点翻译」→ 高亮翻译 FAB
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：首次进入课堂</span>
+        <span class="pat-tag">关闭：自动 / 跳过</span>
+        <span class="pat-tag">频率：仅一次</span>
+        <span class="pat-tag">存储：localStorage</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Dim background (full classroom layout) -->
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Top bar -->
+        <rect x="0" y="0" width="360" height="24" rx="6" fill="#edece7"/>
+        <text x="12" y="16" font-size="7" font-weight="600" fill="#1c1c1a">Ideal Beauty</text>
+        <!-- Progress dots -->
+        <g transform="translate(280,8)"><circle cx="0" cy="4" r="4" fill="#0d5245"/><circle cx="14" cy="4" r="4" fill="#edece7"/><circle cx="28" cy="4" r="4" fill="#edece7"/></g>
+        <!-- Left panel (task area) -->
+        <rect x="4" y="28" width="220" height="168" rx="4" fill="#dfece8" opacity=".3"/>
+        <text x="114" y="110" font-size="8" fill="#0d5245" text-anchor="middle" opacity=".4">任务区</text>
+        <!-- Right rail -->
+        <rect x="228" y="28" width="24" height="168" rx="4" fill="#edece7" opacity=".3"/>
+        <text x="240" y="80" font-size="5" fill="#9c9a92" text-anchor="middle" writing-mode="tb">课文</text>
+        <!-- Semi-transparent overlay -->
+        <rect width="360" height="200" rx="6" fill="#1c1c1a" opacity=".55"/>
+        <!-- Spotlight cutout (left panel highlighted) -->
+        <rect x="4" y="28" width="220" height="168" rx="6" fill="#fbfaf7" opacity=".95"/>
+        <rect x="4" y="28" width="220" height="168" rx="6" fill="#dfece8" opacity=".4"/>
+        <text x="114" y="105" font-size="9" fill="#0d5245" text-anchor="middle" font-weight="600">任务区</text>
+        <text x="114" y="118" font-size="6" fill="#5c5b56" text-anchor="middle">课程内容和练习在这里</text>
+        <!-- Tooltip card (right of spotlight) -->
+        <rect x="232" y="60" width="120" height="56" rx="8" fill="#fbfaf7" stroke="#0d5245" stroke-width="1.5"/>
+        <!-- Arrow pointing left -->
+        <polygon points="232,84 224,88 232,92" fill="#fbfaf7" stroke="#0d5245" stroke-width="1.5"/>
+        <circle cx="246" cy="74" r="6" fill="#0d5245"/><text x="246" y="77" font-size="6" fill="#f0efe8" text-anchor="middle" font-weight="700">1</text>
+        <text x="256" y="77" font-size="7" font-weight="700" fill="#1c1c1a">这是你的任务区</text>
+        <text x="244" y="90" font-size="5.5" fill="#5c5b56">课程内容、练习、讨论</text>
+        <text x="244" y="100" font-size="5.5" fill="#5c5b56">都在左侧完成</text>
+        <!-- Step indicator -->
+        <g transform="translate(150,178)">
+          <circle cx="0" cy="0" r="3" fill="#0d5245"/><circle cx="10" cy="0" r="3" fill="#9c9a92"/><circle cx="20" cy="0" r="3" fill="#9c9a92"/>
+          <text x="36" y="3" font-size="5.5" fill="#9c9a92">跳过</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ C. FEATURE TOOLTIP ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">C —</span>
+    <span class="sec-title">功能气泡 · Feature Tooltip</span>
+    <span class="sec-hint">功能首次出现时</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge amber">待实现</div>
+      <h3>翻译按钮首次提示</h3>
+      <p class="pat-desc">
+        学生首次看到翻译 FAB（琥珀色「译」按钮）时，不知道它是干嘛的。
+      </p>
+      <p class="pat-desc">
+        <strong>方案：</strong>FAB 旁边弹出小气泡，箭头指向按钮。
+        文案：「选中课文中的单词，点我翻译」。
+        <strong>5 秒后自动消失</strong>，或用户点击 FAB / 气泡关闭。
+        用 <code>localStorage</code> 标记，仅首次显示。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：FAB 首次渲染</span>
+        <span class="pat-tag">关闭：5s 自动 / 点击</span>
+        <span class="pat-tag">频率：仅一次</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background -->
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Some content lines -->
+        <rect x="20" y="20" width="200" height="6" rx="2" fill="#edece7"/>
+        <rect x="20" y="32" width="180" height="6" rx="2" fill="#edece7"/>
+        <rect x="20" y="44" width="220" height="6" rx="2" fill="#edece7"/>
+        <rect x="20" y="56" width="160" height="6" rx="2" fill="#edece7"/>
+        <!-- Translate FAB -->
+        <circle cx="320" cy="150" r="18" fill="#7a4d0e"/>
+        <text x="320" y="155" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">译</text>
+        <!-- Pulse ring -->
+        <circle cx="320" cy="150" r="22" fill="none" stroke="#7a4d0e" stroke-width="1.5" opacity=".3">
+          <animate attributeName="r" values="22;28;22" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".3;0;.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Tooltip bubble (left of FAB) -->
+        <rect x="160" y="128" width="136" height="44" rx="8" fill="#fbfaf7" stroke="#7a4d0e" stroke-width="1.5" filter="url(#ts)"/>
+        <defs><filter id="ts"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#1c1c1a" flood-opacity=".08"/></filter></defs>
+        <!-- Arrow pointing right -->
+        <polygon points="296,148 304,150 296,152" fill="#fbfaf7" stroke="#7a4d0e" stroke-width="1.5"/>
+        <text x="175" y="148" font-size="7" font-weight="600" fill="#1c1c1a">选中课文中的单词</text>
+        <text x="175" y="160" font-size="7" font-weight="600" fill="#7a4d0e">点我翻译 →</text>
+        <!-- AI FAB below -->
+        <circle cx="320" cy="180" r="12" fill="#3a3185" opacity=".4"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge amber">待实现</div>
+      <h3>AI 助手首次提示</h3>
+      <p class="pat-desc">
+        学生首次看到 AI FAB（紫色星星按钮）时，不知道可以点开问问题。
+      </p>
+      <p class="pat-desc">
+        <strong>方案：</strong>同样是旁边气泡 + 自动消失。
+        文案：「遇到不懂的？点我问 AI 老师」。
+        与翻译提示<strong>错开显示</strong>（翻译先出，AI 在翻译消失后 2 秒出）。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：FAB 首次渲染</span>
+        <span class="pat-tag">关闭：5s 自动 / 点击</span>
+        <span class="pat-tag">频率：仅一次</span>
+        <span class="pat-tag">延迟：翻译提示后 2s</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <rect x="20" y="20" width="200" height="6" rx="2" fill="#edece7"/>
+        <rect x="20" y="32" width="180" height="6" rx="2" fill="#edece7"/>
+        <!-- Translate FAB (dimmed, already seen) -->
+        <circle cx="320" cy="140" r="14" fill="#7a4d0e" opacity=".5"/>
+        <text x="320" y="144" font-size="9" fill="#fff" text-anchor="middle" font-weight="700" opacity=".5">译</text>
+        <!-- AI FAB -->
+        <circle cx="320" cy="172" r="18" fill="#3a3185"/>
+        <text x="320" y="176" font-size="8" fill="#fff" text-anchor="middle">✦</text>
+        <!-- Pulse ring -->
+        <circle cx="320" cy="172" r="22" fill="none" stroke="#3a3185" stroke-width="1.5" opacity=".3">
+          <animate attributeName="r" values="22;28;22" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".3;0;.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Tooltip -->
+        <rect x="154" y="152" width="142" height="40" rx="8" fill="#fbfaf7" stroke="#3a3185" stroke-width="1.5"/>
+        <polygon points="296,170 304,172 296,174" fill="#fbfaf7" stroke="#3a3185" stroke-width="1.5"/>
+        <text x="168" y="170" font-size="7" font-weight="600" fill="#1c1c1a">遇到不懂的？</text>
+        <text x="168" y="182" font-size="7" font-weight="600" fill="#3a3185">点我问 AI 老师 →</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge amber">待实现</div>
+      <h3>课文面板首次提示</h3>
+      <p class="pat-desc">
+        课文面板默认收起为右侧「T」rail。学生可能不知道可以点开看课文原文。
+      </p>
+      <p class="pat-desc">
+        <strong>方案：</strong>rail 上方气泡：「点击展开课文原文」。与 FAB 提示错开。
+        如果课堂进入时面板默认展开则不需要此提示。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：面板首次折叠态</span>
+        <span class="pat-tag">关闭：3s / 点击 rail</span>
+        <span class="pat-tag">频率：仅一次</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Left area -->
+        <rect x="4" y="4" width="320" height="192" rx="4" fill="#f4f3ef"/>
+        <!-- Rail -->
+        <rect x="328" y="4" width="28" height="192" rx="4" fill="#edece7" stroke="#e4e2d8"/>
+        <rect x="335" y="16" width="14" height="14" rx="3" fill="#dfece8"/>
+        <text x="342" y="26" font-size="7" fill="#0d5245" text-anchor="middle" font-weight="700">T</text>
+        <text x="342" y="60" font-size="5" fill="#9c9a92" text-anchor="middle" writing-mode="tb">课文</text>
+        <text x="342" y="170" font-size="5" fill="#0d5245" text-anchor="middle" font-weight="600">¶12</text>
+        <!-- Tooltip (left of rail) -->
+        <rect x="196" y="8" width="126" height="36" rx="8" fill="#fbfaf7" stroke="#0d5245" stroke-width="1.5"/>
+        <polygon points="322,24 328,26 322,28" fill="#fbfaf7" stroke="#0d5245" stroke-width="1.5"/>
+        <text x="210" y="24" font-size="7" font-weight="600" fill="#1c1c1a">点击展开课文原文</text>
+        <text x="210" y="36" font-size="6" fill="#9c9a92">快捷键：按 T</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ D. INLINE HINT ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">D —</span>
+    <span class="sec-title">内联提示 · Inline Hint</span>
+    <span class="sec-hint">已部分实现</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge green">已有</div>
+      <h3>翻译选中态横幅</h3>
+      <p class="pat-desc">
+        点击翻译 FAB 后，顶部出现琥珀色横幅<strong>「请选择需要翻译的文字（最多500字）」</strong>。
+        这是正确的内联提示模式 — 在用户进入特定状态时给予即时指引。
+      </p>
+      <p class="pat-desc">
+        <strong>已实现 ✓</strong>，无需修改。与「功能气泡」（C）形成两层引导：
+        首次告诉你「有这个功能」，使用时告诉你「怎么操作」。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：进入翻译选中模式</span>
+        <span class="pat-tag">关闭：选中文字后</span>
+        <span class="pat-tag">频率：每次使用</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Amber banner at top -->
+        <rect x="0" y="0" width="360" height="28" rx="6" fill="#f6edda"/>
+        <rect x="0" y="14" width="360" height="14" fill="#f6edda"/>
+        <line x1="0" y1="28" x2="360" y2="28" stroke="rgba(122,77,14,.15)"/>
+        <text x="180" y="18" font-size="7" fill="#7a4d0e" text-anchor="middle" font-weight="500">请选择需要翻译的文字（最多500字）</text>
+        <!-- Content with cursor -->
+        <rect x="20" y="44" width="320" height="140" rx="4" fill="#f4f3ef"/>
+        <text x="32" y="68" font-size="8" fill="#1c1c1a" font-weight="500">The concept of ideal beauty has been debated</text>
+        <text x="32" y="82" font-size="8" fill="#1c1c1a" font-weight="500">throughout history. Renaissance artists believed</text>
+        <!-- Selection highlight -->
+        <rect x="32" y="87" width="72" height="12" rx="2" fill="#f6edda" opacity=".8"/>
+        <text x="32" y="96" font-size="8" fill="#7a4d0e" font-weight="600">ideal beauty</text>
+        <text x="106" y="96" font-size="8" fill="#1c1c1a" font-weight="500"> could be captured through</text>
+        <!-- Text cursor -->
+        <rect x="104" y="87" width="1" height="12" fill="#7a4d0e">
+          <animate attributeName="opacity" values="1;0;1" dur=".8s" repeatCount="indefinite"/>
+        </rect>
+      </svg>
+    </div>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge green">已有</div>
+      <h3>练习提示与错误反馈</h3>
+      <p class="pat-desc">
+        练习题旁的 <strong>? 按钮</strong>提供中文翻译 + 提示。
+        答错后出现琥珀色<strong>提示横幅</strong>，2 次错误后展示逐步解析。
+      </p>
+      <p class="pat-desc">
+        <strong>已实现 ✓</strong>。这是最成熟的内联提示，分层递进（按需 → 错误触发 → 详细解析）。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：点击 ? / 答错</span>
+        <span class="pat-tag">频率：每次</span>
+        <span class="pat-tag">递进：3 层</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Exercise card -->
+        <rect x="20" y="16" width="320" height="168" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="36" y="38" font-size="8" font-weight="700" fill="#1c1c1a">Q1. What does "ideal beauty" refer to?</text>
+        <!-- Help button -->
+        <rect x="298" y="24" width="28" height="16" rx="4" fill="#e4eff8" stroke="#1a5fa0" stroke-width=".5"/>
+        <text x="312" y="35" font-size="7" fill="#1a5fa0" text-anchor="middle" font-weight="600">?</text>
+        <!-- Options -->
+        <rect x="32" y="50" width="296" height="24" rx="5" fill="#fce8ea" stroke="#941a29"/>
+        <text x="44" y="66" font-size="7" fill="#941a29">A. Physical appearance only</text>
+        <text x="314" y="66" font-size="7" fill="#941a29" text-anchor="end">✗</text>
+        <rect x="32" y="80" width="296" height="24" rx="5" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="44" y="96" font-size="7" fill="#5c5b56">B. A perfect standard of beauty</text>
+        <!-- Hint banner -->
+        <rect x="32" y="114" width="296" height="30" rx="6" fill="#f6edda" stroke="rgba(122,77,14,.12)"/>
+        <text x="44" y="128" font-size="6" fill="#7a4d0e">💡</text>
+        <text x="56" y="128" font-size="6.5" fill="#7a4d0e" font-weight="500">提示：注意文章第二段对 "ideal beauty" 的定义。</text>
+        <text x="56" y="138" font-size="6" fill="#7a4d0e">Think about what Renaissance artists were trying to achieve.</text>
+        <!-- Attempt count -->
+        <text x="36" y="162" font-size="6" fill="#9c9a92">1 attempt</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ E. SCAFFOLD ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">E —</span>
+    <span class="sec-title">脚手架 · Scaffold Chips</span>
+    <span class="sec-hint">已实现</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge green">已有</div>
+      <h3>讨论阶段预设回复</h3>
+      <p class="pat-desc">
+        Socratic 讨论中，学生不知道该说什么时，底部有<strong>预设 chip</strong>（如「我不太确定…」「能给个提示吗？」）。
+        点击即发送，降低输入门槛。
+      </p>
+      <p class="pat-desc">
+        AI 助手面板同理 — 有<strong>建议问题 chip</strong>引导学生提问方向。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：讨论阶段 / AI 面板打开</span>
+        <span class="pat-tag">关闭：使用后消失</span>
+        <span class="pat-tag">频率：每次对话</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Chat area -->
+        <rect x="20" y="12" width="320" height="176" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <!-- AI message -->
+        <circle cx="36" cy="36" r="8" fill="#e9e7f3"/>
+        <text x="36" y="39" font-size="5" fill="#3a3185" text-anchor="middle">✦</text>
+        <rect x="50" y="26" width="200" height="28" rx="8" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <text x="60" y="38" font-size="6.5" fill="#1c1c1a">Why do you think the author uses the</text>
+        <text x="60" y="48" font-size="6.5" fill="#1c1c1a">word "transcends" in paragraph 3?</text>
+        <!-- Scaffold chips -->
+        <rect x="28" y="66" width="304" height="32" rx="6" fill="#edece7"/>
+        <rect x="34" y="72" width="90" height="20" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="79" y="85" font-size="6" fill="#5c5b56" text-anchor="middle">我觉得是因为…</text>
+        <rect x="130" y="72" width="80" height="20" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="170" y="85" font-size="6" fill="#5c5b56" text-anchor="middle">能给个提示吗</text>
+        <rect x="216" y="72" width="70" height="20" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="251" y="85" font-size="6" fill="#5c5b56" text-anchor="middle">我不太确定</text>
+        <!-- Input area -->
+        <rect x="28" y="156" width="262" height="24" rx="6" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <text x="40" y="171" font-size="6.5" fill="#9c9a92">输入你的想法...</text>
+        <rect x="296" y="156" width="36" height="24" rx="6" fill="#1c1c1a"/>
+        <text x="314" y="171" font-size="7" fill="#fbfaf7" text-anchor="middle">→</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ F. HELP MENU ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">F —</span>
+    <span class="sec-title">帮助菜单 · Help Menu</span>
+    <span class="sec-hint">任意时刻可呼出</span>
+  </div>
+
+  <div class="pat">
+    <div class="pat-info">
+      <div class="pat-badge blue">待实现</div>
+      <h3>顶栏 ? 按钮 → 帮助面板</h3>
+      <p class="pat-desc">
+        顶栏右侧添加 <strong>?</strong> 按钮，点击弹出帮助面板（从右侧滑入或居中弹窗）。
+        列出所有功能的简短卡片说明，每张卡片包含迷你 SVG 插图 + 一句话描述。
+      </p>
+      <p class="pat-desc">
+        <strong>内容：</strong><br>
+        • 翻译功能 — 选中文字 → 点「译」按钮<br>
+        • AI 助手 — 点击星星按钮提问<br>
+        • 课文面板 — 按 T 展开/收起<br>
+        • 练习操作 — 各题型简介<br>
+        • 讨论阶段 — 用中文或英文与 AI 对话
+      </p>
+      <p class="pat-desc">
+        <strong>这是兜底方案</strong> — 即使聚光灯巡览和功能气泡都错过了，
+        学生仍然可以随时点 ? 查看所有功能说明。
+      </p>
+      <div class="pat-meta">
+        <span class="pat-tag">触发：点击 ? 按钮</span>
+        <span class="pat-tag">入口：顶栏右侧</span>
+        <span class="pat-tag">频率：按需</span>
+        <span class="pat-tag">作用：兜底</span>
+      </div>
+    </div>
+    <div class="pat-illust">
+      <svg viewBox="0 0 360 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="200" rx="6" fill="#fbfaf7"/>
+        <!-- Top bar -->
+        <rect x="0" y="0" width="360" height="24" rx="6" fill="#edece7"/>
+        <rect x="0" y="14" width="360" height="10" fill="#edece7"/>
+        <text x="12" y="16" font-size="7" font-weight="600" fill="#1c1c1a">Ideal Beauty</text>
+        <!-- ? button (highlighted) -->
+        <rect x="324" y="4" width="24" height="16" rx="4" fill="#e4eff8" stroke="#1a5fa0"/>
+        <text x="336" y="15" font-size="8" fill="#1a5fa0" text-anchor="middle" font-weight="700">?</text>
+        <!-- Help panel (right slide) -->
+        <rect x="160" y="28" width="196" height="168" rx="8" fill="#fbfaf7" stroke="#e4e2d8" filter="url(#hs)"/>
+        <defs><filter id="hs"><feDropShadow dx="-4" dy="0" stdDeviation="8" flood-color="#1c1c1a" flood-opacity=".1"/></filter></defs>
+        <text x="176" y="48" font-size="9" font-weight="700" fill="#1c1c1a">帮助</text>
+        <!-- Help cards -->
+        <rect x="172" y="58" width="172" height="34" rx="6" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="186" cy="75" r="8" fill="#f6edda"/>
+        <text x="186" y="78" font-size="6" fill="#7a4d0e" text-anchor="middle" font-weight="700">译</text>
+        <text x="200" y="71" font-size="7" font-weight="600" fill="#1c1c1a">翻译功能</text>
+        <text x="200" y="82" font-size="5.5" fill="#9c9a92">选中文字 → 点击「译」按钮</text>
+
+        <rect x="172" y="98" width="172" height="34" rx="6" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="186" cy="115" r="8" fill="#e9e7f3"/>
+        <text x="186" y="118" font-size="6" fill="#3a3185" text-anchor="middle">✦</text>
+        <text x="200" y="111" font-size="7" font-weight="600" fill="#1c1c1a">AI 助手</text>
+        <text x="200" y="122" font-size="5.5" fill="#9c9a92">点击星星按钮 → 输入问题</text>
+
+        <rect x="172" y="138" width="172" height="34" rx="6" fill="#f4f3ef" stroke="#e4e2d8"/>
+        <circle cx="186" cy="155" r="8" fill="#dfece8"/>
+        <text x="186" y="158" font-size="6" fill="#0d5245" text-anchor="middle" font-weight="700">T</text>
+        <text x="200" y="151" font-size="7" font-weight="600" fill="#1c1c1a">课文面板</text>
+        <text x="200" y="162" font-size="5.5" fill="#9c9a92">按 T 键展开/收起课文</text>
+
+        <!-- Dim left area -->
+        <rect x="4" y="28" width="152" height="168" rx="4" fill="#1c1c1a" opacity=".04"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ IMPLEMENTATION PRIORITY ═══════ -->
+<div class="sec">
+  <div class="sec-hd">
+    <span class="sec-num">07 —</span>
+    <span class="sec-title">实现优先级</span>
+    <span class="sec-hint">建议顺序</span>
+  </div>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>优先级</th>
+        <th>模式</th>
+        <th>理由</th>
+        <th>工作量</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="color:var(--green);font-weight:700">✓ 已完成</td>
+        <td>A. 模态引导（加入页）</td>
+        <td>入口焦虑已解决</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green);font-weight:700">✓ 已完成</td>
+        <td>D. 内联提示（翻译横幅 + 练习提示）</td>
+        <td>使用中引导已覆盖</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td style="color:var(--green);font-weight:700">✓ 已完成</td>
+        <td>E. 脚手架（讨论 chips）</td>
+        <td>输入引导已覆盖</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td style="color:var(--red);font-weight:700">P0</td>
+        <td>C. 功能气泡（翻译 + AI + 课文）</td>
+        <td>功能发现是最大盲区 — 学生看到按钮但不知道干嘛</td>
+        <td>小（CSS tooltip + localStorage flag）</td>
+      </tr>
+      <tr>
+        <td style="color:var(--amber);font-weight:700">P1</td>
+        <td>F. 帮助菜单（顶栏 ?）</td>
+        <td>兜底方案，确保任何时候都能找到帮助</td>
+        <td>中（新面板组件 + 内容）</td>
+      </tr>
+      <tr>
+        <td style="color:var(--t3);font-weight:700">P2</td>
+        <td>B. 聚光灯巡览</td>
+        <td>锦上添花 — C+F 已覆盖大部分发现性问题</td>
+        <td>大（遮罩裁剪 + 步骤引擎）</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- .wrap -->
+</body>
+</html>

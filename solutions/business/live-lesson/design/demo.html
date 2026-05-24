@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>课堂执行 · Ideal Beauty · 三端联动 Demo</title>
+<link rel="stylesheet" href="surfaces/colors_and_type.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:#e8e6df;color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+  overflow:hidden;
+}
+
+/* ============ CONDUCTOR ============ */
+.conductor{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;
+  padding:10px 20px;height:64px;
+}
+.cnd-mark{
+  width:28px;height:28px;border-radius:7px;background:var(--t1);
+  color:#f0efe8;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;letter-spacing:-.3px;flex-shrink:0
+}
+.cnd-title{display:flex;flex-direction:column;gap:1px;margin-right:8px;min-width:0;flex-shrink:0}
+.cnd-title-a{font-size:12px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+.cnd-title-b{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+
+.cnd-rail{display:flex;align-items:center;gap:2px;background:var(--bg);padding:4px;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.cnd-step{
+  display:flex;align-items:center;gap:7px;padding:6px 11px;
+  font-size:11px;font-weight:600;color:var(--t3);
+  border-radius:6px;cursor:pointer;transition:all .15s;
+  font-family:inherit;border:none;background:transparent;white-space:nowrap
+}
+.cnd-step:hover{color:var(--t1);background:var(--surface2)}
+.cnd-step .n{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--surface2);color:var(--t3);
+  font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center
+}
+.cnd-step.done{color:var(--t2)}
+.cnd-step.done .n{background:var(--t2);color:var(--surface)}
+.cnd-step.act{background:var(--t1);color:#f0efe8}
+.cnd-step.act .n{background:#f0efe8;color:var(--t1)}
+.cnd-step .dur{font-size:9px;color:inherit;opacity:.6;font-weight:500}
+
+.cnd-sep{width:1px;height:22px;background:var(--border)}
+
+.cnd-btn{
+  font-family:inherit;font-size:12px;font-weight:500;
+  padding:7px 12px;border-radius:7px;border:1px solid var(--border-strong);
+  background:var(--surface);color:var(--t1);cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;
+}
+.cnd-btn:hover{background:var(--surface2)}
+.cnd-btn.pri{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.cnd-btn.pri:hover{opacity:.88}
+.cnd-btn.ghost{border-color:transparent;background:transparent;color:var(--t2)}
+.cnd-btn.ghost:hover{background:var(--surface2);color:var(--t1)}
+.cnd-btn .kb{font-size:9px;color:var(--t3);padding:1px 4px;border:1px solid var(--border);border-radius:3px;font-family:ui-monospace,Menlo,monospace;background:var(--bg)}
+
+.cnd-time{
+  display:inline-flex;align-items:baseline;gap:4px;
+  font-size:13px;font-weight:700;color:var(--t1);
+  padding-left:14px;margin-left:auto
+}
+.cnd-time .lb{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+.cnd-time .sl{color:var(--t3);font-weight:400}
+.cnd-time .tot{color:var(--t2);font-weight:600;font-size:12px}
+
+/* ============ STAGE ============ */
+.stage{
+  position:fixed;top:64px;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(28,28,26,.035) 0, transparent 55%),
+    radial-gradient(ellipse at 80% 70%, rgba(28,28,26,.04) 0, transparent 55%),
+    #e8e6df;
+  display:grid;
+  grid-template-columns: 1fr 240px;
+  grid-template-rows: 1fr;
+  gap:20px;
+  padding:24px 28px;
+  overflow:hidden;
+}
+
+/* ============ FEATURED (big) ============ */
+.featured{
+  grid-column:1;grid-row:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:0;min-height:0;
+  position:relative;
+}
+.featured-label{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+}
+.featured-label .dot{width:7px;height:7px;border-radius:50%}
+.featured-label.student .dot{background:#4a78b6}
+.featured-label.teacher .dot{background:#4a8e72}
+.featured-label.board .dot{background:#b78840}
+.featured-label .role{color:var(--t1)}
+.featured-label .role-en{color:var(--t3);font-weight:500;letter-spacing:.3px}
+.featured-label .pulse{
+  width:6px;height:6px;border-radius:50%;background:#0d5245;
+  animation:pulse 2s ease infinite
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.featured-label .sync-ok{
+  font-size:10px;color:var(--t3);font-weight:500;letter-spacing:.2px;text-transform:none;
+  padding:2px 7px;border:1px solid var(--border);border-radius:3px;
+  display:inline-flex;align-items:center;gap:5px;
+}
+
+/* the device frame for featured. Logical size set per role via JS. Whole device scales to fit featured-box. */
+.featured-box{
+  flex:1;width:100%;min-width:0;min-height:0;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.dev-large{
+  position:relative;
+  background:#2a2826;
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 30px 60px -20px rgba(28,28,26,.5),0 0 0 1px rgba(28,28,26,.25);
+  /* default logical size — overridden per-role in JS */
+  width:1400px;height:900px;
+  transform-origin:center center;
+  flex-shrink:0;
+}
+.dev-large.board{background:#1c1c1a}
+.dev-large.teacher{background:#2e2c2a}
+.dev-large.ipad::before{
+  content:'';position:absolute;top:7px;left:50%;transform:translateX(-50%);
+  width:6px;height:6px;border-radius:50%;background:#444240;
+}
+.dev-large iframe{
+  width:100%;height:100%;border:none;border-radius:10px;
+  background:var(--bg);display:block;
+}
+.dev-large.board iframe{border-radius:4px}
+.dev-large.teacher iframe{border-radius:6px}
+
+/* ============ FILMSTRIP (right column) ============ */
+.strip{
+  grid-column:2;grid-row:1;
+  display:flex;flex-direction:column;gap:14px;
+  min-height:0;overflow:hidden;
+}
+.strip-h{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--t2);padding:0 2px;
+}
+.thumb{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:10px;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;
+  transition:all .15s;flex:1;min-height:0;
+  font-family:inherit;text-align:left;color:inherit;
+  position:relative;
+}
+.thumb:hover{border-color:var(--border-strong);background:var(--surface2)}
+.thumb-head{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.thumb-dot{width:6px;height:6px;border-radius:50%}
+.thumb.student .thumb-dot{background:#4a78b6}
+.thumb.teacher .thumb-dot{background:#4a8e72}
+.thumb.board .thumb-dot{background:#b78840}
+.thumb-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t1)}
+.thumb-en{font-size:9px;color:var(--t3);font-weight:500;margin-left:auto}
+.thumb-view{
+  flex:1;min-height:0;border:1px solid var(--border);border-radius:5px;
+  overflow:hidden;position:relative;background:var(--bg);
+}
+.thumb-view iframe{
+  width:1400px;height:900px;border:none;
+  transform-origin:top left;
+  pointer-events:none;
+  background:var(--bg);
+}
+.thumb-cover{
+  position:absolute;inset:0;background:transparent;
+}
+.thumb.active{border-color:var(--t1);box-shadow:0 0 0 2px var(--t1) inset}
+.thumb.active .thumb-role{color:var(--t1)}
+.thumb-swap{
+  position:absolute;top:10px;right:10px;
+  font-size:9px;font-weight:600;color:var(--t3);
+  padding:2px 6px;background:var(--surface);border:1px solid var(--border);
+  border-radius:3px;opacity:0;transition:opacity .15s;
+}
+.thumb:hover .thumb-swap{opacity:1}
+
+/* ============ TWEAKS PANEL ============ */
+.tweaks{
+  position:fixed;bottom:20px;right:20px;z-index:100;
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:10px;padding:14px 16px;width:240px;
+  display:none;font-size:12px;
+  box-shadow:0 20px 40px -20px rgba(28,28,26,.3);
+}
+.tweaks.open{display:block}
+.tw-hd{
+  display:flex;align-items:center;gap:6px;margin-bottom:12px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+}
+.tw-hd .dot{width:5px;height:5px;border-radius:50%;background:var(--t1)}
+.tw-hd .sp{flex:1}
+.tw-hd .cls{font-size:11px;color:var(--t3);cursor:pointer;text-transform:none;letter-spacing:0}
+.tw-hd .cls:hover{color:var(--t1)}
+.tw-row{margin-bottom:10px}
+.tw-row:last-child{margin-bottom:0}
+.tw-lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.tw-opts{display:flex;gap:3px;background:var(--bg);padding:2px;border-radius:5px;border:1px solid var(--border)}
+.tw-opts button{
+  flex:1;font-family:inherit;font-size:10px;font-weight:600;
+  padding:5px 6px;border-radius:4px;border:none;background:transparent;
+  color:var(--t3);cursor:pointer;white-space:nowrap;
+}
+.tw-opts button:hover{color:var(--t1)}
+.tw-opts button.act{background:var(--t1);color:var(--surface)}
+
+/* Layout variants via Tweaks */
+body[data-layout="triptych"] .stage{grid-template-columns:1fr 1fr 1fr;gap:16px}
+body[data-layout="triptych"] .strip{
+  grid-column:unset;display:contents;
+}
+body[data-layout="triptych"] .thumb{
+  flex:none;height:auto;
+}
+body[data-layout="triptych"] .thumb-view{aspect-ratio:16/10}
+body[data-layout="triptych"] .featured-box{flex:none;height:100%}
+body[data-layout="triptych"] .featured{grid-column:auto}
+
+/* Bezel toggle */
+body[data-bezel="minimal"] .dev-large{background:transparent;padding:0;box-shadow:none}
+body[data-bezel="minimal"] .dev-large::before{display:none}
+body[data-bezel="minimal"] .dev-large iframe{box-shadow:0 20px 50px -15px rgba(28,28,26,.3)}
+
+/* small screens fallback */
+@media (max-width:900px){
+  .stage{grid-template-columns:1fr;grid-template-rows:1fr auto;overflow-y:auto}
+  .strip{flex-direction:row;overflow-x:auto}
+  .thumb{min-width:200px}
+}
+</style>
+</head>
+<body data-layout="focus" data-bezel="device">
+
+<!-- ============ CONDUCTOR ============ -->
+<div class="conductor">
+  <div class="cnd-mark">R</div>
+  <div class="cnd-title">
+    <div class="cnd-title-a">Ideal Beauty · 三端联动 Demo</div>
+    <div class="cnd-title-b">高一(3)班 · B7U2 · 阅读策略训练</div>
+  </div>
+
+  <div class="cnd-rail" id="rail"></div>
+  <div class="cnd-sep"></div>
+
+  <button class="cnd-btn ghost" id="btnPrev" title="上一步 (←)">←</button>
+  <button class="cnd-btn pri" id="btnNext" title="下一步 (→)">下一步 →</button>
+
+  <div class="cnd-time">
+    <span class="lb">课时</span>
+    <span id="timeNow">12:48</span>
+    <span class="sl">/</span>
+    <span class="tot">45:00</span>
+  </div>
+
+  <button class="cnd-btn ghost" id="btnTweaks" style="padding:7px 9px" title="Tweaks (T)">⚙</button>
+</div>
+
+<!-- ============ STAGE ============ -->
+<div class="stage" id="stage">
+
+  <!-- FEATURED (big surface) -->
+  <div class="featured" id="featured">
+    <div class="featured-label" id="featLabel">
+      <span class="dot"></span>
+      <span class="role">教师控制台</span>
+      <span class="role-en">· Teacher · MacBook</span>
+      <span class="pulse" title="同步"></span>
+    </div>
+    <div class="featured-box" id="featBox">
+      <div class="dev-large teacher" id="devLarge">
+        <iframe id="featIframe" src="surfaces/teacher.html"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILMSTRIP (2 thumbs, click to swap into featured) -->
+  <div class="strip" id="strip">
+    <div class="strip-h" id="stripHdr">其余两端 · 点击切换至主视图</div>
+    <!-- thumbnails generated by JS -->
+  </div>
+
+</div>
+
+<!-- ============ TWEAKS ============ -->
+<div class="tweaks" id="tweaks">
+  <div class="tw-hd"><span class="dot"></span>Tweaks<span class="sp"></span><span class="cls" onclick="document.getElementById('tweaks').classList.remove('open')">✕</span></div>
+  <div class="tw-row">
+    <div class="tw-lb">布局 Layout</div>
+    <div class="tw-opts" id="twLayout">
+      <button data-layout="focus" class="act">主视图 + 缩略</button>
+      <button data-layout="triptych">三端并排</button>
+    </div>
+  </div>
+  <div class="tw-row">
+    <div class="tw-lb">外壳 Bezel</div>
+    <div class="tw-opts" id="twBezel">
+      <button data-bezel="device" class="act">设备壳</button>
+      <button data-bezel="minimal">极简</button>
+    </div>
+  </div>
+  <div class="tw-row">
+    <div class="tw-lb">自动推进 Auto</div>
+    <div class="tw-opts" id="twAuto">
+      <button data-auto="off" class="act">关</button>
+      <button data-auto="slow">慢 8s</button>
+      <button data-auto="fast">快 3s</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const STEPS = [
+  {n:1, label:'图式激活', dur:"3'"},
+  {n:2, label:'结构解码', dur:"6'"},
+  {n:3, label:'矩阵构建', dur:"17'"},
+  {n:4, label:'批判质疑', dur:"12'"},
+  {n:5, label:'复盘升华', dur:"7'"}
+];
+const CUM = [0, 3*60, 9*60, 26*60, 38*60, 45*60];
+
+const ROLES = {
+  student: {key:'student', label:'学生端',       en:'Student · iPad',        src:'surfaces/student.html',         device:'ipad',    w:1400, h:1050},
+  teacher: {key:'teacher', label:'课堂观察台', en:'Teacher · MacBook',     src:'surfaces/teacher.html',         device:'teacher', w:1600, h:1000},
+  board:   {key:'board',   label:'投屏黑板',     en:'Classroom Projector',   src:'surfaces/board.html?embed=1',   device:'board',   w:1400, h:1100},
+};
+const ROLE_ORDER = ['teacher','student','board'];
+
+let cur = parseInt(localStorage.getItem('demoStep'));
+if (isNaN(cur) || cur<0 || cur>4) cur = 2;
+let featured = localStorage.getItem('demoFeatured') || 'teacher';
+if (!ROLES[featured]) featured = 'teacher';
+let autoMode = 'off', autoTimer = null;
+
+// ===== RAIL =====
+const rail = document.getElementById('rail');
+STEPS.forEach((s,i)=>{
+  const b = document.createElement('button');
+  b.className='cnd-step';
+  b.innerHTML = `<span class="n">${i+1}</span>${s.label}<span class="dur">${s.dur}</span>`;
+  b.onclick = ()=> setStep(i);
+  rail.appendChild(b);
+});
+function renderRail(){
+  [...rail.children].forEach((el,i)=>{
+    el.classList.remove('done','act');
+    if (i<cur) el.classList.add('done');
+    if (i===cur) el.classList.add('act');
+  });
+}
+function fmtTime(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+
+// ===== STAGE RENDER =====
+function renderStage(){
+  // featured
+  const role = ROLES[featured];
+  const featLabel = document.getElementById('featLabel');
+  featLabel.className = 'featured-label ' + featured;
+  featLabel.querySelector('.role').textContent = role.label;
+  featLabel.querySelector('.role-en').textContent = '· ' + role.en;
+
+  const devLarge = document.getElementById('devLarge');
+  devLarge.className = 'dev-large ' + role.device;
+  const featIframe = document.getElementById('featIframe');
+  if (featIframe.dataset.role !== featured){
+    featIframe.src = role.src;
+    featIframe.dataset.role = featured;
+  }
+
+  // thumbs
+  const strip = document.getElementById('strip');
+  // clear except header
+  [...strip.querySelectorAll('.thumb')].forEach(n=> n.remove());
+  ROLE_ORDER.filter(r=>r!==featured).forEach(r=>{
+    const R = ROLES[r];
+    const btn = document.createElement('button');
+    btn.className = 'thumb ' + r;
+    btn.type = 'button';
+    btn.onclick = ()=> { featured = r; localStorage.setItem('demoFeatured', r); renderStage(); };
+    btn.innerHTML = `
+      <div class="thumb-head">
+        <span class="thumb-dot"></span>
+        <span class="thumb-role">${R.label}</span>
+        <span class="thumb-en">${R.en}</span>
+      </div>
+      <div class="thumb-view">
+        <iframe data-role="${r}" src="${R.src}"></iframe>
+      </div>
+      <span class="thumb-swap">切换 →</span>
+    `;
+    strip.appendChild(btn);
+  });
+  // scale thumb iframes
+  requestAnimationFrame(scaleThumbs);
+  // sync after small delay so iframe can load
+  setTimeout(()=> broadcast({type:'sync', step: cur}), 80);
+}
+
+function scaleFeatured(){
+  const box = document.getElementById('featBox');
+  const dev = document.getElementById('devLarge');
+  if (!box||!dev) return;
+  const R = ROLES[featured];
+  dev.style.width  = R.w + 'px';
+  dev.style.height = R.h + 'px';
+  const rect = box.getBoundingClientRect();
+  const s = Math.min(rect.width / R.w, rect.height / R.h, 1);
+  dev.style.transform = 'scale(' + s + ')';
+}
+function scaleThumbs(){
+  document.querySelectorAll('.thumb-view').forEach(v=>{
+    const ifr = v.querySelector('iframe'); if (!ifr) return;
+    const role = ifr.dataset.role;
+    const R = ROLES[role] || {w:1400,h:900};
+    const r = v.getBoundingClientRect();
+    const s = Math.min(r.width/R.w, r.height/R.h);
+    ifr.style.width = R.w + 'px';
+    ifr.style.height = R.h + 'px';
+    ifr.style.transform = 'scale(' + s + ')';
+  });
+}
+window.addEventListener('resize', ()=>{ scaleFeatured(); scaleThumbs(); });
+
+// ===== SYNC =====
+function broadcast(msg){
+  document.querySelectorAll('iframe').forEach(f=>{
+    try { f.contentWindow && f.contentWindow.postMessage(msg, '*'); } catch(e){}
+  });
+}
+function setStep(i){
+  cur = Math.max(0, Math.min(4, i));
+  renderRail();
+  const now = CUM[cur] + Math.round((CUM[cur+1]-CUM[cur]) * 0.35);
+  document.getElementById('timeNow').textContent = fmtTime(now);
+  broadcast({type:'sync', step: cur});
+  localStorage.setItem('demoStep', cur);
+}
+
+// ===== NAV =====
+document.getElementById('btnPrev').onclick = ()=> setStep(cur-1);
+document.getElementById('btnNext').onclick = ()=> setStep(cur+1);
+document.addEventListener('keydown', e=>{
+  if (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if (e.key==='ArrowRight'){ e.preventDefault(); setStep(cur+1); }
+  else if (e.key==='ArrowLeft'){ e.preventDefault(); setStep(cur-1); }
+  else if (e.key>='1'&&e.key<='5'){ setStep(parseInt(e.key)-1); }
+  else if (e.key==='t'||e.key==='T'){ document.getElementById('tweaks').classList.toggle('open'); }
+  else if (e.key==='s'||e.key==='S'){ featured='student';  localStorage.setItem('demoFeatured','student'); renderStage(); }
+  else if (e.key==='b'||e.key==='B'){ featured='board';    localStorage.setItem('demoFeatured','board');   renderStage(); }
+  else if (e.key==='c'||e.key==='C'){ featured='teacher';  localStorage.setItem('demoFeatured','teacher'); renderStage(); }
+});
+
+// ===== TWEAKS =====
+document.getElementById('btnTweaks').onclick = ()=> document.getElementById('tweaks').classList.toggle('open');
+
+document.querySelectorAll('#twLayout button').forEach(b=>{
+  b.onclick = ()=>{
+    document.body.dataset.layout = b.dataset.layout;
+    document.querySelectorAll('#twLayout button').forEach(x=> x.classList.toggle('act', x===b));
+    localStorage.setItem('demoLayout', b.dataset.layout);
+    requestAnimationFrame(()=>{ scaleFeatured(); scaleThumbs(); });
+  };
+});
+document.querySelectorAll('#twBezel button').forEach(b=>{
+  b.onclick = ()=>{
+    document.body.dataset.bezel = b.dataset.bezel;
+    document.querySelectorAll('#twBezel button').forEach(x=> x.classList.toggle('act', x===b));
+    localStorage.setItem('demoBezel', b.dataset.bezel);
+  };
+});
+document.querySelectorAll('#twAuto button').forEach(b=>{
+  b.onclick = ()=>{
+    autoMode = b.dataset.auto;
+    document.querySelectorAll('#twAuto button').forEach(x=> x.classList.toggle('act', x===b));
+    if (autoTimer) { clearInterval(autoTimer); autoTimer=null; }
+    if (autoMode !== 'off'){
+      const iv = autoMode==='fast' ? 3000 : 8000;
+      autoTimer = setInterval(()=>{ if (cur<4) setStep(cur+1); else setStep(0); }, iv);
+    }
+    localStorage.setItem('demoAuto', autoMode);
+  };
+});
+
+// Restore layout/bezel/auto
+(function restore(){
+  const lv = localStorage.getItem('demoLayout');
+  if (lv){ document.body.dataset.layout = lv; document.querySelectorAll('#twLayout button').forEach(x=> x.classList.toggle('act', x.dataset.layout===lv)); }
+  const bv = localStorage.getItem('demoBezel');
+  if (bv){ document.body.dataset.bezel = bv; document.querySelectorAll('#twBezel button').forEach(x=> x.classList.toggle('act', x.dataset.bezel===bv)); }
+  const av = localStorage.getItem('demoAuto');
+  if (av){ document.querySelector(`#twAuto button[data-auto="${av}"]`)?.click(); }
+})();
+
+// ===== iframe ready →  push current step =====
+window.addEventListener('message', e=>{
+  const d = e.data || {};
+  if (d.type==='ready' && d.role){
+    setTimeout(()=> broadcast({type:'sync', step: cur}), 60);
+  }
+  if (d.type==='__activate_edit_mode') document.getElementById('tweaks').classList.add('open');
+  if (d.type==='__deactivate_edit_mode') document.getElementById('tweaks').classList.remove('open');
+});
+try { window.parent && window.parent.postMessage({type:'__edit_mode_available'},'*'); } catch(e){}
+
+// ===== initial =====
+renderRail();
+document.getElementById('timeNow').textContent = fmtTime(CUM[cur] + Math.round((CUM[cur+1]-CUM[cur]) * 0.35));
+renderStage();
+setTimeout(scaleFeatured, 50);
+setTimeout(scaleFeatured, 400);
+setTimeout(scaleThumbs, 500);
+
+// observe container resize (layout tweak changes dimensions)
+const ro = new ResizeObserver(()=>{ scaleFeatured(); scaleThumbs(); });
+ro.observe(document.getElementById('featBox'));
+</script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live-Lesson 教师端 · 学生自学总览</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #faf9f6;
+    --color-background-tertiary: #f0efea;
+    --color-background-success: #e9f0d6;
+    --color-background-warning: #faecd0;
+    --color-background-danger: #f5dcd8;
+    --color-background-info: #e0e8f2;
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #5a5a5a;
+    --color-text-tertiary: #8a8a8a;
+    --color-text-success: #6a8e2a;
+    --color-text-warning: #b88018;
+    --color-text-danger: #c04848;
+    --color-text-info: #4a72a8;
+    --color-border-tertiary: #ebe9e3;
+    --color-border-secondary: #d8d6d0;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1b18;
+      --color-background-secondary: #232220;
+      --color-background-tertiary: #2e2c28;
+      --color-background-success: rgba(149, 184, 95, 0.22);
+      --color-background-warning: rgba(212, 160, 80, 0.22);
+      --color-background-danger: rgba(212, 120, 120, 0.22);
+      --color-background-info: rgba(112, 149, 196, 0.22);
+      --color-text-primary: #ebe8e1;
+      --color-text-secondary: #a8a59f;
+      --color-text-tertiary: #7a7771;
+      --color-text-success: #95b85f;
+      --color-text-warning: #d4a050;
+      --color-text-danger: #d47878;
+      --color-text-info: #7095c4;
+      --color-border-tertiary: #2e2c28;
+      --color-border-secondary: #3e3c38;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    margin: 0;
+    padding: 24px 16px;
+    line-height: 1.4;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  button {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 12px;
+  }
+  button:hover { background: var(--color-background-tertiary); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; }
+  .metric { background: var(--color-background-primary); border-radius: var(--border-radius-md); padding: 10px 12px; border: 0.5px solid var(--color-border-tertiary); }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; display: inline-block; }
+  .kp-row { display: grid; grid-template-columns: 130px 1fr 42px; gap: 10px; align-items: center; font-size: 12px; padding: 4px 0; }
+  .bar-track { background: var(--color-background-tertiary); height: 6px; border-radius: 3px; overflow: hidden; }
+  .detail-section { padding: 10px 0 0; margin-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); }
+  .detail-title { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; margin-bottom: 6px; }
+  .kp-item { font-size: 12px; line-height: 1.5; padding: 3px 0; }
+  .kp-evidence { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
+  .zoom-btn { width: 24px; height: 24px; padding: 0; font-size: 14px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  .zoom-level { font-size: 11px; color: var(--color-text-secondary); min-width: 36px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1.25rem;">
+<h2 class="sr-only">学生自学总览，含可缩放的分布矩阵和选中学生详情</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary);">
+  <div>
+    <div style="font-size: 15px; font-weight: 500;">自学完成 — 即将进入课堂讨论</div>
+    <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;">高一(3)班 · 二次函数最值问题 · 用时 12'30"</div>
+  </div>
+  <div style="font-size: 12px; color: var(--color-text-tertiary);">42 / 45 已提交</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">整体掌握度</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">78%</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">学优 / 学困</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">26 <span style="color: var(--color-text-tertiary); font-size: 14px;">/</span> 11</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">异常学生</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px; color: var(--color-text-warning);">5</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">薄弱知识点</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">2</div></div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 8px; margin-bottom: 12px;">
+
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <div style="font-size: 13px; font-weight: 500;">学生分布 · 42 人</div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button class="zoom-btn" id="zoom-out">−</button>
+      <span class="zoom-level" id="zoom-level">100%</span>
+      <button class="zoom-btn" id="zoom-in">+</button>
+      <button style="padding: 0 8px; font-size: 11px; height: 24px; margin-left: 2px;" id="zoom-reset">重置</button>
+    </div>
+  </div>
+  <div style="overflow: hidden; border-radius: 4px;">
+    <svg id="matrix-svg" viewBox="0 0 480 270" width="100%" height="auto" style="display: block; cursor: grab; touch-action: none;">
+      <rect x="50" y="10" width="210" height="112.5" fill="var(--color-background-warning)" opacity="0.55"/>
+      <rect x="260" y="10" width="210" height="112.5" fill="var(--color-background-success)" opacity="0.55"/>
+      <rect x="50" y="122.5" width="210" height="112.5" fill="var(--color-background-danger)" opacity="0.55"/>
+      <rect x="260" y="122.5" width="210" height="112.5" fill="var(--color-background-info)" opacity="0.55"/>
+
+      <line x1="50" y1="122.5" x2="470" y2="122.5" stroke="var(--color-border-secondary)" stroke-dasharray="2,3"/>
+      <line x1="260" y1="10" x2="260" y2="235" stroke="var(--color-border-secondary)" stroke-dasharray="2,3"/>
+
+      <text x="58" y="22" font-size="10" fill="var(--color-text-warning)" font-weight="500">努力但困惑 · 6</text>
+      <text x="462" y="22" font-size="10" fill="var(--color-text-success)" font-weight="500" text-anchor="end">学优 · 26</text>
+      <text x="58" y="248" font-size="10" fill="var(--color-text-danger)" font-weight="500">需要关注 · 5</text>
+      <text x="462" y="248" font-size="10" fill="var(--color-text-info)" font-weight="500" text-anchor="end">吃不饱 · 5</text>
+
+      <text x="260" y="262" font-size="10" fill="var(--color-text-tertiary)" text-anchor="middle">掌握度 →</text>
+      <text x="30" y="125" font-size="10" fill="var(--color-text-tertiary)" text-anchor="middle" transform="rotate(-90, 30, 125)">参与度 →</text>
+
+      <g fill="var(--color-text-success)" opacity="0.72">
+        <circle cx="295" cy="35" r="3.5"/>
+        <circle cx="305" cy="60" r="3.5"/>
+        <circle cx="290" cy="88" r="3.5"/>
+        <circle cx="300" cy="105" r="3.5"/>
+        <circle cx="315" cy="80" r="3.5"/>
+        <circle cx="335" cy="30" r="3.5"/>
+        <circle cx="345" cy="55" r="3.5"/>
+        <circle cx="340" cy="85" r="3.5"/>
+        <circle cx="350" cy="105" r="3.5"/>
+        <circle cx="330" cy="70" r="3.5"/>
+        <circle cx="357" cy="44" r="3.5"/>
+        <circle cx="380" cy="35" r="3.5"/>
+        <circle cx="390" cy="60" r="3.5"/>
+        <circle cx="385" cy="90" r="3.5"/>
+        <circle cx="395" cy="110" r="3.5"/>
+        <circle cx="375" cy="75" r="3.5"/>
+        <circle cx="415" cy="28" r="3.5"/>
+        <circle cx="425" cy="50" r="3.5"/>
+        <circle cx="420" cy="75" r="3.5"/>
+        <circle cx="430" cy="95" r="3.5"/>
+        <circle cx="415" cy="110" r="3.5"/>
+        <circle cx="437" cy="38" r="3.5"/>
+        <circle cx="465" cy="65" r="3.5"/>
+        <circle cx="450" cy="90" r="3.5"/>
+        <circle cx="460" cy="110" r="3.5"/>
+      </g>
+
+      <g fill="var(--color-text-warning)" opacity="0.72">
+        <circle cx="85" cy="55" r="3.5"/>
+        <circle cx="130" cy="70" r="3.5"/>
+        <circle cx="90" cy="95" r="3.5"/>
+        <circle cx="200" cy="85" r="3.5"/>
+        <circle cx="235" cy="105" r="3.5"/>
+      </g>
+
+      <g fill="var(--color-text-danger)" opacity="0.72">
+        <circle cx="80" cy="175" r="3.5"/>
+        <circle cx="110" cy="215" r="3.5"/>
+        <circle cx="200" cy="165" r="3.5"/>
+        <circle cx="240" cy="220" r="3.5"/>
+      </g>
+
+      <g fill="var(--color-text-info)" opacity="0.72">
+        <circle cx="290" cy="195" r="3.5"/>
+        <circle cx="340" cy="215" r="3.5"/>
+        <circle cx="385" cy="175" r="3.5"/>
+        <circle cx="430" cy="220" r="3.5"/>
+        <circle cx="460" cy="195" r="3.5"/>
+      </g>
+
+      <g>
+        <circle cx="455" cy="35" r="6" fill="var(--color-text-success)" stroke="var(--color-background-primary)" stroke-width="2"/>
+        <text x="448" y="25" font-size="10" fill="var(--color-text-primary)" font-weight="500" text-anchor="end">张明</text>
+      </g>
+      <g>
+        <circle cx="170" cy="38" r="11" fill="none" stroke="var(--color-text-warning)" stroke-width="1.5" stroke-dasharray="2,2"/>
+        <circle cx="170" cy="38" r="6" fill="var(--color-text-warning)" stroke="var(--color-background-primary)" stroke-width="2"/>
+        <text x="183" y="35" font-size="10" fill="var(--color-text-primary)" font-weight="500">王芳</text>
+      </g>
+      <g>
+        <circle cx="165" cy="195" r="6" fill="var(--color-text-danger)" stroke="var(--color-background-primary)" stroke-width="2"/>
+        <text x="177" y="199" font-size="10" fill="var(--color-text-primary)" font-weight="500">小赵</text>
+      </g>
+    </svg>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--color-border-tertiary); font-size: 11px; color: var(--color-text-tertiary);">
+    <span>滚轮缩放 · 拖拽平移 · 双击聚焦象限</span>
+    <span>点击姓名 → 详情</span>
+  </div>
+</div>
+
+<div class="card" style="display: flex; flex-direction: column;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <div style="font-size: 14px; font-weight: 500;">王芳</div>
+    <span class="tag" style="background: var(--color-background-warning); color: var(--color-text-warning);">努力但困惑</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 6px 0;">
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">掌握度</div><div style="font-size: 13px; font-weight: 500;">38%</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">参与度</div><div style="font-size: 13px; font-weight: 500;">78%</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">用时</div><div style="font-size: 13px; font-weight: 500;">13'45"</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">完整度</div><div style="font-size: 13px; font-weight: 500;">4 / 5</div></div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-title">关键卡点</div>
+    <div class="kp-item">
+      <div>▸ Q3 顶点公式应用</div>
+      <div class="kp-evidence">3 次错答 → 用提示后才对</div>
+    </div>
+    <div class="kp-item">
+      <div>▸ Q5 配方法</div>
+      <div class="kp-evidence">直接跳过未答</div>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-title">为什么推荐"暴露问题"</div>
+    <div style="font-size: 12px; line-height: 1.55; color: var(--color-text-secondary);">她在 Q3 上的卡点是全班 18 名学生（40%）共同卡点。让她讲解题思路，能把"配方法 → 顶点公式"这个隐性衔接暴露出来。</div>
+  </div>
+
+  <button style="margin-top: 12px; width: 100%; font-size: 12px; padding: 8px;" onclick="alert('演示版按钮 · 实际产品中会把王芳加入提问候选')">加入提问候选 ↗</button>
+</div>
+
+</div>
+
+<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; margin-bottom: 12px;">
+  <div class="card">
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">推荐提问候选</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 13px; font-weight: 500;">张明</div>
+      <span class="tag" style="background: var(--color-background-success); color: var(--color-text-success);">展示标杆</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 13px; font-weight: 500;">李华</div>
+      <span class="tag" style="background: var(--color-background-info); color: var(--color-text-info);">检验掌握</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
+      <div style="font-size: 13px; font-weight: 500;">王芳</div>
+      <span class="tag" style="background: var(--color-background-warning); color: var(--color-text-warning);">暴露问题</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">建议重讲</div>
+    <div style="padding: 4px 0;">
+      <div style="font-size: 12px; font-weight: 500;">3.2 顶点公式应用</div>
+      <div style="font-size: 11px; color: var(--color-text-danger); margin-top: 2px;">错误率 47%</div>
+    </div>
+    <div style="padding: 6px 0 0; margin-top: 4px; border-top: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 12px; font-weight: 500;">2.4 配方法</div>
+      <div style="font-size: 11px; color: var(--color-text-warning); margin-top: 2px;">错误率 31%</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">知识点掌握情况</div>
+  <div class="kp-row">
+    <div>1.1 函数定义</div>
+    <div class="bar-track"><div style="height: 100%; width: 92%; background: var(--color-text-success);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">92%</div>
+  </div>
+  <div class="kp-row">
+    <div>2.3 对称轴</div>
+    <div class="bar-track"><div style="height: 100%; width: 84%; background: var(--color-text-success);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">84%</div>
+  </div>
+  <div class="kp-row">
+    <div>3.1 最值概念</div>
+    <div class="bar-track"><div style="height: 100%; width: 78%; background: var(--color-text-secondary);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">78%</div>
+  </div>
+  <div class="kp-row">
+    <div style="font-weight: 500;">2.4 配方法</div>
+    <div class="bar-track"><div style="height: 100%; width: 69%; background: var(--color-text-warning);"></div></div>
+    <div style="text-align: right; color: var(--color-text-warning);">69%</div>
+  </div>
+  <div class="kp-row">
+    <div style="font-weight: 500;">3.2 顶点公式</div>
+    <div class="bar-track"><div style="height: 100%; width: 53%; background: var(--color-text-danger);"></div></div>
+    <div style="text-align: right; color: var(--color-text-danger);">53%</div>
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('matrix-svg');
+  const lvl = document.getElementById('zoom-level');
+  const orig = { x: 0, y: 0, w: 480, h: 270 };
+  let view = { x: orig.x, y: orig.y, w: orig.w, h: orig.h };
+  let zoom = 1;
+
+  function apply() {
+    svg.setAttribute('viewBox', view.x + ' ' + view.y + ' ' + view.w + ' ' + view.h);
+    lvl.textContent = Math.round(zoom * 100) + '%';
+  }
+  function setZoom(z, cx, cy) {
+    z = Math.max(0.5, Math.min(4, z));
+    cx = cx == null ? view.x + view.w / 2 : cx;
+    cy = cy == null ? view.y + view.h / 2 : cy;
+    const w = orig.w / z, h = orig.h / z;
+    view = {
+      x: Math.max(orig.x, Math.min(orig.x + orig.w - w, cx - w / 2)),
+      y: Math.max(orig.y, Math.min(orig.y + orig.h - h, cy - h / 2)),
+      w: w, h: h
+    };
+    zoom = z;
+    apply();
+  }
+  document.getElementById('zoom-in').onclick = function(){ setZoom(zoom * 1.4); };
+  document.getElementById('zoom-out').onclick = function(){ setZoom(zoom / 1.4); };
+  document.getElementById('zoom-reset').onclick = function(){
+    view = { x: orig.x, y: orig.y, w: orig.w, h: orig.h };
+    zoom = 1;
+    apply();
+  };
+
+  svg.addEventListener('wheel', function(e){
+    e.preventDefault();
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+    setZoom(zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), sp.x, sp.y);
+  }, { passive: false });
+
+  let drag = null;
+  svg.addEventListener('pointerdown', function(e){
+    drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+    svg.setPointerCapture(e.pointerId);
+    svg.style.cursor = 'grabbing';
+  });
+  svg.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    const ratio = view.w / svg.clientWidth;
+    view.x = drag.vx - (e.clientX - drag.x) * ratio;
+    view.y = drag.vy - (e.clientY - drag.y) * ratio;
+    apply();
+  });
+  svg.addEventListener('pointerup', function(){
+    drag = null;
+    svg.style.cursor = 'grab';
+  });
+  svg.addEventListener('pointercancel', function(){
+    drag = null;
+    svg.style.cursor = 'grab';
+  });
+
+  svg.addEventListener('dblclick', function(e){
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const sp = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const cx = sp.x < 260 ? 155 : 365;
+    const cy = sp.y < 122.5 ? 66 : 179;
+    setZoom(2.2, cx, cy);
+  });
+})();
+</script>
+</body>
+</html>

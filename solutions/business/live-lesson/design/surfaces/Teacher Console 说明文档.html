@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>课堂观察台 v5 · 说明文档</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<style>
+body { background: var(--bg); padding: 40px 48px 80px; max-width: 860px; margin: 0 auto; }
+h1 { margin-bottom: 8px; }
+.subtitle { font-size: 14px; color: var(--t2); margin-bottom: 40px; }
+
+.doc-section { margin-bottom: 36px; }
+.doc-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.doc-section h3 { font-size: 13px; font-weight: 600; color: var(--t2); margin: 16px 0 8px; }
+
+.legend-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px; margin-bottom: 4px; }
+.legend-row:hover { background: var(--surface2); }
+.legend-label { font-size: 13px; font-weight: 500; color: var(--t1); flex: 1; }
+.legend-desc { font-size: 12px; color: var(--t2); flex: 2; line-height: 1.5; }
+
+/* Swatches */
+.swatch { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0; border: 1px solid rgba(0,0,0,.06); }
+.swatch-sm { width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,.06); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Badge mock */
+.badge-mock { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 3px; flex-shrink: 0; white-space: nowrap; }
+
+/* Card mock */
+.card-mock { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 8px 0; }
+
+/* Component strip mock */
+.strip-mock { display: flex; gap: 2px; margin: 8px 0; }
+.strip-item { flex: 1; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+
+/* Progress bar mock */
+.prog-mock { display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: var(--surface2); width: 200px; flex-shrink: 0; }
+
+/* Number circle */
+.num-circle { width: 22px; height: 22px; border-radius: 50%; background: var(--t1); color: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+/* Understanding bar */
+.u-bar { height: 6px; border-radius: 3px; flex-shrink: 0; }
+
+/* Annotated screenshot area */
+.anno-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 12px 0; }
+.anno-grid { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: start; }
+.anno-visual { display: flex; flex-direction: column; gap: 8px; }
+.anno-text { font-size: 12px; color: var(--t2); line-height: 1.6; }
+.anno-text strong { color: var(--t1); }
+
+.callout { background: var(--teal-bg); border: 1px solid rgba(13,82,69,.12); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: var(--teal); line-height: 1.6; margin: 12px 0; }
+.callout strong { font-weight: 700; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+th { text-align: left; font-weight: 600; color: var(--t3); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--t2); line-height: 1.5; vertical-align: top; }
+td:first-child { font-weight: 600; color: var(--t1); white-space: nowrap; }
+</style>
+</head><body>
+
+<h1>课堂观察台 v5 · 说明文档</h1>
+<p class="subtitle">Teacher Console 界面元素与数据含义速查</p>
+
+<!-- ═══ 1. 全局布局 ═══ -->
+<div class="doc-section">
+<h2>1. 全局布局</h2>
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:12px">界面分为四个水平层：顶栏 → 时间轴 → 主体（左右分栏）。</p>
+
+<table>
+<tr><th>区域</th><th>位置</th><th>说明</th></tr>
+<tr><td>顶栏</td><td>最上方 44px</td><td>左上角 <strong style="display:inline-flex;align-items:center;gap:4px"><span style="width:18px;height:18px;border-radius:5px;background:var(--t1);color:var(--surface);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">R</span></strong> 为产品 Logo 占位（R = Reader，阅读平台代号）；右侧绿色脉冲圆点 + "实时同步中" 表示数据正在与学生端实时连接</td></tr>
+<tr><td>模式标签</td><td>顶栏内</td><td><span class="badge-mock" style="background:var(--teal-bg);color:var(--teal)">观察模式</span> 教师当前为观察者（不干预）；<span class="badge-mock" style="background:var(--purple-bg);color:var(--purple)">学生自主推进</span> 课堂处于学生自主节奏</td></tr>
+<tr><td>班级信息</td><td>顶栏右半</td><td>显示班级、课文名称、人数、任务数</td></tr>
+<tr><td>时间轴</td><td>第二行 40px</td><td>左侧 <strong>18:22</strong> = 已用时间，右侧 <strong>45:00</strong> = 课堂总时长，进度条可拖拽跳转回放</td></tr>
+<tr><td>左侧主面板</td><td>下方左</td><td>健康概览卡 + 课堂进程（步骤列表）</td></tr>
+<tr><td>右侧面板</td><td>下方右 340px</td><td>观察信号流 / 问题聚类（双 Tab 切换）</td></tr>
+</table>
+</div>
+
+<!-- ═══ 2. 健康概览卡 ═══ -->
+<div class="doc-section">
+<h2>2. 健康概览卡（左上方四卡片）</h2>
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:12px">四张卡片一行排列，快速传达全班关键指标。</p>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0">
+  <div class="card-mock" style="border-color:rgba(45,102,18,.15);background:var(--green-bg)">
+    <div style="font-size:9px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.5px">最快进度</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;margin:4px 0 2px">T5</div>
+    <div style="font-size:10px;color:var(--t2)">2 人已到达</div>
+  </div>
+  <div class="card-mock">
+    <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">中位进度</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;margin:4px 0 2px">T3</div>
+    <div style="font-size:10px;color:var(--t2)">62% 学生在此</div>
+  </div>
+  <div class="card-mock" style="border-color:rgba(122,77,14,.2);background:var(--amber-bg)">
+    <div style="font-size:9px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px">卡点学生</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;margin:4px 0 2px">7</div>
+    <div style="font-size:10px;color:var(--t2)">集中在 T3</div>
+  </div>
+  <div class="card-mock">
+    <div style="font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">AI 对话</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;margin:4px 0 2px">52 轮</div>
+    <div style="font-size:10px;color:var(--t2)">18 人触发</div>
+  </div>
+</div>
+
+<table>
+<tr><th>卡片</th><th>含义</th><th>底色规则</th></tr>
+<tr><td>最快进度</td><td>全班最快学生当前所在 Task 编号</td><td>绿底 = 已有学生接近完成</td></tr>
+<tr><td>中位进度</td><td>50% 学生所在的 Task</td><td>白底 = 中性信息</td></tr>
+<tr><td>卡点学生</td><td>当前被标记为"卡住"（stuck）的学生总数</td><td>琥珀底 = 需关注</td></tr>
+<tr><td>AI 对话</td><td>苏格拉底 AI 对话的累计轮次与触发人数</td><td>白底 = 中性信息</td></tr>
+</table>
+</div>
+
+<!-- ═══ 3. 颜色系统 ═══ -->
+<div class="doc-section">
+<h2>3. 颜色系统</h2>
+
+<h3>3a. 语义颜色</h3>
+<div class="legend-row"><div class="swatch" style="background:var(--green)"></div><div class="legend-label">绿色 Green</div><div class="legend-desc">完成、达标、通过、正确、连接正常</div></div>
+<div class="legend-row"><div class="swatch" style="background:var(--blue)"></div><div class="legend-label">蓝色 Blue</div><div class="legend-desc">进行中、部分理解（30%–70%）、练习类组件</div></div>
+<div class="legend-row"><div class="swatch" style="background:var(--amber)"></div><div class="legend-label">琥珀色 Amber</div><div class="legend-desc">需注意、卡住（stuck）、兜底选择题、中频误解</div></div>
+<div class="legend-row"><div class="swatch" style="background:var(--red)"></div><div class="legend-label">红色 Red</div><div class="legend-desc">紧急、高频误解、选择题答错、理解度极低</div></div>
+<div class="legend-row"><div class="swatch" style="background:var(--purple)"></div><div class="legend-label">紫色 Purple</div><div class="legend-desc">AI 相关：AI 苏格拉底对话、讨论（Discuss）组件</div></div>
+<div class="legend-row"><div class="swatch" style="background:var(--teal)"></div><div class="legend-label">青色 Teal</div><div class="legend-desc">讲解（Lecture）组件、课程引用、观察模式</div></div>
+
+<h3>3b. 进度条三色含义</h3>
+<div style="display:flex;align-items:center;gap:12px;margin:8px 0 4px">
+  <div class="prog-mock">
+    <div style="width:55%;background:var(--green)"></div>
+    <div style="width:25%;background:var(--blue)"></div>
+    <div style="width:20%;background:var(--amber)"></div>
+  </div>
+</div>
+<table>
+<tr><th>颜色段</th><th>含义</th></tr>
+<tr><td style="color:var(--green)">● 绿色</td><td>已完成（done）的学生占比</td></tr>
+<tr><td style="color:var(--blue)">● 蓝色</td><td>进行中（in progress）的学生占比</td></tr>
+<tr><td style="color:var(--amber)">● 琥珀色</td><td>卡住（stuck）的学生占比</td></tr>
+</table>
+
+<h3>3c. 理解度条颜色</h3>
+<table>
+<tr><th>颜色</th><th>区间</th><th>含义</th></tr>
+<tr><td style="color:var(--green)">● 绿色</td><td>&gt; 80%</td><td>理解良好</td></tr>
+<tr><td style="color:var(--blue)">● 蓝色</td><td>50%–80%</td><td>部分理解</td></tr>
+<tr><td style="color:var(--amber)">● 琥珀色</td><td>&lt; 50%</td><td>理解困难</td></tr>
+</table>
+</div>
+
+<!-- ═══ 4. 课堂进程（步骤卡） ═══ -->
+<div class="doc-section">
+<h2>4. 课堂进程（步骤列表）</h2>
+
+<h3>4a. 步骤卡片头部</h3>
+<div class="anno-box">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+  <span class="num-circle">3</span>
+  <div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:13px;font-weight:700">Scan & Build</span>
+      <span style="font-size:9px;color:var(--t2)">15 min · 信息矩阵</span>
+    </div>
+  </div>
+  <div style="margin-left:auto;display:flex;flex-direction:column;gap:2px;align-items:flex-end">
+    <span class="badge-mock" style="background:var(--red);color:#fff">1 紧急</span>
+    <span class="badge-mock" style="background:var(--amber-bg);color:var(--amber)">2 注意</span>
+  </div>
+</div>
+</div>
+
+<table>
+<tr><th>元素</th><th>说明</th></tr>
+<tr><td>左侧圆形数字</td><td>Task 序号（T1–T5），黑底白字</td></tr>
+<tr><td>英文名</td><td>Task 名称（如 Predict / Skim / Scan & Build / Evaluate / Wrap-up）</td></tr>
+<tr><td>时长 + 中文类型</td><td>预设时长 · 教学法类型（图式激活 / 结构解码 / 信息矩阵 / 批判质疑 / 策略复盘）</td></tr>
+<tr><td>右上角徽章</td><td>该步骤的观察信号计数：<span class="badge-mock" style="background:var(--red);color:#fff;font-size:8px">N 紧急</span> 红色紧急 + <span class="badge-mock" style="background:var(--amber-bg);color:var(--amber);font-size:8px">N 注意</span> 琥珀色警告</td></tr>
+<tr><td>▶ 箭头</td><td>点击展开/折叠步骤详情</td></tr>
+</table>
+
+<h3>4b. 组件条（Component Strip）</h3>
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">每个步骤下方的彩色条带，每段代表一个教学组件：</p>
+
+<div class="strip-mock">
+  <div class="strip-item" style="background:var(--teal-bg);color:var(--teal)">讲解</div>
+  <div class="strip-item" style="background:var(--blue-bg);color:var(--blue)">练习</div>
+  <div class="strip-item" style="background:var(--purple-bg);color:var(--purple)">讨论</div>
+  <div class="strip-item" style="background:var(--green-bg);color:var(--green);opacity:.4">总结</div>
+</div>
+
+<table>
+<tr><th>组件类型</th><th>颜色</th><th>说明</th></tr>
+<tr><td>讲解 Lecture</td><td><span class="swatch-sm" style="background:var(--teal-bg);display:inline-block;vertical-align:middle"></span> 青色</td><td>教师讲授环节</td></tr>
+<tr><td>练习 Practice</td><td><span class="swatch-sm" style="background:var(--blue-bg);display:inline-block;vertical-align:middle"></span> 蓝色</td><td>学生做题/填表</td></tr>
+<tr><td>讨论 Discuss</td><td><span class="swatch-sm" style="background:var(--purple-bg);display:inline-block;vertical-align:middle"></span> 紫色</td><td>AI 苏格拉底对话（可点击进入深层视图）</td></tr>
+<tr><td>总结 Summary</td><td><span class="swatch-sm" style="background:var(--green-bg);display:inline-block;vertical-align:middle"></span> 绿色</td><td>任务总结环节</td></tr>
+</table>
+
+<div class="callout">
+<strong>组件条的视觉状态：</strong><br>
+• <strong>已完成</strong> — 绿色浅底，表示全部学生已通过<br>
+• <strong>进行中</strong> — 对应颜色浅底 + 深色进度填充（从左往右按完成比例）<br>
+• <strong>未开始</strong> — 灰色底，透明度 40%<br>
+• <strong>右上角琥珀色小数字</strong> — 该组件中 stuck 的学生数<br>
+• <strong>左上角红色圆点</strong> — 该组件有紧急观察信号
+</div>
+
+<h3>4c. 展开后的组件详情</h3>
+<table>
+<tr><th>元素</th><th>说明</th></tr>
+<tr><td>左侧竖线</td><td>彩色 = 进行中（颜色对应组件类型），绿色 = 已完成，灰色 = 未开始</td></tr>
+<tr><td>类型标签</td><td>如 <span class="badge-mock" style="background:var(--blue-bg);color:var(--blue)">练习</span> 彩色小标签</td></tr>
+<tr><td>迷你进度条</td><td>54px 宽的三色条（绿/蓝/琥珀），含义同上</td></tr>
+<tr><td>百分比指标</td><td>练习显示"正确率"，讨论显示"达标率"</td></tr>
+<tr><td>红/琥珀圆形数字</td><td>该组件关联的观察信号数量</td></tr>
+<tr><td>→ 箭头</td><td>讨论组件可点击，进入 Discuss 深层视图</td></tr>
+</table>
+</div>
+
+<!-- ═══ 5. 观察信号（右侧面板） ═══ -->
+<div class="doc-section">
+<h2>5. 观察信号流（右侧面板 Tab 1）</h2>
+
+<h3>5a. 信号严重级别</h3>
+<div class="legend-row"><div class="dot" style="background:var(--red);animation:sig-pulse 2s infinite"></div><div class="legend-label">紧急 (urg)</div><div class="legend-desc">需要教师立即关注的异常，如大量学生触发兜底。红色脉冲圆点。</div></div>
+<div class="legend-row"><div class="dot" style="background:var(--amber)"></div><div class="legend-label">注意 (warn)</div><div class="legend-desc">需要留意的趋势，如某维度空缺率高、术语混淆。琥珀色圆点。</div></div>
+<div class="legend-row"><div class="dot" style="background:var(--t3)"></div><div class="legend-label">信息 (info)</div><div class="legend-desc">参考性观察，如个别学生卡在某处。灰色圆点。</div></div>
+
+<h3>5b. 信号卡片结构</h3>
+<table>
+<tr><th>元素</th><th>说明</th></tr>
+<tr><td>面包屑 T3 · 讨论</td><td>信号所属的 Task 编号 + 组件类型</td></tr>
+<tr><td>★ / ☆ 按钮</td><td>关注/取消关注该信号，关注的信号可通过筛选器快速查看</td></tr>
+<tr><td>标题行</td><td>信号描述（如"7 人理解度 < 30%，触发兜底选择题"）</td></tr>
+<tr><td>学生姓名标签</td><td>涉及的学生列表，颜色对应严重级别（红/琥珀）</td></tr>
+<tr><td>展开后 — 详细描述</td><td>点击信号卡后显示完整分析</td></tr>
+<tr><td>展开后 — 操作按钮</td><td>建议的教学干预（如"推送提示""暂停 Discuss"），黑底 = 主操作</td></tr>
+</table>
+
+<h3>5c. 筛选器</h3>
+<table>
+<tr><th>选项</th><th>说明</th></tr>
+<tr><td>全部</td><td>显示所有信号</td></tr>
+<tr><td>关注中</td><td>仅显示已 ★ 标记的信号</td></tr>
+<tr><td>仅紧急</td><td>仅显示 severity = urg 的红色信号</td></tr>
+</table>
+
+<h3>5d. 底部关注摘要</h3>
+<p style="font-size:12px;color:var(--t2);line-height:1.6">琥珀色底部区域，汇总当前所有被 ★ 关注的信号标题与涉及人数。</p>
+</div>
+
+<!-- ═══ 6. 问题聚类 ═══ -->
+<div class="doc-section">
+<h2>6. 问题聚类（右侧面板 Tab 2）</h2>
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:12px">汇总学生向 AI 提出的问题，按类别分组。</p>
+
+<table>
+<tr><th>分类</th><th>颜色</th><th>含义</th></tr>
+<tr><td>概念理解</td><td><span class="swatch-sm" style="background:var(--blue-bg);display:inline-block;vertical-align:middle"></span> 蓝</td><td>词汇、概念不懂（如 "shallow 是什么意思"）</td></tr>
+<tr><td>课文内容</td><td><span class="swatch-sm" style="background:var(--purple-bg);display:inline-block;vertical-align:middle"></span> 紫</td><td>课文事实性问题（如 "Myanmar 在哪里"）</td></tr>
+<tr><td>解题求助</td><td><span class="swatch-sm" style="background:var(--amber-bg);display:inline-block;vertical-align:middle"></span> 琥珀</td><td>任务执行困难（如 "怎么写 disagree 论据段"）</td></tr>
+<tr><td>阅读策略</td><td><span class="swatch-sm" style="background:var(--green-bg);display:inline-block;vertical-align:middle"></span> 绿</td><td>策略性问题（如 "Scanning 和 Skimming 区别"）</td></tr>
+</table>
+
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-top:8px">点击任意问题可展开查看 AI 的自动回答内容。</p>
+</div>
+
+<!-- ═══ 7. Discuss 深层视图 ═══ -->
+<div class="doc-section">
+<h2>7. Discuss 深层视图（点击讨论组件进入）</h2>
+
+<h3>7a. 班级概览</h3>
+<table>
+<tr><th>卡片</th><th>含义</th></tr>
+<tr><td>对话达标</td><td>通过苏格拉底对话自主达到理解目标的学生数 / 总数</td></tr>
+<tr><td>兜底选择题</td><td>对话未达标、转为选择题的学生数（分"答对"和"答错"）</td></tr>
+<tr><td>平均轮次</td><td>所有学生的 AI 对话平均轮数</td></tr>
+<tr><td>误解聚类</td><td>系统识别出的常见误解类型数量</td></tr>
+</table>
+
+<h3>7b. 结果分布条</h3>
+<div style="display:flex;height:24px;border-radius:4px;overflow:hidden;background:var(--surface2);margin:8px 0;max-width:500px">
+  <div style="width:56%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">9 达标</div>
+  <div style="width:25%;background:var(--amber);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">4 选对</div>
+  <div style="width:19%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">3 选错</div>
+</div>
+<table>
+<tr><th>颜色段</th><th>含义</th></tr>
+<tr><td style="color:var(--green)">● 绿色</td><td>苏格拉底对话达标（goalReached = true）</td></tr>
+<tr><td style="color:var(--amber)">● 琥珀色</td><td>兜底选择题答对（mcCorrect = true）</td></tr>
+<tr><td style="color:var(--red)">● 红色</td><td>兜底选择题答错（mcCorrect = false）— 需额外关注</td></tr>
+</table>
+
+<h3>7c. 逐轮理解变化</h3>
+<p style="font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">每一轮（Round）展示学生理解度的分布变化，可展开查看各档学生名单。</p>
+<div style="display:flex;gap:14px;font-size:10px;color:var(--t3);margin:8px 0">
+  <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span> 理解 >70%</span>
+  <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--blue);display:inline-block"></span> 30%–70%</span>
+  <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--amber);display:inline-block"></span> < 30%</span>
+</div>
+
+<h3>7d. 误解聚类</h3>
+<table>
+<tr><th>严重度标签</th><th>颜色</th><th>含义</th></tr>
+<tr><td>高频</td><td><span class="badge-mock" style="background:var(--red);color:#fff;font-size:8px">高频</span></td><td>大量学生出现该误解，需立即干预</td></tr>
+<tr><td>中频</td><td><span class="badge-mock" style="background:var(--amber);color:#fff;font-size:8px">中频</span></td><td>部分学生出现，需关注</td></tr>
+<tr><td>低频</td><td><span class="badge-mock" style="background:var(--t3);color:#fff;font-size:8px">低频</span></td><td>少数学生出现，可在总结时统一处理</td></tr>
+</table>
+
+<h3>7e. 学生列表</h3>
+<table>
+<tr><th>列</th><th>说明</th></tr>
+<tr><td>结果</td><td><span class="badge-mock" style="background:var(--green-bg);color:var(--green);font-size:9px">✓ 达标</span> 对话达标 · <span class="badge-mock" style="background:var(--amber-bg);color:var(--amber);font-size:9px">△ 选对</span> 兜底答对 · <span class="badge-mock" style="background:var(--amber-bg);color:var(--amber);font-size:9px">✕ 选错</span> 兜底答错</td></tr>
+<tr><td>轮次</td><td>AI 对话的来回轮次</td></tr>
+<tr><td>用时</td><td>该学生在此 Discuss 环节花费的时间</td></tr>
+<tr><td>最终理解</td><td>最后一轮的理解度百分比（进度条 + 数字）</td></tr>
+</table>
+</div>
+
+<!-- ═══ 8. 学生个人深层视图 ═══ -->
+<div class="doc-section">
+<h2>8. 学生个人视图（点击学生姓名进入）</h2>
+
+<h3>8a. 头部信息</h3>
+<table>
+<tr><th>元素</th><th>说明</th></tr>
+<tr><td>头像圆</td><td>取姓名第一个字，深色背景圆角方块</td></tr>
+<tr><td>状态标签</td><td>同 7e 的结果标签</td></tr>
+</table>
+
+<h3>8b. 左侧：对话记录</h3>
+<table>
+<tr><th>元素</th><th>说明</th></tr>
+<tr><td>三格统计</td><td>对话轮次 · 讨论用时 · 最终理解度（颜色同理解度规则）</td></tr>
+<tr><td>理解度轨迹条</td><td>每轮一根柱，高度 = 理解度百分比，颜色同理解度三色规则</td></tr>
+<tr><td>Round N 分隔</td><td>AI 发言一轮 + 学生回复一轮 = 一个 Round</td></tr>
+<tr><td>紫色圆 S</td><td>S = Socratic，AI 苏格拉底角色</td></tr>
+<tr><td>深色气泡</td><td>学生的回复（右对齐）</td></tr>
+<tr><td style="color:var(--green)">绿色"学生达标"</td><td>对话中出现 [GOAL_REACHED]，学生自主理解达标</td></tr>
+<tr><td style="color:var(--amber)">琥珀色"触发兜底选择题"</td><td>对话无法达标，系统降级为选择题</td></tr>
+</table>
+
+<h3>8c. 右侧：分析面板</h3>
+<table>
+<tr><th>区域</th><th>说明</th></tr>
+<tr><td>关键发现</td><td>系统自动总结的学生表现要点</td></tr>
+<tr><td>方法卡</td><td>绿底 = 苏格拉底对话达标；琥珀底 = 兜底选择题完成</td></tr>
+<tr><td>逐轮理解度</td><td>每轮的理解度条 + 与上轮对比的增减值（绿色正增长 / 红色下降）</td></tr>
+</table>
+</div>
+
+<!-- ═══ 9. 交互操作速查 ═══ -->
+<div class="doc-section">
+<h2>9. 交互操作速查</h2>
+<table>
+<tr><th>操作</th><th>效果</th></tr>
+<tr><td>点击步骤卡</td><td>展开/折叠该步骤的组件详情</td></tr>
+<tr><td>点击<strong>讨论</strong>组件条或详情行</td><td>进入 Discuss 班级概览视图</td></tr>
+<tr><td>点击学生姓名</td><td>进入该学生的 AI 对话详情视图</td></tr>
+<tr><td>点击观察信号卡</td><td>展开信号详情 + 高亮左侧对应组件</td></tr>
+<tr><td>★ 按钮</td><td>关注/取消关注信号</td></tr>
+<tr><td>← 返回课堂 / ← 返回班级</td><td>导航返回上一层视图</td></tr>
+<tr><td>信号中的操作按钮</td><td>向学生推送教学干预</td></tr>
+</table>
+</div>
+
+<style>
+@keyframes sig-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+
+</body></html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>讲解 · 平方差公式</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; }
+.app { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--t1); }
+
+/* ── Topbar ── */
+.topbar { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-class { font-size: 12px; color: var(--t3); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-badge { font-size: 10px; font-weight: 600; padding: 3px 10px; border-radius: 10px; background: var(--green-bg); color: var(--green); }
+.topbar-timer { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.topbar-timer-of { font-size: 11px; color: var(--t3); }
+
+/* ── Layout ── */
+.main-row { flex: 1; display: flex; min-height: 0; justify-content: center; }
+.task-col { flex: 1; min-width: 0; display: flex; flex-direction: column; max-width: 720px; }
+.task-scroll { flex: 1; overflow-y: auto; padding: 24px 32px 80px; }
+
+/* ── Section label ── */
+.section-label-row { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px; }
+
+/* ══ Question Card ══ */
+.q-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; opacity: 0; transform: translateY(10px); transition: opacity .35s ease, transform .35s ease; }
+.q-card.visible { opacity: 1; transform: none; }
+.q-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.q-num { font-size: 11px; font-weight: 700; color: var(--surface); background: var(--teal); width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.q-title { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.q-body { font-size: 13px; color: var(--t2); line-height: 1.7; }
+.q-body p { margin: 0 0 8px; color: var(--t2); }
+.q-body p:last-child { margin-bottom: 0; }
+
+/* ── Observation table ── */
+.obs-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.obs-table th { text-align: left; padding: 8px 12px; background: var(--surface2); font-weight: 500; color: var(--t2); border-bottom: 1px solid var(--border); font-size: 11px; letter-spacing: .3px; }
+.obs-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.obs-table tr:last-child td { border-bottom: none; }
+.obs-table .katex { font-size: 1.1em; }
+
+/* ── Q3: Multiplication Grid ── */
+.mg-grid { display: grid; grid-template-columns: 52px 1fr 1fr; gap: 1px; background: var(--border); border-radius: 10px; overflow: hidden; margin: 14px 0 16px; }
+.mg-grid > * { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; background: var(--surface); }
+.mg-corner { background: var(--surface2); font-size: 15px; font-weight: 700; color: var(--t3); }
+.mg-colh { background: var(--surface2); font-weight: 600; }
+.mg-colh .katex, .mg-rowh .katex { font-size: 1.15em; }
+.mg-rowh { background: var(--surface2); font-weight: 600; }
+.mg-cell { gap: 6px; }
+.mg-hint { font-size: 11px; color: var(--t3); }
+.mg-hint .katex { font-size: .9em; }
+.mg-input { width: 100%; max-width: 100px; text-align: center; padding: 8px; border: 1.5px dashed var(--border); border-radius: 7px; background: var(--bg); font-size: 15px; font-family: inherit; color: var(--t1); outline: none; transition: all .15s; box-sizing: border-box; }
+.mg-input:focus { border-color: var(--teal); border-style: solid; background: var(--teal-bg); }
+.mg-input.correct { border-color: var(--green); border-style: solid; background: var(--green-bg); color: var(--green); font-weight: 600; }
+.mg-input.wrong { border-color: var(--red); border-style: solid; background: var(--red-bg); color: var(--red); }
+.mg-input:disabled { opacity: .7; cursor: default; }
+
+/* ── Q3: Expansion Steps ── */
+.exp-box { background: var(--surface2); border-radius: 10px; padding: 16px 20px; margin-top: 14px; }
+.exp-label { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 10px; }
+.exp-line { display: flex; align-items: center; gap: 2px; font-size: 16px; line-height: 2; flex-wrap: wrap; }
+.exp-line .katex { font-size: 1.1em; }
+.exp-eq { color: var(--t3); font-weight: 500; width: 20px; flex-shrink: 0; text-align: center; }
+.exp-term { display: inline-flex; align-items: center; padding: 2px 4px; border-radius: 4px; position: relative; transition: opacity .5s; }
+.exp-cancel.struck { opacity: .3; }
+.exp-cancel::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--red); transform-origin: left; transform: scaleX(0); transition: transform .4s ease; }
+.exp-cancel.struck::after { transform: scaleX(1); }
+.exp-cancel-note { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 6px 24px; font-size: 12px; color: var(--red); font-weight: 500; padding: 4px 10px; background: var(--red-bg); border-radius: 6px; }
+.exp-cancel-note .katex { font-size: .95em; }
+.exp-final { margin-top: 2px; }
+.exp-final .exp-term .katex { font-size: 1.2em; }
+
+/* ── Color highlights for terms ── */
+.hl-same { background: rgba(148,41,41,.1); color: var(--red); padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+.hl-opp { background: rgba(26,95,160,.1); color: var(--blue); padding: 1px 4px; border-radius: 3px; font-weight: 600; }
+
+/* ── 2-choice buttons ── */
+.choice-row { display: flex; gap: 8px; margin: 8px 0; }
+.choice-btn { flex: 1; max-width: 160px; padding: 9px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface); text-align: center; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--t2); font-family: inherit; transition: all .15s; }
+.choice-btn:hover { border-color: var(--t3); color: var(--t1); background: var(--surface2); }
+.choice-btn.selected { border-color: var(--teal); background: var(--teal-bg); color: var(--teal); }
+.choice-btn.correct { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.choice-btn.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); opacity: .6; }
+.choice-btn.locked { pointer-events: none; }
+
+/* ── Inline blank input ── */
+.blank-input { display: inline-block; border: none; border-bottom: 1.5px solid var(--t3); background: transparent; font-family: inherit; font-size: 13px; color: var(--t1); padding: 2px 4px; min-width: 80px; text-align: center; outline: none; transition: border-color .15s; }
+.blank-input:focus { border-bottom-color: var(--teal); }
+.blank-input.correct { border-bottom-color: var(--green); color: var(--green); font-weight: 600; }
+.blank-input.wrong { border-bottom-color: var(--red); color: var(--red); }
+
+/* KaTeX inline blank */
+.katex-blank { display: inline-block; min-width: 100px; border-bottom: 1.5px solid var(--t3); padding: 2px 8px; margin: 0 2px; }
+.katex-blank.filled { border-bottom-color: var(--green); }
+
+/* ── Submit row ── */
+.submit-row { display: flex; justify-content: flex-end; margin-top: 12px; }
+.submit-sm { padding: 8px 20px; border-radius: 8px; border: none; background: var(--t1); color: var(--surface); font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .15s; }
+.submit-sm:hover { opacity: .85; }
+.submit-sm:disabled { opacity: .35; cursor: default; }
+
+/* ── AI Feedback inline ── */
+.ai-fb { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--purple-bg); border: 1px solid rgba(58,49,133,.1); }
+.ai-fb-icon { width: 22px; height: 22px; border-radius: 6px; background: var(--purple); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ai-fb-icon svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; }
+.ai-fb-body { font-size: 12px; color: var(--t2); line-height: 1.6; flex: 1; }
+.ai-fb-body strong { color: var(--purple); font-weight: 600; }
+
+/* ── Correct / wrong feedback ── */
+.fb-correct { background: var(--green-bg); border-color: rgba(45,102,18,.12); }
+.fb-correct .ai-fb-icon { background: var(--green); }
+.fb-correct .ai-fb-body strong { color: var(--green); }
+.fb-wrong { background: var(--red-bg); border-color: rgba(148,41,41,.12); }
+.fb-wrong .ai-fb-icon { background: var(--red); }
+.fb-wrong .ai-fb-body strong { color: var(--red); }
+
+/* ── Summary card ── */
+.summary-card { background: var(--teal-bg); border: 1px solid rgba(13,82,69,.15); border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; text-align: center; }
+.summary-card .katex { font-size: 1.3em; }
+.summary-label { font-size: 10px; font-weight: 600; color: var(--teal); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.summary-title { font-size: 16px; font-weight: 700; color: var(--teal); margin-top: 10px; }
+
+/* ── Inline choice (within text) ── */
+/* ── Inline choice (within text) ── */
+.inline-choice-wrap { display: inline-flex; gap: 4px; margin: 0 4px; vertical-align: middle; align-items: center; position: relative; }
+.inline-choice { padding: 5px 14px; border-radius: 6px; border: 1.5px solid var(--teal); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--teal); cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+.inline-choice:hover { background: var(--teal-bg); }
+.inline-choice-wrap.awaiting .inline-choice { animation: btnBreathe 2s ease-in-out infinite; }
+@keyframes btnBreathe { 0%,100% { background: var(--surface); border-color: var(--teal); } 50% { background: var(--teal-bg); border-color: var(--teal); } }
+.inline-choice.selected { border-color: var(--teal); background: var(--teal-bg); color: var(--teal); animation: none; }
+.inline-choice.correct { border-color: var(--green); background: var(--green-bg); color: var(--green); pointer-events: none; animation: none; }
+.inline-choice.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); pointer-events: none; opacity: .5; animation: none; }
+.inline-choice.locked { pointer-events: none; border-color: var(--border); color: var(--t3); animation: none; }
+.inline-choice.locked.correct { border-color: var(--green); color: var(--green); }
+.inline-choice-tag { font-size: 10px; color: var(--teal); font-weight: 500; white-space: nowrap; padding: 2px 8px; background: var(--teal-bg); border-radius: 3px; }
+.inline-choice-retry { font-size: 10px; color: var(--amber); font-weight: 500; white-space: nowrap; padding: 2px 8px; background: var(--amber-bg); border-radius: 3px; }
+
+/* ── Step progress ── */
+.step-progress { display: flex; align-items: center; gap: 0; margin-bottom: 20px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 12px 0 16px; }
+.step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; position: relative; z-index: 1; }
+.step-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--t3); transition: all .25s; }
+.step-dot.active { background: var(--teal-bg); border-color: var(--teal); color: var(--teal); }
+.step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+.step-label { font-size: 10px; color: var(--t3); font-weight: 500; white-space: nowrap; transition: color .2s; }
+.step-label.active { color: var(--teal); font-weight: 600; }
+.step-label.done { color: var(--green); }
+.step-connector { flex: 1; height: 2px; background: var(--border); min-width: 12px; margin: 0 -2px; position: relative; top: -9px; transition: background .25s; }
+.step-connector.filled { background: var(--green); }
+
+/* ── Next step button ── */
+.next-step-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--teal); color: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 8px; transition: opacity .15s; }
+.next-step-btn:hover { opacity: .85; }
+
+/* ── Disabled card overlay ── */
+.q-card.locked { opacity: .4; pointer-events: none; }
+
+/* ══ MathInput — multi-mode input component ══ */
+.math-input-root { display: inline-block; vertical-align: top; }
+.math-input-collapsed { display: inline-flex; align-items: center; justify-content: center; min-width: 100px; min-height: 34px; padding: 5px 14px; border-radius: 8px; border: 1.5px dashed var(--teal); background: var(--surface); font-size: 14px; font-weight: 500; color: var(--t1); cursor: pointer; transition: all .15s; }
+.math-input-collapsed.empty { border-style: dashed; }
+.math-input-collapsed:not(.empty) { border-style: solid; }
+.math-input-collapsed:hover { background: var(--teal-bg); }
+.math-input-collapsed.active { border-color: var(--teal); border-style: solid; background: var(--teal-bg); }
+.math-input-collapsed.correct { border-color: var(--green); border-style: solid; color: var(--green); background: var(--green-bg); }
+.math-input-collapsed.wrong { border-color: var(--red); border-style: solid; color: var(--red); background: var(--red-bg); }
+.math-input-collapsed.has-content { padding: 4px 8px; min-height: auto; border-style: solid; }
+.math-input-ph { color: var(--teal); font-size: 12px; font-weight: 500; }
+.math-input-text-preview { font-size: 16px; font-weight: 600; color: var(--t1); }
+.math-input-thumb { max-height: 48px; max-width: 180px; border-radius: 4px; display: block; object-fit: contain; }
+.math-input-edit-hint { font-size: 9px; color: var(--t3); margin-left: 6px; opacity: 0; transition: opacity .15s; }
+.math-input-collapsed:hover .math-input-edit-hint { opacity: 1; }
+
+.math-input-panel { margin-top: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.math-input-confirm-row { padding: 8px 12px 12px; display: flex; justify-content: flex-end; }
+.math-input-confirm { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 8px; border: none; background: var(--teal); color: #fff; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .15s; }
+.math-input-confirm:hover { opacity: .85; }
+.math-input-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.math-input-tab { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 6px; border: none; background: transparent; font-size: 11px; font-weight: 500; color: var(--t3); cursor: pointer; font-family: inherit; transition: all .12s; }
+.math-input-tab svg { stroke: currentColor; }
+.math-input-tab:hover { color: var(--t2); background: var(--surface); }
+.math-input-tab.active { color: var(--teal); background: var(--surface); font-weight: 600; }
+.math-input-close { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 5px; border: none; background: transparent; font-size: 10px; font-weight: 500; color: var(--t3); cursor: pointer; font-family: inherit; }
+.math-input-close:hover { color: var(--t1); background: var(--surface); }
+
+/* Keyboard mode */
+.math-input-kb { padding: 12px; }
+.math-input-field { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--t1); background: var(--bg); }
+.math-input-field:focus { outline: none; border-color: var(--teal); }
+.math-input-kb-hint { font-size: 10px; color: var(--t3); margin-top: 6px; }
+
+/* Handwrite mode — reuses hw-* classes from Practice v3 */
+.math-input-panel .hw-area { border-radius: 0; border: none; animation: none; }
+.math-input-panel .hw-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.math-input-panel .hw-tools { display: flex; align-items: center; gap: 4px; }
+.math-input-panel .hw-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 6px; border: 1px solid transparent; background: transparent; font-size: 11px; font-weight: 500; color: var(--t2); cursor: pointer; font-family: inherit; transition: all .12s; }
+.math-input-panel .hw-btn:hover { background: var(--surface2); color: var(--t1); }
+.math-input-panel .hw-btn.active { background: var(--t1); color: var(--surface); border-color: var(--t1); }
+.math-input-panel .hw-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.math-input-panel .hw-canvas-wrap { background-color: #fbfaf7; background-image: linear-gradient(rgba(28,28,26,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(28,28,26,.04) 1px, transparent 1px); background-size: 24px 24px; }
+.math-input-panel .hw-canvas-wrap canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+
+/* Photo mode */
+.math-input-photo { padding: 12px; }
+.math-input-photo-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px 16px; border: 1.5px dashed var(--border); border-radius: 8px; cursor: pointer; transition: all .15s; }
+.math-input-photo-drop:hover, .math-input-photo-drop.drag-over { border-color: var(--teal); background: var(--teal-bg); }
+.math-input-photo-drop span { font-size: 12px; color: var(--t3); font-weight: 500; }
+.math-input-photo-drop:hover span, .math-input-photo-drop.drag-over span { color: var(--teal); }
+.math-input-photo-preview { position: relative; }
+.math-input-photo-preview img { max-width: 100%; max-height: 280px; border-radius: 6px; border: 1px solid var(--border); display: block; object-fit: contain; }
+.math-input-photo-change { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); font-size: 11px; font-weight: 500; color: var(--t2); cursor: pointer; font-family: inherit; transition: all .12s; }
+.math-input-photo-change:hover { background: var(--surface2); color: var(--t1); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="guided-discovery-app.jsx"></script>
+</body>
+</html>

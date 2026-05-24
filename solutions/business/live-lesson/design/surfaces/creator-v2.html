@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Creator v2 · 组件配置 + 观察设计</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+#root{height:100vh;display:flex;flex-direction:column}
+::selection{background:var(--purple-bg);color:var(--purple)}
+.scr{overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.12) transparent}
+.scr::-webkit-scrollbar{width:6px}.scr::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
+input[type="range"]{height:4px;-webkit-appearance:none;appearance:none;background:var(--surface2);border-radius:2px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--t1);cursor:pointer;border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="creator-shared.jsx"></script>
+<script type="text/babel" src="creator-v2-data.jsx"></script>
+<script type="text/babel" src="creator-v2-content.jsx"></script>
+<script type="text/babel" src="creator-v2-observe.jsx"></script>
+<script type="text/babel" src="creator-v2-app.jsx"></script>
+<script type="text/babel">
+ReactDOM.createRoot(document.getElementById('root')).render(<CreatorV2App />);
+</script>
+</body>
+</html>

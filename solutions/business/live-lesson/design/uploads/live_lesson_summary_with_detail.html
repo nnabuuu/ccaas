@@ -1,0 +1,203 @@
+<style>
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; }
+.metric { background: var(--color-background-primary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; display: inline-block; }
+.kp-row { display: grid; grid-template-columns: 130px 1fr 42px; gap: 10px; align-items: center; font-size: 12px; padding: 4px 0; }
+.bar-track { background: var(--color-background-tertiary); height: 6px; border-radius: 3px; overflow: hidden; }
+.detail-section { padding: 10px 0 0; margin-top: 10px; border-top: 0.5px solid var(--color-border-tertiary); }
+.detail-title { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; margin-bottom: 6px; }
+.kp-item { font-size: 12px; line-height: 1.5; padding: 3px 0; }
+.kp-evidence { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
+</style>
+
+<div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 1.25rem;">
+<h2 class="sr-only">学生自学总览，含分布矩阵、选中学生详情、推荐提问候选与知识点掌握情况</h2>
+
+<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary);">
+  <div>
+    <div style="font-size: 15px; font-weight: 500;">自学完成 — 即将进入课堂讨论</div>
+    <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;">高一(3)班 · 二次函数最值问题 · 用时 12'30"</div>
+  </div>
+  <div style="font-size: 12px; color: var(--color-text-tertiary);">38 / 42 已提交</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">整体掌握度</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">76%</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">学优 / 学困</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">12 <span style="color: var(--color-text-tertiary); font-size: 14px;">/</span> 8</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">异常学生</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px; color: var(--color-text-warning);">3</div></div>
+  <div class="metric"><div style="font-size: 11px; color: var(--color-text-secondary);">薄弱知识点</div><div style="font-size: 20px; font-weight: 500; margin-top: 2px;">2</div></div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 8px; margin-bottom: 12px;">
+
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <div style="font-size: 13px; font-weight: 500;">学生分布矩阵</div>
+    <div style="font-size: 10px; color: var(--color-text-tertiary);">已自动避让重合点 · 数字 = 多人位置</div>
+  </div>
+  <svg viewBox="0 0 480 270" width="100%" height="auto" style="display: block;">
+    <rect x="50" y="10" width="210" height="115" fill="var(--color-background-warning)" opacity="0.4"/>
+    <rect x="260" y="10" width="210" height="115" fill="var(--color-background-success)" opacity="0.4"/>
+    <rect x="50" y="125" width="210" height="115" fill="var(--color-background-danger)" opacity="0.4"/>
+    <rect x="260" y="125" width="210" height="115" fill="var(--color-background-info)" opacity="0.4"/>
+    <line x1="50" y1="125" x2="470" y2="125" stroke="var(--color-border-secondary)" stroke-dasharray="2,3"/>
+    <line x1="260" y1="10" x2="260" y2="240" stroke="var(--color-border-secondary)" stroke-dasharray="2,3"/>
+
+    <text x="58" y="24" font-size="10" fill="var(--color-text-warning)" font-weight="500">努力但困惑 · 5</text>
+    <text x="462" y="24" font-size="10" fill="var(--color-text-success)" font-weight="500" text-anchor="end">学优 · 12</text>
+    <text x="58" y="236" font-size="10" fill="var(--color-text-danger)" font-weight="500">需要关注 · 3</text>
+    <text x="462" y="236" font-size="10" fill="var(--color-text-info)" font-weight="500" text-anchor="end">吃不饱 · 3</text>
+
+    <text x="260" y="262" font-size="10" fill="var(--color-text-tertiary)" text-anchor="middle">掌握度 →</text>
+    <text x="30" y="125" font-size="10" fill="var(--color-text-tertiary)" text-anchor="middle" transform="rotate(-90, 30, 125)">参与度 →</text>
+
+    <circle cx="295" cy="55" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="320" cy="90" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="345" cy="38" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="345" cy="85" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="395" cy="95" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="420" cy="65" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="395" cy="42" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+    <circle cx="425" cy="105" r="4" fill="var(--color-text-success)" opacity="0.75"/>
+
+    <g>
+      <circle cx="370" cy="60" r="11" fill="var(--color-text-success)" stroke="var(--color-background-primary)" stroke-width="1.5"/>
+      <text x="370" y="60" font-size="11" fill="var(--color-background-primary)" font-weight="500" text-anchor="middle" dominant-baseline="middle">3</text>
+    </g>
+
+    <circle cx="90" cy="55" r="4" fill="var(--color-text-warning)" opacity="0.75"/>
+    <circle cx="115" cy="92" r="4" fill="var(--color-text-warning)" opacity="0.75"/>
+    <circle cx="220" cy="78" r="4" fill="var(--color-text-warning)" opacity="0.75"/>
+    <circle cx="240" cy="100" r="4" fill="var(--color-text-warning)" opacity="0.75"/>
+
+    <circle cx="130" cy="170" r="4" fill="var(--color-text-danger)" opacity="0.75"/>
+    <circle cx="225" cy="200" r="4" fill="var(--color-text-danger)" opacity="0.75"/>
+
+    <circle cx="305" cy="195" r="4" fill="var(--color-text-info)" opacity="0.75"/>
+    <circle cx="385" cy="175" r="4" fill="var(--color-text-info)" opacity="0.75"/>
+    <circle cx="440" cy="218" r="4" fill="var(--color-text-info)" opacity="0.75"/>
+
+    <circle cx="245" cy="105" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="265" cy="115" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="250" cy="135" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="275" cy="135" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="270" cy="98" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="245" cy="148" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="290" cy="110" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="285" cy="148" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="220" cy="140" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="305" cy="120" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="225" cy="115" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+    <circle cx="290" cy="142" r="4" fill="var(--color-text-secondary)" opacity="0.6"/>
+
+    <g>
+      <circle cx="455" cy="32" r="6" fill="var(--color-text-success)" stroke="var(--color-background-primary)" stroke-width="2"/>
+      <text x="447" y="22" font-size="10" fill="var(--color-text-primary)" font-weight="500" text-anchor="end">张明</text>
+    </g>
+    <g>
+      <circle cx="170" cy="38" r="11" fill="none" stroke="var(--color-text-warning)" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <circle cx="170" cy="38" r="6.5" fill="var(--color-text-warning)" stroke="var(--color-background-primary)" stroke-width="2"/>
+      <text x="183" y="35" font-size="11" fill="var(--color-text-primary)" font-weight="500">王芳</text>
+    </g>
+    <g>
+      <circle cx="180" cy="195" r="6" fill="var(--color-text-danger)" stroke="var(--color-background-primary)" stroke-width="2"/>
+      <text x="190" y="200" font-size="10" fill="var(--color-text-primary)" font-weight="500">小赵</text>
+    </g>
+  </svg>
+</div>
+
+<div class="card" style="display: flex; flex-direction: column;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <div style="font-size: 14px; font-weight: 500;">王芳</div>
+    <span class="tag" style="background: var(--color-background-warning); color: var(--color-text-warning);">努力但困惑</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 6px 0;">
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">掌握度</div><div style="font-size: 13px; font-weight: 500;">38%</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">参与度</div><div style="font-size: 13px; font-weight: 500;">78%</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">用时</div><div style="font-size: 13px; font-weight: 500;">13'45"</div></div>
+    <div><div style="font-size: 10px; color: var(--color-text-tertiary);">完整度</div><div style="font-size: 13px; font-weight: 500;">4 / 5</div></div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-title">关键卡点</div>
+    <div class="kp-item">
+      <div>▸ Q3 顶点公式应用</div>
+      <div class="kp-evidence">3 次错答 → 用提示后才对</div>
+    </div>
+    <div class="kp-item">
+      <div>▸ Q5 配方法</div>
+      <div class="kp-evidence">直接跳过未答</div>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-title">为什么推荐"暴露问题"</div>
+    <div style="font-size: 12px; line-height: 1.55; color: var(--color-text-secondary);">她在 Q3 上的卡点恰好是全班 47% 学生共同卡点。让她讲解题思路，能把"配方法 → 顶点公式"这个隐性衔接暴露出来。</div>
+  </div>
+
+  <button onclick="sendPrompt('把王芳加入提问候选,意图是暴露问题')" style="margin-top: auto; margin-top: 12px; width: 100%; font-size: 12px;">加入提问候选 ↗</button>
+</div>
+
+</div>
+
+<div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; margin-bottom: 12px;">
+  <div class="card">
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">推荐提问候选</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 13px; font-weight: 500;">张明</div>
+      <span class="tag" style="background: var(--color-background-success); color: var(--color-text-success);">展示标杆</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 13px; font-weight: 500;">李华</div>
+      <span class="tag" style="background: var(--color-background-info); color: var(--color-text-info);">检验掌握</span>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
+      <div style="font-size: 13px; font-weight: 500;">王芳</div>
+      <span class="tag" style="background: var(--color-background-warning); color: var(--color-text-warning);">暴露问题</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">建议重讲</div>
+    <div style="padding: 4px 0;">
+      <div style="font-size: 12px; font-weight: 500;">3.2 顶点公式应用</div>
+      <div style="font-size: 11px; color: var(--color-text-danger); margin-top: 2px;">错误率 47%</div>
+    </div>
+    <div style="padding: 6px 0 0; margin-top: 4px; border-top: 0.5px solid var(--color-border-tertiary);">
+      <div style="font-size: 12px; font-weight: 500;">2.4 配方法</div>
+      <div style="font-size: 11px; color: var(--color-text-warning); margin-top: 2px;">错误率 31%</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="font-size: 13px; font-weight: 500; margin-bottom: 10px;">知识点掌握情况</div>
+  <div class="kp-row">
+    <div>1.1 函数定义</div>
+    <div class="bar-track"><div style="height: 100%; width: 92%; background: var(--color-text-success);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">92%</div>
+  </div>
+  <div class="kp-row">
+    <div>2.3 对称轴</div>
+    <div class="bar-track"><div style="height: 100%; width: 84%; background: var(--color-text-success);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">84%</div>
+  </div>
+  <div class="kp-row">
+    <div>3.1 最值概念</div>
+    <div class="bar-track"><div style="height: 100%; width: 78%; background: var(--color-text-secondary);"></div></div>
+    <div style="text-align: right; color: var(--color-text-secondary);">78%</div>
+  </div>
+  <div class="kp-row">
+    <div style="font-weight: 500;">2.4 配方法</div>
+    <div class="bar-track"><div style="height: 100%; width: 69%; background: var(--color-text-warning);"></div></div>
+    <div style="text-align: right; color: var(--color-text-warning);">69%</div>
+  </div>
+  <div class="kp-row">
+    <div style="font-weight: 500;">3.2 顶点公式</div>
+    <div class="bar-track"><div style="height: 100%; width: 53%; background: var(--color-text-danger);"></div></div>
+    <div style="text-align: right; color: var(--color-text-danger);">53%</div>
+  </div>
+</div>
+
+</div>

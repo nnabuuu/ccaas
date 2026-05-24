@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>课程项目架构设计 · 对齐文档</title>
+<script src="deck-stage.js"></script>
+<link rel="stylesheet" href="tokens.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --type-title: 56px;
+  --type-subtitle: 38px;
+  --type-body: 30px;
+  --type-small: 24px;
+  --type-label: 16px;
+  --type-mono: 20px;
+  --pad-top: 100px;
+  --pad-bottom: 80px;
+  --pad-x: 100px;
+  --gap-title: 48px;
+  --gap-item: 24px;
+}
+section { font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif; color: var(--t1); }
+section * { box-sizing: border-box; }
+
+/* ── Slide layouts ── */
+.slide-pad { padding: var(--pad-top) var(--pad-x) var(--pad-bottom); display: flex; flex-direction: column; }
+.slide-dark { background: var(--t1); color: rgba(240,239,232,.92); }
+.slide-dark .s-label { color: rgba(240,239,232,.4); }
+.slide-dark .s-title { color: rgba(240,239,232,.95); }
+.slide-dark .s-sub { color: rgba(240,239,232,.55); }
+
+.s-label { font-size: 24px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+.s-title { font-size: var(--type-title); font-weight: 800; letter-spacing: -1px; line-height: 1.15; margin-bottom: var(--gap-title); }
+.s-subtitle { font-size: var(--type-subtitle); font-weight: 600; letter-spacing: -.5px; line-height: 1.3; margin-bottom: var(--gap-title); }
+.s-sub { font-size: var(--type-body); color: var(--t2); line-height: 1.6; max-width: 1200px; }
+.s-body { font-size: var(--type-body); color: var(--t2); line-height: 1.7; }
+.s-small { font-size: var(--type-small); color: var(--t3); line-height: 1.6; }
+.s-mono { font-family: "JetBrains Mono", monospace; font-size: var(--type-mono); }
+
+/* ── Diagram primitives ── */
+.d-row { display: flex; gap: 24px; align-items: stretch; }
+.d-col { display: flex; flex-direction: column; gap: 16px; }
+.d-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.d-box-title { font-size: var(--type-small); font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.d-box-body { font-size: 24px; color: var(--t2); line-height: 1.6; }
+.d-accent-l { border-left: 4px solid; }
+.d-tag { display: inline-flex; padding: 4px 14px; border-radius: 6px; font-size: 24px; font-weight: 600; }
+.d-tag.teal { background: var(--teal-bg); color: var(--teal); }
+.d-tag.blue { background: var(--blue-bg); color: var(--blue); }
+.d-tag.green { background: var(--green-bg); color: var(--green); }
+.d-tag.purple { background: var(--purple-bg); color: var(--purple); }
+.d-tag.amber { background: var(--amber-bg); color: var(--amber); }
+.d-tag.coral { background: var(--coral-bg); color: var(--coral); }
+.d-tag.neutral { background: var(--surface2); color: var(--t2); }
+.d-arrow { display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--t3); flex-shrink: 0; width: 60px; }
+.d-phase { flex: 1; border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 10px; }
+.d-phase-title { font-size: 28px; font-weight: 800; }
+.d-phase-kw { font-size: 40px; font-weight: 800; opacity: .08; position: absolute; right: 28px; bottom: 60px; pointer-events: none; }
+.d-phase-body { font-size: 24px; line-height: 1.6; }
+.d-phase-meta { font-size: 24px; opacity: .6; margin-top: auto; font-family: "JetBrains Mono", monospace; }
+
+/* Flow steps */
+.flow-row { display: flex; align-items: center; gap: 0; }
+.flow-node { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 20px 24px; min-width: 180px; text-align: center; }
+.flow-node-title { font-size: 24px; font-weight: 700; }
+.flow-node-type { font-size: 24px; color: var(--t3); font-family: "JetBrains Mono", monospace; margin-top: 4px; }
+.flow-gate { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; flex-shrink: 0; }
+.flow-gate-line { width: 40px; height: 2px; background: var(--border); position: relative; }
+.flow-gate-line::after { content: "→"; position: absolute; right: -8px; top: -10px; font-size: 24px; color: var(--t3); }
+.flow-gate-label { font-size: 24px; font-weight: 600; color: var(--t3); }
+
+/* Layer stack */
+.layer { display: flex; align-items: center; gap: 20px; padding: 20px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.layer-bar { width: 5px; height: 48px; border-radius: 3px; flex-shrink: 0; }
+.layer-label { font-size: 24px; font-weight: 700; min-width: 180px; }
+.layer-desc { font-size: 24px; color: var(--t2); }
+
+/* Table */
+.s-table { width: 100%; border-collapse: collapse; font-size: 24px; }
+.s-table th { text-align: left; padding: 14px 20px; font-size: 24px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--border); }
+.s-table td { padding: 14px 20px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+.s-table tr:last-child td { border-bottom: none; }
+
+/* Code */
+.code-box { background: var(--t1); color: rgba(240,239,232,.85); border-radius: 16px; padding: 28px 32px; font-family: "JetBrains Mono", monospace; font-size: 24px; line-height: 1.7; }
+.code-box .ck { color: #5dcaa5; }
+.code-box .cv { color: #d4a96a; }
+.code-box .cn { color: #7ab5df; }
+.code-box .cc { color: rgba(240,239,232,.3); }
+.code-box.sm { font-size: 24px; }
+
+/* Principle cards */
+.principle { background: var(--surface); border-radius: 16px; padding: 28px 32px; flex: 1; border: 1px solid var(--border); }
+.principle-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+.principle-body { font-size: 24px; color: var(--t2); line-height: 1.6; }
+.principle-mono { font-size: 24px; color: var(--t3); font-family: "JetBrains Mono", monospace; margin-top: 12px; }
+</style>
+</head>
+<body>
+<deck-stage width="1920" height="1080">
+
+<!-- ═══ 01 COVER ═══ -->
+<section data-screen-label="01 Cover">
+  <div class="slide-pad" style="justify-content: center; align-items: flex-start;">
+    <div class="s-label" style="font-size: 26px;">Jijian 精准教学 · 产品/技术对齐文档</div>
+    <div class="s-title" style="font-size: 64px; margin-bottom: 24px;">课程项目架构设计</div>
+    <div class="s-sub" style="max-width: 900px;">从教案设计 → 课程执行构建 → 实际 Live-Lesson 上课的完整逻辑通路。底层由文件系统提供 source of truth，上层由 Entity 视图提供业务语义的结构化投影。</div>
+    <div style="display: flex; gap: 12px; margin-top: 48px;">
+      <span class="d-tag teal">Plan / WHAT</span>
+      <span class="d-tag blue">Execution / HOW</span>
+      <span class="d-tag green">Live Lesson / DO</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 核心概念 ═══ -->
+<section data-screen-label="02 Core Concept">
+  <div class="slide-pad">
+    <div class="s-label">核心概念</div>
+    <div class="s-title">一个课程项目 = 一节课的完整生命周期</div>
+    <div class="d-row" style="flex: 1; align-items: stretch;">
+      <div class="d-phase" style="background: var(--teal-bg); color: var(--teal); position: relative;">
+        <div class="d-phase-title">📝 教案设计</div>
+        <div class="d-phase-body">Document-centric<br>教师心智: "我在写一份文档"<br>教学要求 · 核心素养 · 大模块划分</div>
+        <div class="d-phase-meta">plan/*.md → Notion-alike 编辑器</div>
+      </div>
+      <div class="d-arrow">→</div>
+      <div class="d-phase" style="background: var(--blue-bg); color: var(--blue); position: relative;">
+        <div class="d-phase-title">🧩 执行设计</div>
+        <div class="d-phase-body">Canvas/Flow-centric<br>教师心智: "我在搭一条流水线"<br>模块列表 · 参数配置 · 完成条件</div>
+        <div class="d-phase-meta">execution/manifest.json → 原样消费</div>
+      </div>
+      <div class="d-arrow">→</div>
+      <div class="d-phase" style="background: var(--green-bg); color: var(--green); position: relative;">
+        <div class="d-phase-title">▶️ 课堂执行</div>
+        <div class="d-phase-body">Runtime 状态机<br>学生按序执行 · 教师实时监控<br>课堂记录自动生成</div>
+        <div class="d-phase-meta">record/* → 自动写入</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 双层架构 ═══ -->
+<section data-screen-label="03 Dual Layer">
+  <div class="slide-pad">
+    <div class="s-label">架构</div>
+    <div class="s-title">文件系统 + Entity 视图的双层架构</div>
+    <div class="d-row" style="flex: 1;">
+      <div class="d-box" style="flex: 1;">
+        <div class="d-box-title"><span class="d-tag neutral">底层</span> 文件系统 — Source of Truth</div>
+        <div class="d-box-body">所有数据最终落到文件。Agent 和教师直接编辑共享同一套文件存储。没有隐藏的黑盒数据库。</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag teal" style="min-width: 140px; justify-content: center;">plan/</span><span style="font-size: 24px; color: var(--t2);">教案文档 (*.md)</span></div>
+          <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag blue" style="min-width: 140px; justify-content: center;">execution/</span><span style="font-size: 24px; color: var(--t2);">manifest + 模块定义</span></div>
+          <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag green" style="min-width: 140px; justify-content: center;">record/</span><span style="font-size: 24px; color: var(--t2);">课堂记录 (auto)</span></div>
+          <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag purple" style="min-width: 140px; justify-content: center;">(review)</span><span style="font-size: 24px; color: var(--t2);">AI 实时产出，无 folder</span></div>
+        </div>
+      </div>
+      <div class="d-arrow">↔</div>
+      <div class="d-box" style="flex: 1;">
+        <div class="d-box-title"><span class="d-tag blue">上层</span> Entity 视图 — 结构化投影</div>
+        <div class="d-box-body">业务语义的结构化视图。同一份文件的不同投影——平台层展示"是什么"，方案层展示"做什么"。</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+          <div class="layer"><div class="layer-bar" style="background: var(--teal);"></div><div class="layer-label">plan/ →</div><div class="layer-desc">教案设计 Tab</div></div>
+          <div class="layer"><div class="layer-bar" style="background: var(--blue);"></div><div class="layer-label">execution/ →</div><div class="layer-desc">执行设计 Tab</div></div>
+          <div class="layer"><div class="layer-bar" style="background: var(--green);"></div><div class="layer-label">record/ →</div><div class="layer-desc">（自动生成）</div></div>
+          <div class="layer"><div class="layer-bar" style="background: var(--purple);"></div><div class="layer-label">(no folder) →</div><div class="layer-desc">Review 审计</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 视图体系 ═══ -->
+<section data-screen-label="04 View System">
+  <div class="slide-pad">
+    <div class="s-label">视图体系</div>
+    <div class="s-title">教案 / 执行 First-class + 文件面板常驻</div>
+    <div class="d-row" style="flex: 1; gap: 32px;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+        <div class="s-body" style="margin-bottom: 8px;">教案设计和执行设计是教师的主要工作界面，视觉上作为 primary tab。文件面板作为常驻左侧栏，按类别组织，支持预览和跳转编辑。</div>
+        <div class="d-box" style="padding: 24px;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 26px; font-weight: 700; padding: 8px 20px; border-bottom: 3px solid var(--teal); color: var(--teal);">📝 教案设计</span>
+            <span style="font-size: 26px; font-weight: 700; padding: 8px 20px; border-bottom: 3px solid var(--blue); color: var(--blue);">🧩 执行设计</span>
+            <span style="width: 2px; height: 24px; background: var(--border); margin: 0 12px;"></span>
+            <span style="font-size: 24px; padding: 8px 16px; color: var(--t3);">⚙️ Skills</span>
+            <span style="font-size: 24px; padding: 8px 16px; color: var(--t3);">👁 Review</span>
+          </div>
+        </div>
+        <div class="d-box" style="padding: 24px;">
+          <div style="font-size: 24px; font-weight: 600; color: var(--t3); margin-bottom: 12px;">文件面板分类</div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <span class="d-tag teal">📝 教案文档</span>
+            <span class="d-tag purple">🧩 模块定义</span>
+            <span class="d-tag blue">📋 执行流</span>
+            <span class="d-tag amber">📚 资源</span>
+            <span class="d-tag green">📊 记录</span>
+          </div>
+        </div>
+      </div>
+      <div class="d-box" style="flex: 0 0 480px; padding: 24px; gap: 8px;">
+        <div style="font-size: 24px; font-weight: 600; color: var(--t3);">文件面板特性</div>
+        <div style="font-size: 24px; color: var(--t2); line-height: 1.8;">
+          <div>• 文件按类型分类</div>
+          <div>• 每个文件有 mini preview</div>
+          <div>• 可渲染文件点击跳转编辑</div>
+          <div>• 模块文件标记 <span class="d-tag blue">ref</span></div>
+          <div>• 面板可折叠至图标态</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 Manifest ═══ -->
+<section data-screen-label="05 Manifest">
+  <div class="slide-pad">
+    <div class="s-label">执行设计</div>
+    <div class="s-title">Manifest = 有序模块列表，原样消费</div>
+    <div class="d-row" style="flex: 1; gap: 32px;">
+      <div class="code-box" style="flex: 1;">
+{ <span class="ck">"modules"</span>: [<br>
+&nbsp;&nbsp;{ <span class="ck">"$ref"</span>: <span class="cv">"modules/quiz-comp.json"</span> },<br>
+&nbsp;&nbsp;{ <span class="ck">"$ref"</span>: <span class="cv">"modules/evidence.json"</span> },<br>
+&nbsp;&nbsp;{ <span class="ck">"$ref"</span>: <span class="cv">"modules/discuss.json"</span> },<br>
+&nbsp;&nbsp;{ <span class="ck">"$ref"</span>: <span class="cv">"modules/map.json"</span> },<br>
+]}<br><br>
+<span class="cc">// 模块定义是独立文件</span><br>
+<span class="cc">// $ref 组合 → 编辑同步</span>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div class="d-box d-accent-l" style="border-left-color: var(--blue);">
+          <div class="d-box-title">三个消费者，同一份 Schema</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag blue" style="min-width: 100px;">编辑器 UI</span><span style="font-size: 24px; color: var(--t2);">据 schema 渲染参数表单</span></div>
+            <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag purple" style="min-width: 100px;">Agent</span><span style="font-size: 24px; color: var(--t2);">据 schema 生成合法配置</span></div>
+            <div style="display: flex; gap: 12px; align-items: center;"><span class="d-tag coral" style="min-width: 100px;">校验层</span><span style="font-size: 24px; color: var(--t2);">据 schema 拦截非法状态</span></div>
+          </div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--purple);">
+          <div class="d-box-title">模块 Ref 机制</div>
+          <div class="d-box-body">模块定义是独立 JSON 文件，可被 <code style="font-family: 'JetBrains Mono', monospace; background: var(--surface2); padding: 2px 8px; border-radius: 4px; font-size: 24px;">$ref</code> 引用到执行 manifest 中。编辑模块定义文件，所有引用处同步更新。</div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--green);">
+          <div class="d-box-title">Schema 约束</div>
+          <div class="d-box-body">模块类型由后端提供，只读、不可扩展。教师和学校不能自定义新的模块类型。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 两类字段 ═══ -->
+<section data-screen-label="06 Field Types">
+  <div class="slide-pad">
+    <div class="s-label">模块 Schema</div>
+    <div class="s-title">每个模块的参数分为两类字段</div>
+    <div class="d-row" style="flex: 1; gap: 32px;">
+      <div class="d-box d-accent-l" style="border-left-color: var(--blue); flex: 1;">
+        <div class="d-box-title"><span class="d-tag blue">结构化配置</span></div>
+        <div class="d-box-body" style=">机器直接消费，schema 硬校验</div>
+        <table class="s-table" style="margin-top: 8px;">
+          <tr><th>字段</th><th>类型</th><th>UI 渲染</th></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace;">duration</td><td>number</td><td>滑块</td></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace;">minTurns</td><td>number</td><td>数字输入</td></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace;">difficulty</td><td>enum</td><td>下拉选择</td></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace;">passScore</td><td>number</td><td>滑块</td></tr>
+        </table>
+      </div>
+      <div class="d-box d-accent-l" style="border-left-color: var(--purple); flex: 1;">
+        <div class="d-box-title"><span class="d-tag purple">Declarative Prompt</span></div>
+        <div class="d-box-body" style=">LLM 消费，校验仅限非空检查</div>
+        <table class="s-table" style="margin-top: 8px;">
+          <tr><th>字段</th><th>读取者</th><th>UI 渲染</th></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace; color: var(--purple);">tutorInstruction</td><td>AI Tutor</td><td>文本框</td></tr>
+          <tr><td style="font-family: 'JetBrains Mono', monospace; color: var(--coral);">completionRubric</td><td>AI Evaluator</td><td>文本框</td></tr>
+        </table>
+        <div style="margin-top: 16px; padding: 16px; background: var(--purple-bg); border-radius: 10px; font-size: 24px; color: var(--purple); line-height: 1.6;">
+          ⚠ 两组字段读取者不同、判断标准不同。混合定义会导致调整 tutor 行为时意外改变通过条件。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 AI 字段分离 ═══ -->
+<section data-screen-label="07 AI Separation" class="slide-dark">
+  <div class="slide-pad slide-dark">
+    <div class="s-label">关键设计决策</div>
+    <div class="s-title">AI 字段必须角色分离</div>
+    <div class="d-row" style="flex: 1; gap: 40px;">
+      <div style="flex: 1; padding: 36px; border-radius: 16px; background: rgba(58,49,133,.15); border: 1px solid rgba(58,49,133,.2);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="d-tag purple">→ AI Tutor</span>
+        </div>
+        <div style="font-size: 28px; font-weight: 700; margin-bottom: 12px; color: rgba(240,239,232,.9);">Tutor Instruction</div>
+        <div style="font-size: 24px; color: rgba(240,239,232,.6); line-height: 1.7; margin-bottom: 20px;">定义 tutor 在模块内如何与学生互动</div>
+        <div style="padding: 20px; background: rgba(0,0,0,.3); border-radius: 10px; font-size: 24px; color: rgba(240,239,232,.7); line-height: 1.7; font-style: italic;">
+          "引导学生理解美的实践是一种文化语言。鼓励从课文中找证据，使用苏格拉底式追问，不直接给出答案。"
+        </div>
+      </div>
+      <div style="flex: 1; padding: 36px; border-radius: 16px; background: rgba(107,42,20,.15); border: 1px solid rgba(107,42,20,.2);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+          <span class="d-tag coral">→ AI Evaluator</span>
+        </div>
+        <div style="font-size: 28px; font-weight: 700; margin-bottom: 12px; color: rgba(240,239,232,.9);">Completion Rubric</div>
+        <div style="font-size: 24px; color: rgba(240,239,232,.6); line-height: 1.7; margin-bottom: 20px;">定义学生达标判断标准</div>
+        <div style="padding: 20px; background: rgba(0,0,0,.3); border-radius: 10px; font-size: 24px; color: rgba(240,239,232,.7); line-height: 1.7; font-style: italic;">
+          "学生能说出美的实践是表达身份认同和文化归属的方式，需要引用至少一个课文中的具体实践作为证据。"
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 完成条件 ═══ -->
+<section data-screen-label="08 Completion">
+  <div class="slide-pad">
+    <div class="s-label">模块定义</div>
+    <div class="s-title">三种完成条件类型</div>
+    <div class="d-row" style="flex: 1; gap: 24px;">
+      <div class="d-box d-accent-l" style="border-left-color: var(--t3);">
+        <div class="d-box-title"><span style="font-size: 32px; margin-right: 4px;">▸</span> 手动推进</div>
+        <div class="d-box-body">学生完成内容浏览后点击"下一步"</div>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+          <span class="d-tag neutral">适用: Read / Summary</span>
+          <div class="code-box" style="font-size: 24px; padding: 12px 16px;">{ <span class="ck">"type"</span>: <span class="cv">"manual"</span> }</div>
+        </div>
+      </div>
+      <div class="d-box d-accent-l" style="border-left-color: var(--green);">
+        <div class="d-box-title"><span style="font-size: 32px; color: var(--green); margin-right: 4px;">✓</span> 硬性指标</div>
+        <div class="d-box-body">系统确定性判定，执行框架直接校验</div>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+          <span class="d-tag green">适用: Quiz / Matrix</span>
+          <div class="code-box" style="font-size: 24px; padding: 12px 16px;">{ <span class="ck">"type"</span>: <span class="cv">"hard"</span>, <span class="ck">"rule"</span>: <span class="cv">"score >= 0.75"</span> }</div>
+        </div>
+      </div>
+      <div class="d-box d-accent-l" style="border-left-color: var(--purple);">
+        <div class="d-box-title"><span style="font-size: 32px; color: var(--purple); margin-right: 4px;">✦</span> AI 评估 + 时间兜底</div>
+        <div class="d-box-body">Evaluator LLM 根据 rubric 判定，必须配 timeout 防卡死</div>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+          <span class="d-tag purple">适用: Discussion</span>
+          <div class="code-box" style="font-size: 24px; padding: 12px 16px;">{ <span class="ck">"type"</span>: <span class="cv">"ai_eval"</span>, <span class="ck">"timeoutSec"</span>: <span class="cn">600</span> }</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 Student Runtime ═══ -->
+<section data-screen-label="09 Runtime">
+  <div class="slide-pad">
+    <div class="s-label">课堂执行</div>
+    <div class="s-title">学生端 Runtime = 状态机</div>
+    <div class="s-sub" style="margin-bottom: 24px;">由 manifest 定义状态序列。学生按顺序执行，不可跳步。AI tutor 活动范围限定在当前 module 内部。</div>
+    <div class="flow-row" style="justify-content: center; margin-bottom: 32px;">
+      <div class="flow-node" style="border-left: 4px solid var(--teal);"><div class="flow-node-title">课文阅读</div><div class="flow-node-type">read</div></div>
+      <div class="flow-gate"><div class="flow-gate-line"></div><div class="flow-gate-label">手动</div></div>
+      <div class="flow-node" style="border-left: 4px solid var(--blue);"><div class="flow-node-title">理解检测</div><div class="flow-node-type">quiz</div></div>
+      <div class="flow-gate"><div class="flow-gate-line"></div><div class="flow-gate-label">≥75%</div></div>
+      <div class="flow-node" style="border-left: 4px solid var(--purple);"><div class="flow-node-title">人物分析讨论</div><div class="flow-node-type">discussion</div></div>
+      <div class="flow-gate"><div class="flow-gate-line"></div><div class="flow-gate-label">AI+⏱</div></div>
+      <div class="flow-node" style="border-left: 4px solid var(--green);"><div class="flow-node-title">学习总结</div><div class="flow-node-type">summary</div></div>
+    </div>
+    <div class="d-row" style="gap: 24px;">
+      <div class="d-box"><div class="d-box-title">原样消费</div><div class="d-box-body">直接读取 manifest JSON，不编译不转换。</div></div>
+      <div class="d-box"><div class="d-box-title">Module-internal AI</div><div class="d-box-body">AI tutor 读取当前模块的 tutorInstruction，不越界。</div></div>
+      <div class="d-box"><div class="d-box-title">三层定义</div><div class="d-box-body">内容（展示什么）· 交互（做什么）· 完成条件（何时继续）</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 Teacher Observation ═══ -->
+<section data-screen-label="10 Observation">
+  <div class="slide-pad" style="padding-top: 80px; padding-bottom: 60px;">
+    <div class="s-label">课堂执行</div>
+    <div class="s-title" style="margin-bottom: 32px;">教师端 Observation — 三层监控</div>
+    <div class="s-sub" style="margin-bottom: 24px;">Module-aware · AI-enhanced, not AI-dependent</div>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div class="layer" style="padding: 20px 24px;"><div class="layer-bar" style="background: var(--t1); height: 40px;"></div><div style="flex: 1;"><div style="font-size: 28px; font-weight: 700;">Ambient Band</div><div style="font-size: 24px; color: var(--t2);">顶栏 — 当前步骤 + 全班进度 + 计时器</div></div><span class="d-tag neutral">始终可见</span></div>
+      <div class="layer" style="padding: 20px 24px;"><div class="layer-bar" style="background: var(--amber); height: 40px;"></div><div style="flex: 1;"><div style="font-size: 28px; font-weight: 700;">Overview Column</div><div style="font-size: 24px; color: var(--t2);">学生所在模块 · 提交历史 · 讨论深度</div></div><span class="d-tag amber">客观数据</span></div>
+      <div class="layer" style="padding: 20px 24px;"><div class="layer-bar" style="background: var(--purple); height: 40px;"></div><div style="flex: 1;"><div style="font-size: 28px; font-weight: 700;">Detail Modal</div><div style="font-size: 24px; color: var(--t2);">个人 matrix + AI chat + AI 分析</div></div><span class="d-tag purple">AI 增强</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 Agent ═══ -->
+<section data-screen-label="11 Agent" class="slide-dark">
+  <div class="slide-pad slide-dark">
+    <div class="s-label">协作模型</div>
+    <div class="s-title">Agent — 双通道写入 + Schema 注入</div>
+    <div class="d-row" style="flex: 1; gap: 40px;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+        <div style="padding: 28px; border-radius: 16px; border: 1px solid rgba(240,239,232,.1); background: rgba(240,239,232,.04);">
+          <div style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">双通道写入</div>
+          <div style="font-size: 24px; color: rgba(240,239,232,.6); line-height: 1.7;">教师直接编辑和 Agent 生成都落到同一个文件系统。Agent 读取的永远是最新状态。</div>
+        </div>
+        <div style="padding: 28px; border-radius: 16px; border: 1px solid rgba(240,239,232,.1); background: rgba(240,239,232,.04);">
+          <div style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">Schema 注入</div>
+          <div style="font-size: 24px; color: rgba(240,239,232,.6); line-height: 1.7;">Session 启动时后端注入模块 schema definition。Agent 据此生成合法配置。</div>
+        </div>
+        <div style="padding: 28px; border-radius: 16px; border: 1px solid rgba(240,239,232,.1); background: rgba(240,239,232,.04);">
+          <div style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">Cross-reference</div>
+          <div style="font-size: 24px; color: rgba(240,239,232,.6); line-height: 1.7;">教案和执行设计的语义关联在 Chat context 中实时建立。不编码在文件结构中。</div>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;">
+        <div style="padding: 20px 40px; border-radius: 12px; border: 1px solid rgba(240,239,232,.15); font-size: 24px; font-weight: 600;">教师直接编辑</div>
+        <div style="font-size: 28px; color: rgba(240,239,232,.3);">↓</div>
+        <div style="padding: 28px 48px; border-radius: 16px; background: rgba(240,239,232,.1); text-align: center;">
+          <div style="font-size: 28px; font-weight: 800;">文件系统</div>
+          <div style="font-size: 24px; color: rgba(240,239,232,.4); margin-top: 4px;">Source of Truth</div>
+          <div style="font-size: 24px; font-family: 'JetBrains Mono', monospace; color: rgba(240,239,232,.3); margin-top: 8px;">plan/ + execution/ + record/</div>
+        </div>
+        <div style="font-size: 28px; color: rgba(240,239,232,.3);">↑</div>
+        <div style="padding: 20px 40px; border-radius: 12px; border: 1px solid rgba(58,49,133,.3); background: rgba(58,49,133,.1); font-size: 24px; font-weight: 600; color: rgba(240,239,232,.8);">✦ Agent (Chat)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 Review ═══ -->
+<section data-screen-label="12 Review">
+  <div class="slide-pad">
+    <div class="s-label">审计</div>
+    <div class="s-title">Review — AI Lint, Not Foreign Key</div>
+    <div class="d-row" style="margin-bottom: 32px; align-items: center;">
+      <div style="padding: 20px 32px; border-radius: 12px; background: var(--teal-bg); font-size: 24px; font-weight: 600; color: var(--teal);">plan/</div>
+      <div style="font-size: 28px; color: var(--t3);">+</div>
+      <div style="padding: 20px 32px; border-radius: 12px; background: var(--blue-bg); font-size: 24px; font-weight: 600; color: var(--blue);">execution/</div>
+      <div style="font-size: 28px; color: var(--t3);">→</div>
+      <div style="padding: 20px 32px; border-radius: 12px; background: var(--purple-bg); font-size: 24px; font-weight: 600; color: var(--purple);">AI Cross-Read → 审计报告</div>
+    </div>
+    <div class="d-row" style="flex: 1; gap: 24px;">
+      <div class="d-box d-accent-l" style="border-left-color: var(--green);">
+        <div class="d-box-title"><span class="d-tag green">Coverage</span> 覆盖检查</div>
+        <div class="d-box-body">执行设计中的模块是否覆盖了教案中定义的所有教学要求。</div>
+      </div>
+      <div class="d-box d-accent-l" style="border-left-color: var(--red);">
+        <div class="d-box-title"><span class="d-tag coral">Conflict</span> 冲突检测</div>
+        <div class="d-box-body">执行设计与教案之间是否存在矛盾或不一致。</div>
+      </div>
+      <div class="d-box d-accent-l" style="border-left-color: var(--amber);">
+        <div class="d-box-title"><span class="d-tag amber">Lint</span> 遗漏与冗余</div>
+        <div class="d-box-body">教案有但执行没承接的遗漏，或执行有但教案未定义的冗余。</div>
+      </div>
+    </div>
+    <div style="margin-top: 24px; padding: 20px 28px; background: var(--purple-bg); border-radius: 12px; font-size: 22px; color: var(--purple); line-height: 1.6;">
+      <strong>设计选择:</strong> 教案与执行设计之间无 foreign key。一致性是 soft constraint，由 AI lint 保证。教师修改教案措辞不会导致执行设计侧的引用失效。
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 架构原则 ═══ -->
+<section data-screen-label="13 Principles" class="slide-dark">
+  <div class="slide-pad slide-dark">
+    <div class="s-label">总结</div>
+    <div class="s-title">四个架构原则</div>
+    <div class="d-row" style="flex: 1; gap: 24px;">
+      <div class="principle" style="background: rgba(240,239,232,.06); border-color: rgba(240,239,232,.08);">
+        <div class="principle-title" style="color: rgba(240,239,232,.9);">文件即真相</div>
+        <div class="principle-body" style="color: rgba(240,239,232,.5);">所有数据最终落到文件系统。Agent 和教师编辑共享同一套存储。没有隐藏的黑盒数据库。</div>
+        <div class="principle-mono" style="color: rgba(240,239,232,.25);">Single source of truth</div>
+      </div>
+      <div class="principle" style="background: rgba(240,239,232,.06); border-color: rgba(240,239,232,.08);">
+        <div class="principle-title" style="color: rgba(240,239,232,.9);">Soft Constraint</div>
+        <div class="principle-body" style="color: rgba(240,239,232,.5);">教案与执行设计之间无 FK。一致性由 AI lint 保证，避免硬关联的级联失效。</div>
+        <div class="principle-mono" style="color: rgba(240,239,232,.25);">AI lint, not foreign key</div>
+      </div>
+      <div class="principle" style="background: rgba(240,239,232,.06); border-color: rgba(240,239,232,.08);">
+        <div class="principle-title" style="color: rgba(240,239,232,.9);">Schema 驱动</div>
+        <div class="principle-body" style="color: rgba(240,239,232,.5);">模块类型由后端 schema 定义，只读不可扩展。同一份 schema 服务 UI、Agent、校验三方。</div>
+        <div class="principle-mono" style="color: rgba(240,239,232,.25);">One schema, three consumers</div>
+      </div>
+      <div class="principle" style="background: rgba(240,239,232,.06); border-color: rgba(240,239,232,.08);">
+        <div class="principle-title" style="color: rgba(240,239,232,.9);">原样消费</div>
+        <div class="principle-body" style="color: rgba(240,239,232,.5);">Manifest 是 design-time 和 runtime 的唯一合同。学生端直接消费 JSON，不编译不转换。</div>
+        <div class="principle-mono" style="color: rgba(240,239,232,.25);">No compilation step</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 讨论项 ═══ -->
+<section data-screen-label="14 Discussion">
+  <div class="slide-pad">
+    <div class="s-label">下一步</div>
+    <div class="s-title">待讨论项</div>
+    <div style="display: flex; gap: 32px; flex: 1;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div class="d-box d-accent-l" style="border-left-color: var(--blue);">
+          <div class="d-box-title">模块 Ref 的粒度</div>
+          <div class="d-box-body" style="font-size: 22px;">模块文件的复用范围？跨课程项目？跨教师？模块版本管理策略？</div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--purple);">
+          <div class="d-box-title">AI Evaluator 的边界</div>
+          <div class="d-box-body" style="font-size: 22px;">Completion rubric 的格式约束？evaluator 和 tutor 是否使用不同模型？评估结果的可解释性？</div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--teal);">
+          <div class="d-box-title">教案文档的结构化程度</div>
+          <div class="d-box-body" style="font-size: 22px;">纯 Markdown 还是 structured Markdown？教学要求的标准化分类？</div>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div class="d-box d-accent-l" style="border-left-color: var(--amber);">
+          <div class="d-box-title">Observation 的实时性要求</div>
+          <div class="d-box-body" style="font-size: 22px;">教师端数据刷新频率？LLM 分析的延迟容忍度？离线场景？</div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--green);">
+          <div class="d-box-title">Record 的数据规范</div>
+          <div class="d-box-body" style="font-size: 22px;">课堂记录的 schema？隐私合规？数据保留策略？</div>
+        </div>
+        <div class="d-box d-accent-l" style="border-left-color: var(--coral);">
+          <div class="d-box-title">Skill 的生命周期</div>
+          <div class="d-box-body" style="font-size: 22px;">Skill 的创建/更新/废弃流程？学校级自定义 skill 的可能性？</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</deck-stage>
+</body>
+</html>

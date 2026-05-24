@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>学生端 AI · 翻译 — 组件重设计</title>
+<link rel="stylesheet" href="surfaces/colors_and_type.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+
+/* ── Page chrome ── */
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;letter-spacing:-.4px}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-vl{font-size:12px;font-weight:600;color:var(--t1)}
+
+/* Title block */
+.page-title{font-size:28px;font-weight:800;letter-spacing:-.6px;line-height:1.15;margin-bottom:8px}
+.page-sub{font-size:14px;color:var(--t2);line-height:1.6;max-width:560px;margin-bottom:48px}
+
+/* Section grid */
+.section{margin-bottom:64px}
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3);margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-title{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-bottom:6px}
+.section-desc{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:28px;max-width:560px}
+
+/* Show grid */
+.show-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:28px}
+.show-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.show-card-inner{padding:20px}
+.show-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:12px}
+.show-desc{font-size:12px;color:var(--t2);line-height:1.6;margin-top:10px}
+
+/* ── Mock phone frame ── */
+.phone{width:375px;height:680px;border-radius:36px;background:var(--bg);border:1px solid var(--border);box-shadow:0 12px 48px rgba(0,0,0,.08);overflow:hidden;position:relative;margin:0 auto}
+.phone-notch{width:140px;height:24px;background:var(--t1);border-radius:0 0 16px 16px;margin:0 auto;position:relative;z-index:10}
+.phone-status{display:flex;justify-content:space-between;align-items:center;padding:0 20px;height:20px;font-size:10px;font-weight:600;color:var(--t2)}
+.phone-content{flex:1;overflow:hidden;display:flex;flex-direction:column;height:calc(100% - 44px)}
+
+/* Simulated student page */
+.sim-top{display:flex;align-items:center;gap:8px;padding:0 16px;height:40px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.sim-top-title{font-size:14px;font-weight:700;letter-spacing:-.1px}
+.sim-top-code{font-size:10px;font-family:'SF Mono',monospace;font-weight:600;background:var(--surface2);padding:2px 6px;border-radius:3px;letter-spacing:.05em;color:var(--t2)}
+.sim-body{flex:1;overflow-y:auto;padding:16px}
+.sim-text-line{font-size:13px;color:var(--t2);line-height:1.85;margin-bottom:10px}
+.sim-text-line .hl{background:var(--amber-bg);color:var(--amber);padding:0 3px;border-radius:2px;font-weight:500}
+
+/* ================================================================
+   COMPONENT 1 — UNIFIED TOOLBAR (replaces separate FABs)
+   ================================================================ */
+
+.stu-toolbar{
+  position:absolute;bottom:16px;right:16px;
+  display:flex;flex-direction:column;gap:8px;
+  z-index:50;align-items:flex-end;
+}
+
+/* Individual tool button */
+.tool-btn{
+  display:flex;align-items:center;gap:0;
+  height:44px;border-radius:22px;
+  border:none;cursor:pointer;
+  font-family:inherit;font-weight:600;
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 4px 16px rgba(0,0,0,.1);
+  overflow:hidden;
+  padding:0;
+}
+
+/* Collapsed = circle */
+.tool-btn .tool-icon{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;flex-shrink:0;
+  transition:all .2s;
+}
+.tool-btn .tool-label{
+  font-size:12px;max-width:0;opacity:0;white-space:nowrap;
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  padding:0;overflow:hidden;
+}
+
+/* Expanded (hover or active) */
+.tool-btn:hover .tool-label,
+.tool-btn.expanded .tool-label{
+  max-width:120px;opacity:1;padding-right:16px;padding-left:2px;
+}
+
+/* AI button — purple */
+.tool-btn.ai{background:var(--purple);color:#fff}
+.tool-btn.ai:hover{box-shadow:0 6px 24px rgba(58,49,133,.35)}
+.tool-btn.ai .tool-icon::before{
+  content:'';display:block;width:16px;height:16px;background:currentColor;
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)
+}
+.tool-btn.ai.open{background:var(--t1)}
+.tool-btn.ai.open .tool-icon::before{clip-path:none;content:'×';background:none;width:auto;height:auto;font-size:18px;font-weight:300;line-height:1}
+
+/* Translate button — teal (not amber, better contrast & hierarchy) */
+.tool-btn.translate{background:var(--surface);color:var(--teal);border:1.5px solid rgba(13,82,69,.15)}
+.tool-btn.translate:hover{background:var(--teal-bg);border-color:var(--teal);box-shadow:0 6px 20px rgba(13,82,69,.15)}
+.tool-btn.translate.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* Pulse ring — only on AI */
+.tool-pulse{
+  position:absolute;bottom:16px;right:16px;
+  width:44px;height:44px;border-radius:50%;
+  border:2px solid var(--purple);
+  pointer-events:none;
+  animation:tool-pulse 2.5s ease-out infinite;opacity:0;
+}
+@keyframes tool-pulse{0%{transform:scale(1);opacity:.4}80%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+@media(prefers-reduced-motion:reduce){.tool-pulse{animation:none}}
+
+/* ================================================================
+   COMPONENT 2 — AI PANEL (redesigned)
+   ================================================================ */
+
+.ai-panel{
+  position:absolute;bottom:68px;right:16px;
+  width:340px;max-height:440px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  box-shadow:0 16px 48px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.04);
+  z-index:49;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  animation:panel-enter .25s cubic-bezier(.4,0,.2,1);
+}
+@keyframes panel-enter{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Panel header */
+.ai-panel-hd{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;
+  background:linear-gradient(135deg,var(--purple-bg) 0%,var(--surface) 100%);
+  border-bottom:1px solid var(--border);
+}
+.ai-panel-avatar{
+  width:28px;height:28px;border-radius:10px;
+  background:var(--purple);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.ai-panel-avatar::before{
+  content:'';display:block;width:14px;height:14px;background:currentColor;
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)
+}
+.ai-panel-info{flex:1;min-width:0}
+.ai-panel-title{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:-.1px}
+.ai-panel-context{font-size:10px;color:var(--t3);font-weight:500;margin-top:1px}
+.ai-panel-close{
+  width:28px;height:28px;border-radius:8px;
+  border:none;background:transparent;color:var(--t3);
+  cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.ai-panel-close:hover{background:rgba(0,0,0,.05);color:var(--t1)}
+
+/* Suggestion chips — redesigned as cards */
+.ai-chips{
+  display:flex;gap:6px;padding:10px 16px;
+  overflow-x:auto;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.ai-chips::-webkit-scrollbar{display:none}
+.ai-chip{
+  flex-shrink:0;font-size:11px;padding:7px 14px;
+  border-radius:20px;
+  border:1px solid var(--border);background:var(--surface);
+  cursor:pointer;font-family:inherit;color:var(--t2);
+  font-weight:500;white-space:nowrap;
+  transition:all .15s;
+}
+.ai-chip:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-bg)}
+.ai-chip:active{transform:scale(.96)}
+
+/* Chat area */
+.ai-chat{flex:1;overflow-y:auto;padding:14px 16px;max-height:240px}
+.ai-chat-empty{font-size:12px;color:var(--t3);text-align:center;padding:24px 20px;line-height:1.7}
+.ai-chat-empty-icon{font-size:24px;margin-bottom:8px;display:block;opacity:.4}
+
+/* Messages */
+.ai-msg{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;animation:msg-in .2s ease-out}
+@keyframes msg-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.ai-msg.student{flex-direction:row-reverse}
+.ai-msg-avatar{
+  width:24px;height:24px;border-radius:8px;
+  background:var(--purple-bg);color:var(--purple);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ai-msg-avatar::before{
+  content:'';display:block;width:11px;height:11px;background:currentColor;
+  clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)
+}
+.ai-msg-avatar.student{background:var(--teal-bg);color:var(--teal);border-radius:8px}
+.ai-msg-avatar.student::before{clip-path:none;content:'S';background:none;width:auto;height:auto;font-size:11px;font-weight:700;line-height:1}
+
+.ai-bubble{
+  font-size:13px;line-height:1.7;padding:10px 14px;
+  max-width:82%;border-radius:16px;
+}
+.ai-bubble.ai{
+  background:var(--surface2);color:var(--t1);
+  border-radius:4px 16px 16px 16px;
+}
+.ai-bubble.student{
+  background:var(--t1);color:var(--surface);
+  border-radius:16px 16px 4px 16px;
+  margin-left:auto;
+}
+
+/* Typing indicator */
+.ai-typing{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ai-typing-dots{display:flex;gap:4px;padding:12px 14px;background:var(--surface2);border-radius:4px 16px 16px 16px}
+.ai-typing-dots span{width:5px;height:5px;border-radius:50%;background:var(--purple);opacity:.25;animation:ai-dot .6s infinite alternate}
+.ai-typing-dots span:nth-child(2){animation-delay:.15s}
+.ai-typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes ai-dot{0%,60%{opacity:.25;transform:translateY(0)}30%{opacity:.8;transform:translateY(-3px)}}
+
+/* Input area */
+.ai-input{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);align-items:flex-end}
+.ai-input textarea{
+  flex:1;padding:10px 14px;
+  border:1px solid var(--border);border-radius:12px;
+  font-size:13px;font-family:inherit;
+  background:var(--bg);resize:none;
+  min-height:40px;max-height:80px;line-height:1.5;
+  box-sizing:border-box;
+}
+.ai-input textarea:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 3px rgba(58,49,133,.08)}
+.ai-send{
+  width:40px;height:40px;border-radius:12px;
+  border:none;background:var(--purple);color:#fff;
+  cursor:pointer;font-size:16px;font-weight:600;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.ai-send:hover{opacity:.85;transform:scale(1.03)}
+.ai-send:disabled{opacity:.3;cursor:default;transform:none}
+.ai-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ================================================================
+   COMPONENT 3 — TRANSLATE (redesigned)
+   ================================================================ */
+
+/* Selection mode banner — sleeker */
+.tr-banner{
+  position:absolute;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 16px;
+  background:var(--teal);color:#fff;
+  font-size:12px;font-weight:600;
+  animation:banner-slide .2s ease-out;
+}
+.tr-banner-icon{font-size:14px;opacity:.7}
+.tr-banner-esc{
+  font-size:10px;padding:2px 8px;
+  border-radius:4px;background:rgba(255,255,255,.15);
+  font-weight:500;margin-left:8px;
+}
+@keyframes banner-slide{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+
+/* Translation result — enhanced card with 2 sections + chat */
+.tr-result{
+  position:absolute;z-index:55;
+  width:340px;
+  background:var(--surface);
+  border:1.5px solid rgba(13,82,69,.15);
+  border-radius:20px;
+  box-shadow:0 16px 48px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.04);
+  animation:panel-enter .25s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+}
+
+.tr-result-hd{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 16px;
+  background:linear-gradient(135deg,var(--teal-bg) 0%,var(--surface) 100%);
+  border-bottom:1px solid rgba(13,82,69,.08);
+}
+.tr-result-icon{
+  width:26px;height:26px;border-radius:8px;
+  background:var(--teal);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;flex-shrink:0;
+}
+.tr-result-source-text{
+  flex:1;min-width:0;
+  font-size:12px;color:var(--t2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-style:italic;
+}
+.tr-result-close{
+  width:24px;height:24px;border-radius:6px;
+  border:none;background:transparent;color:var(--t3);
+  cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.tr-result-close:hover{background:rgba(0,0,0,.06);color:var(--t1)}
+
+/* Section 1: Definition */
+.tr-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.tr-section:last-of-type{border-bottom:none}
+.tr-section-label{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--t3);margin-bottom:6px;
+  display:flex;align-items:center;gap:5px;
+}
+.tr-section-label-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.tr-section-label-dot.teal{background:var(--teal)}
+.tr-section-label-dot.purple{background:var(--purple)}
+.tr-section-body{font-size:14px;line-height:1.75;color:var(--t1);font-weight:500}
+.tr-section-body.context{font-size:13px;font-weight:400;color:var(--t2);line-height:1.7}
+
+/* Context highlight quote */
+.tr-context-quote{
+  margin-top:8px;padding:8px 12px;
+  background:var(--surface2);border-radius:8px;
+  font-size:11px;line-height:1.6;color:var(--t3);
+  border-left:2px solid var(--teal);
+}
+.tr-context-quote em{font-style:normal;color:var(--teal);font-weight:600}
+
+/* Follow-up chat area */
+.tr-chat{max-height:140px;overflow-y:auto;padding:10px 16px;border-bottom:1px solid var(--border)}
+.tr-chat-msg{display:flex;gap:6px;align-items:flex-end;margin-bottom:8px;animation:msg-in .2s ease-out}
+.tr-chat-msg.student{flex-direction:row-reverse}
+.tr-chat-bubble{font-size:12px;line-height:1.6;padding:8px 12px;max-width:85%;border-radius:14px}
+.tr-chat-bubble.ai{background:var(--surface2);color:var(--t1);border-radius:4px 14px 14px 14px}
+.tr-chat-bubble.student{background:var(--t1);color:var(--surface);border-radius:14px 14px 4px 14px}
+
+/* Follow-up input */
+.tr-followup{display:flex;gap:6px;padding:10px 14px;align-items:center}
+.tr-followup input{
+  flex:1;padding:8px 12px;
+  border:1px solid var(--border);border-radius:20px;
+  font-size:12px;font-family:inherit;
+  background:var(--bg);
+  box-sizing:border-box;
+}
+.tr-followup input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,82,69,.06)}
+.tr-followup input::placeholder{color:var(--t3)}
+.tr-followup-send{
+  width:32px;height:32px;border-radius:50%;
+  border:none;background:var(--teal);color:#fff;
+  cursor:pointer;font-size:13px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.tr-followup-send:hover{opacity:.85;transform:scale(1.05)}
+.tr-followup-send:disabled{opacity:.3;cursor:default;transform:none}
+.tr-followup-send svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* Loading shimmer */
+.tr-shimmer{
+  height:14px;border-radius:4px;
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--bg) 50%,var(--surface2) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  margin-bottom:6px;
+}
+.tr-shimmer:last-child{width:60%}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ================================================================
+   STATES SHOWCASE
+   ================================================================ */
+
+.states-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:32px}
+.state-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:200px;flex:1}
+.state-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--purple);margin-bottom:10px}
+.state-label.teal{color:var(--teal)}
+
+/* ── Before/After ── */
+.ba-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.ba-col{display:flex;flex-direction:column;gap:12px}
+.ba-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:4px;display:inline-flex;align-self:flex-start}
+.ba-tag.before{background:var(--red-bg);color:var(--red)}
+.ba-tag.after{background:var(--green-bg);color:var(--green)}
+.ba-note{font-size:12px;color:var(--t2);line-height:1.6}
+
+/* Inline comparison items */
+.compare-list{display:flex;flex-direction:column;gap:8px}
+.compare-item{display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.6;color:var(--t2)}
+.compare-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.compare-dot.bad{background:var(--red)}
+.compare-dot.good{background:var(--green)}
+
+/* Spec table */
+.spec-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+.spec-table th{text-align:left;padding:7px 10px;background:var(--surface2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);border-bottom:1px solid var(--border)}
+.spec-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--t2);line-height:1.5}
+.spec-table td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ════════════════ HEADER ════════════════ -->
+<header>
+  <div class="brand">
+    <div class="brand-mk">即</div>
+    <div class="brand-tx">
+      <div class="brand-a">即见 · Live Lesson</div>
+      <div class="brand-b">Component Redesign Spec</div>
+    </div>
+  </div>
+  <div class="meta">
+    <div class="meta-pair"><div class="meta-lb">Component</div><div class="meta-vl">AI Panel + Translate</div></div>
+    <div class="meta-pair"><div class="meta-lb">Surface</div><div class="meta-vl">Student Mobile</div></div>
+    <div class="meta-pair"><div class="meta-lb">Version</div><div class="meta-vl">v2.0</div></div>
+  </div>
+</header>
+
+<h1 class="page-title">AI 助手 &amp; 翻译 — 组件重设计</h1>
+<p class="page-sub">将底部两个独立 FAB 合并为统一工具栏，重新设计 AI 面板和翻译结果卡，提升视觉层级和交互一致性。</p>
+
+<!-- ════════════════ SECTION 1: PROBLEMS ════════════════ -->
+<div class="section">
+  <div class="section-label">01 · 现有问题</div>
+  <h2 class="section-title">Before → After</h2>
+  <p class="section-desc">当前设计存在以下核心问题，新方案逐一解决。</p>
+
+  <div class="ba-grid">
+    <div class="ba-col">
+      <span class="ba-tag before">Before — 现有问题</span>
+      <div class="compare-list">
+        <div class="compare-item"><div class="compare-dot bad"></div>两个独立 FAB 堆叠，视觉杂乱且遮挡内容</div>
+        <div class="compare-item"><div class="compare-dot bad"></div>翻译 FAB 用 amber 色，与 AI FAB 的 purple 色调不统一</div>
+        <div class="compare-item"><div class="compare-dot bad"></div>AI Panel 无背景渐变，header 平淡无层次</div>
+        <div class="compare-item"><div class="compare-dot bad"></div>翻译结果 popover 位置浮动不稳定，视觉断裂</div>
+        <div class="compare-item"><div class="compare-dot bad"></div>AI 气泡使用紫色背景 + 左边框，辨识度低</div>
+        <div class="compare-item"><div class="compare-dot bad"></div>输入框圆角 8px，与面板 16px 圆角不协调</div>
+      </div>
+    </div>
+    <div class="ba-col">
+      <span class="ba-tag after">After — 新设计</span>
+      <div class="compare-list">
+        <div class="compare-item"><div class="compare-dot good"></div>统一工具栏，翻译按钮悬浮展开为 pill 形态</div>
+        <div class="compare-item"><div class="compare-dot good"></div>翻译改用 teal 色调，与课文引用视觉语义一致</div>
+        <div class="compare-item"><div class="compare-dot good"></div>AI Panel header 使用渐变背景，avatar 改为圆角方块</div>
+        <div class="compare-item"><div class="compare-dot good"></div>翻译结果使用 teal 边框卡片，header 带渐变背景</div>
+        <div class="compare-item"><div class="compare-dot good"></div>AI 气泡改为 surface2 灰底，去掉左边框，更干净</div>
+        <div class="compare-item"><div class="compare-dot good"></div>输入框、发送按钮圆角统一为 12px，视觉协调</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ SECTION 2: TOOLBAR ════════════════ -->
+<div class="section">
+  <div class="section-label">02 · 统一工具栏</div>
+  <h2 class="section-title">Unified Toolbar</h2>
+  <p class="section-desc">将翻译和 AI 两个 FAB 合并为右下角工具栏。每个按钮默认为 44px 圆形，悬浮时展开为 pill 形态显示文字标签。</p>
+
+  <div class="show-grid">
+    <!-- State: Both collapsed -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">默认 — 收起状态</div>
+        <div style="position:relative;height:180px;background:var(--bg);border-radius:10px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:16px;font-size:12px;color:var(--t3);line-height:1.8">
+            A fundamental principle of Greek aesthetics was the idea that beauty could be expressed through mathematical proportions...
+          </div>
+          <div class="stu-toolbar" style="position:absolute">
+            <div class="tool-btn translate">
+              <div class="tool-icon">译</div>
+              <div class="tool-label">翻译</div>
+            </div>
+            <div class="tool-btn ai">
+              <div class="tool-icon"></div>
+              <div class="tool-label">AI 助手</div>
+            </div>
+            <div class="tool-pulse"></div>
+          </div>
+        </div>
+        <p class="show-desc">两个按钮纵向排列，翻译在上、AI 在下。AI 按钮带脉冲圈引导首次使用。</p>
+      </div>
+    </div>
+
+    <!-- State: Hover expand -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">悬浮 — 展开标签</div>
+        <div style="position:relative;height:180px;background:var(--bg);border-radius:10px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:16px;font-size:12px;color:var(--t3);line-height:1.8">
+            The Parthenon, constructed between 447-432 BCE, exemplifies these proportional ideals...
+          </div>
+          <div class="stu-toolbar" style="position:absolute">
+            <div class="tool-btn translate expanded" style="border-color:var(--teal);background:var(--teal-bg)">
+              <div class="tool-icon">译</div>
+              <div class="tool-label" style="max-width:120px;opacity:1;padding-right:16px;padding-left:2px">翻译</div>
+            </div>
+            <div class="tool-btn ai">
+              <div class="tool-icon"></div>
+              <div class="tool-label">AI 助手</div>
+            </div>
+          </div>
+        </div>
+        <p class="show-desc">悬浮时按钮展开为 pill，显示文字标签。展开动画 250ms cubic-bezier。</p>
+      </div>
+    </div>
+
+    <!-- State: Translate active -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">翻译选择模式</div>
+        <div style="position:relative;height:180px;background:var(--bg);border-radius:10px;border:1px solid var(--border);overflow:hidden">
+          <div class="tr-banner" style="position:absolute">
+            <span class="tr-banner-icon">✦</span>
+            请选择需要翻译的文字（最多500字）
+            <span class="tr-banner-esc">ESC 退出</span>
+          </div>
+          <div style="padding:52px 16px 16px;font-size:12px;color:var(--t2);line-height:1.8;cursor:text">
+            <span style="background:rgba(13,82,69,.12);padding:2px 0;border-radius:2px">A fundamental principle</span> of Greek aesthetics was the idea that beauty could be expressed through mathematical proportions...
+          </div>
+          <div class="stu-toolbar" style="position:absolute">
+            <div class="tool-btn translate active">
+              <div class="tool-icon">译</div>
+            </div>
+            <div class="tool-btn ai">
+              <div class="tool-icon"></div>
+            </div>
+          </div>
+        </div>
+        <p class="show-desc">选择模式：顶部 teal 横幅 + 光标变文本选择 + FAB 变实心 teal。ESC 退出提示。</p>
+      </div>
+    </div>
+
+    <!-- State: AI panel open -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">AI 面板展开</div>
+        <div style="position:relative;height:180px;background:var(--bg);border-radius:10px;border:1px solid var(--border);overflow:hidden">
+          <div style="padding:16px;font-size:12px;color:var(--t3);line-height:1.8;opacity:.3">
+            A fundamental principle of Greek aesthetics...
+          </div>
+          <div class="stu-toolbar" style="position:absolute">
+            <div class="tool-btn translate">
+              <div class="tool-icon">译</div>
+            </div>
+            <div class="tool-btn ai open">
+              <div class="tool-icon"></div>
+            </div>
+          </div>
+          <!-- Mini panel peek -->
+          <div style="position:absolute;bottom:68px;right:16px;width:200px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.08);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:linear-gradient(135deg,var(--purple-bg),var(--surface));border-bottom:1px solid var(--border)">
+              <div style="width:18px;height:18px;border-radius:5px;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px">✦</div>
+              <span style="font-size:10px;font-weight:700">AI 助手</span>
+            </div>
+            <div style="padding:6px 10px;font-size:9px;color:var(--t3);text-align:center">有什么问题？</div>
+          </div>
+        </div>
+        <p class="show-desc">AI FAB 变为 × 关闭按钮，面板从下方弹出。翻译按钮保持可用。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ SECTION 3: AI PANEL ════════════════ -->
+<div class="section">
+  <div class="section-label">03 · AI 助手面板</div>
+  <h2 class="section-title">AI Panel — Full Spec</h2>
+  <p class="section-desc">重新设计的 AI 对话面板。Header 使用渐变背景，avatar 改为圆角方块，气泡改为灰底无边框，输入框圆角加大。</p>
+
+  <div class="show-grid">
+    <!-- Empty state -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">空状态 — 引导使用</div>
+        <div class="ai-panel" style="position:relative;bottom:auto;right:auto;max-height:none;margin:0 auto">
+          <div class="ai-panel-hd">
+            <div class="ai-panel-avatar"></div>
+            <div class="ai-panel-info">
+              <div class="ai-panel-title">AI 助手</div>
+              <div class="ai-panel-context">步骤 1 · 阅读理解</div>
+            </div>
+            <button class="ai-panel-close">×</button>
+          </div>
+          <div class="ai-chips">
+            <div class="ai-chip">这段什么意思？</div>
+            <div class="ai-chip">能举个例子吗？</div>
+            <div class="ai-chip">帮我总结要点</div>
+          </div>
+          <div class="ai-chat">
+            <div class="ai-chat-empty">
+              <span class="ai-chat-empty-icon">✦</span>
+              有什么不理解的？<br>我可以帮你解释课文内容
+            </div>
+          </div>
+          <div class="ai-input">
+            <textarea placeholder="输入你的问题..." rows="1"></textarea>
+            <button class="ai-send" disabled>
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conversation state -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">对话中 — 多轮交互</div>
+        <div class="ai-panel" style="position:relative;bottom:auto;right:auto;max-height:none;margin:0 auto">
+          <div class="ai-panel-hd">
+            <div class="ai-panel-avatar"></div>
+            <div class="ai-panel-info">
+              <div class="ai-panel-title">AI 助手</div>
+              <div class="ai-panel-context">步骤 2 · 练习</div>
+            </div>
+            <button class="ai-panel-close">×</button>
+          </div>
+          <div class="ai-chat" style="max-height:none">
+            <!-- Student message -->
+            <div class="ai-msg student">
+              <div class="ai-msg-avatar student"></div>
+              <div class="ai-bubble student">Golden ratio 是什么？</div>
+            </div>
+            <!-- AI message -->
+            <div class="ai-msg">
+              <div class="ai-msg-avatar"></div>
+              <div class="ai-bubble ai">黄金比例（约 1:1.618）是一种在自然界和艺术中广泛出现的数学比例。希腊人认为这一比例代表了理想的美学平衡。</div>
+            </div>
+            <!-- Student follow-up -->
+            <div class="ai-msg student">
+              <div class="ai-msg-avatar student"></div>
+              <div class="ai-bubble student">帕特农神庙用了黄金比例吗？</div>
+            </div>
+            <!-- AI typing -->
+            <div class="ai-typing">
+              <div class="ai-msg-avatar"></div>
+              <div class="ai-typing-dots"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="ai-input">
+            <textarea placeholder="继续提问..." rows="1"></textarea>
+            <button class="ai-send">
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Design tokens -->
+  <table class="spec-table" style="margin-top:28px">
+    <thead><tr><th>属性</th><th>旧值</th><th>新值</th><th>变更理由</th></tr></thead>
+    <tbody>
+      <tr><td>Panel border-radius</td><td>16px</td><td>20px</td><td>与 pill 按钮形态协调</td></tr>
+      <tr><td>Panel shadow</td><td>0 12px 40px rgba(0,0,0,.15)</td><td>0 16px 48px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.04)</td><td>双层阴影更有层次</td></tr>
+      <tr><td>Header background</td><td>var(--surface)</td><td>linear-gradient(135deg, purple-bg, surface)</td><td>渐变强化品牌感</td></tr>
+      <tr><td>Avatar shape</td><td>50% (circle)</td><td>border-radius: 10px (squircle)</td><td>区分于用户头像</td></tr>
+      <tr><td>AI bubble bg</td><td>var(--purple-bg) + left border</td><td>var(--surface2), 无边框</td><td>更干净、减少视觉噪音</td></tr>
+      <tr><td>AI bubble radius</td><td>12px 12px 12px 4px</td><td>4px 16px 16px 16px</td><td>左上尖角指向 avatar</td></tr>
+      <tr><td>Student bubble radius</td><td>12px 12px 4px 12px</td><td>16px 16px 4px 16px</td><td>右下尖角指向用户侧</td></tr>
+      <tr><td>Input border-radius</td><td>8px</td><td>12px</td><td>与面板圆角统一</td></tr>
+      <tr><td>Send btn radius</td><td>8px</td><td>12px</td><td>与输入框统一</td></tr>
+      <tr><td>Send btn icon</td><td>→ (text arrow)</td><td>SVG send icon</td><td>更专业的图标</td></tr>
+      <tr><td>Chip border-radius</td><td>14px</td><td>20px (full pill)</td><td>与工具栏 pill 形态一致</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════ SECTION 4: TRANSLATE CARD ════════════════ -->
+<div class="section">
+  <div class="section-label">04 · 翻译卡片</div>
+  <h2 class="section-title">Translate Card — 释义 + 语境 + 追问</h2>
+  <p class="section-desc">翻译结果分两层展示：第一层是词义本身的翻译，第二层是该词在当前段落中的语境解读。底部提供 follow-up 输入框，学生可以针对这个词继续追问。</p>
+
+  <div class="show-grid">
+    <!-- Card: Full result -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">完整结果 — 释义 + 语境</div>
+        <div class="tr-result" style="position:relative;width:100%;z-index:auto">
+          <div class="tr-result-hd">
+            <div class="tr-result-icon">译</div>
+            <div class="tr-result-source-text">"golden ratio"</div>
+            <button class="tr-result-close">×</button>
+          </div>
+          <!-- Part 1: Definition -->
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot teal"></div>释义</div>
+            <div class="tr-section-body">黄金比例</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:4px;line-height:1.5">n. 约为 1:1.618 的数学比例，被认为具有天然的美感与和谐。</div>
+          </div>
+          <!-- Part 2: Context -->
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot purple"></div>在本段中</div>
+            <div class="tr-section-body context">这里作者用 golden ratio 说明希腊人相信美可以用精确的数学关系来表达——不只是感觉上的"好看"，而是有公式可循的。帕特农神庙的立面比例正是这一理念的实物证据。</div>
+            <div class="tr-context-quote">
+              "The <em>golden ratio</em> appeared repeatedly in Greek art and architecture, from the Parthenon's facade to the proportions of classical sculpture."
+            </div>
+          </div>
+          <!-- Follow-up input -->
+          <div class="tr-followup">
+            <input type="text" placeholder="追问：为什么是 1.618？">
+            <button class="tr-followup-send">
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="show-desc">Header 显示源文省略，两个 section 用色点区分（teal = 释义，purple = 语境解读）。底部输入框可追问。</p>
+      </div>
+    </div>
+
+    <!-- Card: With follow-up chat -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">追问对话 — Follow-up Chat</div>
+        <div class="tr-result" style="position:relative;width:100%;z-index:auto;max-height:none">
+          <div class="tr-result-hd">
+            <div class="tr-result-icon">译</div>
+            <div class="tr-result-source-text">"aesthetic proportion"</div>
+            <button class="tr-result-close">×</button>
+          </div>
+          <!-- Part 1: Definition -->
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot teal"></div>释义</div>
+            <div class="tr-section-body">审美比例</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:4px;line-height:1.5">n. 符合美学标准的尺寸或大小关系。</div>
+          </div>
+          <!-- Part 2: Context -->
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot purple"></div>在本段中</div>
+            <div class="tr-section-body context">作者强调希腊人不是凭直觉判断美，而是通过严格的比例关系来"计算"美。这里 aesthetic proportion 指的是神庙建筑中柱子高度与间距的具体数值关系。</div>
+          </div>
+          <!-- Follow-up chat messages -->
+          <div class="tr-chat">
+            <div class="tr-chat-msg student">
+              <div class="tr-chat-bubble student">和 golden ratio 有什么区别？</div>
+            </div>
+            <div class="tr-chat-msg">
+              <div class="tr-chat-bubble ai">Golden ratio 是一个特定的数值（1:1.618），而 aesthetic proportion 是更广义的概念——任何被认为"美"的比例关系都算，不一定是 1:1.618。Golden ratio 是 aesthetic proportion 的一种。</div>
+            </div>
+            <div class="tr-chat-msg student">
+              <div class="tr-chat-bubble student">那中国建筑也有类似的概念吗？</div>
+            </div>
+            <div class="tr-chat-msg">
+              <div class="tr-chat-bubble ai">有的！中国传统建筑讲究"面阔与进深"的比例，故宫太和殿的面阔与高度约为 2:1，也是一种 aesthetic proportion。不过中国强调的是"天人合一"的和谐，不完全用数学公式。</div>
+            </div>
+          </div>
+          <!-- Follow-up input -->
+          <div class="tr-followup">
+            <input type="text" placeholder="继续追问...">
+            <button class="tr-followup-send">
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="show-desc">学生可以围绕选中的词继续多轮对话。聊天区域最高 140px 可滚动，不会撑开整个卡片。</p>
+      </div>
+    </div>
+
+    <!-- Card: Loading state -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">加载中 — Shimmer 骨架屏</div>
+        <div class="tr-result" style="position:relative;width:100%;z-index:auto">
+          <div class="tr-result-hd">
+            <div class="tr-result-icon">译</div>
+            <div class="tr-result-source-text">"geometric harmony"</div>
+            <button class="tr-result-close">×</button>
+          </div>
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot teal"></div>释义</div>
+            <div style="padding-top:2px">
+              <div class="tr-shimmer" style="width:40%"></div>
+              <div class="tr-shimmer" style="width:75%"></div>
+            </div>
+          </div>
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot purple"></div>在本段中</div>
+            <div style="padding-top:2px">
+              <div class="tr-shimmer" style="width:95%"></div>
+              <div class="tr-shimmer" style="width:80%"></div>
+              <div class="tr-shimmer" style="width:55%"></div>
+            </div>
+          </div>
+          <div class="tr-followup">
+            <input type="text" placeholder="加载完成后可追问..." disabled style="opacity:.4">
+            <button class="tr-followup-send" disabled>
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="show-desc">两个 section 分别显示 shimmer。输入框禁用，等待翻译完成后激活。</p>
+      </div>
+    </div>
+
+    <!-- Card: Short word (compact) -->
+    <div class="show-card">
+      <div class="show-card-inner">
+        <div class="show-label">短词 — 紧凑模式</div>
+        <div class="tr-result" style="position:relative;width:100%;z-index:auto">
+          <div class="tr-result-hd">
+            <div class="tr-result-icon">译</div>
+            <div class="tr-result-source-text">"facade"</div>
+            <button class="tr-result-close">×</button>
+          </div>
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot teal"></div>释义</div>
+            <div class="tr-section-body">正面；外观</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:4px;line-height:1.5">n. 建筑物的正面外墙，通常是面向街道或广场的一面。</div>
+          </div>
+          <div class="tr-section">
+            <div class="tr-section-label"><div class="tr-section-label-dot purple"></div>在本段中</div>
+            <div class="tr-section-body context">这里专指帕特农神庙的正面——8根多立克柱组成的标志性立面。作者说黄金比例体现在这个 facade 上，意思是正面的宽高比接近 1:1.618。</div>
+          </div>
+          <div class="tr-followup">
+            <input type="text" placeholder="追问这个词...">
+            <button class="tr-followup-send">
+              <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="show-desc">单个词也展示完整两部分，语境解读帮助学生理解建筑术语在文中的具体含义。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spec tables -->
+  <h3 style="font-size:15px;font-weight:700;margin:36px 0 12px">卡片结构规格</h3>
+  <table class="spec-table">
+    <thead><tr><th>区域</th><th>内容</th><th>数据来源</th></tr></thead>
+    <tbody>
+      <tr><td>Header</td><td>「译」图标 + 源文（省略）+ 关闭</td><td>用户选中的文字</td></tr>
+      <tr><td>释义 (Part 1)</td><td>词义翻译 + 简短释义</td><td>LLM response.definition</td></tr>
+      <tr><td>语境 (Part 2)</td><td>在当前段落中的解读 + 原文引用</td><td>LLM response.contextAnalysis（需要传入段落上下文）</td></tr>
+      <tr><td>Follow-up</td><td>输入框 + 发送按钮 → 多轮对话</td><td>LLM chat，thread 绑定到该词</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size:15px;font-weight:700;margin:28px 0 12px">样式变更对照</h3>
+  <table class="spec-table">
+    <thead><tr><th>属性</th><th>旧值</th><th>新值</th><th>变更理由</th></tr></thead>
+    <tbody>
+      <tr><td>Card width</td><td>320px</td><td>340px</td><td>更多空间放语境解读</td></tr>
+      <tr><td>Card radius</td><td>12px</td><td>20px</td><td>与 AI Panel 统一</td></tr>
+      <tr><td>Card 内容</td><td>单一翻译结果</td><td>释义 + 语境 + 追问</td><td>多层次理解</td></tr>
+      <tr><td>Header</td><td>标题"翻译结果"</td><td>直接显示源文（省略）</td><td>节省空间，一眼看到在查什么</td></tr>
+      <tr><td>Section 分隔</td><td>无</td><td>色点标签 (teal/purple)</td><td>视觉区分两层信息</td></tr>
+      <tr><td>语境引用</td><td>无</td><td>左边框引用块</td><td>标注原文出处</td></tr>
+      <tr><td>追问输入</td><td>无</td><td>pill 输入框 + 发送</td><td>支持深度学习</td></tr>
+      <tr><td>FAB color</td><td>var(--amber)</td><td>surface + teal border</td><td>次要动作不应用实心色</td></tr>
+      <tr><td>Banner color</td><td>amber-bg + amber text</td><td>teal 实心 + 白色文字</td><td>更醒目，与功能色一致</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════ SECTION 5: FULL MOCKUP ════════════════ -->
+<div class="section">
+  <div class="section-label">05 · 完整效果</div>
+  <h2 class="section-title">Full Mockup — Mobile View</h2>
+  <p class="section-desc">在模拟手机框架中展示完整交互效果。</p>
+
+  <div class="show-grid">
+    <!-- Phone: Default -->
+    <div class="show-card">
+      <div class="show-card-inner" style="display:flex;flex-direction:column;align-items:center">
+        <div class="show-label" style="align-self:flex-start">默认状态</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:41</span>
+            <span style="display:flex;gap:4px;align-items:center">
+              <span style="font-size:9px">●●●●○</span>
+              <span style="font-size:9px">WiFi</span>
+              <span style="font-size:9px">🔋</span>
+            </span>
+          </div>
+          <div class="phone-content">
+            <div class="sim-top">
+              <div class="sim-top-title">理想之美</div>
+              <div class="sim-top-code">HX3KM7</div>
+            </div>
+            <div class="sim-body">
+              <div style="display:flex;gap:0;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:14px">
+                <div style="flex:1;text-align:center;font-size:11px;font-weight:600;color:var(--t1);padding:6px 0;border-bottom:2px solid var(--t1)">阅读</div>
+                <div style="flex:1;text-align:center;font-size:11px;color:var(--t3);padding:6px 0">练习</div>
+                <div style="flex:1;text-align:center;font-size:11px;color:var(--t3);padding:6px 0;opacity:.3">讨论</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px">
+                <div style="display:inline-flex;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--purple);background:var(--purple-bg);padding:2px 8px;border-radius:99px;margin-bottom:8px">阅读指导</div>
+                <div style="font-size:15px;font-weight:700;margin-bottom:8px">The Greek Ideal of Beauty</div>
+                <div style="font-size:12px;color:var(--t2);line-height:1.8">请阅读以下段落，了解古希腊人如何通过数学比例来定义"美"的概念。注意关键术语的含义。</div>
+              </div>
+              <div class="sim-text-line">A <span class="hl">fundamental principle</span> of Greek aesthetics was the idea that beauty could be expressed through mathematical proportions and geometric harmony.</div>
+              <div class="sim-text-line">The <span class="hl">golden ratio</span> (approximately 1:1.618) appeared repeatedly in Greek art and architecture, from the Parthenon's facade to the proportions of classical sculpture.</div>
+            </div>
+            <!-- Toolbar -->
+            <div class="stu-toolbar" style="position:absolute">
+              <div class="tool-btn translate">
+                <div class="tool-icon">译</div>
+                <div class="tool-label">翻译</div>
+              </div>
+              <div class="tool-btn ai">
+                <div class="tool-icon"></div>
+                <div class="tool-label">AI 助手</div>
+              </div>
+              <div class="tool-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone: AI Panel open -->
+    <div class="show-card">
+      <div class="show-card-inner" style="display:flex;flex-direction:column;align-items:center">
+        <div class="show-label" style="align-self:flex-start">AI 面板展开</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:42</span>
+            <span style="display:flex;gap:4px;align-items:center">
+              <span style="font-size:9px">●●●●○</span>
+              <span style="font-size:9px">WiFi</span>
+              <span style="font-size:9px">🔋</span>
+            </span>
+          </div>
+          <div class="phone-content">
+            <div class="sim-top">
+              <div class="sim-top-title">理想之美</div>
+              <div class="sim-top-code">HX3KM7</div>
+            </div>
+            <div class="sim-body" style="opacity:.2">
+              <div class="sim-text-line">A fundamental principle of Greek aesthetics...</div>
+            </div>
+            <!-- AI Panel -->
+            <div class="ai-panel" style="position:absolute;bottom:68px;right:12px;left:12px;width:auto">
+              <div class="ai-panel-hd">
+                <div class="ai-panel-avatar"></div>
+                <div class="ai-panel-info">
+                  <div class="ai-panel-title">AI 助手</div>
+                  <div class="ai-panel-context">步骤 1 · 阅读理解</div>
+                </div>
+                <button class="ai-panel-close">×</button>
+              </div>
+              <div class="ai-chips">
+                <div class="ai-chip">这段什么意思？</div>
+                <div class="ai-chip">能举个例子吗？</div>
+              </div>
+              <div class="ai-chat" style="max-height:none">
+                <div class="ai-msg student">
+                  <div class="ai-msg-avatar student"></div>
+                  <div class="ai-bubble student">Golden ratio 是什么？</div>
+                </div>
+                <div class="ai-msg">
+                  <div class="ai-msg-avatar"></div>
+                  <div class="ai-bubble ai">黄金比例（约 1:1.618）是一种在自然界和艺术中广泛出现的数学比例。</div>
+                </div>
+              </div>
+              <div class="ai-input">
+                <textarea placeholder="继续提问..." rows="1"></textarea>
+                <button class="ai-send">
+                  <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- Toolbar -->
+            <div class="stu-toolbar" style="position:absolute">
+              <div class="tool-btn translate">
+                <div class="tool-icon">译</div>
+              </div>
+              <div class="tool-btn ai open">
+                <div class="tool-icon"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone: Translate result (new 2-part card) -->
+    <div class="show-card">
+      <div class="show-card-inner" style="display:flex;flex-direction:column;align-items:center">
+        <div class="show-label" style="align-self:flex-start">翻译卡片（释义 + 语境 + 追问）</div>
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:43</span>
+            <span style="display:flex;gap:4px;align-items:center">
+              <span style="font-size:9px">●●●●○</span>
+              <span style="font-size:9px">WiFi</span>
+              <span style="font-size:9px">🔋</span>
+            </span>
+          </div>
+          <div class="phone-content">
+            <div class="sim-top">
+              <div class="sim-top-title">理想之美</div>
+              <div class="sim-top-code">HX3KM7</div>
+            </div>
+            <div class="sim-body" style="padding:10px">
+              <div style="font-size:11px;color:var(--t3);line-height:1.7;margin-bottom:6px">
+                <span style="background:rgba(13,82,69,.12);padding:2px 3px;border-radius:2px;font-weight:500;color:var(--t2)">golden ratio</span> appeared repeatedly in Greek art...
+              </div>
+
+              <!-- New translate card -->
+              <div class="tr-result" style="position:relative;width:100%;z-index:auto;border-radius:14px">
+                <div class="tr-result-hd" style="padding:8px 12px">
+                  <div class="tr-result-icon" style="width:22px;height:22px;border-radius:6px;font-size:10px">译</div>
+                  <div class="tr-result-source-text" style="font-size:11px">"golden ratio"</div>
+                  <button class="tr-result-close" style="width:20px;height:20px;font-size:12px">×</button>
+                </div>
+                <div class="tr-section" style="padding:10px 12px">
+                  <div class="tr-section-label"><div class="tr-section-label-dot teal"></div>释义</div>
+                  <div class="tr-section-body" style="font-size:13px">黄金比例</div>
+                  <div style="font-size:10px;color:var(--t3);margin-top:2px;line-height:1.4">n. 约为 1:1.618 的数学比例</div>
+                </div>
+                <div class="tr-section" style="padding:10px 12px">
+                  <div class="tr-section-label"><div class="tr-section-label-dot purple"></div>在本段中</div>
+                  <div class="tr-section-body context" style="font-size:11px;line-height:1.6">作者用它说明希腊人相信美可以用精确的数学关系来表达，帕特农神庙正面的宽高比接近这一比例。</div>
+                </div>
+                <div class="tr-followup" style="padding:8px 10px">
+                  <input type="text" placeholder="追问这个词..." style="font-size:11px;padding:6px 10px">
+                  <button class="tr-followup-send" style="width:28px;height:28px">
+                    <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Toolbar -->
+            <div class="stu-toolbar" style="position:absolute">
+              <div class="tool-btn translate">
+                <div class="tool-icon">译</div>
+              </div>
+              <div class="tool-btn ai">
+                <div class="tool-icon"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ SECTION 6: INTERACTION SPEC ════════════════ -->
+<div class="section">
+  <div class="section-label">06 · 交互规格</div>
+  <h2 class="section-title">Interaction Spec</h2>
+
+  <table class="spec-table">
+    <thead><tr><th>交互</th><th>触发</th><th>动画</th><th>时长</th></tr></thead>
+    <tbody>
+      <tr><td>工具栏按钮展开</td><td>hover / touch-start</td><td>max-width + opacity (cubic-bezier)</td><td>250ms</td></tr>
+      <tr><td>AI 面板弹出</td><td>点击 AI FAB</td><td>translateY(12→0) + scale(.96→1) + opacity</td><td>250ms</td></tr>
+      <tr><td>翻译 banner 滑入</td><td>进入选择模式</td><td>translateY(-100%→0)</td><td>200ms</td></tr>
+      <tr><td>翻译结果卡片</td><td>翻译完成</td><td>同 AI 面板动画</td><td>200ms</td></tr>
+      <tr><td>消息气泡入场</td><td>新消息到达</td><td>translateY(6→0) + opacity</td><td>200ms</td></tr>
+      <tr><td>脉冲圈</td><td>AI FAB 关闭时</td><td>scale(1→1.5) + opacity(.4→0)</td><td>2.5s loop</td></tr>
+      <tr><td>Loading shimmer</td><td>等待翻译</td><td>background-position 扫描</td><td>1.5s loop</td></tr>
+      <tr><td>发送按钮 hover</td><td>hover</td><td>scale(1.03) + opacity</td><td>150ms</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>

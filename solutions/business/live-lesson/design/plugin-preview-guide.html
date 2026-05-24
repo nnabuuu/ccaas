@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>练习类型插件 Preview · Plugin Preview & Bundle System</title>
+<link rel="stylesheet" href="surfaces/colors_and_type.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f1dfdc;
+  --blue:#1a5fa0; --blue-bg:#dde9f3;
+  --green:#2d6612; --green-bg:#e6f2dc;
+  --code-bg:#1c1c1a; --code-tx:#e6e3d7; --code-mute:#8c8a80;
+  --code-teal:#7ab5a4; --code-pur:#a299e3; --code-amb:#d9ad6b; --code-red:#e08b8b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:72px;max-width:880px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--purple-bg);color:var(--purple);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--purple);font-weight:500}
+.hero .sub{
+  font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:660px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+.hero .sub code{
+  font-family:"JetBrains Mono",monospace;font-size:15px;
+  background:var(--surface2);color:var(--t1);padding:1px 6px;border-radius:3px;
+}
+
+.cta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 20px;border-radius:8px;
+  font-size:14px;font-weight:600;text-decoration:none;
+  transition:all .15s;
+}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.cta.pri .ar{display:inline-block;transition:transform .2s}
+.cta.pri:hover .ar{transform:translateX(3px)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.cta.sec:hover{background:var(--surface2)}
+
+/* ============ HERO META BAND ============ */
+.hero-band{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  margin-bottom:72px;overflow:hidden;
+}
+.hero-band-cell{
+  padding:22px 24px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;
+}
+.hero-band-cell:last-child{border-right:none}
+.hb-lb{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);font-weight:700}
+.hb-v{font-family:"Fraunces",Georgia,serif;font-size:24px;font-weight:500;color:var(--t1);letter-spacing:-.4px}
+.hb-d{font-size:11px;color:var(--t2);line-height:1.5}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ STEP CARDS (3-col grid) ============ */
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:72px;
+}
+.scard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:14px;
+  transition:all .18s;position:relative;overflow:hidden;
+}
+.scard:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(28,28,26,.18)}
+.scard-num{
+  width:30px;height:30px;border-radius:50%;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex-shrink:0;
+}
+.scard-hd{display:flex;align-items:center;gap:10px}
+.scard h3{font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.2}
+.scard p{font-size:13px;color:var(--t2);line-height:1.6}
+.scard p strong{color:var(--t1);font-weight:600}
+.scard p code{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px;
+}
+.scard-illust{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:6px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:12px;overflow:hidden;
+}
+.scard-illust svg{width:100%;height:100%;display:block}
+
+/* ============ LAYOUT CARD (large) ============ */
+.layout-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:72px;
+}
+.layout-card h3{font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.layout-card .sub-d{font-size:12px;color:var(--t2);margin-bottom:16px;line-height:1.6}
+.layout-svg-wrap{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;overflow:hidden;margin-bottom:20px;
+}
+.layout-svg-wrap svg{width:100%;height:100%;display:block}
+.layout-legend{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+}
+.legend-item{
+  padding:12px 14px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+}
+.legend-item-lb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:4px}
+.legend-item-v{font-size:13px;font-weight:600;color:var(--t1);line-height:1.4}
+.legend-item-d{font-size:11px;color:var(--t2);line-height:1.5;margin-top:4px}
+
+/* ============ SUB-CARDS (2-col grid) ============ */
+.sub-cards{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:72px;
+}
+.sub-cards.three{grid-template-columns:repeat(3,1fr)}
+.subcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.subcard-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  padding:4px 9px;border-radius:4px;width:fit-content;
+}
+.subcard h4{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.subcard p{font-size:12.5px;color:var(--t2);line-height:1.6}
+.subcard p strong{color:var(--t1);font-weight:600}
+.subcard p code{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px;
+}
+.subcard ul{list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:2px}
+.subcard ul li{
+  font-size:12px;color:var(--t2);line-height:1.55;
+  padding-left:14px;position:relative;
+}
+.subcard ul li::before{
+  content:'';position:absolute;left:0;top:7px;
+  width:5px;height:5px;border-radius:50%;background:var(--t3);
+}
+.subcard ul li strong{color:var(--t1);font-weight:600}
+
+/* ============ TABLE ============ */
+.info-table{
+  width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0;
+}
+.info-table th{
+  text-align:left;font-weight:600;color:var(--t3);font-size:10px;
+  text-transform:uppercase;letter-spacing:.4px;
+  padding:10px 12px;border-bottom:1px solid var(--border-strong);
+}
+.info-table td{
+  padding:10px 12px;border-bottom:1px solid var(--border);
+  color:var(--t2);line-height:1.55;vertical-align:top;
+}
+.info-table td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+.info-table td code, .info-table th code{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px;
+}
+.info-table-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px 22px;margin-bottom:72px;
+}
+.info-table-wrap h3{font-size:15px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px}
+.info-table-wrap .hd-d{font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.6}
+
+.info-table .ok{color:var(--green);font-weight:700}
+.info-table .no{color:var(--red);font-weight:700}
+.info-table .warn{color:var(--amber);font-weight:700}
+
+/* ============ CODE BLOCK ============ */
+.code-card{
+  background:var(--code-bg);color:var(--code-tx);
+  border-radius:12px;padding:0;margin-bottom:24px;overflow:hidden;
+  border:1px solid rgba(28,28,26,.35);
+}
+.code-card-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.025);
+}
+.code-card-tabs{display:flex;gap:14px}
+.code-card-tab{
+  font-size:11px;font-weight:600;color:var(--code-mute);
+  text-transform:lowercase;letter-spacing:.2px;
+}
+.code-card-tab.on{color:var(--code-tx)}
+.code-card-lang{font-size:10px;color:var(--code-mute);font-family:"JetBrains Mono",monospace;letter-spacing:.5px}
+.code-card pre{
+  margin:0;padding:18px 22px;font-family:"JetBrains Mono",monospace;
+  font-size:12px;line-height:1.65;overflow-x:auto;
+  color:var(--code-tx);
+}
+.code-card pre .cm{color:var(--code-mute);font-style:italic}
+.code-card pre .kw{color:var(--code-pur)}
+.code-card pre .st{color:var(--code-amb)}
+.code-card pre .fn{color:var(--code-teal)}
+.code-card pre .var{color:var(--code-tx)}
+.code-card pre .num{color:var(--code-red)}
+.code-card pre .ty{color:var(--code-teal);font-style:italic}
+.code-card.compact pre{padding:14px 18px;font-size:11.5px}
+
+/* ============ CALLOUT ============ */
+.callout{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:16px 18px;border-radius:10px;margin-bottom:20px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.callout strong{color:var(--t1);font-weight:600;display:inline}
+.callout.teal{background:var(--teal-bg);border:1px solid rgba(13,82,69,.12)}
+.callout.purple{background:var(--purple-bg);border:1px solid rgba(58,49,133,.12)}
+.callout.amber{background:var(--amber-bg);border:1px solid rgba(122,77,14,.12)}
+.callout-icon{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:11px;
+}
+.callout.teal .callout-icon{background:var(--teal);color:#fff}
+.callout.purple .callout-icon{background:var(--purple);color:#fff}
+.callout.amber .callout-icon{background:var(--amber);color:#fff}
+
+/* ============ FLOW (data flow / lifecycle) ============ */
+.flow-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:72px;
+}
+.flow-card h3{font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.flow-card .hd-d{font-size:12px;color:var(--t2);margin-bottom:22px;line-height:1.6}
+.flow-row{
+  display:grid;grid-template-columns:32px 1fr;gap:18px;
+  padding:14px 0;border-bottom:1px dashed var(--border);
+}
+.flow-row:last-child{border-bottom:none}
+.flow-row-n{
+  width:26px;height:26px;border-radius:6px;background:var(--surface2);color:var(--t1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;
+}
+.flow-row-b{display:flex;flex-direction:column;gap:6px}
+.flow-row-t{font-size:13px;font-weight:600;color:var(--t1);line-height:1.4}
+.flow-row-d{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-row-d code{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px;
+}
+
+/* ============ INSPECTOR PANEL MOCK ============ */
+.inspector-grid{
+  display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:72px;
+}
+.inspector-mock{
+  background:var(--code-bg);color:var(--code-tx);
+  border-radius:12px;padding:0;overflow:hidden;
+  border:1px solid rgba(28,28,26,.35);
+}
+.inspector-mock-hd{
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:11px;font-weight:700;color:var(--code-mute);letter-spacing:.5px;text-transform:uppercase;
+}
+.inspector-mock-body{padding:14px 0;font-family:"JetBrains Mono",monospace;font-size:11.5px;line-height:1.65}
+.inspector-section{
+  padding:10px 18px;border-bottom:1px dashed rgba(255,255,255,.06);
+}
+.inspector-section:last-child{border-bottom:none}
+.inspector-section-h{
+  color:var(--code-teal);font-weight:600;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+}
+.inspector-section-h::before{content:'▼';font-size:9px;color:var(--code-mute)}
+.inspector-row{display:flex;gap:12px;color:var(--code-mute);font-size:11px}
+.inspector-row .k{color:var(--code-mute);min-width:120px}
+.inspector-row .v{color:var(--code-tx)}
+.inspector-row .v.ok{color:var(--code-teal)}
+.inspector-row .v.no{color:var(--code-red)}
+.inspector-row .v.amb{color:var(--code-amb)}
+
+.inspector-rhs{display:flex;flex-direction:column;gap:18px}
+.inspector-rhs .subcard{flex:1}
+
+/* ============ SIGNATURE IDEA ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:40px 44px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(58,49,133,.32) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:40px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#a299e3;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#a299e3}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#a299e3;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:520px}
+.sig p strong{color:#e8e6df;font-weight:600}
+.sig p code{
+  font-family:"JetBrains Mono",monospace;font-size:13px;
+  background:rgba(255,255,255,.08);color:#e8e6df;padding:1px 6px;border-radius:3px;
+}
+
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#a299e3;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ TIMELINE (P0-P4) ============ */
+.timeline{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:72px;
+}
+.timeline h3{font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.timeline .hd-d{font-size:12px;color:var(--t2);margin-bottom:22px;line-height:1.6}
+.timeline-row{
+  display:grid;grid-template-columns:80px 1fr 220px;gap:24px;
+  padding:18px 0;border-bottom:1px solid var(--border);
+  align-items:flex-start;
+}
+.timeline-row:last-child{border-bottom:none}
+.timeline-stage{
+  display:flex;flex-direction:column;gap:4px;
+}
+.timeline-stage-tag{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--t1);color:#f0efe8;
+  font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;
+  font-size:18px;padding:6px 12px;border-radius:6px;width:fit-content;
+}
+.timeline-stage-d{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.timeline-body h4{font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:-.2px}
+.timeline-body p{font-size:12.5px;color:var(--t2);line-height:1.6}
+.timeline-body code{
+  font-family:"JetBrains Mono",monospace;font-size:11px;
+  background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px;
+}
+.timeline-verify{
+  font-size:11.5px;color:var(--t2);line-height:1.55;
+  padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border);
+}
+.timeline-verify-h{
+  display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--green);margin-bottom:4px;
+}
+.timeline-verify strong{color:var(--t1);font-weight:600}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:40px}
+  .steps,.sub-cards,.sub-cards.three,.layout-legend,.notes,.hero-band,.inspector-grid{grid-template-columns:1fr}
+  .sig-row{flex-direction:column}
+  .timeline-row{grid-template-columns:1fr;gap:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 即见</div>
+        <div class="brand-b">练习类型插件 · Exercise Plugin Toolkit</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">文档</span><span class="meta-v">Plugin Preview / Bundle</span></div>
+      <div class="meta-pair"><span class="meta-lb">Type</span><span class="meta-v">Feature Description</span></div>
+      <div class="meta-pair"><span class="meta-lb">Version</span><span class="meta-v">v1 Design</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Preview Toolkit</span>
+      <span class="dot"></span>
+      一个 Plugin · 三种 Preview · 一份 Stories
+    </div>
+    <h1>把"改一行代码<br>到看见效果"压到<em>秒级</em>。</h1>
+    <p class="sub">
+      过去做一个新练习题型，要起 <strong>4 个进程</strong>、跑完整 <strong>classroom session</strong>、假扮学生 join 才能看到一次提交。Preview 把这条链路重组成 <code>npx exercise-preview .</code>：本地热重载、admin 编辑器、公网 demo 三种壳共享 <strong>同一份 Stories 协议</strong>，Mini Backend <strong>复用真实评分代码</strong>，零行为偏移。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="index.html"><span class="ar">←</span> 返回 design 首页</a>
+      <a class="cta sec" href="../docs/exercise-plugin-preview-design.zh-CN.md">设计文档原文</a>
+      <a class="cta sec" href="../docs/exercise-plugin-architecture.zh-CN.md">插件架构本体</a>
+    </div>
+  </section>
+
+  <!-- HERO META BAND -->
+  <div class="hero-band">
+    <div class="hero-band-cell">
+      <div class="hb-lb">受众</div>
+      <div class="hb-v">3 类</div>
+      <div class="hb-d">开发者 · 编辑者 · 终端用户</div>
+    </div>
+    <div class="hero-band-cell">
+      <div class="hb-lb">UI 壳</div>
+      <div class="hb-v">3 个</div>
+      <div class="hb-d">CLI · Admin 嵌入 · 公网 Demo</div>
+    </div>
+    <div class="hero-band-cell">
+      <div class="hb-lb">共享 Runtime</div>
+      <div class="hb-v">1 份</div>
+      <div class="hb-d">Stories 协议 + Mini NestJS</div>
+    </div>
+    <div class="hero-band-cell">
+      <div class="hb-lb">行为偏移</div>
+      <div class="hb-v">零</div>
+      <div class="hb-d">复用真实 GradingService 代码</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 01 — 问题陈述 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>为什么要做 Preview <span class="en">The Problem</span></h2>
+    </div>
+    <span class="hint">三类受众 · 一条慢链路 · 都被卡住</span>
+  </div>
+
+  <div class="steps">
+
+    <!-- Pain 1 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">!</div>
+        <h3>反馈环 &gt; 2 分钟</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- chain of boxes -->
+          <rect x="14" y="62" width="44" height="34" rx="4" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="36" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#1c1c1a" text-anchor="middle">SQLite</text>
+          <rect x="64" y="62" width="44" height="34" rx="4" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="86" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#1c1c1a" text-anchor="middle">Nest</text>
+          <rect x="114" y="62" width="44" height="34" rx="4" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="136" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#1c1c1a" text-anchor="middle">Vite</text>
+          <rect x="164" y="62" width="44" height="34" rx="4" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="186" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#1c1c1a" text-anchor="middle">MCP</text>
+          <!-- chain lines -->
+          <line x1="58" y1="79" x2="64" y2="79" stroke="#9c9a92" stroke-width="1"/>
+          <line x1="108" y1="79" x2="114" y2="79" stroke="#9c9a92" stroke-width="1"/>
+          <line x1="158" y1="79" x2="164" y2="79" stroke="#9c9a92" stroke-width="1"/>
+          <!-- clock -->
+          <circle cx="240" cy="79" r="22" fill="#f1dfdc" stroke="#942929" stroke-width="1.5"/>
+          <text x="240" y="76" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#942929" text-anchor="middle">&gt; 2 min</text>
+          <text x="240" y="88" font-family="Plus Jakarta Sans" font-size="6" fill="#942929" text-anchor="middle">per iter</text>
+          <!-- bottom label -->
+          <text x="140" y="124" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#9c9a92" text-anchor="middle">create session → join → walk steps → submit → see effect</text>
+        </svg>
+      </div>
+      <p>每次改一行代码要跑完整集成：<strong>4 个进程</strong>启动、创 session、假扮学生 join、走完 listen / practice / discuss 才看到一次评分。<strong>反馈环长、依赖重、噪音多</strong>。</p>
+    </div>
+
+    <!-- Pain 2 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">!</div>
+        <h3>编辑者改不了 JSON</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- editor pane stub -->
+          <rect x="20" y="22" width="240" height="114" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="36" y="42" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">{</text>
+          <text x="46" y="56" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">"type":<tspan fill="#7a4d0e">"quiz"</tspan>,</text>
+          <text x="46" y="70" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">"answers": [</text>
+          <text x="56" y="84" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">{ "correct": <tspan fill="#7a4d0e">1</tspan>, ?</text>
+          <text x="46" y="98" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">]</text>
+          <text x="36" y="112" font-family="JetBrains Mono" font-size="8" fill="#1c1c1a">}</text>
+          <!-- error squiggle -->
+          <path d="M120 86 q3 -3 6 0 t6 0 t6 0" stroke="#942929" stroke-width="1" fill="none"/>
+          <!-- side label -->
+          <rect x="178" y="60" width="74" height="44" rx="5" fill="#f1dfdc" stroke="rgba(148,41,41,.18)"/>
+          <text x="215" y="76" font-family="Plus Jakarta Sans" font-size="7" font-weight="700" fill="#942929" text-anchor="middle">手写 manifest</text>
+          <text x="215" y="89" font-family="Plus Jakarta Sans" font-size="6" fill="#942929" text-anchor="middle">无 schema 提示</text>
+          <text x="215" y="98" font-family="Plus Jakarta Sans" font-size="6" fill="#942929" text-anchor="middle">无实时预览</text>
+        </svg>
+      </div>
+      <p>课程编辑/教学设计师没法在 admin 后台<strong>直接编辑 answerKey JSON</strong>、切教师视角看效果。每改一处都要找工程师重起服务。</p>
+    </div>
+
+    <!-- Pain 3 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">!</div>
+        <h3>客户看不到 demo</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- browser -->
+          <rect x="44" y="22" width="192" height="114" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <!-- url bar -->
+          <rect x="56" y="34" width="168" height="18" rx="4" fill="#edece7"/>
+          <text x="64" y="46" font-family="JetBrains Mono" font-size="7" fill="#9c9a92">demo.kedge.com/p/...</text>
+          <!-- 404 -->
+          <text x="140" y="92" font-family="Fraunces" font-size="36" font-weight="500" font-style="italic" fill="#942929" text-anchor="middle">404</text>
+          <text x="140" y="112" font-family="Plus Jakarta Sans" font-size="8" fill="#9c9a92" text-anchor="middle">公网无法访问开发机本地</text>
+          <text x="140" y="124" font-family="Plus Jakarta Sans" font-size="8" fill="#9c9a92" text-anchor="middle">无短码 · 无分享链接</text>
+        </svg>
+      </div>
+      <p>插件做完了，给客户/招生看 demo 只能<strong>录屏</strong>或 <strong>screen share</strong>。每个题型都没有可分享的公网链接、没有 marketplace 入口。</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 02 — 整体架构 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>整体架构 <span class="en">Three Shells, One Core</span></h2>
+    </div>
+    <span class="hint">三个 UI 壳共享一份 Runtime + 一个 Mini Backend</span>
+  </div>
+
+  <div class="layout-card">
+    <h3>三壳一核 · 三层结构</h3>
+    <p class="sub-d">最上层是面向三类受众的 UI 壳。中层 Preview Runtime 提供 Stories 协议、StoryLoader、PreviewSession。最底层 Mini NestJS Backend 复用真实 ExerciseTypeRegistry / GradingService / AiPromptBuilder — 但剥离 SQLite / Observer / Discuss / Snapshot 等与"单插件预览"无关的子系统。</p>
+    <div class="layout-svg-wrap">
+      <svg viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- TOP TIER: 3 UI shells -->
+        <g transform="translate(20,18)">
+          <rect x="0" y="0" width="760" height="108" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="14" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">TIER 1 · UI SHELLS</text>
+
+          <!-- CLI shell -->
+          <rect x="20" y="30" width="232" height="64" rx="8" fill="#dfece8" stroke="rgba(13,82,69,.16)"/>
+          <text x="32" y="48" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#0d5245">CLI Preview</text>
+          <text x="32" y="62" font-family="Plus Jakarta Sans" font-size="9" fill="#0d5245">开发者沙箱 · 热重载 · Inspector</text>
+          <rect x="32" y="72" width="160" height="14" rx="3" fill="#0d5245" opacity=".85"/>
+          <text x="40" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#fbfaf7">$ npx exercise-preview .</text>
+
+          <!-- Admin shell -->
+          <rect x="264" y="30" width="232" height="64" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.16)"/>
+          <text x="276" y="48" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#3a3185">Admin Playground</text>
+          <text x="276" y="62" font-family="Plus Jakarta Sans" font-size="9" fill="#3a3185">编辑器视角 · Monaco · 草稿</text>
+          <rect x="276" y="72" width="160" height="14" rx="3" fill="#3a3185" opacity=".85"/>
+          <text x="284" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#fbfaf7">/playground/:bundle</text>
+
+          <!-- Demo shell -->
+          <rect x="508" y="30" width="232" height="64" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.16)"/>
+          <text x="520" y="48" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#7a4d0e">Public Demo</text>
+          <text x="520" y="62" font-family="Plus Jakarta Sans" font-size="9" fill="#7a4d0e">公网分享 · 短码 · 限流</text>
+          <rect x="520" y="72" width="160" height="14" rx="3" fill="#7a4d0e" opacity=".85"/>
+          <text x="528" y="82" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#fbfaf7">demo.kedge.com/p/...</text>
+        </g>
+
+        <!-- arrows down -->
+        <g stroke="#9c9a92" stroke-width="1" stroke-dasharray="2,3" fill="none">
+          <line x1="156" y1="138" x2="156" y2="158"/>
+          <line x1="400" y1="138" x2="400" y2="158"/>
+          <line x1="644" y1="138" x2="644" y2="158"/>
+        </g>
+
+        <!-- MIDDLE TIER: Runtime -->
+        <g transform="translate(20,160)">
+          <rect x="0" y="0" width="760" height="84" rx="10" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="14" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">TIER 2 · PREVIEW RUNTIME · 三壳共用</text>
+
+          <g transform="translate(20,30)">
+            <rect x="0" y="0" width="170" height="44" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="85" y="18" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a" text-anchor="middle">defineStories()</text>
+            <text x="85" y="32" font-family="Plus Jakarta Sans" font-size="8" fill="#5c5b56" text-anchor="middle">API 入口</text>
+
+            <rect x="184" y="0" width="170" height="44" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="269" y="18" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a" text-anchor="middle">StoryLoader</text>
+            <text x="269" y="32" font-family="Plus Jakarta Sans" font-size="8" fill="#5c5b56" text-anchor="middle">扫描 *.stories.ts</text>
+
+            <rect x="368" y="0" width="170" height="44" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="453" y="18" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a" text-anchor="middle">PreviewSession</text>
+            <text x="453" y="32" font-family="Plus Jakarta Sans" font-size="8" fill="#5c5b56" text-anchor="middle">内存 classroom 模拟</text>
+
+            <rect x="552" y="0" width="168" height="44" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="636" y="18" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a" text-anchor="middle">RoleSwitcher</text>
+            <text x="636" y="32" font-family="Plus Jakarta Sans" font-size="8" fill="#5c5b56" text-anchor="middle">student / teacher / inspector</text>
+          </g>
+        </g>
+
+        <!-- arrow down to backend -->
+        <g stroke="#9c9a92" stroke-width="1" stroke-dasharray="2,3" fill="none">
+          <line x1="400" y1="252" x2="400" y2="270"/>
+        </g>
+
+        <!-- BOTTOM TIER: Mini Backend -->
+        <g transform="translate(20,272)">
+          <rect x="0" y="0" width="760" height="116" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="14" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">TIER 3 · MINI CLASSROOM BACKEND · NestJS</text>
+
+          <!-- Reused providers (left) -->
+          <g transform="translate(20,30)">
+            <text x="0" y="0" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#0d5245">✓ 复用 live-lesson 真实代码</text>
+            <rect x="0" y="10" width="160" height="22" rx="4" fill="#dfece8" stroke="rgba(13,82,69,.18)"/>
+            <text x="80" y="24" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#0d5245" text-anchor="middle">ExerciseTypeRegistry</text>
+            <rect x="0" y="36" width="160" height="22" rx="4" fill="#dfece8" stroke="rgba(13,82,69,.18)"/>
+            <text x="80" y="50" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#0d5245" text-anchor="middle">GradingService</text>
+            <rect x="0" y="62" width="160" height="22" rx="4" fill="#dfece8" stroke="rgba(13,82,69,.18)"/>
+            <text x="80" y="76" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#0d5245" text-anchor="middle">AiPromptBuilder</text>
+          </g>
+
+          <!-- Replaced providers (mid) -->
+          <g transform="translate(220,30)">
+            <text x="0" y="0" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#3a3185">↻ 替换为 Preview 专属</text>
+            <rect x="0" y="10" width="160" height="22" rx="4" fill="#e9e7f3" stroke="rgba(58,49,133,.18)"/>
+            <text x="80" y="24" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#3a3185" text-anchor="middle">InMemoryClassroomState</text>
+            <rect x="0" y="36" width="160" height="22" rx="4" fill="#e9e7f3" stroke="rgba(58,49,133,.18)"/>
+            <text x="80" y="50" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#3a3185" text-anchor="middle">PreviewClassroomController</text>
+            <rect x="0" y="62" width="160" height="22" rx="4" fill="#e9e7f3" stroke="rgba(58,49,133,.18)"/>
+            <text x="80" y="76" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#3a3185" text-anchor="middle">PreviewSessionService</text>
+          </g>
+
+          <!-- Stripped providers (right) -->
+          <g transform="translate(420,30)">
+            <text x="0" y="0" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#942929">✗ 不加载</text>
+            <rect x="0" y="10" width="320" height="14" rx="3" fill="#f1dfdc" stroke="rgba(148,41,41,.18)"/>
+            <text x="8" y="20" font-family="JetBrains Mono" font-size="7" fill="#942929">SQLite / TypeORM</text>
+            <rect x="0" y="28" width="320" height="14" rx="3" fill="#f1dfdc" stroke="rgba(148,41,41,.18)"/>
+            <text x="8" y="38" font-family="JetBrains Mono" font-size="7" fill="#942929">ObserverEngine / DiscussService / SnapshotService</text>
+            <rect x="0" y="46" width="320" height="14" rx="3" fill="#f1dfdc" stroke="rgba(148,41,41,.18)"/>
+            <text x="8" y="56" font-family="JetBrains Mono" font-size="7" fill="#942929">SSE endpoint / 3s polling / 多人 session</text>
+            <rect x="0" y="64" width="320" height="14" rx="3" fill="#f1dfdc" stroke="rgba(148,41,41,.18)"/>
+            <text x="8" y="74" font-family="JetBrains Mono" font-size="7" fill="#942929">鉴权 / Session code / Join 流程</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="layout-legend">
+      <div class="legend-item">
+        <div class="legend-item-lb">A · CLI</div>
+        <div class="legend-item-v">本地开发者沙箱</div>
+        <div class="legend-item-d">npx 一行启动 · Vite HMR · 文件即来源</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">B · Admin</div>
+        <div class="legend-item-v">嵌入 admin-next</div>
+        <div class="legend-item-d">Monaco JSON 编辑 · 草稿存表 · iframe 隔离</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">C · Demo</div>
+        <div class="legend-item-v">公网静态站点</div>
+        <div class="legend-item-d">短码分享 · 限流 demo API key · 隐藏 Inspector</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">D · Mini Backend</div>
+        <div class="legend-item-v">NestJS · 进程独立</div>
+        <div class="legend-item-d">复用真实 ExerciseTypeRegistry · 内存 state</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- callout -->
+  <div class="callout teal">
+    <div class="callout-icon">✓</div>
+    <div><strong>关键论点：</strong>选嵌入式 mini NestJS 而不是纯前端 mock。Mini Backend 跑的是和生产环境<strong>完全相同的</strong> <code>gradingService.grade()</code> 代码 — Zod 校验链路一致、AI 评分调真实 LLM、行为零偏移。开发者在 Preview 里看到的评分结果就是生产环境的结果。</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 03 — Stories 协议 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Stories 协议 <span class="en">Component Story Format, Adapted</span></h2>
+    </div>
+    <span class="hint">借鉴 Storybook · 一份文件三处复用</span>
+  </div>
+
+  <p style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:22px;max-width:880px">
+    一个 <code style="font-family:'JetBrains Mono',monospace;font-size:11.5px;background:var(--surface2);color:var(--t1);padding:1px 5px;border-radius:3px">*.stories.ts</code> 文件 = 一个 plugin 的所有预设场景。默认导出绑定 plugin，命名导出每个场景。<strong style="color:var(--t1)">stories 文件本身就是测试用例 + 文档 + Demo 数据源</strong> —— 一份内容，三处复用，永远同步。
+  </p>
+
+  <div class="code-card">
+    <div class="code-card-hd">
+      <div class="code-card-tabs">
+        <span class="code-card-tab on">long-division.stories.ts</span>
+        <span class="code-card-tab">long-division.plugin.ts</span>
+        <span class="code-card-tab">LongDivisionExercise.tsx</span>
+      </div>
+      <span class="code-card-lang">TypeScript</span>
+    </div>
+<pre>
+<span class="kw">import</span> { <span class="fn">defineStories</span> } <span class="kw">from</span> <span class="st">'@kedge-agentic/exercise-preview'</span>;
+<span class="kw">import</span> { longDivisionPlugin } <span class="kw">from</span> <span class="st">'./long-division.plugin'</span>;
+
+<span class="kw">export default</span> <span class="fn">defineStories</span>({
+  plugin: longDivisionPlugin,
+  meta: {
+    title: <span class="st">'长除法 / Long Division'</span>,
+    description: <span class="st">'初中数学多项式长除法'</span>,
+    tags: [<span class="st">'math'</span>, <span class="st">'grade-8'</span>],
+    docsUrl: <span class="st">'https://docs.kedge.com/long-division'</span>,
+  },
+});
+
+<span class="cm">// 每个 export = 一个 story</span>
+<span class="kw">export const</span> Default: <span class="ty">Story</span> = {
+  name: <span class="st">'默认空白'</span>,
+  answerKey: { type: <span class="st">'long-division'</span>, dividend: <span class="st">'x^2 + 5x + 6'</span>, divisor: <span class="st">'x + 2'</span> },
+};
+
+<span class="kw">export const</span> PartiallyAnswered: <span class="ty">Story</span> = {
+  name: <span class="st">'答到一半'</span>,
+  answerKey: { ... },
+  initialAns: { steps: [{ quotient: <span class="st">'x'</span>, remainder: <span class="st">'...'</span> }] },
+};
+
+<span class="kw">export const</span> ReviewMode: <span class="ty">Story</span> = {
+  name: <span class="st">'复习视图'</span>,
+  answerKey: { ... },
+  reviewData: {
+    data: {...},
+    checkItems: [
+      { idx: <span class="num">1</span>, correct: <span class="kw">true</span> },
+      { idx: <span class="num">2</span>, correct: <span class="kw">false</span>, hint: <span class="st">'注意符号'</span> },
+    ],
+  },
+  initialPhase: <span class="st">'review'</span>,
+};
+
+<span class="kw">export const</span> TeacherObserve: <span class="ty">Story</span> = {
+  name: <span class="st">'教师观察 — 10 学生提交'</span>,
+  answerKey: { ... },
+  <span class="cm">// 教师视图专属：mock 全班提交</span>
+  classSubmissions: [
+    { studentId: <span class="st">'s1'</span>, name: <span class="st">'张三'</span>, data: {...}, score: <span class="num">100</span> },
+    { studentId: <span class="st">'s2'</span>, name: <span class="st">'李四'</span>, data: {...}, score: <span class="num">60</span> },
+  ],
+  initialRole: <span class="st">'teacher'</span>,
+};
+</pre>
+  </div>
+
+  <!-- one-file-three-uses table -->
+  <div class="info-table-wrap">
+    <h3>一份内容，五处复用</h3>
+    <p class="hd-d">写一次 stories 文件，自动喂给所有下游消费者 — 这才是真正消除"文档过时"的方式。</p>
+    <table class="info-table">
+      <tr><th>用途</th><th>复用方式</th><th>价值</th></tr>
+      <tr>
+        <td>单元测试</td>
+        <td><code>for (const [name, story] of Object.entries(stories)) it(name, () => plugin.grade(...))</code></td>
+        <td>每个 story 自动变成一个 vitest 用例</td>
+      </tr>
+      <tr>
+        <td>Preview 沙箱</td>
+        <td>StoryLoader 扫描后渲染左栏场景树</td>
+        <td>开发期立即看到所有场景</td>
+      </tr>
+      <tr>
+        <td>公网 demo</td>
+        <td>build-time 把 stories 打包进静态站点</td>
+        <td>每个 story 一个分享链接</td>
+      </tr>
+      <tr>
+        <td>回归基线</td>
+        <td>stories 的 grade 结果做 snapshot</td>
+        <td>PR 自动检测行为偏移</td>
+      </tr>
+      <tr>
+        <td>文档示例</td>
+        <td><code>@example</code> JSDoc 链接到 stories 文件</td>
+        <td>IDE 跳转 · 文档永远是真实代码</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 04 — Mini Backend -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>Mini Backend <span class="en">NestJS, but Stripped</span></h2>
+    </div>
+    <span class="hint">复用真实 providers · 剥离 classroom 语义</span>
+  </div>
+
+  <div class="sub-cards">
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">复用 · Reuse</span>
+      <h4>哪些真实代码继续用</h4>
+      <p>插件评分链路在 Preview 和生产是<strong>同一份代码</strong>，从 Mini Backend 复用：</p>
+      <ul>
+        <li><strong>ExerciseTypeRegistry</strong> — auto-discover <code>@ExerciseType()</code> 插件</li>
+        <li><strong>GradingService</strong> — 调 <code>registry.grade(ctx)</code></li>
+        <li><strong>AiPromptBuilder</strong> — AI 评分类型直连真实 LLM</li>
+        <li><strong>所有 11 个 Plugin</strong> — bundle 内的 sanitize/grade/buildCheckItems 一行没改</li>
+      </ul>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">替换 · Replace</span>
+      <h4>哪些换成 Preview 专属</h4>
+      <p>"完整 classroom 语义"在单插件预览里是噪音，换成内存版本：</p>
+      <ul>
+        <li><strong>InMemoryClassroomState</strong> — 替代 ClassroomService，Map 存 session</li>
+        <li><strong>PreviewSessionService</strong> — 内存 session 管理，无 SQLite</li>
+        <li><strong>PreviewClassroomController</strong> — 6 个轻量 endpoint</li>
+        <li><strong>动态 bundle 加载</strong> — 命令行参数注入 plugin 包</li>
+      </ul>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--red-bg);color:var(--red)">不加载 · Drop</span>
+      <h4>哪些直接不加载</h4>
+      <p>对"单插件预览"无意义的子系统全部剥离：</p>
+      <ul>
+        <li><strong>ObserverEngine</strong> — 可选，仅 teacher role + classSubmissions 时按需启</li>
+        <li><strong>DiscussService / PersonalTouch</strong> — 非单插件关注点</li>
+        <li><strong>SnapshotService / MetricsAggregator</strong> — 单用户无需历史回放</li>
+        <li><strong>SQLite / TypeORM / SSE / 3s polling</strong> — 全部去掉</li>
+        <li><strong>鉴权 / Session code / Join</strong> — 跳过身份语义</li>
+      </ul>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">API · 6 端点</span>
+      <h4>Preview 后端 API</h4>
+      <table class="info-table" style="margin-top:0">
+        <tr><th>Method</th><th>Route</th></tr>
+        <tr><td>GET</td><td><code>/preview/stories</code></td></tr>
+        <tr><td>POST</td><td><code>/preview/sessions</code></td></tr>
+        <tr><td>POST</td><td><code>/preview/sessions/:id/check</code></td></tr>
+        <tr><td>GET</td><td><code>/preview/sessions/:id/inspector</code></td></tr>
+        <tr><td>GET</td><td><code>/preview/sessions/:id/teacher-state</code></td></tr>
+        <tr><td>POST</td><td><code>/preview/sessions/:id/reset</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="code-card compact">
+    <div class="code-card-hd">
+      <div class="code-card-tabs">
+        <span class="code-card-tab on">preview-classroom.controller.ts</span>
+      </div>
+      <span class="code-card-lang">TypeScript</span>
+    </div>
+<pre>
+<span class="cm">// 关键：gradingService.grade() 和 registry.buildCheckItems() 是从 live-lesson backend</span>
+<span class="cm">// 完全相同的源代码 — Preview 只换了 controller 和 state 存储</span>
+
+<span class="kw">@Controller</span>(<span class="st">'preview/sessions/:id'</span>)
+<span class="kw">export class</span> <span class="ty">PreviewClassroomController</span> {
+  <span class="fn">constructor</span>(
+    <span class="kw">private readonly</span> state: <span class="ty">InMemoryClassroomState</span>,
+    <span class="kw">private readonly</span> gradingService: <span class="ty">GradingService</span>,    <span class="cm">// ← 真实的</span>
+    <span class="kw">private readonly</span> registry: <span class="ty">ExerciseTypeRegistry</span>,    <span class="cm">// ← 真实的</span>
+  ) {}
+
+  <span class="kw">@Post</span>(<span class="st">'check'</span>)
+  <span class="kw">async</span> <span class="fn">check</span>(<span class="kw">@Param</span>(<span class="st">'id'</span>) id: <span class="ty">string</span>, <span class="kw">@Body</span>() body: { ans: <span class="ty">unknown</span> }) {
+    <span class="kw">const</span> session = <span class="kw">this</span>.state.<span class="fn">get</span>(id);
+    <span class="kw">const</span> t0 = performance.<span class="fn">now</span>();
+    <span class="kw">const</span> gradeResult = <span class="kw">await this</span>.gradingService.<span class="fn">grade</span>(session.answerKey, body.ans);  <span class="cm">// ← 真实代码</span>
+    <span class="kw">const</span> checkItems = <span class="kw">this</span>.registry.<span class="fn">buildCheckItems</span>(session.answerKey, body.ans, gradeResult);
+    <span class="kw">this</span>.state.<span class="fn">recordGrade</span>(id, { key: session.answerKey, data: body.ans }, gradeResult, performance.<span class="fn">now</span>() - t0);
+    <span class="kw">return</span> { gradeResult, checkItems };
+  }
+}
+</pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 05 — 三个 UI 壳 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>三个 UI 壳 <span class="en">CLI · Admin · Public Demo</span></h2>
+    </div>
+    <span class="hint">同一套 React 组件 · 三种部署形态</span>
+  </div>
+
+  <div class="sub-cards three">
+
+    <!-- Shell 1: CLI -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">A · CLI · 开发者</span>
+      <h4>CLI Preview</h4>
+      <p><strong>启动：</strong>在 bundle 目录跑一行 <code>npx exercise-preview .</code>，CLI 同时拉起 Mini NestJS (4321) + Vite dev server (5283)，浏览器自动打开。</p>
+      <p><strong>Stories 来源：</strong>本地文件系统 watch，<code>*.stories.ts</code> 改动 Vite HMR 实时热重载。</p>
+      <p><strong>独家特性：</strong>Inspector 完整暴露、文件即编辑（IDE 就是你的编辑器）、AI 评分用开发者自己的 API key。</p>
+      <p><strong>多 bundle 并存：</strong><code>exercise-preview ./pack-math ./pack-reading</code> 一次性预览多个 plugin。</p>
+    </div>
+
+    <!-- Shell 2: Admin -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">B · Admin · 编辑者</span>
+      <h4>Admin Playground</h4>
+      <p><strong>路由：</strong>admin-next 新增 <code>/playground/:bundle</code>。三栏布局：左侧 Monaco JSON 编辑器、中间渲染学生/教师视图、右侧 Inspector。</p>
+      <p><strong>实时校验：</strong>Monaco 内嵌 <code>plugin.answerKeySchema</code> 转出的 JSON Schema，输入时立即得到错误提示。</p>
+      <p><strong>草稿持久化：</strong>admin 后台 <code>playground_drafts</code> 表，按 bundle + 用户 id 索引，跨设备 / 团队协作。</p>
+      <p><strong>一键导出：</strong>把当前 answerKey 复制到剪贴板，或推送成 lesson manifest 的草稿。</p>
+    </div>
+
+    <!-- Shell 3: Demo -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">C · Demo · 终端用户</span>
+      <h4>Public Demo</h4>
+      <p><strong>部署：</strong><code>exercise-preview build</code> 静态打包，每个 story 一个路由。短码分发：<code>demo.kedge.com/p/long-division-abc123</code>。</p>
+      <p><strong>限流：</strong>demo API key 设 RPM 限制（防刷）；AI 评分类型走后端 proxy。</p>
+      <p><strong>简化界面：</strong>隐藏 Inspector 和编辑器，终端用户只看练习本身。右下角"了解 KedgeAgentic 平台"引流。</p>
+      <p><strong>分享场景：</strong>销售 demo、招生展示、客户体验、marketplace 入口。</p>
+    </div>
+
+  </div>
+
+  <!-- shell comparison table -->
+  <div class="info-table-wrap">
+    <h3>三壳能力对比</h3>
+    <p class="hd-d">每个壳的形态是受众诉求决定的：开发者要速度和透明度，编辑者要 GUI 和草稿，终端用户要分享链接和限流。</p>
+    <table class="info-table">
+      <tr><th>维度</th><th style="color:var(--teal)">CLI Preview</th><th style="color:var(--purple)">Admin 嵌入</th><th style="color:var(--amber)">公网 Demo</th></tr>
+      <tr><td>启动方式</td><td><code>npx exercise-preview .</code></td><td><code>/playground/:bundle</code></td><td>静态部署 + 短码</td></tr>
+      <tr><td>Stories 来源</td><td>本地 fs watch</td><td>上传 zip 或选已装 bundle</td><td>build-time 打包</td></tr>
+      <tr><td>AI 评分</td><td>开发者 API key</td><td>admin 用户 quota</td><td>限流 demo key</td></tr>
+      <tr><td>answerKey 编辑</td><td>文件即编辑（IDE）</td><td>Monaco 内联</td><td><span class="no">只读</span></td></tr>
+      <tr><td>Inspector 面板</td><td><span class="ok">✓ 完整</span></td><td><span class="ok">✓ 完整</span></td><td><span class="no">✗ 隐藏</span></td></tr>
+      <tr><td>教师观察预览</td><td><span class="ok">✓ classSubmissions mock</span></td><td><span class="ok">✓ 同</span></td><td><span class="ok">✓ 同</span></td></tr>
+      <tr><td>分享链接</td><td><span class="no">—</span></td><td><span class="warn">⚠ 内部 (含 admin auth)</span></td><td><span class="ok">✓ 公网短码</span></td></tr>
+      <tr><td>热重载</td><td><span class="ok">✓ Vite HMR</span></td><td><span class="no">—</span></td><td><span class="no">—</span></td></tr>
+      <tr><td>离线运行</td><td><span class="ok">✓ AI 评分除外</span></td><td><span class="no">— 依赖 admin server</span></td><td><span class="no">—</span></td></tr>
+      <tr><td>多 bundle 并存</td><td><span class="ok">✓ glob</span></td><td><span class="ok">✓ 选择器</span></td><td><span class="ok">✓ 路由分发</span></td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 06 — Inspector 面板 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">06 —</span>
+      <h2>Inspector 面板 <span class="en">The Developer Superpower</span></h2>
+    </div>
+    <span class="hint">把插件生命周期 + 评分内幕完整暴露</span>
+  </div>
+
+  <div class="inspector-grid">
+
+    <!-- Inspector mock (left, dark) -->
+    <div class="inspector-mock">
+      <div class="inspector-mock-hd">▸ INSPECTOR · long-division/Default</div>
+      <div class="inspector-mock-body">
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">AnswerKey (sanitize 前后对比)</div>
+          <div class="inspector-row"><span class="k">raw</span><span class="v">{...full key with answers}</span></div>
+          <div class="inspector-row"><span class="k">sanitized</span><span class="v">{...student-safe spec}</span></div>
+          <div class="inspector-row"><span class="k">diff</span><span class="v amb">[stripped: correct, walkthrough]</span></div>
+        </div>
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">Current State</div>
+          <div class="inspector-row"><span class="k">ans</span><span class="v">{ steps: [{quotient: 'x'}] }</span></div>
+          <div class="inspector-row"><span class="k">checkResultState</span><span class="v">{}</span></div>
+          <div class="inspector-row"><span class="k">allDone</span><span class="v no">false</span></div>
+          <div class="inspector-row"><span class="k">softDone</span><span class="v no">false</span></div>
+          <div class="inspector-row"><span class="k">canSubmit</span><span class="v ok">true</span></div>
+        </div>
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">Last Grade Call</div>
+          <div class="inspector-row"><span class="k">input</span><span class="v">{ans, key}</span></div>
+          <div class="inspector-row"><span class="k">output</span><span class="v">{ total: 80, byDimension: {...} }</span></div>
+          <div class="inspector-row"><span class="k">duration</span><span class="v amb">1.2s · AI call</span></div>
+          <div class="inspector-row"><span class="k">prompt</span><span class="v">[click to expand]</span></div>
+          <div class="inspector-row"><span class="k">response</span><span class="v">[click to expand]</span></div>
+        </div>
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">Check Items</div>
+          <div class="inspector-row"><span class="k">#1</span><span class="v ok">✓ correct</span></div>
+          <div class="inspector-row"><span class="k">#2</span><span class="v no">✗ wrong · hint: "注意符号"</span></div>
+        </div>
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">Plugin Lifecycle (Proxy 追踪)</div>
+          <div class="inspector-row"><span class="k">enrichFromApi</span><span class="v ok">called (2.3ms)</span></div>
+          <div class="inspector-row"><span class="k">enrichFromManifest</span><span class="v">not called</span></div>
+          <div class="inspector-row"><span class="k">canSubmit</span><span class="v">12 calls</span></div>
+          <div class="inspector-row"><span class="k">handleCheckResult</span><span class="v">1 call (3.1ms)</span></div>
+          <div class="inspector-row"><span class="k">localGrade</span><span class="v">not implemented</span></div>
+        </div>
+
+        <div class="inspector-section">
+          <div class="inspector-section-h">Validation</div>
+          <div class="inspector-row"><span class="k">answerKeySchema</span><span class="v ok">✓ valid</span></div>
+          <div class="inspector-row"><span class="k">sanitize output</span><span class="v ok">✓ matches ExerciseSpec</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Explanation (right) -->
+    <div class="inspector-rhs">
+      <div class="subcard">
+        <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">Why 关键</span>
+        <h4>每个区段解决一个真实痛点</h4>
+        <ul>
+          <li><strong>AnswerKey 对比</strong> · 暴露"答案泄漏"问题 — sanitize 是否真的剥离了 <code>correct</code>、<code>walkthrough</code> 等敏感字段</li>
+          <li><strong>Current State</strong> · 调试 canSubmit / handleCheckResult 错误时一目了然</li>
+          <li><strong>Grade Call</strong> · AI 评分类型直接看 prompt + response，定位 LLM 调用错误</li>
+          <li><strong>Lifecycle 追踪</strong> · Proxy 包裹 plugin 方法，发现"应该调用却没调用"的回调缺失</li>
+          <li><strong>Validation</strong> · 即时发现 schema 漂移（手写 manifest 时最常见错误）</li>
+        </ul>
+      </div>
+
+      <div class="subcard">
+        <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">How 实现</span>
+        <h4>Proxy 追踪所有方法调用</h4>
+        <div class="code-card compact" style="margin-bottom:0">
+<pre>
+<span class="kw">function</span> <span class="fn">instrumentPlugin</span>(plugin, tracer) {
+  <span class="kw">return new</span> <span class="ty">Proxy</span>(plugin, {
+    <span class="fn">get</span>(target, prop) {
+      <span class="kw">const</span> value = target[prop];
+      <span class="kw">if</span> (<span class="kw">typeof</span> value !== <span class="st">'function'</span>) <span class="kw">return</span> value;
+      <span class="kw">return</span> (...args) => {
+        <span class="kw">const</span> t0 = performance.<span class="fn">now</span>();
+        <span class="kw">try</span> {
+          <span class="kw">const</span> result = value.<span class="fn">apply</span>(target, args);
+          tracer.<span class="fn">record</span>(prop, { args, result, duration: performance.<span class="fn">now</span>() - t0 });
+          <span class="kw">return</span> result;
+        } <span class="kw">catch</span> (err) { tracer.<span class="fn">recordError</span>(prop, { args, error: err }); <span class="kw">throw</span> err; }
+      };
+    },
+  });
+}
+</pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="callout amber">
+    <div class="callout-icon">!</div>
+    <div><strong>公网 Demo 例外：</strong>Inspector 在 CLI 和 Admin 壳里完整暴露，但<strong>公网 Demo 默认隐藏</strong> — 不向终端用户暴露评分内部细节（answers、AI prompt）。这是一个有意的安全边界。</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 07 — 数据流 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">07 —</span>
+      <h2>数据流 · 从命令到评分 <span class="en">End-to-End Flow</span></h2>
+    </div>
+    <span class="hint">CLI Preview · 学生视图 · 走完一轮</span>
+  </div>
+
+  <div class="flow-card">
+    <h3>完整生命周期 · 11 步</h3>
+    <p class="hd-d">下面演示一次最完整的开发者体验：从执行命令到看到评分结果，途中每一步都是显式的、可追踪的。</p>
+
+    <div class="flow-row">
+      <div class="flow-row-n">1</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">开发者执行 <code>npx exercise-preview .</code></div>
+        <div class="flow-row-d">CLI 命令入口，参数是当前目录（或多个 bundle 路径）。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">2</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">CLI 启动 · 两件事并发</div>
+        <div class="flow-row-d">
+          <strong>a.</strong> StoryLoader 扫描 <code>./**/*.stories.ts</code> → 得到 Plugin + Stories；<br>
+          <strong>b.</strong> BundleLoader 扫描 <code>./backend/**/*.plugin.ts</code> → 动态 require → 注入 Mini Backend；<br>
+          <strong>c.</strong> 启动 Vite dev server (5283) + Mini NestJS (4321)。
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">3</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">浏览器打开 <code>http://localhost:5283</code></div>
+        <div class="flow-row-d">PreviewApp 加载，左栏 StoryList 渲染 <code>[Default, PartiallyAnswered, ReviewMode, TeacherObserve]</code>。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">4</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">用户点击 "Default" → 创建 session</div>
+        <div class="flow-row-d"><code>POST /preview/sessions { storyId: 'long-division/Default' }</code> → Mini Backend 创建 sessionId，存 answerKey + initialAns → 返回 <code>{ sessionId, sanitizedSpec }</code>。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">5</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">StudentStage 渲染 <code>&lt;plugin.Component&gt;</code></div>
+        <div class="flow-row-d">传入 <code>exercise=sanitizedSpec</code>、<code>ans={}</code>、<code>setAns</code>、<code>checkResultState={}</code>、<code>onDone</code>。组件就是真实的 plugin React 组件，没有 mock。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">6</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">学生交互 · ans 状态实时同步到 Inspector</div>
+        <div class="flow-row-d">填空、选择、画图…… 每次 setAns 都被 Inspector 捕获，开发者看到状态变化的完整轨迹。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">7</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">点击 "提交" · 三步本地检查</div>
+        <div class="flow-row-d">
+          <strong>a.</strong> <code>plugin.canSubmit(ex, ans, checkResultState)</code> → true；<br>
+          <strong>b.</strong> <code>plugin.formatSubmitData(ans, checkResultState)</code> → submitPayload；<br>
+          <strong>c.</strong> <code>POST /preview/sessions/:id/check { ans: submitPayload }</code>。
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">8</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">Mini Backend 执行评分 · 复用真实代码</div>
+        <div class="flow-row-d">
+          <strong>a.</strong> <code>gradingService.grade(answerKey, submitPayload)</code> ← 真实代码路径；<br>
+          <strong>b.</strong> <code>registry.get(type).grade(ctx)</code> → GradeResult；若为 AI 评分：AiPromptBuilder 调真实 LLM；<br>
+          <strong>c.</strong> <code>registry.buildCheckItems(key, data, gradeResult)</code> → CheckItem[]；<br>
+          <strong>d.</strong> <code>state.recordGrade(...)</code> ← Inspector trace。
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">9</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">前端拿到结果 → handleCheckResult</div>
+        <div class="flow-row-d"><code>plugin.handleCheckResult(result, ex, currentState)</code> → <code>{ checkResultState, allDone, ... }</code>。这是 plugin 的 hook 点。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">10</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">setCheckResultState → 重新渲染</div>
+        <div class="flow-row-d">Inspector 面板更新：grade 历史 + checkItems + lifecycle 调用一并展示。开发者看到完整的一轮闭环。</div>
+      </div>
+    </div>
+
+    <div class="flow-row">
+      <div class="flow-row-n">11</div>
+      <div class="flow-row-b">
+        <div class="flow-row-t">改 plugin 代码 → Vite HMR → 状态保留</div>
+        <div class="flow-row-d">最重要的一步：开发者改一行代码，<strong>组件热重载但 session state、ans、checkResultState 保留</strong>。这是迭代速度的核心。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SIGNATURE -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow"><span class="dot"></span>Core Principle</div>
+        <h2>复用真实代码，<br>零行为<em>偏移</em>。</h2>
+        <p>
+          Preview 的核心承诺：<strong>开发者在沙箱里看到的评分结果，与生产环境完全一致</strong> — 因为跑的是同一份 <code>plugin.grade()</code> 代码。Mini Backend 不是 mock，是 NestJS 真实 IoC 容器；剥离的只是"完整 classroom 语义"（多人 session、SSE、Observer 等），评分链路一行不改。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t">
+            <strong>同一份 GradingService</strong>
+            Mini Backend 直接 import live-lesson 的 GradingService，不复制不重写。代码改了一处，两边一起生效。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t">
+            <strong>Zod 校验链路一致</strong>
+            answerKeySchema 在 Preview 和生产是同一份 Zod schema。manifest 在 Preview 通过的，生产也一定通过。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t">
+            <strong>AI 评分调真实 LLM</strong>
+            AI 评分类型默认调真实 LLM API（开发者自己的 key）。<code>--mock-ai</code> 切到 fixture 是 CI 专用，不是默认行为。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">4</div>
+          <div class="sig-item-t">
+            <strong>Snapshot 回归检测</strong>
+            CI 把 stories 的 grade 结果做 snapshot，PR 任何"偏移"都立刻被发现 — Preview 是行为基线本身。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 08 — 实施路径 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">08 —</span>
+      <h2>实施路径 <span class="en">P0 → P4 · Ship-as-You-Go</span></h2>
+    </div>
+    <span class="hint">五阶段渐进 · 每阶段独立可 ship</span>
+  </div>
+
+  <div class="timeline">
+    <h3>5 阶段路线图</h3>
+    <p class="hd-d">每个阶段都有独立产出和验证标准。P1 之后已可用于 quiz 等已迁移到插件模式的题型；P3/P4 是面向编辑者和终端用户的扩展。</p>
+
+    <div class="timeline-row">
+      <div class="timeline-stage">
+        <span class="timeline-stage-tag">P0</span>
+        <span class="timeline-stage-d">Core 库脚手架</span>
+      </div>
+      <div class="timeline-body">
+        <h4>defineStories API + StoryLoader + Story 类型</h4>
+        <p><code>@kedge-agentic/exercise-preview</code> 包初始化；导出 <code>defineStories()</code>、<code>Story</code>、<code>StoryMeta</code> 类型；<code>StoryLoader.load(cwd)</code> 扫描函数。<strong>不在范围内</strong>：UI、backend、CLI。</p>
+      </div>
+      <div class="timeline-verify">
+        <span class="timeline-verify-h">Verify</span>
+        <strong>单测</strong>：能从 <code>.stories.ts</code> 提取 plugin + stories；vitest 集成跑通。
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="timeline-stage">
+        <span class="timeline-stage-tag">P1</span>
+        <span class="timeline-stage-d">Mini NestJS + CLI MVP</span>
+      </div>
+      <div class="timeline-body">
+        <h4>Mini Backend + CLI dev-server 单 bundle 跑通</h4>
+        <p>PreviewBackendModule + PreviewClassroomController；InMemoryClassroomState；cli/dev-server.ts 并发启动两个进程；最小可用 PreviewApp（学生视图 + 提交按钮）。<strong>依赖</strong>：插件架构 P1 阶段（至少 quiz + match + order 三种类型迁移完成）。</p>
+      </div>
+      <div class="timeline-verify">
+        <span class="timeline-verify-h">Verify</span>
+        <strong>E2E</strong>：CLI 启动 → 浏览器看到 quiz → 提交 → 评分正确。
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="timeline-stage">
+        <span class="timeline-stage-tag">P2</span>
+        <span class="timeline-stage-d">完整三栏 UI</span>
+      </div>
+      <div class="timeline-body">
+        <h4>StoryList + StudentStage + TeacherStage + Inspector + RoleSwitcher</h4>
+        <p>三栏布局完整；Inspector 含调用追踪 Proxy；教师视角能用 <code>classSubmissions</code> 渲染 <code>ObserveClassView</code>；多 bundle 并存切换。</p>
+      </div>
+      <div class="timeline-verify">
+        <span class="timeline-verify-h">Verify</span>
+        <strong>验证标准</strong>：11 种现有题型都能在 Preview 跑通。
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="timeline-stage">
+        <span class="timeline-stage-tag">P3</span>
+        <span class="timeline-stage-d">Admin 嵌入</span>
+      </div>
+      <div class="timeline-body">
+        <h4>Admin Playground 页面 + Monaco editor + 草稿持久化</h4>
+        <p>admin-next 新增 <code>pages/playground/[bundleId].tsx</code>；Monaco 集成（带 <code>zod-to-json-schema</code> 转换）；<code>playground_drafts</code> 表 + 草稿 CRUD API；iframe + postMessage 安全壳（隔离 admin token）。</p>
+      </div>
+      <div class="timeline-verify">
+        <span class="timeline-verify-h">Verify</span>
+        <strong>手动</strong>：admin 选 bundle → 编辑 answerKey → 实时预览。
+      </div>
+    </div>
+
+    <div class="timeline-row">
+      <div class="timeline-stage">
+        <span class="timeline-stage-tag">P4</span>
+        <span class="timeline-stage-d">公网 Demo</span>
+      </div>
+      <div class="timeline-body">
+        <h4>静态打包 + 短码服务 + 限流 demo API key</h4>
+        <p><code>exercise-preview build</code> 命令静态打包 stories → HTML/JS；短码服务（可复用现有 URL shortener 或新建）；限流 demo API key；demo 站点骨架（landing + catalog + share link 路由）。<strong>注意</strong>：AI 评分类型需要 thin proxy 转发到真实 LLM。</p>
+      </div>
+      <div class="timeline-verify">
+        <span class="timeline-verify-h">Verify</span>
+        <strong>手动</strong>：生成分享链接 → 隐身窗口打开 → demo 跑通。
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 09 — 关键设计决策 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">09 —</span>
+      <h2>关键设计决策 <span class="en">Why This, Not That</span></h2>
+    </div>
+    <span class="hint">每个 ✓ 都有 ❌ 的替代方案</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <h3>13 个争议点的决策记录</h3>
+    <p class="hd-d">这些是设计阶段反复权衡过的选择 — 列出来是为了让未来改方向的人能找回"当初为什么"。</p>
+    <table class="info-table">
+      <tr><th>决策点</th><th>选择</th><th>备选</th><th>理由</th></tr>
+      <tr><td>Backend 形态</td><td><span class="ok">✓ NestJS</span></td><td>纯前端 mock</td><td>复用 ExerciseTypeRegistry / Zod / AI 真实代码；避免行为偏移</td></tr>
+      <tr><td>Stories 来源</td><td><span class="ok">✓ 文件为主</span></td><td>仅运行时 JSON</td><td>代码即文档；测试/Preview/Demo 三处复用</td></tr>
+      <tr><td>编辑能力</td><td><span class="warn">⚠ Admin 支持 · CLI 不支持</span></td><td>全支持</td><td>CLI 尊重文件即来源；Admin 给非工程师用，需 GUI</td></tr>
+      <tr><td>Backend 进程</td><td><span class="ok">✓ 独立 NestJS</span></td><td>同进程 worker</td><td>NestJS 启动需完整 IoC；独立进程便于隔离 + 调试</td></tr>
+      <tr><td>多 bundle 同时</td><td><span class="ok">✓ 支持</span></td><td>一次一个</td><td><code>exercise-preview ./pack-math ./pack-reading</code> 同进程注入</td></tr>
+      <tr><td>Inspector 在 Demo</td><td><span class="no">✗ 隐藏</span></td><td>显示</td><td>不暴露评分细节给终端用户</td></tr>
+      <tr><td>Stories 异步生成</td><td><span class="no">✗ v1 不支持</span></td><td>支持</td><td>同步声明足够；异步引入 build/load 时机复杂度</td></tr>
+      <tr><td>教师视图 mock</td><td><span class="ok">直接写</span></td><td>自动生成器</td><td>不引入"全班数据生成器"，作者写几条样本即可</td></tr>
+      <tr><td>AI 评分默认</td><td><span class="ok">✓ 真实 LLM</span></td><td>固定假数据</td><td>真实体验；<code>--mock-ai</code> 切 fixture（CI 用）</td></tr>
+      <tr><td>Bundle 加载</td><td><span class="ok">动态 import + Discovery</span></td><td>静态 import</td><td>支持 monorepo + npm 包两种来源</td></tr>
+      <tr><td>短码服务</td><td><span class="ok">单独 service</span></td><td>内嵌 demo 站点</td><td>解耦；未来可复用到其他分享场景</td></tr>
+      <tr><td>草稿存储</td><td><span class="ok">后台 SQL 表</span></td><td>localStorage</td><td>跨设备 + 团队协作</td></tr>
+      <tr><td>Admin 隔离</td><td><span class="ok">✓ iframe + postMessage</span></td><td>直接渲染</td><td>防止 plugin 代码读 admin token / 操作主框架 DOM</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 10 — 与插件架构的关系 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">10 —</span>
+      <h2>与插件架构的关系 <span class="en">Built On Top, Not Coupled</span></h2>
+    </div>
+    <span class="hint">第 10 种契约 · 推荐但非强制</span>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">依赖方向</span>
+      <h4>Preview 只依赖插件基础设施</h4>
+      <p>依赖链：<code>@kedge-agentic/exercise-preview</code> → <code>ExerciseTypeRegistry / GradingService / AiPromptBuilder</code>（live-lesson backend 已抽取的 plugin 基础设施）→ <code>@kedge-agentic/exercise-pack-*</code>（具体 bundle）。</p>
+      <p>Preview 包<strong>不依赖具体 bundle</strong>。具体 bundle 通过命令行参数或 admin UI 选择注入。</p>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">第 10 种契约</span>
+      <h4>Stories 是插件架构的扩展点</h4>
+      <p>插件架构定义了 9 种契约（<code>answerKeySchema</code> / <code>sanitize</code> / <code>grade</code> / <code>buildCheckItems</code> / <code>Component</code> / <code>canSubmit</code> / <code>handleCheckResult</code> / <code>enrichFromApi</code> / <code>ObserveClassView</code>）。Preview 引入第 <strong>10 种契约</strong>：</p>
+      <p style="margin-top:6px"><code style="display:block;padding:8px;background:var(--surface2);border-radius:5px;font-size:11px;line-height:1.5">// 推荐但非强制<br>export const xStories = defineStories({ plugin, meta });</code></p>
+      <p>未提供 stories 的 bundle 仍可工作（Preview 显示"暂无场景"），但失去开发期反馈环和公网展示能力。</p>
+    </div>
+  </div>
+
+  <!-- timeline alignment -->
+  <div class="info-table-wrap">
+    <h3>时间线对齐 · Plugin 架构 ↔ Preview</h3>
+    <p class="hd-d">两条线交错推进，插件迁移每完成一组，Preview 都补一轮验证。</p>
+    <table class="info-table">
+      <tr><th>插件架构阶段</th><th>Preview 配套</th></tr>
+      <tr><td>阶段 0 · 基础设施</td><td><span style="color:var(--teal);font-weight:700">P0</span> Core 库</td></tr>
+      <tr><td>阶段 1 · quiz+match+order 迁移</td><td><span style="color:var(--teal);font-weight:700">P1</span> Mini Backend + CLI MVP</td></tr>
+      <tr><td>阶段 2-5 · 其他类型迁移</td><td><span style="color:var(--teal);font-weight:700">P2</span> 完整三栏 UI</td></tr>
+      <tr><td>阶段 6 · 删遗留代码</td><td><span style="color:var(--teal);font-weight:700">P3</span> Admin 嵌入</td></tr>
+      <tr><td>阶段 7 · 示例扩展包 + 文档</td><td><span style="color:var(--teal);font-weight:700">P4</span> 公网 Demo</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 11 — Bundle 结构 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">11 —</span>
+      <h2>Bundle 包结构 <span class="en">Recommended Layout</span></h2>
+    </div>
+    <span class="hint">含 stories 的标准目录约定</span>
+  </div>
+
+  <div class="code-card">
+    <div class="code-card-hd">
+      <div class="code-card-tabs">
+        <span class="code-card-tab on">packages/exercise-pack-math/</span>
+      </div>
+      <span class="code-card-lang">tree</span>
+    </div>
+<pre>
+<span class="fn">packages/exercise-pack-math/</span>
+├── <span class="fn">backend/</span>
+│   ├── index.ts
+│   └── plugins/
+│       ├── long-division.plugin.ts
+│       ├── long-division.schema.ts
+│       └── long-division.observe.ts
+├── <span class="fn">frontend/</span>
+│   ├── index.ts                          <span class="cm"># registerExerciseType()</span>
+│   ├── long-division.plugin.ts           <span class="cm"># ExerciseUIPlugin</span>
+│   ├── <span class="ty">long-division.stories.ts</span>          <span class="cm"># ← Preview 入口</span>
+│   ├── LongDivisionExercise.tsx
+│   ├── LongDivisionClassView.tsx
+│   └── LongDivisionStudentView.tsx
+├── <span class="fn">tests/</span>
+│   └── stories.test.ts                   <span class="cm"># 自动从 stories.ts 生成</span>
+├── <span class="fn">package.json</span>
+│   └── scripts: { <span class="st">"preview"</span>: <span class="st">"exercise-preview ."</span> }
+└── <span class="fn">README.md</span>
+</pre>
+  </div>
+
+  <!-- CLI API -->
+  <div class="code-card">
+    <div class="code-card-hd">
+      <div class="code-card-tabs">
+        <span class="code-card-tab on">命令行 API</span>
+      </div>
+      <span class="code-card-lang">bash</span>
+    </div>
+<pre>
+<span class="cm"># 启动 dev server（默认）</span>
+exercise-preview [bundle-paths...]
+  --port <span class="num">5283</span>             <span class="cm"># 默认</span>
+  --backend-port <span class="num">4321</span>     <span class="cm"># 默认</span>
+  --mock-ai                <span class="cm"># AI 评分类型用 fixture（CI）</span>
+  --watch                  <span class="cm"># 文件变化自动重启（默认 true）</span>
+
+<span class="cm"># 静态打包（公网 demo）</span>
+exercise-preview build \
+  --bundles ./packages/exercise-pack-* \
+  --output ./dist \
+  --base-url https://demo.kedge.com
+  <span class="cm"># → 静态 HTML/JS + stories 内嵌为 JSON + 短码映射表</span>
+</pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 12 — 风险与缓解 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">12 —</span>
+      <h2>风险与缓解 <span class="en">Known Risks</span></h2>
+    </div>
+    <span class="hint">每个风险都有应对策略</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>风险</th><th>影响</th><th>缓解</th></tr>
+      <tr>
+        <td>AI 评分频繁调真实 LLM → 成本</td>
+        <td><span class="warn">中</span></td>
+        <td><code>--mock-ai</code> 切 fixture；公网 demo 限流</td>
+      </tr>
+      <tr>
+        <td>Mini Backend 与真实 backend 行为偏移</td>
+        <td><span class="no">高</span></td>
+        <td>严格复用 GradingService / Registry，不复制代码；CI 加 snapshot 测试对比两边 grade 输出</td>
+      </tr>
+      <tr>
+        <td>Stories 过时（schema 变更后未更新）</td>
+        <td><span class="warn">中</span></td>
+        <td>CI 跑 <code>vitest stories.test.ts</code>：每个 story 做 <code>safeParse(answerKeySchema, story.answerKey)</code>，失败即报错</td>
+      </tr>
+      <tr>
+        <td>公网 demo 被滥用（恶意流量、信息提取）</td>
+        <td><span class="warn">中</span></td>
+        <td>demo API key RPM 限流；隐藏 Inspector；短码可过期</td>
+      </tr>
+      <tr>
+        <td>Admin Monaco 与 plugin Zod schema 不同步</td>
+        <td><span class="ok">低</span></td>
+        <td>通过 <code>zod-to-json-schema</code> 自动转换；schema 变更触发 admin 缓存失效</td>
+      </tr>
+      <tr>
+        <td>iframe 嵌入的 postMessage 被滥用</td>
+        <td><span class="ok">低</span></td>
+        <td>origin 白名单 + 协议字段 Zod 强类型校验</td>
+      </tr>
+      <tr>
+        <td>Bundle 多版本共存冲突</td>
+        <td><span class="warn">中</span></td>
+        <td>Preview 同时只允许一个版本的同名 plugin；多版本场景用多个进程</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">设计文档 · Source of Truth</div>
+      <div class="note-b">本页是 <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px">docs/exercise-plugin-preview-design.zh-CN.md</code> 的可视化摘要。完整 12 章 (含 NestJS module / Inspector 实现 / 5 阶段交付细节) 在原文。</div>
+    </div>
+    <div>
+      <div class="note-h">实施时间表 · When</div>
+      <div class="note-b">P1 必须等<strong>插件架构阶段 1</strong> 完成（至少 1 种题型迁移到插件模式）。建议两条线交错：插件迁移每完成一组，Preview 补一轮验证。</div>
+    </div>
+    <div>
+      <div class="note-h">下一步 · Next</div>
+      <div class="note-b">(1) Marketplace catalog 把 bundles 做成<strong>可订阅</strong>的内容包 (2) 教研组共享 stories — story 即<strong>教学样例</strong> (3) Stories 作为<strong>回归基线</strong>接入 CI snapshot。</div>
+    </div>
+  </div>
+
+  <footer>Designed for plugin developers · editors · end users · Plugin Preview &amp; Bundle System · v1 Design</footer>
+
+</div>
+
+</body>
+</html>

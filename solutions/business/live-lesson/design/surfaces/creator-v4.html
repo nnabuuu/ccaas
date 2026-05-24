@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Creator v4 · 课程项目</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+#root{height:100vh;display:flex;flex-direction:column}
+::selection{background:var(--purple-bg);color:var(--purple)}
+.scr{overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.12) transparent}
+.scr::-webkit-scrollbar{width:6px}.scr::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
+input[type="range"]{height:4px;-webkit-appearance:none;appearance:none;background:var(--surface2);border-radius:2px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--t1);cursor:pointer;border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+/* File panel */
+.fp{width:240px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;min-height:0;transition:width .2s ease}
+.fp.collapsed{width:44px}
+.fp-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.fp-toggle{width:24px;height:24px;border-radius:5px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--t3);flex-shrink:0}
+.fp-toggle:hover{background:var(--surface2);color:var(--t1)}
+.fp-cat{padding:12px 12px 4px;font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.fp-cat .fc-count{font-weight:500;opacity:.7}
+.fp-file{display:flex;align-items:center;gap:8px;padding:6px 10px;margin:1px 6px;border-radius:6px;cursor:pointer;transition:all .1s}
+.fp-file:hover{background:var(--surface2)}
+.fp-file.active{background:var(--teal-bg);color:var(--teal)}
+.fp-file .ff-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.fp-file .ff-body{flex:1;min-width:0;overflow:hidden}
+.fp-file .ff-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-file .ff-preview{font-size:9px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.fp-file .ff-ref{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:var(--blue-bg);color:var(--blue);flex-shrink:0}
+
+/* Primary tabs */
+.ptabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.ptab{display:flex;align-items:center;gap:6px;padding:10px 18px;font-size:12px;font-weight:500;color:var(--t3);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;white-space:nowrap}
+.ptab:hover{color:var(--t2)}
+.ptab.active{color:var(--t1);font-weight:600;border-bottom-color:var(--t1)}
+.ptab .pt-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ptab-sep{width:1px;height:18px;background:var(--border);margin:8px 6px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="creator-shared.jsx"></script>
+<script type="text/babel" src="creator-v4-data.jsx"></script>
+<script type="text/babel" src="creator-v3-plan.jsx"></script>
+<script type="text/babel" src="creator-v3-content.jsx"></script>
+<script type="text/babel" src="creator-v2-observe.jsx"></script>
+<script type="text/babel" src="creator-v3-views.jsx"></script>
+<script type="text/babel" src="creator-v4-files.jsx"></script>
+<script type="text/babel" src="creator-v4-app.jsx"></script>
+<script type="text/babel">
+ReactDOM.createRoot(document.getElementById('root')).render(<CreatorV4App />);
+</script>
+</body>
+</html>

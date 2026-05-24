@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>引导说明设计系统 · Guidance System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --blue:#1a5fa0; --blue-bg:#e4eff8;
+  --green:#2d6a30; --green-bg:#e6f2dc;
+  --red:#9a2c2c; --red-bg:#f5e0e0;
+  --overlay:rgba(28,28,26,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--teal);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.hero .sub{
+  font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:620px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+
+.cta-row{display:flex;gap:10px;align-items:center}
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 20px;border-radius:8px;
+  font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;
+  transition:all .15s;border:none;
+}
+.cta.pri{background:var(--teal);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(13,82,69,.35)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.cta.sec:hover{background:var(--surface2)}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ COMPONENT SECTION ============ */
+.comp-section{margin-bottom:72px}
+.comp-desc{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:24px;max-width:680px}
+.comp-desc strong{color:var(--t1);font-weight:600}
+
+.demo-area{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:24px;
+}
+.demo-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--t3);margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.demo-label .tag{
+  background:var(--teal-bg);color:var(--teal);padding:2px 7px;border-radius:3px;
+  font-size:9px;letter-spacing:.3px;
+}
+
+/* ============ 1. STEPBAR ============ */
+.stepbar{
+  display:flex;align-items:flex-start;gap:0;position:relative;
+}
+.stepbar-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:8px;position:relative;text-align:center;
+}
+.stepbar-item::after{
+  content:'';position:absolute;top:16px;left:calc(50% + 20px);
+  width:calc(100% - 40px);height:2px;background:var(--surface2);
+}
+.stepbar-item:last-child::after{display:none}
+.stepbar-item.done::after{background:var(--teal)}
+.stepbar-item.active::after{
+  background:linear-gradient(90deg,var(--teal) 50%,var(--surface2) 50%);
+}
+.stepbar-dot{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex-shrink:0;
+  background:var(--surface2);color:var(--t3);
+  border:2px solid var(--surface2);
+  transition:all .2s;position:relative;z-index:1;
+}
+.stepbar-item.done .stepbar-dot{background:var(--teal);color:#f0efe8;border-color:var(--teal)}
+.stepbar-item.active .stepbar-dot{
+  background:var(--surface);color:var(--teal);border-color:var(--teal);
+  box-shadow:0 0 0 3px var(--teal-bg);
+}
+.stepbar-title{font-size:12px;font-weight:600;color:var(--t2);line-height:1.3}
+.stepbar-item.done .stepbar-title{color:var(--teal)}
+.stepbar-item.active .stepbar-title{color:var(--t1);font-weight:700}
+.stepbar-sub{font-size:11px;color:var(--t3);line-height:1.4}
+
+/* Compact variant */
+.stepbar-compact{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);
+}
+.stepbar-compact .sc-dot{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800;
+  background:var(--surface2);color:var(--t3);
+}
+.stepbar-compact .sc-dot.done{background:var(--teal);color:#f0efe8}
+.stepbar-compact .sc-dot.active{background:var(--surface);color:var(--teal);border:2px solid var(--teal)}
+.stepbar-compact .sc-line{width:16px;height:2px;background:var(--surface2);border-radius:1px}
+.stepbar-compact .sc-line.done{background:var(--teal)}
+.stepbar-compact .sc-label{font-size:11px;color:var(--t2);font-weight:500;margin-left:4px}
+
+/* ============ 2. FEATURECARD ============ */
+.featurecard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px 22px;
+  display:flex;gap:16px;align-items:flex-start;
+  transition:all .2s;position:relative;
+}
+.featurecard:hover{border-color:var(--border-strong);box-shadow:0 8px 20px -10px rgba(28,28,26,.12)}
+.featurecard-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:18px;
+}
+.featurecard-body{flex:1;min-width:0}
+.featurecard-title{font-size:15px;font-weight:700;letter-spacing:-.2px;margin-bottom:4px}
+.featurecard-text{font-size:13px;color:var(--t2);line-height:1.6}
+.featurecard-text strong{color:var(--t1);font-weight:600}
+.featurecard-dismiss{
+  position:absolute;top:12px;right:12px;
+  width:24px;height:24px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--t3);cursor:pointer;
+  transition:all .15s;
+}
+.featurecard-dismiss:hover{background:var(--surface2);color:var(--t1)}
+.featurecard-action{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:10px;padding:6px 12px;border-radius:6px;
+  background:var(--teal-bg);color:var(--teal);
+  font-size:12px;font-weight:600;border:none;cursor:pointer;
+  transition:all .15s;
+}
+.featurecard-action:hover{background:var(--teal);color:#f0efe8}
+
+/* Collapsible state */
+.featurecard.collapsed .featurecard-text,
+.featurecard.collapsed .featurecard-action{display:none}
+.featurecard.collapsed{padding:12px 16px;gap:10px}
+.featurecard.collapsed .featurecard-icon{width:28px;height:28px;font-size:14px}
+.featurecard.collapsed .featurecard-title{font-size:13px;margin-bottom:0}
+
+.fc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+/* ============ 3. OVERLAYGUIDE ============ */
+.overlay-demo{
+  position:relative;width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:10px;
+  border:1px solid var(--border);overflow:hidden;
+}
+.overlay-mask{
+  position:absolute;inset:0;background:var(--overlay);
+  border-radius:10px;z-index:2;
+  transition:opacity .3s;
+}
+.overlay-spotlight{
+  position:absolute;z-index:3;
+  border:2px solid var(--teal);border-radius:8px;
+  box-shadow:0 0 0 9999px rgba(28,28,26,.55);
+  transition:all .4s ease;
+}
+.overlay-tooltip{
+  position:absolute;z-index:4;
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:10px;padding:14px 16px;
+  box-shadow:0 12px 28px -8px rgba(28,28,26,.2);
+  max-width:220px;
+}
+.overlay-tooltip::before{
+  content:'';position:absolute;width:10px;height:10px;
+  background:var(--surface);border:1px solid var(--border-strong);
+  transform:rotate(45deg);
+}
+.overlay-tooltip.arrow-top::before{bottom:-6px;left:24px;border-top:none;border-left:none}
+.overlay-tooltip.arrow-left::before{right:-6px;top:14px;border-bottom:none;border-left:none}
+.overlay-tooltip.arrow-bottom::before{top:-6px;left:24px;border-bottom:none;border-right:none}
+.ot-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.ot-text{font-size:12px;color:var(--t2);line-height:1.5}
+.ot-step-indicator{
+  display:flex;align-items:center;gap:6px;margin-top:10px;
+}
+.ot-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--surface2);
+}
+.ot-dot.active{background:var(--teal)}
+.ot-nav{
+  display:flex;gap:6px;margin-top:10px;
+}
+.ot-nav button{
+  padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;
+  border:none;cursor:pointer;transition:all .15s;
+}
+.ot-nav .ot-skip{background:transparent;color:var(--t3)}
+.ot-nav .ot-skip:hover{color:var(--t1)}
+.ot-nav .ot-next{background:var(--teal);color:#f0efe8}
+.ot-nav .ot-next:hover{transform:translateY(-1px);box-shadow:0 4px 12px -4px rgba(13,82,69,.3)}
+
+/* Layout mock inside overlay demo */
+.layout-mock{position:absolute;inset:0;display:grid;grid-template-columns:260px 1fr 280px;grid-template-rows:42px 1fr 36px;gap:0}
+.lm-topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px}
+.lm-topbar-title{font-size:11px;font-weight:700;color:var(--t1)}
+.lm-topbar-pills{display:flex;gap:4px;margin-left:auto}
+.lm-topbar-pill{padding:3px 8px;border-radius:4px;font-size:9px;font-weight:600;background:var(--bg);color:var(--t3)}
+.lm-topbar-pill.active{background:var(--teal-bg);color:var(--teal)}
+.lm-left{background:var(--surface);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:8px}
+.lm-left-block{height:24px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
+.lm-left-block.tall{height:60px}
+.lm-center{background:var(--bg);padding:16px;display:flex;flex-direction:column;gap:6px}
+.lm-center-line{height:8px;background:var(--surface2);border-radius:3px}
+.lm-center-line.short{width:60%}
+.lm-right{background:var(--surface);border-left:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:8px}
+.lm-right-block{height:20px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
+.lm-right-block.chat{height:40px}
+.lm-bottom{grid-column:1/-1;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px}
+.lm-phase{padding:3px 10px;border-radius:4px;font-size:9px;font-weight:600;background:var(--bg);color:var(--t3)}
+.lm-phase.active{background:var(--teal);color:#f0efe8}
+
+/* ============ 4. EXERCISETIP ============ */
+.exercisetip{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:0;overflow:hidden;
+  max-width:340px;
+  box-shadow:0 20px 40px -16px rgba(28,28,26,.2);
+}
+.et-header{
+  padding:16px 20px 12px;
+  background:linear-gradient(135deg,var(--teal-bg) 0%,var(--surface) 100%);
+  border-bottom:1px solid var(--border);
+}
+.et-type-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:4px;
+  background:var(--teal);color:#f0efe8;
+  font-size:10px;font-weight:700;letter-spacing:.3px;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.et-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.et-body{padding:16px 20px}
+.et-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.et-step{display:flex;gap:10px;align-items:flex-start}
+.et-step-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:var(--t2);flex-shrink:0;
+}
+.et-step-text{font-size:12px;color:var(--t2);line-height:1.5}
+.et-step-text strong{color:var(--t1);font-weight:600}
+.et-anim-area{
+  width:100%;aspect-ratio:5/3;background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:8px;
+}
+.et-anim-area svg{width:100%;height:100%;display:block}
+.et-start{
+  width:100%;padding:10px;border-radius:8px;
+  background:var(--teal);color:#f0efe8;border:none;
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .15s;
+}
+.et-start:hover{transform:translateY(-1px);box-shadow:0 8px 20px -6px rgba(13,82,69,.3)}
+
+.et-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+
+/* ============ 5. TOOLHINT ============ */
+.toolhint-demo{
+  position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;
+}
+.th-trigger{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:8px;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:13px;font-weight:600;color:var(--t1);
+  cursor:pointer;transition:all .15s;
+}
+.th-trigger:hover{border-color:var(--border-strong);background:var(--surface2)}
+.th-trigger-icon{
+  width:24px;height:24px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;
+}
+.th-bubble{
+  position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);
+  background:var(--t1);color:#e8e6df;
+  padding:10px 14px;border-radius:8px;
+  font-size:12px;line-height:1.5;white-space:nowrap;
+  box-shadow:0 8px 24px -8px rgba(28,28,26,.3);
+  animation:th-float 3s ease-in-out infinite;
+}
+.th-bubble::after{
+  content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:6px solid transparent;border-top-color:var(--t1);
+}
+.th-bubble .th-key{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:1px 5px;border-radius:3px;
+  background:rgba(255,255,255,.12);font-size:10px;font-weight:600;
+  font-family:SF Mono,Menlo,monospace;margin-left:6px;
+}
+.th-bubble .th-close{
+  position:absolute;top:4px;right:6px;
+  font-size:9px;color:rgba(255,255,255,.4);cursor:pointer;
+}
+.th-bubble .th-close:hover{color:rgba(255,255,255,.8)}
+
+.th-row{display:flex;gap:40px;align-items:flex-end;flex-wrap:wrap;padding-top:50px}
+
+@keyframes th-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+
+/* ============ SCENARIO TABLE ============ */
+.scenario-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  margin-bottom:32px;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+}
+.scenario-table th{
+  background:var(--surface2);padding:10px 14px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--t2);text-align:left;
+}
+.scenario-table td{
+  padding:10px 14px;font-size:13px;color:var(--t2);line-height:1.5;
+  border-top:1px solid var(--border);vertical-align:top;
+}
+.scenario-table td strong{color:var(--t1);font-weight:600}
+.scenario-table td:first-child{font-weight:700;color:var(--t1);width:44px;text-align:center}
+.scenario-table .comp-tag{
+  display:inline-flex;padding:2px 7px;border-radius:4px;
+  font-size:10px;font-weight:600;letter-spacing:.2px;
+}
+.comp-tag.stepbar{background:var(--teal-bg);color:var(--teal)}
+.comp-tag.featurecard{background:var(--purple-bg);color:var(--purple)}
+.comp-tag.overlay{background:var(--blue-bg);color:var(--blue)}
+.comp-tag.exercisetip{background:var(--amber-bg);color:var(--amber)}
+.comp-tag.toolhint{background:var(--green-bg);color:var(--green)}
+
+/* ============ INTEGRATION EXAMPLES ============ */
+.integration-frame{
+  width:100%;aspect-ratio:16/9;position:relative;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;margin-bottom:16px;
+}
+.int-caption{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:24px}
+.int-caption strong{color:var(--t1);font-weight:600}
+
+/* ============ SIGNATURE / DESIGN PRINCIPLES ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:40px 44px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.25) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:40px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#7ab5a4;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#5dcaa5}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#5dcaa5;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:520px}
+.sig p strong{color:#e8e6df;font-weight:600}
+
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#5dcaa5;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+/* ============ ANIMATIONS ============ */
+
+/* StepBar pulse for active dot */
+@keyframes step-pulse{0%,100%{box-shadow:0 0 0 3px var(--teal-bg)}50%{box-shadow:0 0 0 6px rgba(13,82,69,.1)}}
+.stepbar-item.active .stepbar-dot{animation:step-pulse 2s ease infinite}
+
+/* FeatureCard slide-in */
+@keyframes fc-slide-in{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+.featurecard{animation:fc-slide-in .4s ease both}
+.fc-grid .featurecard:nth-child(2){animation-delay:.1s}
+.fc-grid .featurecard:nth-child(3){animation-delay:.2s}
+
+/* OverlayGuide spotlight breathe */
+@keyframes spotlight-breathe{0%,100%{box-shadow:0 0 0 9999px rgba(28,28,26,.55),0 0 0 3px var(--teal)}50%{box-shadow:0 0 0 9999px rgba(28,28,26,.55),0 0 0 5px rgba(13,82,69,.4)}}
+
+/* ExerciseTip drag animation */
+@keyframes drag-demo{
+  0%,10%{transform:translate(0,0)}
+  30%{transform:translate(40px,-10px)}
+  50%{transform:translate(80px,0)}
+  60%{transform:translate(80px,0) scale(.95)}
+  70%,100%{transform:translate(80px,0) scale(1)}
+}
+@keyframes click-demo{
+  0%,40%{r:0;opacity:0}
+  50%{r:8;opacity:.3}
+  70%,100%{r:0;opacity:0}
+}
+@keyframes select-flash{
+  0%,40%{fill:var(--surface2)}
+  50%{fill:var(--teal-bg)}
+  70%,100%{fill:var(--surface2)}
+}
+
+/* ToolHint entrance */
+@keyframes th-enter{0%{opacity:0;transform:translateX(-50%) translateY(6px)}100%{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Checkmark draw */
+@keyframes check-draw{0%{stroke-dashoffset:20}100%{stroke-dashoffset:0}}
+
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:40px}
+  header{flex-direction:column;gap:20px}
+  .meta{text-align:left}
+  .fc-grid,.et-grid,.notes{grid-template-columns:1fr}
+  .sig-row{flex-direction:column}
+  .sig{padding:28px 24px}
+  .scenario-table{font-size:12px}
+  .scenario-table th,.scenario-table td{padding:8px 10px}
+  .th-row{flex-direction:column;align-items:flex-start;gap:24px}
+  .layout-mock{grid-template-columns:1fr;grid-template-rows:auto}
+  .lm-left,.lm-right{display:none}
+  .stepbar{flex-direction:column;gap:12px}
+  .stepbar-item::after{display:none}
+  .overlay-demo{aspect-ratio:4/3}
+  .et-grid .exercisetip{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">G</div>
+      <div class="brand-tx">
+        <div class="brand-a">Live Lesson · 引导设计</div>
+        <div class="brand-b">Guidance System · Design Spec</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">类型</span><span class="meta-v">设计系统</span></div>
+      <div class="meta-pair"><span class="meta-lb">版本</span><span class="meta-v">v1.0</span></div>
+      <div class="meta-pair"><span class="meta-lb">组件</span><span class="meta-v">5 种</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Guidance System</span>
+      <span class="dot"></span>
+      5 种组件 · 13 个场景 · 完整引导体系
+    </div>
+    <h1>每一步都<em>清晰</em>，<br>每个人都<em>不迷路</em>。</h1>
+    <p class="sub">
+      统一的引导组件设计系统，覆盖<strong>学生端 8 个场景 + 教师端 5 个场景</strong>。
+      从加入课堂到查看报告，让用户在关键节点获得<strong>恰到好处</strong>的帮助。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="student-guide.html">学生端指南 →</a>
+      <a class="cta sec" href="teacher-guide.html">教师端指南</a>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- DESIGN PRINCIPLES -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow"><span class="dot"></span> Design Principles</div>
+        <h2>引导的<em>四项原则</em></h2>
+        <p>
+          好的引导让人<strong>感觉不到它的存在</strong>——在需要时出现，理解后消失，不打断沉浸的学习体验。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t"><strong>及时 · Timely</strong>在困惑发生的那一刻出现，而不是提前堆砌信息。首次出现自动展示，之后记忆关闭状态。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t"><strong>简洁 · Concise</strong>每条引导只传达一个核心信息。一句话说清楚，看完即可行动。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t"><strong>可跳过 · Skippable</strong>尊重熟练用户。所有引导都可关闭、跳过或折叠，不阻塞核心操作流程。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">4</div>
+          <div class="sig-item-t"><strong>上下文 · Contextual</strong>引导嵌入当前界面，指向具体位置。不跳转、不弹窗、不脱离上下文。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SCENARIO OVERVIEW -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">00 —</span>
+      <h2>场景全景 <span class="en">Scenario Map</span></h2>
+    </div>
+    <span class="hint">学生 8 + 教师 5 = 13 场景</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">覆盖学生和教师的<strong>完整使用旅程</strong>。每个场景对应一种引导组件，确保用户在关键节点不迷失。</p>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--teal)">学生端</h3>
+    <table class="scenario-table" style="margin-bottom:24px">
+      <thead>
+        <tr><th>#</th><th>阶段</th><th>核心问题</th><th>组件</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>S1</strong></td><td><strong>加入课堂</strong> — 输入课堂码 + 姓名</td><td>"课堂码从哪来？要几位？"</td><td><span class="comp-tag stepbar">StepBar</span></td></tr>
+        <tr><td><strong>S2</strong></td><td><strong>等待大厅</strong> — 老师未开始</td><td>"要等多久？能做什么？"</td><td><span class="comp-tag featurecard">FeatureCard</span></td></tr>
+        <tr><td><strong>S3</strong></td><td><strong>首次进入</strong> — 课堂五区布局</td><td>"左右面板是什么？怎么切换？"</td><td><span class="comp-tag overlay">OverlayGuide</span></td></tr>
+        <tr><td><strong>S4</strong></td><td><strong>Listen</strong> — 任务说明 + 音频 + 确认</td><td>"为什么先听？按钮在哪？"</td><td><span class="comp-tag featurecard">FeatureCard</span></td></tr>
+        <tr><td><strong>S5</strong></td><td><strong>Practice</strong> — 7 种练习类型首次出现</td><td>"怎么拖拽？怎么选？提交在哪？"</td><td><span class="comp-tag exercisetip">ExerciseTip</span></td></tr>
+        <tr><td><strong>S6</strong></td><td><strong>AI 工具</strong> — 翻译 / AI Ask / Hint</td><td>"什么时候用？怎么激活？"</td><td><span class="comp-tag toolhint">ToolHint</span></td></tr>
+        <tr><td><strong>S7</strong></td><td><strong>Discuss</strong> — Socratic 对话</td><td>"不打分？要说多少？"</td><td><span class="comp-tag featurecard">FeatureCard</span></td></tr>
+        <tr><td><strong>S8</strong></td><td><strong>Report</strong> — 策略得分 + 徽章</td><td>"分数怎么看？颜色含义？"</td><td><span class="comp-tag featurecard">FeatureCard</span></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--purple)">教师端</h3>
+    <table class="scenario-table">
+      <thead>
+        <tr><th>#</th><th>阶段</th><th>核心问题</th><th>组件</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>T1</strong></td><td><strong>创建课堂</strong> — 选课 + 创建 Session</td><td>"创建后怎么分享给学生？"</td><td><span class="comp-tag stepbar">StepBar</span></td></tr>
+        <tr><td><strong>T2</strong></td><td><strong>候场</strong> — 等待学生加入</td><td>"人数够了吗？怎么开始？"</td><td><span class="comp-tag featurecard">FeatureCard</span></td></tr>
+        <tr><td><strong>T3</strong></td><td><strong>仪表盘</strong> — Timeline + Observation</td><td>"红色标签什么意思？"</td><td><span class="comp-tag overlay">OverlayGuide</span></td></tr>
+        <tr><td><strong>T4</strong></td><td><strong>干预</strong> — 发消息 / 看个人详情</td><td>"什么时候该介入？"</td><td><span class="comp-tag toolhint">ToolHint</span></td></tr>
+        <tr><td><strong>T5</strong></td><td><strong>结束</strong> — 结束课堂 + 看汇总</td><td>"什么时候该结束？"</td><td><span class="comp-tag toolhint">ToolHint</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMPONENT 1 — StepBar -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>StepBar <span class="en">嵌入式步骤条</span></h2>
+    </div>
+    <span class="hint">S1 · T1 · T2</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">
+      水平排列步骤，<strong>当前步骤高亮、已完成步骤打勾</strong>。适合线性流程（加入课堂、创建课堂），嵌入页面顶部或卡片内。
+    </p>
+
+    <!-- Demo: Student Join Flow -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S1</span> 学生加入课堂 · 4 步</div>
+      <div class="stepbar">
+        <div class="stepbar-item done">
+          <div class="stepbar-dot">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stepbar-title">打开链接</div>
+          <div class="stepbar-sub">访问 /join 页面</div>
+        </div>
+        <div class="stepbar-item done">
+          <div class="stepbar-dot">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stepbar-title">输入课堂码</div>
+          <div class="stepbar-sub">老师提供的 6 位码</div>
+        </div>
+        <div class="stepbar-item active">
+          <div class="stepbar-dot">3</div>
+          <div class="stepbar-title">输入姓名</div>
+          <div class="stepbar-sub">用中文真名</div>
+        </div>
+        <div class="stepbar-item">
+          <div class="stepbar-dot">4</div>
+          <div class="stepbar-title">进入课堂</div>
+          <div class="stepbar-sub">点击"加入"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo: Teacher Create Flow -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">T1</span> 教师创建课堂 · 3 步</div>
+      <div class="stepbar">
+        <div class="stepbar-item done">
+          <div class="stepbar-dot">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stepbar-title">选择课程</div>
+          <div class="stepbar-sub">从课程列表选取</div>
+        </div>
+        <div class="stepbar-item active">
+          <div class="stepbar-dot">2</div>
+          <div class="stepbar-title">创建 Session</div>
+          <div class="stepbar-sub">获得 6 位课堂码</div>
+        </div>
+        <div class="stepbar-item">
+          <div class="stepbar-dot">3</div>
+          <div class="stepbar-title">分享给学生</div>
+          <div class="stepbar-sub">投屏或发送链接</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo: Compact variant -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">compact</span> 紧凑模式 · 单行显示</div>
+      <div class="stepbar-compact">
+        <div class="sc-dot done">
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="sc-line done"></div>
+        <div class="sc-dot done">
+          <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="sc-line done"></div>
+        <div class="sc-dot active">3</div>
+        <div class="sc-line"></div>
+        <div class="sc-dot">4</div>
+        <div class="sc-label">步骤 3 / 4 — 输入姓名</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMPONENT 2 — FeatureCard -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>FeatureCard <span class="en">功能说明卡</span></h2>
+    </div>
+    <span class="hint">S2 · S4 · S7 · S8 · T2</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">
+      标题 + 一句话说明 + 可选图标。<strong>首次自动展示，可折叠/关闭</strong>，带"知道了"按钮。适合阶段说明（Listen / Discuss / Report）和状态通知（等待大厅）。
+    </p>
+
+    <!-- Demo: 3 FeatureCards -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S4 / S7 / S8</span> 阶段说明卡示例</div>
+      <div class="fc-grid">
+
+        <!-- Listen -->
+        <div class="featurecard">
+          <div class="featurecard-icon" style="background:var(--blue-bg);color:var(--blue)">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3a4 4 0 0 0-4 4v3a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="1.5"/><path d="M6 10v1a4 4 0 0 0 8 0v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10 15v2M8 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="featurecard-body">
+            <div class="featurecard-title">Listen 阶段</div>
+            <div class="featurecard-text">先<strong>听任务说明和音频</strong>，理解阅读材料背景。听完后点击底部的"确认"按钮进入下一步。</div>
+            <button class="featurecard-action" onclick="this.closest('.featurecard').classList.add('collapsed')">知道了</button>
+          </div>
+          <div class="featurecard-dismiss" onclick="this.closest('.featurecard').style.display='none'" title="关闭">✕</div>
+        </div>
+
+        <!-- Discuss -->
+        <div class="featurecard">
+          <div class="featurecard-icon" style="background:var(--purple-bg);color:var(--purple)">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 5h8a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H8l-3 2v-2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5"/><path d="M8 5V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <div class="featurecard-body">
+            <div class="featurecard-title">Discuss 阶段</div>
+            <div class="featurecard-text">和 AI 进行 <strong>Socratic 对话</strong>，不打分！畅所欲言即可。AI 会引导你深入思考文章的核心观点。</div>
+            <button class="featurecard-action" onclick="this.closest('.featurecard').classList.add('collapsed')">知道了</button>
+          </div>
+          <div class="featurecard-dismiss" onclick="this.closest('.featurecard').style.display='none'" title="关闭">✕</div>
+        </div>
+
+        <!-- Report -->
+        <div class="featurecard">
+          <div class="featurecard-icon" style="background:var(--amber-bg);color:var(--amber)">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 17V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12l-3.5-2L10 17l-3.5-2L3 17Z" stroke="currentColor" stroke-width="1.5"/><path d="M7 7h6M7 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="featurecard-body">
+            <div class="featurecard-title">Report 阶段</div>
+            <div class="featurecard-text">查看你的<strong>策略得分和徽章</strong>。绿色 = 掌握，黄色 = 基本理解，红色 = 需要加强。点击维度查看详情。</div>
+            <button class="featurecard-action" onclick="this.closest('.featurecard').classList.add('collapsed')">知道了</button>
+          </div>
+          <div class="featurecard-dismiss" onclick="this.closest('.featurecard').style.display='none'" title="关闭">✕</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Demo: Waiting lobby card -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S2</span> 等待大厅 · 状态说明卡</div>
+      <div style="max-width:400px">
+        <div class="featurecard">
+          <div class="featurecard-icon" style="background:var(--teal-bg);color:var(--teal)">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="featurecard-body">
+            <div class="featurecard-title">等待老师开始</div>
+            <div class="featurecard-text">你已成功加入课堂！老师正在准备中，<strong>课堂开始后会自动跳转</strong>。可以先熟悉一下界面布局。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo: Collapsed state -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">collapsed</span> 折叠状态 · 点击"知道了"后</div>
+      <div style="max-width:320px">
+        <div class="featurecard collapsed">
+          <div class="featurecard-icon" style="background:var(--blue-bg);color:var(--blue)">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3a4 4 0 0 0-4 4v3a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <div class="featurecard-body">
+            <div class="featurecard-title">Listen 阶段</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMPONENT 3 — OverlayGuide -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>OverlayGuide <span class="en">布局叠加引导</span></h2>
+    </div>
+    <span class="hint">S3 · T3</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">
+      半透明遮罩 + <strong>聚光灯高亮关键区域</strong>。分步引导：左面板 → 右面板 → 顶栏 → 底部阶段条。可跳过 / 下一步。适合首次进入课堂的布局介绍。
+    </p>
+
+    <!-- Demo: Classroom Layout Guide - Step 1 -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S3</span> 课堂五区布局引导 · Step 1: 左面板</div>
+      <div class="overlay-demo" id="overlay-demo">
+
+        <!-- Mock classroom layout -->
+        <div class="layout-mock">
+          <div class="lm-topbar">
+            <div class="lm-topbar-title">Ideal Beauty Reading</div>
+            <div class="lm-topbar-pills">
+              <div class="lm-topbar-pill active">Task 1</div>
+              <div class="lm-topbar-pill">Task 2</div>
+              <div class="lm-topbar-pill">Task 3</div>
+            </div>
+          </div>
+          <div class="lm-left">
+            <div class="lm-left-block" style="height:16px;width:60%;background:var(--teal-bg)"></div>
+            <div class="lm-left-block tall"></div>
+            <div class="lm-left-block tall"></div>
+            <div class="lm-left-block"></div>
+          </div>
+          <div class="lm-center">
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line short"></div>
+            <div style="height:8px"></div>
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line short"></div>
+            <div style="height:8px"></div>
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line short"></div>
+          </div>
+          <div class="lm-right">
+            <div class="lm-right-block" style="width:50%;background:var(--teal-bg)"></div>
+            <div class="lm-right-block chat"></div>
+            <div class="lm-right-block chat"></div>
+            <div class="lm-right-block" style="margin-top:auto"></div>
+          </div>
+          <div class="lm-bottom">
+            <div class="lm-phase">Listen</div>
+            <div class="lm-phase active">Practice</div>
+            <div class="lm-phase">Discuss</div>
+            <div class="lm-phase">Report</div>
+          </div>
+        </div>
+
+        <!-- Overlay spotlight on left panel -->
+        <div class="overlay-spotlight" id="spotlight" style="top:42px;left:0;width:260px;height:calc(100% - 42px - 36px);animation:spotlight-breathe 2s ease infinite;border-radius:0"></div>
+
+        <!-- Tooltip -->
+        <div class="overlay-tooltip arrow-left" style="top:80px;left:274px">
+          <div class="ot-title">阅读材料面板</div>
+          <div class="ot-text">左侧显示课文原文。可以<strong>选中单词或短语</strong>查看翻译。滚动阅读全文。</div>
+          <div class="ot-step-indicator">
+            <div class="ot-dot active"></div>
+            <div class="ot-dot"></div>
+            <div class="ot-dot"></div>
+            <div class="ot-dot"></div>
+          </div>
+          <div class="ot-nav">
+            <button class="ot-skip" onclick="document.getElementById('overlay-demo').querySelector('.overlay-mask,.overlay-spotlight,.overlay-tooltip').style.display='none'">跳过</button>
+            <button class="ot-next">下一步</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Step indicators reference -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">steps</span> 四步引导顺序</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--teal-bg);border-radius:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--teal)">1</span>
+          <span style="font-size:12px;color:var(--teal);font-weight:500">左面板 · 阅读材料</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--t2)">2</span>
+          <span style="font-size:12px;color:var(--t2);font-weight:500">中间区域 · 练习/对话</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--t2)">3</span>
+          <span style="font-size:12px;color:var(--t2);font-weight:500">右面板 · AI 助教</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--t2)">4</span>
+          <span style="font-size:12px;color:var(--t2);font-weight:500">底部阶段条 · 进度</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMPONENT 4 — ExerciseTip -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>ExerciseTip <span class="en">练习类型引导</span></h2>
+    </div>
+    <span class="hint">S5 · 7 种练习类型</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">
+      每种练习首次出现时弹出卡片，包含<strong>图示 + 操作要点 + 动画演示</strong>。"开始练习"按钮关闭后进入练习。卡片不再出现（记忆已查看的类型）。
+    </p>
+
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S5</span> 三种代表练习 · Quiz / Match / Select Evidence</div>
+      <div class="et-grid">
+
+        <!-- Quiz -->
+        <div class="exercisetip">
+          <div class="et-header">
+            <div class="et-type-badge">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#f0efe8" stroke-width="1.5"/><path d="M4 5h2" stroke="#f0efe8" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Quiz 选择题
+            </div>
+            <div class="et-title">阅读后选择正确答案</div>
+          </div>
+          <div class="et-body">
+            <div class="et-anim-area">
+              <svg viewBox="0 0 200 120" fill="none">
+                <!-- Question text -->
+                <rect x="12" y="8" width="176" height="14" rx="3" fill="#edece7"/>
+                <rect x="12" y="8" width="120" height="14" rx="3" fill="#e4e2d8"/>
+                <!-- Options -->
+                <g>
+                  <rect x="12" y="30" width="176" height="20" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                  <circle cx="26" cy="40" r="5" fill="#edece7"/>
+                  <text x="24" y="42.5" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92" text-anchor="middle" font-weight="600">A</text>
+                  <rect x="38" y="36" width="80" height="8" rx="2" fill="#edece7"/>
+                </g>
+                <g>
+                  <rect x="12" y="54" width="176" height="20" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5">
+                    <animate attributeName="fill" values="#fbfaf7;#dfece8;#dfece8;#fbfaf7" dur="4s" repeatCount="indefinite" begin="1s"/>
+                  </rect>
+                  <circle cx="26" cy="64" r="5" fill="#edece7">
+                    <animate attributeName="fill" values="#edece7;#0d5245;#0d5245;#edece7" dur="4s" repeatCount="indefinite" begin="1s"/>
+                  </circle>
+                  <text x="24" y="66.5" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92" text-anchor="middle" font-weight="600">B
+                    <animate attributeName="fill" values="#9c9a92;#f0efe8;#f0efe8;#9c9a92" dur="4s" repeatCount="indefinite" begin="1s"/>
+                  </text>
+                  <rect x="38" y="60" width="100" height="8" rx="2" fill="#edece7"/>
+                </g>
+                <g>
+                  <rect x="12" y="78" width="176" height="20" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                  <circle cx="26" cy="88" r="5" fill="#edece7"/>
+                  <text x="24" y="90.5" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92" text-anchor="middle" font-weight="600">C</text>
+                  <rect x="38" y="84" width="90" height="8" rx="2" fill="#edece7"/>
+                </g>
+                <!-- Click indicator -->
+                <circle cx="26" cy="64" r="0" fill="rgba(13,82,69,.2)">
+                  <animate attributeName="r" values="0;12;0" dur="4s" repeatCount="indefinite" begin="1.2s"/>
+                  <animate attributeName="opacity" values="0;.3;0" dur="4s" repeatCount="indefinite" begin="1.2s"/>
+                </circle>
+              </svg>
+            </div>
+            <div class="et-steps">
+              <div class="et-step">
+                <div class="et-step-num">1</div>
+                <div class="et-step-text">阅读题目和选项</div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">2</div>
+                <div class="et-step-text"><strong>点击选项</strong>选择答案</div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">3</div>
+                <div class="et-step-text">完成所有题目后<strong>提交</strong></div>
+              </div>
+            </div>
+            <button class="et-start">开始练习</button>
+          </div>
+        </div>
+
+        <!-- Match -->
+        <div class="exercisetip">
+          <div class="et-header">
+            <div class="et-type-badge">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 3h3M6 3h3M1 7h3M6 7h3" stroke="#f0efe8" stroke-width="1.2" stroke-linecap="round"/><path d="M4 3L6 7" stroke="#f0efe8" stroke-width="1" stroke-dasharray="1 1"/></svg>
+              Match 配对
+            </div>
+            <div class="et-title">将左右两列正确配对</div>
+          </div>
+          <div class="et-body">
+            <div class="et-anim-area">
+              <svg viewBox="0 0 200 120" fill="none">
+                <!-- Left column -->
+                <rect x="10" y="10" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="20" y="18" width="40" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="10" y="40" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="20" y="48" width="50" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="10" y="70" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="20" y="78" width="35" height="6" rx="2" fill="#e4e2d8"/>
+                <!-- Right column -->
+                <rect x="120" y="10" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="130" y="18" width="45" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="120" y="40" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="130" y="48" width="35" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="120" y="70" width="70" height="22" rx="5" fill="#fbfaf7" stroke="#e4e2d8" stroke-width=".5"/>
+                <rect x="130" y="78" width="50" height="6" rx="2" fill="#e4e2d8"/>
+                <!-- Animated connection line -->
+                <line x1="80" y1="21" x2="120" y2="51" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="4 2" opacity="0">
+                  <animate attributeName="opacity" values="0;0;1;1;1;0" dur="5s" repeatCount="indefinite"/>
+                </line>
+                <line x1="80" y1="51" x2="120" y2="81" stroke="var(--teal)" stroke-width="1.5" stroke-dasharray="4 2" opacity="0">
+                  <animate attributeName="opacity" values="0;0;0;1;1;0" dur="5s" repeatCount="indefinite" begin=".8s"/>
+                </line>
+                <!-- Drag indicator dot -->
+                <circle cx="80" cy="21" r="4" fill="var(--teal)" opacity="0">
+                  <animate attributeName="opacity" values="0;0;.8;.8;0" dur="5s" repeatCount="indefinite"/>
+                  <animate attributeName="cx" values="80;80;80;120;120" dur="5s" repeatCount="indefinite"/>
+                  <animate attributeName="cy" values="21;21;21;51;51" dur="5s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+            </div>
+            <div class="et-steps">
+              <div class="et-step">
+                <div class="et-step-num">1</div>
+                <div class="et-step-text">阅读左列和右列内容</div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">2</div>
+                <div class="et-step-text">从右列下拉菜单中<strong>选择匹配项</strong></div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">3</div>
+                <div class="et-step-text">配对完成后<strong>提交</strong></div>
+              </div>
+            </div>
+            <button class="et-start">开始练习</button>
+          </div>
+        </div>
+
+        <!-- Select Evidence -->
+        <div class="exercisetip">
+          <div class="et-header">
+            <div class="et-type-badge">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="1" y="2" width="8" height="6" rx="1" stroke="#f0efe8" stroke-width="1.2"/><path d="M3 4h4M3 6h2" stroke="#f0efe8" stroke-width=".8" stroke-linecap="round"/></svg>
+              Select Evidence 文本选证
+            </div>
+            <div class="et-title">从文章中选出关键证据</div>
+          </div>
+          <div class="et-body">
+            <div class="et-anim-area">
+              <svg viewBox="0 0 200 120" fill="none">
+                <!-- Text lines -->
+                <rect x="10" y="10" width="180" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="10" y="22" width="160" height="6" rx="2" fill="#e4e2d8"/>
+                <!-- Highlighted sentence -->
+                <rect x="10" y="34" width="140" height="8" rx="2" fill="#e4e2d8">
+                  <animate attributeName="fill" values="#e4e2d8;#dfece8;#dfece8;#e4e2d8" dur="5s" repeatCount="indefinite" begin=".5s"/>
+                </rect>
+                <rect x="10" y="34" width="0" height="8" rx="2" fill="rgba(13,82,69,.15)">
+                  <animate attributeName="width" values="0;0;140;140;0" dur="5s" repeatCount="indefinite" begin=".5s"/>
+                </rect>
+                <rect x="10" y="48" width="180" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="10" y="60" width="120" height="6" rx="2" fill="#e4e2d8"/>
+                <rect x="10" y="72" width="170" height="6" rx="2" fill="#e4e2d8"/>
+                <!-- Second highlight -->
+                <rect x="10" y="84" width="160" height="8" rx="2" fill="#e4e2d8">
+                  <animate attributeName="fill" values="#e4e2d8;#e4e2d8;#e4e2d8;#dfece8;#e4e2d8" dur="5s" repeatCount="indefinite" begin="1.5s"/>
+                </rect>
+                <rect x="10" y="98" width="140" height="6" rx="2" fill="#e4e2d8"/>
+                <!-- Function tag appearing -->
+                <g opacity="0">
+                  <animate attributeName="opacity" values="0;0;1;1;0" dur="5s" repeatCount="indefinite" begin=".5s"/>
+                  <rect x="155" y="32" width="36" height="12" rx="3" fill="var(--teal)"/>
+                  <text x="173" y="41" font-family="Plus Jakarta Sans" font-size="5.5" fill="#f0efe8" text-anchor="middle" font-weight="600">Main Idea</text>
+                </g>
+              </svg>
+            </div>
+            <div class="et-steps">
+              <div class="et-step">
+                <div class="et-step-num">1</div>
+                <div class="et-step-text">阅读文章，找到关键句子</div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">2</div>
+                <div class="et-step-text"><strong>点击句子</strong>选中，再选择功能标签</div>
+              </div>
+              <div class="et-step">
+                <div class="et-step-num">3</div>
+                <div class="et-step-text">完成所有标注后<strong>提交</strong></div>
+              </div>
+            </div>
+            <button class="et-start">开始练习</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMPONENT 5 — ToolHint -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>ToolHint <span class="en">工具提示气泡</span></h2>
+    </div>
+    <span class="hint">S6 · T4 · T5</span>
+  </div>
+
+  <div class="comp-section">
+    <p class="comp-desc">
+      指向目标按钮的<strong>箭头气泡</strong>，简短文案 + 可选快捷键提示。首次出现后自动消失或点击关闭。非侵入式、不阻断操作流。
+    </p>
+
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">S6 / T4 / T5</span> 翻译 / AI Ask / 快捷键 / 干预提示</div>
+      <div class="th-row">
+
+        <!-- Translate -->
+        <div class="toolhint-demo">
+          <div class="th-bubble">
+            选中单词即可翻译
+            <span class="th-key">选中文本</span>
+            <span class="th-close">✕</span>
+            <span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--t1)"></span>
+          </div>
+          <div class="th-trigger">
+            <div class="th-trigger-icon" style="background:var(--teal-bg);color:var(--teal)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4h5M4.5 4v6M2 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 10l1.5-4L11 10M8.5 9h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            翻译
+          </div>
+        </div>
+
+        <!-- AI Ask -->
+        <div class="toolhint-demo">
+          <div class="th-bubble">
+            对文章有疑问？点击提问
+            <span class="th-key">Ctrl+K</span>
+            <span class="th-close">✕</span>
+            <span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--t1)"></span>
+          </div>
+          <div class="th-trigger">
+            <div class="th-trigger-icon" style="background:var(--purple-bg);color:var(--purple)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 5.5a1.5 1.5 0 0 1 3 0c0 1-1.5 1-1.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="10" r=".6" fill="currentColor"/></svg>
+            </div>
+            AI Ask
+          </div>
+        </div>
+
+        <!-- Hint -->
+        <div class="toolhint-demo">
+          <div class="th-bubble">
+            卡住了？获取一个小提示
+            <span class="th-close">✕</span>
+            <span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--t1)"></span>
+          </div>
+          <div class="th-trigger">
+            <div class="th-trigger-icon" style="background:var(--amber-bg);color:var(--amber)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2a3.5 3.5 0 0 0-2 6.3V10a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V8.3A3.5 3.5 0 0 0 7 2Z" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 12h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            </div>
+            Hint
+          </div>
+        </div>
+
+        <!-- Teacher: Intervene -->
+        <div class="toolhint-demo">
+          <div class="th-bubble" style="background:var(--purple);white-space:normal;max-width:180px">
+            3 位学生在 Task 2 卡住超过 3 分钟，建议查看
+            <span class="th-close">✕</span>
+            <span style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--purple)"></span>
+          </div>
+          <div class="th-trigger">
+            <div class="th-trigger-icon" style="background:var(--red-bg);color:var(--red)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v5M7 9.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/></svg>
+            </div>
+            干预提示
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- INTEGRATION EXAMPLES -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">06 —</span>
+      <h2>集成示例 <span class="en">Integration Examples</span></h2>
+    </div>
+    <span class="hint">组件在真实页面中的嵌入效果</span>
+  </div>
+
+  <div class="comp-section">
+
+    <!-- Integration 1: JoinPage + StepBar -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">JoinPage</span> StepBar 嵌入加入页面顶部</div>
+      <div class="integration-frame">
+        <!-- Mock JoinPage -->
+        <div style="position:absolute;inset:0;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:20px">
+          <!-- StepBar at top -->
+          <div style="width:90%;max-width:500px;margin-bottom:20px">
+            <div class="stepbar-compact">
+              <div class="sc-dot done">
+                <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#f0efe8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="sc-line done"></div>
+              <div class="sc-dot active">2</div>
+              <div class="sc-line"></div>
+              <div class="sc-dot">3</div>
+              <div class="sc-line"></div>
+              <div class="sc-dot">4</div>
+              <div class="sc-label">步骤 2 / 4 — 输入课堂码</div>
+            </div>
+          </div>
+          <!-- Card mockup -->
+          <div style="width:90%;max-width:380px;background:#fff;border-radius:12px;padding:28px;box-shadow:0 8px 24px -12px rgba(0,0,0,.1);text-align:center">
+            <div style="font-size:18px;font-weight:700;margin-bottom:4px;color:#1c1c1a">加入课堂</div>
+            <div style="font-size:11px;color:#9c9a92;margin-bottom:20px">输入课堂码和姓名加入</div>
+            <div style="border:1px solid #e4e2d8;border-radius:8px;padding:12px;margin-bottom:10px;text-align:left">
+              <span style="font-family:SF Mono,monospace;font-size:16px;font-weight:600;letter-spacing:.3em;color:#1c1c1a">MPD6S_</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#e6f2dc;border-radius:6px;margin-bottom:12px">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 7.5L5.5 10L11 4" stroke="#2d6a30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span style="font-size:11px;color:#2d6a30;font-weight:600">课堂已找到: Ideal Beauty Reading</span>
+            </div>
+            <div style="border:1px solid #e4e2d8;border-radius:8px;padding:12px;margin-bottom:14px;text-align:left">
+              <span style="font-size:13px;color:#9c9a92">你的姓名...</span>
+            </div>
+            <div style="background:#d5d4cf;border-radius:8px;padding:10px;text-align:center">
+              <span style="font-size:13px;font-weight:600;color:#fff">加入课堂</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="int-caption"><strong>StepBar (compact)</strong> 嵌入 JoinPage 顶部，实时显示进度。课堂码验证通过后自动前进到步骤 3。</p>
+    </div>
+
+    <!-- Integration 2: Classroom + OverlayGuide -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">Classroom</span> OverlayGuide 叠加在课堂首屏</div>
+      <div class="integration-frame">
+        <!-- Reuse layout mock with overlay -->
+        <div class="layout-mock">
+          <div class="lm-topbar">
+            <div class="lm-topbar-title">Ideal Beauty</div>
+            <div class="lm-topbar-pills">
+              <div class="lm-topbar-pill active">Task 1</div>
+              <div class="lm-topbar-pill">Task 2</div>
+              <div class="lm-topbar-pill">Task 3</div>
+            </div>
+          </div>
+          <div class="lm-left">
+            <div class="lm-left-block" style="height:16px;width:60%;background:var(--teal-bg)"></div>
+            <div class="lm-left-block tall"></div>
+            <div class="lm-left-block tall"></div>
+          </div>
+          <div class="lm-center">
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line short"></div>
+            <div style="height:8px"></div>
+            <div class="lm-center-line"></div>
+            <div class="lm-center-line short"></div>
+          </div>
+          <div class="lm-right">
+            <div class="lm-right-block" style="width:50%;background:var(--purple-bg)"></div>
+            <div class="lm-right-block chat"></div>
+            <div class="lm-right-block chat"></div>
+          </div>
+          <div class="lm-bottom">
+            <div class="lm-phase active">Listen</div>
+            <div class="lm-phase">Practice</div>
+            <div class="lm-phase">Discuss</div>
+            <div class="lm-phase">Report</div>
+          </div>
+        </div>
+        <!-- Spotlight on right panel (step 3) -->
+        <div style="position:absolute;top:42px;right:0;width:280px;height:calc(100% - 42px - 36px);border:2px solid var(--purple);box-shadow:0 0 0 9999px rgba(28,28,26,.55);z-index:3"></div>
+        <div class="overlay-tooltip arrow-left" style="position:absolute;top:60px;right:290px;z-index:4">
+          <div class="ot-title">AI 助教面板</div>
+          <div class="ot-text">右侧是 AI 助教。可以提问、获取提示，或进行 Socratic 对话。</div>
+          <div class="ot-step-indicator">
+            <div class="ot-dot"></div>
+            <div class="ot-dot"></div>
+            <div class="ot-dot active"></div>
+            <div class="ot-dot"></div>
+          </div>
+          <div class="ot-nav">
+            <button class="ot-skip">跳过</button>
+            <button class="ot-next">下一步</button>
+          </div>
+        </div>
+      </div>
+      <p class="int-caption"><strong>OverlayGuide</strong> 在首次进入课堂时触发，分 4 步介绍五区布局。图示为 Step 3 — 右面板 AI 助教。</p>
+    </div>
+
+    <!-- Integration 3: Practice + ExerciseTip -->
+    <div class="demo-area">
+      <div class="demo-label"><span class="tag">Practice</span> ExerciseTip 在首次练习时弹出</div>
+      <div class="integration-frame">
+        <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 340px;background:var(--bg)">
+          <!-- Left: practice area (blurred) -->
+          <div style="padding:20px;filter:blur(2px);opacity:.5">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--t1)">Task 1 · Quiz</div>
+            <div style="background:var(--surface);border-radius:8px;padding:16px;border:1px solid var(--border)">
+              <div style="height:8px;background:var(--surface2);border-radius:3px;width:90%;margin-bottom:12px"></div>
+              <div style="height:28px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:28px;background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:8px"></div>
+              <div style="height:28px;background:var(--surface);border:1px solid var(--border);border-radius:6px"></div>
+            </div>
+          </div>
+          <!-- Right: ExerciseTip overlay -->
+          <div style="padding:16px;display:flex;align-items:flex-start;background:rgba(28,28,26,.03);border-left:1px solid var(--border)">
+            <div class="exercisetip" style="max-width:100%;box-shadow:0 16px 36px -12px rgba(28,28,26,.18)">
+              <div class="et-header">
+                <div class="et-type-badge">Quiz 选择题</div>
+                <div class="et-title">阅读后选择正确答案</div>
+              </div>
+              <div class="et-body">
+                <div class="et-steps">
+                  <div class="et-step">
+                    <div class="et-step-num">1</div>
+                    <div class="et-step-text">阅读题目和选项</div>
+                  </div>
+                  <div class="et-step">
+                    <div class="et-step-num">2</div>
+                    <div class="et-step-text"><strong>点击选项</strong>选择答案</div>
+                  </div>
+                  <div class="et-step">
+                    <div class="et-step-num">3</div>
+                    <div class="et-step-text">完成后<strong>提交</strong></div>
+                  </div>
+                </div>
+                <button class="et-start">开始练习</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="int-caption"><strong>ExerciseTip</strong> 在练习区域右侧弹出，左侧练习内容虚化。点击"开始练习"后卡片消失，聚焦练习。</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- NOTES -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="notes">
+    <div>
+      <div class="note-h">触发策略</div>
+      <div class="note-b">所有引导基于 <strong>localStorage</strong> 记忆已查看状态。key 格式：<strong>guide_seen_{component}_{scene}</strong>。首次展示后设置 flag。</div>
+    </div>
+    <div>
+      <div class="note-h">无障碍</div>
+      <div class="note-b">所有组件支持 <strong>prefers-reduced-motion</strong>。OverlayGuide 提供键盘导航（Tab / Enter / Esc）。ToolHint 使用 <strong>role="tooltip"</strong>。</div>
+    </div>
+    <div>
+      <div class="note-h">实现优先级</div>
+      <div class="note-b"><strong>P0</strong>: StepBar + FeatureCard（覆盖 S1-S4）。<strong>P1</strong>: ExerciseTip（S5）。<strong>P2</strong>: OverlayGuide + ToolHint。</div>
+    </div>
+  </div>
+
+  <footer>Guidance System Design Spec v1.0 · Live Lesson · 2025</footer>
+
+</div>
+
+</body>
+</html>

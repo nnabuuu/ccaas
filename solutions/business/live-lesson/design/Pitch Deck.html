@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>EduPlatform · Pitch Deck</title>
+<script src="deck-stage.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f3ef;
+  --surface: #fbfaf7;
+  --surface2: #edece7;
+  --t1: #1c1c1a;
+  --t2: #5c5b56;
+  --t3: #9c9a92;
+  --border: rgba(28,28,26,.07);
+  --blue: #1a5fa0; --blue-bg: #e4eff8;
+  --green: #2d6612; --green-bg: #e6f2dc;
+  --amber: #7a4d0e; --amber-bg: #f6edda;
+  --red: #942929; --red-bg: #f8e6e6;
+  --purple: #3a3185; --purple-bg: #eceafe;
+  --teal: #0d5245; --teal-bg: #ddf1eb;
+  --coral: #6b2a14; --coral-bg: #f7ebe5;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+deck-stage {
+  --deck-bg: var(--bg);
+}
+
+section {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--t1);
+  padding: 80px 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Part divider slides ── */
+section.part {
+  background: var(--t1);
+  color: var(--surface);
+}
+section.part .part-label {
+  font-size: 24px; font-weight: 600; letter-spacing: 2px;
+  text-transform: uppercase; opacity: .4; margin-bottom: 20px;
+}
+section.part h1 {
+  font-size: 64px; font-weight: 800; letter-spacing: -2px; line-height: 1.1;
+}
+section.part .part-sub {
+  font-size: 26px; font-weight: 400; opacity: .5; margin-top: 16px; line-height: 1.5;
+}
+
+/* ── Content slides ── */
+section.content { background: var(--bg); }
+section.content h2 {
+  font-size: 42px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15;
+  margin-bottom: 40px;
+}
+section.content h3 {
+  font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 24px;
+}
+section.content p, section.content li {
+  font-size: 26px; line-height: 1.6; color: var(--t2);
+}
+section.content ul { list-style: none; padding: 0; }
+section.content li {
+  padding: 8px 0 8px 32px; position: relative;
+}
+section.content li::before {
+  content: ''; position: absolute; left: 0; top: 18px;
+  width: 10px; height: 10px; border-radius: 3px; background: var(--t3);
+}
+
+/* ── Extreme cards ── */
+.extreme-grid {
+  display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%;
+}
+.extreme-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 32px 36px;
+  display: flex; gap: 24px; align-items: flex-start;
+}
+.extreme-card .ex-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 800; flex-shrink: 0;
+  color: white;
+}
+.extreme-card .ex-body h4 {
+  font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -.3px;
+}
+.extreme-card .ex-body p {
+  font-size: 24px; line-height: 1.5; color: var(--t3);
+}
+
+/* ── Tag / pill ── */
+.tag {
+  display: inline-block; padding: 4px 14px; border-radius: 6px;
+  font-size: 16px; font-weight: 600; margin-right: 8px; margin-bottom: 8px;
+}
+
+/* ── Two-col layout ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+.two-col.tight { gap: 40px; }
+
+/* ── Component chip ── */
+.comp-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 10px; font-size: 20px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface); margin: 6px;
+}
+.comp-chip .chip-dot {
+  width: 10px; height: 10px; border-radius: 4px;
+}
+
+/* ── JSON block ── */
+.json-block {
+  background: var(--t1); color: #c8c6bc; border-radius: 12px;
+  padding: 28px 32px; font-family: "SF Mono", ui-monospace, monospace;
+  font-size: 18px; line-height: 1.7; white-space: pre; overflow: hidden;
+}
+.json-block .key { color: #8ab4f8; }
+.json-block .str { color: #a8d4a0; }
+.json-block .comment { color: #6b6960; }
+
+/* ── Summary slide ── */
+section.summary { background: var(--t1); color: var(--surface); }
+section.summary h2 {
+  font-size: 48px; font-weight: 800; letter-spacing: -1.5px; line-height: 1.15;
+  color: var(--surface);
+}
+section.summary li { color: rgba(240,239,232,.55); }
+section.summary li::before { background: rgba(240,239,232,.2); }
+section.summary .highlight {
+  color: rgba(240,239,232,.95); font-weight: 600;
+}
+
+/* ── Observe flow ── */
+.flow-row {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.flow-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px 28px; text-align: center;
+}
+.flow-box .fb-label { font-size: 22px; font-weight: 700; }
+.flow-box .fb-sub { font-size: 16px; color: var(--t3); margin-top: 4px; }
+.flow-arrow { font-size: 28px; color: var(--t3); }
+
+/* ── Metric cards ── */
+.metric-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.metric-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px;
+}
+.metric-card .mc-label { font-size: 16px; color: var(--t3); font-weight: 500; margin-bottom: 8px; }
+.metric-card .mc-value { font-size: 28px; font-weight: 700; }
+
+/* ── Creator features ── */
+.creator-modes {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 12px;
+}
+.creator-mode {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 32px; display: flex; flex-direction: column; gap: 12px;
+}
+.creator-mode h4 { font-size: 24px; font-weight: 700; }
+.creator-mode p { font-size: 20px; }
+.creator-mode .cm-tag {
+  display: inline-block; padding: 4px 12px; border-radius: 6px;
+  font-size: 14px; font-weight: 600; align-self: flex-start;
+}
+
+/* ── Pipeline chain ── */
+.pipeline {
+  display: flex; align-items: center; gap: 0; margin-top: 32px; flex-wrap: wrap;
+}
+.pipeline .pipe-step {
+  padding: 14px 28px; font-size: 20px; font-weight: 700;
+  border-radius: 10px; white-space: nowrap;
+}
+.pipeline .pipe-sep {
+  font-size: 24px; color: var(--t3); padding: 0 8px;
+}
+
+/* ── Title slide ── */
+section.title-slide {
+  background: var(--t1); color: var(--surface);
+  justify-content: flex-end; padding-bottom: 100px;
+}
+section.title-slide h1 {
+  font-size: 72px; font-weight: 800; letter-spacing: -3px; line-height: 1.05;
+}
+section.title-slide .subtitle {
+  font-size: 28px; font-weight: 400; opacity: .45; margin-top: 20px; line-height: 1.5;
+}
+section.title-slide .brand-mark {
+  position: absolute; top: 80px; left: 100px;
+  width: 48px; height: 48px; border-radius: 14px;
+  background: rgba(240,239,232,.1); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 800; color: rgba(240,239,232,.6);
+}
+
+/* ── Problem matrix slide ── */
+.problem-matrix {
+  display: grid; grid-template-columns: auto 1fr 1fr; gap: 0;
+  border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; background: var(--surface);
+}
+.pm-cell {
+  padding: 20px 24px; font-size: 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+}
+.pm-cell:nth-child(3n+1) { background: var(--surface2); font-weight: 700; }
+.pm-cell.header {
+  font-size: 16px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .5px;
+  border-bottom: 1px solid rgba(28,28,26,.12);
+}
+.pm-cell:last-child, .pm-cell:nth-last-child(2), .pm-cell:nth-last-child(3) {
+  border-bottom: none;
+}
+
+/* ── Transition insight ── */
+.insight-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 36px; margin-top: 24px;
+}
+.insight-card h4 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+.insight-card p { font-size: 22px; }
+
+/* ── Role cards ── */
+.role-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 12px; }
+.role-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 8px;
+}
+.role-card h4 { font-size: 22px; font-weight: 700; }
+.role-card p { font-size: 20px; }
+</style>
+</head>
+<body>
+<deck-stage>
+
+<!-- ════ Slide 01: Title ════ -->
+<section class="title-slide" data-screen-label="01 Title">
+  <div class="brand-mark">E</div>
+  <h1>AI 成为课堂基础设施<br>教师回归教育本质</h1>
+  <div class="subtitle">Describable Component · Auto-Observability · Teachingless</div>
+</section>
+
+<!-- ════ Slide 02: Part 1 Divider ════ -->
+<section class="part" data-screen-label="02 Part 1">
+  <div class="part-label">Part 1</div>
+  <h1>问题</h1>
+  <div class="part-sub">AI 进入教育的三个极端</div>
+</section>
+
+<!-- ════ Slide 03: Extreme A ════ -->
+<section class="content" data-screen-label="03 极端A">
+  <h2>极端 A — AI 替代老师</h2>
+  <div class="extreme-grid">
+    <div class="extreme-card">
+      <div class="ex-icon" style="background:var(--blue)">A</div>
+      <div class="ex-body">
+        <h4>1 对 1 Chatbot Tutor</h4>
+        <p>Khanmigo、Duolingo Max — 没有课堂、没有同伴、没有教师判断。AI 直接面对学生，教师出局。</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-card">
+    <h4>核心矛盾</h4>
+    <p>学习不只是信息传递 — 缺少课堂社交语境和教师的专业判断，AI 独角戏无法完成真正的教育。</p>
+  </div>
+</section>
+
+<!-- ════ Slide 04: Extreme B ════ -->
+<section class="content" data-screen-label="04 极端B">
+  <h2>极端 B — 老师用 AI 当工具</h2>
+  <div class="extreme-grid">
+    <div class="extreme-card">
+      <div class="ex-icon" style="background:var(--amber)">B</div>
+      <div class="ex-body">
+        <h4>ChatGPT 生成教案、PPT、出题</h4>
+        <p>AI 停留在备课环节，没有进入课堂过程。教师被迫从技术视角思考 — "prompt 怎么写"，而非教育视角。</p>
+      </div>
+    </div>
+  </div>
+  <div class="insight-card">
+    <h4>核心矛盾</h4>
+    <p>形式使用 — 技术改变了备课方式，但课堂本身没变。AI 的能力被浪费在课前阶段。</p>
+  </div>
+</section>
+
+<!-- ════ Slide 05: Extreme C ════ -->
+<section class="content" data-screen-label="05 极端C">
+  <h2>极端 C — Agent 黑盒丢给学生</h2>
+  <div class="extreme-grid">
+    <div class="extreme-card">
+      <div class="ex-icon" style="background:var(--red)">C</div>
+      <div class="ex-body">
+        <h4>用 Coze / GPTs / Dify 搭学科 Agent</h4>
+        <p>让学生自由对话 — 对话驱动，无法约束学习路径。</p>
+      </div>
+    </div>
+  </div>
+  <ul style="margin-top:24px">
+    <li><strong style="color:var(--t1)">不可控</strong> — 学生跑偏失焦，无法约束学习路径</li>
+    <li><strong style="color:var(--t1)">不可观测</strong> — 教师不知道 30 个学生和 Agent 聊了什么</li>
+    <li><strong style="color:var(--t1)">不可解释</strong> — Agent 为什么这样回答？无法归因、无法改进</li>
+  </ul>
+</section>
+
+<!-- ════ Slide 06: Problem Matrix ════ -->
+<section class="content" data-screen-label="06 共同问题">
+  <h2>共同问题 — AI 能力 vs. 教师掌控力</h2>
+  <div class="problem-matrix">
+    <div class="pm-cell header"></div>
+    <div class="pm-cell header">现状</div>
+    <div class="pm-cell header">缺失</div>
+    <div class="pm-cell">极端 A</div>
+    <div class="pm-cell">AI 直接教学</div>
+    <div class="pm-cell" style="color:var(--red)">教师不在场</div>
+    <div class="pm-cell">极端 B</div>
+    <div class="pm-cell">教师用 AI 备课</div>
+    <div class="pm-cell" style="color:var(--red)">AI 不在课堂里</div>
+    <div class="pm-cell">极端 C</div>
+    <div class="pm-cell">Agent 在课堂里</div>
+    <div class="pm-cell" style="color:var(--red)">教师看不见、管不了</div>
+  </div>
+  <div class="insight-card" style="margin-top:32px">
+    <h4 style="color:var(--teal)">我们要解决的</h4>
+    <p>AI 在课堂过程中发挥作用，同时教师仍然是掌控者。</p>
+  </div>
+</section>
+
+<!-- ════ Slide 07: Part 2 Divider ════ -->
+<section class="part" data-screen-label="07 Part 2">
+  <div class="part-label">Part 2</div>
+  <h1>我们的做法</h1>
+  <div class="part-sub">技术侧</div>
+</section>
+
+<!-- ════ Slide 08: Describable Component ════ -->
+<section class="content" data-screen-label="08 Describable Component">
+  <h2>核心概念 — Describable Component</h2>
+  <div class="two-col">
+    <div>
+      <p style="font-size:24px;margin-bottom:24px">一节课 = 一组可描述的 Component。<br>每个 Component 声明：</p>
+      <ul>
+        <li><strong style="color:var(--t1)">类型</strong> — quiz / match / matrix / discuss / …</li>
+        <li><strong style="color:var(--t1)">内容</strong> — 题目、素材、选项</li>
+        <li><strong style="color:var(--t1)">评分规则</strong> — answerKey</li>
+        <li><strong style="color:var(--t1)">observe</strong> — 关注哪些维度的学生表现</li>
+      </ul>
+    </div>
+    <div class="json-block"><span class="comment">// quiz component 示例</span>
+{
+  <span class="key">"type"</span>: <span class="str">"quiz"</span>,
+  <span class="key">"content"</span>: {
+    <span class="key">"stem"</span>: <span class="str">"SAS 判定需要…"</span>,
+    <span class="key">"options"</span>: [<span class="str">"A"</span>, <span class="str">"B"</span>, <span class="str">"C"</span>]
+  },
+  <span class="key">"answerKey"</span>: <span class="str">"B"</span>,
+  <span class="key">"observe"</span>: [<span class="str">"accuracy"</span>, <span class="str">"time"</span>]
+}</div>
+  </div>
+</section>
+
+<!-- ════ Slide 09: Auto-Observability ════ -->
+<section class="content" data-screen-label="09 Auto-Observability">
+  <h2>Auto-Observability — 描述即可观测</h2>
+  <div class="flow-row" style="margin-bottom:32px">
+    <div class="flow-box">
+      <div class="fb-label">Component 定义 observe</div>
+      <div class="fb-sub">声明关注的维度</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="fb-label">教师端自动产生</div>
+      <div class="fb-sub">对应的观测数据</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">
+      <div class="fb-label">无需单独开发仪表板</div>
+      <div class="fb-sub">新类型自动获得 metrics</div>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="mc-label">实时数据</div>
+      <div class="mc-value">byDimension 分布</div>
+    </div>
+    <div class="metric-card">
+      <div class="mc-label">实时数据</div>
+      <div class="mc-value">完成率 · 卡住预警</div>
+    </div>
+    <div class="metric-card">
+      <div class="mc-label">实时数据</div>
+      <div class="mc-value">AI 讨论轮次 · alertTag</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ Slide 10: Structured Flow ════ -->
+<section class="content" data-screen-label="10 结构化流程">
+  <h2>结构化流程 — 可控的 AI 参与</h2>
+  <div class="flow-row" style="margin-bottom:32px">
+    <div class="flow-box" style="border-color:var(--teal);background:var(--teal-bg)">
+      <div class="fb-label" style="color:var(--teal)">reading</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--blue);background:var(--blue-bg)">
+      <div class="fb-label" style="color:var(--blue)">exercise</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box" style="border-color:var(--green);background:var(--green-bg)">
+      <div class="fb-label" style="color:var(--green)">discuss</div>
+    </div>
+  </div>
+  <ul>
+    <li>课堂流程由 <strong style="color:var(--t1)">manifest</strong> 定义 — 有明确路径</li>
+    <li>AI 在结构内发挥作用 — Socratic 讨论、personal touch</li>
+    <li>每一步 AI 做了什么、学生怎么回应 → 全部有记录、可追溯</li>
+    <li>同时解决极端 C 的三个问题：<strong style="color:var(--teal)">可控 · 可观测 · 可解释</strong></li>
+  </ul>
+</section>
+
+<!-- ════ Slide 11: 7 Components ════ -->
+<section class="content" data-screen-label="11 已验证">
+  <h2>已验证 — 7 种 Component 在跑</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:32px">
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--blue)"></div>quiz</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--purple)"></div>match</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--amber)"></div>matrix</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--green)"></div>stance</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--teal)"></div>order</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--red)"></div>select-evidence</div>
+    <div class="comp-chip"><div class="chip-dot" style="background:var(--coral)"></div>map</div>
+  </div>
+  <div class="insight-card">
+    <h4>每种自带</h4>
+    <p><span class="tag" style="background:var(--blue-bg);color:var(--blue)">grading</span><span class="tag" style="background:var(--green-bg);color:var(--green)">sanitization</span><span class="tag" style="background:var(--purple-bg);color:var(--purple)">observability</span></p>
+    <p style="margin-top:16px">证明这个模式可扩展 — 加类型不改架构。</p>
+  </div>
+</section>
+
+<!-- ════ Slide 12: Part 3 Divider ════ -->
+<section class="part" data-screen-label="12 Part 3">
+  <div class="part-label">Part 3</div>
+  <h1>教育侧的意义</h1>
+</section>
+
+<!-- ════ Slide 13: Shift 1 ════ -->
+<section class="content" data-screen-label="13 转变1">
+  <h2>转变 1 — 从"怎么用 AI"<br>到"关注什么信息"</h2>
+  <div class="two-col" style="margin-top:12px">
+    <div>
+      <ul>
+        <li>教师不再需要学 prompt engineering</li>
+        <li>不需要搭 Agent</li>
+        <li>回到教育本职 — <strong style="color:var(--teal)">这个环节我想观察学生的什么？</strong></li>
+      </ul>
+    </div>
+    <div class="insight-card" style="margin-top:0">
+      <h4 style="color:var(--purple)">observe 定义</h4>
+      <p>Component 的 observe 字段就是这个问题的答案。技术把教育问题还给了教育者。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════ Slide 14: Shift 2 ════ -->
+<section class="content" data-screen-label="14 转变2">
+  <h2>转变 2 — 课堂有效信息透明化</h2>
+  <div class="two-col" style="margin-top:12px">
+    <div>
+      <h3 style="color:var(--t3);font-size:20px;margin-bottom:16px">传统课堂</h3>
+      <p style="font-size:24px">教师凭经验 + 巡视感知学情<br>信息损失巨大</p>
+    </div>
+    <div>
+      <h3 style="color:var(--teal);font-size:20px;margin-bottom:16px">Live Lesson</h3>
+      <p style="font-size:24px">每个学生在每个 step 的选择、耗时、AI 对话轮次、卡住位置 — 全部可见</p>
+    </div>
+  </div>
+  <div class="insight-card" style="margin-top:32px">
+    <h4>以前不可能观察的信息</h4>
+    <p>思考过程、错误模式、求助行为 — 现在透明了。教师第一次能看到全班每个人在每个环节的真实状态。</p>
+  </div>
+</section>
+
+<!-- ════ Slide 15: Shift 3 — Teachingless ════ -->
+<section class="content" data-screen-label="15 Teachingless">
+  <h2>转变 3 — Teachingless</h2>
+  <p style="font-size:24px;margin-bottom:28px">机械性固定知识的讲授 → AI 驱动的结构化流程承担</p>
+  <div class="role-grid">
+    <div class="role-card" style="border-top:3px solid var(--teal)">
+      <h4 style="color:var(--teal)">Coach</h4>
+      <p>根据实时数据精准干预个别学生</p>
+    </div>
+    <div class="role-card" style="border-top:3px solid var(--amber)">
+      <h4 style="color:var(--amber)">情绪洞察者</h4>
+      <p>关注 stuck 学生、发现焦虑信号</p>
+    </div>
+    <div class="role-card" style="border-top:3px solid var(--blue)">
+      <h4 style="color:var(--blue)">决策者</h4>
+      <p>"Q1 错误偏高" → 决定是否全班讲解</p>
+    </div>
+  </div>
+  <p style="font-size:22px;color:var(--t3);margin-top:28px">不是让教师无事可做 — 是让教师做只有人才能做的事。</p>
+</section>
+
+<!-- ════ Slide 16: Part 4 Divider ════ -->
+<section class="part" data-screen-label="16 Part 4">
+  <div class="part-label">Part 4</div>
+  <h1>未来</h1>
+</section>
+
+<!-- ════ Slide 17: Creator ════ -->
+<section class="content" data-screen-label="17 Creator">
+  <h2>Creator — 从工程师到任何人</h2>
+  <p style="font-size:22px;margin-bottom:28px">今天 manifest 是 JSON，需要工程师。下一步：</p>
+  <div class="creator-modes">
+    <div class="creator-mode">
+      <div class="cm-tag" style="background:var(--blue-bg);color:var(--blue)">手动模式</div>
+      <h4>拖拽组装</h4>
+      <p>30+ 种 Component 模板库<br>拖拽进课程时间线，配置内容与 observe 维度</p>
+    </div>
+    <div class="creator-mode">
+      <div class="cm-tag" style="background:var(--purple-bg);color:var(--purple)">AI 驱动</div>
+      <h4>描述教学目标 → 生成 manifest</h4>
+      <p>AI 理解课程意图，自动生成结构化流程，教师人工微调</p>
+    </div>
+  </div>
+  <p style="font-size:22px;color:var(--t3);margin-top:28px">教研组长、学科带头人、一线教师 — 都能创作互动课。更多创作者 → 更多类型 → 更丰富的课程生态。</p>
+</section>
+
+<!-- ════ Slide 18: Summary ════ -->
+<section class="summary" data-screen-label="18 总结">
+  <h2>总结</h2>
+  <ul style="margin-top:32px;margin-bottom:40px">
+    <li>不是 AI 替代老师 <span style="opacity:.3">（极端 A）</span></li>
+    <li>不是老师用 AI 当工具 <span style="opacity:.3">（极端 B）</span></li>
+    <li>不是把 Agent 黑盒丢给学生 <span style="opacity:.3">（极端 C）</span></li>
+    <li class="highlight" style="margin-top:16px">是：AI 成为课堂基础设施，教师回归教育本质</li>
+  </ul>
+  <div class="pipeline">
+    <div class="pipe-step" style="background:rgba(240,239,232,.08);color:rgba(240,239,232,.7)">Describable Component</div>
+    <div class="pipe-sep" style="color:rgba(240,239,232,.2)">→</div>
+    <div class="pipe-step" style="background:rgba(240,239,232,.08);color:rgba(240,239,232,.7)">Auto-Observability</div>
+    <div class="pipe-sep" style="color:rgba(240,239,232,.2)">→</div>
+    <div class="pipe-step" style="background:rgba(240,239,232,.08);color:rgba(240,239,232,.7)">精准教学</div>
+    <div class="pipe-sep" style="color:rgba(240,239,232,.2)">→</div>
+    <div class="pipe-step" style="background:rgba(240,239,232,.12);color:rgba(240,239,232,.95)">Teachingless</div>
+  </div>
+</section>
+
+</deck-stage>
+</body>
+</html>

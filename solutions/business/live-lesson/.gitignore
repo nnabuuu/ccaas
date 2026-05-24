@@ -3,10 +3,6 @@ data/live-lesson.db
 data/live-lesson.db-wal
 data/live-lesson.db-shm
 
-# Design assets (teacher-guide.html is tracked separately)
-design/*
-!design/teacher-guide.html
-
 # E2E test artifacts
 e2e/screenshots/
 

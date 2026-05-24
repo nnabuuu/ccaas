@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>Socratic Discuss · Demo</title>
+<link rel="stylesheet" href="colors_and_type.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root{
+  --bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;
+  --t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;
+  --border:rgba(28,28,26,.07);--border-strong:rgba(28,28,26,.14);
+  --blue:#1f4a7a;--blue-bg:#e4ecf4;
+  --green:#0d5245;--green-bg:#dfece8;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --red:#8a2a1f;--red-bg:#f4dfdb;
+  --purple:#3a3185;--purple-bg:#e9e7f3;
+  --teal:#0d5245;--teal-bg:#dfece8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+</style>
+</head><body>
+<div id="root"></div>
+<script type="text/babel" src="socratic-discuss.jsx"></script>
+<script type="text/babel">
+const {useState, Fragment} = React;
+
+/* Task switcher + demo shell */
+function DemoApp() {
+  const [taskId, setTaskId] = useState(1);
+  const [key, setKey] = useState(0);
+  const [completed, setCompleted] = useState(false);
+
+  const reset = () => { setKey(k => k + 1); setCompleted(false); };
+
+  const demoStyles = {
+    shell: { display: 'flex', flexDirection: 'column', height: '100vh' },
+    topBar: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', height: 48, background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0 },
+    title: { fontSize: 15, fontWeight: 700, letterSpacing: '-.2px' },
+    sub: { fontSize: 11, color: 'var(--t3)', flex: 1 },
+    taskNav: { display: 'flex', gap: 0, padding: '0 20px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0 },
+    taskBtn: { padding: '10px 16px', fontSize: 12, fontWeight: 500, color: 'var(--t3)', cursor: 'pointer', borderBottom: '2px solid transparent', transition: 'all .12s', background: 'none', border: 'none', borderBottomWidth: 2, borderBottomStyle: 'solid', borderBottomColor: 'transparent', fontFamily: 'inherit' },
+    taskBtnActive: { color: 'var(--t1)', fontWeight: 600, borderBottomColor: 'var(--t1)' },
+    main: { flex: 1, overflowY: 'auto', padding: '0 24px 80px' },
+    inner: { maxWidth: 640, margin: '0 auto', width: '100%' },
+    resetBtn: { padding: '6px 14px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 11, fontWeight: 500, cursor: 'pointer', color: 'var(--t2)', fontFamily: 'inherit' },
+    flowCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px 20px', marginTop: 20, marginBottom: 16 },
+    flowTitle: { fontSize: 12, fontWeight: 700, color: 'var(--purple)', marginBottom: 10 },
+    flowStep: { display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 8 },
+    flowNum: { width: 22, height: 22, borderRadius: '50%', background: 'var(--purple-bg)', color: 'var(--purple)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    flowText: { fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 },
+    flowArrow: { fontSize: 11, color: 'var(--t3)', textAlign: 'center', margin: '4px 0 4px 30px' },
+  };
+
+  const taskNames = ['Predict', 'Skim', 'Scan & Build', 'Evaluate', 'Wrap-up'];
+
+  return React.createElement('div', { style: demoStyles.shell },
+    React.createElement('div', { style: demoStyles.topBar },
+      React.createElement('div', { style: demoStyles.title }, 'Socratic Discuss'),
+      React.createElement('div', { style: demoStyles.sub }, 'Interactive Discussion Prototype'),
+      React.createElement('button', { style: demoStyles.resetBtn, onClick: reset }, '↺ Reset'),
+    ),
+    React.createElement('div', { style: demoStyles.taskNav },
+      taskNames.map((name, i) =>
+        React.createElement('button', {
+          key: i,
+          style: { ...demoStyles.taskBtn, ...(taskId === i + 1 ? demoStyles.taskBtnActive : {}) },
+          onClick: () => { setTaskId(i + 1); reset(); },
+        }, `T${i + 1}: ${name}`)
+      ),
+    ),
+    React.createElement('div', { style: demoStyles.main },
+      React.createElement('div', { style: demoStyles.inner },
+        /* Flow diagram */
+        React.createElement('div', { style: demoStyles.flowCard },
+          React.createElement('div', { style: demoStyles.flowTitle }, 'Discussion Flow'),
+          React.createElement('div', { style: demoStyles.flowStep },
+            React.createElement('div', { style: demoStyles.flowNum }, '1'),
+            React.createElement('div', { style: demoStyles.flowText },
+              React.createElement('strong', null, 'Socratic Dialogue'), ' — AI asks guiding questions. Student thinks and responds freely. Sentence scaffolds available.')),
+          React.createElement('div', { style: demoStyles.flowArrow }, '↓ if student reaches the answer'),
+          React.createElement('div', { style: demoStyles.flowStep },
+            React.createElement('div', { style: { ...demoStyles.flowNum, background: 'var(--green-bg)', color: 'var(--green)' } }, '✓'),
+            React.createElement('div', { style: demoStyles.flowText },
+              React.createElement('strong', null, 'Goal Reached!'), ' — Explanation + Key Insight shown.')),
+          React.createElement('div', { style: demoStyles.flowArrow }, '↓ if max rounds or time exceeded'),
+          React.createElement('div', { style: demoStyles.flowStep },
+            React.createElement('div', { style: { ...demoStyles.flowNum, background: 'var(--amber-bg)', color: 'var(--amber)' } }, '?'),
+            React.createElement('div', { style: demoStyles.flowText },
+              React.createElement('strong', null, 'Fallback MC'), ' — Multiple choice to ensure understanding. Then explanation.')),
+        ),
+
+        /* The actual component */
+        React.createElement(SocraticDiscuss, {
+          key: `${taskId}-${key}`,
+          taskId: taskId,
+          onDone: () => setCompleted(true),
+        }),
+
+        completed && React.createElement('div', {
+          style: { textAlign: 'center', padding: '20px 0', fontSize: 13, color: 'var(--green)', fontWeight: 600 }
+        }, '✓ Discuss phase complete — ready for Takeaway'),
+      ),
+    ),
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(DemoApp));
+</script>
+</body></html>
