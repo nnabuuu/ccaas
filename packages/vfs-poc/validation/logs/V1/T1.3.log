@@ -1,15 +1,15 @@
 # T1.3 mmap packfile — gc + concurrent cat-file (R2, R9)
-# started 2026-05-24T18:44:24.671Z
+# started 2026-05-24T19:09:36.860Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-3-1779648264672/.git/
-  → exit 0 (71ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git config init.defaultBranch main
-  → exit 0 (27ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git add -A
-  → exit 0 (6698ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git commit -m bulk-1k
-  | [main（根提交） 7872976] bulk-1k
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-3-1779649776862/.git/
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git config init.defaultBranch main
+  → exit 0 (38ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git add -A
+  → exit 0 (5482ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git commit -m bulk-1k
+  | [main（根提交） afc505a] bulk-1k
   |  1000 files changed, 20000 insertions(+)
   |  create mode 100644 files/f0.txt
   |  create mode 100644 files/f1.txt
@@ -1015,13 +1015,13 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git commit -m bulk-1k
   |  create mode 100644 files/f997.txt
   |  create mode 100644 files/f998.txt
   |  create mode 100644 files/f999.txt
-  → exit 0 (943ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git gc --aggressive --quiet
-  → exit 0 (3387ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git log -p
-  | commit 787297681c788423f34048d5ebd047665692ac61
+  → exit 0 (490ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git gc --aggressive --quiet
+  → exit 0 (2823ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git log -p
+  | commit afc505a343c02b9cf5105e1a1d2c71c868341ce8
   | Author: vfs-poc <vfs-poc@example.invalid>
-  | Date:   Mon May 25 02:44:33 2026 +0800
+  | Date:   Mon May 25 03:09:44 2026 +0800
   | 
   |     bulk-1k
   | 
@@ -27069,81 +27069,81 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git log -p
   | +content-999
   | +content-999
   | +content-999
-  → exit 0 (67ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git rev-parse HEAD
-  | 787297681c788423f34048d5ebd047665692ac61
-  → exit 0 (31ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git cat-file -p 787297681c788423f34048d5ebd047665692ac61
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  → exit 0 (34ms)
-  → exit 0 (50ms)
-  → exit 0 (65ms)
-  → exit 0 (81ms)
-  → exit 0 (95ms)
-  → exit 0 (111ms)
-  → exit 0 (127ms)
-  → exit 0 (148ms)
-  → exit 0 (173ms)
-  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
-  | author vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | committer vfs-poc <vfs-poc@example.invalid> 1779648273 +0800
-  | 
-  | bulk-1k
-  → exit 0 (20ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779648264672 && git fsck --full
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git rev-parse HEAD
+  | afc505a343c02b9cf5105e1a1d2c71c868341ce8
   → exit 0 (37ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git cat-file -p afc505a343c02b9cf5105e1a1d2c71c868341ce8
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  → exit 0 (30ms)
+  → exit 0 (45ms)
+  → exit 0 (58ms)
+  → exit 0 (72ms)
+  → exit 0 (86ms)
+  → exit 0 (101ms)
+  → exit 0 (116ms)
+  → exit 0 (138ms)
+  → exit 0 (163ms)
+  | tree f5a3ce95ad7bfbdfdf1467c64f3da23c28dc1591
+  | author vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | committer vfs-poc <vfs-poc@example.invalid> 1779649784 +0800
+  | 
+  | bulk-1k
+  → exit 0 (21ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-3-1779649776862 && git fsck --full
+  → exit 0 (39ms)
 
-PASS in 13194ms
+PASS in 10948ms

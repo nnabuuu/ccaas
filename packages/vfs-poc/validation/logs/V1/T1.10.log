@@ -1,218 +1,218 @@
 # T1.10 10 rounds of full worktree lifecycle (combined stress)
-# started 2026-05-24T18:44:59.078Z
+# started 2026-05-24T19:10:07.747Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project/.git/
-  → exit 0 (80ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git config init.defaultBranch main
-  → exit 0 (31ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git add -A
-  → exit 0 (36ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git commit -m base
-  | [main（根提交） 6c3a44a] base
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project/.git/
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git config init.defaultBranch main
+  → exit 0 (32ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git add -A
+  → exit 0 (37ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git commit -m base
+  | [main（根提交） 4d4ee59] base
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 base.txt
-  → exit 0 (69ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-0 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-0
+  → exit 0 (63ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-0 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-0
   ! 准备工作区（新分支 'session-0'）
-  | HEAD 现在位于 6c3a44a base
-  → exit 0 (88ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-0 && git add -A
-  → exit 0 (44ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-0 && git commit -m round-0
-  | [session-0 3417100] round-0
+  | HEAD 现在位于 4d4ee59 base
+  → exit 0 (81ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-0 && git add -A
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-0 && git commit -m round-0
+  | [session-0 f0138db] round-0
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 r0.txt
-  → exit 0 (81ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-0 session-0
+  → exit 0 (72ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-0 session-0
   | Merge made by the 'ort' strategy.
   |  r0.txt | 1 +
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 r0.txt
-  → exit 0 (93ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-0
-  → exit 0 (51ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-1 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-1
+  → exit 0 (77ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-0
+  → exit 0 (44ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-1 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-1
   ! 准备工作区（新分支 'session-1'）
-  | HEAD 现在位于 7df82f6 merge session-0
-  → exit 0 (87ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-1 && git add -A
-  → exit 0 (39ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-1 && git commit -m round-1
-  | [session-1 ba75af7] round-1
+  | HEAD 现在位于 c402865 merge session-0
+  → exit 0 (83ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-1 && git add -A
+  → exit 0 (40ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-1 && git commit -m round-1
+  | [session-1 1cfad22] round-1
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r1.txt
-  → exit 0 (60ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-1 session-1
+  → exit 0 (57ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-1 session-1
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r1.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r1.txt
-  → exit 0 (90ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-1
-  → exit 0 (45ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-2 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-2
-  ! 准备工作区（新分支 'session-2'）
-  | HEAD 现在位于 8a2d4aa merge session-1
   → exit 0 (81ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-2 && git add -A
-  → exit 0 (42ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-2 && git commit -m round-2
-  | [session-2 9741591] round-2
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-1
+  → exit 0 (50ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-2 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-2
+  ! 准备工作区（新分支 'session-2'）
+  | HEAD 现在位于 a80e313 merge session-1
+  → exit 0 (80ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-2 && git add -A
+  → exit 0 (43ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-2 && git commit -m round-2
+  | [session-2 5ea4606] round-2
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r2.txt
-  → exit 0 (58ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-2 session-2
+  → exit 0 (56ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-2 session-2
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r2.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r2.txt
-  → exit 0 (79ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-2
-  → exit 0 (46ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-3 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-3
+  → exit 0 (94ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-2
+  → exit 0 (44ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-3 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-3
   ! 准备工作区（新分支 'session-3'）
-  | HEAD 现在位于 cb99380 merge session-2
-  → exit 0 (80ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-3 && git add -A
-  → exit 0 (45ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-3 && git commit -m round-3
-  | [session-3 5d6b790] round-3
+  | HEAD 现在位于 3f6a317 merge session-2
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-3 && git add -A
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-3 && git commit -m round-3
+  | [session-3 d227d1e] round-3
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r3.txt
   → exit 0 (59ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-3 session-3
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-3 session-3
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r3.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r3.txt
-  → exit 0 (79ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-3
-  → exit 0 (53ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-4 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-4
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-3
+  → exit 0 (50ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-4 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-4
   ! 准备工作区（新分支 'session-4'）
-  | HEAD 现在位于 6e3592d merge session-3
-  → exit 0 (78ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-4 && git add -A
-  → exit 0 (44ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-4 && git commit -m round-4
-  | [session-4 df10351] round-4
+  | HEAD 现在位于 717be82 merge session-3
+  → exit 0 (90ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-4 && git add -A
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-4 && git commit -m round-4
+  | [session-4 df8a180] round-4
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r4.txt
-  → exit 0 (125ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-4 session-4
+  → exit 0 (61ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-4 session-4
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r4.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r4.txt
-  → exit 0 (108ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-4
-  → exit 0 (52ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-5 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-5
+  → exit 0 (77ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-4
+  → exit 0 (57ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-5 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-5
   ! 准备工作区（新分支 'session-5'）
-  | HEAD 现在位于 c313554 merge session-4
-  → exit 0 (98ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-5 && git add -A
-  → exit 0 (36ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-5 && git commit -m round-5
-  | [session-5 72a5ec6] round-5
+  | HEAD 现在位于 66706e6 merge session-4
+  → exit 0 (91ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-5 && git add -A
+  → exit 0 (45ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-5 && git commit -m round-5
+  | [session-5 f05acba] round-5
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r5.txt
-  → exit 0 (56ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-5 session-5
+  → exit 0 (62ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-5 session-5
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r5.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r5.txt
-  → exit 0 (84ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-5
-  → exit 0 (59ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-6 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-6
+  → exit 0 (86ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-5
+  → exit 0 (56ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-6 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-6
   ! 准备工作区（新分支 'session-6'）
-  | HEAD 现在位于 97e5640 merge session-5
-  → exit 0 (93ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-6 && git add -A
-  → exit 0 (46ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-6 && git commit -m round-6
-  | [session-6 6532e6d] round-6
+  | HEAD 现在位于 5ba7724 merge session-5
+  → exit 0 (91ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-6 && git add -A
+  → exit 0 (52ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-6 && git commit -m round-6
+  | [session-6 2343527] round-6
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r6.txt
-  → exit 0 (56ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-6 session-6
+  → exit 0 (55ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-6 session-6
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r6.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r6.txt
-  → exit 0 (83ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-6
+  → exit 0 (78ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-6
   → exit 0 (61ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-7 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-7
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-7 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-7
   ! 准备工作区（新分支 'session-7'）
-  | HEAD 现在位于 6117838 merge session-6
-  → exit 0 (98ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-7 && git add -A
-  → exit 0 (49ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-7 && git commit -m round-7
-  | [session-7 a51f39c] round-7
+  | HEAD 现在位于 9a967f6 merge session-6
+  → exit 0 (101ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-7 && git add -A
+  → exit 0 (54ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-7 && git commit -m round-7
+  | [session-7 40a1aa1] round-7
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r7.txt
-  → exit 0 (63ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-7 session-7
+  → exit 0 (69ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-7 session-7
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r7.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r7.txt
-  → exit 0 (80ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-7
-  → exit 0 (55ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-8 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-8
+  → exit 0 (86ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-7
+  → exit 0 (61ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-8 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-8
   ! 准备工作区（新分支 'session-8'）
-  | HEAD 现在位于 baab646 merge session-7
-  → exit 0 (95ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-8 && git add -A
-  → exit 0 (50ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-8 && git commit -m round-8
-  | [session-8 7a57a6f] round-8
+  | HEAD 现在位于 1771fa1 merge session-7
+  → exit 0 (106ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-8 && git add -A
+  → exit 0 (51ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-8 && git commit -m round-8
+  | [session-8 4c56edb] round-8
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r8.txt
-  → exit 0 (61ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-8 session-8
+  → exit 0 (70ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-8 session-8
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r8.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r8.txt
-  → exit 0 (84ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-8
-  → exit 0 (59ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree add -b session-9 /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-9
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-8
+  → exit 0 (62ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree add -b session-9 /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-9
   ! 准备工作区（新分支 'session-9'）
-  | HEAD 现在位于 0e45767 merge session-8
-  → exit 0 (103ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-9 && git add -A
-  → exit 0 (51ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-9 && git commit -m round-9
-  | [session-9 eca166b] round-9
+  | HEAD 现在位于 5db20df merge session-8
+  → exit 0 (115ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-9 && git add -A
+  → exit 0 (52ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-9 && git commit -m round-9
+  | [session-9 d33ceb7] round-9
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r9.txt
-  → exit 0 (60ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git merge --no-ff -m merge session-9 session-9
+  → exit 0 (64ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git merge --no-ff -m merge session-9 session-9
   | Merge made by the 'ort' strategy.
   |  base.txt | 2 +-
   |  r9.txt   | 1 +
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 r9.txt
-  → exit 0 (97ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/wt-9
-  → exit 0 (57ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779648299085/project && git fsck --full
-  → exit 0 (70ms)
+  → exit 0 (112ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/wt-9
+  → exit 0 (63ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-10-1779649807748/project && git fsck --full
+  → exit 0 (76ms)
 
-PASS in 4445ms
+PASS in 4406ms

@@ -1,53 +1,53 @@
 # T1.6 2 worktrees, parallel commits, serial merge (R1, R7)
-# started 2026-05-24T18:44:41.157Z
+# started 2026-05-24T19:09:51.006Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project/.git/
-  → exit 0 (91ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git config init.defaultBranch main
-  → exit 0 (37ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git add -A
-  → exit 0 (48ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git commit -m base
-  | [main（根提交） 5d5dd70] base
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project/.git/
+  → exit 0 (83ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git config init.defaultBranch main
+  → exit 0 (30ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git add -A
+  → exit 0 (39ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git commit -m base
+  | [main（根提交） a6ea050] base
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 shared.txt
-  → exit 0 (70ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git worktree add -b branch-A /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-A
+  → exit 0 (65ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git worktree add -b branch-A /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-A
   ! 准备工作区（新分支 'branch-A'）
-  | HEAD 现在位于 5d5dd70 base
-  → exit 0 (93ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git worktree add -b branch-B /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-B
+  | HEAD 现在位于 a6ea050 base
+  → exit 0 (85ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git worktree add -b branch-B /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-B
   ! 准备工作区（新分支 'branch-B'）
-  | HEAD 现在位于 5d5dd70 base
-  → exit 0 (105ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-A && git add -A
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-B && git add -A
-  → exit 0 (54ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-A && git commit -m A commit
-  → exit 0 (47ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/wt-B && git commit -m B commit
-  | [branch-A 4b72d37] A commit
+  | HEAD 现在位于 a6ea050 base
+  → exit 0 (96ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-A && git add -A
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-B && git add -A
+  → exit 0 (52ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-A && git commit -m A commit
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/wt-B && git commit -m B commit
+  | [branch-A 672854e] A commit
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 a.txt
-  → exit 0 (54ms)
-  | [branch-B 68ea806] B commit
+  → exit 0 (59ms)
+  | [branch-B 81461ac] B commit
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 b.txt
-  → exit 0 (51ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git merge --no-ff -m merge A branch-A
+  → exit 0 (47ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git merge --no-ff -m merge A branch-A
   | Merge made by the 'ort' strategy.
   |  a.txt | 1 +
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 a.txt
-  → exit 0 (71ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git merge --no-ff -m merge B branch-B
+  → exit 0 (68ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git merge --no-ff -m merge B branch-B
   | Merge made by the 'ort' strategy.
   |  b.txt | 1 +
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 b.txt
-  → exit 0 (84ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779648281158/project && git fsck --full
-  → exit 0 (61ms)
+  → exit 0 (82ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-6-1779649791007/project && git fsck --full
+  → exit 0 (59ms)
 
-PASS in 1414ms
+PASS in 1370ms

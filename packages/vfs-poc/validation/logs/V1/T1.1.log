@@ -1,7 +1,7 @@
 # T1.1 baseline — init / add / commit / log / fsck
-# started 2026-05-24T18:44:22.342Z
+# started 2026-05-24T19:09:34.653Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git init
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git init
   ! 提示：使用 'master' 作为初始分支的名称。这个默认分支名称可能会更改。要在新仓库中
   ! 提示：配置使用初始分支名，并消除这条警告，请执行：
   ! 提示：
@@ -11,23 +11,23 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git init
   ! 提示：可以通过以下命令重命名刚创建的分支：
   ! 提示：
   ! 提示：	git branch -m <name>
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-1-1779648262343/.git/
-  → exit 0 (103ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git config init.defaultBranch main
-  → exit 0 (37ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git add -A
-  → exit 0 (56ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git commit -m init
-  | [master（根提交） 12d9c3f] init
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-1-1779649774654/.git/
+  → exit 0 (104ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git config init.defaultBranch main
+  → exit 0 (40ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git add -A
+  → exit 0 (54ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git commit -m init
+  | [master（根提交） a031de5] init
   |  3 files changed, 3 insertions(+)
   |  create mode 100644 README.md
   |  create mode 100644 a.txt
   |  create mode 100644 b.txt
-  → exit 0 (78ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git log --oneline
-  | 12d9c3f init
-  → exit 0 (33ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779648262343 && git fsck --full
-  → exit 0 (61ms)
+  → exit 0 (68ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git log --oneline
+  | a031de5 init
+  → exit 0 (34ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-1-1779649774654 && git fsck --full
+  → exit 0 (60ms)
 
-PASS in 997ms
+PASS in 1005ms

@@ -1,122 +1,122 @@
 # T1.5 concurrent git add — lock + atomicity stress (R1)
-# started 2026-05-24T18:44:39.234Z
+# started 2026-05-24T19:09:49.121Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-5-1779648279235/.git/
-  → exit 0 (96ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git config init.defaultBranch main
-  → exit 0 (35ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add -A
-  → exit 0 (41ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git commit -m seed
-  | [main（根提交） 6fb8f00] seed
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-5-1779649789123/.git/
+  → exit 0 (84ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git config init.defaultBranch main
+  → exit 0 (32ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add -A
+  → exit 0 (33ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git commit -m seed
+  | [main（根提交） d2af03f] seed
   |  1 file changed, 1 insertion(+)
   |  create mode 100644 seed.txt
-  → exit 0 (67ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f0.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f1.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f2.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f3.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f4.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f5.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f6.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f7.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f8.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f9.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f10.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f11.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f12.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f13.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f14.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f15.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f16.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f17.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f18.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f19.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f20.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f21.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f22.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f23.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f24.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f25.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f26.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f27.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f28.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f29.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f30.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f31.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f32.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f33.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f34.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f35.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f36.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f37.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f38.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f39.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f40.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f41.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f42.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f43.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f44.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f45.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f46.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f47.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f48.txt
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add f49.txt
+  → exit 0 (50ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f0.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f1.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f2.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f3.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f4.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f5.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f6.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f7.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f8.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f9.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f10.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f11.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f12.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f13.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f14.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f15.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f16.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f17.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f18.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f19.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f20.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f21.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f22.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f23.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f24.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f25.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f26.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f27.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f28.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f29.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f30.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f31.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f32.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f33.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f34.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f35.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f36.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f37.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f38.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f39.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f40.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f41.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f42.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f43.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f44.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f45.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f46.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f47.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f48.txt
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add f49.txt
   → exit 0 (34ms)
-  → exit 0 (49ms)
+  → exit 0 (48ms)
   → exit 0 (64ms)
   → exit 0 (80ms)
-  → exit 0 (97ms)
-  → exit 0 (112ms)
+  → exit 0 (95ms)
+  → exit 0 (110ms)
   → exit 0 (127ms)
   → exit 0 (143ms)
   → exit 0 (158ms)
-  → exit 0 (173ms)
-  → exit 0 (188ms)
-  → exit 0 (205ms)
-  → exit 0 (220ms)
-  → exit 0 (237ms)
-  → exit 0 (251ms)
-  → exit 0 (265ms)
-  → exit 0 (280ms)
-  → exit 0 (296ms)
-  → exit 0 (312ms)
-  → exit 0 (326ms)
-  → exit 0 (341ms)
-  → exit 0 (356ms)
-  → exit 0 (371ms)
-  → exit 0 (385ms)
-  → exit 0 (400ms)
-  → exit 0 (418ms)
-  → exit 0 (433ms)
-  → exit 0 (449ms)
-  → exit 0 (464ms)
-  → exit 0 (480ms)
-  → exit 0 (495ms)
-  → exit 0 (509ms)
-  → exit 0 (523ms)
-  → exit 0 (538ms)
-  → exit 0 (552ms)
+  → exit 0 (179ms)
+  → exit 0 (195ms)
+  → exit 0 (212ms)
+  → exit 0 (227ms)
+  → exit 0 (241ms)
+  → exit 0 (256ms)
+  → exit 0 (274ms)
+  → exit 0 (288ms)
+  → exit 0 (303ms)
+  → exit 0 (318ms)
+  → exit 0 (334ms)
+  → exit 0 (350ms)
+  → exit 0 (367ms)
+  → exit 0 (384ms)
+  → exit 0 (399ms)
+  → exit 0 (415ms)
+  → exit 0 (430ms)
+  → exit 0 (445ms)
+  → exit 0 (460ms)
+  → exit 0 (476ms)
+  → exit 0 (490ms)
+  → exit 0 (505ms)
+  → exit 0 (520ms)
+  → exit 0 (535ms)
+  → exit 0 (551ms)
   → exit 0 (568ms)
-  → exit 0 (583ms)
-  → exit 0 (598ms)
-  → exit 0 (614ms)
-  → exit 0 (630ms)
+  → exit 0 (585ms)
+  → exit 0 (603ms)
+  → exit 0 (617ms)
+  → exit 0 (632ms)
   → exit 0 (646ms)
-  → exit 0 (662ms)
-  → exit 0 (678ms)
-  → exit 0 (697ms)
-  → exit 0 (713ms)
-  → exit 0 (731ms)
+  → exit 0 (660ms)
+  → exit 0 (675ms)
+  → exit 0 (689ms)
+  → exit 0 (703ms)
+  → exit 0 (719ms)
+  → exit 0 (733ms)
   → exit 0 (753ms)
-  → exit 0 (779ms)
-  → exit 0 (806ms)
+  → exit 0 (776ms)
+  → exit 0 (801ms)
   → exit 0 (27ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git add -A
-  → exit 0 (22ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git commit -m all-50
-  | [main 2eb6fa2] all-50
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git add -A
+  → exit 0 (21ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git commit -m all-50
+  | [main 92ced89] all-50
   |  50 files changed, 50 insertions(+)
   |  create mode 100644 f0.txt
   |  create mode 100644 f1.txt
@@ -168,8 +168,8 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git commit -m all-50
   |  create mode 100644 f7.txt
   |  create mode 100644 f8.txt
   |  create mode 100644 f9.txt
-  → exit 0 (52ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git ls-tree -r --name-only HEAD
+  → exit 0 (54ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git ls-tree -r --name-only HEAD
   | f0.txt
   | f1.txt
   | f10.txt
@@ -221,8 +221,8 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git ls-tree -r --name-onl
   | f8.txt
   | f9.txt
   | seed.txt
-  → exit 0 (27ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779648279235 && git fsck --full
-  → exit 0 (56ms)
+  → exit 0 (29ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-5-1779649789123 && git fsck --full
+  → exit 0 (55ms)
 
-PASS in 1922ms
+PASS in 1883ms
