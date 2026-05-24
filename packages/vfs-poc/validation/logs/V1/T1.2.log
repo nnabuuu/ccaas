@@ -1,21 +1,16 @@
 # T1.2 hardlink — git clone --local from host into mount
-# started 2026-05-24T18:04:11.287Z
+# started 2026-05-24T18:44:23.340Z
 
 host source repo ready at /tmp/vfs-poc-validation/host-source-repo
-$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779645851699 && git clone --local --no-hardlinks /tmp/vfs-poc-validation/host-source-repo clone
+$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779648263629 && git clone --local --no-hardlinks /tmp/vfs-poc-validation/host-source-repo clone
   ! 正克隆到 'clone'...
   ! 完成。
-  ! 错误：non-monotonic index /private/tmp/vfs-poc-validation/mnt/t1-2-1779645851699/clone/.git/objects/pack/._pack-571e6b3717037cbee57dc6ea13be3b300daa6383.idx
-  → exit 0 (201ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779645851699/clone && git log --oneline
-  ! 错误：non-monotonic index .git/objects/pack/._pack-571e6b3717037cbee57dc6ea13be3b300daa6383.idx
-  ! 错误：non-monotonic index .git/objects/pack/._pack-571e6b3717037cbee57dc6ea13be3b300daa6383.idx
-  ! 错误：non-monotonic index .git/objects/pack/._pack-571e6b3717037cbee57dc6ea13be3b300daa6383.idx
-  | a416aec bulk
-  ! 错误：non-monotonic index .git/objects/pack/._pack-571e6b3717037cbee57dc6ea13be3b300daa6383.idx
-  | c3714be seed
-  → exit 0 (40ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779645851699/clone && git fsck --full
-  → exit 0 (56ms)
+  → exit 0 (245ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779648263629/clone && git log --oneline
+  | 5a6c3db bulk
+  | 5367b64 seed
+  → exit 0 (38ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-2-1779648263629/clone && git fsck --full
+  → exit 0 (102ms)
 
-PASS in 1369ms
+PASS in 1331ms

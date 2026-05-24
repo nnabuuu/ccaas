@@ -1,10 +1,10 @@
 {
   "suite": "V1",
-  "startedAt": "2026-05-24T18:04:10.148Z",
-  "finishedAt": "2026-05-24T18:04:50.651Z",
+  "startedAt": "2026-05-24T18:44:22.342Z",
+  "finishedAt": "2026-05-24T18:45:03.530Z",
   "platform": "darwin arm64",
   "versions": {
-    "agentfs": "agentfs 2e9c85f",
+    "agentfs": "agentfs 2e9c85f-dirty",
     "git": "git version 2.43.0",
     "node": "v22.15.1"
   },
@@ -13,18 +13,18 @@
       "id": "T1.1",
       "description": "baseline — init / add / commit / log / fsck",
       "status": "pass",
-      "durationMs": 1138,
+      "durationMs": 997,
       "logFile": "logs/V1/T1.1.log"
     },
     {
       "id": "T1.2",
       "description": "hardlink — git clone --local from host into mount",
       "status": "pass",
-      "durationMs": 1369,
+      "durationMs": 1331,
       "notes": "--no-hardlinks required (host↔mount cross-device EXDEV); not an agentfs issue",
       "metrics": {
         "cloneNlink": 1,
-        "sourceNlink": -1,
+        "sourceNlink": 1,
         "hardlinked": false
       },
       "logFile": "logs/V1/T1.2.log"
@@ -33,7 +33,7 @@
       "id": "T1.3",
       "description": "mmap packfile — gc + concurrent cat-file (R2, R9)",
       "status": "pass",
-      "durationMs": 11057,
+      "durationMs": 13194,
       "metrics": {
         "parallelCatFile": 10
       },
@@ -43,14 +43,14 @@
       "id": "T1.4",
       "description": "worktree add → commit → merge → remove (spec ③⑧ main flow)",
       "status": "pass",
-      "durationMs": 1273,
+      "durationMs": 1367,
       "logFile": "logs/V1/T1.4.log"
     },
     {
       "id": "T1.5",
       "description": "concurrent git add — lock + atomicity stress (R1)",
       "status": "pass",
-      "durationMs": 2044,
+      "durationMs": 1922,
       "metrics": {
         "ok": 50,
         "lockBusy": 0,
@@ -62,19 +62,18 @@
       "id": "T1.6",
       "description": "2 worktrees, parallel commits, serial merge (R1, R7)",
       "status": "pass",
-      "durationMs": 1398,
+      "durationMs": 1414,
       "logFile": "logs/V1/T1.6.log"
     },
     {
       "id": "T1.7",
       "description": "case collision Foo.md vs foo.md (macOS NFS) (R4)",
       "status": "pass",
-      "durationMs": 1008,
+      "durationMs": 942,
       "notes": "Foo.md=\"CAPITAL\" foo.md=\"lowercase\"",
       "metrics": {
         "caseFolding": false,
         "trackedFiles": [
-          ".gitignore",
           "Foo.md",
           "foo.md"
         ]
@@ -85,12 +84,12 @@
       "id": "T1.8",
       "description": "git status perf + stat-cache stability across remount (R5, R8)",
       "status": "pass",
-      "durationMs": 15452,
-      "notes": "cold=228ms warm=47ms postRemount=275ms",
+      "durationMs": 14118,
+      "notes": "cold=329ms warm=62ms postRemount=185ms",
       "metrics": {
-        "statusCold_ms": 228,
-        "statusWarm_ms": 47,
-        "statusAfterRemount_ms": 275
+        "statusCold_ms": 329,
+        "statusWarm_ms": 62,
+        "statusAfterRemount_ms": 185
       },
       "logFile": "logs/V1/T1.8.log"
     },
@@ -98,14 +97,14 @@
       "id": "T1.9",
       "description": "git mv directory with mixed modified entries (R10)",
       "status": "pass",
-      "durationMs": 1316,
+      "durationMs": 1444,
       "logFile": "logs/V1/T1.9.log"
     },
     {
       "id": "T1.10",
       "description": "10 rounds of full worktree lifecycle (combined stress)",
       "status": "pass",
-      "durationMs": 4429,
+      "durationMs": 4445,
       "metrics": {
         "roundsCompleted": 10
       },

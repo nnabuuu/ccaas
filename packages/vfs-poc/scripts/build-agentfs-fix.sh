@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Build and install our agentfs fork's fix/nfs-write-owner-bypass-mode-check
-# branch over the current agentfs binary. Required for V1 to pass on
-# macOS NFS — see ../VALIDATION_REPORT.md (v2 revision) for context.
+# Build and install our patched agentfs over the current agentfs binary.
+# Required for V1 to pass on macOS NFS — see ../VALIDATION_REPORT.md
+# (v3 revision) for context.
 #
-# The fix originated from @rail44 in tursodatabase/agentfs#333 (issue still
-# open with no upstream merge). We carry it on our fork so the ccaas POC has
-# a stable buildable source and so we can layer our own modifications.
+# Default branch (feat/nfs-drop-appledouble) carries TWO patches:
+#   1. rail44's fix/nfs-write-owner-bypass-mode-check — lets git's loose
+#      objects survive the NFS WRITE-after-CREATE-0444 mode check
+#      (originally from tursodatabase/agentfs#333)
+#   2. Our nfs-drop-appledouble — server-side suppression of macOS
+#      AppleDouble `._foo` sidecars (means no app-layer .gitignore /
+#      cleanAppleDoubles workaround needed)
 #
 # Backs up the existing binary to ~/.cargo/bin/agentfs.upstream so you can
 # revert with: cp ~/.cargo/bin/agentfs.upstream ~/.cargo/bin/agentfs
@@ -14,7 +18,7 @@
 set -euo pipefail
 
 FORK_URL="${AGENTFS_FORK_URL:-https://github.com/nnabuuu/agentfs.git}"
-FORK_BRANCH="${AGENTFS_FORK_BRANCH:-fix/nfs-write-owner-bypass-mode-check}"
+FORK_BRANCH="${AGENTFS_FORK_BRANCH:-feat/nfs-drop-appledouble}"
 WORKDIR="${TMPDIR:-/tmp}/agentfs-fix-build"
 TARGET_BIN="$HOME/.cargo/bin/agentfs"
 BACKUP_BIN="$HOME/.cargo/bin/agentfs.upstream"

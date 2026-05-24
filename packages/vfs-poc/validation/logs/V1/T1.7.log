@@ -1,27 +1,24 @@
 # T1.7 case collision Foo.md vs foo.md (macOS NFS) (R4)
-# started 2026-05-24T18:04:28.438Z
+# started 2026-05-24T18:44:42.572Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-7-1779645868440/.git/
-  → exit 0 (96ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git config init.defaultBranch main
-  → exit 0 (55ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git add -A
-  → exit 0 (62ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git ls-files
-  | .gitignore
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-7-1779648282573/.git/
+  → exit 0 (83ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git config init.defaultBranch main
+  → exit 0 (33ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git add -A
+  → exit 0 (41ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git ls-files
   | Foo.md
   | foo.md
-  → exit 0 (32ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git commit -m case test
-  | [main（根提交） 50d9aeb] case test
-  |  3 files changed, 4 insertions(+)
-  |  create mode 100644 .gitignore
+  → exit 0 (28ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git commit -m case test
+  | [main（根提交） b85f3b0] case test
+  |  2 files changed, 2 insertions(+)
   |  create mode 100644 Foo.md
   |  create mode 100644 foo.md
-  → exit 0 (64ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779645868440 && git fsck --full
-  ! 坏的 sha1 文件：.git/objects/eb/._tmp_obj_tRNcFN
-  → exit 0 (55ms)
+  → exit 0 (61ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-7-1779648282573 && git fsck --full
+  → exit 0 (60ms)
 
-PASS in 1007ms
+PASS in 942ms

@@ -1,17 +1,16 @@
 # T1.8 git status perf + stat-cache stability across remount (R5, R8)
-# started 2026-05-24T18:04:29.448Z
+# started 2026-05-24T18:44:43.515Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-8-1779645869450/.git/
-  → exit 0 (78ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git config init.defaultBranch main
-  → exit 0 (29ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git add -A
-  → exit 0 (4800ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
-  | [main（根提交） de8c94a] tree
-  |  1001 files changed, 1002 insertions(+)
-  |  create mode 100644 .gitignore
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-8-1779648283516/.git/
+  → exit 0 (87ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git config init.defaultBranch main
+  → exit 0 (32ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git add -A
+  → exit 0 (6396ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git commit -m tree
+  | [main（根提交） 1310a53] tree
+  |  1000 files changed, 1000 insertions(+)
   |  create mode 100644 tree/f0.txt
   |  create mode 100644 tree/f1.txt
   |  create mode 100644 tree/f10.txt
@@ -250,9 +249,9 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
   |  create mode 100644 tree/f31.txt
   |  create mode 100644 tree/f310.txt
   |  create mode 100644 tree/f311.txt
-  |  create mode 100644 tree
-  | /f312.txt
-  |  create mode 100644 tree/f313.txt
+  |  create mode 100644 tree/f312.txt
+  |  create mode 100644 t
+  | ree/f313.txt
   |  create mode 100644 tree/f314.txt
   |  create mode 100644 tree/f315.txt
   |  create mode 100644 tree/f316.txt
@@ -493,9 +492,9 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
   |  create mode 100644 tree/f528.txt
   |  create mode 100644 tree/f529.txt
   |  create mode 100644 tree/f53.txt
-  |  create mode 1
-  | 00644 tree/f530.txt
-  |  create mode 100644 tree/f531.txt
+  |  create mode 100644 tree/f530.txt
+  |  create mod
+  | e 100644 tree/f531.txt
   |  create mode 100644 tree/f532.txt
   |  create mode 100644 tree/f533.txt
   |  create mode 100644 tree/f534.txt
@@ -736,8 +735,7 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
   |  create mode 100644 tree/f746.txt
   |  create mode 100644 tree/f747.txt
   |  create mode 100644 tree/f748.txt
-  |  cr
-  | eate mode 100644 tree/f749.txt
+  |  create mode 100644 tree/f749.txt
   |  create mode 100644 tree/f75.txt
   |  create mode 100644 tree/f750.txt
   |  create mode 100644 tree/f751.txt
@@ -978,9 +976,9 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
   |  create mode 100644 tree/f963.txt
   |  create mode 100644 tree/f964.txt
   |  create mode 100644 tree/f965.txt
-  |  create mode 100644 tree/f9
-  | 66.txt
-  |  create mode 100644 tree/f967.txt
+  |  create mode 100644 tree/f966.txt
+  |  create mode 100644 tree
+  | /f967.txt
   |  create mode 100644 tree/f968.txt
   |  create mode 100644 tree/f969.txt
   |  create mode 100644 tree/f97.txt
@@ -1016,12 +1014,12 @@ $ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git commit -m tree
   |  create mode 100644 tree/f997.txt
   |  create mode 100644 tree/f998.txt
   |  create mode 100644 tree/f999.txt
-  → exit 0 (731ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git status --porcelain
-  → exit 0 (228ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git status --porcelain
-  → exit 0 (47ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779645869450 && git status --porcelain
-  → exit 0 (275ms)
+  → exit 0 (749ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git status --porcelain
+  → exit 0 (329ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git status --porcelain
+  → exit 0 (62ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-8-1779648283516 && git status --porcelain
+  → exit 0 (185ms)
 
-PASS in 15452ms
+PASS in 14118ms

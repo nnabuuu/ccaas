@@ -145,6 +145,8 @@ export function nlinkOf(path: string): number {
  * would misinterpret the sidecars.
  */
 export function cleanAppleDoubles(dir: string): void {
+  // No-op when VFS_POC_BARE=1 — see configureRepo() rationale.
+  if (process.env.VFS_POC_BARE === '1') return;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = `${dir}/${entry.name}`;
     if (entry.isDirectory()) cleanAppleDoubles(p);
@@ -164,9 +166,13 @@ export async function configureRepo(ctx: TestContext, cwd: string): Promise<void
   // macOS NFS client auto-creates `._foo` AppleDouble sidecars for every file
   // (because com.apple.provenance xattr can't be stored in agentfs NFS, kernel
   // falls back to AppleDouble). Excluding `._*` from git prevents them from
-  // being staged/committed/merged. Does not stop their physical creation on
-  // disk, but keeps them out of the git index. Linux FUSE has no AppleDouble.
-  writeF(join(cwd, '.gitignore'), '._*\n.DS_Store\n');
+  // being staged/committed/merged.
+  // Skip when VFS_POC_BARE=1 — used to validate that a patched agentfs
+  // (which drops sidecars server-side, see appledouble.rs) makes the workaround
+  // unnecessary.
+  if (process.env.VFS_POC_BARE !== '1') {
+    writeF(join(cwd, '.gitignore'), '._*\n.DS_Store\n');
+  }
 }
 
 export { wait };

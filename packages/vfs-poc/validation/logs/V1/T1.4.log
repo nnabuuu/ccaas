@@ -1,44 +1,39 @@
 # T1.4 worktree add → commit → merge → remove (spec ③⑧ main flow)
-# started 2026-05-24T18:04:23.719Z
+# started 2026-05-24T18:44:37.866Z
 
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git init -b main
-  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project/.git/
-  → exit 0 (87ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git config init.defaultBranch main
-  → exit 0 (36ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git add -A
-  → exit 0 (46ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git commit -m initial
-  | [main（根提交） 6ef4f47] initial
-  |  2 files changed, 3 insertions(+)
-  |  create mode 100644 .gitignore
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git init -b main
+  | 已初始化空的 Git 仓库于 /private/tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project/.git/
+  → exit 0 (155ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git config init.defaultBranch main
+  → exit 0 (41ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git add -A
+  → exit 0 (41ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git commit -m initial
+  | [main（根提交） f5aee92] initial
+  |  1 file changed, 1 insertion(+)
   |  create mode 100644 shared.txt
-  → exit 0 (60ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git worktree add -b session-A /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A
+  → exit 0 (78ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git worktree add -b session-A /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/worktree-A
   ! 准备工作区（新分支 'session-A'）
-  | HEAD 现在位于 6ef4f47 initial
-  → exit 0 (90ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A && git add -A
-  → exit 0 (40ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A && git commit -m session-A work
-  | [session-A 665eacd] session-A work
+  | HEAD 现在位于 f5aee92 initial
+  → exit 0 (110ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/worktree-A && git add -A
+  → exit 0 (47ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/worktree-A && git commit -m session-A work
+  | [session-A 2bef221] session-A work
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 session-only.txt
-  → exit 0 (59ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git merge --no-ff -m merge session-A session-A
+  → exit 0 (69ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git merge --no-ff -m merge session-A session-A
   | Merge made by the 'ort' strategy.
   |  session-only.txt | 1 +
   |  shared.txt       | 2 +-
   |  2 files changed, 2 insertions(+), 1 deletion(-)
   |  create mode 100644 session-only.txt
-  → exit 0 (95ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/worktree-A
-  → exit 0 (53ms)
-$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779645863721/project && git fsck --full
-  ! 坏的 sha1 文件：.git/objects/83/._tmp_obj_IN7HqB
-  ! 坏的 sha1 文件：.git/objects/b6/._e9572c53c400eb50a6d27eca226e5f54a1a951
-  ! 坏的 sha1 文件：.git/objects/eb/._00a60a5cf4c8d382b51a1ff664213616d31bf5
-  ! 坏的 sha1 文件：.git/objects/eb/._tmp_obj_IA0sCB
-  → exit 0 (54ms)
+  → exit 0 (87ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git worktree remove /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/worktree-A
+  → exit 0 (46ms)
+$ cd /tmp/vfs-poc-validation/mnt/t1-4-1779648277867/project && git fsck --full
+  → exit 0 (59ms)
 
-PASS in 1273ms
+PASS in 1367ms

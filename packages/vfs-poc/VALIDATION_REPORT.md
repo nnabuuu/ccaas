@@ -1,10 +1,10 @@
 # Agent Session Runtime — P0 Validation Report
 
-> **验证日期**: v1 2026-05-24,**v2 (本次修订) 2026-05-25**
+> **验证日期**: v1 2026-05-24, v2 2026-05-25, **v3 (本次修订) 2026-05-25**
 > **平台**: macOS 14.x (darwin arm64), agentfs NFS export
 > **关联 spec**: [docs/agent-session-runtime-spec.md](../../docs/agent-session-runtime-spec.md)
 > **关联 POC**: `packages/vfs-poc/` (POC1 commit `d531540`)
-> **版本** (v2 修订时): agentfs **2e9c85f** ([rail44/agentfs fix 分支](https://github.com/rail44/agentfs/tree/fix/nfs-write-owner-bypass-mode-check)) + upstream v0.6.4 备份, git 2.43.0, claude 2.1.148, node 22.15.1
+> **版本** (v3 修订时): agentfs **7f6af74** ([nnabuuu/agentfs feat/nfs-drop-appledouble 分支](https://github.com/nnabuuu/agentfs/tree/feat/nfs-drop-appledouble)), git 2.43.0, claude 2.1.148, node 22.15.1
 > **测试代码**: `packages/vfs-poc/validation/` (可重跑: `npm run validate:v1`, `npm run validate:v2`)
 > **原始日志**: `packages/vfs-poc/validation/logs/{V1,V2}/`
 > **机器可读结果**: `packages/vfs-poc/validation/results/{v1,v2}-darwin.json`
@@ -13,20 +13,21 @@
 
 ## Executive Summary
 
-> **本报告有两轮验证**:
+> **本报告有三轮验证**:
 > - **v1 (2026-05-24)** 用 agentfs upstream v0.6.4 跑,V1 全 fail。
-> - **v2 (2026-05-25)** 我们独立踩到的 git 失败,在 [tursodatabase/agentfs#333](https://github.com/tursodatabase/agentfs/issues/333) 里被 `@rail44` 在 2026-04-16 报告过,并附了 fix 分支。本次自己 build + 装上 fix 分支重跑,**V1 从 0/10 → 10/10**。
+> - **v2 (2026-05-25)** 找到 [tursodatabase/agentfs#333](https://github.com/tursodatabase/agentfs/issues/333) 同问题 + @rail44 的 fix 分支,自己 build 装上重跑。V1 从 0/10 → 10/10,但仍依赖**应用层 workaround** (`.gitignore '._*'` + `cleanAppleDoubles()`)。
+> - **v3 (2026-05-25)** 在我们 fork 上加 `feat/nfs-drop-appledouble`(server 端"silent drop" AppleDouble,250 行 Rust),应用层 workaround **全部移除**(`VFS_POC_BARE=1`),V1 仍然 10/10。spec D2 在 macOS 上现在是 **clean pass**,不再需要任何 git 配置妥协。
 
-| 验证 | v1 结论 (upstream) | v2 结论 (rail44 fix + macOS workarounds) | 对 spec 的影响 |
-|---|---|---|---|
-| **V1 — `.git` 直接放 agentfs 虚拟 FS** | ❌ 0/10 — `git add` 写 loose object 时 close() 报 EACCES | ✅ **10/10** — rail44 fix 解了 NFS server 端,加 `.gitignore '._*'` + `cleanAppleDoubles()` 处理 macOS-only AppleDouble | **D2/D4 conditional pass**: 一旦 rail44 fix 合入 upstream(或我们一直自带打过补丁的 build),spec D2 在 macOS 也立得住。Linux FUSE 大概率原生 pass(无 AppleDouble)。**不再是 blocker** |
-| **V2 — just-bash 完全替代 claude shell + fs 工具** | ⚠️ 强读 1/3,弱读 3/3 | (本轮未重跑 V2) | **D1 措辞需修订**: 不写"完全替代",改写**两层模型** — bash 弱替代(POC1 已验证)+ 可选 fs 强替代(需要 1:1 schema 镜像) |
-| **总体** | 🚧 需要补丁 + spec 措辞修订 | 🟢 **spec 主架构成立**,有 1 个上游 fix 依赖 + 1 个措辞修订 | |
+| 验证 | v1 (upstream) | v2 (rail44 fix + macOS workarounds) | **v3 (rail44 fix + nfs-drop-appledouble, bare mode)** | 对 spec 的影响 |
+|---|---|---|---|---|
+| **V1 — `.git` 直接放 agentfs 虚拟 FS** | ❌ 0/10 | ✅ 10/10 (需 `.gitignore '._*'` + `cleanAppleDoubles()`) | ✅ **10/10 bare** — `VFS_POC_BARE=1` 关掉所有应用层 workaround 仍 10/10 | **D2/D4 clean pass**: 现在不需要任何 git 配置或测试代码妥协。**完全不是 blocker** |
+| **V2 — just-bash 完全替代 claude shell + fs 工具** | ⚠️ 强读 1/3,弱读 3/3 | (未重跑 V2,跟 git/fs server 无关) | (同左) | **D1 措辞需修订**: 不写"完全替代",改写**两层模型** — bash 弱替代(POC1 已验证)+ 可选 fs 强替代(需要 1:1 schema 镜像) |
+| **总体** | 🚧 需要补丁 + spec 措辞修订 | 🟢 spec 主架构成立,带 macOS-only 应用层 workaround | 🟢🟢 **spec 主架构成立 + 零应用层妥协**,我们自维护的 agentfs fork 在 server 端解决所有 macOS 兼容性 | |
 
 **当前 blocker 状态**:
-1. ~~agentfs SETATTR-after-WRITE~~ — **已有 fix**([rail44 fix 分支](https://github.com/rail44/agentfs/tree/fix/nfs-write-owner-bypass-mode-check), 1 commit,带 test)。仅需上游合入或者我们维护 fork。Issue [#333](https://github.com/tursodatabase/agentfs/issues/333) 详细描述了同类问题在 nfs-ganesha/mergerfs/Red Hat 的先例和修复方式
+1. ~~agentfs SETATTR-after-WRITE~~ — **已解**: rail44 fix 在我们 fork (`fix/nfs-write-owner-bypass-mode-check`),由 `feat/nfs-drop-appledouble` 继承
 2. ~~`git clone --local` EXDEV~~ — 标准 POSIX 行为;加 `--no-hardlinks` 即解(spec 实际场景里不会有 host→mount clone 这种操作)
-3. **macOS AppleDouble** — macOS NFS client 给所有文件自动写 `._foo` sidecar(因为 `com.apple.provenance` xattr fallback)。**Linux FUSE 没有这个问题**。macOS dev 需要 `.gitignore '._*'` + 周期性 `find -name '._*' -delete`,或者推 turso 实现 NFS server 端 xattr 支持
+3. ~~macOS AppleDouble~~ — **已解**: 我们 fork 上的 `feat/nfs-drop-appledouble` 分支在 NFS server 端"silent drop"所有 `._foo` 和 .DS_Store。LOOKUP 返 NOENT;CREATE 返 synthetic fh;READ 返 EOF;WRITE 静默吞掉;READDIR 过滤。macOS 应用层完全无感(没人需要 `com.apple.provenance` roundtrip)。Linux FUSE 本来就没这个问题
 
 ---
 
@@ -274,3 +275,11 @@ npm run clean
   - **V1 最终 10/10 pass on macOS NFS** (agentfs `2e9c85f` + 应用层 macOS workaround)
   - spec D2 verdict 从 BLOCKED 升级为 conditional pass
   - 更正 v1 报告里"fchmod after WRITE"的不精确描述 — 实际是 git `open(O_CREAT, 0444)` 后 NFS server mode-check 拒 WRITE RPC,close() 时延迟报错
+- **v3 — 2026-05-25** (server 端根治 AppleDouble):
+  - 在 `nnabuuu/agentfs:feat/nfs-drop-appledouble` 上加 250 行 Rust 模块 `appledouble.rs` + 11 处 NFS handler 拦截。架构: synthetic fh (fileid=u64::MAX) + per-handler short-circuits + READDIR 过滤
+  - 11 个 patched handler: LOOKUP / CREATE / GETATTR / SETATTR / READ / WRITE / ACCESS / REMOVE / RENAME / READDIR / READDIRPLUS
+  - env var gate: `AGENTFS_DROP_APPLEDOUBLE=0` 可禁用(默认 on)
+  - 加 `VFS_POC_BARE=1` 测试模式,把应用层 `.gitignore '._*'` + `cleanAppleDoubles()` 全关
+  - **V1 在 bare mode 下仍 10/10 pass** → 证明 server 端拦截已替代所有应用层 workaround
+  - spec D2 verdict 从 conditional pass 升级为 **clean pass** (零 git 配置妥协)
+  - 不依赖 turso 上游合任何东西 — 完全在我们 fork 控制内
