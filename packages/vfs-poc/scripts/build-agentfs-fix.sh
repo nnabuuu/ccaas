@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Build and install rail44/agentfs's fix/nfs-write-owner-bypass-mode-check
+# Build and install our agentfs fork's fix/nfs-write-owner-bypass-mode-check
 # branch over the current agentfs binary. Required for V1 to pass on
 # macOS NFS — see ../VALIDATION_REPORT.md (v2 revision) for context.
+#
+# The fix originated from @rail44 in tursodatabase/agentfs#333 (issue still
+# open with no upstream merge). We carry it on our fork so the ccaas POC has
+# a stable buildable source and so we can layer our own modifications.
 #
 # Backs up the existing binary to ~/.cargo/bin/agentfs.upstream so you can
 # revert with: cp ~/.cargo/bin/agentfs.upstream ~/.cargo/bin/agentfs
@@ -9,8 +13,8 @@
 # Requires: rustup with a nightly toolchain installed.
 set -euo pipefail
 
-FORK_URL="https://github.com/rail44/agentfs.git"
-FORK_BRANCH="fix/nfs-write-owner-bypass-mode-check"
+FORK_URL="${AGENTFS_FORK_URL:-https://github.com/nnabuuu/agentfs.git}"
+FORK_BRANCH="${AGENTFS_FORK_BRANCH:-fix/nfs-write-owner-bypass-mode-check}"
 WORKDIR="${TMPDIR:-/tmp}/agentfs-fix-build"
 TARGET_BIN="$HOME/.cargo/bin/agentfs"
 BACKUP_BIN="$HOME/.cargo/bin/agentfs.upstream"
@@ -22,6 +26,8 @@ fi
 
 echo "==> cloning $FORK_URL @ $FORK_BRANCH → $WORKDIR"
 rm -rf "$WORKDIR"
+# Shallow clone for build speed. Override AGENTFS_FORK_URL / AGENTFS_FORK_BRANCH
+# env vars to build a different source.
 git clone --depth 1 --branch "$FORK_BRANCH" "$FORK_URL" "$WORKDIR"
 
 echo "==> building (release)"
