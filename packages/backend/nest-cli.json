@@ -5,6 +5,13 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
-    "tsConfigPath": "tsconfig.json"
+    "tsConfigPath": "tsconfig.json",
+    "assets": [
+      {
+        "include": "sessions/sandbox/just-bash-mcp/**/*",
+        "outDir": "dist/src",
+        "watchAssets": false
+      }
+    ]
   }
 }

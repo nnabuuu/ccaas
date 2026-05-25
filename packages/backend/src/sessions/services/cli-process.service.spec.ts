@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { CliProcessService } from './cli-process.service';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
+import { SandboxService } from '../sandbox/sandbox.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CliProcessService - handleCLIClose', () => {
@@ -39,6 +40,16 @@ describe('CliProcessService - handleCLIClose', () => {
           useValue: { mapToSessionEvents: jest.fn().mockReturnValue([]) },
         },
         { provide: WorkspaceService, useValue: {} },
+        {
+          provide: SandboxService,
+          useValue: {
+            enabled: false,
+            mode: 'none',
+            bashMcpSpec: () => null,
+            disallowedTools: () => [],
+            systemPromptSteer: () => '',
+          },
+        },
       ],
     }).compile();
 

@@ -19,6 +19,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
+import { SandboxService } from '../sandbox/sandbox.service';
 import type { ManagedSession, CLIEvent, SessionEvent } from '../../common/interfaces';
 
 export interface ResolvedAttachment {
@@ -37,11 +38,80 @@ export class CliProcessService {
     private readonly configService: ConfigService,
     private readonly eventMapperService: EventMapperService,
     private readonly workspaceService: WorkspaceService,
+    private readonly sandboxService: SandboxService,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
     this.claudeCliPath = this.configService.get('CLAUDE_CLI_PATH', 'claude');
 
     this.logger.log(`Using Claude CLI: ${this.claudeCliPath}`);
+  }
+
+  /**
+   * Build the `--mcp-config` arg + any sandbox-related arg additions
+   * shared between initial spawn and `--resume` spawn. Mutates `args`
+   * in place.
+   *
+   * Sandbox semantics (when `SandboxService.enabled`):
+   *   - Inject `__ccaas_bash` MCP server backed by just-bash, rooted at
+   *     `session.workspaceDir`. Merged with solution-provided mcpServers,
+   *     never overrides.
+   *   - Append `--disallowed-tools Bash` (combined with any existing
+   *     disallows we may want in the future).
+   *   - Append sandbox steering text to `appendSystemPrompt`.
+   */
+  private applyMcpAndSandbox(
+    session: ManagedSession,
+    args: string[],
+    appendSystemPrompt: string | undefined,
+  ): string | undefined {
+    const mcpServers: Record<string, unknown> = {};
+
+    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
+      const resolved = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
+      Object.assign(mcpServers, resolved);
+      this.logger.log(
+        `Session ${session.sessionId} using solution MCP servers: ${Object.keys(session.mcpServers).join(', ')}`,
+      );
+    }
+
+    const sandbox = this.sandboxService.bashMcpSpec(session.workspaceDir, session.sessionId);
+    if (sandbox) {
+      if (mcpServers[sandbox.name]) {
+        this.logger.warn(
+          `Session ${session.sessionId} mcpServer key collision on reserved name ${sandbox.name}; ` +
+          `solution-provided entry is being replaced by ccaas sandbox MCP.`,
+        );
+      }
+      mcpServers[sandbox.name] = {
+        command: sandbox.command,
+        args: sandbox.args,
+        env: sandbox.env,
+      };
+      this.logger.log(
+        `Session ${session.sessionId} bash sandbox active (${this.sandboxService.mode}) → ${sandbox.name}`,
+      );
+    }
+
+    if (Object.keys(mcpServers).length > 0) {
+      const mcpConfig = JSON.stringify({ mcpServers });
+      args.push('--mcp-config', mcpConfig);
+      this.logger.debug(`MCP config: ${mcpConfig}`);
+    } else {
+      this.logger.warn(`Session ${session.sessionId} has NO MCP servers configured`);
+    }
+
+    const disallow = this.sandboxService.disallowedTools();
+    if (disallow.length > 0) {
+      args.push('--disallowed-tools', disallow.join(','));
+    }
+
+    const steer = this.sandboxService.systemPromptSteer();
+    if (steer) {
+      return appendSystemPrompt && appendSystemPrompt.trim()
+        ? `${appendSystemPrompt}\n\n${steer}`
+        : steer;
+    }
+    return appendSystemPrompt;
   }
 
   /**
@@ -73,22 +143,13 @@ export class CliProcessService {
       '--permission-prompt-tool', 'stdio',
     ];
 
-    // Add MCP servers if configured (passed from solution backends)
-    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      // Resolve tenant-relative paths to session-relative symlink paths
-      const resolvedMcpServers = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
-      const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
-      args.push('--mcp-config', mcpConfig);
-      this.logger.log(`Session ${session.sessionId} using MCP servers: ${Object.keys(session.mcpServers).join(', ')}`);
-      this.logger.debug(`MCP config: ${mcpConfig}`);
-    } else {
-      this.logger.warn(`Session ${session.sessionId} has NO MCP servers configured`);
-    }
-
-    // Add append-system-prompt if provided
-    if (appendSystemPrompt && appendSystemPrompt.trim()) {
-      args.push('--append-system-prompt', appendSystemPrompt);
-      this.logger.log(`Added skill system prompt (${appendSystemPrompt.length} chars)`);
+    // Merge solution-provided MCP servers + ccaas sandbox MCP (when enabled),
+    // emit --mcp-config / --disallowed-tools, fold sandbox steering into the
+    // append-system-prompt. See applyMcpAndSandbox for sandbox rationale.
+    const effectiveSystemPrompt = this.applyMcpAndSandbox(session, args, appendSystemPrompt);
+    if (effectiveSystemPrompt && effectiveSystemPrompt.trim()) {
+      args.push('--append-system-prompt', effectiveSystemPrompt);
+      this.logger.log(`Added system prompt (${effectiveSystemPrompt.length} chars)`);
     }
 
     this.logger.log(`Running command: ${this.claudeCliPath} ${args.join(' ')}`);
@@ -186,17 +247,11 @@ export class CliProcessService {
       '--resume', session.sessionId,
     ];
 
-    // Add MCP servers if configured (passed from solution backends)
-    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      // Resolve tenant-relative paths to session-relative symlink paths
-      const resolvedMcpServers = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
-      const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
-      args.push('--mcp-config', mcpConfig);
-    }
-
-    // Add append-system-prompt (preserved across resume)
-    if (session.appendSystemPrompt && session.appendSystemPrompt.trim()) {
-      args.push('--append-system-prompt', session.appendSystemPrompt);
+    // Merge MCP + sandbox same as initial spawn (so resumed sessions
+    // keep the just-bash MCP route + Bash deny, not just on first turn).
+    const effectiveSystemPrompt = this.applyMcpAndSandbox(session, args, session.appendSystemPrompt);
+    if (effectiveSystemPrompt && effectiveSystemPrompt.trim()) {
+      args.push('--append-system-prompt', effectiveSystemPrompt);
     }
 
     this.logger.log(`Running follow-up command: ${this.claudeCliPath} ${args.join(' ')}`);

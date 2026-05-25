@@ -27,6 +27,16 @@ export default () => ({
       // Where per-session SQLite delta dbs live. Defaults under workspace.dir.
       deltaStore: process.env.WORKSPACE_AGENTFS_DELTA_STORE || '', // '' = use ${workspace.dir}/_agentfs_deltas
     },
+    // Bash sandbox for claude session spawns. When 'just-bash', backend
+    // appends `--disallowed-tools Bash` and injects an MCP server backed by
+    // just-bash (rooted at the session workspace path). 'none' = native Bash
+    // tool stays enabled (today's behavior).
+    // Resolved default: 'just-bash' iff WORKSPACE_PROVIDER=agentfs (so a stage-1
+    // local self-host with WORKSPACE_PROVIDER=agentfs gets fs+bash both sandboxed
+    // out of the box). Explicit value always wins.
+    bashSandbox: (process.env.WORKSPACE_BASH_SANDBOX
+      ?? (process.env.WORKSPACE_PROVIDER === 'agentfs' ? 'just-bash' : 'none')) as
+      'just-bash' | 'none',
   },
 
   database: {

@@ -37,6 +37,7 @@ import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
 import { BaseMaterializer } from './workspace/base-materializer';
 import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory';
 import { WORKSPACE_PROVIDER } from './workspace/types';
+import { SandboxService } from './sandbox/sandbox.service';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -83,6 +84,7 @@ import { BundleModule } from '../bundles/bundle.module';
     AgentfsWorkspaceProvider,
     BaseMaterializer,
     WorkspaceProviderFactory,
+    SandboxService,
   ],
   exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER],
 })
