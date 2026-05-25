@@ -4,10 +4,10 @@ import { LandingNav } from './components/LandingNav'
 import { HeroSection } from './components/HeroSection'
 import { NarrativeSection } from './components/NarrativeSection'
 import { SkipSection } from './components/SkipSection'
+import { DeveloperExperienceSection } from './components/DeveloperExperienceSection'
 import { UseCasesSection } from './components/UseCasesSection'
 import { FeaturesGrid } from './components/FeaturesGrid'
 import { ArchitectureDiagram } from './components/ArchitectureDiagram'
-import { PricingSection } from './components/PricingSection'
 import { CTASection } from './components/CTASection'
 import { LandingFooter } from './components/LandingFooter'
 import { useLang } from '@/contexts/language-context'
@@ -40,10 +40,10 @@ export function LandingPage() {
       <HeroSection />
       <NarrativeSection />
       <SkipSection />
+      <DeveloperExperienceSection />
       <UseCasesSection />
       <FeaturesGrid />
       <ArchitectureDiagram />
-      <PricingSection />
       <CTASection />
       <LandingFooter />
     </div>

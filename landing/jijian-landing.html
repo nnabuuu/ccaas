@@ -622,6 +622,7 @@
   @media (max-width: 1024px) {
     .feature-grid { grid-template-columns: repeat(2, 1fr); }
     .narrative-grid { gap: 48px; }
+    .sd-interactions { grid-template-columns: 1fr; }
   }
   @media (max-width: 768px) {
     .nav-links { display: none; }
@@ -631,214 +632,115 @@
     .feature-grid { grid-template-columns: 1fr; }
     .usecase-grid { grid-template-columns: 1fr; }
     .arch-diagram { padding: 24px; }
+    .sd-flow { min-width: 700px; }
     .footer-cols { gap: 40px; }
     .footer-inner { flex-direction: column; }
     .footer-bottom { flex-direction: column; gap: 8px; }
   }
 
-  /* ─── PRICING ─── */
-  .pricing { background: var(--surface-subtle); }
-  .demo-banner {
-    background: var(--accent-light);
-    border: 1px solid rgba(74,124,111,0.2);
+  /* ─── SOLUTION DELIVERY (DX) ─── */
+  .dx-section { background: var(--navy); color: #fff; }
+  .dx-section .section-label { color: var(--accent); opacity: 0.9; }
+  .dx-section .section-title { color: #fff; }
+  .dx-section .section-desc { color: rgba(255,255,255,0.6); }
+
+  .sd-flow-wrapper {
+    margin-top: 56px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sd-flow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    min-width: 800px;
+  }
+  .sd-node {
+    padding: 24px 20px;
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.08);
     border-radius: 12px;
-    padding: 20px 28px;
-    margin-top: 40px;
-    margin-bottom: 32px;
+    text-align: center;
+    min-width: 140px;
+    max-width: 180px;
+    flex: 1;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .sd-node:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .sd-node-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sd-node-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .sd-node-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.5;
+  }
+  .sd-arrow {
     display: flex;
     align-items: center;
-    gap: 16px;
-  }
-  .demo-banner-icon {
-    width: 36px; height: 36px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
+    padding: 0 8px;
+    padding-top: 24px;
+    color: rgba(255,255,255,0.25);
+    font-size: 20px;
     flex-shrink: 0;
   }
-  .demo-banner-text { flex: 1; }
-  .demo-banner-text strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--accent-dark);
-    margin-bottom: 4px;
-  }
-  .demo-banner-text p {
-    font-size: 13px;
-    color: var(--ink-secondary);
-    line-height: 1.5;
-    margin: 0;
-  }
-  .demo-banner-cta {
-    padding: 8px 20px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-  .demo-banner-cta:hover { background: var(--accent-dark); }
-  .plan-grid {
+  .sd-interactions {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
-    margin-bottom: 24px;
+    margin-top: 40px;
   }
-  .plan-card {
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    transition: box-shadow 0.2s, border-color 0.2s;
-  }
-  .plan-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-  .plan-card.recommended {
-    background: var(--navy);
-    border-color: var(--navy);
-  }
-  .recommended-badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 4px 14px;
-    border-radius: 100px;
-    white-space: nowrap;
-  }
-  .plan-header { margin-bottom: 24px; }
-  .plan-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--ink);
-    margin-bottom: 6px;
-  }
-  .plan-card.recommended .plan-name { color: #fff; }
-  .plan-tagline {
-    font-size: 13px;
-    color: var(--ink-muted);
-    line-height: 1.4;
-  }
-  .plan-card.recommended .plan-tagline { color: rgba(255,255,255,0.55); }
-  .plan-price { margin-bottom: 28px; }
-  .plan-price-amount {
-    font-size: 36px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    color: var(--ink);
-    line-height: 1;
-  }
-  .plan-card.recommended .plan-price-amount { color: #fff; }
-  .plan-price-unit {
-    font-size: 14px;
-    color: var(--ink-muted);
-    margin-top: 4px;
-  }
-  .plan-card.recommended .plan-price-unit { color: rgba(255,255,255,0.5); }
-  .plan-features {
-    flex: 1;
-    list-style: none;
-    margin-bottom: 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .plan-features li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 13.5px;
-    color: var(--ink-secondary);
-    line-height: 1.4;
-  }
-  .plan-card.recommended .plan-features li { color: rgba(255,255,255,0.7); }
-  .feat-check { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
-  .plan-cta {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
-    cursor: pointer;
-    text-decoration: none;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--ink);
-    transition: background 0.2s, border-color 0.2s, transform 0.15s;
-  }
-  .plan-cta:hover { border-color: var(--ink-muted); background: var(--surface-subtle); }
-  .plan-card.recommended .plan-cta {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-  .plan-card.recommended .plan-cta:hover {
-    background: var(--accent-dark);
-    border-color: var(--accent-dark);
-    transform: translateY(-1px);
-  }
-  .enterprise-strip {
-    background: var(--navy);
-    border-radius: 16px;
-    padding: 28px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-  .enterprise-strip-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 4px;
-  }
-  .enterprise-strip-desc {
-    font-size: 14px;
-    color: rgba(255,255,255,0.55);
-  }
-  .enterprise-strip-cta {
-    padding: 11px 28px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    white-space: nowrap;
+  .sd-card {
+    padding: 28px;
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
     transition: background 0.2s, border-color 0.2s;
-    flex-shrink: 0;
   }
-  .enterprise-strip-cta:hover {
-    background: rgba(255,255,255,0.18);
-    border-color: rgba(255,255,255,0.35);
+  .sd-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
   }
-  @media (max-width: 1024px) {
-    .plan-grid { grid-template-columns: repeat(2, 1fr); }
+  .sd-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.4;
   }
-  @media (max-width: 768px) {
-    .plan-grid { grid-template-columns: 1fr; }
-    .enterprise-strip { flex-direction: column; align-items: flex-start; }
+  .sd-card p {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.7;
+  }
+
+  /* ─── ARCHITECTURE HARNESS BAND ─── */
+  .arch-harness {
+    margin-top: 24px;
+    padding: 14px 24px;
+    background: var(--accent-light);
+    border: 0.5px solid rgba(74,124,111,0.2);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    letter-spacing: 0.02em;
   }
 
   /* ─── ANIMATION ─── */
@@ -873,21 +775,17 @@
         <span class="zh">为什么选择即见</span>
         <span class="en">Why KedgeAgentic</span>
       </a>
-      <a href="#features">
-        <span class="zh">平台能力</span>
-        <span class="en">Features</span>
-      </a>
-      <a href="#architecture">
-        <span class="zh">架构</span>
-        <span class="en">Architecture</span>
+      <a href="#dx">
+        <span class="zh">方案交付</span>
+        <span class="en">Solution Delivery</span>
       </a>
       <a href="#usecases">
         <span class="zh">应用场景</span>
         <span class="en">Use Cases</span>
       </a>
-      <a href="#pricing">
-        <span class="zh">定价</span>
-        <span class="en">Pricing</span>
+      <a href="#features">
+        <span class="zh">平台能力</span>
+        <span class="en">Features</span>
       </a>
       <button class="lang-toggle" id="langToggle" onclick="toggleLang()">EN</button>
       <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank" class="nav-cta">
@@ -917,8 +815,8 @@
       </div>
       <div class="hs-title zh">描述业务</div>
       <div class="hs-title en">Describe</div>
-      <div class="hs-desc zh">用 Skills 定义逻辑，用 MCP 连接工具和数据</div>
-      <div class="hs-desc en">Define logic in Skills, connect tools via MCP</div>
+      <div class="hs-desc zh">用 SKILL.md 描述业务逻辑，用 MCP 连通工具</div>
+      <div class="hs-desc en">Describe logic in SKILL.md, connect tools via MCP</div>
     </div>
 
     <div class="hs-connector">
@@ -948,29 +846,29 @@
       </div>
       <div class="hs-title zh">交付 Agent 服务</div>
       <div class="hs-title en">Ship Service</div>
-      <div class="hs-desc zh">增强现有系统，或直接面向你的用户</div>
-      <div class="hs-desc en">Enhance existing systems or ship to users</div>
+      <div class="hs-desc zh">12 项 Harness 检查守护质量，即刻交付</div>
+      <div class="hs-desc en">12 Harness checks guard quality, ship instantly</div>
     </div>
   </div>
 
   <!-- Social proof bar -->
   <div class="hero-proof">
     <div class="hero-proof-item">
-      <span class="hero-proof-num">4+</span>
-      <span class="hero-proof-label zh">生产场景落地</span>
-      <span class="hero-proof-label en">Production use cases</span>
+      <span class="hero-proof-num">16</span>
+      <span class="hero-proof-label zh">业务解决方案</span>
+      <span class="hero-proof-label en">Business solutions</span>
     </div>
     <div class="hero-proof-divider"></div>
     <div class="hero-proof-item">
-      <span class="hero-proof-num">20+</span>
-      <span class="hero-proof-label zh">Agent 事件类型</span>
-      <span class="hero-proof-label en">Agent event types</span>
+      <span class="hero-proof-num">58</span>
+      <span class="hero-proof-label zh">Skills 已注册</span>
+      <span class="hero-proof-label en">Skills registered</span>
     </div>
     <div class="hero-proof-divider"></div>
     <div class="hero-proof-item">
-      <span class="hero-proof-num">On-Prem</span>
-      <span class="hero-proof-label zh">支持私有化部署</span>
-      <span class="hero-proof-label en">Self-hosted available</span>
+      <span class="hero-proof-num">12</span>
+      <span class="hero-proof-label zh">渐进式 Demo</span>
+      <span class="hero-proof-label en">Progressive demos</span>
     </div>
   </div>
 
@@ -1044,9 +942,124 @@
             <span class="zh">今天描述，明天上线</span>
             <span class="en">Describe Today, Ship Tomorrow</span>
           </h3>
-          <p class="zh">不需要搭建 Agent 基础设施，不需要处理模型调用、会话状态或工具编排。你只需描述业务——平台负责其余一切，Agent 服务随时可交付。</p>
-          <p class="en">No need to build agent infrastructure, manage model calls, session state, or tool orchestration. Describe the business — the platform handles the rest. Your Agentic service is ready to ship.</p>
+          <p class="zh">不需要搭建 Agent 基础设施，不需要处理模型调用、会话状态或工具编排。你只需描述业务——平台负责其余一切，Agent 服务随时可交付。内置 Harness 质量棘轮，技术债不会随规模悄悄增长。</p>
+          <p class="en">No need to build agent infrastructure, manage model calls, session state, or tool orchestration. Describe the business — the platform handles the rest. Your Agentic service is ready to ship. Built-in Harness quality ratchet ensures tech debt never creeps in as you scale.</p>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION DELIVERY -->
+<section class="dx-section" id="dx">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">方案交付</span>
+      <span class="en">Solution Delivery</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">从业务描述到生产交付的完整闭环</span>
+      <span class="en">From business description to production delivery</span>
+    </h2>
+    <p class="section-desc zh">Skills 定义意图、MCP 连通工具、平台编排执行、Harness 守护质量、SDK 交付体验——五个环节有机协作，业务描述即生产服务。</p>
+    <p class="section-desc en">Skills define intent, MCP connects tools, the platform orchestrates execution, Harness guards quality, SDK delivers UX — five stages work together so business descriptions become production services.</p>
+
+    <!-- Flow pipeline -->
+    <div class="sd-flow-wrapper">
+      <div class="sd-flow">
+        <div class="sd-node fade-in">
+          <div class="sd-node-label">Skills</div>
+          <div class="sd-node-title">
+            <span class="zh">定义业务意图</span>
+            <span class="en">Define Intent</span>
+          </div>
+          <div class="sd-node-desc">
+            <span class="zh">用 SKILL.md 描述 AI 该做什么——触发条件、工具权限、行为规范</span>
+            <span class="en">Describe what AI should do — triggers, tool permissions, behavior rules</span>
+          </div>
+        </div>
+        <div class="sd-arrow">→</div>
+        <div class="sd-node fade-in">
+          <div class="sd-node-label">MCP</div>
+          <div class="sd-node-title">
+            <span class="zh">连通工具与数据</span>
+            <span class="en">Connect Tools</span>
+          </div>
+          <div class="sd-node-desc">
+            <span class="zh">MCP Server 封装现有系统，AI 像调用函数一样使用你的工具和数据</span>
+            <span class="en">MCP Servers wrap existing systems — AI calls your tools like functions</span>
+          </div>
+        </div>
+        <div class="sd-arrow">→</div>
+        <div class="sd-node fade-in">
+          <div class="sd-node-label">Platform</div>
+          <div class="sd-node-title">
+            <span class="zh">执行与编排</span>
+            <span class="en">Execute</span>
+          </div>
+          <div class="sd-node-desc">
+            <span class="zh">平台调度 Agent、管理会话、路由 Skill、持久化上下文</span>
+            <span class="en">Schedules agents, manages sessions, routes skills, persists context</span>
+          </div>
+        </div>
+        <div class="sd-arrow">→</div>
+        <div class="sd-node fade-in">
+          <div class="sd-node-label">Harness</div>
+          <div class="sd-node-title">
+            <span class="zh">质量守护</span>
+            <span class="en">Guard Quality</span>
+          </div>
+          <div class="sd-node-desc">
+            <span class="zh">12 项自动检查 + 棘轮，技术债只减不增</span>
+            <span class="en">12 checks + ratchet — tech debt only decreases</span>
+          </div>
+        </div>
+        <div class="sd-arrow">→</div>
+        <div class="sd-node fade-in">
+          <div class="sd-node-label">UI/UX</div>
+          <div class="sd-node-title">
+            <span class="zh">交付用户体验</span>
+            <span class="en">Deliver UX</span>
+          </div>
+          <div class="sd-node-desc">
+            <span class="zh">SDK hooks + SYNC_FIELDS 实时同步 AI 输出到界面</span>
+            <span class="en">SDK hooks + SYNC_FIELDS sync AI output to UI in real-time</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interaction cards -->
+    <div class="sd-interactions">
+      <div class="sd-card fade-in">
+        <h3>
+          <span class="zh">Skills × MCP — 意图与能力的解耦</span>
+          <span class="en">Skills × MCP — Intent & Capability Decoupled</span>
+        </h3>
+        <p>
+          <span class="zh">Skills 定义 AI 该做什么，MCP 提供做事的工具——业务逻辑与数据源自然解耦。换工具不影响业务描述，换业务不需要重写工具。</span>
+          <span class="en">Skills define what AI should do. MCP provides the tools. Business logic and data sources decouple naturally — swap tools without touching rules, swap business without rewriting tools.</span>
+        </p>
+      </div>
+      <div class="sd-card fade-in">
+        <h3>
+          <span class="zh">Platform × Harness — 执行即可信赖</span>
+          <span class="en">Platform × Harness — Every Delivery Verified</span>
+        </h3>
+        <p>
+          <span class="zh">平台执行每次 Agent 迭代，Harness 棘轮确保质量只增不减。不是"上线后再测"，而是每次交付都经过验证。</span>
+          <span class="en">The platform executes every iteration. Harness ratchet ensures quality only improves. Not "test after launch" — every delivery is verified.</span>
+        </p>
+      </div>
+      <div class="sd-card fade-in">
+        <h3>
+          <span class="zh">全链路同步 — 从 AI 到用户，零断层</span>
+          <span class="en">End-to-End Sync — AI to UI, Zero Gap</span>
+        </h3>
+        <p>
+          <span class="zh">AI 通过 write_output 产出结构化数据，toolEventTriggers 推送 SSE，SYNC_FIELDS 实时订阅——从 AI 思考到 UI 更新，整条链路自动贯通。</span>
+          <span class="en">AI produces structured data via write_output, toolEventTriggers push SSE, SYNC_FIELDS subscribe in real-time — the entire AI-to-UI pipeline is automatic.</span>
+        </p>
       </div>
     </div>
   </div>
@@ -1091,24 +1104,27 @@
       </div>
       <div class="usecase-card fade-in">
         <div class="usecase-tag">
-          <span class="zh">人机协作</span>
-          <span class="en">Interactive</span>
+          <span class="zh">苏格拉底教学</span>
+          <span class="en">Socratic Teaching</span>
         </div>
         <h3>
-          <span class="zh">课程方案设计师</span>
-          <span class="en">Lesson Plan Designer</span>
+          <span class="zh">AI 互动课堂</span>
+          <span class="en">AI-Driven Live Lesson</span>
         </h3>
-        <p class="zh">老师只需定义教学 Skills，平台负责执行。AI 生成课程内容，实时同步结构化数据到表单字段——无需写任何代码。</p>
-        <p class="en">Teachers define teaching Skills; the platform handles execution. AI generates curriculum content and syncs structured data to form fields in real-time — no code required.</p>
+        <p class="zh">苏格拉底式 AI 教学引擎。8 个 MCP 工具控制板书状态机，SYNC_FIELDS 实时同步学生端 UI，16 个 E2E 测试守护每次迭代。</p>
+        <p class="en">Socratic AI teaching engine. 8 MCP tools drive a whiteboard state machine, SYNC_FIELDS sync student UI in real-time, 16 E2E specs guard every iteration.</p>
         <div class="usecase-detail">
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
-            9 MCP tools
+            8 MCP tools
           </span>
           <span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
-            <span class="zh">实时同步</span>
-            <span class="en">Real-time sync</span>
+            SYNC_FIELDS
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            16 E2E specs
           </span>
         </div>
       </div>
@@ -1203,8 +1219,8 @@
       <span class="zh">生产级所需的一切</span>
       <span class="en">Everything agents need<br>to run in production</span>
     </h2>
-    <p class="section-desc zh">平台负责 Agent 执行、上下文管理、会话持久化、工具编排。你只需专注 Skills 和 MCP——描述你的业务，其余交给平台。</p>
-    <p class="section-desc en">The platform handles agent execution, context management, session persistence, and tool orchestration. You focus on Skills and MCP — describe your business, the platform does the rest.</p>
+    <p class="section-desc zh">平台负责 Agent 执行、质量守护、上下文管理、会话持久化、工具编排。你只需专注 Skills 和 MCP——描述你的业务，其余交给平台。</p>
+    <p class="section-desc en">The platform handles agent execution, quality assurance, context management, session persistence, and tool orchestration. You focus on Skills and MCP — describe your business, the platform does the rest.</p>
     <div class="feature-grid">
       <div class="feature-card fade-in">
         <div class="feature-icon">
@@ -1274,25 +1290,25 @@
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/></svg>
         </div>
         <h3>
-          <span class="zh">Session Templates</span>
-          <span class="en">Session Templates</span>
+          <span class="zh">Harness 质量守护</span>
+          <span class="en">Harness Quality System</span>
         </h3>
-        <p class="zh">在 solution.json 中预设多角色 AI 行为（如教师模式/学生模式），平台自动 upsert 到租户配置，无需代码修改。</p>
-        <p class="en">Define multi-role AI behaviors in solution.json (e.g. teacher/student mode). The platform auto-upserts them to tenant config — no code changes required.</p>
+        <p class="zh">12 项自动检查 + 棘轮机制——console.log、any 类型、ts-ignore 等技术债只减不增。Agent 迭代评估 + E2E 保障每次交付。</p>
+        <p class="en">12 automated checks with ratchet mechanism — console.log, any types, ts-ignore debt can only decrease. Agent iteration evaluation + E2E guards every delivery.</p>
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
         </div>
         <h3>
-          <span class="zh">useOutputSync</span>
-          <span class="en">useOutputSync</span>
+          <span class="zh">结构化输出管线</span>
+          <span class="en">Structured Output Pipeline</span>
         </h3>
-        <p class="zh">SDK 内置 pending state 管理 hook，替代每个 Solution frontend 中的 30+ 行同步样板代码，开箱即用。</p>
-        <p class="en">Built-in SDK hook for managing output pending state. Replaces 30+ lines of sync boilerplate in every Solution frontend — works out of the box.</p>
+        <p class="zh">AI 通过 write_output 写入命名字段，toolEventTriggers 自动推送 SSE 事件，前端 SYNC_FIELDS 按组订阅——从 AI 到 UI 的完整数据通路。</p>
+        <p class="en">AI writes to named fields via write_output, toolEventTriggers auto-push SSE events, frontend SYNC_FIELDS subscribe by group — a complete AI-to-UI data pipeline.</p>
       </div>
     </div>
   </div>
@@ -1388,8 +1404,8 @@
       </div>
       <div class="arch-outputs">
         <div class="arch-output">
-          <span class="zh">事件流（20+ 类型）</span>
-          <span class="en">Event Stream (20+ types)</span>
+          <span class="zh">事件流（22 种类型）</span>
+          <span class="en">Event Stream (22 types)</span>
         </div>
         <div class="arch-output">
           <span class="zh">消息持久化</span>
@@ -1404,189 +1420,10 @@
           <span class="en">Admin Dashboard</span>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section id="pricing" class="pricing">
-  <div class="container">
-    <div class="section-label">
-      <span class="zh">定价</span>
-      <span class="en">Pricing</span>
-    </div>
-    <h2 class="section-title">
-      <span class="zh">从验证到规模化，<br>无需迁移平台</span>
-      <span class="en">From pilot to scale,<br>no platform migration</span>
-    </h2>
-    <p class="section-desc zh">从 Demo 到生产，同一平台，技术栈不变，数据不迁移。</p>
-    <p class="section-desc en">Demo to production on the same platform. Same stack, no data migration.</p>
-
-    <!-- Plan Grid -->
-    <div class="plan-grid">
-      <!-- Free -->
-      <div class="plan-card fade-in">
-        <div class="plan-header">
-          <div class="plan-name">Free</div>
-          <div class="plan-tagline">
-            <span class="zh">邀请码注册，免费评估平台能力</span>
-            <span class="en">Invite-only. Free evaluation.</span>
-          </div>
-        </div>
-        <div class="plan-price">
-          <div class="plan-price-amount">¥0</div>
-          <div class="plan-price-unit">
-            <span class="zh">免费，永久</span>
-            <span class="en">Free forever</span>
-          </div>
-        </div>
-        <ul class="plan-features">
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">5 个 Skills</span><span class="en">5 Skills</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">3 个 MCP Server</span><span class="en">3 MCP Servers</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">3 路并发 Agent</span><span class="en">3 concurrent Agents</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">20 个 Workspace</span><span class="en">20 Workspaces</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">50K Token / 月（平台提供）</span><span class="en">50K tokens/mo (platform-provided)</span></span>
-          </li>
-        </ul>
-        <a href="mailto:hello@kedgetech.io" class="plan-cta">
-          <span class="zh">申请邀请码</span>
-          <span class="en">Request Invite Key</span>
-        </a>
+      <div class="arch-harness">
+        <span class="zh">Harness: 12 checks · 棘轮机制 · E2E</span>
+        <span class="en">Harness: 12 checks · ratchet · E2E</span>
       </div>
-
-      <!-- Starter (Recommended) -->
-      <div class="plan-card recommended fade-in">
-        <div class="recommended-badge">
-          <span class="zh">推荐</span>
-          <span class="en">Recommended</span>
-        </div>
-        <div class="plan-header">
-          <div class="plan-name">Starter</div>
-          <div class="plan-tagline">
-            <span class="zh">生产级起点，自带 LLM Key</span>
-            <span class="en">Production-ready. Bring your own key.</span>
-          </div>
-        </div>
-        <div class="plan-price">
-          <div class="plan-price-amount">¥1,999</div>
-          <div class="plan-price-unit">
-            <span class="zh">/ 月</span>
-            <span class="en">/ month</span>
-          </div>
-        </div>
-        <ul class="plan-features">
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">15 个 Skills</span><span class="en">15 Skills</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">8 个 MCP Server</span><span class="en">8 MCP Servers</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">10 路并发 Agent</span><span class="en">10 concurrent Agents</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">500 个 Workspace</span><span class="en">500 Workspaces</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">自带 LLM Key，无 Token 上限</span><span class="en">Bring your own key, no token cap</span></span>
-          </li>
-        </ul>
-        <a href="mailto:hello@kedgetech.io" class="plan-cta">
-          <span class="zh">联系我们</span>
-          <span class="en">Get Started</span>
-        </a>
-      </div>
-
-      <!-- Business -->
-      <div class="plan-card fade-in">
-        <div class="plan-header">
-          <div class="plan-name">Business</div>
-          <div class="plan-tagline">
-            <span class="zh">无限扩展，适合规模化部署</span>
-            <span class="en">Unlimited scale for enterprise deployment</span>
-          </div>
-        </div>
-        <div class="plan-price">
-          <div class="plan-price-amount">¥9,999</div>
-          <div class="plan-price-unit">
-            <span class="zh">/ 月</span>
-            <span class="en">/ month</span>
-          </div>
-        </div>
-        <ul class="plan-features">
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">无限 Skills</span><span class="en">Unlimited Skills</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">无限 MCP Server</span><span class="en">Unlimited MCP Servers</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">50 路并发 Agent</span><span class="en">50 concurrent Agents</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">5,000 个 Workspace</span><span class="en">5,000 Workspaces</span></span>
-          </li>
-          <li>
-            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
-            <span><span class="zh">自带 LLM Key，无 Token 上限</span><span class="en">Bring your own key, no token cap</span></span>
-          </li>
-        </ul>
-        <a href="mailto:hello@kedgetech.io" class="plan-cta">
-          <span class="zh">联系销售</span>
-          <span class="en">Talk to Sales</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- Workspace note -->
-    <p style="font-size:13px; color:var(--ink-muted); margin-bottom:24px;">
-      <span class="zh">* 1 Workspace = 1 个终端用户账号。</span>
-      <span class="en">* 1 Workspace = 1 end-user account.</span>
-      <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/concepts" target="_blank" style="color:var(--accent); text-decoration:none;">
-        <span class="zh">了解核心概念 →</span>
-        <span class="en">Learn more →</span>
-      </a>
-    </p>
-
-    <!-- Enterprise Strip -->
-    <div class="enterprise-strip fade-in">
-      <div>
-        <div class="enterprise-strip-title">
-          <span class="zh">Enterprise — 定制合约</span>
-          <span class="en">Enterprise — Custom Contract</span>
-        </div>
-        <div class="enterprise-strip-desc">
-          <span class="zh">私有化部署 · 定制 Skills &amp; 并发 · SLA 保障 · 自带 LLM 基础设施 · 专属对接团队</span>
-          <span class="en">On-premise deployment · Custom Skills &amp; concurrency · SLA guarantee · Bring your own LLM infrastructure · Dedicated team</span>
-        </div>
-      </div>
-      <a href="mailto:hello@kedgetech.io" class="enterprise-strip-cta">
-        <span class="zh">洽谈合作</span>
-        <span class="en">Contact Us</span>
-      </a>
     </div>
   </div>
 </section>
@@ -1690,7 +1527,7 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <span>&copy; 2025 KedgeAgentic. All rights reserved.</span>
+    <span>&copy; 2025–2026 KedgeAgentic. All rights reserved.</span>
     <span style="font-family:'Noto Serif',serif; font-style:italic; opacity:0.6;">凡所有相，皆是虚妄。若见诸相非相，即见如来。——《金刚经》</span>
   </div>
 </footer>

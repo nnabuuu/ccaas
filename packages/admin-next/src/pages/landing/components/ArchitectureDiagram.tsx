@@ -92,8 +92,8 @@ export function ArchitectureDiagram() {
           </div>
           <div className="arch-outputs">
             <div className="arch-output">
-              <span className="zh">事件流（20+ 类型）</span>
-              <span className="en">Event Stream (20+ types)</span>
+              <span className="zh">事件流（22 种类型）</span>
+              <span className="en">Event Stream (22 types)</span>
             </div>
             <div className="arch-output">
               <span className="zh">消息持久化</span>
@@ -107,6 +107,10 @@ export function ArchitectureDiagram() {
               <span className="zh">管理后台</span>
               <span className="en">Admin Dashboard</span>
             </div>
+          </div>
+          <div className="arch-harness">
+            <span className="zh">Harness: 12 checks · 棘轮机制 · E2E</span>
+            <span className="en">Harness: 12 checks · ratchet · E2E</span>
           </div>
         </div>
       </div>

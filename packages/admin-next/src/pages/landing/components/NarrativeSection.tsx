@@ -65,8 +65,8 @@ export function NarrativeSection() {
                 <span className="zh">今天描述，明天上线</span>
                 <span className="en">Describe Today, Ship Tomorrow</span>
               </h3>
-              <p className="zh">不需要搭建 Agent 基础设施，不需要处理模型调用、会话状态或工具编排。你只需描述业务——平台负责其余一切，Agent 服务随时可交付。</p>
-              <p className="en">No need to build agent infrastructure, manage model calls, session state, or tool orchestration. Describe the business — the platform handles the rest. Your Agentic service is ready to ship.</p>
+              <p className="zh">不需要搭建 Agent 基础设施，不需要处理模型调用、会话状态或工具编排。你只需描述业务——平台负责其余一切，Agent 服务随时可交付。内置 Harness 质量棘轮，技术债不会随规模悄悄增长。</p>
+              <p className="en">No need to build agent infrastructure, manage model calls, session state, or tool orchestration. Describe the business — the platform handles the rest. Your Agentic service is ready to ship. Built-in Harness quality ratchet ensures tech debt never creeps in as you scale.</p>
             </div>
           </div>
         </div>

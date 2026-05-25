@@ -71,7 +71,7 @@ export function LandingFooter() {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>&copy; 2025 KedgeAgentic. All rights reserved.</span>
+        <span>&copy; 2025–2026 KedgeAgentic. All rights reserved.</span>
         <span style={{ fontFamily: "'Noto Serif', serif", fontStyle: 'italic', opacity: 0.6 }}>
           凡所有相，皆是虚妄。若见诸相非相，即见如来。——《金刚经》
         </span>

@@ -16,8 +16,8 @@ export function HeroSection() {
       </h1>
 
       <p className="hero-subtitle">
-        <span className="zh">无需再造轮子——写 Skill 描述业务，接 MCP 连通工具，Agent 服务随时交付</span>
-        <span className="en">No infrastructure to build first. Define your Skills, connect your tools via MCP — your agent service is ready to ship.</span>
+        <span className="zh">无需再造轮子——用 SKILL.md 描述业务，接 MCP 连通工具。Harness 棘轮守护质量，Agent 服务即刻交付。</span>
+        <span className="en">No infrastructure to build first. Describe logic in SKILL.md, connect tools via MCP. Harness ratchet guards quality — your agent service is ready to ship.</span>
       </p>
 
       {/* 3-step flow */}
@@ -34,8 +34,8 @@ export function HeroSection() {
           </div>
           <div className="hs-title zh">描述业务</div>
           <div className="hs-title en">Describe</div>
-          <div className="hs-desc zh">用 Skills 定义逻辑，用 MCP 连接工具和数据</div>
-          <div className="hs-desc en">Define logic in Skills, connect tools via MCP</div>
+          <div className="hs-desc zh">用 SKILL.md 描述业务逻辑，用 MCP 连通工具</div>
+          <div className="hs-desc en">Describe logic in SKILL.md, connect tools via MCP</div>
         </div>
 
         <div className="hs-connector">
@@ -74,8 +74,8 @@ export function HeroSection() {
           </div>
           <div className="hs-title zh">交付 Agent 服务</div>
           <div className="hs-title en">Ship Service</div>
-          <div className="hs-desc zh">增强现有系统，或直接面向你的用户</div>
-          <div className="hs-desc en">Enhance existing systems or ship to users</div>
+          <div className="hs-desc zh">12 项 Harness 检查守护质量，即刻交付</div>
+          <div className="hs-desc en">12 Harness checks guard quality, ship instantly</div>
         </div>
       </div>
 
@@ -83,32 +83,32 @@ export function HeroSection() {
       <div className="hero-proof">
         <div className="hero-proof-item">
           <span className="hero-proof-num">
-            {stats ? `${stats.totalSessions}` : '4+'}
+            {stats ? `${stats.totalSessions}` : '16'}
           </span>
           <span className="hero-proof-label zh">
-            {stats ? '历史会话数' : '生产场景落地'}
+            {stats ? '历史会话数' : '业务解决方案'}
           </span>
           <span className="hero-proof-label en">
-            {stats ? 'Total sessions' : 'Production use cases'}
+            {stats ? 'Total sessions' : 'Business solutions'}
           </span>
         </div>
         <div className="hero-proof-divider"></div>
         <div className="hero-proof-item">
           <span className="hero-proof-num">
-            {stats ? `${stats.totalSkills}` : '20+'}
+            {stats ? `${stats.totalSkills}` : '58'}
           </span>
           <span className="hero-proof-label zh">
-            {stats ? '已注册 Skills' : 'Agent 事件类型'}
+            {stats ? '已注册 Skills' : 'Skills 已注册'}
           </span>
           <span className="hero-proof-label en">
-            {stats ? 'Registered skills' : 'Agent event types'}
+            {stats ? 'Registered skills' : 'Skills registered'}
           </span>
         </div>
         <div className="hero-proof-divider"></div>
         <div className="hero-proof-item">
-          <span className="hero-proof-num">On-Prem</span>
-          <span className="hero-proof-label zh">支持私有化部署</span>
-          <span className="hero-proof-label en">Self-hosted available</span>
+          <span className="hero-proof-num">12</span>
+          <span className="hero-proof-label zh">渐进式 Demo</span>
+          <span className="hero-proof-label en">Progressive demos</span>
         </div>
       </div>
 

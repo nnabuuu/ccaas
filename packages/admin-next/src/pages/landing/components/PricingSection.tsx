@@ -44,6 +44,7 @@ export function PricingSection() {
               <li><CheckIcon /><span><span className="zh">3 路并发 Agent</span><span className="en">3 concurrent Agents</span></span></li>
               <li><CheckIcon /><span><span className="zh">20 个 Workspace</span><span className="en">20 Workspaces</span></span></li>
               <li><CheckIcon /><span><span className="zh">50K Token / 月（平台提供）</span><span className="en">50K tokens/mo (platform-provided)</span></span></li>
+              <li><CheckIcon /><span><span className="zh">12 个渐进式 Demo 模板</span><span className="en">12 progressive demo templates</span></span></li>
             </ul>
             <a href="mailto:hello@kedgetech.io" className="plan-cta">
               <span className="zh">申请邀请码</span>

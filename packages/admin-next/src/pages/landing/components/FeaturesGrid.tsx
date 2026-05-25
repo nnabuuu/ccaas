@@ -76,28 +76,26 @@ export function FeaturesGrid() {
     {
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-          <path d="M16 3.13a4 4 0 010 7.75"/>
+          <path d="M9 12l2 2 4-4"/>
+          <path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/>
         </svg>
       ),
-      titleZh: 'Session Templates',
-      titleEn: 'Session Templates',
-      descZh: '在 solution.json 中预设多角色 AI 行为（如教师模式/学生模式），平台自动 upsert 到租户配置，无需代码修改。',
-      descEn: 'Define multi-role AI behaviors in solution.json (e.g. teacher/student mode). The platform auto-upserts them to tenant config — no code changes required.',
+      titleZh: 'Harness 质量守护',
+      titleEn: 'Harness Quality System',
+      descZh: '12 项自动检查 + 棘轮机制——console.log、any 类型、ts-ignore 等技术债只减不增。Agent 迭代评估 + E2E 保障每次交付。',
+      descEn: '12 automated checks with ratchet mechanism — console.log, any types, ts-ignore debt can only decrease. Agent iteration evaluation + E2E guards every delivery.',
     },
     {
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="1 4 1 10 7 10"/>
-          <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
         </svg>
       ),
-      titleZh: 'useOutputSync',
-      titleEn: 'useOutputSync',
-      descZh: 'SDK 内置 pending state 管理 hook，替代每个 Solution frontend 中的 30+ 行同步样板代码，开箱即用。',
-      descEn: 'Built-in SDK hook for managing output pending state. Replaces 30+ lines of sync boilerplate in every Solution frontend — works out of the box.',
+      titleZh: '结构化输出管线',
+      titleEn: 'Structured Output Pipeline',
+      descZh: 'AI 通过 write_output 写入命名字段，toolEventTriggers 自动推送 SSE 事件，前端 SYNC_FIELDS 按组订阅——从 AI 到 UI 的完整数据通路。',
+      descEn: 'AI writes to named fields via write_output, toolEventTriggers auto-push SSE events, frontend SYNC_FIELDS subscribe by group — a complete AI-to-UI data pipeline.',
     },
   ]
 
@@ -112,11 +110,11 @@ export function FeaturesGrid() {
           <span className="zh">生产级所需的一切</span>
           <span className="en">Everything agents need<br />to run in production</span>
         </h2>
-        <p className="section-desc zh">平台负责 Agent 执行、上下文管理、会话持久化、工具编排。你只需专注 Skills 和 MCP——描述你的业务，其余交给平台。</p>
-        <p className="section-desc en">The platform handles agent execution, context management, session persistence, and tool orchestration. You focus on Skills and MCP — describe your business, the platform does the rest.</p>
+        <p className="section-desc zh">平台负责 Agent 执行、质量守护、上下文管理、会话持久化、工具编排。你只需专注 Skills 和 MCP——描述你的业务，其余交给平台。</p>
+        <p className="section-desc en">The platform handles agent execution, quality assurance, context management, session persistence, and tool orchestration. You focus on Skills and MCP — describe your business, the platform does the rest.</p>
         <div className="feature-grid">
-          {features.map((f, i) => (
-            <div key={i} className="feature-card fade-in">
+          {features.map((f) => (
+            <div key={f.titleEn} className="feature-card fade-in">
               <div className="feature-icon">{f.icon}</div>
               <h3>
                 <span className="zh">{f.titleZh}</span>

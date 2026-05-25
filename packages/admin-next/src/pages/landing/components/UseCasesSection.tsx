@@ -43,29 +43,35 @@ export function UseCasesSection() {
 
           <div className="usecase-card fade-in">
             <div className="usecase-tag">
-              <span className="zh">人机协作</span>
-              <span className="en">Interactive</span>
+              <span className="zh">苏格拉底教学</span>
+              <span className="en">Socratic Teaching</span>
             </div>
             <h3>
-              <span className="zh">课程方案设计师</span>
-              <span className="en">Lesson Plan Designer</span>
+              <span className="zh">AI 互动课堂</span>
+              <span className="en">AI-Driven Live Lesson</span>
             </h3>
-            <p className="zh">老师只需定义教学 Skills，平台负责执行。AI 生成课程内容，实时同步结构化数据到表单字段——无需写任何代码。</p>
-            <p className="en">Teachers define teaching Skills; the platform handles execution. AI generates curriculum content and syncs structured data to form fields in real-time — no code required.</p>
+            <p className="zh">苏格拉底式 AI 教学引擎。8 个 MCP 工具控制板书状态机，SYNC_FIELDS 实时同步学生端 UI，16 个 E2E 测试守护每次迭代。</p>
+            <p className="en">Socratic AI teaching engine. 8 MCP tools drive a whiteboard state machine, SYNC_FIELDS sync student UI in real-time, 16 E2E specs guard every iteration.</p>
             <div className="usecase-detail">
               <span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="16 3 21 3 21 8"/>
                   <line x1="4" y1="20" x2="21" y2="3"/>
                 </svg>
-                9 MCP tools
+                8 MCP tools
               </span>
               <span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/>
                 </svg>
-                <span className="zh">实时同步</span>
-                <span className="en">Real-time sync</span>
+                SYNC_FIELDS
+              </span>
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12l2 2 4-4"/>
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+                16 E2E specs
               </span>
             </div>
           </div>
@@ -131,7 +137,7 @@ export function UseCasesSection() {
             </div>
           </div>
 
-          <div className="usecase-card fade-in" style={{ gridColumn: 'span 2' }}>
+          <div className="usecase-card usecase-card--wide fade-in">
             <div className="usecase-tag">
               <span className="zh">动画渲染</span>
               <span className="en">Animation Rendering</span>
