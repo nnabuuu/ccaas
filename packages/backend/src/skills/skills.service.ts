@@ -56,50 +56,95 @@ export class SkillsService {
   ) {}
 
   /**
-   * Create a new skill
+   * Create a new skill.
+   *
+   * Three writes (skill row, files, initial version snapshot) all run
+   * inside a single transaction so a mid-create failure rolls everything
+   * back. Without this, `SolutionLoaderService` auto-import would see a
+   * dangling skill row on the next boot via `findOne(tenantId, slug)`
+   * and silently skip the re-import — leaving the skill permanently
+   * without a version + files.
    */
   async create(tenantId: string, dto: CreateSkillDto, userId?: string): Promise<Skill> {
     const slug = dto.slug || this.generateSlug(dto.name);
 
-    // Check for duplicate slug
-    const existing = await this.skillRepository.findOne({
-      where: { tenantId, slug },
+    const saved = await this.skillRepository.manager.transaction(async (manager) => {
+      // Duplicate-slug guard runs inside the transaction so a concurrent
+      // create can't slip past (the unique index would catch it too,
+      // but the message is friendlier here).
+      const existing = await manager.findOne(Skill, {
+        where: { tenantId, slug },
+      });
+      if (existing) {
+        throw new AlreadyExistsException(`Skill with slug '${slug}' already exists`);
+      }
+
+      const skill = manager.create(Skill, {
+        tenantId,
+        createdBy: userId || null,
+        scope: dto.scope || 'tenant',
+        name: dto.name,
+        slug,
+        description: dto.description,
+        content: dto.content,
+        type: dto.type || 'skill',
+        config: dto.config || {},
+        allowedTools: dto.allowedTools || [],
+        triggers: dto.triggers || [],
+        status: 'draft',
+        currentVersion: '1.0.0',
+      });
+
+      const saved = await manager.save(Skill, skill);
+
+      // Files (use the same manager so they share the transaction)
+      if (dto.files && dto.files.length > 0) {
+        const fileRows = dto.files.map((f) =>
+          manager.create(SkillFile, {
+            skillId: saved.id,
+            relativePath: this.normalizePath(f.relativePath),
+            content: f.content,
+            contentHash: this.hashContent(f.content),
+          }),
+        );
+        await manager.save(SkillFile, fileRows);
+      }
+
+      // Initial version snapshot
+      const contentHash = this.hashContent(saved.content);
+      const version = manager.create(SkillVersion, {
+        skillId: saved.id,
+        version: '1.0.0',
+        content: saved.content,
+        contentHash,
+        config: saved.config,
+        allowedTools: saved.allowedTools,
+        changelog: 'Initial version',
+        deploymentStatus: 'draft',
+      });
+      const savedVersion = await manager.save(SkillVersion, version);
+
+      // Snapshot files into version_files (matches createVersion's behaviour)
+      if (dto.files && dto.files.length > 0) {
+        const versionFiles = dto.files.map((f) =>
+          manager.create(SkillVersionFile, {
+            versionId: savedVersion.id,
+            relativePath: this.normalizePath(f.relativePath),
+            content: f.content,
+            contentHash: this.hashContent(f.content),
+          }),
+        );
+        await manager.save(SkillVersionFile, versionFiles);
+      }
+
+      this.logger.log(`Created skill ${saved.name} (${saved.slug}) for tenant ${tenantId}`);
+      return saved;
     });
-    if (existing) {
-      throw new AlreadyExistsException(`Skill with slug '${slug}' already exists`);
-    }
 
-    const skill = this.skillRepository.create({
-      tenantId,
-      createdBy: userId || null,
-      scope: dto.scope || 'tenant',
-      name: dto.name,
-      slug,
-      description: dto.description,
-      content: dto.content,
-      type: dto.type || 'skill',
-      config: dto.config || {},
-      allowedTools: dto.allowedTools || [],
-      triggers: dto.triggers || [],
-      status: 'draft',
-      currentVersion: '1.0.0',
-    });
-
-    const saved = await this.skillRepository.save(skill);
-
-    // Import files if provided
-    if (dto.files && dto.files.length > 0) {
-      await this.upsertFiles(saved.id, dto.files);
-    }
-
-    // Create initial version
-    await this.createVersion(saved.id, { changelog: 'Initial version' });
-
-    this.logger.log(`Created skill ${saved.name} (${saved.slug}) for tenant ${tenantId}`);
-
-    // Notify listeners of skill creation
+    // Notify AFTER commit succeeds — listeners may load the skill back
+    // from the DB and a notifier-inside-the-callback would fire while
+    // the row is still uncommitted.
     SkillChangeNotifier.notify(tenantId, saved.id, saved.slug, 'created');
-
     return saved;
   }
 

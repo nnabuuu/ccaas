@@ -35,12 +35,26 @@
 set -e
 CCAAS=${CCAAS:-http://127.0.0.1:3001}
 LLL=${LLL:-http://127.0.0.1:3007}
-TENANT_ID=${TENANT_ID:-2c3e613e-f700-4c1f-8b15-16de81ede960}
 TENANT_SLUG=${TENANT_SLUG:-live-lesson-creator}
 TPL=${TPL:-edit-lesson}
+# TENANT_ID can be passed explicitly. Otherwise resolved from the
+# tenants list by slug (works against any deployment, not just the dev
+# DB the original PoC was authored against).
+TENANT_ID=${TENANT_ID:-}
 
 NO_PROXY=127.0.0.1,localhost
 export NO_PROXY no_proxy=$NO_PROXY
+
+if [ -z "$TENANT_ID" ]; then
+  echo "==> resolve tenant id for slug=$TENANT_SLUG"
+  TENANT_ID=$(curl -fs "$CCAAS/api/v1/tenants" 2>/dev/null \
+    | jq -r --arg slug "$TENANT_SLUG" '(.items // .) | map(select(.slug == $slug))[0].id // empty')
+  if [ -z "$TENANT_ID" ] || [ "$TENANT_ID" = "null" ]; then
+    echo "✗ could not resolve tenant id for $TENANT_SLUG — pass TENANT_ID=<uuid> explicitly"
+    exit 1
+  fi
+  echo "    tenant = $TENANT_ID"
+fi
 
 echo "==> create project on live-lesson"
 PID=$(curl -fs -X POST "$LLL/api/projects" \
@@ -59,7 +73,7 @@ echo "==> subscribe ccaas change stream in background"
 SSE_LOG=$(mktemp)
 ( curl -sN -m 15 "$CCAAS/projects/$PID/changes" > "$SSE_LOG" 2>&1 ) &
 SSE_PID=$!
-trap "kill $SSE_PID 2>/dev/null || true; rm -f $SSE_LOG" EXIT
+trap "kill $SSE_PID 2>/dev/null || true; rm -f $SSE_LOG" EXIT INT TERM
 sleep 1
 
 echo "==> POST first message — auto-creates session"

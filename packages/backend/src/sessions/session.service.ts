@@ -14,6 +14,8 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -290,9 +292,38 @@ export class SessionService implements OnModuleDestroy {
     if (!projectId) {
       throw new BadRequestException('projectId required');
     }
+    if (!tenantId) {
+      throw new BadRequestException('tenantId required');
+    }
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new NotFoundException(`session ${sessionId} not found`);
+    }
+    // Cross-tenant defence. If the session already has a tenantId (set
+    // by an earlier message or by createSession), the body's tenantId
+    // MUST match — otherwise an attacker who knows a sessionId from
+    // tenant A could rebind it under tenant B and steal its project
+    // stream. If the session has no tenantId yet (anonymous-first
+    // pattern), accept and assign the caller's tenantId here.
+    if (session.tenantId && session.tenantId !== tenantId) {
+      throw new ForbiddenException(
+        `session ${sessionId} is owned by a different tenant`,
+      );
+    }
+    if (!session.tenantId) {
+      session.tenantId = tenantId;
+    }
+    // Rebind-to-different-project conflict. Same-projectId is idempotent
+    // (used to re-trigger bootstrap sync after a refactor); different
+    // projectId would silently overwrite the binding + leak the agent's
+    // workspace across projects. Force the caller to start a fresh
+    // session for a different project.
+    const existingPid = this.projectBindings.get(sessionId);
+    if (existingPid && existingPid !== projectId) {
+      throw new ConflictException(
+        `session ${sessionId} is already bound to project ${existingPid}; ` +
+        `create a new session to bind a different project`,
+      );
     }
     await this.sessionMetadataService.put(
       sessionId,

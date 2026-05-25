@@ -49,6 +49,7 @@ import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ControlResponseDto } from './dto/control-response.dto';
+import { BindProjectDto } from './dto/bind-project.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -654,11 +655,15 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    * `SessionAssetSyncer.onSessionBound` which bootstraps the workspace
    * from `RestProjectArtifactSource.loadArtifacts(projectId)`.
    *
-   * Idempotent: re-binding the same projectId is a no-op write + no-op
-   * sync converge.
+   * Idempotent on same projectId; rebinding to a different project
+   * returns 409 (use a fresh session). Cross-tenant binds are rejected
+   * with 403 — the body's tenantId must match the session's owning
+   * tenant (enforced in SessionService.bindToProject).
+   *
+   * TODO(auth): @OptionalAuth + AUTH_ALLOW_ANONYMOUS=true is dev-only.
+   * Production should require @Auth('sessions:write') or equivalent.
    *
    * POST /api/v1/sessions/:sessionId/bind-project
-   * body: { projectId: string, tenantId: string }
    */
   @Post(':sessionId/bind-project')
   @OptionalAuth()
@@ -666,22 +671,19 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
     summary: '绑定 session 到 project / Bind Session to Project',
     description:
       'Tells agent-runtime which project this session edits. Required ' +
-      'before the agent can read/write project artifacts. Idempotent.',
+      'before the agent can read/write project artifacts. Idempotent ' +
+      'on same projectId; 409 on rebind to a different project.',
   })
   @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
   @ApiResponse({ status: 200, description: '绑定成功 / Bound' })
   @ApiResponse({ status: 400, description: 'projectId / tenantId missing' })
+  @ApiResponse({ status: 403, description: 'tenant mismatch — body tenantId differs from session owner' })
   @ApiResponse({ status: 404, description: '会话不存在 / Session not found' })
+  @ApiResponse({ status: 409, description: 'session already bound to a different projectId' })
   async bindToProject(
     @Param('sessionId') sessionId: string,
-    @Body() body: { projectId?: string; tenantId?: string },
+    @Body() body: BindProjectDto,
   ): Promise<{ success: true; sessionId: string; projectId: string }> {
-    if (!body?.projectId) {
-      throw new BadRequestException('projectId required in request body');
-    }
-    if (!body?.tenantId) {
-      throw new BadRequestException('tenantId required in request body');
-    }
     await this.sessionService.bindToProject(sessionId, body.tenantId, body.projectId);
     return { success: true, sessionId, projectId: body.projectId };
   }

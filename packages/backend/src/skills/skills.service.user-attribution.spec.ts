@@ -123,14 +123,17 @@ describe('SkillsService - User Attribution', () => {
         createdBy: userId,
       };
 
-      skillRepository.findOne.mockResolvedValueOnce(null); // Duplicate check
-      skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save.mockResolvedValue(mockSkill as any);
-      txManager.findOne.mockResolvedValue(mockSkill as any); // createVersion transaction
+      // create() now runs inside a transaction; duplicate check + saves
+      // all go through the txManager mock. findOne(null) = no duplicate.
+      txManager.findOne.mockResolvedValue(null);
+      // Make save return the input data so `result.createdBy` etc. survive.
+      txManager.save.mockImplementation((_entity: any, data: any) =>
+        Promise.resolve({ id: 'version-1', ...data }),
+      );
 
       const result = await service.create(tenantId, createDto, userId);
 
-      expect(skillRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         tenantId,
         createdBy: userId,
         scope: 'tenant',
@@ -154,14 +157,15 @@ describe('SkillsService - User Attribution', () => {
         scope: 'tenant',
       };
 
-      skillRepository.findOne.mockResolvedValueOnce(null);
-      skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save.mockResolvedValue(mockSkill as any);
-      txManager.findOne.mockResolvedValue(mockSkill as any);
+      // create() now transactional — mock txManager only.
+      txManager.findOne.mockResolvedValue(null);
+      txManager.save.mockImplementation((_entity: any, data: any) =>
+        Promise.resolve({ id: 'version-1', ...data }),
+      );
 
       const result = await service.create(tenantId, createDto);
 
-      expect(skillRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         createdBy: null,
       }));
       expect(result.createdBy).toBeNull();
@@ -183,14 +187,15 @@ describe('SkillsService - User Attribution', () => {
         scope: 'tenant',
       };
 
-      skillRepository.findOne.mockResolvedValueOnce(null);
-      skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save.mockResolvedValue(mockSkill as any);
-      txManager.findOne.mockResolvedValue(mockSkill as any);
+      // create() now transactional — mock txManager only.
+      txManager.findOne.mockResolvedValue(null);
+      txManager.save.mockImplementation((_entity: any, data: any) =>
+        Promise.resolve({ id: 'version-1', ...data }),
+      );
 
       const result = await service.create(tenantId, createDto, userId);
 
-      expect(skillRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         scope: 'tenant',
       }));
       expect(result.scope).toBe('tenant');
@@ -212,14 +217,15 @@ describe('SkillsService - User Attribution', () => {
         createdBy: userId,
       };
 
-      skillRepository.findOne.mockResolvedValueOnce(null);
-      skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save.mockResolvedValue(mockSkill as any);
-      txManager.findOne.mockResolvedValue(mockSkill as any);
+      // create() now transactional — mock txManager only.
+      txManager.findOne.mockResolvedValue(null);
+      txManager.save.mockImplementation((_entity: any, data: any) =>
+        Promise.resolve({ id: 'version-1', ...data }),
+      );
 
       const result = await service.create(tenantId, createDto, userId);
 
-      expect(skillRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         scope: 'personal',
       }));
       expect(result.scope).toBe('personal');

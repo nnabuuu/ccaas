@@ -497,16 +497,24 @@ describe('SkillsService - File Management', () => {
         ],
       };
 
-      const mockSkill = { id: skillId, tenantId, ...createDto };
-      skillRepo.findOne.mockResolvedValueOnce(null); // no duplicate
-      skillRepo.create.mockReturnValue(mockSkill);
-      skillRepo.save.mockResolvedValue(mockSkill);
-      txManager.findOne.mockResolvedValue(mockSkill); // for createVersion
+      // create() now runs everything inside one transaction (HIGH #3 fix).
+      // Duplicate check + skill row + skill_files + version + version_files
+      // all flow through txManager.
+      txManager.findOne.mockResolvedValue(null);
+      txManager.save.mockImplementation((entity: any, data: any) => {
+        if (Array.isArray(data)) return Promise.resolve(data);
+        if (entity === Skill) return Promise.resolve({ id: skillId, ...data });
+        return Promise.resolve({ id: 'tx-row-1', ...data });
+      });
 
       await service.create(tenantId, createDto);
 
-      // upsertFiles should be called for the files
-      expect(skillFileRepo.find).toHaveBeenCalledWith({ where: { skillId } });
+      // skill_files rows go through the transaction manager.
+      const fileSaves = txManager.save.mock.calls.filter(
+        (call: any[]) => call[0] === SkillFile,
+      );
+      expect(fileSaves).toHaveLength(1);
+      expect(fileSaves[0][1][0].relativePath).toBe('refs/a.md');
     });
   });
 

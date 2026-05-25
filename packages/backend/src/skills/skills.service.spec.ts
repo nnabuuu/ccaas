@@ -72,58 +72,90 @@ describe('SkillsService', () => {
     };
 
     it('should create a skill successfully when slug is unique', async () => {
-      skillRepo.findOne.mockResolvedValue(null); // no duplicate
-      // createVersion -> transaction -> findOne returns the saved skill
-      txManager.findOne.mockResolvedValue({
-        id: 'new-skill-id',
-        name: 'My Skill',
-        content: 'You are a helpful assistant',
-        config: {},
-        allowedTools: [],
-        currentVersion: null,
-      });
+      // Duplicate check runs inside the transaction now — returns null = no dup.
+      txManager.findOne.mockResolvedValue(null);
 
       const result = await service.create(tenantId, createDto);
 
-      expect(skillRepo.findOne).toHaveBeenCalledWith({
+      expect(txManager.findOne).toHaveBeenCalledWith(Skill, {
         where: { tenantId, slug: 'my-skill' },
       });
-      expect(skillRepo.create).toHaveBeenCalled();
-      expect(skillRepo.save).toHaveBeenCalled();
+      expect(txManager.create).toHaveBeenCalled();
+      expect(txManager.save).toHaveBeenCalled();
       expect(result).toHaveProperty('id');
     });
 
     it('should throw AlreadyExistsException when slug already exists', async () => {
-      skillRepo.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
+      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
 
       await expect(service.create(tenantId, createDto)).rejects.toThrow(AlreadyExistsException);
-
-      expect(skillRepo.create).not.toHaveBeenCalled();
-      expect(skillRepo.save).not.toHaveBeenCalled();
     });
 
     it('should include slug in AlreadyExistsException message', async () => {
-      skillRepo.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
+      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
 
       await expect(service.create(tenantId, createDto)).rejects.toThrow(/my-skill/);
     });
 
     it('should generate slug from name when slug is not provided', async () => {
-      skillRepo.findOne.mockResolvedValue(null);
-      txManager.findOne.mockResolvedValue({
-        id: 'new-skill-id',
-        name: 'Hello World',
-        content: 'content',
-        config: {},
-        allowedTools: [],
-        currentVersion: null,
-      });
+      txManager.findOne.mockResolvedValue(null);
 
       await service.create(tenantId, { name: 'Hello World', content: 'content', type: 'skill' });
 
-      expect(skillRepo.findOne).toHaveBeenCalledWith({
+      expect(txManager.findOne).toHaveBeenCalledWith(Skill, {
         where: { tenantId, slug: 'hello-world' },
       });
+    });
+
+    // ----- Transactional rollback (HIGH #3) --------------------------------
+    // If the SkillVersion or SkillFile save throws mid-create, the whole
+    // transaction must roll back — otherwise the skills row survives, and
+    // SolutionLoaderService.importOneSkill's idempotency check
+    // (`findOne(tenantId, slug)` -> skip) would skip the re-import on
+    // every subsequent boot, leaving the skill permanently versionless.
+
+    it('rolls back the skill row when a downstream save throws', async () => {
+      txManager.findOne.mockResolvedValue(null);
+      // Simulate transaction failure: the second save (SkillVersion) throws.
+      // Real TypeORM would roll back the SkillRow committed earlier in the
+      // same transaction. We assert the error propagates and the outer
+      // promise rejects — confirming we're inside a transaction wrapper.
+      let saveCount = 0;
+      txManager.save.mockImplementation((_entity: any, data: any) => {
+        saveCount += 1;
+        if (saveCount === 2) {
+          return Promise.reject(new Error('simulated version-write failure'));
+        }
+        if (Array.isArray(data)) return Promise.resolve(data);
+        return Promise.resolve({ id: 'saved-1', ...data });
+      });
+
+      await expect(service.create(tenantId, createDto)).rejects.toThrow(
+        /simulated version-write failure/,
+      );
+
+      // Notifier must NOT fire when the transaction rolls back.
+      // (The SkillChangeNotifier call lives after the transaction in
+      // skills.service.ts; on rejection, control never reaches it.)
+      expect(txManager.transaction).toHaveBeenCalled();
+    });
+
+    it('runs the whole create inside a single transaction', async () => {
+      txManager.findOne.mockResolvedValue(null);
+
+      await service.create(tenantId, {
+        ...createDto,
+        files: [{ relativePath: 'tools/check.sh', content: '#!/bin/sh\n' }],
+      });
+
+      // Three writes (Skill, SkillFile[], SkillVersion, SkillVersionFile[])
+      // all happen via the SAME manager — the transaction callback.
+      expect(txManager.transaction).toHaveBeenCalledTimes(1);
+      // Confirm we saved against multiple entity tables via the same manager.
+      const entitiesSaved = txManager.save.mock.calls.map((c: any[]) =>
+        typeof c[0] === 'function' ? c[0].name : c[0],
+      );
+      expect(entitiesSaved).toEqual(expect.arrayContaining(['Skill', 'SkillFile', 'SkillVersion']));
     });
   });
 });

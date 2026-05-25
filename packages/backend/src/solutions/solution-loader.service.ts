@@ -32,6 +32,47 @@ import { validateSolutionConfig } from './dto/solution-config.dto';
 import { validateSkillFrontmatter } from './dto/skill-frontmatter.dto';
 
 // ============================================================================
+// Skill walk safety limits
+// ============================================================================
+
+/**
+ * Per-skill file count cap during auto-import. A solution can legitimately
+ * have dozens of skill files (tools/, examples/, scripts/), but thousands
+ * almost always means the operator pointed the walk at the wrong dir.
+ */
+const MAX_SKILL_FILES = 200;
+
+/**
+ * Per-skill aggregate-bytes cap. Per-file is already capped at 1MB; this
+ * keeps total RAM + DB write volume bounded during boot.
+ */
+const MAX_SKILL_BYTES = 10 * 1024 * 1024;
+
+/**
+ * Extension allowlist for skill_files content. Only text/source formats
+ * a SKILL.md would legitimately reference. Refuses .env / .pem / .key /
+ * .pfx / binary blobs / anything not on this list.
+ */
+const SKILL_FILE_EXTENSIONS = new Set<string>([
+  '.md', '.mdx', '.markdown',
+  '.txt', '.csv', '.tsv',
+  '.json', '.json5', '.jsonc',
+  '.yaml', '.yml', '.toml',
+  '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx',
+  '.py', '.rb', '.go', '.rs',
+  '.sh', '.bash', '.zsh',
+  '.sql', '.html', '.htm', '.css',
+]);
+
+/** Mutable budget threaded through the recursive walk. */
+interface WalkBudget {
+  bytes: number;
+  count: number;
+  /** Absolute path of the skill's root dir (resolved once, used to detect symlink escapes). */
+  root: string;
+}
+
+// ============================================================================
 // Types
 // ============================================================================
 
@@ -375,14 +416,41 @@ export class SolutionLoaderService implements OnModuleInit {
   /**
    * Resolve a single skill reference into a list of skill directories on disk.
    * Supports the three v3 forms: short string, `{folder}`, `{slug, name}`.
-   * Glob support is limited to a trailing `*` (e.g. `skills/*` →
+   * Glob support is limited to a trailing `/*` (e.g. `skills/*` →
    * every subdir of skills/) — full glob isn't worth dragging in a dep for.
+   *
+   * Security: `folder` comes from solution.json (potentially third-party
+   * authored in a marketplace world). We resolve against `solutionDir`
+   * and reject any path that escapes it via `..` — otherwise
+   * `collectSkillFiles` would happily slurp `/etc/shadow` into the DB.
+   * Also warns on unsupported glob shapes (`**`, brace expansion, mid-
+   * path `*`) so the operator notices instead of seeing silent empty.
    */
   private resolveSkillRef(solutionDir: string, ref: SkillReferenceV3): string[] {
     const folder = typeof ref === 'string' ? ref : ('folder' in ref ? ref.folder : `skills/${ref.slug}`);
     const isGlob = folder.endsWith('/*');
     const baseRel = isGlob ? folder.slice(0, -2) : folder;
-    const baseAbs = path.join(solutionDir, baseRel);
+    // Reject unsupported glob shapes loudly — `**`, brace expansion, or
+    // any `*` not at the trailing segment. Silent [] would mask config
+    // typos for hours.
+    const remaining = isGlob ? baseRel : folder;
+    if (remaining.includes('*') || remaining.includes('{') || remaining.includes('?')) {
+      this.logger.warn(
+        `unsupported glob pattern "${folder}" — only trailing "/*" is supported; ` +
+        `skipping`,
+      );
+      return [];
+    }
+
+    const solutionAbs = path.resolve(solutionDir);
+    const baseAbs = path.resolve(solutionAbs, baseRel);
+    // Boundary check: baseAbs must be solutionAbs itself or a descendant.
+    if (baseAbs !== solutionAbs && !baseAbs.startsWith(solutionAbs + path.sep)) {
+      this.logger.warn(
+        `skill ref "${folder}" escapes solutionDir; refusing to import`,
+      );
+      return [];
+    }
 
     if (!fs.existsSync(baseAbs)) return [];
     if (!isGlob) {
@@ -423,7 +491,8 @@ export class SolutionLoaderService implements OnModuleInit {
     }
 
     // Collect sibling files (everything under skillDir except SKILL.md itself)
-    const files = this.collectSkillFiles(skillDir, skillDir);
+    const budget: WalkBudget = { bytes: 0, count: 0, root: path.resolve(skillDir) };
+    const files = this.collectSkillFiles(skillDir, skillDir, budget);
 
     await this.skills.create(tenantId, {
       slug,
@@ -439,29 +508,75 @@ export class SolutionLoaderService implements OnModuleInit {
   }
 
   /**
-   * Recursively collect non-SKILL.md files under skillDir. Returns relative
-   * paths from skillDir root. Skips anything > 1MB (the SkillFile size cap)
-   * and node_modules / hidden dirs.
+   * Recursively collect skill content files under skillDir. Returns
+   * relative paths from skillDir root.
+   *
+   * Safety rails:
+   *   - Per-file size cap (1MB) matches the SkillFile content column.
+   *   - Per-skill aggregate caps (MAX_SKILL_FILES, MAX_SKILL_BYTES)
+   *     prevent a hostile or accidental "every node_module" walk from
+   *     OOMing boot.
+   *   - Extension allowlist — only text/source files that a skill body
+   *     could legitimately reference. Stops `secrets.json`, `id_rsa`,
+   *     `*.env` etc. from getting persisted to the DB if someone drops
+   *     them into a skill dir.
+   *   - Path boundary — resolved absolute path of each candidate must
+   *     stay inside the skill root (blocks symlink escapes; a `ln -s
+   *     /etc /skills/manifest-editor/secrets` would otherwise be
+   *     followed by readFileSync).
+   *   - Skips dotfiles + node_modules.
    */
-  private collectSkillFiles(skillDir: string, root: string): Array<{ relativePath: string; content: string }> {
+  private collectSkillFiles(
+    skillDir: string,
+    root: string,
+    budget: WalkBudget,
+  ): Array<{ relativePath: string; content: string }> {
     const out: Array<{ relativePath: string; content: string }> = [];
     const entries = fs.readdirSync(skillDir, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
       const abs = path.join(skillDir, entry.name);
-      if (entry.isDirectory()) {
-        out.push(...this.collectSkillFiles(abs, root));
+      // Symlink-escape defence. The skill root was resolved once; every
+      // descendant must be inside it.
+      const resolved = path.resolve(abs);
+      if (resolved !== budget.root && !resolved.startsWith(budget.root + path.sep)) {
+        this.logger.warn(`skipping ${abs} — symlink escapes skill root`);
         continue;
       }
-      // Skip the SKILL.md at the skill root (content already captured)
+      if (entry.isDirectory()) {
+        out.push(...this.collectSkillFiles(abs, root, budget));
+        continue;
+      }
       const rel = path.relative(root, abs);
       if (rel === 'SKILL.md') continue;
+      // Extension allowlist. Anything outside this list gets dropped
+      // with a debug log (not a warn — adding new types should be a
+      // conscious decision, but skipping a stray .png isn't a problem).
+      const ext = path.extname(entry.name).toLowerCase();
+      if (!SKILL_FILE_EXTENSIONS.has(ext)) {
+        this.logger.debug(`skipping ${rel} — extension "${ext}" not in skill allowlist`);
+        continue;
+      }
+      if (budget.count >= MAX_SKILL_FILES) {
+        this.logger.warn(
+          `skill at ${root}: hit ${MAX_SKILL_FILES}-file cap; remaining files skipped`,
+        );
+        return out;
+      }
       try {
         const stat = fs.statSync(abs);
         if (stat.size > 1024 * 1024) {
-          this.logger.warn(`skipping ${abs} — exceeds 1MB skill_file cap`);
+          this.logger.warn(`skipping ${abs} — exceeds 1MB per-file cap`);
           continue;
         }
+        if (budget.bytes + stat.size > MAX_SKILL_BYTES) {
+          this.logger.warn(
+            `skill at ${root}: hit ${MAX_SKILL_BYTES}-byte aggregate cap; remaining files skipped`,
+          );
+          return out;
+        }
+        budget.bytes += stat.size;
+        budget.count += 1;
         out.push({ relativePath: rel, content: fs.readFileSync(abs, 'utf8') });
       } catch (err) {
         this.logger.warn(`skipping ${abs} — ${err instanceof Error ? err.message : err}`);
