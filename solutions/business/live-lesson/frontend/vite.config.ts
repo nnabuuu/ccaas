@@ -5,6 +5,7 @@ import http from 'node:http'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const BACKEND_TARGET = env.BACKEND_URL || 'http://localhost:3007'
+  const PREVIEW_TARGET = env.PREVIEW_URL || 'http://localhost:4321'
   const backendUrl = new URL(BACKEND_TARGET)
 
   return {
@@ -26,6 +27,10 @@ export default defineConfig(({ mode }) => {
       port: 5283,
       host: true,
       proxy: {
+        '/preview': {
+          target: PREVIEW_TARGET,
+          changeOrigin: true,
+        },
         '/api': {
           target: BACKEND_TARGET,
           configure: (proxy) => {
