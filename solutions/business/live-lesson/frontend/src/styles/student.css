@@ -193,6 +193,11 @@
 
 @media (max-width:768px){.stu-text-overlay{position:absolute;top:0;bottom:0;right:0;width:100%;z-index:10;flex:none}}
 
+/* Sidebar in right panel — fill available space, overlay close controls */
+.sidebar-right-panel{display:flex;flex-direction:column;overflow:hidden;position:relative}
+.sidebar-right-panel .demo-sidebar{width:100%;flex:1;border:none;border-radius:0}
+.sidebar-right-controls{position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:2}
+
 /* Para reference links */
 .stu-para-link{color:var(--teal);cursor:pointer;font-weight:600;border-bottom:1.5px dashed var(--teal);transition:opacity .15s}
 .stu-para-link:hover{opacity:.7}

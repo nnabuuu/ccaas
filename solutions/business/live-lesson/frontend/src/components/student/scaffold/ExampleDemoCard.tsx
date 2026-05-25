@@ -22,9 +22,11 @@ export interface ExampleDemoCardProps {
   skipAnimation?: boolean
   /** Label for the primary action button; defaults to "我来练习" */
   confirmLabel?: string
+  /** When provided, sidebar renders externally (right panel); receives activeStep updates */
+  onSidebarStep?: (step: number) => void
 }
 
-export default function ExampleDemoCard({ config, onDone, skipAnimation = false, confirmLabel }: ExampleDemoCardProps) {
+export default function ExampleDemoCard({ config, onDone, skipAnimation = false, confirmLabel, onSidebarStep }: ExampleDemoCardProps) {
   const { stepStart, totalStages } = useMemo(() => computeStageLayout(config.steps), [config.steps])
   const [stage, setStage] = useState(skipAnimation ? totalStages - 1 : 0)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
@@ -61,6 +63,11 @@ export default function ExampleDemoCard({ config, onDone, skipAnimation = false,
     if (stage >= totalStages - 1) return maxStep + 1
     return Math.min(activeStepIdx + 1, maxStep)
   }, [stage, activeStepIdx, totalStages, config.sidebar])
+
+  // Notify parent of sidebar step changes (for external right-panel rendering)
+  useEffect(() => {
+    if (onSidebarStep && config.sidebar) onSidebarStep(sidebarActiveStep)
+  }, [sidebarActiveStep, onSidebarStep, config.sidebar])
 
   const mainContent = (
     <>
@@ -119,7 +126,7 @@ export default function ExampleDemoCard({ config, onDone, skipAnimation = false,
     </>
   )
 
-  if (config.sidebar) {
+  if (config.sidebar && !onSidebarStep) {
     return (
       <div className="demo-layout">
         <div className="demo-main">{mainContent}</div>
@@ -400,7 +407,7 @@ function FormulaRenderer({ tokens, className }: { tokens: FormulaToken[]; classN
 
 /* ═══ LectureSidebar — full sidebar with rule card + step cards ═══ */
 
-function LectureSidebar({ sidebar, activeStep }: {
+export function LectureSidebar({ sidebar, activeStep }: {
   sidebar: DemoSidebar; activeStep: number
 }) {
   if (!sidebar.ruleCard?.formula?.length || !sidebar.steps?.length) return null

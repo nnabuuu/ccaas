@@ -9,6 +9,8 @@ import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
 import ScaffoldPanel from './ScaffoldPanel'
 import type { ScaffoldHint } from './ScaffoldPanel'
+import { LectureSidebar } from './scaffold/ExampleDemoCard'
+import type { DemoSidebar } from './task-data'
 import AiPanel from './ai-ask/AiPanel'
 import TranslateButton from './TranslateButton'
 import HelpGuide from './HelpGuide'
@@ -60,7 +62,13 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
 
   // ── Scaffold hints (right panel mode) ──
   const [scaffoldHints, setScaffoldHints] = useState<ScaffoldHint[]>([])
-  const [rightMode, setRightMode] = useState<'text' | 'scaffold'>('text')
+  const [rightMode, setRightMode] = useState<'text' | 'scaffold' | 'sidebar'>('text')
+  const [sidebarData, setSidebarData] = useState<DemoSidebar | null>(null)
+  const [sidebarActiveStep, setSidebarActiveStep] = useState(0)
+
+  const handleSidebarStep = useCallback((step: number) => {
+    setSidebarActiveStep(step)
+  }, [])
 
   const handleScaffoldPush = useCallback((hint: ScaffoldHint) => {
     setScaffoldHints(prev => {
@@ -70,19 +78,6 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     setRightMode('scaffold')
     setTextbookOpen(true)
   }, [])
-
-  // On task change: populate initialScaffold or clear
-  useEffect(() => {
-    const t = tasks[taskId ? taskId - 1 : -1]
-    if (t?.initialScaffold?.length) {
-      setScaffoldHints(t.initialScaffold as ScaffoldHint[])
-      setRightMode('scaffold')
-      setTextbookOpen(true)
-    } else {
-      setScaffoldHints([])
-      setRightMode('text')
-    }
-  }, [taskId, tasks])
 
   // Listen for scroll-to-para events from paragraph reference links
   useEffect(() => {
@@ -160,6 +155,28 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     () => buildInstructionMap(manifest.readingSteps || [], taskToStep),
     [manifest.readingSteps, taskToStep],
   )
+
+  // On task change: populate sidebar > initialScaffold > text
+  useEffect(() => {
+    const t = tasks[taskId ? taskId - 1 : -1]
+    const sidebar = taskId ? instructionMap[taskId]?.demoConfig?.sidebar : null
+    if (sidebar) {
+      setSidebarData(sidebar)
+      setSidebarActiveStep(0)
+      setScaffoldHints([])
+      setRightMode('sidebar')
+      setTextbookOpen(true)
+    } else if (t?.initialScaffold?.length) {
+      setSidebarData(null)
+      setScaffoldHints(t.initialScaffold as ScaffoldHint[])
+      setRightMode('scaffold')
+      setTextbookOpen(true)
+    } else {
+      setSidebarData(null)
+      setScaffoldHints([])
+      setRightMode('text')
+    }
+  }, [taskId, tasks, instructionMap])
 
   // Extract i0 intro studentView for rich course intro screen
   const courseIntroView = useMemo(() => {
@@ -286,8 +303,26 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             doneSet={doneSet}
             onPhaseChange={handlePhaseChange}
             initialPhase={initialPhase}
+            onSidebarStep={sidebarData ? handleSidebarStep : undefined}
           />
-          {scaffoldHints.length > 0 && rightMode === 'scaffold' ? (
+          {rightMode === 'sidebar' && sidebarData ? (
+            !textbookOpen ? (
+              <div className="stu-text-rail" onClick={() => setTextbookOpen(true)}>
+                <div className="stu-text-rail-icon">📖</div>
+                <div className="stu-text-rail-label">{sidebarData.title}</div>
+              </div>
+            ) : (
+              <div className="stu-text-overlay sidebar-right-panel">
+                <LectureSidebar sidebar={sidebarData} activeStep={currentPhase === 'listen' ? sidebarActiveStep : sidebarData.steps.length + 1} />
+                <div className="sidebar-right-controls">
+                  {manifest.article && (
+                    <button className="scaffold-panel-close" onClick={() => setRightMode('text')}>课文</button>
+                  )}
+                  <button className="scaffold-panel-close" onClick={() => setTextbookOpen(false)}>×</button>
+                </div>
+              </div>
+            )
+          ) : scaffoldHints.length > 0 && rightMode === 'scaffold' ? (
             <ScaffoldPanel
               hints={scaffoldHints}
               enableMath={manifest.enableMath}

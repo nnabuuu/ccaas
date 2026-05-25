@@ -50,12 +50,13 @@ export function renderMd(text: string, opts?: { math?: boolean }) {
       if (typeof p !== 'string') return [p]
       const segs: (string | JSX.Element)[] = []
       let rest = p
+      let bc = 0
       while (rest.includes('**')) {
         const a = rest.indexOf('**')
         const b = rest.indexOf('**', a + 2)
         if (b === -1) { segs.push(rest); rest = ''; break }
         if (a > 0) segs.push(rest.slice(0, a))
-        segs.push(<strong key={`b${pi}${a}`}>{rest.slice(a + 2, b)}</strong>)
+        segs.push(<strong key={`b${pi}${bc++}`}>{rest.slice(a + 2, b)}</strong>)
         rest = rest.slice(b + 2)
       }
       if (rest) segs.push(rest)
@@ -66,12 +67,13 @@ export function renderMd(text: string, opts?: { math?: boolean }) {
       if (typeof p !== 'string') return [p]
       const segs: (string | JSX.Element)[] = []
       let rest = p
+      let ic = 0
       while (rest.includes('*')) {
         const a = rest.indexOf('*')
         const b = rest.indexOf('*', a + 1)
         if (b === -1) { segs.push(rest); rest = ''; break }
         if (a > 0) segs.push(rest.slice(0, a))
-        segs.push(<em key={`i${pi}${a}`}>{rest.slice(a + 1, b)}</em>)
+        segs.push(<em key={`i${pi}${ic++}`}>{rest.slice(a + 1, b)}</em>)
         rest = rest.slice(b + 1)
       }
       if (rest) segs.push(rest)

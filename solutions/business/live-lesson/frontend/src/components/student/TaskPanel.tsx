@@ -41,7 +41,7 @@ function getDefaultPhases(t: TFn): PhaseConfig[] {
 }
 
 /* ═══ LISTEN PHASE ═══ */
-function ListenPhase({ task, onDone, lessonId, isRevisit, label }: { task: Task; onDone: () => void; lessonId?: string; isRevisit?: boolean; label?: string }) {
+function ListenPhase({ task, onDone, lessonId, isRevisit, label, onSidebarStep }: { task: Task; onDone: () => void; lessonId?: string; isRevisit?: boolean; label?: string; onSidebarStep?: (step: number) => void }) {
   const t = useT()
   const { config } = useContext(SessionCtx)
   const [done, setDone] = useState(!!isRevisit)
@@ -57,6 +57,7 @@ function ListenPhase({ task, onDone, lessonId, isRevisit, label }: { task: Task;
           onDone={handleClick}
           skipAnimation={done}
           confirmLabel={iv.confirmLabel}
+          onSidebarStep={onSidebarStep}
         />
       </div>
     )
@@ -118,9 +119,9 @@ import type { ScaffoldHint } from './ScaffoldPanel'
 
 /** Phase→component registry. Each entry renders the phase given standard props. */
 const PHASE_REGISTRY: Record<string, (props: {
-  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; partIds?: string[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void
+  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; partIds?: string[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean; onScaffoldPush?: (hint: ScaffoldHint) => void; onSidebarStep?: (step: number) => void
 }) => JSX.Element | null> = {
-  listen: ({ task, onDone, lessonId, isRevisit, label }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} label={label} />,
+  listen: ({ task, onDone, lessonId, isRevisit, label, onSidebarStep }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} label={label} onSidebarStep={onSidebarStep} />,
   practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit, onScaffoldPush, partIds }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} onScaffoldPush={onScaffoldPush} partIds={partIds} />,
   discuss: ({ task, onDone, isRevisit }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} isRevisit={isRevisit} />,
   discovery: ({ task, onDone, stepIdx, isRevisit }) => <DiscoveryPhase key={`disc${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} isRevisit={isRevisit} />,
@@ -135,8 +136,8 @@ function getPhaseRenderer(phaseId: string) {
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null; onScaffoldPush?: (hint: ScaffoldHint) => void
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush, onSidebarStep }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null; onScaffoldPush?: (hint: ScaffoldHint) => void; onSidebarStep?: (step: number) => void
 }) {
   const t = useT()
   const ctx = useContext(SessionCtx)
@@ -278,6 +279,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
                 onComplete,
                 onOverlayChange,
                 onScaffoldPush,
+                onSidebarStep: phase.id === 'listen' || phase.id.startsWith('listen') ? onSidebarStep : undefined,
                 taskCount,
                 isRevisit: isRevisit || donePhases.has(phase.id),
               })}
@@ -348,7 +350,7 @@ export function useStudentTask(
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush, locale }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase, onScaffoldPush, onSidebarStep, locale }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -366,6 +368,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   initialPhase?: string | null
   onPhaseChange?: (phase: string) => void
   onScaffoldPush?: (hint: ScaffoldHint) => void
+  onSidebarStep?: (step: number) => void
   locale?: Locale
 }) {
   const t = useT(locale)
@@ -439,7 +442,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus' && (
         <BonusPhase onComplete={() => setScreen('summary')} />
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} onScaffoldPush={onScaffoldPush} />}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} onScaffoldPush={onScaffoldPush} onSidebarStep={onSidebarStep} />}
     </div>
     </LocaleScope>
   )
