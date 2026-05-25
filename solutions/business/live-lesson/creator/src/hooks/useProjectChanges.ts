@@ -18,6 +18,14 @@
  * server comes back, the browser auto-reconnects and `isConnected`
  * flips true via the next welcome event.
  *
+ * **Auth status (Phase 2a)**: the ccaas SSE endpoint at
+ * `/api/v1/projects/:projectId/changes` is currently unauthenticated.
+ * `EventSource` cannot set HTTP headers, so when auth lands on that
+ * endpoint (tracked in `docs/AGENT_RUNTIME_DESIGN.md` § Phase 2 security),
+ * this hook will need to either (a) accept a query-param token, or
+ * (b) switch to a fetch-based SSE reader (rewrite — EventSource just
+ * doesn't support `Authorization` headers).
+ *
  * Events array is capped at MAX_EVENTS (50) — older events drop off
  * the tail. The UI typically only renders the most recent few.
  */
@@ -125,14 +133,28 @@ export function useProjectChanges(projectId: string | null): UseProjectChangesRe
 }
 
 /**
- * Minimal runtime shape check on parsed SSE data. Defensive against
- * the server (or a proxy) sending an unexpected payload.
+ * Runtime shape check on parsed SSE data. Defensive against a server
+ * (or a proxy) sending an unexpected payload — accepts only events
+ * with the documented `kind` enum + required string fields. Unknown
+ * kinds are rejected outright rather than rendered as default "Agent
+ * edited" banners with empty paths.
  */
+const VALID_KINDS = new Set<ChangeEvent['kind']>([
+  'created', 'updated', 'deleted', 'subscribed', 'heartbeat',
+]);
+
 function isChangeEvent(value: unknown): value is ChangeEvent {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
+  if (typeof v.kind !== 'string' || !VALID_KINDS.has(v.kind as ChangeEvent['kind'])) {
+    return false;
+  }
+  // subscribed/heartbeat are connection-control events: only `kind` is required.
+  if (v.kind === 'subscribed' || v.kind === 'heartbeat') return true;
+  // Real ChangeEvents must carry path + source + at.
   return (
-    typeof v.kind === 'string' &&
-    (v.path === undefined || typeof v.path === 'string')
+    typeof v.path === 'string' &&
+    typeof v.at === 'string' &&
+    (v.source === 'agent' || v.source === 'gui' || v.source === 'system')
   );
 }

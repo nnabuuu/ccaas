@@ -42,12 +42,24 @@ export default function ExecutionTab({ projectId, reloadKey = 0 }: ExecutionTabP
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const manifestRef = useRef<Manifest | null>(null)
   manifestRef.current = manifest
+  /**
+   * Generation counter incremented on every reload (reloadKey bump) and
+   * on unmount. Inside save(), we snapshot the current gen at start and
+   * compare on resolve — if it changed, an external reload happened
+   * mid-flight and we discard our stale write (no setSaveStatus, no
+   * fallback ui change) to prevent overwriting freshly-loaded content
+   * with the operator's pre-reload edits.
+   */
+  const saveGenRef = useRef(0)
 
   // Load manifest
   useEffect(() => {
     let cancelled = false
-    // Clear timer when projectId changes
+    // Clear timer + bump generation so any in-flight save() resolves
+    // into the "stale, discard" branch instead of overwriting the
+    // freshly-loaded manifest with the operator's pre-reload edits.
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveGenRef.current++
     async function load() {
       try {
         setLoading(true)
@@ -77,15 +89,22 @@ export default function ExecutionTab({ projectId, reloadKey = 0 }: ExecutionTabP
     }
   }, [projectId, reloadKey])
 
-  // Save function
+  // Save function — generation-guarded against reload races.
   const save = useCallback(async () => {
     const m = manifestRef.current
     if (!m) return
+    const gen = saveGenRef.current
     setSaveStatus('saving')
     try {
       await writeFile(projectId, 'execution/manifest.json', JSON.stringify(m, null, 2))
+      // If a reload bumped the generation while we were in-flight, the
+      // operator's pre-reload edits would clobber the new content. Drop
+      // this write's status update — the load() in the new effect run
+      // already set 'saved'.
+      if (gen !== saveGenRef.current) return
       setSaveStatus('saved')
     } catch {
+      if (gen !== saveGenRef.current) return
       setSaveStatus('unsaved')
     }
   }, [projectId])

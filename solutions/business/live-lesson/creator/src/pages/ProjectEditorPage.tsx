@@ -38,6 +38,11 @@ export default function ProjectEditorPage() {
   const { events, isConnected, error: sseError } = useProjectChanges(id ?? null)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [reloadKey, setReloadKey] = useState(0)
+  // Reset the dismissed set whenever the operator opens a different project
+  // — stale keys for project A would otherwise accumulate forever.
+  useEffect(() => {
+    setDismissed(new Set())
+  }, [id])
   // Map of active tab → the file path it's currently editing. Used to
   // decide whether the [Reload] button is shown on a given notice.
   const currentlyEditingPath = useMemo(() => {
@@ -59,10 +64,11 @@ export default function ProjectEditorPage() {
     if (path === currentlyEditingPath) {
       setReloadKey((k) => k + 1)
       // Also clear the matching notice so the banner doesn't linger.
+      // Key must match `eventKey()` in ProjectChangeNotice (includes actor).
       setDismissed((prev) => {
         const next = new Set(prev)
         for (const e of events) {
-          if (e.path === path) next.add(`${e.at}|${e.path}|${e.kind}`)
+          if (e.path === path) next.add(`${e.at}|${e.path}|${e.kind}|${e.actor ?? ''}`)
         }
         return next
       })

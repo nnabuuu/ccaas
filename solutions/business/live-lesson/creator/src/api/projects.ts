@@ -84,6 +84,16 @@ export async function publishProject(projectId: string): Promise<{ lessonId: str
  * unset.
  */
 export function getChangesStreamUrl(projectId: string): string {
-  const base = (import.meta.env.VITE_CCAAS_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
+  const envUrl = import.meta.env.VITE_CCAAS_URL as string | undefined;
+  if (!envUrl && import.meta.env.PROD) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[creator] VITE_CCAAS_URL is not set in a production build; ' +
+      'falling back to http://localhost:3001. The agent-runtime SSE feed will ' +
+      'only work if the user accesses the app from the same machine as ccaas. ' +
+      'Set VITE_CCAAS_URL at build time to your deployed ccaas origin.',
+    );
+  }
+  const base = (envUrl ?? 'http://localhost:3001').replace(/\/+$/, '');
   return `${base}/api/v1/projects/${encodeURIComponent(projectId)}/changes`;
 }

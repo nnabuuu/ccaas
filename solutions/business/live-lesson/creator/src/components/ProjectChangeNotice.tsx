@@ -161,7 +161,12 @@ function noticeVariant(event: ChangeEvent): Variant {
   };
 }
 
-/** Stable identity per event for the dismissed set. `at` is server-emitted ISO timestamp. */
+/**
+ * Stable identity per event for the dismissed set. `at` is server-emitted
+ * ISO timestamp at ms granularity; including `actor` distinguishes
+ * `conflict-agent-wins` from a plain `updated` event for the same
+ * (at, path, kind) tuple (rare collision possible at sub-ms scheduling).
+ */
 function eventKey(event: ChangeEvent): string {
-  return `${event.at}|${event.path}|${event.kind}`;
+  return `${event.at}|${event.path}|${event.kind}|${event.actor ?? ''}`;
 }
