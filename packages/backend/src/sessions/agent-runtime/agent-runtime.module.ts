@@ -31,6 +31,7 @@ import { InMemoryChangeStream } from '@kedge-agentic/agent-runtime';
 
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
 import { TypeOrmSnapshotStore } from './typeorm-snapshot-store';
+import { RestProjectArtifactSource } from './rest-project-artifact-source';
 import {
   PROJECT_ARTIFACT_SOURCE,
   SNAPSHOT_STORE,
@@ -65,10 +66,20 @@ class NoopArtifactSource implements ProjectArtifactSource {
 @Module({})
 export class AgentRuntimeModule {
   static forRoot(options: AgentRuntimeModuleOptions = {}): DynamicModule {
+    // Source resolution priority:
+    //   1. explicit `options.artifactSource` (highest — test-friendly)
+    //   2. SOLUTION_ARTIFACT_URL env var → RestProjectArtifactSource
+    //   3. NoopArtifactSource (lowest — degrades gracefully)
+    const envUrl = process.env.SOLUTION_ARTIFACT_URL?.trim();
     const sourceProvider: Provider = options.artifactSource
       ? {
           provide: PROJECT_ARTIFACT_SOURCE,
           useExisting: options.artifactSource,
+        }
+      : envUrl
+      ? {
+          provide: PROJECT_ARTIFACT_SOURCE,
+          useFactory: () => new RestProjectArtifactSource(envUrl),
         }
       : {
           provide: PROJECT_ARTIFACT_SOURCE,
@@ -93,7 +104,11 @@ export class AgentRuntimeModule {
         TypeOrmSnapshotStore,
         snapshotStoreProvider,
         changeStreamProvider,
-        ...(options.artifactSource ? [options.artifactSource] : [NoopArtifactSource]),
+        ...(options.artifactSource
+          ? [options.artifactSource]
+          : envUrl
+          ? []
+          : [NoopArtifactSource]),
         sourceProvider,
       ],
       exports: [
