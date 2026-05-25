@@ -47,10 +47,29 @@ export NO_PROXY no_proxy=$NO_PROXY
 
 if [ -z "$TENANT_ID" ]; then
   echo "==> resolve tenant id for slug=$TENANT_SLUG"
+  # Try the REST tenants list first (works in production with an admin
+  # API key). The endpoint is auth-gated even under
+  # AUTH_ALLOW_ANONYMOUS=true, so the curl will likely 403 in pure-dev
+  # mode — fall through to the sqlite path below.
   TENANT_ID=$(curl -fs "$CCAAS/api/v1/tenants" 2>/dev/null \
-    | jq -r --arg slug "$TENANT_SLUG" '(.items // .) | map(select(.slug == $slug))[0].id // empty')
+    | jq -r --arg slug "$TENANT_SLUG" '(.items // .) | map(select(.slug == $slug))[0].id // empty' 2>/dev/null)
+
+  # Fallback: read the SQLite DB at the conventional path used by ccaas
+  # in dev. Cheap and 100% reliable when both backends share a host.
   if [ -z "$TENANT_ID" ] || [ "$TENANT_ID" = "null" ]; then
-    echo "✗ could not resolve tenant id for $TENANT_SLUG — pass TENANT_ID=<uuid> explicitly"
+    REPO_ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
+    DB_PATH=${CCAAS_DB_PATH:-"$REPO_ROOT/packages/backend/.agent-workspace/data.db"}
+    if [ -r "$DB_PATH" ] && command -v sqlite3 >/dev/null 2>&1; then
+      TENANT_ID=$(sqlite3 "$DB_PATH" "SELECT id FROM tenants WHERE slug='$TENANT_SLUG';" 2>/dev/null)
+    fi
+  fi
+
+  if [ -z "$TENANT_ID" ] || [ "$TENANT_ID" = "null" ]; then
+    echo "✗ could not resolve tenant id for $TENANT_SLUG"
+    echo "  options:"
+    echo "    1. TENANT_ID=<uuid> sh $0"
+    echo "    2. install sqlite3 + ensure $DB_PATH exists (dev fallback)"
+    echo "    3. set CCAAS_API_KEY=... and add 'Authorization: Bearer ...' to the curl (production)"
     exit 1
   fi
   echo "    tenant = $TENANT_ID"
@@ -78,9 +97,14 @@ sleep 1
 
 echo "==> POST first message — auto-creates session"
 SID=$(uuidgen 2>/dev/null | tr 'A-Z' 'a-z' || python3 -c 'import uuid;print(uuid.uuid4())')
+# The messages endpoint streams SSE until the first agent turn completes
+# (~5-15s depending on LLM latency); the connection stays open for the
+# whole turn. We only need the session to exist for bind-project, so
+# discard the stream body and just record the status code. -m 30 keeps
+# the whole script bounded even if the LLM stalls.
 HTTP=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$CCAAS/api/v1/sessions/$SID/messages" \
   -H 'content-type: application/json' \
-  -d "{\"message\":\"hi\",\"tenantId\":\"$TENANT_ID\",\"templateName\":\"$TPL\"}" -m 8)
+  -d "{\"message\":\"hi\",\"tenantId\":\"$TENANT_ID\",\"templateName\":\"$TPL\"}" -m 30)
 [ "$HTTP" = "201" ] || { echo "✗ message POST failed: $HTTP"; exit 1; }
 echo "    session = $SID"
 
