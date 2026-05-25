@@ -11,7 +11,10 @@ import {
   type TaskDemoAttemptRecord,
   type TaskDemoAttemptRepoPort,
 } from '../../domain/ports/task-demo-attempt-repo.port';
+import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { ExerciseService } from '../exercise/exercise.service';
+import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
+import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import type { ExerciseSpec } from '../../schemas';
 
 // Shared with ClassroomService (same alphabet — 30 chars, no 0/O/1/I/L).
@@ -61,7 +64,11 @@ export class TaskDemoService {
     private readonly studentRepo: StudentRepoPort,
     @Inject(TASK_DEMO_ATTEMPT_REPO_PORT)
     private readonly attemptRepo: TaskDemoAttemptRepoPort,
+    @Inject(LESSON_REPO_PORT)
+    private readonly lessonRepo: LessonRepoPort,
     private readonly exerciseService: ExerciseService,
+    private readonly manifestCache: ManifestCacheService,
+    private readonly exerciseRegistry: ExerciseTypeRegistry,
   ) {}
 
   // ── Lifecycle ──
@@ -103,10 +110,36 @@ export class TaskDemoService {
     return { studentId: created.id, name: created.name };
   }
 
-  async getExerciseSpec(code: string): Promise<ExerciseSpec & { step: number }> {
+  async getExerciseSpec(code: string): Promise<
+    ExerciseSpec & {
+      step: number;
+      lessonId: string;
+      /**
+       * Full sanitized lesson manifest. Frontend decides what to render in
+       * the right panel: manifest.article → TextPanel; manifest.boardData
+       * → BoardInline; readingSteps[step].studentView → instruction header;
+       * etc. Returning the whole manifest (sanitized) is cheaper than
+       * shipping a custom shape per task type.
+       */
+      manifest: Record<string, unknown>;
+    }
+  > {
     const session = await this.resolveSession(code);
     const spec = await this.exerciseService.getExerciseSpec(session, session.currentStep);
-    return { ...spec, step: session.currentStep };
+
+    const rawManifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!rawManifest) {
+      // Should never happen — getExerciseSpec above would have thrown first.
+      throw new Error('Lesson manifest not found');
+    }
+    const sanitized = this.exerciseRegistry.sanitizeManifest(rawManifest) as Record<string, unknown>;
+
+    return {
+      ...spec,
+      step: session.currentStep,
+      lessonId: session.lessonId,
+      manifest: sanitized,
+    };
   }
 
   async submit(

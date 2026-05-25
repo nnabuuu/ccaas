@@ -19,6 +19,10 @@ export interface ClaimResult {
 export interface ExerciseSpec extends Record<string, unknown> {
   type: string
   step: number
+  lessonId: string
+  /** Full sanitized manifest. Pick what to render: article / boardData /
+   *  readingSteps[step].studentView, etc. */
+  manifest: Record<string, any>
 }
 
 export interface SubmitResult {

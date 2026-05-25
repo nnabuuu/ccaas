@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MockSessionProvider } from '../preview/MockSessionProvider'
 import { getExerciseType } from '../../components/student/exercise/plugins/registry'
 import '../../components/student/exercise/plugins/built-in' // side-effect: registers all 11 plugins
+import { RightPanel } from './RightPanel'
 import { taskDemoApi, type ExerciseSpec, type ReplayEntry, type Respondent } from './useTaskDemoApi'
 
 /**
@@ -87,23 +88,40 @@ export function ReplayMode({ code, userParam }: { code: string; userParam: strin
   const current = attempts[idx]
   const plugin = getExerciseType(spec.type)
 
+  const hasRightPanel = Boolean(
+    spec.manifest?.article
+      || spec.manifest?.boardData?.blocks?.some?.((b: any) => b?.reveal?.step === spec.step)
+      || (spec.manifest?.readingSteps as Array<any> | undefined)?.find?.((s) => s.idx === spec.step)?.studentView
+  )
+
   return (
     <Frame title={`Replay · ${respondent.name}`}>
-      <ScrubBar
-        attempts={attempts}
-        idx={idx}
-        onChange={setIdx}
-      />
+      <div style={{ padding: '14px 24px 0' }}>
+        <ScrubBar attempts={attempts} idx={idx} onChange={setIdx} />
+      </div>
       {plugin ? (
-        // key={idx} forces a fresh mount per scrub so useReviewRestore (which
-        // parses reviewData once at mount) picks up the new attempt's state.
         <MockSessionProvider>
-          <ReplayStage
-            key={`${respondent.studentId}-${current.attempt}`}
-            plugin={plugin}
-            spec={spec}
-            entry={current}
-          />
+          <div style={{
+            display: hasRightPanel ? 'grid' : 'block',
+            gridTemplateColumns: hasRightPanel ? 'minmax(0, 520px) minmax(0, 1fr)' : undefined,
+            gap: 0,
+            height: hasRightPanel ? 'calc(100vh - 48px - 72px)' : undefined,
+          }}>
+            <div className="stu-task-area" style={{ overflow: 'auto', padding: '20px 24px', background: 'var(--surface)' }}>
+              {/* key={idx} forces a fresh mount per scrub so useReviewRestore re-parses */}
+              <ReplayStage
+                key={`${respondent.studentId}-${current.attempt}`}
+                plugin={plugin}
+                spec={spec}
+                entry={current}
+              />
+            </div>
+            {hasRightPanel && (
+              <div className="stu-text-area">
+                <RightPanel spec={spec} overlay={null} />
+              </div>
+            )}
+          </div>
         </MockSessionProvider>
       ) : (
         <ErrorBlock message={`No frontend plugin registered for type "${spec.type}".`} />

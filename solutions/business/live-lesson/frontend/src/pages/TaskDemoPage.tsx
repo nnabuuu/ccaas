@@ -13,6 +13,11 @@ import { ReplayMode } from './task-demo/ReplayMode'
 import { AdminMode } from './task-demo/AdminMode'
 import { taskDemoApi, studentIdCacheKey } from './task-demo/useTaskDemoApi'
 
+// The production exercise components are styled assuming they're inside the
+// student-shell layout. Loading the same stylesheets here keeps text colors,
+// option chips, ✓/✗ marks etc. consistent with /session/:id.
+import '../styles/student.css'
+
 export default function TaskDemoPage() {
   const { code = '', mode = '' } = useParams<{ code: string; mode?: string }>()
   const [params, setParams] = useSearchParams()
