@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MockSessionProvider } from '../preview/MockSessionProvider'
 import { getExerciseType } from '../../components/student/exercise/plugins/registry'
 import '../../components/student/exercise/plugins/built-in' // side-effect: registers all 11 plugins
-import { RightPanel } from './RightPanel'
+import { RightPanel, hasRightPanelContent } from './RightPanel'
 import { taskDemoApi, type ExerciseSpec, type ReplayEntry, type Respondent } from './useTaskDemoApi'
 
 /**
@@ -88,11 +88,7 @@ export function ReplayMode({ code, userParam }: { code: string; userParam: strin
   const current = attempts[idx]
   const plugin = getExerciseType(spec.type)
 
-  const hasRightPanel = Boolean(
-    spec.manifest?.article
-      || spec.manifest?.boardData?.blocks?.some?.((b: any) => b?.reveal?.step === spec.step)
-      || (spec.manifest?.readingSteps as Array<any> | undefined)?.find?.((s) => s.idx === spec.step)?.studentView
-  )
+  const hasRightPanel = hasRightPanelContent(spec)
 
   return (
     <Frame title={`Replay · ${respondent.name}`}>

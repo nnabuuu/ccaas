@@ -1,5 +1,6 @@
 import type { ReactNode, ComponentProps } from 'react'
 import { SessionCtx } from '../../components/student/TaskPanel'
+import type { SubmitResult } from '../../hooks/useClassroom'
 import { taskDemoApi } from './useTaskDemoApi'
 
 type SessionCtxValue = ComponentProps<typeof SessionCtx.Provider>['value']
@@ -9,10 +10,12 @@ type SessionCtxValue = ComponentProps<typeof SessionCtx.Provider>['value']
  * `ctx.submit(step, data)` (notably select-evidence — selfManagedSubmit=true)
  * hit /api/task-demo/:code/submit instead of the classroom backend.
  *
- * The MockSessionProvider used by /exercise-demo returns a canned submit
- * response; that's fine for bundle previews but wrong here — task-demo's
- * whole point is server persistence. This provider replaces only the
- * `submit` function and keeps the rest of the mock shape.
+ * KNOWN GAP — rich-content-quiz scaffold flow is NOT supported. Production
+ * `/submit` response carries `scaffold`, `partId`, `nextPartId`,
+ * `sampleSolution` which drive RichContentQuizExercise's multi-part
+ * walkthrough. /api/task-demo/:code/submit returns only `{attempt, score,
+ * allCorrect, items}` — so the scaffold branch silently no-ops and every
+ * submission jumps to "correct". Tracked in docs/task-demo.md backlog.
  */
 export function TaskDemoSessionProvider({
   code,
@@ -34,10 +37,11 @@ export function TaskDemoSessionProvider({
     discussMeta: null,
     submit: async (_step, data) => {
       const result = await taskDemoApi.submit(code, studentId, data)
-      onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as any, items: result.items })
-      // Cast to SubmitResult — the production submit response has more
-      // fields (scaffold, partId, …) which we don't surface for task-demo.
-      return { ok: true, score: result.score } as any
+      onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as Record<string, unknown> | null, items: result.items })
+      // SubmitResult has more optional fields (scaffold / partId / etc.)
+      // we never produce for task-demo — leave them undefined.
+      const ret: SubmitResult = { ok: true, score: result.score as Record<string, unknown> | null }
+      return ret
     },
   }
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>

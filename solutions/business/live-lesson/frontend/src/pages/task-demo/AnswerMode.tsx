@@ -3,9 +3,8 @@ import { TaskDemoSessionProvider } from './TaskDemoSessionProvider'
 import { getExerciseType } from '../../components/student/exercise/plugins/registry'
 import '../../components/student/exercise/plugins/built-in' // side-effect: registers all 11 plugins
 import type { ExerciseUIPlugin } from '../../components/student/exercise/plugins/types'
-import TextPanel, { type TextOverlay } from '../../components/student/TextPanel'
-import BoardInline from '../../components/student/BoardInline'
-import { RightPanel } from './RightPanel'
+import { type TextOverlay } from '../../components/student/TextPanel'
+import { RightPanel, hasRightPanelContent } from './RightPanel'
 import { taskDemoApi, type ExerciseSpec, type SubmitResult } from './useTaskDemoApi'
 
 /**
@@ -62,8 +61,8 @@ export function AnswerMode({
 
   const stepDef = (spec.manifest?.readingSteps as Array<{ idx: number; label?: string }> | undefined)?.find((s) => s.idx === spec.step)
   const headerTitle = stepDef?.label ?? spec.type
-  const rightPanel = <RightPanel spec={spec} overlay={overlay} />
-  const hasRightPanel = Boolean(rightPanel && (spec.manifest?.article || stepHasBoard(spec) || stepHasStudentView(spec)))
+  const hasRightPanel = hasRightPanelContent(spec)
+  const rightPanel = hasRightPanel ? <RightPanel spec={spec} overlay={overlay} /> : null
 
   return (
     <Frame title={`${userName} · ${headerTitle}`}>
@@ -95,7 +94,7 @@ export function AnswerMode({
               })}
             />
           }
-          right={hasRightPanel ? rightPanel : null}
+          right={rightPanel}
         />
         {lastResult && <ResultBanner result={lastResult} />}
       </TaskDemoSessionProvider>
@@ -186,15 +185,6 @@ function ExerciseSurface({
   )
 }
 
-function stepHasBoard(spec: ExerciseSpec): boolean {
-  const blocks = spec.manifest?.boardData?.blocks
-  return Array.isArray(blocks) && blocks.some((b: any) => b?.reveal?.step === spec.step)
-}
-
-function stepHasStudentView(spec: ExerciseSpec): boolean {
-  const steps = spec.manifest?.readingSteps as Array<{ idx: number; studentView?: unknown }> | undefined
-  return !!steps?.find((s) => s.idx === spec.step)?.studentView
-}
 
 function TwoColumn({ left, right }: { left: React.ReactNode; right: React.ReactNode | null }) {
   if (!right) return <div style={{ padding: '24px 32px', maxWidth: 1200, margin: '0 auto' }}>{left}</div>

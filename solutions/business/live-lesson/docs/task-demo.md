@@ -124,6 +124,25 @@ public deploy (`?token=<jwt>` on `/respondents` + `/replay/:studentId`).
       per-student soft cap (e.g. 200 attempts → 429) protects against
       script loops bloating `task_demo_attempts`.
 
+### Known gaps
+
+- [ ] **Rich-content-quiz scaffold flow is unsupported in AnswerMode.**
+      Production `POST /submit` returns `scaffold` / `partId` /
+      `nextPartId` / `sampleSolution` which drive the multi-part
+      walkthrough. `/api/task-demo/:code/submit` returns only
+      `{attempt, score, allCorrect, items}`, so the scaffold branch
+      no-ops and every submit jumps to "correct". For now, sales should
+      not share a rich-content-quiz `/task-demo` link with customers —
+      use `/exercise-demo` (bundle-based) instead, or stick to
+      quiz / match / select-evidence / matrix / map / stance / order /
+      fill-blank / guided-discovery.
+- [ ] **`sanitizeManifest` is block-list based** — it strips
+      `discuss.systemPrompt` / `discuss.goal` + per-step answerKey, but
+      anything new added to the manifest (e.g. `teacherView`,
+      `instructorNotes`, `evalRubric`, lesson-level `coachingPrompt`)
+      will leak through to the unauthenticated task-demo URL. Switch to
+      an allow-list, or add a `sanitizeForPublicShare()` wrapper.
+
 ### Nice-to-have
 
 - [ ] Session lifecycle: nothing currently transitions a task-demo
