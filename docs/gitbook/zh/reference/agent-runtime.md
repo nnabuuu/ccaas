@@ -341,6 +341,26 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 后端 `SessionService.bindToProject(sessionId, tenantId, projectId)` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。
 
+### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
+
+后端 `/api/v1/projects/:projectId/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
+
+参考实现：`solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` —— 一个 React hook，内部用 `EventSource` 订阅，过滤掉 heartbeat / subscribed / 自己的 gui 写入，把剩下的 agent 事件返回给 UI：
+
+```tsx
+import { useProjectChanges } from './hooks/useProjectChanges';
+
+function ProjectEditorPage({ projectId }) {
+  const { events, isConnected, error } = useProjectChanges(projectId);
+  // events 里只剩下 source==='agent' 的 changes；包括 actor==='conflict-agent-wins'
+  return <ProjectChangeNotice events={events} ... />;
+}
+```
+
+`ProjectChangeNotice` 组件按 actor / kind 着色（红 = conflict-agent-wins，黄 = updated，橙 = deleted）+ 提供 [Reload]/[Dismiss] 按钮。Reload 不会自动跑 —— user 必须显式点，避免覆盖 user 未保存的改动。
+
+URL 路由：creator app 通过 `import.meta.env.VITE_CCAAS_URL`（默认 `http://localhost:3001`）直连 ccaas，不走 Vite proxy（proxy 只代理 `/api/*` 到 solution backend :3007）。
+
 ## 旧的 `sync/`（Phase 0 接口骨架，仍然存在）
 
 ```ts

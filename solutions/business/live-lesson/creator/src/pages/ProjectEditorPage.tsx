@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload } from 'lucide-react'
 import { getProject, publishProject } from '../api/projects'
@@ -8,6 +8,8 @@ import AiPanel from '../components/sidebar/AiPanel'
 import TabBar from '../components/layout/TabBar'
 import FileBrowser from '../components/sidebar/FileBrowser'
 import ExecutionTab from '../components/execution/ExecutionTab'
+import ProjectChangeNotice from '../components/ProjectChangeNotice'
+import { useProjectChanges } from '../hooks/useProjectChanges'
 
 const TABS = [
   { key: 'plan', label: '教案设计', dotColor: 'bg-teal-500' },
@@ -29,6 +31,43 @@ export default function ProjectEditorPage() {
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<string | null>(null)
   const [publishOk, setPublishOk] = useState(false)
+  // agent-runtime SSE subscription (Phase 2a): surfaces agent-side
+  // edits so the operator knows when the agent has touched the same
+  // project. Dismissed notices are tracked locally; `reloadKey` bumps
+  // force the active tab to re-fetch from disk.
+  const { events, isConnected, error: sseError } = useProjectChanges(id ?? null)
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [reloadKey, setReloadKey] = useState(0)
+  // Map of active tab → the file path it's currently editing. Used to
+  // decide whether the [Reload] button is shown on a given notice.
+  const currentlyEditingPath = useMemo(() => {
+    if (activeTab === 'execution') return 'execution/manifest.json'
+    if (activeTab === 'plan') return 'plan/lesson-plan.md'
+    return null
+  }, [activeTab])
+  const handleDismiss = useCallback((key: string) => {
+    setDismissed((prev) => {
+      const next = new Set(prev)
+      next.add(key)
+      return next
+    })
+  }, [])
+  const handleReload = useCallback((path: string) => {
+    // Only the active tab's path is reloaded; other tabs would re-fetch
+    // on their next mount anyway. Tabs that share state across mounts
+    // (none today) would need their own reload signal.
+    if (path === currentlyEditingPath) {
+      setReloadKey((k) => k + 1)
+      // Also clear the matching notice so the banner doesn't linger.
+      setDismissed((prev) => {
+        const next = new Set(prev)
+        for (const e of events) {
+          if (e.path === path) next.add(`${e.at}|${e.path}|${e.kind}`)
+        }
+        return next
+      })
+    }
+  }, [currentlyEditingPath, events])
 
   const fetchProject = useCallback(async () => {
     if (!id) return
@@ -95,7 +134,7 @@ export default function ProjectEditorPage() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'execution':
-        return <ExecutionTab projectId={project.id} />
+        return <ExecutionTab projectId={project.id} reloadKey={reloadKey} />
       case 'plan':
         return (
           <div className="flex-1 flex items-center justify-center text-gray-400">
@@ -139,6 +178,13 @@ export default function ProjectEditorPage() {
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {/* SSE connection indicator — green when subscribed to agent-runtime
+              changes for this project, gray when not (e.g., ccaas not running
+              or env var unset). Hover for the error message if any. */}
+          <span
+            className={`inline-block w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}
+            title={isConnected ? 'Live agent-edit notifications connected' : (sseError ?? 'Disconnected')}
+          />
           <FileBrowser files={files} />
           <button
             onClick={handlePublish}
@@ -150,6 +196,16 @@ export default function ProjectEditorPage() {
           </button>
         </div>
       </header>
+
+      {/* Agent-edit notices (Phase 2a). Only renders when there are
+          un-dismissed agent-side events; otherwise self-hides. */}
+      <ProjectChangeNotice
+        events={events}
+        currentlyEditingPath={currentlyEditingPath}
+        onReload={handleReload}
+        onDismiss={handleDismiss}
+        dismissed={dismissed}
+      />
 
       {/* Main area */}
       <EditorLayout

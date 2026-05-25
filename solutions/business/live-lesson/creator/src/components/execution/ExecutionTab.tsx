@@ -8,6 +8,13 @@ import BlockEditorDrawer from './BlockEditorDrawer'
 
 interface ExecutionTabProps {
   projectId: string
+  /**
+   * Bump this counter to force a reload of the manifest from disk —
+   * used by `ProjectEditorPage` when the operator clicks "Reload"
+   * on an agent-edit notice. The useEffect depends on it so any
+   * change re-runs the fetch.
+   */
+  reloadKey?: number
 }
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved'
@@ -25,7 +32,7 @@ function nextStepId(): string {
   return `s-${Date.now()}-${++stepIdCounter}`
 }
 
-export default function ExecutionTab({ projectId }: ExecutionTabProps) {
+export default function ExecutionTab({ projectId, reloadKey = 0 }: ExecutionTabProps) {
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -68,7 +75,7 @@ export default function ExecutionTab({ projectId }: ExecutionTabProps) {
       cancelled = true
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [projectId])
+  }, [projectId, reloadKey])
 
   // Save function
   const save = useCallback(async () => {

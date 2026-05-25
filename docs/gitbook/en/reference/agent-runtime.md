@@ -340,6 +340,27 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 `SessionService.bindToProject(sessionId, tenantId, projectId)` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state.
 
+### GUI side: consume the SSE so users see agent edits (Phase 2a)
+
+The backend `/api/v1/projects/:projectId/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
+
+Reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` — a React hook that uses `EventSource` to subscribe, filters out heartbeat / subscribed / own-gui writes, and returns agent-side events to the UI:
+
+```tsx
+import { useProjectChanges } from './hooks/useProjectChanges';
+
+function ProjectEditorPage({ projectId }) {
+  const { events, isConnected, error } = useProjectChanges(projectId);
+  // `events` contains only source==='agent' changes, including
+  // actor==='conflict-agent-wins' (when an agent edit overrode a GUI edit).
+  return <ProjectChangeNotice events={events} ... />;
+}
+```
+
+`ProjectChangeNotice` color-codes by actor / kind (red = conflict-agent-wins, yellow = updated, orange = deleted) and offers [Reload]/[Dismiss] buttons. Reload never runs automatically — the user must click it explicitly to avoid losing unsaved edits.
+
+URL routing: the creator app reads `import.meta.env.VITE_CCAAS_URL` (default `http://localhost:3001`) to talk to ccaas directly. The Vite `/api/*` proxy only routes to the solution backend on :3007.
+
 ## Legacy `sync/` (Phase 0 interface skeleton, still present)
 
 ```ts

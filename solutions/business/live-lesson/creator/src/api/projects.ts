@@ -71,3 +71,19 @@ export async function publishProject(projectId: string): Promise<{ lessonId: str
     method: 'POST',
   });
 }
+
+/**
+ * Build the URL for the ccaas agent-runtime SSE change feed. Unlike
+ * the rest of this file (which uses the Vite proxy to live-lesson
+ * backend on :3007), this endpoint lives on ccaas itself (:3001) and
+ * needs the full URL.
+ *
+ * Source: `import.meta.env.VITE_CCAAS_URL` (matches the classroom
+ * frontend's `useLiveLesson.ts` SDK pattern). Defaults to
+ * `http://localhost:3001` for dev convenience when the env var is
+ * unset.
+ */
+export function getChangesStreamUrl(projectId: string): string {
+  const base = (import.meta.env.VITE_CCAAS_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
+  return `${base}/api/v1/projects/${encodeURIComponent(projectId)}/changes`;
+}

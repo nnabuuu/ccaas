@@ -261,9 +261,23 @@ cd frontend && npm run build
 ```
 
 ## Ports
-- Frontend: 5283
-- Solution Backend: 3007 (lesson API + classroom API)
+- Frontend (classroom): 5283
+- Creator (course editor): 5284 — see `creator/vite.config.ts`
+- Solution Backend: 3007 (lesson API + classroom API + project artifacts API)
 - CCAAS Backend: 3001 (required)
+
+## Creator app env (Phase 2a)
+
+The course-editor creator app at `creator/` consumes the ccaas
+agent-runtime SSE feed (`GET /api/v1/projects/:projectId/changes`) to
+surface agent-side edits in real time. Two env vars in `creator/.env`:
+
+| Var | Default | Purpose |
+|---|---|---|
+| `BACKEND_URL` | `http://localhost:3007` | Vite proxy target for `/api/*` → live-lesson backend |
+| `VITE_CCAAS_URL` | `http://localhost:3001` | Direct URL for the SSE feed (bypasses proxy because it lives on ccaas, not live-lesson backend). Used by `useProjectChanges` hook. |
+
+See `creator/.env.example` for the template.
 
 ## API Proxy Architecture
 

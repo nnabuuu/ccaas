@@ -1,0 +1,138 @@
+/**
+ * useProjectChanges — subscribe to ccaas agent-runtime change events
+ * for a project. Surfaces agent-side edits (and `conflict_agent_wins`
+ * markers) so the creator UI can show banners + offer reload.
+ *
+ * What it filters OUT (returned events array never contains these):
+ *   - kind === 'subscribed'   — welcome event fired once per connection
+ *   - kind === 'heartbeat'    — every 30s, used internally for liveness
+ *   - source === 'gui'        — echoes of our OWN writes (we don't want to alert ourselves)
+ *
+ * What it surfaces:
+ *   - source === 'agent' edits (`updated` / `deleted`)
+ *   - actor === 'conflict-agent-wins' (a special agent-wins-on-dual-write marker)
+ *
+ * Reconnection: relies on the browser's built-in EventSource
+ * reconnect (with exponential backoff). If the server is down, the
+ * hook flips `isConnected=false` and `error` is populated; once the
+ * server comes back, the browser auto-reconnects and `isConnected`
+ * flips true via the next welcome event.
+ *
+ * Events array is capped at MAX_EVENTS (50) — older events drop off
+ * the tail. The UI typically only renders the most recent few.
+ */
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+
+import { getChangesStreamUrl } from '../api/projects';
+
+/**
+ * Mirrors the backend's `ChangeEvent` shape from
+ * `@kedge-agentic/agent-runtime/sync`. Defined inline here to avoid
+ * a workspace dep on the runtime package (the creator app is a
+ * standalone Vite app that doesn't currently consume agent-runtime).
+ */
+export interface ChangeEvent {
+  projectId: string;
+  path: string;
+  source: 'agent' | 'gui' | 'system';
+  kind: 'created' | 'updated' | 'deleted' | 'subscribed' | 'heartbeat';
+  at: string;
+  actor?: string;
+}
+
+export interface UseProjectChangesResult {
+  /** Filtered events (no heartbeats, no own-writes); newest last. */
+  readonly events: ChangeEvent[];
+  /** True when the SSE connection is open (welcome event received). */
+  readonly isConnected: boolean;
+  /** Last connection error message, if any. */
+  readonly error: string | null;
+  /** Clear the events buffer (e.g. after the user dismisses all notices). */
+  clear(): void;
+}
+
+const MAX_EVENTS = 50;
+
+export function useProjectChanges(projectId: string | null): UseProjectChangesResult {
+  const [events, setEvents] = useState<ChangeEvent[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Keep latest events ref for use across renders without re-subscribing.
+  const eventsRef = useRef<ChangeEvent[]>(events);
+  eventsRef.current = events;
+
+  const clear = useCallback(() => {
+    setEvents([]);
+  }, []);
+
+  useEffect(() => {
+    if (!projectId) {
+      setIsConnected(false);
+      return;
+    }
+    // Reset on projectId change so the consumer doesn't see stale
+    // events from the previous project.
+    setEvents([]);
+    setError(null);
+
+    const url = getChangesStreamUrl(projectId);
+    const eventSource = new EventSource(url);
+
+    eventSource.onmessage = (msg: MessageEvent<string>) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(msg.data);
+      } catch {
+        // malformed payload — log to console and ignore
+        // eslint-disable-next-line no-console
+        console.warn('[useProjectChanges] received non-JSON SSE data:', msg.data);
+        return;
+      }
+      if (!isChangeEvent(parsed)) {
+        return;
+      }
+      // `subscribed` is the connection-handshake welcome event.
+      if (parsed.kind === 'subscribed') {
+        setIsConnected(true);
+        setError(null);
+        return;
+      }
+      // `heartbeat` keeps proxies happy; doesn't represent a real change.
+      if (parsed.kind === 'heartbeat') return;
+      // Don't echo our own writes back as notices.
+      if (parsed.source === 'gui') return;
+
+      setEvents((prev) => {
+        const next = [...prev, parsed];
+        // Cap to MAX_EVENTS; oldest drops off the head.
+        return next.length > MAX_EVENTS ? next.slice(next.length - MAX_EVENTS) : next;
+      });
+    };
+
+    eventSource.onerror = () => {
+      setIsConnected(false);
+      setError('SSE connection error; browser will retry automatically.');
+    };
+
+    return () => {
+      eventSource.close();
+      setIsConnected(false);
+    };
+  }, [projectId]);
+
+  return { events, isConnected, error, clear };
+}
+
+/**
+ * Minimal runtime shape check on parsed SSE data. Defensive against
+ * the server (or a proxy) sending an unexpected payload.
+ */
+function isChangeEvent(value: unknown): value is ChangeEvent {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.kind === 'string' &&
+    (v.path === undefined || typeof v.path === 'string')
+  );
+}
