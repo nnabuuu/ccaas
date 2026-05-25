@@ -4,6 +4,12 @@ A showcase solution for ccaas stage-1 sandboxed FS + bash. The agent
 operates over a B2B SaaS dataset — customers, revenue, quarterly plans
 — using `ls` / `grep` / `cat` routed through the just-bash MCP server.
 
+> **新读者请先读这两页**：
+> 1. **[gitbook → Runtime 架构](../../../docs/gitbook/zh/platform/runtime-architecture.md)** — 这个 demo 在用的所有层的心智模型
+> 2. **[gitbook → demo-sandbox 案例页](../../../docs/gitbook/zh/examples/demo-sandbox.md)** — 启动 4 条命令 + 推荐第一个 prompt + 验证步骤
+>
+> 本 README 是源码组织 + 直接技术细节；上面两页是「为什么」+「怎么用」。
+
 ## What it demonstrates
 
 1. **Progressive-disclosure skill** — `skills/sandbox-explorer/` is a

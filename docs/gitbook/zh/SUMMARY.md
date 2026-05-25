@@ -8,6 +8,7 @@
 * [核心概念](platform/concepts.md)
 * [核心价值：Skills + MCP](platform/value.md)
 * [平台架构](platform/architecture.md)
+* [Runtime 架构（sandbox + workspace + materializer）](platform/runtime-architecture.md)
 * [核心能力](platform/capabilities.md)
 * [Solution 案例展示](platform/solutions.md)
 * [定价](platform/pricing.md)
@@ -17,6 +18,7 @@
 * [概述](getting-started/README.md)
 * [安装与启动](getting-started/installation.md)
 * [5 分钟快速体验](getting-started/quickstart.md)
+* [本地自托管（stage-1 sandbox）](getting-started/local-self-host.md)
 
 ## Solution 构建教程 <a href="#tutorial" id="tutorial"></a>
 
@@ -45,6 +47,7 @@
   * [纯 Skill 方案：零 MCP 架构](examples/mckinsey-cli/skill-design.md)
 * [Article Analyzer UI/UX 重设计](examples/article-analyzer-ui-redesign.md)
 * [Context Layer @ Reference Picker](examples/reference-picker.md)
+* [demo-sandbox（sandbox 全套能力案例）](examples/demo-sandbox.md)
 
 ## 开发指南 <a href="#guide" id="guide"></a>
 
@@ -64,6 +67,7 @@
 * [会话持久化](guide/conversation-persistence.md)
 * [Context Layer](guide/context-layer.md)
 * [Harness Engineering](guide/harness-engineering.md)
+* [Solution 用 runtime 新能力（扩展点指南）](guide/extending-runtime.md)
 
 ## 高级配置 <a href="#advanced" id="advanced"></a>
 
@@ -86,3 +90,5 @@
 
 * [solution.json 配置参考 (v3.0)](reference/solution-json.md)
 * [最佳实践汇总](reference/best-practices.md)
+* [Runtime REST API（fs + metadata）](reference/runtime-api.md)
+* [@kedge-agentic/agentfs-runtime 包参考](reference/agentfs-runtime.md)

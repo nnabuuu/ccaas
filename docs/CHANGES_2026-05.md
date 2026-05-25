@@ -1,0 +1,145 @@
+# Recent changes — 2026-05 runtime + sandbox sprint
+
+> Catch-up doc for engineers who haven't been tracking commits the last
+> two weeks. Lists the runtime / sandbox / agentfs-runtime work in
+> chronological order with commit refs. If you're new, **don't read
+> this**; read [gitbook → Runtime 架构](./gitbook/zh/platform/runtime-architecture.md)
+> first. This page is for "I was here before, what did I miss".
+
+## TL;DR (the new mental model)
+
+ccaas backend now has a per-session **sandbox** (agentfs FS + just-bash
+MCP bash), an **asset-materialization** layer that seeds solution data
+into each session, a **runtime REST API** for observing + checkpointing
+the agent's FS, and a clean-architecture **package extraction**
+(`@kedge-agentic/agentfs-runtime`) that decouples the materializer
+logic from TypeORM / NestJS.
+
+Six new gitbook pages exist (`platform/runtime-architecture`,
+`getting-started/local-self-host`, `reference/runtime-api`,
+`reference/agentfs-runtime`, `examples/demo-sandbox`,
+`guide/extending-runtime`) — see [`docs/gitbook/zh/SUMMARY.md`](./gitbook/zh/SUMMARY.md).
+
+---
+
+## Chronological digest
+
+### Week 1: Stage-1 sandbox (FS + bash)
+
+| Date | Commit | What |
+|---|---|---|
+| 2026-05-23 | `c9ebd806` (pre-window) | `WorkspaceProvider` abstraction lands: `LocalWorkspaceProvider` + `AgentfsWorkspaceProvider` + `BaseMaterializer` (originally in backend) |
+| 2026-05-24 | `d9f895f2` | Graceful shutdown awaits agentfs unmount (previously leaked) |
+| 2026-05-25 | `c7c57124` + `2c0934b6` | Bash sandbox: `SandboxService` + just-bash MCP server. Injects `__ccaas_bash` MCP, denies native `Bash`, steers via system prompt |
+| 2026-05-25 | `f7c90e41` | Review fixes: `--disallowed-tools` dedup, `existsSync` gated on mode, steering delimiter |
+
+After this week: `WORKSPACE_PROVIDER=agentfs npm run start:prod` gives you full FS + bash sandbox per session.
+
+### Week 1.5: Per-session asset materialization + demo-sandbox
+
+| Commit | What |
+|---|---|
+| `cdb7d82f` | New `SessionAssetMaterializer`: copies `SOLUTION_DIRS[slug]/{entities,resources}/` into each session's workspace root. 64KB/file, 256KB total caps. Symlink rejection. |
+| `c8234ca5` | demo-sandbox solution data: B2B SaaS theme + progressive-disclosure skill (`sandbox-explorer`) + entities (customers/revenue/plans) + resources (glossary/playbooks/data-dictionary) |
+| `04f77ef3` | demo-sandbox solution backend (:3010): bootstrap registration + chokidar hot-reload + `DemoEntityProvider` extending `DocumentEditProvider` + REST `/api/demo-sandbox/entities/:id` |
+| `14736e9b` | Review fixes: symlink guard tightened, fetch timeout, slug validation, `__dirname` boot sanity |
+| `7d82c3ae` | demo-sandbox single-page frontend (vanilla HTML/JS) + `/demo/run` SSE proxy |
+
+### Week 2: Runtime REST API
+
+| Commit | What |
+|---|---|
+| `c75d7f42` | Session FS endpoints: `GET /sessions/:id/fs/{diff,timeline}` + `POST /sessions/:id/fs/{snapshot,rollback}`. Wraps agentfs CLI via snapshot-cp pattern; surfaces existing `WorkspaceHandle.snapshot/rollback` methods. |
+| `b7b7829d` | Session metadata KV API: `/sessions/:id/meta[/:key]` CRUD. Backend SQLite, not agentfs KvStore. 64KB/value, 256KB/session caps. |
+| `91e23dc9` | demo-sandbox frontend "FS changes" panel + `/demo/fs-diff/:sessionId` proxy. Visualizes everything the agent touched per run. |
+| `5fd230cd` | Docs: `STAGE1_LOCAL_SELFHOST.md` + `WORKSPACE_PROVIDER.md` gain the runtime API curl examples. |
+| `4ce06c46` | Review fixes: WAL copy order, mid-turn 409, parseDiff warn log, timeline filter validation, demo proxy sessionId regex. |
+
+### Week 2.5: Package extraction (Phase A)
+
+| Commit | What |
+|---|---|
+| `1609c997` | Archive `packages/vfs-poc/`: delete `src/`, `test/`, validation runners, Docker setup; keep `docs/`, `validation/results/`, `scripts/build-agentfs-fix.sh`. Update backend "Ported from" comments to point at `docs/` instead. |
+| `2aef2e33` | **Phase A extraction**: new `@kedge-agentic/agentfs-runtime` package with `BaseMaterializer` + `ContentSource` port + `Logger` port. Backend gains `TypeOrmSkillContentSource` adapter + factory. Pure tests in vitest; backend tests still in jest. |
+| `45ba906c` | Review fixes: path-traversal guard in materializer + 3 specs; root build chain includes the new package; explicit `"type": "commonjs"`; `InMemoryContentSource` exported at `/testing` subpath. |
+
+### Today (2026-05-25 late)
+
+| Commit (this) | What |
+|---|---|
+| (current) | Documentation refresh: 6 new gitbook pages + 4 in-repo entry-point updates + this CHANGES file |
+
+---
+
+## Surface area added (so you know where to grep)
+
+```
+NEW packages:
+  packages/agentfs-runtime/                     ← framework-free
+    src/core/{types,logger,base-materializer}.ts
+    src/testing/in-memory-content-source.ts
+
+NEW backend files (sessions module):
+  src/sessions/sandbox/sandbox.service.ts
+  src/sessions/sandbox/just-bash-mcp/server.mjs
+  src/sessions/services/session-asset-materializer.service.ts
+  src/sessions/services/session-fs.service.ts
+  src/sessions/services/session-metadata.service.ts
+  src/sessions/session-fs.controller.ts
+  src/sessions/session-metadata.controller.ts
+  src/sessions/workspace/local-provider.ts
+  src/sessions/workspace/agentfs-provider.ts
+  src/sessions/workspace/workspace-provider.factory.ts
+  src/sessions/workspace/typeorm-skill-content-source.ts
+  src/sessions/workspace/base-materializer.factory.ts
+  src/sessions/entities/session-metadata.entity.ts
+
+NEW solution (showcase + DX):
+  solutions/business/demo-sandbox/{solution.json, skills/, entities/, resources/, backend/, frontend/}
+
+NEW config:
+  WORKSPACE_PROVIDER, WORKSPACE_BASH_SANDBOX, WORKSPACE_AGENTFS_*,
+  SOLUTION_DIRS — see packages/backend/CLAUDE.md table
+```
+
+---
+
+## What hasn't shipped yet (open backlog)
+
+See `~/.claude/projects/.../memory/backlog.md` for the full list. The
+highest-leverage ones:
+
+- **Phase B**: extract `WorkspaceProvider` + local/agentfs impls into `@kedge-agentic/agentfs-runtime`. Currently still in backend.
+- **Phase C**: extract `SandboxService` + just-bash MCP server.
+- **HeadlessExecutionService provider integration**: scheduled tasks still use local fs only.
+- **Forensic re-mount of closed sessions**: today fs/diff/timeline 404 once session is purged from in-memory map.
+- **`sessions:fs` / `sessions:meta` granular scopes**: currently `admin` for stage-1; needed for multi-tenant SaaS.
+- **better-sqlite3 online backup for `fs/diff`**: current cp pattern can produce inconsistent reads under heavy writes; rare in practice but noted.
+- **English gitbook parallel**: only zh updated in this doc-refresh PR.
+
+---
+
+## Where to look up something
+
+```
+"how do I run sandbox locally?"
+  → docs/gitbook/zh/getting-started/local-self-host.md
+
+"what does the agent actually see?"
+  → docs/gitbook/zh/platform/runtime-architecture.md § 1.3 + § 6
+
+"what REST endpoints exist?"
+  → docs/gitbook/zh/reference/runtime-api.md
+
+"how does the sandbox stack relate to vfs-poc?"
+  → packages/vfs-poc/README.md (top-of-file note explains it)
+
+"I want to write a solution that uses snapshot/rollback / KV"
+  → docs/gitbook/zh/guide/extending-runtime.md
+
+"design rationale + risk register"
+  → packages/vfs-poc/docs/WORKSPACE_PROVIDER.md (archive, but authoritative for 'why')
+
+"sandbox vs SDK direct integration — why mount?"
+  → ~/.claude/projects/.../memory/sandbox-mount-vs-sdk.md (decision record)
+```

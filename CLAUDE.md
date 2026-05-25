@@ -30,6 +30,7 @@ ccaas/
 | `@kedge-agentic/chat-interface` | React, Tailwind, Vite | Extensible chat UI component library |
 | `@kedge-agentic/entity-document` | TypeScript, Vitest | Block ↔ Markdown bidirectional transform, pluggable TransformRegistry |
 | `@kedge-agentic/context-layer` | TypeScript, NestJS (optional) | Entity context routing, DocumentEditProvider base class |
+| `@kedge-agentic/agentfs-runtime` | TypeScript (framework-free) | `BaseMaterializer` + `ContentSource` port for the sandbox runtime layer |
 | `@kedge-agentic/common` | TypeScript, Zod | Shared types and protocols |
 
 ## Build
@@ -41,7 +42,8 @@ npm run dev:backend      # Start backend on :3001
 npm run dev:admin        # Start admin on :5175
 ```
 
-**Build order:** common → vue-sdk/react-sdk → admin-next/backend
+**Build order:** common + agentfs-runtime → vue-sdk/react-sdk → admin-next/backend
+(orchestrated by root `build:libs` → `build`)
 
 ## Package-Specific Guides
 
@@ -52,7 +54,22 @@ npm run dev:admin        # Start admin on :5175
 - **@kedge-agentic/chat-interface**: See [`packages/chat-interface/ARCHITECTURE.md`](./packages/chat-interface/ARCHITECTURE.md)
 - **@kedge-agentic/entity-document**: See [`packages/entity-document/README.md`](./packages/entity-document/README.md)
 - **@kedge-agentic/context-layer**: See [`packages/context-layer/src/core/document-edit-provider.ts`](./packages/context-layer/src/core/document-edit-provider.ts)
+- **@kedge-agentic/agentfs-runtime**: See [`packages/agentfs-runtime/README.md`](./packages/agentfs-runtime/README.md) + gitbook reference page
 - **@kedge-agentic/common**: See [`packages/common/README.md`](./packages/common/README.md)
+
+## Runtime layer (post-stage-1 sandbox)
+
+ccaas backend gained a sandboxed-FS + sandboxed-bash runtime layer in
+May 2026. **If you're a new engineer landing here, read this first** so
+log lines and code paths make sense:
+
+- 📘 **[gitbook → 平台介绍 → Runtime 架构](./docs/gitbook/zh/platform/runtime-architecture.md)** — single canonical 10-min walkthrough of WorkspaceProvider, BaseMaterializer, SessionAssetMaterializer, SandboxService, just-bash MCP. Start here.
+- 🚀 **[gitbook → 快速开始 → 本地自托管](./docs/gitbook/zh/getting-started/local-self-host.md)** — boot ccaas with `WORKSPACE_PROVIDER=agentfs` + `WORKSPACE_BASH_SANDBOX=just-bash`
+- 📡 **[gitbook → 参考 → Runtime REST API](./docs/gitbook/zh/reference/runtime-api.md)** — 8 new endpoints under `/api/v1/sessions/:id/` (fs/diff, fs/timeline, snapshot, rollback, meta KV)
+- 🛠️ **[gitbook → 开发指南 → Solution 扩展点](./docs/gitbook/zh/guide/extending-runtime.md)** — for solution authors using the new runtime
+- 🎯 **[gitbook → 案例 → demo-sandbox](./docs/gitbook/zh/examples/demo-sandbox.md)** — complete e2e demo (B2B SaaS theme), source at [`solutions/business/demo-sandbox/`](./solutions/business/demo-sandbox/)
+
+Catching up on the last few weeks of churn? See [`docs/CHANGES_2026-05.md`](./docs/CHANGES_2026-05.md).
 
 ## Conventions → See [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)
 

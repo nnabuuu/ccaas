@@ -40,6 +40,25 @@ src/
 - **ProtocolModule** — Shared event types, error codes, metrics, Ajv validation, field transformation.
 - **Error Handling** — 12 ErrorCode types, HTTP status mapping, retry hints, global filter. See [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md).
 
+## Sandbox + Workspace (stage-1, 2026-05)
+
+The sessions module contains the new runtime layer. See **[gitbook → Runtime 架构](../../docs/gitbook/zh/platform/runtime-architecture.md)** for the full mental model; quick map of source files:
+
+| Concept | File | One-line role |
+|---|---|---|
+| Workspace abstraction | `src/sessions/workspace/types.ts` | `WorkspaceProvider` + `WorkspaceHandle` interfaces |
+| Local provider | `src/sessions/workspace/local-provider.ts` | mkdir + symlink (today's default) |
+| Agentfs provider | `src/sessions/workspace/agentfs-provider.ts` | full agentfs CLI lifecycle (init/mount/snapshot/rollback/diff/timeline); FUSE on Linux, NFS on macOS |
+| Provider selector | `src/sessions/workspace/workspace-provider.factory.ts` | `WORKSPACE_PROVIDER=local\|agentfs` |
+| Base materializer | (extracted) `@kedge-agentic/agentfs-runtime` package | DB skills → disk projection for agentfs `--base` overlay |
+| TypeORM adapter | `src/sessions/workspace/typeorm-skill-content-source.ts` | implements `ContentSource` over our Skill/SkillFile/McpServer entities |
+| Per-session asset seed | `src/sessions/services/session-asset-materializer.service.ts` | copies `SOLUTION_DIRS[slug]/{entities,resources}/` into each session's workspace root |
+| Bash sandbox | `src/sessions/sandbox/sandbox.service.ts` + `just-bash-mcp/server.mjs` | injects `__ccaas_bash` MCP server, denies native Bash, steers via system prompt |
+| Runtime fs API | `src/sessions/session-fs.controller.ts` + `services/session-fs.service.ts` | REST: `/sessions/:id/fs/{diff,timeline,snapshot,rollback}` (agentfs only) |
+| Runtime meta API | `src/sessions/session-metadata.controller.ts` + `services/session-metadata.service.ts` + `entities/session-metadata.entity.ts` | REST: `/sessions/:id/meta[/:key]` CRUD (provider-agnostic) |
+
+Operator quickstart: **[gitbook → 本地自托管](../../docs/gitbook/zh/getting-started/local-self-host.md)**.
+
 ## Environment Variables
 
 | Variable | Default | Purpose |
@@ -55,6 +74,12 @@ src/
 | `DEV_LOGIN_USERNAME` | admin | Dev login admin username |
 | `DEV_LOGIN_PASSWORD` | dev123 | Dev login admin password |
 | `ADMIN_EMAIL` | admin@localhost | Dev login admin email |
+| `WORKSPACE_PROVIDER` | `local` | `local` \| `agentfs` (FS sandbox) |
+| `WORKSPACE_BASH_SANDBOX` | auto-on under `agentfs` | `just-bash` \| `none` (bash sandbox) |
+| `WORKSPACE_AGENTFS_BIN` | `agentfs` | path to agentfs binary |
+| `WORKSPACE_AGENTFS_BASE_DIR` | `${WORKSPACE_DIR}/_agentfs_base` | shared overlay base for materialized skills |
+| `WORKSPACE_AGENTFS_DELTA_STORE` | `${WORKSPACE_DIR}/_agentfs_deltas` | per-session SQLite delta dbs |
+| `SOLUTION_DIRS` | empty | CSV `slug:abspath` to register solution dirs for per-session asset seed |
 
 ## Database Schema
 

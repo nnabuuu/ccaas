@@ -1,10 +1,19 @@
 # @kedge-agentic/vfs-poc — design + validation archive
 
 > **Status: archive.** All POC source has been ported into the
-> production ccaas backend (`packages/backend/src/sessions/`). This
-> directory preserves the design documents and validation results
-> that backed those decisions, plus the build-agentfs-fix script
-> still needed for first-time setup.
+> production ccaas backend (`packages/backend/src/sessions/`) and the
+> `@kedge-agentic/agentfs-runtime` package. This directory preserves
+> the design documents and validation results that backed those
+> decisions, plus the build-agentfs-fix script still needed for
+> first-time setup.
+>
+> **Looking for current runtime architecture?** Read the gitbook page
+> **[平台介绍 → Runtime 架构](../../docs/gitbook/zh/platform/runtime-architecture.md)**
+> first — that's the canonical engineer-facing narrative. The deep-dive
+> `docs/WORKSPACE_PROVIDER.md` here is the *design rationale* behind
+> what's in that gitbook page; useful when you need to know *why* a
+> decision was made (risk register, sanity checks, alternatives
+> considered), not what the code currently does.
 
 ## What's here
 
