@@ -30,7 +30,7 @@ export type {
 export { noopLogger } from './workspace/logger.js';
 export type { Logger } from './workspace/logger.js';
 
-// Artifact (Phase 0)
+// Artifact (Phase 0 + Phase 1 source-loader port)
 export { JsonEditProvider } from './artifact/json-edit-provider.js';
 export type {
   ArtifactType,
@@ -40,6 +40,8 @@ export type {
   EditResult,
   ArtifactEditor,
   JsonEditProviderOptions,
+  ArtifactSnapshot,
+  ProjectArtifactSource,
 } from './artifact/index.js';
 
 // Project (Phase 0 interfaces)
@@ -57,5 +59,16 @@ export type {
   SchemaRegistry,
 } from './schema/types.js';
 
-// Sync (Phase 0 interfaces)
+// Sync (Phase 0 interface + Phase 1 in-memory impl + sync engine)
 export type { ChangeEvent, ChangeListener, ChangeStream } from './sync/types.js';
+export { InMemoryChangeStream } from './sync/in-memory-change-stream.js';
+export { InMemorySnapshotStore } from './sync/snapshot-store.js';
+export type { SnapshotEntry, SnapshotStore } from './sync/snapshot-store.js';
+export { SyncEngine } from './sync/sync-engine.js';
+export type {
+  ContentHasher,
+  FsDelta,
+  SyncAction,
+  SyncEngineInput,
+  SyncPlan,
+} from './sync/sync-engine.js';

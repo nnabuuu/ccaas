@@ -8,3 +8,7 @@ export type {
 } from './types.js';
 export { JsonEditProvider } from './json-edit-provider.js';
 export type { JsonEditProviderOptions } from './json-edit-provider.js';
+export type {
+  ArtifactSnapshot,
+  ProjectArtifactSource,
+} from './project-artifact-source.js';
