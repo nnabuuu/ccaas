@@ -48,6 +48,8 @@ import { SandboxService } from './sandbox/sandbox.service';
 import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
 import { ProjectChangesController } from './agent-runtime/project-changes.controller';
 import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
+import { ProjectArtifactSourceRegistry } from './agent-runtime/project-artifact-source-registry';
+import { PROJECT_ARTIFACT_SOURCE_REGISTRY } from './agent-runtime/tokens';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -103,7 +105,16 @@ import { BundleModule } from '../bundles/bundle.module';
     WorkspaceProviderFactory,
     SandboxService,
     SessionAssetSyncer,
+    // Agent-runtime registry lives here (not in AgentRuntimeModule) because
+    // it depends on TenantsService — which is reachable from SessionsModule
+    // via the TenantsModule import above, but pulling TenantsModule into
+    // AgentRuntimeModule creates DI grief (TenantGuard → UserTenantService).
+    ProjectArtifactSourceRegistry,
+    {
+      provide: PROJECT_ARTIFACT_SOURCE_REGISTRY,
+      useExisting: ProjectArtifactSourceRegistry,
+    },
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, PROJECT_ARTIFACT_SOURCE_REGISTRY],
 })
 export class SessionsModule {}

@@ -364,6 +364,22 @@ export const SolutionConfigV3Schema = z.object({
    */
   sessionTemplates: z.record(SessionTemplateSchema).optional(),
 
+  /**
+   * Agent-runtime sync layer — REST callback base URL the ccaas backend
+   * uses to reach this solution's REST endpoints for the bidirectional
+   * artifact sync (`GET/PUT/DELETE {url}/projects/:id/artifacts...`).
+   *
+   * When set, `SolutionLoaderService.import()` persists it to
+   * `tenant.config.artifactUrl`; `ProjectArtifactSourceRegistry` reads
+   * it at session-sync time and routes per session's tenant.slug.
+   *
+   * Mutable at runtime via `PUT /tenants/:id { config: { artifactUrl } }`
+   * — registry cache invalidates via the `tenant.config.changed` event.
+   *
+   * Optional: solutions without bidirectional sync just omit it.
+   */
+  artifactUrl: z.string().url().optional(),
+
   // ============ Solution Internal Configuration ============
   /** Synchronized fields for real-time updates (not used by CCAAS Core) */
   syncFields: z.union([

@@ -13,7 +13,10 @@
  * Skills are registered separately via the Skills API.
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { TenantsService } from '../tenants/tenants.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
@@ -34,6 +37,14 @@ export interface ImportSolutionConfig {
   mode?: 'simple' | 'advanced';
   mcpServers?: Record<string, McpServerDefinition>;
   sessionTemplates?: Record<string, SessionTemplateConfig>;
+  /**
+   * agent-runtime sync layer — REST base URL ccaas calls back to for
+   * artifact load/save. Persisted to `tenant.config.artifactUrl`
+   * via `tenants.update()`; read at sync time by
+   * `ProjectArtifactSourceRegistry`. Optional — solutions without
+   * bidirectional artifact sync omit it.
+   */
+  artifactUrl?: string;
 }
 
 export interface LoadResult {
@@ -65,7 +76,7 @@ export interface LoaderStatus {
 // ============================================================================
 
 @Injectable()
-export class SolutionLoaderService {
+export class SolutionLoaderService implements OnModuleInit {
   private readonly logger = new Logger(SolutionLoaderService.name);
   private status: LoaderStatus = {
     lastLoadAt: null,
@@ -80,7 +91,56 @@ export class SolutionLoaderService {
     private readonly mcpPool: McpPoolService,
     private readonly eventMapper: EventMapperService,
     private readonly bundleService: BundleService,
+    private readonly cfg: ConfigService,
   ) {}
+
+  /**
+   * Boot auto-discovery: walk `SOLUTIONS_DIR/<slug>/solution.json` and
+   * import each into ccaas at backend startup. Sibling solution backends declare
+   * their config + artifactUrl in their source tree; ccaas picks them up
+   * with zero env vars, zero REST calls, zero admin keys.
+   *
+   * Per-file try/catch so one malformed `solution.json` doesn't block
+   * other solutions from importing. Logs the error and continues.
+   *
+   * In prod, leave `SOLUTIONS_DIR` unset to opt out — solutions are
+   * imported explicitly via `POST /api/v1/admin/solutions/import`.
+   *
+   * Ordering: this runs AFTER `TenantsService.onModuleInit` (which seeds
+   * the default tenant) because Nest resolves modules in import-graph
+   * order and `SolutionsModule` depends on `TenantsModule`.
+   */
+  async onModuleInit(): Promise<void> {
+    const dir = this.cfg.get<string>('solutions.dir');
+    if (!dir) return;
+    if (!fs.existsSync(dir)) {
+      this.logger.warn(`SOLUTIONS_DIR=${dir} does not exist; skipping auto-import`);
+      return;
+    }
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    let imported = 0;
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const file = path.join(dir, entry.name, 'solution.json');
+      if (!fs.existsSync(file)) continue;
+      try {
+        const raw = fs.readFileSync(file, 'utf8');
+        const config = JSON.parse(raw) as ImportSolutionConfig;
+        await this.importFromConfig(config);
+        imported++;
+        this.logger.log(
+          `auto-imported solution from ${file} (tenant=${config.tenant?.slug})`,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`auto-import failed for ${file}: ${msg}`);
+        // continue — one bad file shouldn't halt boot
+      }
+    }
+    if (imported > 0) {
+      this.logger.log(`auto-discovery complete: ${imported} solution(s) imported`);
+    }
+  }
 
   // --------------------------------------------------------------------------
   // Public API
@@ -154,7 +214,16 @@ export class SolutionLoaderService {
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
-    // Step 6: Stamp solutionAppliedAt
+    // Step 6: Persist artifactUrl (agent-runtime sync layer) if declared.
+    // The partial-merge semantics on tenants.update mean other config
+    // keys are preserved; re-import is idempotent.
+    if (config.artifactUrl) {
+      await this.tenants.update(tenantId, {
+        config: { artifactUrl: config.artifactUrl },
+      });
+    }
+
+    // Step 7: Stamp solutionAppliedAt
     await this.tenants.update(tenantId, {
       config: { solutionAppliedAt: new Date().toISOString() },
     });

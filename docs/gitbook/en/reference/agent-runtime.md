@@ -280,24 +280,45 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 treated as already-deleted
 ```
 
-ccaas reads env vars for the baseUrl; `AgentRuntimeModule.forRoot()` auto-selects this adapter when either is set. **Two config shapes**:
+**Solution registration (v0.3.2+)**: the baseUrl is no longer an env var. It's stored on `tenant.config.artifactUrl` — same field family as `webhookUrl` and `customSystemPrompt`. Two ways to set it:
 
-```bash
-# Single solution (v0.3 — still supported as legacy default)
-SOLUTION_ARTIFACT_URL=http://localhost:3007/api
+### Path A: solution.json + auto-discovery (recommended, zero-key in dev)
 
-# Multiple solutions (v0.3.1 — same CSV shape as SOLUTION_DIRS)
-SOLUTION_ARTIFACT_URLS=live-lesson:http://localhost:3007/api,demo:http://localhost:3010/api
+Each solution ships a `solution.json` in its source tree:
+
+```jsonc
+{
+  "schemaVersion": "3.0",
+  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "artifactUrl": "http://localhost:3007/api",
+  "skills": ["./skills/*"]
+}
 ```
 
-**Resolution priority** (highest → lowest):
+Backend `.env`:
 
-1. `AgentRuntimeModule.forRoot({ artifactSource: ... })` explicit injection (test-only)
-2. `SOLUTION_ARTIFACT_URLS` per-tenant entries — routed via `session.tenantId → tenant.slug`
-3. `SOLUTION_ARTIFACT_URL` as defaultSource fallback — applied to any tenant whose slug isn't in the per-tenant map
-4. Neither set → syncer no-ops for that tenant
+```bash
+SOLUTIONS_DIR=./solutions/business
+```
 
-Both env vars can coexist: the per-tenant map names specific tenants, the single URL catches the rest. Same CSV-with-first-colon grammar as `SOLUTION_DIRS=slug:abspath,...` (see `packages/backend/CLAUDE.md`) — URL `://` survives the first-colon-only split.
+At startup, `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and calls `tenants.update()` to write `artifactUrl` into `tenant.config`. Zero curl, zero admin key, zero env var for the URL.
+
+### Path B: REST registration (prod / runtime updates)
+
+```bash
+# 1. Grab the admin key (auto-printed at first boot, or POST /auth/login)
+# 2. Create or find the tenant
+# 3. Write artifactUrl to its config
+curl -X PUT $CCAAS/api/v1/tenants/$ID \
+  -H "x-api-key: $K" \
+  -d '{"config":{"artifactUrl":"https://prod.example.com/api"}}'
+```
+
+`PUT /tenants/:id` is a partial merge — other config keys (`webhookUrl` etc.) are preserved.
+
+### Runtime updates take effect without a restart
+
+`tenants.update()` emits a `tenant.config.changed` event when the update payload carried a `config` field; `ProjectArtifactSourceRegistry` subscribes and evicts the cached source for that slug. The next sync turn re-reads `tenant.config.artifactUrl` from the fresh DB row — no backend restart.
 
 ### REST endpoints (consumed by GUI)
 

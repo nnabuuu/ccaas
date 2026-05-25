@@ -52,7 +52,14 @@ describe('SolutionsModule', () => {
         {
           provide: SolutionLoaderService,
           useFactory: (tenants, skills, mcpPool, eventMapper, bundleService) =>
-            new SolutionLoaderService(tenants, skills, mcpPool, eventMapper, bundleService),
+            new SolutionLoaderService(
+              tenants,
+              skills,
+              mcpPool,
+              eventMapper,
+              bundleService,
+              { get: () => undefined } as any, // ConfigService — no SOLUTIONS_DIR
+            ),
           inject: [
             'TenantsService',
             'SkillsService',

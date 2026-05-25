@@ -14,6 +14,7 @@ import { TenantsService } from './tenants.service';
 import { Tenant, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/tenant.entity';
 import { ApiKeyService } from '../auth/api-key.service';
 import { QuotaService } from '../admin/quota.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('TenantsService', () => {
   let service: TenantsService;
@@ -61,6 +62,10 @@ describe('TenantsService', () => {
         {
           provide: QuotaService,
           useValue: mockQuotaService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();

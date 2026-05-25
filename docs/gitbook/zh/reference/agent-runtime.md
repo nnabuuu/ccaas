@@ -280,24 +280,45 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 视作已删除
 ```
 
-ccaas 通过环境变量配置 baseUrl，`AgentRuntimeModule.forRoot()` 自动启用该 adapter。**两种配置形态**：
+**Solution 注册（v0.3.2 起）**：baseUrl 不再走 env var，而是存在 `tenant.config.artifactUrl` 里 —— 跟 `webhookUrl` / `customSystemPrompt` 一样，是 tenant 配置的一个字段。两种填法：
 
-```bash
-# 单 solution（v0.3 起兼容保留）
-SOLUTION_ARTIFACT_URL=http://localhost:3007/api
+### 方式 A：solution.json + 自动发现（推荐，dev 零密钥）
 
-# 多 solution（v0.3.1 起新增；跟 SOLUTION_DIRS 完全同构）
-SOLUTION_ARTIFACT_URLS=live-lesson:http://localhost:3007/api,demo:http://localhost:3010/api
+每个 solution 在源码里放一个 `solution.json`：
+
+```jsonc
+{
+  "schemaVersion": "3.0",
+  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "artifactUrl": "http://localhost:3007/api",
+  "skills": ["./skills/*"]
+}
 ```
 
-**解析优先级**（高 → 低）：
+后端 `.env` 设置 `SOLUTIONS_DIR`：
 
-1. `AgentRuntimeModule.forRoot({ artifactSource: ... })` 显式注入（仅测试用）
-2. `SOLUTION_ARTIFACT_URLS` 的 per-tenant 条目 —— 按 `session.tenantId → tenant.slug` 路由
-3. `SOLUTION_ARTIFACT_URL` 作为 default fallback —— 任何 slug 没在 map 里的 tenant 走这里
-4. 都没设 → 该 tenant 的 syncer no-op
+```bash
+SOLUTIONS_DIR=./solutions/business
+```
 
-两个 env var 可以同时存在：per-tenant map 管命名 tenant，单 URL 兜底其他人。跟 `packages/backend/CLAUDE.md` 里的 `SOLUTION_DIRS=slug:abspath,...` 是同一套 CSV 语法（`:` 之后的内容 —— URL 里的 `://` —— 不会被二次切割）。
+启动时 `SolutionLoaderService.onModuleInit` 会自动扫描 `SOLUTIONS_DIR/*/solution.json`，调 `tenants.update()` 把 `artifactUrl` 写到 `tenant.config`。零 curl，零 admin key，零 env var for URL。
+
+### 方式 B：REST 注册（prod / 运行时变更）
+
+```bash
+# 1. 拿到 admin key（启动时自动打印，或 POST /auth/login）
+# 2. 创建/找到 tenant
+# 3. 把 artifactUrl 写到它的 config
+curl -X PUT $CCAAS/api/v1/tenants/$ID \
+  -H "x-api-key: $K" \
+  -d '{"config":{"artifactUrl":"https://prod.example.com/api"}}'
+```
+
+`PUT /tenants/:id` 是 partial-merge —— 其他 config key（`webhookUrl` 等）不受影响。
+
+### 运行时更新
+
+`tenants.update()` 在 `config` 改动时会发 `tenant.config.changed` 事件；`ProjectArtifactSourceRegistry` 订阅后清除该 slug 的缓存。下一轮 sync 就会读到新的 `artifactUrl`，**不用重启 backend**。
 
 ### REST endpoints（GUI 用的）
 

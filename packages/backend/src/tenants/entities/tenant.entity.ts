@@ -62,6 +62,13 @@ export class Tenant {
     customSystemPrompt?: string;
     allowedDomains?: string[];
     webhookUrl?: string;
+    /**
+     * agent-runtime sync layer — REST base URL ccaas calls back to for
+     * artifact load/save. Set via solution.json `artifactUrl` (imported
+     * by SolutionLoaderService) or by hand via `PUT /tenants/:id`.
+     * See `ProjectArtifactSourceRegistry` for the read path.
+     */
+    artifactUrl?: string;
     features?: {
       enableSubAgents?: boolean;
       enableCustomMcp?: boolean;

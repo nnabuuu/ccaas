@@ -5,7 +5,7 @@
  * Skills are registered separately via the Skills API.
  */
 
-import { IsString, IsOptional, IsIn, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsIn, IsUrl, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { McpServerDefinition, SessionTemplateConfig } from '../../solutions/dto/solution-config.dto';
 
@@ -35,4 +35,14 @@ export class ImportSolutionDto {
 
   @IsOptional()
   sessionTemplates?: Record<string, SessionTemplateConfig>;
+
+  /**
+   * agent-runtime sync layer — REST base URL ccaas calls back to for
+   * artifact load/save (e.g. `http://localhost:3007/api`). Persisted
+   * to `tenant.config.artifactUrl`; read by ProjectArtifactSourceRegistry.
+   * Mutable at runtime via `PUT /tenants/:id`.
+   */
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  artifactUrl?: string;
 }

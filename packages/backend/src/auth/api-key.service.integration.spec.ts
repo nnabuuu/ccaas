@@ -4,6 +4,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource } from 'typeorm';
 import { ApiKeyService } from './api-key.service';
 import { TenantsService } from '../tenants/tenants.service';
@@ -42,7 +43,14 @@ describe('ApiKeyService - User Resolution Integration', () => {
         createTestDatabaseModule(),
         TypeOrmModule.forFeature([ApiKey, User, UserTenant, Tenant, TenantQuota]),
       ],
-      providers: [ApiKeyService, TenantsService, UserTenantService, UsersService, QuotaService],
+      providers: [
+        ApiKeyService,
+        TenantsService,
+        UserTenantService,
+        UsersService,
+        QuotaService,
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+      ],
     }).compile();
 
     service = module.get<ApiKeyService>(ApiKeyService);

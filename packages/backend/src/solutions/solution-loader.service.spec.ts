@@ -116,6 +116,7 @@ describe('SolutionLoaderService', () => {
       mcpPool as any,
       eventMapper as any,
       bundleService as any,
+      { get: jest.fn(() => undefined) } as any, // ConfigService — no SOLUTIONS_DIR
     );
   });
 

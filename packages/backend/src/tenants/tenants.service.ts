@@ -16,7 +16,12 @@ import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
+import {
+  TENANT_CONFIG_CHANGED,
+  type TenantConfigChangedEvent,
+} from '../sessions/agent-runtime/tenant-config-events';
 import {
   Tenant,
   TenantPlan,
@@ -41,6 +46,7 @@ export class TenantsService implements OnModuleInit {
     private readonly apiKeyService: ApiKeyService,
     @Inject(forwardRef(() => QuotaService))
     private readonly quotaService: QuotaService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.defaultTenantId = this.configService.get('skills.defaultTenantId', 'default');
   }
@@ -176,6 +182,17 @@ export class TenantsService implements OnModuleInit {
 
     const saved = await this.tenantRepository.save(tenant);
     this.logger.log(`Updated tenant ${saved.name} (${saved.slug})`);
+
+    // Emit only when config was part of the update — other fields
+    // (name/plan/etc) don't affect agent-runtime registry routing.
+    if (dto.config !== undefined) {
+      const event: TenantConfigChangedEvent = {
+        tenantId: saved.id,
+        slug: saved.slug,
+      };
+      this.eventEmitter.emit(TENANT_CONFIG_CHANGED, event);
+    }
+
     return saved;
   }
 

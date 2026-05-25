@@ -1,55 +1,115 @@
 /**
- * ProjectArtifactSourceRegistry unit tests — pure slug → source map.
+ * ProjectArtifactSourceRegistry unit tests — tenant.config-backed lookup.
+ *
+ * Mocks TenantsService and exercises:
+ *   - cache hit returns instance, doesn't re-query
+ *   - cache miss + tenant has artifactUrl → constructs RestProjectArtifactSource
+ *   - cache miss + tenant has no artifactUrl → caches null (negative cache)
+ *   - cache miss + tenant config has invalid URL → caches null + logs
+ *   - null/undefined slug → returns null without DB call
+ *   - tenant.config.changed event evicts the cached entry
  */
 
-import type { ProjectArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
 import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
+import { TENANT_CONFIG_CHANGED } from './tenant-config-events';
+import { RestProjectArtifactSource } from './rest-project-artifact-source';
 
-const stub = (label: string): ProjectArtifactSource => ({
-  loadArtifacts: jest.fn(async () => [{ path: label, content: label, type: 'md' } as ArtifactSnapshot]),
-  saveArtifact: jest.fn(async () => undefined),
+const tenant = (slug: string, artifactUrl?: string) => ({
+  id: `id-${slug}`,
+  slug,
+  name: slug,
+  config: artifactUrl !== undefined ? { artifactUrl } : {},
 });
 
 describe('ProjectArtifactSourceRegistry', () => {
-  it('returns the per-tenant source for a matching slug', () => {
-    const live = stub('live');
-    const r = new ProjectArtifactSourceRegistry(new Map([['live-lesson', live]]), null);
-    expect(r.getForTenantSlug('live-lesson')).toBe(live);
+  let tenants: { findOne: jest.Mock };
+  let registry: ProjectArtifactSourceRegistry;
+
+  beforeEach(() => {
+    tenants = { findOne: jest.fn() };
+    registry = new ProjectArtifactSourceRegistry(tenants as any);
   });
 
-  it('falls back to defaultSource when slug not in map', () => {
-    const fallback = stub('default');
-    const r = new ProjectArtifactSourceRegistry(new Map(), fallback);
-    expect(r.getForTenantSlug('unknown')).toBe(fallback);
+  it('cache miss + tenant has artifactUrl → constructs RestProjectArtifactSource', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://localhost:3007/api'));
+    const source = await registry.getForTenantSlug('live-lesson');
+    expect(source).toBeInstanceOf(RestProjectArtifactSource);
+    expect(tenants.findOne).toHaveBeenCalledWith('live-lesson');
   });
 
-  it('returns null when slug not in map AND no default', () => {
-    const r = new ProjectArtifactSourceRegistry(new Map(), null);
-    expect(r.getForTenantSlug('unknown')).toBeNull();
+  it('cache hit does not re-query TenantsService', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('demo', 'http://localhost:3010/api'));
+    const first = await registry.getForTenantSlug('demo');
+    const second = await registry.getForTenantSlug('demo');
+    expect(first).toBe(second);
+    expect(tenants.findOne).toHaveBeenCalledTimes(1);
   });
 
-  it('null/undefined slug falls back to defaultSource', () => {
-    const fallback = stub('default');
-    const r = new ProjectArtifactSourceRegistry(new Map(), fallback);
-    expect(r.getForTenantSlug(null)).toBe(fallback);
-    expect(r.getForTenantSlug(undefined)).toBe(fallback);
+  it('cache miss + tenant has no artifactUrl → caches null', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('bare-tenant'));
+    const first = await registry.getForTenantSlug('bare-tenant');
+    expect(first).toBeNull();
+    // re-query: cached null, no DB call
+    const second = await registry.getForTenantSlug('bare-tenant');
+    expect(second).toBeNull();
+    expect(tenants.findOne).toHaveBeenCalledTimes(1);
   });
 
-  it('per-tenant overrides default when both apply', () => {
-    const live = stub('live');
-    const fallback = stub('default');
-    const r = new ProjectArtifactSourceRegistry(new Map([['live-lesson', live]]), fallback);
-    expect(r.getForTenantSlug('live-lesson')).toBe(live);
-    expect(r.getForTenantSlug('demo')).toBe(fallback);
+  it('cache miss + tenant config has invalid URL → caches null + logs', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('broken', 'not a real url'));
+    const out = await registry.getForTenantSlug('broken');
+    expect(out).toBeNull();
   });
 
-  it('lookup is synchronous + side-effect-free (no DB calls)', () => {
-    const live = stub('live');
-    const r = new ProjectArtifactSourceRegistry(new Map([['live-lesson', live]]), null);
-    // Resolve same slug 1000 times — no async, no calls beyond the Map.get.
-    for (let i = 0; i < 1000; i++) {
-      expect(r.getForTenantSlug('live-lesson')).toBe(live);
-    }
-    expect(live.loadArtifacts).not.toHaveBeenCalled();
+  it('null/undefined slug → returns null without DB call', async () => {
+    expect(await registry.getForTenantSlug(null)).toBeNull();
+    expect(await registry.getForTenantSlug(undefined)).toBeNull();
+    expect(await registry.getForTenantSlug('')).toBeNull();
+    expect(tenants.findOne).not.toHaveBeenCalled();
+  });
+
+  it('unknown tenant (findOne returns null) → caches null', async () => {
+    tenants.findOne.mockResolvedValueOnce(null);
+    const out = await registry.getForTenantSlug('ghost');
+    expect(out).toBeNull();
+    // verify the null was cached
+    await registry.getForTenantSlug('ghost');
+    expect(tenants.findOne).toHaveBeenCalledTimes(1);
+  });
+
+  describe('tenant.config.changed event invalidation', () => {
+    it('evicts the cached entry for the changed slug', async () => {
+      tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://a.local/api'));
+      const first = await registry.getForTenantSlug('live-lesson');
+      expect(first).toBeInstanceOf(RestProjectArtifactSource);
+
+      // Simulate the event: TenantsService.update writes new URL, then fires.
+      registry.onTenantConfigChanged({ tenantId: 'id-live-lesson', slug: 'live-lesson' });
+
+      // Next lookup re-queries; new mock returns the new URL.
+      tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://b.local/api'));
+      const second = await registry.getForTenantSlug('live-lesson');
+      expect(second).toBeInstanceOf(RestProjectArtifactSource);
+      expect(second).not.toBe(first);
+      expect(tenants.findOne).toHaveBeenCalledTimes(2);
+    });
+
+    it('only evicts the named slug, leaves others cached', async () => {
+      tenants.findOne
+        .mockResolvedValueOnce(tenant('a', 'http://a.local/api'))
+        .mockResolvedValueOnce(tenant('b', 'http://b.local/api'));
+      const aFirst = await registry.getForTenantSlug('a');
+      const bFirst = await registry.getForTenantSlug('b');
+
+      registry.onTenantConfigChanged({ tenantId: 'id-a', slug: 'a' });
+
+      // a re-queries; b stays cached
+      tenants.findOne.mockResolvedValueOnce(tenant('a', 'http://a2.local/api'));
+      const aSecond = await registry.getForTenantSlug('a');
+      const bSecond = await registry.getForTenantSlug('b');
+      expect(aSecond).not.toBe(aFirst);
+      expect(bSecond).toBe(bFirst); // same instance, no new DB call
+      expect(tenants.findOne).toHaveBeenCalledTimes(3); // a, b, a-again
+    });
   });
 });

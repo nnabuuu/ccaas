@@ -156,7 +156,7 @@ export class SessionAssetSyncer {
     // Null means this tenant has no configured artifact source AND there's
     // no default fallback — treat the same as "no binding": no-op.
     const slug = await this.resolveSlug(session.tenantId);
-    const source = this.sourceRegistry.getForTenantSlug(slug);
+    const source = await this.sourceRegistry.getForTenantSlug(slug);
     if (!source) {
       this.logger.debug(
         `sync: session ${sessionId} tenant=${session.tenantId} has no artifact source configured, skipping`,
