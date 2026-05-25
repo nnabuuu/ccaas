@@ -65,6 +65,20 @@ export interface ReplayEntry {
 export class TaskDemoService {
   private readonly logger = new Logger(TaskDemoService.name);
 
+  /**
+   * Per-(session,student) in-flight promise queue. Serializes concurrent
+   * submitPart / passPart calls for the same respondent so they can't both
+   * read the same stale partsProgress before either writes (double-click,
+   * simultaneous tabs). Different students still run in parallel; the
+   * single-shot submit path doesn't need this because it has no
+   * read-then-write window.
+   *
+   * In-memory mutex is enough for single-process — task-demo isn't shipped
+   * multi-instance. If we ever scale horizontally, replace with a row-level
+   * advisory lock on classroom_sessions.id keyed by studentId.
+   */
+  private partsLocks = new Map<string, Promise<unknown>>();
+
   constructor(
     @Inject(CLASSROOM_SESSION_REPO_PORT)
     private readonly sessionRepo: ClassroomSessionRepoPort,
@@ -168,10 +182,14 @@ export class TaskDemoService {
     // partId + _pass → passPart (acknowledge scaffold and proceed).
     const partId = typeof data.partId === 'string' ? data.partId : undefined;
     if (partId) {
-      if (data._pass === true) {
-        return this.passPart(session, studentId, partId);
-      }
-      return this.submitPart(session, studentId, data, partId);
+      // Serialize per (session, student) so concurrent submits don't both
+      // read the same prior partsProgress before either writes — see
+      // partsLocks docstring.
+      return this.withPartsLock(session.id, studentId, () =>
+        data._pass === true
+          ? this.passPart(session, studentId, partId)
+          : this.submitPart(session, studentId, data, partId),
+      );
     }
 
     const step = session.currentStep;
@@ -226,9 +244,15 @@ export class TaskDemoService {
     // Recover prior partsProgress from the most recent attempt for this
     // student (task_demo_attempts is append-only — every submit is its own
     // row, the latest row carries the most up-to-date progress).
+    //
+    // Shallow-clone partProgress before mutating: TypeORM's `simple-json`
+    // gives a fresh parsed object per read so DB-side is safe, but we'd
+    // still be writing through the same reference held by priorParts.
+    // Cloning keeps the in-method mutations local + matches the
+    // `{...priorParts, [partId]: partProgress}` spread idiom below.
     const prior = await this.attemptRepo.findLatestByStudent(session.id, studentId);
     const priorParts = (prior?.dataJson?.parts as Record<string, any> | undefined) ?? {};
-    const partProgress = priorParts[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
+    const partProgress = { attempts: 0, completed: false, scaffoldLevel: -1, ...priorParts[partId] };
 
     // Grade by constructing a synthetic image-upload key from this part —
     // identical to production submitPart so the same plugin grader (vision
@@ -321,12 +345,13 @@ export class TaskDemoService {
 
     const prior = await this.attemptRepo.findLatestByStudent(session.id, studentId);
     const priorParts = (prior?.dataJson?.parts as Record<string, any> | undefined) ?? {};
-    const partProgress = priorParts[partId];
-    if (!partProgress || (partProgress.scaffoldLevel ?? -1) < 0) {
+    const priorPartProgress = priorParts[partId];
+    if (!priorPartProgress || (priorPartProgress.scaffoldLevel ?? -1) < 0) {
       throw new BadRequestException('Cannot pass a part before any scaffold has been shown');
     }
 
-    partProgress.completed = true;
+    // Shallow-clone before mutating (see submitPart for rationale).
+    const partProgress = { ...priorPartProgress, completed: true };
     if (partDef.sampleSolution) partProgress.sampleSolution = partDef.sampleSolution;
     const partsProgress = { ...priorParts, [partId]: partProgress };
 
@@ -425,6 +450,26 @@ export class TaskDemoService {
       }
     }
     throw new ConflictException('Could not record submission — too many concurrent attempts');
+  }
+
+  /**
+   * Serialize an async block per (session, student). Used to wrap parts
+   * submits so the read-then-grade-then-insert pipeline doesn't race
+   * itself when the same student double-clicks "submit". Chains via the
+   * map's stored promise; entry cleared once the chain settles to avoid
+   * unbounded growth.
+   */
+  private async withPartsLock<T>(sessionId: string, studentId: string, fn: () => Promise<T>): Promise<T> {
+    const key = `${sessionId}:${studentId}`;
+    const prev = this.partsLocks.get(key) ?? Promise.resolve();
+    const next = prev.catch(() => undefined).then(fn);
+    this.partsLocks.set(key, next);
+    try {
+      return await next;
+    } finally {
+      // Only clear if no one else has chained onto this entry meanwhile.
+      if (this.partsLocks.get(key) === next) this.partsLocks.delete(key);
+    }
   }
 
   // ── Admin / replay views ──

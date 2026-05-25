@@ -264,6 +264,29 @@ describe('TaskDemoService — rich-content-quiz parts flow', () => {
     expect(pass.sampleSolution).toBe('4m^2 - 9n^2');
   });
 
+  it('concurrent submits on the same part serialize, scaffold ladder advances correctly', async () => {
+    // Without the per-(session,student) mutex, two concurrent submits for
+    // the same part would both read scaffoldLevel=-1 and both produce
+    // level=0 hints (instead of 0 then 1). The unique-attempt constraint
+    // would still serialize the inserts, but the scaffold ladder would
+    // stall. Lock makes the second submit see the first's effect.
+    const { code } = await service.create(RCQ_MANIFEST.id, 1);
+    const { studentId } = await service.claim(code, 'henry');
+
+    mockGradeSequence([
+      { total: 30, llmFeedback: 'wrong 1' },
+      { total: 30, llmFeedback: 'wrong 2' },
+    ]);
+
+    const [r1, r2] = await Promise.all([
+      service.submit(code, studentId, { partId: 'a', images: ['<x1>'] }),
+      service.submit(code, studentId, { partId: 'a', images: ['<x2>'] }),
+    ]);
+
+    const levels = [r1.scaffold!.level, r2.scaffold!.level].sort();
+    expect(levels).toEqual([0, 1]);
+  });
+
   it('non-part submission path still works (regression for single-shot types)', async () => {
     // Quiz manifest from the other spec doesn't need parts.
     const { code } = await service.create(RCQ_MANIFEST.id, 1);
