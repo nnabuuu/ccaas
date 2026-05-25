@@ -162,7 +162,10 @@ function ReplayStage({
 }
 
 const NOOP = () => {}
-const NOOP_SET = (() => {}) as any
+// Setter that swallows all updates — the exercise component is rendered
+// read-only in replay so any setAns / setCheckResultState the plugin would
+// emit gets dropped.
+const NOOP_SET: React.Dispatch<React.SetStateAction<Record<string, any>>> = () => {}
 
 function ScrubBar({
   attempts,

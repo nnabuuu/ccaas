@@ -132,17 +132,37 @@ export class TaskDemoService {
       ? Math.round((items.filter((i) => i.correct === true).length / items.length) * 100)
       : (checkResult.allCorrect ? 100 : 0);
 
-    const nextAttempt = (await this.attemptRepo.maxAttempt(session.id, studentId)) + 1;
-    const saved = await this.attemptRepo.insert({
-      sessionId: session.id,
-      lessonId: session.lessonId,
-      studentId,
-      step,
-      attempt: nextAttempt,
-      dataJson: data as Record<string, any>,
-      scoreJson: { total },
-      checkItemsJson: (checkResult.items ?? []) as Array<Record<string, any>>,
-    });
+    // Read-then-insert race guard: maxAttempt + 1 can collide with a
+    // concurrent submit (double-click, simultaneous tabs). The entity has
+    // UNIQUE(sessionId, studentId, attempt); on violation we re-read and
+    // retry. Loop bounded so a sustained collision storm surfaces an error
+    // instead of looping forever.
+    let saved;
+    for (let tries = 0; tries < 5; tries++) {
+      const nextAttempt = (await this.attemptRepo.maxAttempt(session.id, studentId)) + 1;
+      try {
+        saved = await this.attemptRepo.insert({
+          sessionId: session.id,
+          lessonId: session.lessonId,
+          studentId,
+          step,
+          attempt: nextAttempt,
+          dataJson: data as Record<string, any>,
+          scoreJson: { total },
+          checkItemsJson: (checkResult.items ?? []) as Array<Record<string, any>>,
+        });
+        break;
+      } catch (err: any) {
+        const isUniqueViolation = err?.message?.includes('UNIQUE')
+          || err?.code === 'SQLITE_CONSTRAINT'
+          || err?.code === '23505'; // postgres
+        if (!isUniqueViolation) throw err;
+        // Loop again with a fresh maxAttempt read.
+      }
+    }
+    if (!saved) {
+      throw new ConflictException('Could not record submission — too many concurrent attempts');
+    }
 
     return {
       attempt: saved.attempt,

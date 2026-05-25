@@ -110,10 +110,40 @@ public deploy (`?token=<jwt>` on `/respondents` + `/replay/:studentId`).
 
 ## Backlog
 
-- [ ] Admin route access guard (token / SSO) — required before public deploy
-- [ ] Session list endpoint so admin can see "all my active task-demos" in
-      one place
+### 🚨 Public-deploy blockers — must land before exposing URL externally
+
+- [ ] **Auth gate on admin routes** (`/respondents`, `/replay/:studentId`) —
+      a 6-char code (≈730M space, but discoverable via forwarded links /
+      screenshots) is not access control. Add `Authorization: Bearer
+      <token>` or query-param token; even a static env-var secret is enough
+      for v1.
+- [ ] **Auth gate on `/create`** — anyone can spin up unlimited
+      `classroom_sessions` rows + exhaust the 30^6 code namespace. Same
+      token requirement as above.
+- [ ] **Rate limit on `/submit`** — `@nestjs/throttler` 10/min per IP +
+      per-student soft cap (e.g. 200 attempts → 429) protects against
+      script loops bloating `task_demo_attempts`.
+
+### Nice-to-have
+
+- [ ] Session lifecycle: nothing currently transitions a task-demo
+      session to `status='ended'`. Add `POST /api/task-demo/:code/end` so
+      the cleanup job has a signal to GC by.
 - [ ] Cleanup job: archive `task_demo_attempts` rows for ended sessions
-- [ ] Email / Slack notification when a customer submits
-- [ ] Aggregate analytics across sessions ("60% of customers picked answer B
-      on Q1 across all 12 demos")
+      (the `submittedAt` index landed in v1 so the GC query is cheap).
+- [ ] Session-list endpoint: "show all my active task-demos in one place"
+      for sales dashboard.
+- [ ] Print/control-char guard on `user` (`@Matches(/^[\p{L}\p{N}\s._-]+$/u)`)
+      so weird Unicode doesn't leak into URL bar titles / log lines.
+- [ ] `task-demo` vs `classroom` separation: both currently use
+      `ClassroomSession`. If a regular classroom workflow ever calls
+      `sessionRepo.update(id, { currentStep })` on a task-demo session,
+      grading silently shifts to a different step. Either add a `kind`
+      discriminator column or split into a dedicated `task_demo_sessions`
+      table.
+- [ ] Name-collision UX: two customers literally named "li" share a
+      studentId today (acceptable for sales demos). Surface
+      "name-taken-pick-another" in the `NamePicker` when relevant.
+- [ ] Email / Slack notification when a customer submits.
+- [ ] Aggregate analytics across sessions ("60% of customers picked answer
+      B on Q1 across all 12 demos").

@@ -34,7 +34,9 @@ export class TaskDemoController {
 
   @Post(':code/submit')
   submit(@Param('code') code: string, @Body() dto: SubmitTaskDemoDto) {
-    return this.service.submit(validateCode(code), validateStudentId(dto.studentId), dto.data);
+    // studentId already UUID-validated by the DTO (@IsUUID); url code is
+    // validated here because path params don't pass through class-validator.
+    return this.service.submit(validateCode(code), dto.studentId, dto.data);
   }
 
   @Get(':code/respondents')

@@ -199,6 +199,20 @@ describe('TaskDemoService', () => {
       expect(r.allCorrect).toBe(false);
       expect(r.score?.total).toBe(50);
     });
+
+    it('concurrent submits do not collide on attempt number (race guard)', async () => {
+      // Read-then-insert without protection would let two submits both land
+      // with attempt=1. The entity unique + retry loop should serialize
+      // them so we get 1 and 2 (in some order).
+      const { code } = await service.create(QUIZ_MANIFEST.id, 1);
+      const { studentId } = await service.claim(code, 'alice');
+      const results = await Promise.all([
+        service.submit(code, studentId, { answers: [1, 2] }),
+        service.submit(code, studentId, { answers: [0, 0] }),
+      ]);
+      const attempts = results.map((r) => r.attempt).sort();
+      expect(attempts).toEqual([1, 2]);
+    });
   });
 
   describe('listRespondents + getReplay', () => {
