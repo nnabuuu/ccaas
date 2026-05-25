@@ -2,7 +2,7 @@
 
 POC: 用 **agentfs overlay** 替代 ccaas 现在的"每 session 一个真实 host 目录",并把 **just-bash** 作为 agent 的 Bash MCP 工具,验证 `claude` CLI 可以 spawn 在虚拟 FS 上工作。
 
-详细背景见 `/Users/niex/.claude/plans/ccaas-core-workspace-path-vercel-just-b-functional-robin.md`。
+📖 **完整文档见 [`docs/`](./docs/README.md)** — architecture overview, validation report, WorkspaceProvider design draft.
 
 ## 三个验证目标
 
@@ -24,7 +24,7 @@ agentfs --version  # 应该输出 v0.6.4 或更新
 
 # 2. (V1 需要) build + 装我们 fork 的 patched agentfs
 #    默认 branch = feat/nfs-drop-appledouble (NFS fix + AppleDouble drop)
-#    详情见 VALIDATION_REPORT.md
+#    详情见 docs/VALIDATION_REPORT.md
 bash packages/vfs-poc/scripts/build-agentfs-fix.sh
 
 # 想跑"bare mode"(无应用层 workaround,验证 server 端拦截足够)?

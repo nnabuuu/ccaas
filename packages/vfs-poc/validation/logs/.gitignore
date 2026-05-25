@@ -1,5 +1,5 @@
 # Validation logs are intentionally checked in.
 # They are the reproducible primary record of P0 validation runs — see
-# packages/vfs-poc/VALIDATION_REPORT.md for the human-readable summary.
+# packages/vfs-poc/docs/VALIDATION_REPORT.md for the human-readable summary.
 # Overrides root .gitignore's `*.log` exclusion.
 !*.log

@@ -4,7 +4,7 @@
 > **平台**:
 > - macOS 14.x (darwin arm64), agentfs NFS export
 > - **NEW v4**: Linux 6.14 (orbstack VM arm64), agentfs FUSE mount, Ubuntu 24.04 Docker
-> **关联 spec**: [docs/agent-session-runtime-spec.md](../../docs/agent-session-runtime-spec.md)
+> **关联 spec**: [docs/agent-session-runtime-spec.md](../../../docs/agent-session-runtime-spec.md)
 > **关联 POC**: `packages/vfs-poc/` (POC1 commit `d531540`)
 > **版本** (v4 修订时): agentfs **9180ed4** ([nnabuuu/agentfs feat/nfs-drop-appledouble](https://github.com/nnabuuu/agentfs/tree/feat/nfs-drop-appledouble)) + upstream **v0.6.4** (Linux baseline), git 2.43.0+, claude 2.1.148, node 20/22
 > **测试代码**: `packages/vfs-poc/validation/` (可重跑: `npm run validate:v1`, `npm run validate:v2`)

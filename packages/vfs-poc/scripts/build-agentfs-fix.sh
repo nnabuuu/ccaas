@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and install our patched agentfs over the current agentfs binary.
-# Required for V1 to pass on macOS NFS — see ../VALIDATION_REPORT.md
+# Required for V1 to pass on macOS NFS — see ../docs/VALIDATION_REPORT.md
 # (v3 revision) for context.
 #
 # Default branch (feat/nfs-drop-appledouble) carries TWO patches:
