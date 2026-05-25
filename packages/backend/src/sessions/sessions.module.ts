@@ -18,6 +18,7 @@ import { SessionsController } from './sessions.controller';
 import { ConversationsAliasController } from './conversations-alias.controller';
 import { QueueController } from './queue.controller';
 import { SessionFsController } from './session-fs.controller';
+import { SessionMetadataController } from './session-metadata.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -35,6 +36,8 @@ import { ConversationMetadataService } from './services/conversation-metadata.se
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
 import { SessionFsService } from './services/session-fs.service';
+import { SessionMetadataService } from './services/session-metadata.service';
+import { SessionMetadata } from './entities/session-metadata.entity';
 import { LocalWorkspaceProvider } from './workspace/local-provider';
 import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
 import { BaseMaterializer } from './workspace/base-materializer';
@@ -56,7 +59,7 @@ import { BundleModule } from '../bundles/bundle.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MessageQueue, Session, Skill, SkillFile, McpServer]),
+    TypeOrmModule.forFeature([MessageQueue, Session, Skill, SkillFile, McpServer, SessionMetadata]),
     TurnsModule,
     SkillsModule,
     TenantsModule,
@@ -64,7 +67,7 @@ import { BundleModule } from '../bundles/bundle.module';
     FilesModule,
     BundleModule,
   ],
-  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController],
+  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController],
   providers: [
     SessionsController,
     SessionsGateway,
@@ -85,6 +88,7 @@ import { BundleModule } from '../bundles/bundle.module';
     StreamRegistryService,
     SessionAssetMaterializer,
     SessionFsService,
+    SessionMetadataService,
     LocalWorkspaceProvider,
     AgentfsWorkspaceProvider,
     BaseMaterializer,
