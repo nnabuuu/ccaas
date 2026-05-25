@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>引导式发现 · Guided Discovery · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--amber)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+
+.discovery-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.discovery-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.discovery-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.step-block{padding:18px 20px;background:var(--bg);border-radius:8px;margin-bottom:14px;border-left:3px solid var(--amber)}
+.step-block-h{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.step-block-n{width:26px;height:26px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:"Fraunces",serif}
+.step-block-t{font-size:14px;font-weight:700;color:var(--t1)}
+.step-block-type{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--amber);background:var(--amber-bg);padding:2px 7px;border-radius:3px;margin-left:auto}
+.step-table{width:100%;border-collapse:collapse;font-family:Georgia,serif;font-size:13px;color:var(--t1);margin-top:8px}
+.step-table td{padding:8px 12px;border:1px solid var(--border);background:#fff;text-align:center}
+.step-table td .red{color:#942929;font-weight:700}
+.step-table td .blue{color:#1a5fa0;font-weight:700}
+.step-q{font-size:12.5px;color:var(--t2);line-height:1.55;font-style:italic;margin-top:8px}
+.step-q strong{color:var(--t1);font-style:normal}
+.step-chips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.step-chip{padding:5px 12px;background:#fff;border:1px solid var(--border-strong);border-radius:6px;font-size:12px;color:var(--t2)}
+.step-chip.on{background:var(--green-bg);border-color:var(--green);color:var(--green);font-weight:600}
+
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--amber);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(122,77,14,.32) 0, transparent 50%)}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#d9ad6b;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#d9ad6b}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#d9ad6b;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">引导式发现 · 让学生自己归纳出规律</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Guided Discovery</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">公式归纳 / 规律发现 / 概念建构</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">8 – 15 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill amber">探究题型</span>
+      <span class="dot"></span>
+      多步引导 · 观察 → 归纳 → 验证 → 应用
+    </div>
+    <h1>不直接给公式 ——<br>让学生<em>自己看出来</em>。</h1>
+    <p class="sub">
+      传统教学是"老师讲公式 → 学生套公式"。guided-discovery 反过来：先给<strong>3-5 个具体例子</strong>，让学生<strong>观察 → 猜规律 → 验证猜想 → 推广</strong>。整个过程被拆成<em>多步小问</em>，每步都有引导。学生<strong>自己归纳出来</strong>的公式，比硬背的记得更牢。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">多步骤渐进 · 一步答对才能进下一步</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="34" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">归纳平方差公式 · STEP 1 / 4</text>
+
+        <!-- step title -->
+        <text x="36" y="64" font-family="Plus Jakarta Sans" font-size="15" font-weight="700" fill="#1c1c1a">观察下面的乘法算式与结果，看看能发现什么？</text>
+
+        <!-- observation table -->
+        <g transform="translate(36,84)">
+          <rect x="0" y="0" width="720" height="32" rx="4" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="180" y="20" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a" text-anchor="middle">算式</text>
+          <text x="540" y="20" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a" text-anchor="middle">结果</text>
+
+          <!-- row 1 -->
+          <rect x="0" y="32" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="180" y="58" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle">
+            <tspan fill="#942929">(y</tspan><tspan fill="#1a5fa0">+2)</tspan><tspan fill="#942929">(y</tspan><tspan fill="#1a5fa0">−2)</tspan>
+          </text>
+          <rect x="360" y="32" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="540" y="58" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle" fill="#1c1c1a">y² − 4</text>
+
+          <!-- row 2 -->
+          <rect x="0" y="72" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="180" y="98" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle">
+            <tspan fill="#942929">(3</tspan><tspan fill="#1a5fa0">−a)</tspan><tspan fill="#942929">(3</tspan><tspan fill="#1a5fa0">+a)</tspan>
+          </text>
+          <rect x="360" y="72" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="540" y="98" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle" fill="#1c1c1a">9 − a²</text>
+
+          <!-- row 3 -->
+          <rect x="0" y="112" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="180" y="138" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle">
+            <tspan fill="#942929">(2a</tspan><tspan fill="#1a5fa0">+b)</tspan><tspan fill="#942929">(2a</tspan><tspan fill="#1a5fa0">−b)</tspan>
+          </text>
+          <rect x="360" y="112" width="360" height="40" fill="#fff" stroke="#e4e2d8"/>
+          <text x="540" y="138" font-family="Georgia" font-style="italic" font-size="16" text-anchor="middle" fill="#1c1c1a">4a² − b²</text>
+        </g>
+
+        <!-- guiding question -->
+        <rect x="36" y="244" width="720" height="60" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.15)"/>
+        <text x="50" y="266" font-family="Plus Jakarta Sans" font-size="12" font-weight="700" fill="#7a4d0e">引导问题</text>
+        <text x="50" y="288" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56">标红的项：<tspan font-family="Georgia" font-style="italic" font-weight="700">y</tspan> 和 <tspan font-family="Georgia" font-style="italic" font-weight="700">y</tspan>、<tspan font-family="Georgia" font-style="italic" font-weight="700">3</tspan> 和 <tspan font-family="Georgia" font-style="italic" font-weight="700">3</tspan>、<tspan font-family="Georgia" font-style="italic" font-weight="700">2a</tspan> 和 <tspan font-family="Georgia" font-style="italic" font-weight="700">2a</tspan>，这些完全相同的项我们称为：</text>
+
+        <!-- two options -->
+        <g transform="translate(36,322)">
+          <rect x="0" y="0" width="350" height="46" rx="8" fill="#dfece8" stroke="#0d5245" stroke-width="2"/>
+          <text x="175" y="30" font-family="Plus Jakarta Sans" font-size="14" font-weight="700" fill="#0d5245" text-anchor="middle">✓ 相同项</text>
+
+          <rect x="370" y="0" width="350" height="46" rx="8" fill="#fbfaf7" stroke="#e4e2d8" stroke-width="2"/>
+          <text x="545" y="30" font-family="Plus Jakarta Sans" font-size="14" font-weight="700" fill="#5c5b56" text-anchor="middle">相反项</text>
+        </g>
+
+        <!-- progress -->
+        <g transform="translate(36,400)">
+          <rect x="0" y="0" width="70" height="22" rx="3" fill="#7a4d0e"/>
+          <text x="35" y="15" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#fbfaf7" text-anchor="middle">Step 1</text>
+          <rect x="78" y="0" width="70" height="22" rx="3" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="113" y="15" font-family="Plus Jakarta Sans" font-size="9" fill="#9c9a92" text-anchor="middle">Step 2</text>
+          <rect x="156" y="0" width="70" height="22" rx="3" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="191" y="15" font-family="Plus Jakarta Sans" font-size="9" fill="#9c9a92" text-anchor="middle">Step 3</text>
+          <rect x="234" y="0" width="70" height="22" rx="3" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="269" y="15" font-family="Plus Jakarta Sans" font-size="9" fill="#9c9a92" text-anchor="middle">Step 4</text>
+
+          <rect x="500" y="0" width="220" height="22" rx="6" fill="#1c1c1a"/>
+          <text x="610" y="15" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#fbfaf7" text-anchor="middle">下一步 →</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>观察例子</h4><p>看 <strong>3-5 个具体算式</strong>，关键项用<strong>红蓝色高亮</strong>突出模式（如所有"相同项"标红、"相反项"标蓝）。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>回答引导问题</h4><p>系统问<strong>简单的引导问题</strong>，每步通常 1 选 / 1 填，逐步把学生引向规律。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>答对才进下一步</h4><p>每步<strong>必须答对</strong>才能解锁下一步。错了立刻反馈 + 可以再试。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>最后归纳出公式</h4><p>最后一步学生<strong>自己写出公式</strong>（如平方差公式 (a+b)(a−b) = a² − b²） —— <em>不是老师告诉的，是自己看出来的</em>。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">摘自《平方差公式》探索发现 · Step 1 of 4</span>
+  </div>
+
+  <div class="discovery-card">
+    <div class="discovery-meta">4 step · 观察 → 命名 → 归纳 → 应用</div>
+    <h4>归纳平方差公式</h4>
+
+    <div class="step-block">
+      <div class="step-block-h">
+        <div class="step-block-n">1</div>
+        <div class="step-block-t">观察下面的乘法算式与结果，看看能发现什么？</div>
+        <div class="step-block-type">observation_choice</div>
+      </div>
+      <table class="step-table">
+        <tr><td>(<span class="red">y</span><span class="blue">+2</span>)(<span class="red">y</span><span class="blue">−2</span>)</td><td>y² − 4</td></tr>
+        <tr><td>(<span class="red">3</span><span class="blue">−a</span>)(<span class="red">3</span><span class="blue">+a</span>)</td><td>9 − a²</td></tr>
+        <tr><td>(<span class="red">2a</span><span class="blue">+b</span>)(<span class="red">2a</span><span class="blue">−b</span>)</td><td>4a² − b²</td></tr>
+      </table>
+      <div class="step-q"><strong>引导问题：</strong>标红的项：<em>y</em> 和 <em>y</em>、<em>3</em> 和 <em>3</em>、<em>2a</em> 和 <em>2a</em>，这些完全相同的项我们称为：</div>
+      <div class="step-chips">
+        <span class="step-chip on">✓ 相同项</span>
+        <span class="step-chip">相反项</span>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-block-h">
+        <div class="step-block-n">2</div>
+        <div class="step-block-t">那么标蓝的项呢？</div>
+        <div class="step-block-type">observation_choice</div>
+      </div>
+      <div class="step-q">标蓝的项：<em>+2</em> 和 <em>−2</em>、<em>−a</em> 和 <em>+a</em>、<em>+b</em> 和 <em>−b</em>，符号相反 —— 这些叫：</div>
+      <div class="step-chips">
+        <span class="step-chip">相同项</span>
+        <span class="step-chip on">✓ 相反项</span>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-block-h">
+        <div class="step-block-n">3</div>
+        <div class="step-block-t">看结果有什么规律？</div>
+        <div class="step-block-type">conjecture</div>
+      </div>
+      <div class="step-q"><strong>引导：</strong>每个结果都是"相同项的平方 减去 相反项的平方"。如：y² − 4 = y² − 2² —— 这是"相同项"y 的平方减去"相反项"2 的平方。</div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-block-h">
+        <div class="step-block-n">4</div>
+        <div class="step-block-t">用 a 和 b 表示这个规律</div>
+        <div class="step-block-type">formula</div>
+      </div>
+      <div class="step-q"><strong>填空：</strong>(a + b)(a − b) = <em>______</em></div>
+      <div class="step-q" style="margin-top:8px;font-style:normal;color:var(--green)"><strong>学生写：a² − b² ✓</strong> 平方差公式归纳成功 —— 学生<em>自己看出来的</em>，不是老师讲的。</div>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">每步通过率</span>
+      <h4>哪一步全班卡住</h4>
+      <p>4 步的题，能看到每步的<strong>通过率 + 平均尝试次数</strong>。Step 1 大家很快过、Step 3 全班卡 —— 说明<strong>归纳跳跃</strong>对学生太难，下次出题需要在 2 和 3 之间加一个过渡步。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">尝试模式</span>
+      <h4>谁直觉对、谁试错</h4>
+      <p>每步学生第几次答对。一次过 = 直觉强 / 真的看到了；试 3 次才对 = 在<strong>排除法</strong>。两种"对"的认知质量不同。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">最后归纳的公式</span>
+      <h4>学生写出了正确公式吗</h4>
+      <p>最后一步通常让学生<strong>自己写公式</strong>。能看到每个学生写了什么 —— "a²−b²" ✓ / "a² + b²" (符号错) / "ab−ba" (理解错)。<em>最有教学价值的诊断点</em>。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--blue-bg);color:var(--blue)">放弃率</span>
+      <h4>谁中途没做完</h4>
+      <p>guided-discovery 是长题（8-15 分钟），有学生会半途<strong>放弃</strong>。能看到谁卡在哪一步停了 —— 这些学生需要老师下课后单独跟进。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td><strong>归纳数学公式</strong>（平方差、完全平方、二项式系数）</td><td>已知公式的练习 —— 用 <strong>rich-content-quiz</strong></td></tr>
+      <tr><td><strong>物理规律探索</strong>（落体 / 电流 / 光学定律）</td><td>事实性回忆 —— 用 <strong>quiz</strong></td></tr>
+      <tr><td><strong>化学反应规律</strong>（周期表趋势 / 反应类型）</td><td>简单分类 —— 用 <strong>match</strong></td></tr>
+      <tr><td><strong>语法规则归纳</strong>（动词变形 / 时态用法）</td><td>课时短 (&lt;10 分钟) —— guided-discovery 慢节奏</td></tr>
+      <tr><td>"想让学生<strong>自己发现</strong>"而非"直接告诉"的内容</td><td>没有规律可循 (开放讨论题) —— 用 <strong>discuss</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">guided-discovery 是工作量<em style="color:var(--amber);font-style:normal;font-weight:600">最大</em>的题型，但产出价值最高 —— 它替代了"老师讲一堂课"。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">明确"终极归纳目标"</div>
+        <div class="checklist-row-d">你希望学生最后<strong>自己说出</strong>什么？平方差公式？牛顿第二定律？过去分词构成？<em>这个目标必须可以一句话写出来</em>。模糊目标 → 引导不出有结构的发现。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">从目标反推：拆成 3-5 个引导步</div>
+        <div class="checklist-row-d">每步是一次<em>认知跳跃</em>。例：(Step 1) 命名相同项 → (Step 2) 命名相反项 → (Step 3) 发现"结果是相同项平方减相反项平方" → (Step 4) 用字母 a/b 表达。<strong>每一步只跳一小步</strong>，不要省。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">准备 3-5 个具体例子</div>
+        <div class="checklist-row-d">第一步的观察例子。<em>必须够多</em>才能让学生看出规律（&lt;3 个看不出来）；<em>太多</em>(>5 个)有信息过载。<strong>3-4 个最佳</strong>。例子之间要<em>变化够大</em>（不同字母 / 不同符号），才能凸显规律。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">用颜色高亮"模式"</div>
+        <div class="checklist-row-d">在例子里用<strong>红蓝色标出"相同 vs 相反"、"系数 vs 常数"</strong>等模式 —— 这是 guided-discovery 的核心 UI 技巧。学生通过<em>颜色</em>看出哪些项有共同特征，比文字解释快得多。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">5</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每步设引导问题（选 / 填）</div>
+        <div class="checklist-row-d">用 <strong>observation_choice</strong>（看数据 + 选项）或 <strong>conjecture</strong>（看引导词 + 选项）或 <strong>formula</strong>（填空）三种类型组合。每步<em>只问一个小问题</em>，不要"既问 A 又问 B"。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">6</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">最后一步：让学生<em>自己写</em></div>
+        <div class="checklist-row-d">前几步用选项 / 引导，<em>最后一步必须留白</em>让学生填公式 / 写规律。这是<strong>归纳的高潮</strong> —— 没有这一步，整道题就退化成了选择题串。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>自己<em>看出来</em>的，<br>才真的记得住。</h2>
+    <p>
+      传统教学最大的问题是 —— 老师讲一遍，学生记一遍，但<strong>没有真正"想过"</strong>。guided-discovery 的设计哲学是：把<em>"老师讲解的思路"</em>拆成<strong>学生一步步自己走出来的小台阶</strong>。每一步都需要回答一个问题，每一步都被强制思考。最后归纳出的公式不是"听到的"，是<strong>"想出来的"</strong> —— 这种知识在大脑里的位置和死记硬背不一样，<em>能用</em>、<em>能迁移</em>、<em>不容易忘</em>。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>步骤可以多于 5 个吗？</td><td>技术上可以，但<strong>不推荐</strong>。超过 5 步学生会迷失"我在干什么"。如果内容多，拆成两道 guided-discovery 题。</td></tr>
+      <tr><td>每步必须答对才能进下一步吗？</td><td>是。这是 guided-discovery 的核心 —— <strong>每一步都强制思考</strong>。错了立刻反馈 + 可以再试，但不能跳过。</td></tr>
+      <tr><td>如果学生卡在某步出不去？</td><td>提供"<strong>查看引导</strong>"按钮：进一步分解这一步的逻辑。如果还出不去，老师可以从观察台手动"通行"。</td></tr>
+      <tr><td>能在文科用吗？</td><td>能。"归纳过去分词构成规律" / "归纳古文中'之'的用法" / "归纳议论文论证结构" 都是 guided-discovery 的场景。<strong>不只是数学</strong>。</td></tr>
+      <tr><td>最后一步必须是填公式吗？</td><td>不必。可以是<strong>选公式</strong>（如果学生写公式负担太大）、<strong>选规律描述</strong>（文科常用）、<strong>选最简表达</strong>。但<em>"让学生自己产出"</em> 是关键。</td></tr>
+      <tr><td>能用 LaTeX 渲染公式吗？</td><td>能。和 rich-content-quiz 一样，用 <code>$...$</code> 包裹。颜色高亮用 <code>\\color{red}{x}</code> 标记。</td></tr>
+      <tr><td>课堂上怎么用？</td><td>最好的方式是<strong>全班同步推进</strong>。投屏显示进度卡 —— 让学生看到"全班都在 Step 2"，制造集体探究氛围。每步过后老师可以暂停讨论几分钟。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">《平方差公式》的"探索发现"步骤 —— 4 步让学生从 3 个具体算式归纳出 <em>(a+b)(a−b) = a² − b²</em>。完全平方公式、立方差公式等都可用同样模板。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">归纳后练习公式应用 → 接 <strong>rich-content-quiz</strong>。归纳后让学生写公式证明 → 接 <strong>image-upload</strong>。简单概念辨析（不需要归纳）→ 用 <strong>quiz</strong>。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 步骤跳跃太大（学生看不出从 Step 2 怎么推到 Step 3）；(2) 例子太少（&lt;3 个看不出规律）；(3) 例子变化太小（学生只是死记字面）；(4) 没用颜色高亮（学生看不到模式）；(5) 最后没让学生自己写（变成了引导式选择题）。</div></div>
+  </div>
+
+  <footer>guided-discovery · 引导式发现 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

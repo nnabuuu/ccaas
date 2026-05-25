@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>坐标布置题 · Map · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--teal)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.map-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.map-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--teal);background:var(--teal-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.map-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--teal-bg);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--teal);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.32) 0, transparent 50%)}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7ab5a4;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#7ab5a4}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#7ab5a4;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">二维坐标布置 · 多维判断可视化</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Map · 坐标布置</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">分类 / 价值判断 / 维度对比</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">4 – 8 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill teal">坐标题型</span>
+      <span class="dot"></span>
+      二维平面 · 拖拽放置 · 解释为什么
+    </div>
+    <h1>不是选对错，<br>是<em>表态</em>。</h1>
+    <p class="sub">
+      给一张<strong>二维坐标平面</strong>（X 轴 + Y 轴是两个维度），把课文里的事物作为<strong>可拖拽的卡片</strong>，学生把每张卡片<em>放到合适的位置</em>，再写一句话<strong>解释为什么放在这里</strong>。这是把"复杂判断"<strong>空间化</strong>的题型 —— 适合训练学生"用两个维度同时思考"。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">二维平面 · 卡片库 · 拖拽到位置</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="34" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">DRAG EACH PRACTICE ONTO THE PLANE</text>
+
+        <!-- 2d plane -->
+        <g transform="translate(36,60)">
+          <!-- axes -->
+          <rect x="0" y="0" width="440" height="320" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <!-- grid -->
+          <line x1="220" y1="0" x2="220" y2="320" stroke="#e4e2d8" stroke-width="1"/>
+          <line x1="0" y1="160" x2="440" y2="160" stroke="#e4e2d8" stroke-width="1"/>
+
+          <!-- x labels -->
+          <text x="-6" y="170" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#7a4d0e" text-anchor="end">外表为主</text>
+          <text x="220" y="338" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#9c9a92" text-anchor="middle" letter-spacing=".4">WHY · 为什么做</text>
+          <text x="446" y="170" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#2d6612">文化意义</text>
+
+          <!-- y labels -->
+          <text x="220" y="-6" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#0d5245" text-anchor="middle">永久性</text>
+          <text x="-30" y="160" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#9c9a92" transform="rotate(-90 -30 160)" text-anchor="middle">HOW LASTING</text>
+          <text x="220" y="316" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#1a5fa0" text-anchor="middle">临时性</text>
+
+          <!-- placed chips -->
+          <g transform="translate(70,80)">
+            <rect x="0" y="0" width="92" height="32" rx="6" fill="#dfece8" stroke="#0d5245" stroke-width="1.5"/>
+            <text x="46" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#0d5245" text-anchor="middle">Māori tattoos</text>
+          </g>
+
+          <g transform="translate(300,90)">
+            <rect x="0" y="0" width="118" height="32" rx="6" fill="#dfece8" stroke="#0d5245" stroke-width="1.5"/>
+            <text x="59" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#0d5245" text-anchor="middle">Long-neck rings</text>
+          </g>
+
+          <g transform="translate(40,220)">
+            <rect x="0" y="0" width="80" height="32" rx="6" fill="#dfece8" stroke="#0d5245" stroke-width="1.5"/>
+            <text x="40" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#0d5245" text-anchor="middle">Egyptian kohl</text>
+          </g>
+
+          <g transform="translate(280,240)">
+            <rect x="0" y="0" width="124" height="32" rx="6" fill="#dfece8" stroke="#0d5245" stroke-width="1.5"/>
+            <text x="62" y="20" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#0d5245" text-anchor="middle">Fattening room diet</text>
+          </g>
+        </g>
+
+        <!-- right: chip library + reason input -->
+        <g transform="translate(498,60)">
+          <text x="0" y="-2" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">REASONING · 解释</text>
+          <rect x="0" y="10" width="244" height="140" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="12" y="32" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a">Māori tattoos</text>
+          <text x="12" y="52" font-family="Plus Jakarta Sans" font-size="10" fill="#9c9a92" font-style="italic">为什么放在右上角？</text>
+          <rect x="12" y="62" width="220" height="80" rx="4" fill="#fff" stroke="#e4e2d8"/>
+          <text x="20" y="80" font-family="Georgia" font-size="11" fill="#5c5b56">Tattoos are permanent —</text>
+          <text x="20" y="96" font-family="Georgia" font-size="11" fill="#5c5b56">they record cultural</text>
+          <text x="20" y="112" font-family="Georgia" font-size="11" fill="#5c5b56">identity, not just</text>
+          <text x="20" y="128" font-family="Georgia" font-size="11" fill="#5c5b56">appearance.</text>
+
+          <text x="0" y="178" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">CHIPS · 待放置</text>
+          <rect x="0" y="190" width="244" height="60" rx="8" fill="#edece7" stroke="#e4e2d8" stroke-dasharray="3,3"/>
+          <text x="122" y="220" font-family="Plus Jakarta Sans" font-size="11" fill="#9c9a92" text-anchor="middle">全部放置完成 ✓</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>读懂两个轴</h4><p>X 轴 = 一个维度（如"为什么做"）、Y 轴 = 另一个维度（如"持续多久"）。左侧标签 vs 右侧标签 = 一个轴的两端。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>把卡片拖到平面</h4><p>右侧卡片库里的每张卡（如 "Māori tattoos"）<strong>拖到平面上</strong>合适位置。可以反复调整。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>写一句解释</h4><p>放好一张卡后，会弹出输入框：<strong>"为什么放在这里？"</strong> 学生用一两句话说明判断理由。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>全部放完提交</h4><p>每张卡片有<em>容许范围</em>（不要求精确位置）。系统判断"放对象限"+"理由是否合理"。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">摘自《Ideal Beauty》Task 4 · 美的"动机 + 持久性"二维分析</span>
+  </div>
+
+  <div class="map-card">
+    <div class="map-meta">2 轴 · 4 张卡片 · 每张写一句话</div>
+    <h4>把每个"美的做法"放到平面上 — 它<strong>为什么</strong>被做？持续<strong>多久</strong>？</h4>
+    <div style="margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--t2);line-height:1.7">
+      <strong>X 轴</strong>：左端 = <em>外表为主 (Just appearance)</em> &nbsp;|&nbsp; 右端 = <em>文化意义 (Cultural meaning)</em><br>
+      <strong>Y 轴</strong>：下端 = <em>临时 (Temporary)</em> &nbsp;|&nbsp; 上端 = <em>永久 (Permanent)</em>
+    </div>
+    <div style="margin-top:14px">
+      <strong style="display:block;font-size:12px;color:var(--t1);margin-bottom:8px">待放置的 4 张卡片：</strong>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span style="padding:6px 12px;background:var(--teal-bg);color:var(--teal);border-radius:6px;font-size:12px;font-weight:600">Egyptian kohl</span>
+        <span style="padding:6px 12px;background:var(--teal-bg);color:var(--teal);border-radius:6px;font-size:12px;font-weight:600">1600s plump & pale</span>
+        <span style="padding:6px 12px;background:var(--teal-bg);color:var(--teal);border-radius:6px;font-size:12px;font-weight:600">Borneo tattoos</span>
+        <span style="padding:6px 12px;background:var(--teal-bg);color:var(--teal);border-radius:6px;font-size:12px;font-weight:600">Long-neck rings</span>
+      </div>
+    </div>
+    <div style="margin-top:18px;padding:14px 16px;background:var(--green-bg);border-radius:6px;font-size:12.5px;color:var(--green);line-height:1.6">
+      <strong>没有标准答案 —— 而是有"合理区间"。</strong>"Māori tattoos" 应该在右上（文化 + 永久），"1600s 丰满白皮" 应该在左下（外表 + 临时），但学生<em>解释的质量</em>和<em>放置的方向</em>同样重要。
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">空间分布</span>
+      <h4>全班的"集体地图"</h4>
+      <p>把全班所有学生对同一张卡的放置叠加 —— <strong>云图</strong>。看 "Māori tattoos" 的云图集中在右上还是分散，能直接看出全班对这一项的<em>共识度</em>。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">理由文本</span>
+      <h4>每个学生写的解释</h4>
+      <p>真正的诊断在<strong>理由</strong>里。两个学生都把 tattoos 放右上 —— 但一个写"永久而且代表身份"，另一个写"看起来很酷"。<em>放置位置一样，理解深度差很多</em>。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">分歧点</span>
+      <h4>哪张卡片全班分歧最大</h4>
+      <p>如果 "1600s 丰满白皮" 的云图分散在四个象限 —— 说明全班对这个文化现象的<strong>解读差异很大</strong>。这是非常适合的讨论起点。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">推理质量</span>
+      <h4>学生理由长度 / 质量</h4>
+      <p>2 个字的理由（"因为永久"）vs 完整的解释 —— 后者代表<strong>真的在思考</strong>，前者只是应付。观察台上能看到每个理由的字数和质量信号。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>价值判断题（伦理 / 美学 / 政治立场分类）</td><td>有标准答案的题 —— 用 <strong>quiz</strong> 或 <strong>matrix</strong></td></tr>
+      <tr><td>多维度对比（X、Y 各代表一个独立维度）</td><td>只有一个维度 —— 用 <strong>order</strong> 排序</td></tr>
+      <tr><td>训练"二维思考" / "在两个维度上同时表态"</td><td>需要严格分类（A/B/C 类）—— 用 <strong>quiz</strong></td></tr>
+      <tr><td>开放性强、希望看到学生<strong>解释推理</strong>的题</td><td>需要查记忆 / 事实回忆 —— 用 <strong>quiz</strong> 或 <strong>fill-blank</strong></td></tr>
+      <tr><td>提供讨论素材（看完云图直接开课堂讨论）</td><td>课堂时间紧（不到 5 分钟）—— map 题需要慢节奏</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">map 题的核心是<em style="color:var(--teal);font-style:normal;font-weight:600">两个轴的设计</em>。轴不好，整道题没意义。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">确定两个独立维度</div>
+        <div class="checklist-row-d">X 轴和 Y 轴必须<em>真的正交</em> —— 一个维度的值不该自动推出另一个维度。<strong>反例</strong>：X 轴"重要 ↔ 不重要" + Y 轴"很大 ↔ 很小"（这两个轴相关，重要的事通常也大）。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每个轴写"两端标签"</div>
+        <div class="checklist-row-d">X 轴左/右、Y 轴上/下各一个简短标签（"外表为主" vs "文化意义"）。<em>标签必须自解释</em> —— 学生看一眼就知道什么意思，不要写"X1" / "X2"。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">挑 4-8 张卡片</div>
+        <div class="checklist-row-d">少于 4 张地图太空；多于 8 张学生疲劳。<em>5 张是甜点</em>。卡片名称<strong>要短</strong>（3-5 个字最佳），太长在小屏幕上挤不下。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每张卡定"合理区间"</div>
+        <div class="checklist-row-d">不是精确坐标，而是<em>合理象限或区域</em>。"Māori tattoos" 在右上象限算对；放到右下也部分对（永久维度错了）；放到左下完全错。让<strong>差不多对的也得分</strong>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">5</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">（推荐）准备一段"标准解释"</div>
+        <div class="checklist-row-d">学生提交后展示。<em>原则</em>：不是"这张卡的正确位置是 X、Y"，而是<strong>解释为什么这两个轴让这个分类有意义</strong>。这是 map 题的灵魂。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>没有标准答案，<br>有<em>合理区间</em>。</h2>
+    <p>
+      map 题的判分逻辑不是"对/错"，而是"<strong>放在哪个象限</strong>"+"<strong>解释是否合理</strong>"。最有教学价值的不是学生最后放在哪 —— 是<strong>全班的云图</strong>：看到分歧立刻能开讨论 ("为什么有 1/3 同学把 tattoos 放在左下？"），看到共识能确认教学达成 ("全班都同意 1600s 丰满白皮在左下")。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>支持"练习模式"吗？</td><td>支持。<code>randomPractice</code> + <code>practiceCount</code> —— 8 张卡随机选 3 张让学生放。</td></tr>
+      <tr><td>必须解释吗？</td><td>可配置。但<strong>强烈推荐要求解释</strong> —— 没有解释的 map 就退化成"凭感觉拖"，失去训练价值。</td></tr>
+      <tr><td>能放多个卡到同一位置吗？</td><td>可以。两张卡片可以重叠（位置无主从关系）。</td></tr>
+      <tr><td>判分是看位置还是看理由？</td><td>主要看<strong>位置在合理象限</strong>。理由由 AI 评估给出"thoughtful / 浅薄"的额外信号，但不直接判错。</td></tr>
+      <tr><td>能不能 3 个轴？</td><td>不行。3 维空间在 2D 屏幕上学生无法操作。如果有 3 个独立维度，建议拆成两道 map 题。</td></tr>
+      <tr><td>课堂上怎么用云图？</td><td>放完后<strong>切到教师视图</strong>，把云图投屏。让学生<em>看着自己的位置 vs 全班分布</em>，然后开放讨论 "为什么我们意见不同？"。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">《Ideal Beauty》Task 4 用"动机 (appearance/culture)" × "持久性 (temp/perm)" 二维让学生分类各种美的做法 —— 在<strong>课堂讨论引出环节</strong>效果最好。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">只想分类不要解释？用 <strong>matrix</strong>。要严格对错？用 <strong>quiz</strong>。要开放讨论？用 <strong>discuss</strong> 接在 map 后面。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 两个轴<strong>不正交</strong>（互相相关，没有真的二维性）；(2) 轴标签晦涩（学生不知道两端是什么意思）；(3) 卡片名太长（屏幕拥挤）；(4) 没有要求解释（变成"无脑拖"）。</div></div>
+  </div>
+
+  <footer>map · 坐标布置题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>排序题 · Order · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--amber)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.order-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--amber);background:var(--amber-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.order-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.order-list{display:flex;flex-direction:column;gap:8px}
+.order-item{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--t1)}
+.order-rank{width:28px;height:28px;border-radius:50%;background:var(--amber);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;font-family:"Fraunces",serif}
+.order-handle{margin-left:auto;color:var(--t3);font-size:18px;cursor:grab}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--amber);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(122,77,14,.32) 0, transparent 50%);pointer-events:none}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#d9ad6b;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#d9ad6b}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#d9ad6b;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">排序题 · 时间线 / 步骤顺序 / 程度</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Order · 排序</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">流程 / 时间线 / 程度</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">1 – 2 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill amber">排序题型</span>
+      <span class="dot"></span>
+      拖动卡片 · 排出正确顺序
+    </div>
+    <h1>顺序，<br>是隐藏的<em>理解度</em>。</h1>
+    <p class="sub">
+      几张卡片打乱给学生，让他们排出正确顺序 —— 故事时间线、操作步骤、阅读策略、推理链。学生<strong>不需要写一个字</strong>就能展示自己有没有真正理解"为什么这个在那个前面"。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">乱序卡片 · 拖动排列</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="36" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">PUT THESE 4 STEPS IN THE CORRECT ORDER</text>
+
+        <!-- before / after columns -->
+        <text x="36" y="74" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#7a4d0e">乱序（初始）</text>
+        <text x="430" y="74" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#2d6612">排好序后</text>
+
+        <!-- left: shuffled -->
+        <g transform="translate(36,90)">
+          <rect x="0" y="0" width="320" height="44" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="20" y="28" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56">Scanning — find specific details</text>
+
+          <rect x="0" y="56" width="320" height="44" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="20" y="84" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56">Predicting — read the title, ask questions</text>
+
+          <rect x="0" y="112" width="320" height="44" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="20" y="140" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56">Evaluating — form your own judgment</text>
+
+          <rect x="0" y="168" width="320" height="44" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="20" y="196" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56">Skimming — find the structure quickly</text>
+        </g>
+
+        <!-- arrow -->
+        <path d="M380 200 L420 200" stroke="#9c9a92" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+        <polygon points="420,200 412,196 412,204" fill="#9c9a92"/>
+
+        <!-- right: ordered -->
+        <g transform="translate(430,90)">
+          <rect x="0" y="0" width="320" height="44" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.3)"/>
+          <circle cx="22" cy="22" r="13" fill="#7a4d0e"/>
+          <text x="22" y="22" font-family="Fraunces" font-size="14" font-weight="500" fill="#fbfaf7" text-anchor="middle" dominant-baseline="middle">1</text>
+          <text x="46" y="28" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" fill="#1c1c1a">Predicting</text>
+
+          <rect x="0" y="56" width="320" height="44" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.3)"/>
+          <circle cx="22" cy="78" r="13" fill="#7a4d0e"/>
+          <text x="22" y="78" font-family="Fraunces" font-size="14" font-weight="500" fill="#fbfaf7" text-anchor="middle" dominant-baseline="middle">2</text>
+          <text x="46" y="84" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" fill="#1c1c1a">Skimming</text>
+
+          <rect x="0" y="112" width="320" height="44" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.3)"/>
+          <circle cx="22" cy="134" r="13" fill="#7a4d0e"/>
+          <text x="22" y="134" font-family="Fraunces" font-size="14" font-weight="500" fill="#fbfaf7" text-anchor="middle" dominant-baseline="middle">3</text>
+          <text x="46" y="140" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" fill="#1c1c1a">Scanning</text>
+
+          <rect x="0" y="168" width="320" height="44" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.3)"/>
+          <circle cx="22" cy="190" r="13" fill="#7a4d0e"/>
+          <text x="22" y="190" font-family="Fraunces" font-size="14" font-weight="500" fill="#fbfaf7" text-anchor="middle" dominant-baseline="middle">4</text>
+          <text x="46" y="196" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" fill="#1c1c1a">Evaluating</text>
+        </g>
+
+        <rect x="36" y="380" width="710" height="40" rx="10" fill="#1c1c1a"/>
+        <text x="391" y="406" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#fbfaf7" text-anchor="middle">检查我的顺序 →</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>看到乱序卡片</h4><p>系统会<strong>随机打乱</strong>顺序展示。学生不会从"已经排好"的状态开始。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>拖拽重排</h4><p>每张卡片可以上下拖动。<strong>实时</strong>看到新顺序。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>提交检查</h4><p>对：✓ 进下一步。错：哪几张<strong>位置错了</strong>会被标出来，可以再调。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>再次提交</h4><p>不限重试。系统记录<strong>每次的顺序快照</strong>，老师可看出学生<em>纠错路径</em>。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">摘自《Ideal Beauty》Task 5</span>
+  </div>
+
+  <div class="order-card">
+    <div class="order-meta">阅读策略 · 4 步排序</div>
+    <h4>Put today's 4 reading strategies in the correct order.</h4>
+    <div class="order-list">
+      <div class="order-item"><div class="order-rank">1</div><span>Predicting — read the title, ask questions</span><div class="order-handle">⋮⋮</div></div>
+      <div class="order-item"><div class="order-rank">2</div><span>Skimming — find the structure quickly</span><div class="order-handle">⋮⋮</div></div>
+      <div class="order-item"><div class="order-rank">3</div><span>Scanning — find specific details</span><div class="order-handle">⋮⋮</div></div>
+      <div class="order-item"><div class="order-rank">4</div><span>Evaluating — form your own judgment</span><div class="order-handle">⋮⋮</div></div>
+    </div>
+    <div style="margin-top:18px;padding:14px 16px;background:var(--green-bg);border-radius:6px;font-size:12.5px;color:var(--green);line-height:1.55">
+      <strong>这是正确顺序的内在逻辑：</strong>先<em>预测</em>（建立预期），再<em>略读</em>（看结构），然后<em>查读</em>（找细节），最后<em>评价</em>（形成判断）。从抽象到具体，从输入到输出。
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">最终排序</span>
+      <h4>每个学生提交的顺序</h4>
+      <p>对错一目了然。错的学生<strong>具体把哪两项调换了</strong>也能直接看出来。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">常见错位</span>
+      <h4>全班最容易调换的两项</h4>
+      <p>如果一半人把 "Scanning" 和 "Skimming" 互调，说明<strong>这两个概念学生混淆</strong> —— 下一步该全班讲两者的区别。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">尝试次数</span>
+      <h4>一次过 vs 多次试错</h4>
+      <p>一次排对 = 真正理解逻辑。试 3 次才对 = 在<strong>试错猜</strong>。老师能针对后者做后续提问。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">完成时间</span>
+      <h4>很快 vs 卡很久</h4>
+      <p>20 秒排完 = 直觉对了或者瞎排；2 分钟才提交 = 在<strong>真的思考</strong>哪个先哪个后。看时间能补充正确率信息。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>时间线（历史事件 / 故事情节 / 生物发育）</td><td>顺序无所谓的题 —— 用 <strong>match</strong> 或 <strong>quiz</strong></td></tr>
+      <tr><td>操作流程（化学实验步骤 / 数学解题步骤 / 算法 step）</td><td>顺序有多个合理解 —— 用 <strong>discuss</strong> 让学生解释</td></tr>
+      <tr><td>程度排列（从轻到重 / 从近到远 / 从简到难）</td><td>需要写理由 —— 用 <strong>image-upload</strong> 拍纸质排序</td></tr>
+      <tr><td>逻辑链（前提 → 推论 → 结论）</td><td>多步独立计算 —— 用 <strong>guided-discovery</strong></td></tr>
+      <tr><td>策略归纳（先做什么、再做什么）</td><td>项目数太少（&lt;3 项）—— 排序没有意义</td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">排序题最考验的是<em style="color:var(--amber);font-style:normal;font-weight:600">顺序背后的逻辑</em>。如果"为什么这个在那个前面"你自己都说不清，学生只会觉得这题没道理。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">先想清楚"正确顺序的内在逻辑"</div>
+        <div class="checklist-row-d">是时间先后？因果链？抽象到具体？由轻到重？<em>把这个逻辑写下来 —— 不能说清楚就说明题不该出</em>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">列出 3-6 个待排项</div>
+        <div class="checklist-row-d">少于 3 个排序没意义；多于 6 个学生会迷失。<em>4 是甜点</em>。每项最好一句话能说清楚，太长学生看不完。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">检查：是否有多个合理顺序</div>
+        <div class="checklist-row-d">如果"Scanning 在 Predicting 之前"也有道理 —— 这题就<strong>不适合做排序题</strong>，应该改成 discuss 让学生说理由。排序题要求<em>唯一正确</em>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">（推荐）准备一句"逻辑解释"</div>
+        <div class="checklist-row-d">学生答对后展示。<em>原则</em>：不是"答案就是 1234"，而是<strong>解释为什么这是唯一正确顺序</strong>（"从抽象到具体，从输入到输出"）。让学生知道"<em>下次遇到类似题怎么想</em>"。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>顺序错了，<br>等于没<em>真懂</em>。</h2>
+    <p>
+      排序题最好用的地方在于：学生可能<strong>每个概念都认识</strong>，但如果排不出顺序，说明他没有真正建立起概念之间的<strong>因果 / 时序 / 层级关系</strong>。这是"碎片化知识"和"系统理解"的分水岭 —— 排序题精准地把它测出来。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>排错可以重排吗？</td><td>可以。无限重试。系统记录每次提交的快照。</td></tr>
+      <tr><td>必须全对才算对吗？</td><td>是。<strong>顺序题没有"部分对"</strong> —— 错一对就是错。</td></tr>
+      <tr><td>可以做"分组+顺序"吗？</td><td>不支持。如果是分组场景 → 用 <strong>matrix</strong>；如果组内还要排序 → 拆成多道题。</td></tr>
+      <tr><td>有时间限制吗？</td><td>没有。学生可以反复调整，直到自己满意再提交。</td></tr>
+      <tr><td>能加图片吗？</td><td>当前是<strong>纯文本卡片</strong>。如果需要"图片排序"（如漫画格子排序），等扩展版本。</td></tr>
+      <tr><td>能给每项加 hint 吗？</td><td>当前版本不行（项本身就该是提示）。如果某项需要解释，把解释直接<em>写到项文本里</em>。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">《Ideal Beauty》Task 5 用排序题让学生归纳"今天用了哪 4 个阅读策略" —— <strong>课堂总结</strong>场景。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">需要分组而非排序？用 <strong>matrix</strong>。需要解释为什么这个顺序？用 <strong>discuss</strong>。需要多步独立操作？用 <strong>guided-discovery</strong>。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 多个合理顺序 → 学生有理由说自己对；(2) 项文本太长 → 排序变阅读理解；(3) 顺序逻辑只有出题人自己懂 → 学生当算命题。</div></div>
+  </div>
+
+  <footer>order · 排序题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

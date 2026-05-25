@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>立场题 · Stance · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--red)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.stance-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.stance-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.stance-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.stance-q{font-size:16px;color:var(--t1);font-weight:600;line-height:1.5;margin-bottom:14px;padding:14px 18px;background:var(--bg);border-left:4px solid var(--red);border-radius:0 6px 6px 0}
+.stance-q .zh{display:block;font-size:13px;color:var(--t2);font-weight:400;font-style:italic;margin-top:4px}
+.stance-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stance-opt{padding:14px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:13px;font-weight:600;color:var(--t1);background:var(--surface)}
+.stance-opt.on{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.stance-evidence-box{padding:14px 16px;background:var(--bg);border:1px dashed var(--border-strong);border-radius:6px;font-size:12.5px;color:var(--t2);line-height:1.6}
+.stance-evidence-box em{color:var(--red);font-style:normal;font-weight:600}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--red-bg);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--red);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(148,41,41,.3) 0, transparent 50%)}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#e08b8b;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#e08b8b}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#e08b8b;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}.stance-opts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">立场题 · 表态 + 证据</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Stance · 立场</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">议论文 / 辩论 / 价值观训练</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">3 – 6 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill red">立场题型</span>
+      <span class="dot"></span>
+      选立场 · 给至少 N 条证据
+    </div>
+    <h1>不只是表态，<br>是<em>论证</em>。</h1>
+    <p class="sub">
+      给一个有争议的问题（"作者是支持还是反对？"），学生<strong>必须选边</strong>（支持 / 反对 / 中立），然后<strong>从课文里找出至少 N 条证据</strong>支持自己的立场。这是把"<strong>有观点</strong>"和"<strong>有证据</strong>"绑在一起的题型 —— 防止学生靠直觉答题。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">立场选择 + 证据收集箱</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="34" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">PICK A SIDE — THEN GIVE AT LEAST 3 PIECES OF EVIDENCE</text>
+
+        <!-- question -->
+        <rect x="36" y="56" width="720" height="60" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <rect x="36" y="56" width="4" height="60" fill="#942929"/>
+        <text x="52" y="78" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#1c1c1a">Does the author think changing your body for beauty is wrong?</text>
+        <text x="52" y="96" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#9c9a92">作者是否认为"为了美改变身体"是错的？</text>
+
+        <!-- 3 stance options -->
+        <g transform="translate(36,136)">
+          <rect x="0" y="0" width="232" height="56" rx="8" fill="#fbfaf7" stroke="#e4e2d8" stroke-width="2"/>
+          <text x="116" y="34" font-family="Plus Jakarta Sans" font-size="14" font-weight="700" fill="#5c5b56" text-anchor="middle">✓ 是的（反对）</text>
+
+          <rect x="244" y="0" width="232" height="56" rx="8" fill="#f1dfdc" stroke="#942929" stroke-width="2"/>
+          <text x="360" y="34" font-family="Plus Jakarta Sans" font-size="14" font-weight="700" fill="#942929" text-anchor="middle">✗ 不是（接受）</text>
+
+          <rect x="488" y="0" width="232" height="56" rx="8" fill="#fbfaf7" stroke="#e4e2d8" stroke-width="2"/>
+          <text x="604" y="34" font-family="Plus Jakarta Sans" font-size="14" font-weight="700" fill="#5c5b56" text-anchor="middle">⟷ 中立</text>
+        </g>
+
+        <!-- Evidence section -->
+        <text x="36" y="220" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">证据 · 至少 3 条 · 2/3 ✓</text>
+
+        <!-- evidence pills -->
+        <g transform="translate(36,236)">
+          <rect x="0" y="0" width="720" height="40" rx="6" fill="#dfece8" stroke="rgba(13,82,69,.25)"/>
+          <text x="14" y="26" font-family="Plus Jakarta Sans" font-size="11" fill="#0d5245">
+            <tspan font-weight="700">¶8</tspan>  "cultural values, not just vanity" — author treats it as cultural, not as harm
+          </text>
+          <text x="700" y="26" font-family="Plus Jakarta Sans" font-size="14" fill="#0d5245" text-anchor="end" font-weight="700">×</text>
+
+          <rect x="0" y="48" width="720" height="40" rx="6" fill="#dfece8" stroke="rgba(13,82,69,.25)"/>
+          <text x="14" y="74" font-family="Plus Jakarta Sans" font-size="11" fill="#0d5245">
+            <tspan font-weight="700">¶6</tspan>  "Māori celebrate facial tattoos as a record of identity rather than disfigurement"
+          </text>
+          <text x="700" y="74" font-family="Plus Jakarta Sans" font-size="14" fill="#0d5245" text-anchor="end" font-weight="700">×</text>
+
+          <rect x="0" y="96" width="720" height="40" rx="6" fill="#fbfaf7" stroke="#e4e2d8" stroke-dasharray="4,4"/>
+          <text x="360" y="122" font-family="Plus Jakarta Sans" font-size="11" fill="#9c9a92" font-style="italic" text-anchor="middle">+ 添加第 3 条证据</text>
+        </g>
+
+        <rect x="36" y="400" width="720" height="32" rx="8" fill="#1c1c1a" opacity=".4"/>
+        <text x="396" y="421" font-family="Plus Jakarta Sans" font-size="12" font-weight="700" fill="#fbfaf7" text-anchor="middle" opacity=".6">提交（还差 1 条证据）</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>读问题</h4><p>问题通常有<strong>明显争议性</strong>："作者的态度是？" / "你同意 X 观点吗？"。中英双语。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>选立场</h4><p>3 个选项：支持 / 反对 / 中立（也可以是"赞成 / 反对" 或自定义标签）。<strong>必须选一个</strong>。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>收集证据</h4><p>每条证据是一段课文引用 + 解释。<strong>必须至少 N 条</strong>（通常 3 条）才能提交。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>提交得到反馈</h4><p>系统检查：(a) 立场是否被支持文本接受、(b) 证据数量够、(c) 证据与立场是否一致。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+  </div>
+
+  <div class="stance-card">
+    <div class="stance-meta">立场 + 3 证据</div>
+    <div class="stance-q">Does the author think changing your body for beauty is wrong?<span class="zh">作者是否认为"为了美改变身体"是错的？</span></div>
+    <div class="stance-opts">
+      <div class="stance-opt">Yes (反对)</div>
+      <div class="stance-opt on">No (接受)</div>
+      <div class="stance-opt">中立</div>
+    </div>
+    <div class="stance-evidence-box">
+      <strong>已添加证据 (3 / 3) — 学生选 "No"，提供：</strong>
+      <ul style="margin-top:8px;padding-left:20px;line-height:1.8">
+        <li><em>¶8</em> · "cultural values, not just vanity" — author treats it as culture</li>
+        <li><em>¶6</em> · "Māori celebrate facial tattoos as a record of identity rather than disfigurement"</li>
+        <li><em>¶5</em> · No negative judgment language is used about Karo people's fattening rooms</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--red-bg);color:var(--red)">立场分布</span>
+      <h4>全班选了哪边</h4>
+      <p>每个立场的人数。如果"反对" 占 80% / "接受" 占 20% —— 全班<strong>有明显倾向</strong>，可以引导少数派学生陈述他们的理由（多样性引入）。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">证据内容</span>
+      <h4>引用了哪些段落</h4>
+      <p>每个学生给出的证据 —— 课文中<strong>哪些句子被频繁引用</strong>？这告诉你课文里<em>哪些证据最显眼</em>。被忽略的证据 = 学生没读到 / 没看懂。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">证据质量</span>
+      <h4>证据 - 立场一致性</h4>
+      <p>有时学生选了"支持"但拿出的证据其实是反方的（典型迷思）。系统能检测<strong>不一致</strong>，老师能针对这种"自相矛盾"做提问。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">提交速度</span>
+      <h4>立刻提交 vs 慢慢拼证据</h4>
+      <p>30 秒选立场 + 10 秒"凑齐" 3 条证据 = 应付。3 分钟才提交 = 在认真找证据。<strong>速度本身就是信号</strong>。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>议论文阅读（"作者的态度是？"）</td><td>事实性问题 —— 用 <strong>quiz</strong></td></tr>
+      <tr><td>辩论训练 / 价值观讨论</td><td>开放对话型讨论 —— 用 <strong>discuss</strong></td></tr>
+      <tr><td>培养"<strong>论点必须有证据</strong>"的学术规范</td><td>需要写完整段落 —— 用 <strong>image-upload</strong></td></tr>
+      <tr><td>历史 / 政治 / 哲学的立场分析</td><td>需要严格分类 —— 用 <strong>quiz</strong> 或 <strong>matrix</strong></td></tr>
+      <tr><td>看完一篇阅读后<strong>整合观点</strong></td><td>没有真争议（答案明显）—— 用 <strong>quiz</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">立场题的灵魂是<em style="color:var(--red);font-style:normal;font-weight:600">问题本身要真的有争议</em>。如果答案一面倒，学生就只是选"对的那个"。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">设计有真争议的问题</div>
+        <div class="checklist-row-d"><em>"作者支持还是反对"</em> 比 <em>"作者讲了什么"</em> 好。但要确保课文里<strong>同时存在</strong>支持和反对的证据 —— 不然就成了 quiz。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">设定立场选项</div>
+        <div class="checklist-row-d">标准 3 选：<em>支持 / 反对 / 中立</em>。但根据问题可以自定义（"乐观 / 悲观 / 务实" / "保守 / 改革 / 折中"）。<strong>选项必须互斥且完整</strong>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">设最少证据数：3 是甜点</div>
+        <div class="checklist-row-d">1 条太少，5 条太累。<em>3 条</em>逼着学生<strong>从多个段落找</strong>，但又不会让题变得无聊。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">明确"可接受立场"</div>
+        <div class="checklist-row-d">如果作者明显反对，但课文里<strong>真的有暧昧的余地</strong>，可以把"支持"和"中立"都设为<em>可接受</em>。学生选哪个都行，只要证据支撑。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">5</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">（推荐）写一段"模范答案"</div>
+        <div class="checklist-row-d">提交后展示。<em>原则</em>：不是只给一个立场，而是<strong>展示如何论证</strong> —— "如果选支持，可以引用 ¶3 + ¶8；如果选反对，可以引用 ¶5 + ¶7"。让学生看到<em>多种合理论证路径</em>。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>有观点，<br>必须有<em>证据</em>。</h2>
+    <p>
+      stance 题对治的是学生 ESL / 议论文写作的最大问题 —— <strong>凭直觉表态、不论证</strong>。强制收集 3 条证据让学生不能"我觉得作者反对"就交差，必须<em>从课文里找出来</em>。这是<strong>学术论证素养</strong>的底层训练 —— 适合所有需要"以理服人"的语文 / 英语 / 政治 / 历史课。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>"无所谓"算立场吗？</td><td>"中立" 是合法立场，但<strong>仍要证据</strong>。学生不能用"两边都说，所以中立"应付 —— 要找出"作者刻意避免表态"的证据。</td></tr>
+      <tr><td>证据必须直接引用课文吗？</td><td>建议引用 + 自己的解释。<strong>"¶3 说 X，意味着作者 Y"</strong> 是最佳格式。纯引用没解读、纯解读没引用都不够。</td></tr>
+      <tr><td>错立场可以重选吗？</td><td>可以。但<strong>重选后证据要重新整理</strong> —— 之前为"支持"找的证据不一定服务于"反对"。</td></tr>
+      <tr><td>能多人辩论吗？</td><td>不行。stance 是<strong>个人立场</strong>题。多人辩论用 <strong>discuss</strong>。</td></tr>
+      <tr><td>能不能"两条以下"提交？</td><td>不能。<strong>系统强制最少证据数</strong>。如果你觉得 3 条太多，可以设为 2 条 —— 但 1 条不允许。</td></tr>
+      <tr><td>系统怎么判断证据"质量"？</td><td>当前是<strong>数量 + 是否引用了课文段落</strong>。深度的质量评估（AI 判断证据是否真支持立场）在路线图上。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">议论文阅读、文学批评、辩论训练。<strong>《Ideal Beauty》</strong>课程的高阶版本里用 stance 题让学生分析作者立场。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">需要开放对话？用 <strong>discuss</strong>。需要在多维度分类？用 <strong>map</strong>。需要写完整论证？用 <strong>image-upload</strong>（拍纸质作文）。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 问题没争议（答案一面倒）；(2) 证据要求太多（学生疲劳）；(3) 没有可接受的多个立场（学生选错就算错）；(4) 证据没要求引用具体段落（变成"我觉得"）。</div></div>
+  </div>
+
+  <footer>stance · 立场题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

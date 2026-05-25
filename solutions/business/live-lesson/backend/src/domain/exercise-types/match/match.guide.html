@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>匹配题 · Match · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--purple)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px;overflow:hidden}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;letter-spacing:-.1px;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.match-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.match-meta{display:inline-flex;gap:8px;align-items:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);background:var(--purple-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.match-card h4{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:14px}
+.match-row{display:grid;grid-template-columns:1fr 30px 1fr;gap:14px;align-items:center;margin-bottom:10px}
+.match-left{padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--t1);font-weight:500}
+.match-arrow{font-size:18px;color:var(--purple);text-align:center;font-weight:700}
+.match-right{padding:11px 14px;background:var(--purple-bg);border:1px solid rgba(58,49,133,.2);border-radius:8px;font-size:13px;color:var(--t1);font-weight:500}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:-.1px}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--purple);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(58,49,133,.32) 0, transparent 50%);pointer-events:none}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#a299e3;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#a299e3}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#a299e3;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">左右配对 · 词汇 / 概念 / 因果</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Match · 匹配</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">词汇 / 概念辨析</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">1 – 3 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill purple">配对题型</span>
+      <span class="dot"></span>
+      左右两列 · 拖拽或下拉选 · 一一对应
+    </div>
+    <h1>把"看起来熟悉"<br>变成"<em>真的懂</em>"。</h1>
+    <p class="sub">
+      左边一列东西（词 / 概念 / 现象），右边一列对应物（定义 / 解释 / 结果），学生把它们连起来。比选择题<strong>更难"蒙"</strong> —— 因为每个选项都得在"对的地方"，错一个连锁错好几个，逼着学生<strong>真的去想</strong>每一对的关系。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../../../../../design/index.html"><span style="display:inline-block">←</span> 返回 design 首页</a>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">左列 · 中间下拉 · 右列固定选项</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="38" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">MATCH EACH WORD TO ITS DEFINITION</text>
+
+        <!-- left column -->
+        <g transform="translate(36,70)">
+          <rect x="0" y="0" width="240" height="40" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="16" y="25" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#1c1c1a">fattening</text>
+
+          <rect x="0" y="50" width="240" height="40" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="16" y="75" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#1c1c1a">stunning</text>
+
+          <rect x="0" y="100" width="240" height="40" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="16" y="125" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#1c1c1a">elongate</text>
+
+          <rect x="0" y="150" width="240" height="40" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="16" y="175" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#1c1c1a">disfigurement</text>
+
+          <rect x="0" y="200" width="240" height="40" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="16" y="225" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#1c1c1a">vanity</text>
+        </g>
+
+        <!-- arrows -->
+        <g stroke="#3a3185" stroke-width="1.5" fill="none">
+          <path d="M280 90 L460 90"/>
+          <path d="M280 140 L460 240"/>
+          <path d="M280 190 L460 140"/>
+          <path d="M280 240 L460 290"/>
+          <path d="M280 290 L460 190"/>
+          <!-- arrow heads -->
+          <polygon points="460,90 454,87 454,93" fill="#3a3185"/>
+          <polygon points="460,240 454,237 454,243" fill="#3a3185"/>
+          <polygon points="460,140 454,137 454,143" fill="#3a3185"/>
+          <polygon points="460,290 454,287 454,293" fill="#3a3185"/>
+          <polygon points="460,190 454,187 454,193" fill="#3a3185"/>
+        </g>
+
+        <!-- right column -->
+        <g transform="translate(464,70)">
+          <rect x="0" y="0" width="280" height="40" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.25)"/>
+          <text x="16" y="25" font-family="Plus Jakarta Sans" font-size="12" fill="#3a3185">making someone fat on purpose</text>
+
+          <rect x="0" y="50" width="280" height="40" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.25)"/>
+          <text x="16" y="75" font-family="Plus Jakarta Sans" font-size="12" fill="#3a3185">extremely impressive in beauty</text>
+
+          <rect x="0" y="100" width="280" height="40" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.25)"/>
+          <text x="16" y="125" font-family="Plus Jakarta Sans" font-size="12" fill="#3a3185">to make longer or stretch out</text>
+
+          <rect x="0" y="150" width="280" height="40" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.25)"/>
+          <text x="16" y="175" font-family="Plus Jakarta Sans" font-size="12" fill="#3a3185">damage to appearance</text>
+
+          <rect x="0" y="200" width="280" height="40" rx="8" fill="#e9e7f3" stroke="rgba(58,49,133,.25)"/>
+          <text x="16" y="225" font-family="Plus Jakarta Sans" font-size="12" fill="#3a3185">excessive pride in looks</text>
+        </g>
+
+        <!-- submit -->
+        <rect x="36" y="380" width="710" height="40" rx="10" fill="#1c1c1a"/>
+        <text x="391" y="406" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#fbfaf7" text-anchor="middle">提交配对 →</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card">
+      <div class="flow-card-n">1</div>
+      <h4>读两列内容</h4>
+      <p>左列是"题"（词 / 概念 / 现象），右列是"答"（定义 / 解释 / 结果）。<strong>两列数量一一对应</strong>。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">2</div>
+      <h4>建立映射</h4>
+      <p>点击左侧某项 → 弹出右侧候选下拉框；选中一个 = 建立配对。<strong>可以反复改</strong>。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">3</div>
+      <h4>检查全部连完</h4>
+      <p>提交按钮只在<strong>所有配对都连上</strong>之后才可点击。漏一个都不行。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">4</div>
+      <h4>看每对的对错</h4>
+      <p>提交后，每对单独标 ✓ 或 ✗。错的可以重连后再次提交。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">词汇配定义</span>
+  </div>
+
+  <div class="match-card">
+    <div class="match-meta">词汇 · 5 对配对</div>
+    <h4>Match each word to its definition</h4>
+    <div class="match-row"><div class="match-left">fattening</div><div class="match-arrow">→</div><div class="match-right">making someone fat on purpose</div></div>
+    <div class="match-row"><div class="match-left">stunning</div><div class="match-arrow">→</div><div class="match-right">extremely impressive in beauty</div></div>
+    <div class="match-row"><div class="match-left">elongate</div><div class="match-arrow">→</div><div class="match-right">to make longer or stretch out</div></div>
+    <div class="match-row"><div class="match-left">disfigurement</div><div class="match-arrow">→</div><div class="match-right">damage to appearance</div></div>
+    <div class="match-row"><div class="match-left">vanity</div><div class="match-arrow">→</div><div class="match-right">excessive pride in looks</div></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+    <span class="hint">配对级 · 维度统计</span>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">每对</span>
+      <h4>哪对最容易错</h4>
+      <p>每个配对单独的正确率。如果"vanity" 这一对全班错了一大半 —— 说明这个词大家都不熟，<strong>下一步重点讲它</strong>。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">错配模式</span>
+      <h4>常见的"错配组合"</h4>
+      <p>"stunning" 经常被配到 "extreme pride" —— 说明学生把它和 "vanity" 混淆了。错配模式比单纯的对错更有诊断价值。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">完成时间</span>
+      <h4>快 vs 慢的学生</h4>
+      <p>10 秒钟连完 = 大概率瞎连；3 分钟才提交 = 在真的思考。两者答案都对，但<strong>掌握深度不同</strong>，需要不同处理。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">尝试次数</span>
+      <h4>谁连了几次才全对</h4>
+      <p>一次过 = 单词都熟。三次才过 = 至少一组词有混淆。系统记录每次提交时的<strong>错配组合</strong>，能精准定位混淆点。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>词汇练习（词 ↔ 定义、词 ↔ 反义词）</td><td>词义辨析需要例句上下文 —— 用 <strong>quiz</strong></td></tr>
+      <tr><td>概念配对（事件 ↔ 时间、人物 ↔ 作品、原因 ↔ 结果）</td><td>概念有<strong>多对多关系</strong>（一个原因对多个结果）—— 用 <strong>matrix</strong></td></tr>
+      <tr><td>对照学习（中文术语 ↔ 英文术语 / 旧概念 ↔ 新概念）</td><td>开放回答（"为什么这样配？"）—— 用 <strong>discuss</strong></td></tr>
+      <tr><td>检查一组相近词的辨析能力</td><td>顺序关系（不是配对而是排序）—— 用 <strong>order</strong></td></tr>
+      <tr><td>warmup / 复习课（快速激活旧知识）</td><td>需要写出定义 —— 用 <strong>fill-blank</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">配对题看起来简单，但<em>左右两列怎么设计</em>决定了它是"识记题"还是"辨析题"。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">决定要配对的"维度"</div>
+        <div class="checklist-row-d">词 ↔ 定义？事件 ↔ 时间？文化 ↔ 国家？<em>这是题的灵魂</em>。明确维度后再选 4-6 对内容。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">控制对数：4-6 对最佳</div>
+        <div class="checklist-row-d">少于 3 对太简单。多于 7 对学生会"猜中了一半就放弃"。<em>5 对是甜点</em>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">右列内容要"听起来都合理"</div>
+        <div class="checklist-row-d">最容易出错的地方：右列答案<strong>太特异</strong>，学生一眼能看出"这肯定是配那个的"。好的右列让<em>每一项都可能是任何一个左列的答案</em>，迫使学生真的思考。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">（可选）每对加 hint</div>
+        <div class="checklist-row-d">如果某对涉及生僻知识，给一行提示。学生卡住时能用，不用就不影响节奏。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>配对题的难度<br>在<em>右列</em>。</h2>
+    <p>
+      左列定主题，右列定难度。当右列的每一项<strong>对任何左列都"看起来合理"</strong>时，学生不能靠"看起来像就连"，必须<strong>真的理解每对的精确含义</strong>。这就是配对题超越选择题的地方 —— <strong>错一个连锁错好几个</strong>，逼着学生认真对待每一对。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>左右列数量必须一样吗？</td><td>是。<strong>1:1 严格对应</strong>。如果想出"一对多" / "多余干扰项"，用 quiz 多选。</td></tr>
+      <tr><td>顺序会随机化吗？</td><td>每次加载<strong>右列顺序会打乱</strong>（防止学生记位置）。左列固定。</td></tr>
+      <tr><td>可以拖拽吗？</td><td>当前是点击+下拉选择。拖拽交互在路线图上。</td></tr>
+      <tr><td>错的可以单独重连吗？</td><td>可以。重新打开任意一行 → 选新答案 → 再次提交。</td></tr>
+      <tr><td>每对能加图吗？</td><td>当前左右两列是<strong>纯文本</strong>。需要图配文，等扩展版本。</td></tr>
+      <tr><td>能做"多对多"配对吗？</td><td>不支持。多对多关系本质是 <strong>matrix</strong>（行列交叉表）的场景。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">英语词汇课、文言文实词配对、生物学名 ↔ 中文名等场景常用。在 <strong>warmup</strong> 步骤效果最好。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">需要多维交叉关系？用 <strong>matrix</strong>。需要顺序关系？用 <strong>order</strong>。需要写答案？用 <strong>fill-blank</strong>。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">最常见错误：(1) 右列答案太特异（一眼看出对应）；(2) 对数太多导致疲劳；(3) 左右列<strong>不平衡</strong>（左列短词、右列长定义混搭让认知负担集中在右列）。</div></div>
+  </div>
+
+  <footer>match · 匹配题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>点选证据题 · Select Evidence · 教师指南</title>
+<link rel="stylesheet" href="../../../../../docs/bundle-readme.css">
+<style>
+/* 几个补充样式 — 用于此页特有的展示 */
+.hero h1 em{color:var(--green)}
+
+.preview-strip{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:8px;margin-bottom:72px;
+}
+.preview-svg-wrap{
+  width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);padding:18px;overflow:hidden;
+}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+
+.flow-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px;
+}
+.flow-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px;
+  display:flex;flex-direction:column;gap:10px;
+  position:relative;
+}
+.flow-card-n{
+  width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;
+}
+.flow-card h4{font-size:13px;font-weight:700;letter-spacing:-.1px;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+
+/* 示例段落 — 模拟课文 + 高亮 token */
+.passage-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:24px 28px;margin-bottom:24px;
+}
+.passage-card h4{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:10px;letter-spacing:-.1px}
+.passage-card .passage-meta{
+  display:inline-flex;gap:8px;align-items:center;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--green);background:var(--green-bg);
+  padding:3px 9px;border-radius:4px;margin-bottom:14px;
+}
+.passage-body{font-size:14px;color:var(--t2);line-height:1.8;font-family:Georgia,serif}
+.passage-body .ev{
+  background:#fff4d6;border-bottom:2px solid #d9ad6b;padding:1px 3px;border-radius:2px;
+  font-weight:600;color:var(--t1);cursor:help;
+}
+.passage-body .ev.picked{background:#cfe8c5;border-color:var(--green);}
+.passage-fn-row{
+  display:flex;align-items:center;gap:12px;margin-top:18px;padding-top:16px;
+  border-top:1px dashed var(--border);
+}
+.passage-fn-lb{font-size:12px;font-weight:600;color:var(--t1)}
+.passage-fn-opt{
+  font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;
+  background:var(--surface2);color:var(--t2);border:1px solid var(--border);
+}
+.passage-fn-opt.on{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* AI 反馈条 */
+.ai-feedback-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:72px;
+}
+.ai-feedback{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:20px 22px;display:flex;flex-direction:column;gap:10px;
+}
+.ai-feedback-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  padding:3px 9px;border-radius:4px;width:fit-content;
+}
+.ai-feedback-tag.right{background:var(--green-bg);color:var(--green)}
+.ai-feedback-tag.partial{background:var(--amber-bg);color:var(--amber)}
+.ai-feedback-q{font-size:13px;font-weight:600;color:var(--t1)}
+.ai-feedback-msg{
+  font-size:13px;color:var(--t2);line-height:1.6;font-style:italic;
+  padding:12px 14px;background:var(--bg);border-radius:6px;border-left:3px solid var(--green);
+}
+.ai-feedback-row .ai-feedback.partial .ai-feedback-msg{border-left-color:var(--amber)}
+
+/* 出题清单 */
+.checklist{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:24px 28px;margin-bottom:72px;
+}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{
+  display:grid;grid-template-columns:36px 1fr;gap:14px;
+  padding:14px 0;border-bottom:1px dashed var(--border);
+}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{
+  width:28px;height:28px;border-radius:6px;background:var(--green-bg);color:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;
+}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:-.1px}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--green);font-style:normal;font-weight:600}
+
+/* signature */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(45,102,18,.32) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#9ad48b;margin-bottom:16px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#9ad48b}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;
+  letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative;
+}
+.sig h2 em{color:#9ad48b;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative;}
+.sig p strong{color:#e8e6df;font-weight:600}
+
+@media (max-width:900px){
+  .flow-grid{grid-template-columns:1fr 1fr}
+  .ai-feedback-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">阅读理解 · 文本结构分析</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">点选证据题</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">中高年级阅读</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">3–6 分钟</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill green">阅读题型</span>
+      <span class="dot"></span>
+      在课文里点出证据 · 给段落贴功能标签
+    </div>
+    <h1>让学生在课文里<br><em>找到</em>论证的骨架。</h1>
+    <p class="sub">
+      学生通读完一段课文后，把<strong>关键词点亮</strong>，并给这一段贴上正确的<strong>功能标签</strong>（如"对比 / 举例 / 历史 / 文化 / 转折"）。这是练"<strong>看出文章结构</strong>"——比 quiz 慢一拍、但比写读后感快很多的中间地带。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../../../../../design/index.html"><span style="display:inline-block">←</span> 返回 design 首页</a>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 01 — 学生看到什么 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>学生看到什么 <span class="en">The Student Experience</span></h2>
+    </div>
+    <span class="hint">课文 · 高亮 token · 功能标签</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- left: section progress -->
+        <rect x="20" y="20" width="180" height="410" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="36" y="44" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">SECTION 进度</text>
+
+        <rect x="36" y="60" width="148" height="44" rx="6" fill="#dfece8" stroke="rgba(13,82,69,.18)"/>
+        <text x="48" y="78" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#0d5245">¶3-4 · History ✓</text>
+        <text x="48" y="92" font-family="Plus Jakarta Sans" font-size="8" fill="#0d5245">已完成 · 3/3 关键词</text>
+
+        <rect x="36" y="112" width="148" height="44" rx="6" fill="#fbfaf7" stroke="#1c1c1a" stroke-width="2"/>
+        <text x="48" y="130" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#1c1c1a">¶5-7 · 进行中</text>
+        <text x="48" y="144" font-family="Plus Jakarta Sans" font-size="8" fill="#9c9a92">2/3 关键词 · 选功能</text>
+
+        <rect x="36" y="164" width="148" height="44" rx="6" fill="#edece7" stroke="#e4e2d8"/>
+        <text x="48" y="182" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92">¶8 · 未开始</text>
+        <text x="48" y="196" font-family="Plus Jakarta Sans" font-size="8" fill="#c9c7be">等待中</text>
+
+        <!-- center: passage with highlighted tokens -->
+        <rect x="216" y="20" width="404" height="410" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="232" y="44" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">¶5-7 · 课文</text>
+
+        <!-- paragraph text simulated as lines -->
+        <text x="232" y="74" font-family="Georgia" font-size="11" fill="#5c5b56">In <tspan fill="#1c1c1a" font-weight="700">Borneo</tspan>, the Karo people …</text>
+        <rect x="248" y="64" width="42" height="14" rx="2" fill="#fff4d6"/>
+        <text x="232" y="74" font-family="Georgia" font-size="11" fill="#5c5b56">In <tspan fill="#1c1c1a" font-weight="700">Borneo</tspan>, the Karo people …</text>
+
+        <text x="232" y="96" font-family="Georgia" font-size="11" fill="#5c5b56">… in <tspan fill="#1c1c1a" font-weight="700">New Zealand</tspan>, the Māori …</text>
+        <rect x="252" y="86" width="64" height="14" rx="2" fill="#cfe8c5"/>
+        <text x="232" y="96" font-family="Georgia" font-size="11" fill="#5c5b56">… in <tspan fill="#1c1c1a" font-weight="700">New Zealand</tspan>, the Māori …</text>
+
+        <text x="232" y="118" font-family="Georgia" font-size="11" fill="#5c5b56">In <tspan fill="#1c1c1a" font-weight="700">Myanmar</tspan>, the long-neck …</text>
+        <rect x="248" y="108" width="56" height="14" rx="2" fill="#cfe8c5"/>
+        <text x="232" y="118" font-family="Georgia" font-size="11" fill="#5c5b56">In <tspan fill="#1c1c1a" font-weight="700">Myanmar</tspan>, the long-neck …</text>
+
+        <text x="232" y="140" font-family="Georgia" font-size="11" fill="#5c5b56">The Mentawai of <tspan fill="#1c1c1a" font-weight="700">Indonesia</tspan> …</text>
+        <rect x="318" y="130" width="60" height="14" rx="2" fill="#fff4d6"/>
+        <text x="232" y="140" font-family="Georgia" font-size="11" fill="#5c5b56">The Mentawai of <tspan fill="#1c1c1a" font-weight="700">Indonesia</tspan> …</text>
+
+        <text x="232" y="162" font-family="Georgia" font-size="11" fill="#9c9a92">… each culture defines beauty …</text>
+
+        <!-- "this paragraph is about" label -->
+        <text x="232" y="208" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#1c1c1a">这一段在说：</text>
+
+        <!-- function chips -->
+        <g transform="translate(232,220)">
+          <rect x="0" y="0" width="76" height="28" rx="6" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="38" y="18" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#5c5b56" text-anchor="middle">Phenomenon</text>
+
+          <rect x="84" y="0" width="60" height="28" rx="6" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="114" y="18" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#5c5b56" text-anchor="middle">History</text>
+
+          <rect x="152" y="0" width="62" height="28" rx="6" fill="#2d6612"/>
+          <text x="183" y="18" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fbfaf7" text-anchor="middle">Culture ✓</text>
+
+          <rect x="222" y="0" width="80" height="28" rx="6" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="262" y="18" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#5c5b56" text-anchor="middle">Conclusion</text>
+        </g>
+
+        <!-- AI feedback -->
+        <rect x="232" y="276" width="372" height="64" rx="6" fill="#e6f2dc" stroke="rgba(45,102,18,.18)"/>
+        <text x="244" y="296" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#2d6612">AI 反馈 · 答对</text>
+        <text x="244" y="313" font-family="Plus Jakarta Sans" font-size="10" fill="#2d6612">"Yes — all PLACE / CULTURE signals: Borneo,</text>
+        <text x="244" y="327" font-family="Plus Jakarta Sans" font-size="10" fill="#2d6612">New Zealand, Myanmar… Multiple places = Culture."</text>
+
+        <!-- next button -->
+        <rect x="232" y="360" width="372" height="38" rx="8" fill="#1c1c1a"/>
+        <text x="418" y="384" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#fbfaf7" text-anchor="middle">下一段 →</text>
+
+        <!-- right: hint panel -->
+        <rect x="636" y="20" width="144" height="410" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <text x="652" y="44" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" letter-spacing=".4">提示</text>
+
+        <rect x="652" y="60" width="112" height="20" rx="4" fill="#f6edda" stroke="rgba(122,77,14,.18)"/>
+        <text x="708" y="74" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#7a4d0e" text-anchor="middle">💡 看提示</text>
+
+        <text x="652" y="100" font-family="Plus Jakarta Sans" font-size="9" fill="#5c5b56">点亮国家/地点</text>
+        <text x="652" y="114" font-family="Plus Jakarta Sans" font-size="9" fill="#5c5b56">名称作为证据。</text>
+
+        <rect x="652" y="138" width="112" height="20" rx="4" fill="#dfece8" stroke="rgba(13,82,69,.18)"/>
+        <text x="708" y="152" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#0d5245" text-anchor="middle">📖 阅读指南</text>
+
+        <text x="652" y="178" font-family="Plus Jakarta Sans" font-size="9" fill="#5c5b56">如何 skim?</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 4 step flow -->
+  <div class="flow-grid">
+    <div class="flow-card">
+      <div class="flow-card-n">1</div>
+      <h4>读这一段</h4>
+      <p>左侧是 <strong>section 列表</strong>（如 ¶3-4 / ¶5-7 / ¶8），中间是当前 section 的课文。学生从第一个 section 开始。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">2</div>
+      <h4>点亮关键词</h4>
+      <p>课文里某些 token <strong>可点</strong>（带柔黄色背景）。学生点亮自己认为是"证据"的词。每段都有最少要点亮的数量。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">3</div>
+      <h4>选功能标签</h4>
+      <p>下方一排 chip：<strong>Phenomenon / History / Culture / Conclusion</strong>。学生根据这段在文章里的"作用"来选。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">4</div>
+      <h4>立即收到反馈</h4>
+      <p>选完<strong>立刻知道对错</strong>——AI 会用具体的话告诉学生为什么对/为什么差一点，然后才能进下一段。</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 02 — 真实出题样本 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>看一道真实的题 <span class="en">A Real Question</span></h2>
+    </div>
+    <span class="hint">摘自《Ideal Beauty》Skim 步骤</span>
+  </div>
+
+  <p style="font-size:13.5px;color:var(--t2);line-height:1.7;margin-bottom:20px;max-width:860px">
+    这一段需要学生<strong style="color:var(--t1)">把国家名作为证据点亮</strong>，并意识到"重复出现的国家名"是文章在讲<strong style="color:var(--t1)">文化差异</strong>的信号 —— 而不是历史变迁。下面是学生屏幕上看到的样子：
+  </p>
+
+  <div class="passage-card">
+    <div class="passage-meta">¶5-7 · Section</div>
+    <h4>课文片段</h4>
+    <div class="passage-body">
+      In <span class="ev picked">Borneo</span>, the Karo people once kept young women in <span class="ev">fattening rooms</span> before marriage, where they would be fed continuously to gain weight — a sign of beauty and prosperity. Meanwhile, in <span class="ev picked">New Zealand</span>, the Māori celebrate facial tattoos called <em>tā moko</em>, treating skin markings as a record of identity rather than disfigurement. In <span class="ev picked">Myanmar</span>, the long-neck Karen women wear brass rings that gradually elongate their necks. The Mentawai of <span class="ev">Indonesia</span> sharpen their teeth into points — a practice considered beautiful within their culture.
+    </div>
+    <div class="passage-fn-row">
+      <span class="passage-fn-lb">这一段在说：</span>
+      <span class="passage-fn-opt">Phenomenon</span>
+      <span class="passage-fn-opt">History</span>
+      <span class="passage-fn-opt on">Culture ✓</span>
+      <span class="passage-fn-opt">Conclusion</span>
+    </div>
+  </div>
+
+  <div class="ai-feedback-row">
+    <div class="ai-feedback">
+      <span class="ai-feedback-tag right">学生答对时</span>
+      <div class="ai-feedback-q">AI 立刻给出确认 + 推理</div>
+      <div class="ai-feedback-msg">
+        "Yes — all PLACE / CULTURE signals: <strong>different cultures around the world</strong>, Borneo, New Zealand, Myanmar, Indonesia, cultural identity. Multiple places = Culture."
+      </div>
+    </div>
+    <div class="ai-feedback partial">
+      <span class="ai-feedback-tag partial">学生答错时</span>
+      <div class="ai-feedback-q">AI 引导而不是公布答案</div>
+      <div class="ai-feedback-msg">
+        "You picked some practices. Those are <em>examples</em>, not signals. What word repeats at the start of each paragraph?"
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 03 — 教师能观察到什么 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2>
+    </div>
+    <span class="hint">课堂观察台上的 select-evidence 步骤</span>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">每个学生</span>
+      <h4>谁选对、谁选错</h4>
+      <p>每个 section 的功能选择 <strong>对 / 错 / 部分对</strong>，加上每位学生<strong>点亮了哪些 token</strong>（是否包含了"关键词"还是只挑了不相关的）。</p>
+      <p>对于错误学生，可以看到他选了哪个错的功能 —— 是把 Culture 选成 History 还是 Conclusion，错误模式不同对应不同的讲解方式。</p>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">全班</span>
+      <h4>哪个 section 最容易卡</h4>
+      <p>系统会突出显示<strong>错误率最高的那个 section</strong>。比如 ¶8 (Conclusion) 经常被学生错选成 Phenomenon —— 你立刻就知道"全班需要讲一下'总结段落'的三个信号"。</p>
+      <p>也能看到 <strong>哪些 token 被点亮率特别高</strong> —— 学生的"证据"挑选模式，常常比答案本身更有诊断价值。</p>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">AI 互动</span>
+      <h4>谁看了提示、看了几次</h4>
+      <p>每个学生看 hint 的次数 + 触发"部分对"AI 反馈的轮数。多次部分对说明<strong>这位学生卡在同一个迷思</strong>上 —— 适合做提问目标。</p>
+    </div>
+
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">完成进度</span>
+      <h4>全班推进节奏</h4>
+      <p>每个 section 的完成率 —— 第一段大家很快通过、卡在第二段说明"概念 A → B 的迁移"是难点。这是<strong>课堂节奏调整</strong>的依据。</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 04 — 什么时候用、什么时候不用 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>什么时候用 <span class="en">When to Reach for This</span></h2>
+    </div>
+    <span class="hint">合适场景 · 不合适场景</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr>
+        <td>训练"<strong>识别文本结构</strong>" —— 让学生看出文章的论证骨架（History → Culture → Conclusion）</td>
+        <td>事实性记忆题（"作者是哪国人？"）—— 用 <strong>quiz</strong></td>
+      </tr>
+      <tr>
+        <td>训练"<strong>找证据</strong>"能力 —— 学生需要在段落里指出"哪个词支持你的判断"</td>
+        <td>需要学生写完整段落回答 —— 用 <strong>image-upload</strong>（拍作业）</td>
+      </tr>
+      <tr>
+        <td>修辞分析 —— 让学生标注每段的修辞作用（对比 / 举例 / 因果 / 转折）</td>
+        <td>多步推理 / 数学推导 —— 用 <strong>guided-discovery</strong></td>
+      </tr>
+      <tr>
+        <td>需要<strong>即时反馈</strong>的训练课，希望每个学生都能在不打断节奏的情况下知道对错</td>
+        <td>开放讨论题（"你觉得作者为什么这么写？"）—— 用 <strong>discuss</strong></td>
+      </tr>
+      <tr>
+        <td>课文较长，需要把<strong>分段处理</strong>（每段一个判断 + 一组证据），降低认知负担</td>
+        <td>课文非常短或只有一段 —— 用 <strong>match</strong> 或 <strong>quiz</strong></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 05 — 出题时需要准备什么 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2>
+    </div>
+    <span class="hint">五件事，按顺序</span>
+  </div>
+
+  <div class="checklist">
+    <h3>出题前的准备</h3>
+    <p class="sub-d">不需要写代码。课程编辑后台会自动检查格式 —— 你只需要思考<em style="color:var(--green);font-style:normal;font-weight:600">教学逻辑</em>本身。</p>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">把课文切成 2–4 个 section</div>
+        <div class="checklist-row-d">每个 section 是若干个相邻段落（例如 ¶3-4 一组、¶5-7 一组、¶8 单独一组）。section 太多学生会累；太少又看不出结构。<em>3 段是个甜点</em>。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">想 2–4 个功能标签</div>
+        <div class="checklist-row-d">每个 section 应该对应一个标签。最常用的组合：<em>对比 / 举例 / 因果 / 转折</em>；议论文常用：<em>现象 / 历史 / 文化 / 结论</em>。标签数量 = section 数量 ± 1。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">标记每段里"哪些词可以被点"</div>
+        <div class="checklist-row-d">不是每个词都能点 —— 你需要给课文里的<strong>关键 token</strong> 打上标记（例如：所有的国家名、所有的时间词、所有的转折连词）。系统会用柔黄色背景提示学生"这个词可点"。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每个 section 写一句"提示"</div>
+        <div class="checklist-row-d">学生卡住时点 💡 看到的话。<em>原则</em>：不要直接告诉答案，要给"找证据的方法"。比如"找时间信号——指向时间段的短语"。建议同时写中英双语。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">5</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">写两条 AI 反馈（答对 / 答差一点）</div>
+        <div class="checklist-row-d">
+          <strong>答对时</strong>：肯定 + 简短归纳（"Yes — all PLACE signals..."），让学生听到自己已经掌握的规律。<br>
+          <strong>差一点时</strong>：不要公布答案，问一个引导问题（"What word repeats at the start of each paragraph?"），让学生再回去看。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SIGNATURE -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>不是"读懂"，是 <em>看见结构</em>。</h2>
+    <p>
+      Select-evidence 不是阅读理解题的另一种问法 —— 是把"<strong>看出文章是怎么搭起来的</strong>"这种隐性能力<strong>显式化</strong>。学生必须在课文里指出"哪个词支持我的判断"，老师从观察台上能直接看出来学生"挑证据的眼光"对不对 —— 而不是只看一个对错分数。这是<strong>修辞意识</strong>训练，特别适合议论文、说明文、对比类阅读。
+    </p>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 06 — 常见疑问 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">06 —</span>
+      <h2>常见疑问 <span class="en">FAQ</span></h2>
+    </div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr>
+        <td>学生可以跳过某段吗？</td>
+        <td>不行 —— 必须按顺序完成每个 section。设计上是<strong>线性</strong>的，让学生强制经历每一段的判断。</td>
+      </tr>
+      <tr>
+        <td>答错可以重试吗？</td>
+        <td>可以。学生选错功能后会拿到 AI 引导，可以<strong>重新挑选 token、再次提交</strong>。系统记录所有尝试，老师能看到。</td>
+      </tr>
+      <tr>
+        <td>提示和 AI 反馈是同一回事吗？</td>
+        <td>不是。<strong>提示</strong>是学生主动点 💡 看到的（一句话教方法）；<strong>AI 反馈</strong>是提交后系统自动给的（针对学生的具体答案）。</td>
+      </tr>
+      <tr>
+        <td>能不能没有"功能标签"，只让学生选 token？</td>
+        <td>当前版本不行 —— 功能标签是这个题型的核心训练点（学生必须解释"这段在做什么"）。如果只要 token 选择，用 <strong>highlight</strong> 类型（如未来扩展）。</td>
+      </tr>
+      <tr>
+        <td>能用在英文阅读以外的科目吗？</td>
+        <td>可以。<strong>语文议论文</strong>（找论据 + 标注论证方式）、<strong>历史文本分析</strong>（标注史料的时间/地点/性质）、<strong>政治哲学论文</strong>（标注论点 / 反驳 / 让步）都能用。</td>
+      </tr>
+      <tr>
+        <td>一道题大概要做多久？</td>
+        <td>3–6 分钟。<strong>3 个 section、每段 30–60 秒</strong>是常见节奏。section 太多（&gt;4）会拖到 10 分钟以上，建议拆成两道题。</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">已落地课程 · In Use</div>
+      <div class="note-b">这个题型已用在《<strong>Ideal Beauty</strong>》（英语阅读 · 议论文）的 Skim 步骤 —— 让学生在通读后标注 ¶3-4 / ¶5-7 / ¶8 的功能（History / Culture / Conclusion）。</div>
+    </div>
+    <div>
+      <div class="note-h">同类题型 · Related</div>
+      <div class="note-b">需要不同形式的阅读训练？看：<strong>quiz</strong>（事实题）、<strong>match</strong>（短文匹配）、<strong>discuss</strong>（开放讨论）、<strong>guided-discovery</strong>（多步推理）。</div>
+    </div>
+    <div>
+      <div class="note-h">给编辑者的建议 · Authoring Tips</div>
+      <div class="note-b">第一次出这种题，<strong>先复用 Ideal Beauty 的 functionOptions</strong>（Phenomenon/History/Culture/Conclusion），把课文换掉。等熟悉了再尝试不同的标签组合。</div>
+    </div>
+  </div>
+
+  <footer>select-evidence · 阅读理解题型指南 · KedgeAgentic Live Lesson</footer>
+
+</div>
+
+</body>
+</html>

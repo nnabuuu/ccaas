@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>选择题 · Quiz · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--teal)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px;overflow:hidden}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;letter-spacing:-.1px;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.qcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.qcard h4{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px;letter-spacing:-.2px}
+.qcard-meta{display:inline-flex;gap:8px;align-items:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--teal);background:var(--teal-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.qcard-q{font-size:15px;color:var(--t1);line-height:1.55;font-weight:500;margin-bottom:14px}
+.qcard-q .zh{display:block;font-size:13px;color:var(--t2);font-weight:400;font-style:italic;margin-top:2px}
+.qopt{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13.5px;color:var(--t2)}
+.qopt-mk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--t3);flex-shrink:0}
+.qopt.on{background:var(--teal-bg);border-color:var(--teal);color:var(--t1)}
+.qopt.on .qopt-mk{background:var(--teal);border-color:var(--teal);color:#fff}
+.qopt.wrong{background:var(--red-bg);border-color:rgba(148,41,41,.3);color:var(--t1)}
+.qopt.wrong .qopt-mk{background:var(--red);border-color:var(--red);color:#fff}
+.ai-feedback-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:72px}
+.ai-feedback{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.ai-feedback-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:4px;width:fit-content}
+.ai-feedback-tag.right{background:var(--green-bg);color:var(--green)}
+.ai-feedback-tag.partial{background:var(--amber-bg);color:var(--amber)}
+.ai-feedback-q{font-size:13px;font-weight:600;color:var(--t1)}
+.ai-feedback-msg{font-size:13px;color:var(--t2);line-height:1.6;font-style:italic;padding:12px 14px;background:var(--bg);border-radius:6px;border-left:3px solid var(--green)}
+.ai-feedback.partial .ai-feedback-msg{border-left-color:var(--amber)}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--teal-bg);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:-.1px}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--teal);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.32) 0, transparent 50%);pointer-events:none}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7ab5a4;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#7ab5a4}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#7ab5a4;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}.ai-feedback-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">最常用的题型 · 单/多选择题</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Quiz · 选择题</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">全学科</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">30 秒 – 2 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill teal">最基础的题型</span>
+      <span class="dot"></span>
+      单选 / 多选 · 4 选 1 · 出对了立刻反馈
+    </div>
+    <h1>最基础、最通用，<br>也是最<em>不该被低估</em>的题型。</h1>
+    <p class="sub">
+      一道题、几个选项、选一个或多个 —— 选择题谁都会出。但平台版本多了几样东西：每道题有<strong>提示</strong>（不公布答案，给方法）、<strong>详解</strong>（答完才显示）、<strong>AI 反馈</strong>（针对学生答错的具体选项），让选择题不只是"对错记录"，而是<strong>训练工具</strong>。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="../../../../../design/index.html"><span style="display:inline-block">←</span> 返回 design 首页</a>
+    </div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">题干 · 4 个选项 · 提示按钮</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- progress dots -->
+        <g transform="translate(36,24)">
+          <circle cx="0" cy="0" r="6" fill="#0d5245"/>
+          <circle cx="20" cy="0" r="6" fill="#0d5245"/>
+          <circle cx="40" cy="0" r="6" fill="#1c1c1a" stroke="#0d5245" stroke-width="2"/>
+          <circle cx="60" cy="0" r="6" fill="#edece7"/>
+          <circle cx="80" cy="0" r="6" fill="#edece7"/>
+          <text x="100" y="4" font-family="Plus Jakarta Sans" font-size="10" fill="#5c5b56" font-weight="600">3 / 5</text>
+        </g>
+
+        <!-- question -->
+        <text x="36" y="74" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#9c9a92" letter-spacing=".4">QUESTION 3</text>
+        <text x="36" y="100" font-family="Plus Jakarta Sans" font-size="16" font-weight="600" fill="#1c1c1a">What did Happiness Edem do to become "beautiful"?</text>
+        <text x="36" y="118" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#9c9a92">Happiness Edem 为了变"美"做了什么？</text>
+
+        <!-- options -->
+        <g transform="translate(36,140)">
+          <rect x="0" y="0" width="650" height="42" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <circle cx="22" cy="21" r="9" fill="none" stroke="#9c9a92" stroke-width="1.5"/>
+          <text x="40" y="21" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56" dominant-baseline="middle">A · Went on a diet to become slim</text>
+
+          <rect x="0" y="52" width="650" height="42" rx="8" fill="#dfece8" stroke="#0d5245" stroke-width="2"/>
+          <circle cx="22" cy="73" r="9" fill="#0d5245"/>
+          <text x="22" y="73" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fbfaf7" text-anchor="middle" dominant-baseline="middle">✓</text>
+          <text x="40" y="73" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" fill="#1c1c1a" dominant-baseline="middle">B · Gained weight in a fattening room</text>
+
+          <rect x="0" y="104" width="650" height="42" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <circle cx="22" cy="125" r="9" fill="none" stroke="#9c9a92" stroke-width="1.5"/>
+          <text x="40" y="125" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56" dominant-baseline="middle">C · Got cosmetic surgery</text>
+
+          <rect x="0" y="156" width="650" height="42" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <circle cx="22" cy="177" r="9" fill="none" stroke="#9c9a92" stroke-width="1.5"/>
+          <text x="40" y="177" font-family="Plus Jakarta Sans" font-size="12" fill="#5c5b56" dominant-baseline="middle">D · Started a fashion brand</text>
+        </g>
+
+        <!-- hint + submit row -->
+        <g transform="translate(36,360)">
+          <rect x="0" y="0" width="100" height="32" rx="8" fill="#f6edda" stroke="rgba(122,77,14,.18)"/>
+          <text x="50" y="20" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#7a4d0e" text-anchor="middle">💡 提示</text>
+
+          <rect x="500" y="0" width="186" height="32" rx="8" fill="#1c1c1a"/>
+          <text x="593" y="20" font-family="Plus Jakarta Sans" font-size="12" font-weight="700" fill="#fbfaf7" text-anchor="middle">提交答案 →</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card">
+      <div class="flow-card-n">1</div>
+      <h4>看题干</h4>
+      <p>题干可以是中英双语 —— 上方英文原句、下方中文译文。学生先理解题目本身。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">2</div>
+      <h4>选选项</h4>
+      <p>4 个（或更多）选项，<strong>单选</strong>居多。点击高亮选中，可以反复改主意，提交前都不算数。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">3</div>
+      <h4>卡住可以看提示</h4>
+      <p>点 💡 看到一句话提示 —— <strong>不公布答案，给方法</strong>（"看 ¶1，她的体重怎么变了？"）。</p>
+    </div>
+    <div class="flow-card">
+      <div class="flow-card-n">4</div>
+      <h4>提交后看反馈</h4>
+      <p>答对 → 详解 + 进下一题。答错 → AI 针对学生选的<strong>错误选项</strong>解释为什么错，可以重选。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">摘自《Ideal Beauty》Task 1</span>
+  </div>
+
+  <div class="qcard">
+    <div class="qcard-meta">¶1-2 · 阅读理解 · 单选</div>
+    <h4>题干</h4>
+    <p class="qcard-q">What did Happiness Edem do to become "beautiful"?<span class="zh">Happiness Edem 为了变"美"做了什么？</span></p>
+    <div class="qopt"><div class="qopt-mk">A</div>Went on a diet to become slim</div>
+    <div class="qopt on"><div class="qopt-mk">B</div><span><strong>Gained weight in a fattening room</strong> &nbsp; ✓ 正确答案</span></div>
+    <div class="qopt"><div class="qopt-mk">C</div>Got cosmetic surgery</div>
+    <div class="qopt"><div class="qopt-mk">D</div>Started a fashion brand</div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--amber);margin-bottom:6px">💡 提示（学生主动点开才看到）</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.55;font-style:italic">Look at ¶1: what happened to her <strong>weight</strong>? Did it go up or down?<br><span style="color:var(--t3)">看 ¶1，她的<strong>体重</strong>发生了什么变化？增加还是减少？</span></div>
+    </div>
+  </div>
+
+  <div class="ai-feedback-row">
+    <div class="ai-feedback">
+      <span class="ai-feedback-tag right">学生答对时</span>
+      <div class="ai-feedback-q">详解被解锁，展示完整推理</div>
+      <div class="ai-feedback-msg">"Read the 2nd sentence of ¶1: <em>'She spent six months in a <strong>fattening room</strong> where her daily routine was to sleep, eat and grow fat.'</em> The key phrase is 'fattening room' + 'grow fat' — she deliberately gained weight."</div>
+    </div>
+    <div class="ai-feedback partial">
+      <span class="ai-feedback-tag partial">学生选错时（比如选了 A）</span>
+      <div class="ai-feedback-q">AI 针对错误选项点出迷思</div>
+      <div class="ai-feedback-msg">"You picked 'went on a diet'. But the passage says <em>'her daily routine was to sleep, eat and grow fat'</em> — diet usually means eating less, but here she ate <strong>more</strong>. Read again, focusing on what she <strong>did</strong>, not what you'd expect."</div>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+    <span class="hint">最丰富的题型 · 维度统计</span>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">每题</span>
+      <h4>正确率 + 错误选项分布</h4>
+      <p>每道题独立的<strong>正确率</strong> + 学生选了哪几个错误选项的<strong>人数分布</strong>。比如"7 人选了 C（应为 B）"—— 你立刻知道哪个错误选项最有诱惑力，对应学生有什么迷思。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">告警</span>
+      <h4>系统会主动标"错误偏高"</h4>
+      <p>如果某道题正确率明显低于平均，会在 Step 卡片打上 <strong>"Q3 错误偏高"</strong>红色标签。这个题就是你<strong>下一个该全班讲的</strong>。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">尝试次数</span>
+      <h4>谁是一次答对、谁是改了好几次</h4>
+      <p>每个学生在每题的<strong>尝试轮数</strong>都被记录。一次过 = 真懂；改 3 次才对 = 大概率是猜的。这能区分"假性掌握"。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">提示使用</span>
+      <h4>谁看了 💡 提示</h4>
+      <p>提示使用率高 = 这道题难度可能偏高；某学生频繁看提示 = 需要个别关注。提示是"无声求助信号"。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+    <span class="hint">合适场景 · 不合适场景</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>事实性回忆 / 对课文细节的检查</td><td>"你怎么看？" 类开放讨论 —— 用 <strong>discuss</strong> 或 <strong>stance</strong></td></tr>
+      <tr><td>核心概念辨析（"A 和 B 的区别是什么"）</td><td>需要学生写完整段落 —— 用 <strong>image-upload</strong></td></tr>
+      <tr><td>关键判断点 —— 必须答对才能往下推进</td><td>探索式学习（让学生自己归纳规律）—— 用 <strong>guided-discovery</strong></td></tr>
+      <tr><td>需要<strong>大量练习</strong>的训练课（一次出 5-10 道）</td><td>需要标注课文证据 —— 用 <strong>select-evidence</strong></td></tr>
+      <tr><td>课前 warmup / 课后 quick check</td><td>需要拖拽 / 排序 / 空间布置 —— 用 <strong>order / map / matrix</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+    <span class="hint">最少 4 件事</span>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">选择题门槛低 —— 但<em style="color:var(--teal);font-style:normal;font-weight:600">高质量的</em>选择题门槛不低。下面是把"能用"做到"好用"需要的事情。</p>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">写题干 —— 别让中文版只是翻译</div>
+        <div class="checklist-row-d">题干可以中英双语。中文不是机翻 —— <em>它是给学生的扶手</em>。例如英文是 "What did Happiness Edem do…"，中文版给"Happiness Edem 为了变'美'做了什么？" 用"为了变'美'"提示了核心问题方向。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">写 4 个选项 —— 错误选项要有"诱惑力"</div>
+        <div class="checklist-row-d">最常见错误：3 个选项明显错、1 个明显对。这样的题<strong>诊断价值为零</strong>。好的错误选项应该<em>对应学生常见迷思</em> —— 比如把"增重"想成"节食"是 ESL 学生的典型误读。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">写一句提示 —— 给方法，不给答案</div>
+        <div class="checklist-row-d">学生点 💡 看到的那行字。<em>原则</em>：指方向（"看 ¶1"）、问关键（"她的体重变了吗？"）、不要直接说答案。好的提示能让学生"<strong>哦原来去找这个</strong>"。</div>
+      </div>
+    </div>
+
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">（强烈推荐）写详解 walkthrough</div>
+        <div class="checklist-row-d">答对后才展示。<strong>不是答案再说一遍</strong>，而是<em>把推理路径完整展开</em> —— 引用课文原句、指出关键短语、解释为什么是 B 而不是 A。这是学生"对了但不知道为啥对"时的救命稻草。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>选择题不是测验，<br>是<em>诊断工具</em>。</h2>
+    <p>
+      把每道选择题当成<strong>一次诊断</strong> —— 题干检验"理解题目本身的能力"、错误选项检验"常见迷思"、详解是"对了的人也能学到东西"、提示是"困难学生的扶手"。一道好题能让你看到全班的<strong>认知分布</strong> —— 不只是"谁对谁错"，而是"哪些学生卡在哪种错法上"。这才是观察台上选择题的真正用法。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>能出多选题吗？</td><td>支持。在选项配置时允许"多个 correct"，学生需要勾选全部对的才得满分。</td></tr>
+      <tr><td>答错可以重选吗？</td><td>可以。系统记录所有尝试，老师能看到"第几次才对"。</td></tr>
+      <tr><td>选项顺序会随机吗？</td><td>当前版本<strong>顺序固定</strong>（防止学生答案传递）。如需打乱，下一步会加 <code>shuffle</code> 字段。</td></tr>
+      <tr><td>必须 4 个选项吗？</td><td>不必。最少 2 个、上不封顶。但选项太多（>6）学生会浏览疲劳，建议 3-5 个。</td></tr>
+      <tr><td>能加图片吗？</td><td>题干和选项目前是<strong>纯文本</strong>。如果需要图，用 <strong>rich-content-quiz</strong>（带 LaTeX/Markdown）或 <strong>image-upload</strong>（学生上传）。</td></tr>
+      <tr><td>一次最多出几道？</td><td>无技术上限。但<strong>3-5 道一组</strong>是认知最佳的节奏 —— 超过 7 道学生注意力会下降。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">《Ideal Beauty》¶1-2 阅读理解（5 题英语选择题）；几乎每个 lesson 都至少用到一次 quiz。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">需要更复杂的版本？看：<strong>rich-content-quiz</strong>（数学公式 + 图）、<strong>match</strong>（左右配对）、<strong>stance</strong>（带立场 + 证据的选择）。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">最常见错误：(1) 错误选项太弱（一眼能排除）—— 失去诊断价值；(2) 题干信息含糊（学生不是答错而是没读懂）；(3) 提示直接说答案 —— 失去扶手作用。</div></div>
+  </div>
+
+  <footer>quiz · 选择题 · KedgeAgentic Live Lesson</footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>填空题 · Fill Blank · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--teal)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.fb-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px}
+.fb-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--teal);background:var(--teal-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.fb-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.fb-sentence{font-size:15px;line-height:2;color:var(--t1)}
+.fb-blank{display:inline-block;min-width:80px;padding:2px 12px;background:var(--teal-bg);color:var(--teal);border:1px solid rgba(13,82,69,.3);border-radius:4px;font-weight:700;text-align:center;margin:0 4px}
+.fb-blank.empty{background:#fff4d6;color:var(--t3);border-color:#d9ad6b;border-style:dashed;font-style:italic;font-weight:400}
+.accept-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:72px}
+.accept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px}
+.accept-card-tag{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:4px;width:fit-content;background:var(--teal-bg);color:var(--teal);margin-bottom:10px}
+.accept-card h4{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:10px}
+.accept-list{display:flex;flex-wrap:wrap;gap:6px}
+.accept-chip{padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;font-size:12px;color:var(--t2);font-family:Georgia,serif}
+.accept-chip.right{background:var(--green-bg);color:var(--green);border-color:rgba(45,102,18,.3);font-weight:600}
+.accept-card p{font-size:12px;color:var(--t2);line-height:1.6}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--teal-bg);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--teal);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.32) 0, transparent 50%)}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#7ab5a4;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#7ab5a4}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#7ab5a4;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}.accept-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">填空题 · 词汇 / 关键概念 / 公式</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Fill Blank · 填空</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">词汇 / 公式 / 关键词</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">30 秒 – 2 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill teal">填空题型</span>
+      <span class="dot"></span>
+      在句子中挖空 · 学生输入答案
+    </div>
+    <h1>没给选项，<br>学生必须<em>真的会</em>。</h1>
+    <p class="sub">
+      填空题不给候选 —— 学生要<strong>自己想到</strong>答案。比选择题更严格，但比写作题轻量。系统支持<strong>多个可接受答案</strong>（同义词 / 变形 / 大小写不敏感），所以"a fattening room" / "fattening room" / "a Fattening Room" 都能算对。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">完整句子 · 中间挖空 · 输入框</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="38" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">FILL IN THE BLANKS · ¶1-2</text>
+
+        <!-- sentence 1 -->
+        <g transform="translate(36,76)">
+          <text x="0" y="20" font-family="Georgia" font-size="14" fill="#1c1c1a">She spent six months in a</text>
+          <rect x="186" y="2" width="120" height="28" rx="4" fill="#dfece8" stroke="#0d5245" stroke-width="1.5"/>
+          <text x="246" y="20" font-family="Plus Jakarta Sans" font-size="13" font-weight="600" fill="#0d5245" text-anchor="middle">fattening room</text>
+          <text x="316" y="20" font-family="Georgia" font-size="14" fill="#1c1c1a">where</text>
+          <text x="0" y="46" font-family="Georgia" font-size="14" fill="#1c1c1a">her daily routine was to sleep, eat and</text>
+          <rect x="260" y="28" width="80" height="28" rx="4" fill="#fff4d6" stroke="#d9ad6b" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="300" y="46" font-family="Plus Jakarta Sans" font-size="13" fill="#9c9a92" font-style="italic" text-anchor="middle">______</text>
+          <text x="350" y="46" font-family="Georgia" font-size="14" fill="#1c1c1a">fat.</text>
+        </g>
+
+        <!-- sentence 2 -->
+        <g transform="translate(36,180)">
+          <text x="0" y="20" font-family="Georgia" font-size="14" fill="#1c1c1a">The Karo people once kept young women in</text>
+          <rect x="310" y="2" width="100" height="28" rx="4" fill="#fff4d6" stroke="#d9ad6b" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="360" y="20" font-family="Plus Jakarta Sans" font-size="13" fill="#9c9a92" font-style="italic" text-anchor="middle">______</text>
+          <text x="0" y="46" font-family="Georgia" font-size="14" fill="#1c1c1a">where they would be fed continuously to</text>
+          <rect x="282" y="28" width="80" height="28" rx="4" fill="#fff4d6" stroke="#d9ad6b" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <text x="322" y="46" font-family="Plus Jakarta Sans" font-size="13" fill="#9c9a92" font-style="italic" text-anchor="middle">______</text>
+          <text x="372" y="46" font-family="Georgia" font-size="14" fill="#1c1c1a">weight.</text>
+        </g>
+
+        <!-- hint button -->
+        <rect x="36" y="300" width="110" height="30" rx="6" fill="#f6edda" stroke="rgba(122,77,14,.2)"/>
+        <text x="91" y="319" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#7a4d0e" text-anchor="middle">💡 看提示</text>
+
+        <rect x="36" y="380" width="710" height="40" rx="10" fill="#1c1c1a"/>
+        <text x="391" y="406" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#fbfaf7" text-anchor="middle">提交答案 →</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>读完整句子</h4><p>句子中有挖空。学生先<strong>整句通读</strong>，根据上下文猜空里该填什么。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>填入答案</h4><p>每个空都有<strong>独立输入框</strong>。可以反复改，提交前都不算数。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>卡住看提示</h4><p>每个空可以<strong>独立 hint</strong> —— 比如"动词原形" / "首字母 f"，不直接给答案。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>提交查每空对错</h4><p>每个空单独判断 ✓ 或 ✗。错的空可以再填再提交。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>系统怎么判对错 <span class="en">How Grading Works</span></h2></div>
+    <span class="hint">多种合理写法都算对</span>
+  </div>
+
+  <div class="accept-row">
+    <div class="accept-card">
+      <span class="accept-card-tag">挖空 1 · "grow ___ fat"</span>
+      <h4>可接受的答案</h4>
+      <div class="accept-list">
+        <span class="accept-chip right">grow</span>
+        <span class="accept-chip right">to grow</span>
+        <span class="accept-chip right">Grow</span>
+        <span class="accept-chip right">GROW</span>
+      </div>
+      <p style="margin-top:10px">系统<strong>大小写不敏感</strong>，前后空格自动去掉。可以指定多个等价答案 —— 学生写哪个都对。</p>
+    </div>
+    <div class="accept-card">
+      <span class="accept-card-tag">挖空 2 · 类型识别</span>
+      <h4>什么算"差不多对"</h4>
+      <div class="accept-list">
+        <span class="accept-chip right">fattening room</span>
+        <span class="accept-chip right">fattening rooms</span>
+        <span class="accept-chip right">a fattening room</span>
+      </div>
+      <p style="margin-top:10px">出题时可以加上常见的<em style="color:var(--teal);font-style:normal;font-weight:600">复数 / 冠词 / 缩写</em>变体。学生没写"a"也算对，但写错单词依然算错。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">每空</span>
+      <h4>每个空的正确率</h4>
+      <p>哪个空全班错率高 —— 可能是上下文太隐晦 / 学生没读完前文 / 关键词太陌生。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">错答内容</span>
+      <h4>学生写了什么"错答案"</h4>
+      <p>填空题最有诊断价值的地方 —— 选择题只知道对错，填空题能看到<strong>学生具体写了什么</strong>。"gain" 错成 "grew" → 时态问题；"fattening" 错成 "fastening" → 拼写混淆。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">提示使用</span>
+      <h4>谁看了哪几个提示</h4>
+      <p>哪几个空触发了大量提示请求 —— 那就是<strong>难度峰值</strong>。同一学生在多个空看提示 = 词汇基础有缺口。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">尝试次数</span>
+      <h4>一次过 vs 改了几次</h4>
+      <p>填空题改 2-3 次很常见（尤其拼写）。但同一个空改了 5 次还错 = 学生根本不知道答案在哪 —— 需要个别帮助。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td>关键词汇练习（动词 / 名词 / 形容词）</td><td>词义辨析 —— 用 <strong>quiz</strong>（给选项）</td></tr>
+      <tr><td>课文复述（让学生重新填回原句的关键词）</td><td>需要长答案 —— 用 <strong>image-upload</strong> 或 <strong>discuss</strong></td></tr>
+      <tr><td>公式默写（中文：背一句话；数理：背公式）</td><td>有多种合理写法且变化太大 —— 用 <strong>quiz</strong></td></tr>
+      <tr><td>语法练习（时态变形 / 介词 / 冠词）</td><td>开放发挥（"你的看法是什么"）—— 用 <strong>discuss</strong></td></tr>
+      <tr><td>检查"是否真的读了/背了" —— 短小快速</td><td>需要看图理解 —— 用 <strong>rich-content-quiz</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">填空题<em style="color:var(--teal);font-style:normal;font-weight:600">挖什么</em>比挖几个更重要。挖错地方就变成"猜字游戏"。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">选要挖的"关键词"</div>
+        <div class="checklist-row-d">必须是<em>句子里最关键的那个词</em> —— 通常是核心动词 / 关键名词 / 专有概念。不要挖介词、冠词这种"靠语感能猜出来"的词，那是脑筋急转弯。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">列出所有合理的可接受答案</div>
+        <div class="checklist-row-d">想<em>"如果学生写 X，我会算对吗"</em> —— 如果会，那就把 X 加进 accept 列表。常见情况：单复数、大小写、含/不含冠词、口语/书面变体。<strong>越多越宽容，学生体验越好</strong>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每个空给一行 hint</div>
+        <div class="checklist-row-d">不公布答案，给"类型/方向"。例：词性提示（"动词原形"）、首字母提示（"以 f 开头"）、上下文提示（"和 sleep 同时发生的动作"）。让卡住的学生<em>有梯子</em>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">控制每题挖空数：3-6 个最佳</div>
+        <div class="checklist-row-d">单空填空像 quiz；多于 6 个空就像默写课文 —— 认知负担太重。<em>4 空是甜点</em>。如果内容多，拆成多道题，节奏更好。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>没选项，<br>才是<em>真测试</em>。</h2>
+    <p>
+      填空题最大的价值在于：<strong>它去掉了候选答案</strong>。选择题里学生可以靠"看哪个选项最像"答对；填空题学生必须<strong>从自己脑子里调用</strong>那个词。看到学生具体写了什么错答案，比看到错率更有诊断价值 —— "fastening" vs "fattening" 暴露的是拼写联想错误，"gain" vs "grow" 暴露的是动词搭配习惯。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>大小写敏感吗？</td><td><strong>不敏感</strong>（默认）。"Grow" / "grow" / "GROW" 都算对。</td></tr>
+      <tr><td>能识别拼写错误吗？</td><td>不能"原谅"拼写错。如果学生有<strong>常见 typo</strong>（"fattenning"），可以把这个变体也加进 accepts。</td></tr>
+      <tr><td>支持中文填空吗？</td><td>支持。文言文实词、关键概念、术语都可以挖空。中文不会被切分，整字符匹配。</td></tr>
+      <tr><td>能用正则表达式做模糊匹配吗？</td><td>当前是<strong>精确字符串匹配</strong>（trim + lowercase）。正则在路线图上。需要复杂判断的用 <strong>image-upload</strong>（AI 评分）。</td></tr>
+      <tr><td>每个空的提示是必填吗？</td><td>不是。但<strong>强烈推荐</strong>，因为没提示的填空对差生很不友好。</td></tr>
+      <tr><td>一道题挖空太多怎么办？</td><td>拆成两道题。比"一道挖 10 空"体验好得多 —— 学生能<em>分批获得成就感</em>。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">语法练习、关键词复述、英文单词拼写、数学公式默写 —— <strong>最广用</strong>的题型之一。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">需要给候选？用 <strong>quiz</strong>。需要写完整句子？用 <strong>image-upload</strong>。需要拍纸质作业？用 <strong>image-upload</strong>。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 挖错地方（挖介词不挖核心动词）；(2) 没准备答案变体（只接受 "grow"，"grew" 误判错）；(3) 一题挖太多空导致疲劳。</div></div>
+  </div>
+
+  <footer>fill-blank · 填空题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>

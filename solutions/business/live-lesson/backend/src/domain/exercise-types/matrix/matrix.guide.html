@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>矩阵题 · Matrix · 教师指南</title>
+<link rel="stylesheet" href="../../../../../../docs/bundle-readme.css">
+<style>
+.hero h1 em{color:var(--purple)}
+.preview-strip{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;margin-bottom:72px}
+.preview-svg-wrap{width:100%;aspect-ratio:16/9;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:18px}
+.preview-svg-wrap svg{width:100%;height:100%;display:block}
+.flow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:72px}
+.flow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.flow-card-n{width:24px;height:24px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.flow-card h4{font-size:13px;font-weight:700;color:var(--t1)}
+.flow-card p{font-size:12px;color:var(--t2);line-height:1.55}
+.flow-card p strong{color:var(--t1);font-weight:600}
+.matrix-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:24px;overflow-x:auto}
+.matrix-meta{display:inline-flex;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);background:var(--purple-bg);padding:3px 9px;border-radius:4px;margin-bottom:14px}
+.matrix-card h4{font-size:14px;font-weight:700;margin-bottom:14px}
+.matrix-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:560px}
+.matrix-table th{padding:10px 12px;background:var(--bg);border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--t1);text-align:left}
+.matrix-table th.demo-th{background:var(--purple-bg);color:var(--purple)}
+.matrix-table td{padding:11px 12px;border:1px solid var(--border);color:var(--t2);line-height:1.5;vertical-align:top}
+.matrix-table td.demo{background:#f7f5ef;color:var(--t1);font-style:italic}
+.matrix-table td.demo::before{content:'示例 · ';font-size:9px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:.4px;font-style:normal;margin-right:6px}
+.matrix-table td.empty{background:#fff;color:var(--t3);font-style:italic;font-size:11.5px}
+.matrix-table td.filled{background:var(--green-bg);color:var(--t1);font-weight:500}
+.checklist{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:72px}
+.checklist h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.checklist .sub-d{font-size:12.5px;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.checklist-row{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--border)}
+.checklist-row:last-child{border-bottom:none}
+.checklist-row-mk{width:28px;height:28px;border-radius:6px;background:var(--purple-bg);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.checklist-row-b{display:flex;flex-direction:column;gap:4px}
+.checklist-row-t{font-size:13px;font-weight:700;color:var(--t1)}
+.checklist-row-d{font-size:12.5px;color:var(--t2);line-height:1.6}
+.checklist-row-d em{color:var(--purple);font-style:normal;font-weight:600}
+.sig{background:#1c1c1a;color:#e8e6df;border-radius:14px;padding:36px 40px;margin-bottom:64px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;right:0;width:280px;height:100%;background:radial-gradient(circle at 70% 40%, rgba(58,49,133,.32) 0, transparent 50%)}
+.sig-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#a299e3;margin-bottom:16px}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#a299e3}
+.sig h2{font-family:"Fraunces",Georgia,serif;font-size:32px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin-bottom:14px;position:relative}
+.sig h2 em{color:#a299e3;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:680px;position:relative}
+.sig p strong{color:#e8e6df;font-weight:600}
+@media (max-width:900px){.flow-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">K</div>
+      <div class="brand-tx">
+        <div class="brand-a">KedgeAgentic · 题型指南</div>
+        <div class="brand-b">矩阵题 · 横纵交叉 · 信息梳理</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">题型</span><span class="meta-v">Matrix · 矩阵</span></div>
+      <div class="meta-pair"><span class="meta-lb">适用</span><span class="meta-v">对比 / 信息整理 / 表格阅读</span></div>
+      <div class="meta-pair"><span class="meta-lb">单题用时</span><span class="meta-v">4 – 8 分钟</span></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill purple">矩阵题型</span>
+      <span class="dot"></span>
+      横轴 + 纵轴 · 学生填每个格子
+    </div>
+    <h1>把课文里散落的信息<br><em>逼成一张表</em>。</h1>
+    <p class="sub">
+      课文里散布着"古埃及 / 1600 年欧洲 / 婆罗洲" 各自的美的标准 —— 矩阵题让学生<strong>把这些信息搜集起来填进表格</strong>。一行一个主体，一列一个属性。填表格的过程，就是<strong>建立结构化理解</strong>的过程。
+    </p>
+    <div class="cta-row"><a class="cta pri" href="../../../../../design/index.html">← 返回 design 首页</a></div>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">01 —</span><h2>学生看到什么 <span class="en">The Student Experience</span></h2></div>
+    <span class="hint">一张半空表 · 示例行已填 · 自己填其他</span>
+  </div>
+
+  <div class="preview-strip">
+    <div class="preview-svg-wrap">
+      <svg viewBox="0 0 800 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="36" y="38" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#9c9a92" letter-spacing=".4">READ ¶3-7 AND FILL THE MATRIX</text>
+
+        <!-- table headers -->
+        <g transform="translate(36,60)">
+          <rect x="0" y="0" width="180" height="34" rx="4" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="12" y="22" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a">Place / 地点</text>
+
+          <rect x="180" y="0" width="240" height="34" rx="4" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="192" y="22" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a">Beauty practice / 美的做法</text>
+
+          <rect x="420" y="0" width="304" height="34" rx="4" fill="#edece7" stroke="#e4e2d8"/>
+          <text x="432" y="22" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#1c1c1a">Why / 为什么</text>
+
+          <!-- demo row -->
+          <rect x="0" y="34" width="180" height="50" fill="#e9e7f3" stroke="#e4e2d8"/>
+          <text x="12" y="54" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#3a3185">示例</text>
+          <text x="12" y="70" font-family="Plus Jakarta Sans" font-size="11" fill="#1c1c1a">Ancient Egypt</text>
+
+          <rect x="180" y="34" width="240" height="50" fill="#e9e7f3" stroke="#e4e2d8"/>
+          <text x="192" y="58" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#3a3185">slim dark-haired women in</text>
+          <text x="192" y="72" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#3a3185">paintings</text>
+
+          <rect x="420" y="34" width="304" height="50" fill="#e9e7f3" stroke="#e4e2d8"/>
+          <text x="432" y="58" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#3a3185">beauty ideal / normal</text>
+          <text x="432" y="72" font-family="Plus Jakarta Sans" font-size="11" font-style="italic" fill="#3a3185">practice</text>
+
+          <!-- row 2: 1600s Europe -->
+          <rect x="0" y="84" width="180" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="12" y="112" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#1c1c1a">1600s Europe</text>
+
+          <rect x="180" y="84" width="240" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="192" y="106" font-family="Plus Jakarta Sans" font-size="11" fill="#9c9a92" font-style="italic">What body type?</text>
+          <rect x="192" y="112" width="216" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+
+          <rect x="420" y="84" width="304" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="432" y="106" font-family="Plus Jakarta Sans" font-size="11" fill="#9c9a92" font-style="italic">Why was pale skin fashionable?</text>
+          <rect x="432" y="112" width="280" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+
+          <!-- row 3: Borneo -->
+          <rect x="0" y="134" width="180" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="12" y="162" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#1c1c1a">Borneo</text>
+
+          <rect x="180" y="134" width="240" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="192" y="162" width="216" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+
+          <rect x="420" y="134" width="304" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="432" y="162" width="280" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+
+          <!-- row 4 -->
+          <rect x="0" y="184" width="180" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="12" y="212" font-family="Plus Jakarta Sans" font-size="11" font-weight="600" fill="#1c1c1a">Myanmar</text>
+          <rect x="180" y="184" width="240" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="192" y="212" width="216" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+          <rect x="420" y="184" width="304" height="50" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="432" y="212" width="280" height="20" rx="3" fill="#fff4d6" stroke="#d9ad6b" stroke-dasharray="3,3"/>
+        </g>
+
+        <rect x="36" y="380" width="688" height="40" rx="10" fill="#1c1c1a"/>
+        <text x="380" y="406" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#fbfaf7" text-anchor="middle">提交表格 →</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="flow-grid">
+    <div class="flow-card"><div class="flow-card-n">1</div><h4>看示例行</h4><p>第一行系统<strong>已经填好</strong>，是示例。学生看清楚"这一列要填什么粒度"。</p></div>
+    <div class="flow-card"><div class="flow-card-n">2</div><h4>对照课文填</h4><p>每一行都有<strong>段落引用</strong>（"¶4"）—— 学生去对应段落找答案。每个空有<em>引导问题</em>（"What body type?"）。</p></div>
+    <div class="flow-card"><div class="flow-card-n">3</div><h4>每空可以单独看提示</h4><p>卡住的空点 💡 看一句话提示 —— 通常指向<strong>课文里的关键短语</strong>。</p></div>
+    <div class="flow-card"><div class="flow-card-n">4</div><h4>提交看每格对错</h4><p>每个空独立评分。错的格可以<strong>单独重填</strong>，不用整张表重填。</p></div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">02 —</span><h2>看一道真实的题 <span class="en">A Real Question</span></h2></div>
+    <span class="hint">摘自《Ideal Beauty》Task 3 · 美的"做法 + 原因"对照</span>
+  </div>
+
+  <div class="matrix-card">
+    <div class="matrix-meta">3 行 × 2 列 · 第一行示例</div>
+    <h4>Read ¶3-7 and fill the matrix</h4>
+    <table class="matrix-table">
+      <thead>
+        <tr><th>Place / 地点</th><th>Beauty practice / 做法</th><th>Why / 为什么</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="demo-th">Ancient Egypt</th>
+          <td class="demo">slim dark-haired women in paintings</td>
+          <td class="demo">beauty ideal / normal practice</td>
+        </tr>
+        <tr>
+          <th>1600s Europe</th>
+          <td class="empty">填：体型？</td>
+          <td class="empty">填：为什么白皮肤时髦？</td>
+        </tr>
+        <tr>
+          <th>Borneo</th>
+          <td class="empty">填：什么做法？</td>
+          <td class="empty">填：为什么？</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:12px 14px;background:var(--amber-bg);border-radius:6px;font-size:12.5px;color:var(--amber);line-height:1.55">
+      <strong>提示（¶4）：</strong>What body type was <em>"the most stunning"</em> beauty? Why was <strong>pale skin</strong> fashionable?
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">03 —</span><h2>教师能观察到什么 <span class="en">From the Observation Panel</span></h2></div>
+  </div>
+
+  <div class="sub-cards">
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">每格</span>
+      <h4>哪一列 / 哪一行最难</h4>
+      <p>每个格子的正确率。如果整个"Why" 列全班错率高 —— 说明学生<strong>没读到原因部分</strong>。如果某行（如 "Borneo"）全班错 —— 段落隐晦或者关键词陌生。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">学生填的内容</span>
+      <h4>真实回答的文本</h4>
+      <p>填空题的所有优势 + 矩阵的结构。能看到学生<strong>具体写了什么</strong> —— "tattoos" vs "tatoos"（拼写）、"plump and pale" vs "fat"（精确度）。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">完成进度</span>
+      <h4>谁填了几格</h4>
+      <p>同时显示每个学生<strong>填了多少 / 提交了多少</strong>。卡在第二行不动 = 在那段课文里迷失了。</p>
+    </div>
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--green-bg);color:var(--green)">提示模式</span>
+      <h4>哪些格被频繁求助</h4>
+      <p>触发提示最多的格子 = 设计上最难那一格。可以预判明年这道题需要加更多 scaffolding。</p>
+    </div>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">04 —</span><h2>什么时候用 <span class="en">When to Reach for This</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>✓ 适合</th><th>✗ 不适合 / 用别的</th></tr>
+      <tr><td><strong>横向对比</strong>多个对象（多个国家 / 多个朝代 / 多个化学元素）</td><td>只对比 2 个 —— 用 <strong>quiz</strong> 或文字回答</td></tr>
+      <tr><td>课文信息<strong>散布在多个段落</strong>，需要重新组织</td><td>信息集中在一段 —— 直接用 <strong>quiz</strong> 提问</td></tr>
+      <tr><td>培养"<strong>把段落变成表格</strong>"的阅读能力</td><td>需要主观判断 / 推理 —— 用 <strong>matrix</strong> 限制了思路</td></tr>
+      <tr><td>需要展示<strong>多维度对比</strong>（每行多列属性）</td><td>只有一个属性 —— 用 <strong>match</strong></td></tr>
+      <tr><td>历史 / 地理 / 生物分类 / 化学性质对比</td><td>步骤型操作 —— 用 <strong>order</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">05 —</span><h2>出一道题需要准备什么 <span class="en">Authoring Checklist</span></h2></div>
+  </div>
+
+  <div class="checklist">
+    <h3>出题清单</h3>
+    <p class="sub-d">矩阵题最怕<em style="color:var(--purple);font-style:normal;font-weight:600">设计混乱</em>。表格列不明确，学生不知道每个格要填什么粒度。</p>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">1</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">确定行 / 列的轴</div>
+        <div class="checklist-row-d">行 = 对象（朝代 / 地点 / 物种 / 人物）。列 = 属性（特征 / 原因 / 时间 / 影响）。<em>2-4 行、2-3 列</em>是甜点 —— 大于 4 行学生会累。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">2</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">第一行设为"示例"</div>
+        <div class="checklist-row-d"><strong>必须有示例</strong>。这一行系统会自动填，学生看清楚"每个格要填什么粒度、多详细"。这是<em>降低门槛</em>的关键。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">3</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每个空写"引导问题"</div>
+        <div class="checklist-row-d">比如 "What body type?" / "Why was pale skin fashionable?" —— <em>不要只放空格</em>，把"我想让你回答什么"明确写出来。这能减少 50% 的卡顿。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">4</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">每行标段落引用</div>
+        <div class="checklist-row-d">行级别加 <code>paraRef: [4]</code> 这样的字段，告诉学生"这一行的答案在 ¶4 找"。<strong>不公布答案，但告诉去哪找</strong>。</div>
+      </div>
+    </div>
+    <div class="checklist-row">
+      <div class="checklist-row-mk">5</div>
+      <div class="checklist-row-b">
+        <div class="checklist-row-t">写每个空可接受答案变体</div>
+        <div class="checklist-row-d">和 fill-blank 一样：列出所有合理写法（"plump" / "fat" / "plump and pale"）。<strong>不要让正确的学生因为措辞差异被判错</strong>。</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sig">
+    <div class="sig-eyebrow"><span class="dot"></span>核心教学原则</div>
+    <h2>把课文<br><em>读成一张表</em>。</h2>
+    <p>
+      矩阵题不是问 "你记得什么"，而是问 "你能不能把这些信息整理出结构"。<strong>结构化思维</strong>是阅读理解的高阶能力 —— 学生需要在头脑里同时持有多个对象、对每个对象的多个属性、并且能横纵对比。这是议论文 / 说明文 / 历史文献阅读训练里最有效的题型之一。
+    </p>
+  </section>
+
+  <div class="sec-h">
+    <div class="sec-h-l"><span class="num">06 —</span><h2>常见疑问 <span class="en">FAQ</span></h2></div>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>必须有示例行吗？</td><td>不强制，但<strong>强烈推荐</strong>。没有示例行学生不知道粒度，正确率会差 30% 以上。</td></tr>
+      <tr><td>能"练习全部行"还是只练几行？</td><td>支持 <code>practiceCount</code> —— 比如 4 行的矩阵随机选 2 行让学生填（示例除外）。降低单题用时。</td></tr>
+      <tr><td>能加图片单元格吗？</td><td>当前每个格是<strong>纯文本输入</strong>。如果需要图，等扩展版本。</td></tr>
+      <tr><td>答错可以单格重填吗？</td><td>可以。每格独立判定，错的可以单独改后再次提交。</td></tr>
+      <tr><td>能横向加合并单元格吗？</td><td>不支持。矩阵题就是<strong>严格的二维网格</strong> —— 如果有跨格需求，那是 image-upload 拍纸质表的场景。</td></tr>
+      <tr><td>列太多怎么办？</td><td>3 列以上学生屏幕会很挤。建议拆成两道题。或者<strong>转置</strong>（把列变成行）。</td></tr>
+    </table>
+  </div>
+
+  <div class="notes">
+    <div><div class="note-h">已落地课程 · In Use</div><div class="note-b">《Ideal Beauty》Task 3 用 4 行矩阵让学生整理"古埃及 / 1600 欧洲 / 婆罗洲 / 新西兰" 各自的美的做法和原因 —— <strong>多文化对比</strong>场景的典型。</div></div>
+    <div><div class="note-h">同类题型 · Related</div><div class="note-b">只对比 2 个对象？用 <strong>quiz</strong>。需要排顺序？用 <strong>order</strong>。需要解释表格背后的逻辑？用 <strong>discuss</strong>。</div></div>
+    <div><div class="note-h">出题陷阱 · Pitfalls</div><div class="note-b">(1) 没示例行 → 学生不知道粒度；(2) 列的属性不平行 → 学生不知道该填什么；(3) 表格太大 → 单题耗时超 10 分钟。</div></div>
+  </div>
+
+  <footer>matrix · 矩阵题 · KedgeAgentic Live Lesson</footer>
+</div>
+</body>
+</html>
