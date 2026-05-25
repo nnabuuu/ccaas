@@ -29,7 +29,7 @@ import { RestProjectArtifactSource } from './rest-project-artifact-source';
 import {
   TENANT_CONFIG_CHANGED,
   type TenantConfigChangedEvent,
-} from './tenant-config-events';
+} from '../../tenants/tenant-config-events';
 
 @Injectable()
 export class ProjectArtifactSourceRegistry implements OnModuleInit {
@@ -77,11 +77,9 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
       this.cache.set(slug, null);
       return null;
     }
-    try {
-      new URL(url);
-    } catch {
+    if (!isSafeArtifactUrl(url)) {
       this.logger.error(
-        `tenant ${slug}: invalid artifactUrl "${url}", treating as unset`,
+        `tenant ${slug}: artifactUrl "${url}" is not a valid http(s) URL, treating as unset`,
       );
       this.cache.set(slug, null);
       return null;
@@ -104,5 +102,21 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
     if (this.cache.delete(event.slug)) {
       this.logger.log(`cache evicted for slug=${event.slug} (config changed)`);
     }
+  }
+}
+
+/**
+ * Defense in depth — reject artifactUrl values that aren't http(s).
+ * Bare `new URL(...)` accepts `file://`, `javascript:`, `gopher://`,
+ * etc.; `fetch()` will happily walk into `file://` on some runtimes,
+ * which would let a misconfigured/compromised `tenant.config.artifactUrl`
+ * read local files from the ccaas process.
+ */
+function isSafeArtifactUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
   }
 }

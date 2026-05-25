@@ -26,6 +26,7 @@ import type {
   McpServerDefinition,
   SessionTemplateConfig,
 } from './dto/solution-config.dto';
+import { validateSolutionConfig } from './dto/solution-config.dto';
 
 // ============================================================================
 // Types
@@ -125,7 +126,24 @@ export class SolutionLoaderService implements OnModuleInit {
       if (!fs.existsSync(file)) continue;
       try {
         const raw = fs.readFileSync(file, 'utf8');
-        const config = JSON.parse(raw) as ImportSolutionConfig;
+        const parsed = JSON.parse(raw) as unknown;
+        // Run Zod validation BEFORE handing to importFromConfig so a
+        // malformed solution.json fails fast with a field-level error
+        // rather than deep inside ensureTenant / TypeORM.
+        const validated = validateSolutionConfig(parsed);
+        if (!validated.success) {
+          const issues = validated.errors.issues
+            .map((i) => `${i.path.join('.')}: ${i.message}`)
+            .join('; ');
+          this.logger.error(
+            `auto-import failed for ${file}: schema v${validated.version} validation: ${issues}`,
+          );
+          continue;
+        }
+        // v3 / v2 / v1 all have a compatible subset for importFromConfig
+        // (tenant + mode + mcpServers + sessionTemplates + artifactUrl).
+        // Cast through unknown — we've validated the shape via Zod.
+        const config = validated.data as unknown as ImportSolutionConfig;
         await this.importFromConfig(config);
         imported++;
         this.logger.log(
@@ -214,19 +232,18 @@ export class SolutionLoaderService implements OnModuleInit {
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
-    // Step 6: Persist artifactUrl (agent-runtime sync layer) if declared.
-    // The partial-merge semantics on tenants.update mean other config
-    // keys are preserved; re-import is idempotent.
+    // Step 6: Stamp solutionAppliedAt + persist artifactUrl in a single
+    // update. The partial-merge semantics on tenants.update preserve
+    // other config keys (webhookUrl, customSystemPrompt, etc.); re-import
+    // is idempotent. A single update also means only one
+    // `tenant.config.changed` event fires (registry evicts once).
+    const tenantConfigPatch: Record<string, unknown> = {
+      solutionAppliedAt: new Date().toISOString(),
+    };
     if (config.artifactUrl) {
-      await this.tenants.update(tenantId, {
-        config: { artifactUrl: config.artifactUrl },
-      });
+      tenantConfigPatch.artifactUrl = config.artifactUrl;
     }
-
-    // Step 7: Stamp solutionAppliedAt
-    await this.tenants.update(tenantId, {
-      config: { solutionAppliedAt: new Date().toISOString() },
-    });
+    await this.tenants.update(tenantId, { config: tenantConfigPatch });
 
     // Update status
     const mcpRegistered = mcpResults.filter(

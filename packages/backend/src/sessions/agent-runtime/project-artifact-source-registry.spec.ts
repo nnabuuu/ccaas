@@ -11,7 +11,7 @@
  */
 
 import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
-import { TENANT_CONFIG_CHANGED } from './tenant-config-events';
+import { TENANT_CONFIG_CHANGED } from '../../tenants/tenant-config-events';
 import { RestProjectArtifactSource } from './rest-project-artifact-source';
 
 const tenant = (slug: string, artifactUrl?: string) => ({
@@ -59,6 +59,22 @@ describe('ProjectArtifactSourceRegistry', () => {
     tenants.findOne.mockResolvedValueOnce(tenant('broken', 'not a real url'));
     const out = await registry.getForTenantSlug('broken');
     expect(out).toBeNull();
+  });
+
+  it('rejects non-http(s) protocols (file://, javascript:) as unsafe', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('evil', 'file:///etc/passwd'));
+    expect(await registry.getForTenantSlug('evil')).toBeNull();
+
+    tenants.findOne.mockResolvedValueOnce(tenant('xss', 'javascript:alert(1)'));
+    expect(await registry.getForTenantSlug('xss')).toBeNull();
+  });
+
+  it('accepts both http:// and https:// URLs', async () => {
+    tenants.findOne.mockResolvedValueOnce(tenant('plain', 'http://localhost:3007/api'));
+    expect(await registry.getForTenantSlug('plain')).toBeInstanceOf(RestProjectArtifactSource);
+
+    tenants.findOne.mockResolvedValueOnce(tenant('secure', 'https://api.example.com/v1'));
+    expect(await registry.getForTenantSlug('secure')).toBeInstanceOf(RestProjectArtifactSource);
   });
 
   it('null/undefined slug → returns null without DB call', async () => {

@@ -43,6 +43,6 @@ export class ImportSolutionDto {
    * Mutable at runtime via `PUT /tenants/:id`.
    */
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })
   artifactUrl?: string;
 }

@@ -21,7 +21,7 @@ import * as crypto from 'crypto';
 import {
   TENANT_CONFIG_CHANGED,
   type TenantConfigChangedEvent,
-} from '../sessions/agent-runtime/tenant-config-events';
+} from './tenant-config-events';
 import {
   Tenant,
   TenantPlan,
@@ -99,6 +99,17 @@ export class TenantsService implements OnModuleInit {
 
     const saved = await this.tenantRepository.save(tenant);
     this.logger.log(`Created tenant ${saved.name} (${saved.slug})`);
+
+    // Emit tenant.config.changed so the agent-runtime registry evicts
+    // any negative-cached entry for this slug (e.g., a previous
+    // `getForTenantSlug(slug)` returned null and cached null). Without
+    // this, a brand-new tenant's first sync would stay null-cached
+    // until backend restart.
+    const event: TenantConfigChangedEvent = {
+      tenantId: saved.id,
+      slug: saved.slug,
+    };
+    this.eventEmitter.emit(TENANT_CONFIG_CHANGED, event);
 
     // Auto-create monthly quota based on plan
     await this.quotaService.createDefaultQuota(saved.id, saved.plan).catch((err) =>

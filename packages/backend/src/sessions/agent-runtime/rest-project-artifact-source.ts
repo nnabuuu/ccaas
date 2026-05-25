@@ -18,10 +18,10 @@
  * Solutions don't have to know about ccaas-internal types; the
  * `ArtifactSnapshot` shape is intentionally a plain JSON object.
  *
- * Configuration: set `SOLUTION_ARTIFACT_URL` env var to the base URL
- * (e.g. `http://localhost:3007/api`). `AgentRuntimeModule.forRoot`
- * uses this adapter automatically when the env var is set; falls back
- * to no-op when unset.
+ * Configuration: set `tenant.config.artifactUrl` (via `solution.json`
+ * auto-discovery or `PUT /tenants/:id`). The `ProjectArtifactSourceRegistry`
+ * lazily constructs a `RestProjectArtifactSource(url)` per tenant on
+ * first use and caches it, invalidating on `tenant.config.changed` events.
  *
  * Failure behavior: network errors throw; the syncer logs + swallows
  * so a flaky solution never corrupts a session's snapshot. Solutions

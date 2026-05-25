@@ -72,8 +72,10 @@ import { BundleModule } from '../bundles/bundle.module';
     MessagesModule,
     FilesModule,
     BundleModule,
-    // Agent-runtime sync layer: solutions override the artifact source via
-    // SOLUTION_ARTIFACT_URL{,S} env vars; default is a no-op source.
+    // Agent-runtime sync layer: source URL lives on `tenant.config.artifactUrl`
+    // (set via solution.json auto-discovery or `PUT /tenants/:id`).
+    // `ProjectArtifactSourceRegistry` (provided below) reads it lazily +
+    // invalidates on `tenant.config.changed` events.
     AgentRuntimeModule.forRoot(),
   ],
   controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController, ProjectChangesController],

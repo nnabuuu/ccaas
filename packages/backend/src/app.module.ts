@@ -133,9 +133,9 @@ import { BuilderModule } from './builder/builder.module';
     StorageModule,
 
     // Note: AgentRuntimeModule.forRoot() is imported by SessionsModule
-    // (transitively reaches AppModule via SessionsModule below). Solutions
-    // override the artifact source through env vars (SOLUTION_ARTIFACT_URL{,S}),
-    // not by recalling forRoot here.
+    // (transitively reaches AppModule via SessionsModule below). The
+    // artifact callback URL lives on `tenant.config.artifactUrl`, set via
+    // solution.json auto-discovery or `PUT /tenants/:id` — no env vars.
 
     // Feature modules
     SessionsModule, // Unified session management (WebSocket + REST)
