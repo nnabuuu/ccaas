@@ -58,6 +58,13 @@ export class DemoController {
     // pull sessionId out of req params (no @Param() to keep the
     // controller signature minimal + map cleanly through res)
     const sessionId = (res.req.params as { sessionId: string }).sessionId;
+    // Defense in depth: ccaas's own routing would reject odd values
+    // (TenantGuard + SessionFsService), but constrain at the proxy
+    // boundary too so a malicious value can't even reach the upstream URL.
+    if (!/^[\w-]{1,128}$/.test(sessionId ?? '')) {
+      res.status(400).json({ error: 'invalid sessionId (must match ^[\\w-]{1,128}$)' });
+      return;
+    }
     const ccaasUrl = process.env.CCAAS_URL ?? 'http://localhost:3001';
     const apiKey = process.env.CCAAS_API_KEY;
     if (!apiKey) {

@@ -85,17 +85,14 @@ export class SessionMetadataService {
       );
     }
 
-    // Enforce per-session total cap. Subtract the existing row's contribution
-    // (if any) before adding the new one — otherwise an UPDATE to the same
-    // key with a smaller payload could be wrongly rejected.
-    const existing = await this.repo.findOne({ where: { sessionId, key } });
-    const existingBytes = existing
-      ? Buffer.byteLength(existing.value, 'utf8')
-      : 0;
-    const otherRows = await this.repo.find({ where: { sessionId } });
+    // Enforce per-session total cap. Sum every OTHER key (excludes the
+    // one we're upserting) so shrinking an existing key isn't wrongly
+    // rejected — see the "shrinking an existing key" spec.
+    const allRows = await this.repo.find({ where: { sessionId } });
     let otherBytes = 0;
-    for (const r of otherRows) {
-      if (r.key === key) continue; // exclude self
+    let existing: SessionMetadata | undefined;
+    for (const r of allRows) {
+      if (r.key === key) { existing = r; continue; }
       otherBytes += Buffer.byteLength(r.value, 'utf8');
     }
     if (otherBytes + byteLen > MAX_SESSION_TOTAL_BYTES) {
@@ -104,7 +101,6 @@ export class SessionMetadataService {
         `(other keys: ${otherBytes}B + this key: ${byteLen}B)`,
       );
     }
-    void existingBytes; // referenced to be intentional; not used in cap math
 
     if (existing) {
       existing.value = serialized;
@@ -140,6 +136,14 @@ export class SessionMetadataService {
     }
   }
 
+  /**
+   * Tenant ownership — same defensive-not-load-bearing semantics as
+   * `SessionFsService.requireOwnedSession`. Admin scope (current
+   * stage-1 control) is cross-tenant by design; the equality check
+   * catches admin-with-wrong-header mistakes. Stage-2 may add a
+   * tenant-bound `sessions:meta` scope where this check becomes the
+   * real security boundary.
+   */
   private requireOwnedSession(sessionId: string, tenantId: string) {
     const session = this.sessions.getSession(sessionId);
     if (!session) {

@@ -19,6 +19,7 @@
  */
 
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -52,6 +53,14 @@ export class SessionFsController {
     return this.svc.diff(id, tenantId);
   }
 
+  /**
+   * `limit` is silently clamped to the [1, 1000] range (negative /
+   * non-numeric values fall through to agentfs's default).
+   * `filter` is restricted to `^[\w./*-]{1,256}$` — defense in depth
+   * against unexpected CLI arg values, even though `execFile` doesn't
+   * shell-interpret. `status` must be one of the three enum values
+   * agentfs accepts.
+   */
   @Get('timeline')
   @Auth('admin')
   timeline(
@@ -64,9 +73,16 @@ export class SessionFsController {
     const opts: TimelineOpts = {};
     if (limit) {
       const n = Number(limit);
-      if (Number.isFinite(n) && n > 0) opts.limit = Math.min(n, 1000);
+      if (Number.isFinite(n) && n > 0) opts.limit = Math.min(Math.floor(n), 1000);
     }
-    if (filter) opts.filter = filter;
+    if (filter) {
+      if (!/^[\w./*-]{1,256}$/.test(filter)) {
+        throw new BadRequestException(
+          'filter must match ^[\\w./*-]{1,256}$',
+        );
+      }
+      opts.filter = filter;
+    }
     if (status === 'pending' || status === 'success' || status === 'error') {
       opts.status = status;
     }

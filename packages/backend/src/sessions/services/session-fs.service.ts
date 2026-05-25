@@ -18,6 +18,7 @@
 
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -70,12 +71,9 @@ export class SessionFsService {
     tenantId: string,
     label: string,
   ): Promise<SnapshotResult> {
-    if (!label || !/^[\w.-]{1,64}$/.test(label)) {
-      throw new BadRequestException(
-        'label must match ^[\\w.-]{1,64}$ (alphanumeric, underscore, dot, dash; ≤64 chars)',
-      );
-    }
+    this.requireValidLabel(label);
     const session = this.requireOwnedSession(sessionId, tenantId);
+    this.requireSessionIdle(session, 'snapshot');
     if (!session.workspaceHandle?.snapshot) {
       throw this.unsupported('snapshot');
     }
@@ -88,12 +86,9 @@ export class SessionFsService {
     tenantId: string,
     label: string,
   ): Promise<void> {
-    if (!label || !/^[\w.-]{1,64}$/.test(label)) {
-      throw new BadRequestException(
-        'label must match ^[\\w.-]{1,64}$ (alphanumeric, underscore, dot, dash; ≤64 chars)',
-      );
-    }
+    this.requireValidLabel(label);
     const session = this.requireOwnedSession(sessionId, tenantId);
+    this.requireSessionIdle(session, 'rollback');
     if (!session.workspaceHandle?.rollback) {
       throw this.unsupported('rollback');
     }
@@ -102,6 +97,27 @@ export class SessionFsService {
 
   // ─── internals ─────────────────────────────────────────────────────────
 
+  private requireValidLabel(label: string): void {
+    if (!label || !/^[\w.-]{1,64}$/.test(label)) {
+      throw new BadRequestException(
+        'label must match ^[\\w.-]{1,64}$ (alphanumeric, underscore, dot, dash; ≤64 chars)',
+      );
+    }
+  }
+
+  /**
+   * Tenant ownership check.
+   *
+   * **Auth model for stage-1**: these endpoints are gated `Auth('admin')`
+   * at the controller layer, which means TenantGuard reads `x-tenant-id`
+   * from the request header (admin keys can cross-tenant freely). The
+   * equality check below is therefore *defensive*: an admin caller who
+   * sends the wrong tenant header gets 403 instead of accidentally
+   * reading another tenant's session. It is NOT load-bearing as a
+   * security boundary in stage-1 (admin scope is intentionally
+   * unrestricted). Stage-2 may add a `sessions:fs` granular scope for
+   * tenant-bound keys, at which point this check becomes load-bearing.
+   */
   private requireOwnedSession(sessionId: string, tenantId: string) {
     const session = this.sessions.getSession(sessionId);
     if (!session) {
@@ -109,15 +125,32 @@ export class SessionFsService {
         `session not found or not active: ${sessionId} (sessions purged from memory after close)`,
       );
     }
-    // Tenant ownership: admins can cross-tenant via header (TenantGuard
-    // already swaps tenantId on the request for admin keys), so a
-    // direct equality check is sufficient here.
     if (session.tenantId && session.tenantId !== tenantId) {
       throw new ForbiddenException(
         `session ${sessionId} belongs to a different tenant`,
       );
     }
     return session;
+  }
+
+  /**
+   * Snapshot + rollback cycle the underlying mount daemon (stop + cp +
+   * restart). Doing this mid-turn yanks open file handles out from
+   * under the agent process — claude sees EIO and the turn breaks.
+   * Refuse with 409 unless the session is idle.
+   */
+  private requireSessionIdle(
+    session: { status?: string; sessionId: string },
+    op: string,
+  ): void {
+    const busy = session.status && session.status !== 'idle' && session.status !== 'error';
+    if (busy) {
+      throw new ConflictException(
+        `cannot ${op} while session ${session.sessionId} is ${session.status} ` +
+        `(snapshot/rollback cycle the agentfs mount; mid-turn agent file handles would EIO). ` +
+        `Cancel the turn first, or wait for status=idle.`,
+      );
+    }
   }
 
   private unsupported(op: string): BadRequestException {

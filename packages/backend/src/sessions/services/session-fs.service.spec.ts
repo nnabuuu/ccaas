@@ -16,6 +16,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { ConflictException } from '@nestjs/common';
+
 import { SessionFsService } from './session-fs.service';
 import { SessionService } from '../session.service';
 import { WORKSPACE_PROVIDER } from '../workspace/types';
@@ -26,6 +28,7 @@ function fakeSession(overrides: Partial<any> = {}) {
   return {
     sessionId: 's-1',
     tenantId: TENANT,
+    status: 'idle',
     workspaceHandle: {
       path: '/tmp/x',
       snapshot: jest.fn().mockResolvedValue('/tmp/snap/x.db'),
@@ -117,6 +120,12 @@ describe('SessionFsService', () => {
       const svc = await build(session);
       await expect(svc.snapshot('s-1', TENANT, 'lbl')).rejects.toBeInstanceOf(BadRequestException);
     });
+
+    it('409 when session is processing (mid-turn) — would EIO the agent', async () => {
+      const session = fakeSession({ status: 'processing' });
+      const svc = await build(session);
+      await expect(svc.snapshot('s-1', TENANT, 'lbl')).rejects.toBeInstanceOf(ConflictException);
+    });
   });
 
   describe('rollback', () => {
@@ -130,6 +139,12 @@ describe('SessionFsService', () => {
     it('400 on invalid label', async () => {
       const svc = await build(fakeSession());
       await expect(svc.rollback('s-1', TENANT, '')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('409 when session is processing', async () => {
+      const session = fakeSession({ status: 'processing' });
+      const svc = await build(session);
+      await expect(svc.rollback('s-1', TENANT, 'lbl')).rejects.toBeInstanceOf(ConflictException);
     });
   });
 

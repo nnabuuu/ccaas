@@ -159,6 +159,19 @@ function ExerciseSurface({
 
   const Component = plugin.Component
 
+  // selfManagedSubmit plugins (select-evidence / rich-content-quiz /
+  // guided-discovery) call props.submit(stepIdx, data) directly instead
+  // of going through the SubmitBar. Wire that to the real backend so the
+  // selfManagedSubmit branch actually persists.
+  const pluginSubmit = async (_step: number, data: Record<string, any>) => {
+    try {
+      const result = await taskDemoApi.submit(code, studentId, data)
+      onSubmitResult(result)
+    } catch (e: any) {
+      setSubmitError(String(e?.message ?? e))
+    }
+  }
+
   return (
     <div>
       <Component
@@ -174,6 +187,7 @@ function ExerciseSurface({
         taskId={1}
         locale="zh"
         onOverlayChange={setOverlay}
+        submit={pluginSubmit}
       />
 
       {!plugin.selfManagedSubmit && (

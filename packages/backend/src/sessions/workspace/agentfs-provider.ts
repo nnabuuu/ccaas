@@ -279,7 +279,7 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
   async diff(sessionId: string): Promise<FsDiffEntry[]> {
     return this.withReadonlyDeltaCopy(sessionId, async (dbPath) => {
       const { stdout } = await execFileAsync(this.binPath, ['diff', dbPath]);
-      return parseDiffOutput(stdout);
+      return this.parseDiffOutput(stdout, sessionId);
     });
   }
 
@@ -303,9 +303,28 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
 
   /**
    * Copy delta DB + sidecars to a tmpdir, hand the copy path to `fn`,
-   * always clean up. The copy is acceptably consistent for read-only
-   * queries (cf. SQLite live-backup pattern); for write operations use
-   * `snapshot`/`rollback` which cycle the daemon.
+   * always clean up. Intended for read-only queries (`agentfs diff` /
+   * `timeline`) against a live FUSE-held delta. For write operations
+   * use `snapshot`/`rollback` which cycle the daemon for strong
+   * consistency.
+   *
+   * Consistency contract — **eventual / best-effort**:
+   *   - Three separate `cp` syscalls hold no SQLite lock. If the daemon
+   *     commits a checkpoint between copying `.db` and `-wal`, the
+   *     resulting triple can be internally inconsistent.
+   *   - Copy order matters: `.db` first, then `.db-shm`, THEN `.db-wal`.
+   *     This is the SQLite-recommended order for live backup-by-cp,
+   *     because the -wal references pages in .db; opening with a -wal
+   *     newer than .db triggers SQLite's recovery path, which is
+   *     forgiving. The reverse order can leave the reader with a -wal
+   *     pointing at pages that don't exist yet in .db → ERROR.
+   *   - Worst-case impact: `agentfs diff/timeline` errors or returns
+   *     empty. NO data leak (read-only operation against the agent's
+   *     own sandbox), bad UX visible to operators who can retry.
+   *
+   * Future-proof fix (stage-2): replace with better-sqlite3's online
+   * `db.backup(dest)` which holds shared locks across pages for
+   * guaranteed consistency.
    */
   private async withReadonlyDeltaCopy<T>(
     sessionId: string,
@@ -318,7 +337,13 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentfs-ro-'));
     try {
       const copyBase = path.join(tmpDir, `${sessionId}.db`);
-      this.copyDbSet(liveBase, copyBase);
+      // .db first → .db-shm next → .db-wal LAST.
+      // (Reverse order can cause "WAL frame past end of DB" errors.)
+      const RO_COPY_ORDER = ['', '-shm', '-wal'] as const;
+      for (const ext of RO_COPY_ORDER) {
+        const src = liveBase + ext;
+        if (fs.existsSync(src)) fs.copyFileSync(src, copyBase + ext);
+      }
       return await fn(copyBase);
     } finally {
       try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
@@ -400,29 +425,40 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
       if (fs.existsSync(src)) fs.copyFileSync(src, dest);
     }
   }
-}
 
-/**
- * Parse `agentfs diff` text output into structured entries.
- * Skips header lines (`Using agent: ...`, `Base: ...`) and blank lines.
- * Format per change line:
- *   <OP> <TYPE> <PATH>
- *     OP   ∈ {A, M, D}  (added / modified / removed)
- *     TYPE ∈ {f, d}     (file / directory)
- *     PATH = whitespace-separated tail (joined; agentfs paths don't contain newlines)
- */
-function parseDiffOutput(stdout: string): FsDiffEntry[] {
-  const OPS: Record<string, FsDiffEntry['op']> = { A: 'added', M: 'modified', D: 'removed' };
-  const TYPES: Record<string, FsDiffEntry['type']> = { f: 'file', d: 'directory' };
-  const out: FsDiffEntry[] = [];
-  for (const raw of stdout.split('\n')) {
-    const line = raw.trimEnd();
-    if (!line) continue;
-    // Skip well-known headers
-    if (line.startsWith('Using agent:') || line.startsWith('Base:')) continue;
-    const m = /^([AMD])\s+([fd])\s+(.+)$/.exec(line);
-    if (!m) continue; // ignore anything we don't recognize rather than throwing
-    out.push({ op: OPS[m[1]], type: TYPES[m[2]], path: m[3] });
+  /**
+   * Parse `agentfs diff` text output into structured entries.
+   * Skips header lines (`Using agent: ...`, `Base: ...`) and blank lines.
+   * Format per change line:
+   *   <OP> <TYPE> <PATH>
+   *     OP   ∈ {A, M, D}  (added / modified / removed)
+   *     TYPE ∈ {f, d}     (file / directory)
+   *     PATH = whitespace-separated tail (agentfs paths don't contain newlines)
+   *
+   * Unrecognized non-header lines are warned (rather than silently dropped)
+   * so an upstream agentfs CLI format change is loud, not invisible.
+   */
+  private parseDiffOutput(stdout: string, sessionId: string): FsDiffEntry[] {
+    const OPS: Record<string, FsDiffEntry['op']> = { A: 'added', M: 'modified', D: 'removed' };
+    const TYPES: Record<string, FsDiffEntry['type']> = { f: 'file', d: 'directory' };
+    const out: FsDiffEntry[] = [];
+    const unrecognized: string[] = [];
+    for (const raw of stdout.split('\n')) {
+      const line = raw.trimEnd();
+      if (!line) continue;
+      if (line.startsWith('Using agent:') || line.startsWith('Base:')) continue;
+      const m = /^([AMD])\s+([fd])\s+(.+)$/.exec(line);
+      if (!m) { unrecognized.push(line); continue; }
+      out.push({ op: OPS[m[1]], type: TYPES[m[2]], path: m[3] });
+    }
+    if (unrecognized.length > 0) {
+      // Cap the sample so a corrupted multi-MB output doesn't flood the log.
+      const sample = unrecognized.slice(0, 3).join(' | ');
+      this.logger.warn(
+        `agentfs diff for ${sessionId}: ignored ${unrecognized.length} unrecognized line(s) ` +
+        `(format may have drifted). Sample: ${sample}`,
+      );
+    }
+    return out;
   }
-  return out;
 }
