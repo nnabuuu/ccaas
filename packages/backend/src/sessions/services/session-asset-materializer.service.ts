@@ -30,10 +30,21 @@ import { TenantsService } from '../../tenants/tenants.service';
 
 const ASSET_SUBDIRS = ['entities', 'resources'] as const;
 
+/**
+ * Resource caps — copy stops gracefully when any is exceeded. Per-session
+ * I/O multiplier, so be conservative. Sized for typical solution
+ * directories (dozens of small md/json files); a real solution that
+ * needs more should not be using this disk-copy seed mechanism at all.
+ */
+const MAX_FILES = 500;
+const MAX_FILE_BYTES = 1_000_000;       // 1 MB per file
+const MAX_TOTAL_BYTES = 10_000_000;     // 10 MB per session
+
 export interface MaterializeAssetsResult {
   tenantSlug: string;
   copied: number;
   unchanged: number;
+  skipped: number;     // files skipped due to symlink / size / count cap
   durationMs: number;
 }
 
@@ -76,53 +87,117 @@ export class SessionAssetMaterializer {
     if (!solutionDir) return null;
 
     const t0 = Date.now();
+    // Budget is shared across both subdirs (entities + resources). Carried
+    // mutably so a deep tree can't bypass caps by being spread across roots.
+    const budget = { files: 0, bytes: 0 };
     let copied = 0;
     let unchanged = 0;
+    let skipped = 0;
 
     for (const sub of ASSET_SUBDIRS) {
       const src = path.join(solutionDir, sub);
-      if (!fs.existsSync(src) || !fs.statSync(src).isDirectory()) continue;
+      // lstat (not stat) so a symlinked subdir doesn't get followed.
+      if (!fs.existsSync(src)) continue;
+      const lst = fs.lstatSync(src);
+      if (lst.isSymbolicLink()) {
+        this.logger.warn(`Skipping ${sub}/ for ${tenant.slug}: symlink not allowed`);
+        skipped++;
+        continue;
+      }
+      if (!lst.isDirectory()) continue;
       const dst = path.join(sessionDir, sub);
-      const r = this.copyTreeIfChanged(src, dst);
+      const r = this.copyTreeIfChanged(src, dst, budget, tenant.slug);
       copied += r.copied;
       unchanged += r.unchanged;
+      skipped += r.skipped;
     }
 
     const result: MaterializeAssetsResult = {
       tenantSlug: tenant.slug,
       copied,
       unchanged,
+      skipped,
       durationMs: Date.now() - t0,
     };
-    if (copied > 0 || unchanged > 0) {
+    if (copied > 0 || unchanged > 0 || skipped > 0) {
       this.logger.log(
         `Materialized session assets for ${tenant.slug} → ${sessionDir} ` +
-        `(copied=${copied}, unchanged=${unchanged}, ${result.durationMs}ms)`,
+        `(copied=${copied}, unchanged=${unchanged}, skipped=${skipped}, ${result.durationMs}ms)`,
       );
     }
     return result;
   }
 
+  /**
+   * Recursive copy with security + resource guards. Mutates `budget`
+   * across the whole materialize() call. On budget overage, stops
+   * gracefully (no exception) and increments `skipped`.
+   *
+   * Security: uses `lstat` for every entry so symlinks are detected and
+   * skipped — never dereferenced. Without this, a symlink in `entities/`
+   * pointing to `/etc/passwd` would copy into the session workspace,
+   * readable via just-bash.
+   */
   private copyTreeIfChanged(
     src: string,
     dst: string,
-  ): { copied: number; unchanged: number } {
+    budget: { files: number; bytes: number },
+    tenantSlug: string,
+  ): { copied: number; unchanged: number; skipped: number } {
     fs.mkdirSync(dst, { recursive: true });
     let copied = 0;
     let unchanged = 0;
-    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-      const sp = path.join(src, entry.name);
-      const dp = path.join(dst, entry.name);
-      if (entry.isDirectory()) {
-        const r = this.copyTreeIfChanged(sp, dp);
+    let skipped = 0;
+    for (const entryName of fs.readdirSync(src)) {
+      const sp = path.join(src, entryName);
+      const dp = path.join(dst, entryName);
+      const lst = fs.lstatSync(sp);
+      if (lst.isSymbolicLink()) {
+        this.logger.warn(`Skipping ${sp}: symlink (target would escape sandbox)`);
+        skipped++;
+        continue;
+      }
+      if (lst.isDirectory()) {
+        const r = this.copyTreeIfChanged(sp, dp, budget, tenantSlug);
         copied += r.copied;
         unchanged += r.unchanged;
-      } else if (entry.isFile()) {
-        if (this.writeIfChanged(dp, fs.readFileSync(sp))) copied++;
-        else unchanged++;
+        skipped += r.skipped;
+        continue;
       }
+      if (!lst.isFile()) continue;
+
+      // Cap: total file count
+      if (budget.files >= MAX_FILES) {
+        this.logger.warn(
+          `Skipping ${sp}: max-files cap (${MAX_FILES}) reached for ${tenantSlug}`,
+        );
+        skipped++;
+        continue;
+      }
+      // Cap: per-file size (cheap stat-level check before read)
+      if (lst.size > MAX_FILE_BYTES) {
+        this.logger.warn(
+          `Skipping ${sp}: ${lst.size}B exceeds per-file cap (${MAX_FILE_BYTES}B)`,
+        );
+        skipped++;
+        continue;
+      }
+      // Cap: total bytes (would-be-after-add)
+      if (budget.bytes + lst.size > MAX_TOTAL_BYTES) {
+        this.logger.warn(
+          `Skipping ${sp}: would exceed total cap (${MAX_TOTAL_BYTES}B) for ${tenantSlug}`,
+        );
+        skipped++;
+        continue;
+      }
+
+      const content = fs.readFileSync(sp);
+      budget.files += 1;
+      budget.bytes += lst.size;
+      if (this.writeIfChanged(dp, content)) copied++;
+      else unchanged++;
     }
-    return { copied, unchanged };
+    return { copied, unchanged, skipped };
   }
 
   private writeIfChanged(filePath: string, content: Buffer): boolean {

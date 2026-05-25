@@ -171,4 +171,90 @@ describe('SessionAssetMaterializer', () => {
     expect(fs.existsSync(path.join(sessionDir, 'resources/playbooks/churn.md'))).toBe(true);
     expect(fs.existsSync(path.join(sessionDir, 'resources/playbooks/expansion.md'))).toBe(true);
   });
+
+  // ─── Security guards (review HIGH #1, #2) ────────────────────────────────
+
+  describe('security guards', () => {
+    let hostSecret: string;
+    beforeEach(() => {
+      // Drop a "host" file that a symlink might try to escape to.
+      hostSecret = fs.mkdtempSync(path.join(os.tmpdir(), 'sam-host-'));
+      fs.writeFileSync(path.join(hostSecret, 'leaked.txt'), 'SHOULD_NOT_LEAK');
+    });
+    afterEach(() => fs.rmSync(hostSecret, { recursive: true, force: true }));
+
+    it('skips a symlinked top-level subdir (entities/ → host path)', async () => {
+      // entities is a symlink to outside-tree dir; resources stays a real file
+      fs.symlinkSync(hostSecret, path.join(solutionRoot, 'entities'), 'dir');
+      seed('resources/glossary.md', 'g');
+
+      const svc = await build(
+        { 'demo-sandbox': solutionRoot },
+        { id: 'tid-1', slug: 'demo-sandbox' },
+      );
+      const r = await svc.materialize(sessionDir, 'tid-1');
+
+      // Symlinked entities/ counts as skipped; resources/ still copies
+      expect(r!.copied).toBe(1);
+      expect(r!.skipped).toBe(1);
+      expect(fs.existsSync(path.join(sessionDir, 'entities'))).toBe(false);
+      expect(fs.existsSync(path.join(sessionDir, 'leaked.txt'))).toBe(false);
+    });
+
+    it('skips a symlinked file inside entities/ (does not dereference)', async () => {
+      seed('entities/customers/real.md', 'real');
+      fs.symlinkSync(
+        path.join(hostSecret, 'leaked.txt'),
+        path.join(solutionRoot, 'entities/customers/sneaky.md'),
+        'file',
+      );
+
+      const svc = await build(
+        { 'demo-sandbox': solutionRoot },
+        { id: 'tid-1', slug: 'demo-sandbox' },
+      );
+      const r = await svc.materialize(sessionDir, 'tid-1');
+
+      expect(r!.copied).toBe(1);
+      expect(r!.skipped).toBe(1);
+      expect(fs.readFileSync(path.join(sessionDir, 'entities/customers/real.md'), 'utf8'))
+        .toBe('real');
+      expect(fs.existsSync(path.join(sessionDir, 'entities/customers/sneaky.md'))).toBe(false);
+    });
+
+    it('skips files exceeding MAX_FILE_BYTES (1 MB) without reading them', async () => {
+      seed('entities/small.md', 'fine');
+      const big = Buffer.alloc(1_000_001, 'x'); // 1 byte over the cap
+      fs.writeFileSync(path.join(solutionRoot, 'entities/huge.bin'), big);
+
+      const svc = await build(
+        { 'demo-sandbox': solutionRoot },
+        { id: 'tid-1', slug: 'demo-sandbox' },
+      );
+      const r = await svc.materialize(sessionDir, 'tid-1');
+
+      expect(r!.copied).toBe(1);
+      expect(r!.skipped).toBe(1);
+      expect(fs.existsSync(path.join(sessionDir, 'entities/huge.bin'))).toBe(false);
+    });
+
+    it('stops once MAX_TOTAL_BYTES (10 MB) cumulative cap is hit', async () => {
+      // 12 files at 900 KB each = 10.8 MB total; cap should trip mid-way
+      fs.mkdirSync(path.join(solutionRoot, 'entities'), { recursive: true });
+      const chunk = Buffer.alloc(900_000, 'y');
+      for (let i = 0; i < 12; i++) {
+        fs.writeFileSync(path.join(solutionRoot, `entities/chunk-${i}.bin`), chunk);
+      }
+
+      const svc = await build(
+        { 'demo-sandbox': solutionRoot },
+        { id: 'tid-1', slug: 'demo-sandbox' },
+      );
+      const r = await svc.materialize(sessionDir, 'tid-1');
+
+      // 11 × 900k = 9.9 MB fits; 12th would push past 10 MB → skip
+      expect(r!.copied).toBe(11);
+      expect(r!.skipped).toBe(1);
+    });
+  });
 });

@@ -85,6 +85,14 @@ export default () => ({
   debug: process.env.DEBUG === 'true',
 });
 
+/**
+ * Slug must match this grammar before we'll register a SOLUTION_DIRS
+ * entry. Defense in depth: even though the value is looked up by
+ * `tenant.slug` (DB-sourced) at runtime, refusing path-traversal-shaped
+ * keys (`../etc`) here means we can't accidentally route them anywhere.
+ */
+const SOLUTION_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+
 function parseSolutionDirs(raw: string | undefined): Record<string, string> {
   if (!raw) return {};
   const out: Record<string, string> = {};
@@ -93,7 +101,16 @@ function parseSolutionDirs(raw: string | undefined): Record<string, string> {
     if (idx <= 0 || idx === pair.length - 1) continue;
     const slug = pair.slice(0, idx).trim();
     const dir = pair.slice(idx + 1).trim();
-    if (slug && dir) out[slug] = dir;
+    if (!slug || !dir) continue;
+    if (!SOLUTION_SLUG_RE.test(slug)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[configuration] SOLUTION_DIRS: ignoring entry with invalid slug "${slug}" ` +
+        `(must match ${SOLUTION_SLUG_RE})`,
+      );
+      continue;
+    }
+    out[slug] = dir;
   }
   return out;
 }

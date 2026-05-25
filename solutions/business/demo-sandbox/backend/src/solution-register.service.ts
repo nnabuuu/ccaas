@@ -21,13 +21,33 @@
  */
 
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, lstatSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import * as chokidar from 'chokidar';
 
 const TENANT_SLUG = 'demo-sandbox';
+/**
+ * Path resolution assumes the compiled `dist/solution-register.service.js`
+ * layout (one level deep under backend/dist/, two `..` up to solution
+ * root). If `ts-node src/main.ts` is used directly, SOLUTION_ROOT points
+ * to backend/ and the bootstrap-time sanity check below catches it.
+ */
 const SOLUTION_ROOT = resolve(__dirname, '..', '..');
 const SKILLS_ROOT = join(SOLUTION_ROOT, 'skills');
+const SOLUTION_CONFIG_PATH = join(SOLUTION_ROOT, 'solution.json');
+
+/** Per-request fetch budget so a hung ccaas backend doesn't stall us. */
+const HTTP_TIMEOUT_MS = 10_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
 
 @Injectable()
 export class SolutionRegisterService implements OnApplicationBootstrap, OnModuleDestroy {
@@ -36,6 +56,15 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
   private reregisterTimer?: NodeJS.Timeout;
 
   async onApplicationBootstrap(): Promise<void> {
+    // Sanity: bail noisily if SOLUTION_ROOT is wrong (e.g. ran via ts-node
+    // from src/, which puts __dirname one level deeper than expected).
+    if (!existsSync(SOLUTION_CONFIG_PATH)) {
+      throw new Error(
+        `SOLUTION_ROOT resolution failed: no solution.json at ${SOLUTION_CONFIG_PATH}. ` +
+        `Run the compiled binary (\`node dist/main.js\`), not ts-node from src/.`,
+      );
+    }
+
     const ccaasUrl = process.env.CCAAS_URL ?? 'http://localhost:3001';
     const apiKey = process.env.CCAAS_API_KEY;
 
@@ -82,7 +111,7 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
     const configPath = join(SOLUTION_ROOT, 'solution.json');
     const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
-    const resp = await fetch(`${ccaasUrl}/api/v1/admin/solutions/import`, {
+    const resp = await fetchWithTimeout(`${ccaasUrl}/api/v1/admin/solutions/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
       body: JSON.stringify(config),
@@ -122,7 +151,7 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
       // 1. Upsert the skill (POST creates; if already exists, ccaas returns
       //    409, in which case we look up by slug and PUT to update).
       let skillId: string;
-      const createResp = await fetch(`${ccaasUrl}/api/v1/skills`, {
+      const createResp = await fetchWithTimeout(`${ccaasUrl}/api/v1/skills`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ name: slug, slug, content }),
@@ -132,10 +161,10 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
         this.logger.log(`Created skill ${slug} (id=${skillId})`);
       } else if (createResp.status === 409) {
         // Look up by slug then update content
-        const found = await fetch(`${ccaasUrl}/api/v1/skills/${slug}`, { headers });
+        const found = await fetchWithTimeout(`${ccaasUrl}/api/v1/skills/${slug}`, { headers });
         if (!found.ok) throw new Error(`Lookup after 409 failed: HTTP ${found.status}`);
         skillId = (await found.json()).id;
-        const updateResp = await fetch(`${ccaasUrl}/api/v1/skills/${skillId}`, {
+        const updateResp = await fetchWithTimeout(`${ccaasUrl}/api/v1/skills/${skillId}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ content }),
@@ -150,7 +179,7 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
       //    can `cat` them during progressive disclosure.
       const files = this.collectSkillFiles(skillDir).filter((f) => f.relativePath !== 'SKILL.md');
       if (files.length > 0) {
-        const upsertResp = await fetch(`${ccaasUrl}/api/v1/skills/${skillId}/files`, {
+        const upsertResp = await fetchWithTimeout(`${ccaasUrl}/api/v1/skills/${skillId}/files`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ files }),
@@ -162,7 +191,7 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
       }
 
       // 3. Publish so sessions can use it
-      const pubResp = await fetch(`${ccaasUrl}/api/v1/skills/${skillId}/publish`, {
+      const pubResp = await fetchWithTimeout(`${ccaasUrl}/api/v1/skills/${skillId}/publish`, {
         method: 'POST',
         headers,
       });
@@ -181,10 +210,17 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
   private collectSkillFiles(skillDir: string): { relativePath: string; content: string }[] {
     const out: { relativePath: string; content: string }[] = [];
     const walk = (dir: string) => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) walk(full);
-        else if (entry.isFile()) {
+      for (const entryName of readdirSync(dir)) {
+        const full = join(dir, entryName);
+        // lstat (not stat) so symlinks are detected and skipped — never
+        // dereferenced into host fs content that doesn't belong here.
+        const lst = lstatSync(full);
+        if (lst.isSymbolicLink()) {
+          this.logger.warn(`Skipping ${full}: symlink not allowed in skill files`);
+          continue;
+        }
+        if (lst.isDirectory()) walk(full);
+        else if (lst.isFile()) {
           out.push({
             relativePath: relative(skillDir, full),
             content: readFileSync(full, 'utf8'),
