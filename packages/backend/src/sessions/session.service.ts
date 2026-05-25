@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'node:fs';
@@ -27,6 +28,7 @@ import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
+import { SessionMetadataService } from './services/session-metadata.service';
 import { WORKSPACE_PROVIDER, type WorkspaceProvider } from './workspace/types';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
@@ -94,6 +96,8 @@ export class SessionService implements OnModuleDestroy {
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
     private readonly streamRegistry: StreamRegistryService,
     private readonly sessionAssetMaterializer: SessionAssetMaterializer,
+    private readonly sessionMetadataService: SessionMetadataService,
+    private readonly eventEmitter: EventEmitter2,
     @Inject(WORKSPACE_PROVIDER)
     private readonly workspaceProvider: WorkspaceProvider,
     @InjectRepository(SessionEntity)
@@ -250,6 +254,41 @@ export class SessionService implements OnModuleDestroy {
    */
   getSession(sessionId: string): ManagedSession | undefined {
     return this.sessions.get(sessionId);
+  }
+
+  /**
+   * Bind a session to a project for the agent-runtime sync layer.
+   * Writes `session_metadata['projectId']` and emits `session.bound`
+   * so the SessionAssetSyncer bootstraps the workspace `artifacts/`
+   * dir from the solution's `ProjectArtifactSource.loadArtifacts()`
+   * before the first agent turn.
+   *
+   * Idempotent: calling twice with the same `projectId` is a no-op
+   * write (metadata upserts) + a re-bootstrap (also no-op when the
+   * snapshot is already current).
+   *
+   * Solutions call this immediately after creating a project-scoped
+   * agent session, before the first message lands.
+   */
+  async bindToProject(
+    sessionId: string,
+    tenantId: string,
+    projectId: string,
+  ): Promise<void> {
+    if (!projectId) {
+      throw new BadRequestException('projectId required');
+    }
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new NotFoundException(`session ${sessionId} not found`);
+    }
+    await this.sessionMetadataService.put(
+      sessionId,
+      tenantId,
+      'projectId',
+      projectId,
+    );
+    this.eventEmitter.emit('session.bound', { sessionId, tenantId, projectId });
   }
 
   /**

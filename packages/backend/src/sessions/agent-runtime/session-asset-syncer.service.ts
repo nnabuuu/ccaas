@@ -75,6 +75,12 @@ export interface SessionTurnCompleteEvent {
   exitCode: number | null;
 }
 
+export interface SessionBoundEvent {
+  sessionId: string;
+  tenantId: string;
+  projectId: string;
+}
+
 @Injectable()
 export class SessionAssetSyncer {
   private readonly logger = new Logger(SessionAssetSyncer.name);
@@ -98,6 +104,27 @@ export class SessionAssetSyncer {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(
         `sync failed for session=${payload.sessionId}: ${msg}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
+  }
+
+  /**
+   * Bootstrap hook — fires when a session first binds to a projectId
+   * (via `SessionService.bindToProject`). Runs the same `sync()` flow
+   * as turn-end; since the previous snapshot is empty, every DB-side
+   * artifact is treated as a `write_fs` action, producing the initial
+   * materialized state under `<workspace>/artifacts/` before the
+   * agent's first turn ever reads it.
+   */
+  @OnEvent('session.bound')
+  async onSessionBound(payload: SessionBoundEvent): Promise<void> {
+    try {
+      await this.sync(payload.sessionId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `bootstrap sync failed for session=${payload.sessionId} project=${payload.projectId}: ${msg}`,
         err instanceof Error ? err.stack : undefined,
       );
     }

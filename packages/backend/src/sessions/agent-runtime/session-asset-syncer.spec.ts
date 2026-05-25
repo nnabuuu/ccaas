@@ -253,4 +253,40 @@ describe('SessionAssetSyncer', () => {
     await expect(syncer.onTurnComplete({ sessionId: SID, status: 'complete', exitCode: 0 }))
       .resolves.toBeUndefined();
   });
+
+  describe('onSessionBound — bootstrap hook', () => {
+    it('materializes initial artifacts from source.loadArtifacts into workspace', async () => {
+      source.rows = [
+        { path: 'lesson-plan.md', content: '# Hello', type: 'md' },
+        { path: 'execution-plan.json', content: '{"v":1}', type: 'json' },
+      ];
+
+      await syncer.onSessionBound({ sessionId: SID, tenantId: TID, projectId: PROJ });
+
+      const plan = await fs.readFile(
+        path.join(workspaceDir, ARTIFACTS_DIR, 'lesson-plan.md'), 'utf8',
+      );
+      const exec = await fs.readFile(
+        path.join(workspaceDir, ARTIFACTS_DIR, 'execution-plan.json'), 'utf8',
+      );
+      expect(plan).toBe('# Hello');
+      expect(exec).toBe('{"v":1}');
+
+      const snap = await snapshots.list(SID);
+      expect(snap).toHaveLength(2);
+      expect(new Set(snap.map((e) => e.path))).toEqual(new Set([
+        'lesson-plan.md',
+        'execution-plan.json',
+      ]));
+    });
+
+    it('swallows errors so bootstrap failure does not break session create', async () => {
+      sessionSvc.getSession.mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+      await expect(syncer.onSessionBound({
+        sessionId: SID, tenantId: TID, projectId: PROJ,
+      })).resolves.toBeUndefined();
+    });
+  });
 });

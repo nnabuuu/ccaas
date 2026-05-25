@@ -16,6 +16,8 @@ import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
+import { SessionMetadataService } from './services/session-metadata.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { mockWorkspaceProvider } from './workspace/__mocks__/mock-provider';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type { ManagedSession } from '../common/interfaces/session.interface';
@@ -94,6 +96,11 @@ async function buildModule(): Promise<SessionService> {
         provide: SessionAssetMaterializer,
         useValue: { materialize: jest.fn().mockResolvedValue(null) },
       },
+      {
+        provide: SessionMetadataService,
+        useValue: { put: jest.fn(), get: jest.fn() },
+      },
+      { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       {
         provide: getRepositoryToken(SessionEntity),
         useValue: { save: jest.fn(), update: jest.fn() },
