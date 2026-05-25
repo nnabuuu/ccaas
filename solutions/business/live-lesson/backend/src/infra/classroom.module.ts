@@ -11,6 +11,7 @@ import { ClassroomSnapshot } from '../adapters/persistence/entities/classroom-sn
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../adapters/persistence/entities/discuss-target-hit.entity';
+import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import {
   ObserverEngine,
@@ -113,11 +114,17 @@ import { ChatTurnHandler } from '../adapters/observer-engine/handlers/chat-turn-
 import { StatusChangeHandler } from '../adapters/observer-engine/handlers/status-change-handler';
 import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-event-handler';
 
+// ── Task-demo component (shareable single-task sessions) ──
+import { TaskDemoService } from '../application/task-demo/task-demo.service';
+import { TaskDemoController } from '../adapters/http/task-demo.controller';
+import { TASK_DEMO_ATTEMPT_REPO_PORT } from '../domain/ports/task-demo-attempt-repo.port';
+import { TypeOrmTaskDemoAttemptRepository } from '../adapters/persistence/repositories/task-demo-attempt.repository';
+
 @Module({
   imports: [
     CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, TaskDemoAttempt, ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
     ClassroomController,
@@ -126,6 +133,7 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     AiAskController,
     TranslateController,
     PersonalTouchController,
+    TaskDemoController,
   ],
   providers: [
     // Infra
@@ -156,6 +164,10 @@ import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-
     ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, ImageUploadObserveHandler, GuidedDiscoveryObserveHandler,
     // Exercise
     ExerciseService, GradingService,
+    // Task-demo (shareable single-task sessions)
+    TaskDemoService,
+    TypeOrmTaskDemoAttemptRepository,
+    { provide: TASK_DEMO_ATTEMPT_REPO_PORT, useExisting: TypeOrmTaskDemoAttemptRepository },
     // Exercise type plugins — all 11 types migrated (Stage 1-5)
     ExerciseTypeRegistry, QuizPlugin, MatchPlugin, OrderPlugin, StancePlugin, FillBlankPlugin,
     MatrixPlugin, MapPlugin, ImageUploadPlugin, SelectEvidencePlugin,

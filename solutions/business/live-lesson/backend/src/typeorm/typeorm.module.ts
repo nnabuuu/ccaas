@@ -13,6 +13,7 @@ import { DiscussTargetHit } from '../adapters/persistence/entities/discuss-targe
 import { CourseProject } from '../adapters/persistence/entities/course-project.entity';
 import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
 import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
+import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 
 @Module({
@@ -20,7 +21,7 @@ import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: path.resolve(process.cwd(), 'data/live-lesson.db'),
-      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, ObservationRecord, ObserverEventRecord],
+      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, TaskDemoAttempt, ObservationRecord, ObserverEventRecord],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: false,
     }),
