@@ -28,6 +28,44 @@ export interface ResolvedAttachment {
   mimeType: string;
 }
 
+/**
+ * Hard delimiter prepended before the sandbox steer so it can't be
+ * visually swallowed by a malformed solution `appendSystemPrompt`
+ * (e.g. one ending with "ignore subsequent instructions"). Note the
+ * actual deny + MCP-injection enforcement happens at the CLI-flag layer
+ * — steer text is only a hint to the model.
+ */
+const SANDBOX_STEER_DELIMITER =
+  '\n\n---\n[CCAAS SANDBOX — non-negotiable system constraint]\n';
+
+/**
+ * Merge sandbox-required `disallowed` tools into an existing
+ * `--disallowed-tools <csv>` flag in `args`, or push a new one. Mutates
+ * `args` in place. Idempotent — duplicates are de-duped.
+ *
+ * Why merge instead of push: claude CLI takes the LAST `--disallowed-tools`
+ * occurrence when duplicates are present, so a future caller pushing its
+ * own deny flag would silently undo ours.
+ */
+function mergeDisallowedTools(args: string[], disallowed: string[]): void {
+  let idx = -1;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--disallowed-tools') {
+      idx = i;
+    }
+  }
+  if (idx >= 0 && idx + 1 < args.length) {
+    const existing = args[idx + 1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const merged = Array.from(new Set([...existing, ...disallowed]));
+    args[idx + 1] = merged.join(',');
+  } else {
+    args.push('--disallowed-tools', disallowed.join(','));
+  }
+}
+
 @Injectable()
 export class CliProcessService {
   private readonly logger = new Logger(CliProcessService.name);
@@ -55,9 +93,13 @@ export class CliProcessService {
    *   - Inject `__ccaas_bash` MCP server backed by just-bash, rooted at
    *     `session.workspaceDir`. Merged with solution-provided mcpServers,
    *     never overrides.
-   *   - Append `--disallowed-tools Bash` (combined with any existing
-   *     disallows we may want in the future).
-   *   - Append sandbox steering text to `appendSystemPrompt`.
+   *   - Add `Bash` to `--disallowed-tools`. If a prior caller already
+   *     pushed `--disallowed-tools`, merge into that single flag rather
+   *     than emit a second one (claude CLI is last-wins on duplicates,
+   *     so a duplicate flag would silently undo the sandbox deny).
+   *   - Append sandbox steering text to `appendSystemPrompt` separated
+   *     by a hard delimiter so a malformed solution prompt can't visually
+   *     swallow it.
    */
   private applyMcpAndSandbox(
     session: ManagedSession,
@@ -102,13 +144,13 @@ export class CliProcessService {
 
     const disallow = this.sandboxService.disallowedTools();
     if (disallow.length > 0) {
-      args.push('--disallowed-tools', disallow.join(','));
+      mergeDisallowedTools(args, disallow);
     }
 
     const steer = this.sandboxService.systemPromptSteer();
     if (steer) {
       return appendSystemPrompt && appendSystemPrompt.trim()
-        ? `${appendSystemPrompt}\n\n${steer}`
+        ? `${appendSystemPrompt}${SANDBOX_STEER_DELIMITER}${steer}`
         : steer;
     }
     return appendSystemPrompt;

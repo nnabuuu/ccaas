@@ -50,7 +50,11 @@ export class SandboxService {
 
   constructor(@Inject(ConfigService) cfg: ConfigService) {
     this.mode = cfg.get<BashSandboxMode>('workspace.bashSandbox', 'none');
-    this.serverScriptPath = resolveServerScriptPath();
+    // Gate the existsSync check on mode so deploys that pruned .mjs files
+    // from dist (or any deploy with sandbox off) don't crash at boot for
+    // an asset they never use. Throw remains fail-fast for active sandbox.
+    this.serverScriptPath =
+      this.mode === 'just-bash' ? resolveServerScriptPath() : '';
     const workspaceDir = cfg.get<string>('workspace.dir', '.agent-workspace');
     this.traceLogPath = resolve(workspaceDir, '_sandbox_logs', 'bash-mcp.log');
     this.logger.log(
