@@ -226,44 +226,74 @@ export class SessionAssetSyncer {
       `sync: session=${sessionId} project=${projectId} applying ${plan.actions.length} action(s)`,
     );
 
+    // Track path rewrites that solutions return from saveArtifact
+    // (sentPath → canonicalPath). Used below to rewrite both
+    // nextSnapshot entries and ChangeEvents so the snapshot store
+    // and SSE consumers see the actual persisted key. Phase 1 review M1.
+    const pathRewrites = new Map<string, string>();
     for (const action of plan.actions) {
-      await this.applyAction(action, projectId, artifactsDir, source);
+      const rewrite = await this.applyAction(action, projectId, artifactsDir, source);
+      if (rewrite && rewrite.sentPath !== rewrite.canonicalPath) {
+        this.logger.warn(
+          `sync: solution rewrote path ${rewrite.sentPath} → ${rewrite.canonicalPath}; ` +
+            `using canonical for snapshot (avoid by not normalizing paths server-side, ` +
+            `see ProjectArtifactSource.saveArtifact JSDoc)`,
+        );
+        pathRewrites.set(rewrite.sentPath, rewrite.canonicalPath);
+      }
     }
 
     // Replace the snapshot wholesale — actions are over, the new
-    // snapshot is the source of truth for the next sync.
+    // snapshot is the source of truth for the next sync. Apply any
+    // path rewrites the solution surfaced so we record the canonical
+    // path the DB actually holds.
     await this.snapshots.clear(sessionId);
     for (const entry of plan.nextSnapshot) {
-      await this.snapshots.put(entry);
+      const canonical = pathRewrites.get(entry.path);
+      await this.snapshots.put(
+        canonical ? { ...entry, path: canonical } : entry,
+      );
     }
 
-    // Publish change events for the GUI.
+    // Publish change events for the GUI — rewritten to canonical path
+    // so SSE consumers reload-from-DB against the right key.
     for (const action of plan.actions) {
-      this.changes.publish(this.actionToEvent(projectId, action));
+      this.changes.publish(this.actionToEvent(projectId, action, pathRewrites));
     }
   }
 
+  /**
+   * Apply a single sync action. Returns a `{sentPath, canonicalPath}`
+   * rewrite when the solution's `saveArtifact` reports that it
+   * normalized the path server-side (Phase 1 review M1) — caller uses
+   * this to keep the snapshot store in sync with the persisted key.
+   * Returns undefined when no rewrite happened.
+   */
   private async applyAction(
     action: SyncAction,
     projectId: string,
     artifactsDir: string,
     source: ProjectArtifactSource,
-  ): Promise<void> {
+  ): Promise<{ sentPath: string; canonicalPath: string } | undefined> {
     const filePath = (rel: string) => path.join(artifactsDir, rel);
     switch (action.kind) {
       case 'write_fs':
         await this.writeFs(filePath(action.path), action.content);
-        break;
+        return undefined;
       case 'delete_fs':
         await fs.rm(filePath(action.path), { force: true });
-        break;
-      case 'save_db':
-        await source.saveArtifact(projectId, {
+        return undefined;
+      case 'save_db': {
+        const result = await source.saveArtifact(projectId, {
           path: action.path,
           content: action.content,
           type: action.type,
         });
-        break;
+        if (result?.canonicalPath) {
+          return { sentPath: action.path, canonicalPath: result.canonicalPath };
+        }
+        return undefined;
+      }
       case 'delete_db':
         // SyncEngine only plans this when allowDelete=true, so source
         // is guaranteed to have deleteArtifact. The guard is belt-and-
@@ -271,23 +301,27 @@ export class SessionAssetSyncer {
         if (source.deleteArtifact) {
           await source.deleteArtifact(projectId, action.path);
         }
-        break;
-      case 'conflict_agent_wins':
+        return undefined;
+      case 'conflict_agent_wins': {
         // Persist agent's version to DB; fs already has it.
-        await source.saveArtifact(projectId, {
+        const result = await source.saveArtifact(projectId, {
           path: action.path,
           content: action.agentContent,
           type: action.agentType,
         });
         // The conflict event is published separately by actionToEvent;
         // here we only do the persistence work.
-        break;
+        if (result?.canonicalPath) {
+          return { sentPath: action.path, canonicalPath: result.canonicalPath };
+        }
+        return undefined;
+      }
       default: {
         // Exhaustiveness check — adding a new SyncAction kind without
         // handling it here will surface as a typecheck error.
         const _exhaust: never = action;
         void _exhaust;
-        break;
+        return undefined;
       }
     }
   }
@@ -306,21 +340,29 @@ export class SessionAssetSyncer {
     await fs.writeFile(absPath, content);
   }
 
-  private actionToEvent(projectId: string, action: SyncAction): ChangeEvent {
+  private actionToEvent(
+    projectId: string,
+    action: SyncAction,
+    pathRewrites?: ReadonlyMap<string, string>,
+  ): ChangeEvent {
     const at = new Date().toISOString();
+    // Use canonical path in the event so SSE consumers reload-from-DB
+    // hit the right key. Only save_db / conflict_agent_wins can have a
+    // rewrite; the fs-side actions never go through saveArtifact.
+    const canonicalPath = (sent: string) => pathRewrites?.get(sent) ?? sent;
     switch (action.kind) {
       case 'write_fs':
         return { projectId, path: action.path, source: 'gui', kind: 'updated', at };
       case 'delete_fs':
         return { projectId, path: action.path, source: 'gui', kind: 'deleted', at };
       case 'save_db':
-        return { projectId, path: action.path, source: 'agent', kind: 'updated', at };
+        return { projectId, path: canonicalPath(action.path), source: 'agent', kind: 'updated', at };
       case 'delete_db':
         return { projectId, path: action.path, source: 'agent', kind: 'deleted', at };
       case 'conflict_agent_wins':
         return {
           projectId,
-          path: action.path,
+          path: canonicalPath(action.path),
           source: 'agent',
           kind: 'updated',
           at,

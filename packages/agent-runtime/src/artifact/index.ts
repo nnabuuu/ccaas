@@ -11,4 +11,5 @@ export type { JsonEditProviderOptions } from './json-edit-provider.js';
 export type {
   ArtifactSnapshot,
   ProjectArtifactSource,
+  SaveArtifactResult,
 } from './project-artifact-source.js';

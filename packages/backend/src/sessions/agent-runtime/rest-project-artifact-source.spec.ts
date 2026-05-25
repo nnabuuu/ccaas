@@ -139,6 +139,38 @@ describe('RestProjectArtifactSource', () => {
         type: 'md',
       });
     });
+
+    it('returns { canonicalPath } when server response includes path field (Phase 1 M1)', async () => {
+      mockFetch(() => makeResponse({ path: 'lesson.md', fileType: 'md' }));
+      const result = await source.saveArtifact('p1', {
+        path: 'LESSON.MD',
+        content: '# Updated',
+        type: 'md',
+      });
+      expect(result).toEqual({ canonicalPath: 'lesson.md' });
+    });
+
+    it('returns undefined when server response has no path field', async () => {
+      mockFetch(() => makeResponse({ ok: true }));
+      const result = await source.saveArtifact('p1', {
+        path: 'lesson.md',
+        content: 'x',
+        type: 'md',
+      });
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined when server returns non-JSON content-type', async () => {
+      mockFetch(() =>
+        new Response('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } }),
+      );
+      const result = await source.saveArtifact('p1', {
+        path: 'lesson.md',
+        content: 'x',
+        type: 'md',
+      });
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('deleteArtifact', () => {

@@ -275,6 +275,11 @@ GET  {base}/projects/:projectId/artifacts
 
 PUT  {base}/projects/:projectId/artifacts?path=<encoded>
      body { content, type, attributes? }   # upsert
+     response (JSON, optional but recommended): { path: <canonical>, ... }
+     ↑ If the solution normalizes path server-side (posix.normalize, case-fold, leading-slash strip, etc),
+       it MUST return the canonical path in the response. Otherwise the runtime snapshot records the
+       SENT path; the next loadArtifacts returns the canonical path; the engine treats them as separate
+       files and plans a spurious delete_fs against the old sent-path entry (Phase 1 review M1).
 
 DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 treated as already-deleted

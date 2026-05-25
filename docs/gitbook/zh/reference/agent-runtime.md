@@ -275,6 +275,11 @@ GET  {base}/projects/:projectId/artifacts
 
 PUT  {base}/projects/:projectId/artifacts?path=<encoded>
      body { content, type, attributes? }   # upsert
+     response (JSON, optional but recommended): { path: <canonical>, ... }
+     ↑ 如果 solution 在 server 端 normalize 了 path（posix.normalize / case-fold / 去前导 slash 等），
+       MUST 在 response 里返回 canonical path —— 否则 runtime snapshot 记录的是 SENT path，
+       下一轮 loadArtifacts 拿到 canonical path，engine 会把两者当成两个文件，
+       对老的 sent-path 条目计划一个错误的 delete_fs（Phase 1 review M1）。
 
 DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 视作已删除

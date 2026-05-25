@@ -41,6 +41,23 @@ export interface ArtifactSnapshot {
 }
 
 /**
+ * Optional return shape from `saveArtifact`. When the solution
+ * normalizes / canonicalizes the path server-side (e.g.,
+ * `posix.normalize`, case-fold, strip-leading-slash), it MUST surface
+ * the persisted canonical path here so the runtime's snapshot store
+ * records the actual key — otherwise the next `loadArtifacts` returns
+ * the canonical path and the engine treats it as a new file, planning
+ * a spurious `delete_fs` against the old sent-path entry. Phase 1
+ * review M1.
+ *
+ * Solutions that do NOT normalize paths can return `void`; the
+ * runtime treats the originally-sent path as canonical.
+ */
+export interface SaveArtifactResult {
+  readonly canonicalPath?: string;
+}
+
+/**
  * The port solutions implement. Two required methods cover the full
  * bidirectional sync; `deleteArtifact` is opt-in.
  */
@@ -72,8 +89,17 @@ export interface ProjectArtifactSource {
    * (`@BeforeInsert/@BeforeUpdate` for TypeORM) firing here — that's
    * how schema enforcement reaches both REST and agent-driven writes
    * through the same boundary.
+   *
+   * Return shape: solutions that may normalize / rewrite the path
+   * server-side MUST return `{ canonicalPath }` so the runtime's
+   * snapshot stays in sync with what was actually persisted. Returning
+   * `void` is fine when the solution preserves the path verbatim.
+   * See `SaveArtifactResult` for the rationale.
    */
-  saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void>;
+  saveArtifact(
+    projectId: string,
+    artifact: ArtifactSnapshot,
+  ): Promise<void | SaveArtifactResult>;
 
   /**
    * Optional: persist a deletion. If a solution doesn't want agent

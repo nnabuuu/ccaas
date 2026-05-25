@@ -42,6 +42,7 @@ export type {
   JsonEditProviderOptions,
   ArtifactSnapshot,
   ProjectArtifactSource,
+  SaveArtifactResult,
 } from './artifact/index.js';
 
 // Project (Phase 0 interfaces)

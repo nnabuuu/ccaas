@@ -168,7 +168,7 @@ export class ProjectService {
     filePath: string,
     content: string,
     fileType: string,
-  ): Promise<void> {
+  ): Promise<{ path: string; fileType: string }> {
     await this.ensureProject(projectId);
     const safePath = this.sanitizePath(filePath);
     const existing = await this.fileRepo.findOne({
@@ -190,6 +190,11 @@ export class ProjectService {
       );
     }
     await this.projectRepo.update(projectId, { updatedAt: this.now() });
+    // Return the canonical (sanitized) path so ccaas's
+    // RestProjectArtifactSource snapshot uses the actual persisted
+    // key, not the (possibly differently-shaped) sent path.
+    // Phase 1 review M1 / Phase 2b-1.
+    return { path: safePath, fileType };
   }
 
   async deleteFile(projectId: string, filePath: string): Promise<void> {

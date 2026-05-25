@@ -33,6 +33,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type {
   ArtifactSnapshot,
   ProjectArtifactSource,
+  SaveArtifactResult,
 } from '@kedge-agentic/agent-runtime';
 
 @Injectable()
@@ -94,11 +95,11 @@ export class RestProjectArtifactSource implements ProjectArtifactSource {
   async saveArtifact(
     projectId: string,
     artifact: ArtifactSnapshot,
-  ): Promise<void> {
+  ): Promise<void | SaveArtifactResult> {
     const url = `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/artifacts?path=${encodeURIComponent(artifact.path)}`;
     const res = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
         content: artifact.content,
         type: artifact.type,
@@ -109,6 +110,29 @@ export class RestProjectArtifactSource implements ProjectArtifactSource {
       throw new Error(
         `saveArtifact(${projectId}, ${artifact.path}) HTTP ${res.status}: ${await res.text()}`,
       );
+    }
+    // If the solution returned a JSON body with `path`, expose it as
+    // the canonical path so the syncer's snapshot uses the persisted
+    // key rather than the sent key. Phase 1 review M1. Tolerates:
+    //   - empty body (no content-type)
+    //   - non-JSON body
+    //   - JSON without `path`
+    // — any of those skip the result + caller falls back to sent path.
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) return;
+    let body: unknown;
+    try {
+      body = await res.json();
+    } catch {
+      return;
+    }
+    if (
+      body &&
+      typeof body === 'object' &&
+      typeof (body as Record<string, unknown>).path === 'string'
+    ) {
+      const canonical = (body as Record<string, unknown>).path as string;
+      return { canonicalPath: canonical };
     }
   }
 

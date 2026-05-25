@@ -40,12 +40,20 @@ class FakeSource implements ProjectArtifactSource {
   rows: ArtifactSnapshot[] = [];
   saved: Array<{ projectId: string; artifact: ArtifactSnapshot }> = [];
   deleted: Array<{ projectId: string; path: string }> = [];
+  /** When set, saveArtifact() returns this canonical path for the next call. */
+  nextCanonicalPath: string | null = null;
 
   async loadArtifacts(): Promise<ReadonlyArray<ArtifactSnapshot>> {
     return this.rows;
   }
-  async saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void> {
+  async saveArtifact(projectId: string, artifact: ArtifactSnapshot) {
     this.saved.push({ projectId, artifact });
+    if (this.nextCanonicalPath) {
+      const canonical = this.nextCanonicalPath;
+      this.nextCanonicalPath = null;
+      return { canonicalPath: canonical };
+    }
+    return;
   }
   async deleteArtifact(projectId: string, p: string): Promise<void> {
     this.deleted.push({ projectId, path: p });
@@ -271,6 +279,30 @@ describe('SessionAssetSyncer', () => {
     );
     expect(restored).toBe('v1');
     expect(noDeleteSource.saveArtifact).not.toHaveBeenCalled();
+  });
+
+  it('snapshot uses canonical path when source returns one (Phase 1 M1)', async () => {
+    // agent wrote `LESSON.MD`; solution normalizes server-side to `lesson.md`
+    const agentFile = path.join(workspaceDir, ARTIFACTS_DIR, 'LESSON.MD');
+    await fs.writeFile(agentFile, 'agent-version');
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+      diffEntries: [{ op: 'added', type: 'file', path: '/artifacts/LESSON.MD' }],
+    }));
+    source.rows = [];
+    source.nextCanonicalPath = 'lesson.md';
+
+    await syncer.sync(SID);
+
+    expect(source.saved).toHaveLength(1);
+    expect(source.saved[0].artifact.path).toBe('LESSON.MD');
+
+    // Snapshot should record the canonical path, not the sent path —
+    // otherwise next sync sees `lesson.md` in dbNow + `LESSON.MD` in
+    // snapshot and plans a spurious delete_fs.
+    const snap = await snapshots.list(SID);
+    expect(snap).toHaveLength(1);
+    expect(snap[0].path).toBe('lesson.md');
   });
 
   it('snapshot updated to reflect post-sync state', async () => {
