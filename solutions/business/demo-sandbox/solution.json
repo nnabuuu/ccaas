@@ -1,0 +1,20 @@
+{
+  "$schema": "https://kedge.agentic/schemas/solution-v3.json",
+  "schemaVersion": "3.0",
+  "tenant": {
+    "slug": "demo-sandbox",
+    "name": "Demo Sandbox",
+    "description": "Showcase for stage-1 sandboxed FS + bash. B2B SaaS theme — agent browses customer / revenue / plan data via just-bash."
+  },
+  "mode": "simple",
+  "discovery": { "enabled": true },
+  "skills": ["skills/*"],
+  "mcpServers": {},
+  "sessionTemplates": {
+    "explore": {
+      "description": "Browse demo entities and reference docs via sandboxed bash",
+      "enabledSkills": ["sandbox-explorer"],
+      "skillPromptMode": "inline"
+    }
+  }
+}

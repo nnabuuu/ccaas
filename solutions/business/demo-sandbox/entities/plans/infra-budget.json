@@ -1,0 +1,48 @@
+{
+  "period": "2026-Q2",
+  "currency": "USD",
+  "owner": "infra-team",
+  "approved_by": "cto",
+  "approved_at": "2026-04-15",
+  "total_capex": 184000,
+  "total_opex_monthly": 47500,
+  "line_items": [
+    {
+      "id": "msk-migration",
+      "category": "capex",
+      "amount": 62000,
+      "description": "Kafka → MSK migration: engineer-time + data egress + parallel-run period",
+      "owner": "platform-team",
+      "linked_initiative": "Theme 1 — Migrate legacy event bus"
+    },
+    {
+      "id": "eu-west-active-active",
+      "category": "capex",
+      "amount": 88000,
+      "description": "Build out eu-west active-active failover: net-new compute, IaC work, runbook + chaos drills",
+      "owner": "infra-team",
+      "linked_initiative": "Theme 1 — eu-west active-active failover"
+    },
+    {
+      "id": "rate-limiter-refactor",
+      "category": "capex",
+      "amount": 34000,
+      "description": "Per-tenant rate limit primitive: replace the four duplicated implementations",
+      "owner": "platform-team",
+      "linked_initiative": "Theme 1 — Per-tenant rate limit refactor"
+    },
+    {
+      "id": "managed-services-opex-bump",
+      "category": "opex",
+      "amount_monthly": 9500,
+      "description": "Run-rate increase from MSK + active-active eu-west (steady-state, post-migration)"
+    },
+    {
+      "id": "observability-tier-up",
+      "category": "opex",
+      "amount_monthly": 3200,
+      "description": "Datadog tier-up for retention + APM-on-everything (was sampled)"
+    }
+  ],
+  "notes": "Net total: $184k capex + ~$12.7k incremental opex/mo. Pre-approved at 2026-04-15 leadership review."
+}

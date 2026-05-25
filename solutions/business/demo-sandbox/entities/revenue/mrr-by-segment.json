@@ -1,0 +1,41 @@
+{
+  "period": "2026-Q1",
+  "currency": "USD",
+  "as_of": "2026-03-31",
+  "segments": {
+    "enterprise": {
+      "customer_count": 5,
+      "mrr": 58333,
+      "arr": 700000,
+      "nrr_t12m": 1.18,
+      "logos_added": 0,
+      "logos_lost": 0,
+      "notable_accounts": ["acme"]
+    },
+    "mid-market": {
+      "customer_count": 18,
+      "mrr": 36000,
+      "arr": 432000,
+      "nrr_t12m": 0.94,
+      "logos_added": 4,
+      "logos_lost": 2,
+      "notable_accounts": ["initech"],
+      "lost_accounts": ["vandelay", "techco"]
+    },
+    "smb": {
+      "customer_count": 24,
+      "mrr": 9000,
+      "arr": 108000,
+      "nrr_t12m": 1.21,
+      "logos_added": 6,
+      "logos_lost": 1,
+      "notable_accounts": ["globex"]
+    }
+  },
+  "totals": {
+    "customer_count": 47,
+    "mrr": 103333,
+    "arr": 1240000,
+    "nrr_t12m": 1.08
+  }
+}

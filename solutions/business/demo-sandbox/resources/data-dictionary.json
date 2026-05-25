@@ -1,0 +1,35 @@
+{
+  "$schema": "internal://demo-sandbox/entity-dictionary",
+  "version": "1.0",
+  "entities": {
+    "customers": {
+      "path": "entities/customers/{id}.md",
+      "frontmatter_fields": {
+        "id": { "type": "string", "editable": false, "description": "URL-safe slug, matches filename" },
+        "name": { "type": "string", "editable": true },
+        "segment": { "type": "enum", "values": ["enterprise", "mid-market", "smb"], "editable": true },
+        "status": { "type": "enum", "values": ["healthy", "expansion_opportunity", "at-risk", "renewal_at_risk", "churned"], "editable": true },
+        "owner": { "type": "string", "editable": true, "description": "Email of internal owner (CSM or AE)" },
+        "arr_usd": { "type": "number", "editable": false, "description": "Annual recurring revenue" },
+        "mrr_usd": { "type": "number", "editable": false, "description": "Monthly recurring revenue" },
+        "seats_licensed": { "type": "number", "editable": true },
+        "seats_active": { "type": "number", "editable": false, "description": "Derived from usage; not manually editable" },
+        "nrr_trailing_12m": { "type": "number", "editable": false },
+        "last_renewal": { "type": "date", "editable": false },
+        "next_renewal": { "type": "date", "editable": true },
+        "churn_risk_score": { "type": "number", "editable": false, "description": "0.0–1.0; populated for at-risk accounts only" }
+      },
+      "body_sections": ["Health signals", "Risk signals", "Expansion opportunities", "Expansion case", "Renewal context", "Suggested playbook", "Recent activity", "Notes"]
+    },
+    "revenue": {
+      "path": "entities/revenue/{report-id}.{md,json}",
+      "editable": false,
+      "description": "Derived reports — regenerated weekly from billing system. Do not edit by hand."
+    },
+    "plans": {
+      "path": "entities/plans/{plan-id}.{md,json}",
+      "editable_via_provider": false,
+      "description": "Strategic plans. Editing requires leadership approval — out of scope for the API."
+    }
+  }
+}

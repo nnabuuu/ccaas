@@ -1,0 +1,13 @@
+{
+  "name": "@kedge-agentic/demo-sandbox-solution",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Showcase solution for ccaas stage-1 sandboxed FS + bash (B2B SaaS theme)",
+  "scripts": {
+    "start": "npm run start --workspace=./backend",
+    "build": "npm run build --workspace=./backend"
+  },
+  "workspaces": [
+    "backend"
+  ]
+}
