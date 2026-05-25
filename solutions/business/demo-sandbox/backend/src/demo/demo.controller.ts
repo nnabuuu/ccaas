@@ -47,6 +47,40 @@ export class DemoController {
   }
 
   /**
+   * GET /demo/fs-diff/:sessionId — proxies ccaas's session FS diff
+   * endpoint so the browser doesn't hold the admin key. Returns
+   * whatever ccaas returns (200 + diff entries, 404 if session not
+   * active, 400 if WORKSPACE_PROVIDER=local). Surfaced as a side
+   * panel in the demo frontend.
+   */
+  @Get('demo/fs-diff/:sessionId')
+  async fsDiff(@Res() res: Response): Promise<void> {
+    // pull sessionId out of req params (no @Param() to keep the
+    // controller signature minimal + map cleanly through res)
+    const sessionId = (res.req.params as { sessionId: string }).sessionId;
+    const ccaasUrl = process.env.CCAAS_URL ?? 'http://localhost:3001';
+    const apiKey = process.env.CCAAS_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ error: 'CCAAS_API_KEY not set on demo backend' });
+      return;
+    }
+    try {
+      const r = await fetch(`${ccaasUrl}/api/v1/sessions/${sessionId}/fs/diff`, {
+        headers: { 'x-api-key': apiKey, 'x-tenant-id': TENANT_SLUG },
+      });
+      const body = await r.text();
+      res.status(r.status);
+      const ct = r.headers.get('content-type');
+      if (ct) res.setHeader('Content-Type', ct);
+      res.send(body);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`fs-diff proxy error: ${msg}`);
+      res.status(502).json({ error: msg });
+    }
+  }
+
+  /**
    * POST /demo/run — pipe ccaas's SSE stream straight through to the
    * browser. The body's `message` is what claude sees as the user turn.
    * Optional `sessionId` lets the browser keep a multi-turn conversation

@@ -40,11 +40,11 @@
   header button:hover { background: var(--border); }
   main {
     display: grid;
-    grid-template-columns: 220px 1fr 1fr;
+    grid-template-columns: 220px 1fr 1fr 260px;
     grid-template-rows: 1fr 280px;
     grid-template-areas:
-      "entities before after"
-      "prompt   prompt  prompt";
+      "entities before    after     fsdiff"
+      "prompt   prompt    prompt    fsdiff";
     flex: 1; min-height: 0;
   }
   .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
@@ -92,6 +92,31 @@
   .empty-hint {
     padding: 24px; color: var(--fg-dim);
     text-align: center; font-style: italic;
+  }
+
+  /* FS diff inspector (right column) */
+  #fsdiff { grid-area: fsdiff; border-right: none; border-left: 1px solid var(--border); }
+  #fsdiff .panel-title button {
+    background: var(--panel-2); color: var(--fg); border: 1px solid var(--border);
+    padding: 1px 8px; border-radius: 3px; font-size: 10px;
+    cursor: pointer; margin-left: auto;
+  }
+  #fsdiff .panel-title button:hover { background: var(--border); }
+  .fsdiff-list { padding: 4px 0; }
+  .fsdiff-entry {
+    padding: 4px 12px; font-family: var(--mono); font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; gap: 6px; align-items: baseline;
+  }
+  .fsdiff-entry .op { flex-shrink: 0; font-weight: 700; width: 12px; text-align: center; }
+  .fsdiff-entry .op-added    { color: var(--green); }
+  .fsdiff-entry .op-modified { color: var(--orange); }
+  .fsdiff-entry .op-removed  { color: var(--red); }
+  .fsdiff-entry .type { color: var(--fg-dim); flex-shrink: 0; font-size: 9px; }
+  .fsdiff-entry .path { word-break: break-all; }
+  .fsdiff-summary {
+    padding: 6px 12px; color: var(--fg-dim); font-size: 11px;
+    border-bottom: 1px solid var(--border);
   }
 
   /* Prompt + log */
@@ -189,6 +214,18 @@
     </div>
   </section>
 
+  <section id="fsdiff" class="panel">
+    <div class="panel-title">
+      <span>FS changes</span>
+      <span class="pill" id="fsdiff-pill">—</span>
+      <button id="btn-fsdiff-refresh" title="Refresh diff from agentfs">↻</button>
+    </div>
+    <div class="panel-body">
+      <div id="fsdiff-summary" class="empty-hint">runs after each session — shows every file the agent touched in the sandbox (not just the entity in the After pane)</div>
+      <div id="fsdiff-list" class="fsdiff-list"></div>
+    </div>
+  </section>
+
   <section id="prompt" class="panel">
     <div class="panel-title">Prompt → Agent</div>
     <div class="examples">
@@ -225,6 +262,10 @@ const $btnCancel    = document.getElementById('btn-cancel');
 const $btnReset     = document.getElementById('btn-reset');
 const $log          = document.getElementById('log-pane');
 const $sessionId    = document.getElementById('session-id');
+const $fsdiffPill   = document.getElementById('fsdiff-pill');
+const $fsdiffSummary= document.getElementById('fsdiff-summary');
+const $fsdiffList   = document.getElementById('fsdiff-list');
+const $fsdiffRefresh= document.getElementById('btn-fsdiff-refresh');
 
 // ─── state ─────────────────────────────────────────────────────────────────
 let selectedEntity = null;        // string id
@@ -413,6 +454,8 @@ async function runPrompt(message, sessionId) {
         $afterContent.textContent = 'refresh failed: ' + err.message;
       }
     }
+    // Refresh the FS diff inspector (every file the agent touched, not just our entity)
+    if (currentSessionId) refreshFsDiff(currentSessionId);
   }
 }
 
@@ -444,6 +487,61 @@ function handleFrame(frame) {
   const d = describeEvent(payload);
   logRow(d.tag, d.body, d.cls);
 }
+
+// ─── FS diff inspector ─────────────────────────────────────────────────────
+async function refreshFsDiff(sessionId) {
+  if (!sessionId) {
+    $fsdiffPill.textContent = '—';
+    $fsdiffSummary.textContent = 'no session yet';
+    $fsdiffList.innerHTML = '';
+    return;
+  }
+  $fsdiffPill.textContent = '…';
+  $fsdiffSummary.textContent = 'fetching from agentfs…';
+  $fsdiffList.innerHTML = '';
+  try {
+    const r = await fetch('/demo/fs-diff/' + encodeURIComponent(sessionId));
+    if (!r.ok) {
+      let msg = 'HTTP ' + r.status;
+      try {
+        const j = await r.json();
+        msg = j.message ?? j.error ?? msg;
+      } catch { /* keep status */ }
+      $fsdiffPill.textContent = '!';
+      $fsdiffSummary.textContent = msg;
+      return;
+    }
+    const entries = await r.json();
+    $fsdiffPill.textContent = entries.length;
+    if (entries.length === 0) {
+      $fsdiffSummary.textContent = 'no changes in the delta vs base';
+      return;
+    }
+    // count by op
+    const counts = entries.reduce((acc, e) => (acc[e.op] = (acc[e.op] || 0) + 1, acc), {});
+    $fsdiffSummary.textContent =
+      `${entries.length} entries · ${counts.added || 0} added · ${counts.modified || 0} modified · ${counts.removed || 0} removed`;
+    // render list — sort by path for stable order
+    const sorted = entries.slice().sort((a, b) => a.path.localeCompare(b.path));
+    $fsdiffList.innerHTML = '';
+    for (const e of sorted) {
+      const row = document.createElement('div');
+      row.className = 'fsdiff-entry';
+      const sym = e.op === 'added' ? '+' : e.op === 'modified' ? '~' : '-';
+      const t   = e.type === 'directory' ? 'dir' : 'file';
+      row.innerHTML =
+        '<span class="op op-' + e.op + '">' + sym + '</span>' +
+        '<span class="type">' + t + '</span>' +
+        '<span class="path"></span>';
+      row.querySelector('.path').textContent = e.path;
+      $fsdiffList.appendChild(row);
+    }
+  } catch (err) {
+    $fsdiffPill.textContent = '!';
+    $fsdiffSummary.textContent = 'fetch failed: ' + (err.message ?? String(err));
+  }
+}
+$fsdiffRefresh.onclick = () => refreshFsDiff(currentSessionId);
 
 // ─── wiring ────────────────────────────────────────────────────────────────
 $btnRun.onclick = () => {
