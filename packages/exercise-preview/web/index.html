@@ -124,6 +124,25 @@ textarea.ans-input:focus{outline:2px solid var(--teal);outline-offset:-1px}
 
 .empty{text-align:center;padding:40px;color:var(--t3);font-size:13px}
 .empty strong{color:var(--t1);font-weight:600;display:block;margin-bottom:6px}
+
+/* Frontend-iframe stage (P3) — fills the middle pane so the production
+   exercise component (rendered by /exercise-demo) shows at the real size. */
+/* height = 100vh - topbar(48) - pane padding (16*2) */
+.preview-frame-host{display:flex;flex-direction:column;height:calc(100vh - 80px);gap:8px}
+.preview-frame-bar{
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+  font-size:11px;color:var(--t3);
+}
+.preview-frame-bar a{color:var(--teal);text-decoration:none}
+.preview-frame-bar a:hover{text-decoration:underline}
+.preview-frame{flex:1;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.preview-frame-unreachable{
+  padding:18px;background:var(--amber-bg);color:var(--amber);
+  border-radius:8px;font-size:12px;line-height:1.55;
+}
+.preview-frame-unreachable code{
+  background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-size:11px;
+}
 </style>
 </head>
 <body>
@@ -265,6 +284,27 @@ function t(key) {
   return (STRINGS[loc] && STRINGS[loc][key]) || STRINGS['zh-CN'][key] || key;
 }
 
+// ──────────────── Frontend host ────────────────
+// Where the production React app serves /exercise-demo. Override per session
+// via `?frontend=http://other-host:1234`; the value is also persisted in
+// sessionStorage so reloads remember it. Production deployments can set this
+// once via window.PREVIEW_FRONTEND_URL on the embedding page.
+const FRONTEND_URL = (() => {
+  const fromQuery = new URLSearchParams(location.search).get('frontend');
+  if (fromQuery) {
+    try { sessionStorage.setItem('preview:frontend-url', fromQuery); } catch {}
+    return fromQuery.replace(/\/$/, '');
+  }
+  try {
+    const stored = sessionStorage.getItem('preview:frontend-url');
+    if (stored) return stored.replace(/\/$/, '');
+  } catch {}
+  if (typeof window !== 'undefined' && window.PREVIEW_FRONTEND_URL) {
+    return String(window.PREVIEW_FRONTEND_URL).replace(/\/$/, '');
+  }
+  return 'http://localhost:5283';
+})();
+
 // ──────────────── State ────────────────
 const state = {
   bundles: [],
@@ -373,78 +413,66 @@ function renderStage() {
   }
 }
 
-function renderStudentStage(stage) {
-  const story = state.story;
-  const ansJson = JSON.stringify(state.ans, null, 2);
+// Renders an iframe pointing at the frontend's /exercise-demo route so the
+// real production exercise component (QuizExercise / McClassView / …) shows
+// inside the preview chrome. The frontend fetches story data back via its
+// own /preview vite-proxy → this same preview-server.
+function renderIframeStage(stage, role) {
+  const bundleId = encodeURIComponent(state.activeBundleId);
+  const storyName = encodeURIComponent(state.activeStoryName);
+  const src = `${FRONTEND_URL}/exercise-demo?bundle=${bundleId}&story=${storyName}&role=${role}&embed=1`;
+  const roleLabel = role === 'teacher'
+    ? t('preview.stage.teacherTitle')
+    : t('preview.stage.studentTitle');
+
   stage.innerHTML = `
-    <div class="stage-header">
-      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.studentTitle'))}</div>
-      <div>
-        <button class="btn sec" id="reset-btn">${escape(t('preview.btn.reset'))}</button>
-        <button class="btn pri" id="check-btn">${escape(t('preview.btn.submit'))}</button>
+    <div class="preview-frame-host">
+      <div class="preview-frame-bar">
+        <strong style="font-family:Fraunces,Georgia,serif;font-size:14px;color:var(--t1)">
+          <em style="color:var(--teal);font-style:italic">${escape(state.activeStoryName)}</em>
+          · ${escape(roleLabel)}
+        </strong>
+        <span style="margin-left:auto">via</span>
+        <a href="${escape(src)}" target="_blank" rel="noopener">${escape(FRONTEND_URL)}</a>
       </div>
+      <iframe
+        class="preview-frame"
+        id="preview-iframe"
+        src="${escape(src)}"
+        title="Exercise preview"
+        loading="eager"
+      ></iframe>
     </div>
-
-    <div class="section">
-      <div class="section-label">${escape(t('preview.stage.answerKey'))}</div>
-      <pre class="json">${escape(JSON.stringify(story.answerKey, null, 2))}</pre>
-    </div>
-
-    <div class="section">
-      <div class="section-label">${escape(t('preview.stage.answerEdit'))}</div>
-      <textarea class="ans-input" id="ans-input">${escape(ansJson)}</textarea>
-    </div>
-
-    ${state.lastGrade ? `
-      <div class="section">
-        <div class="section-label">${escape(t('preview.stage.lastGrade'))}</div>
-        <pre class="json">${escape(JSON.stringify(state.lastGrade, null, 2))}</pre>
-      </div>
-    ` : ''}
   `;
 
-  document.getElementById('check-btn').addEventListener('click', onCheck);
-  document.getElementById('reset-btn').addEventListener('click', onReset);
-  document.getElementById('ans-input').addEventListener('input', e => {
-    try {
-      state.ans = JSON.parse(e.target.value);
-    } catch {}
+  // Show a hint if the iframe fails to load (frontend probably not running).
+  const iframe = document.getElementById('preview-iframe');
+  const failTimer = setTimeout(() => {
+    if (iframe && !iframe.dataset.loaded) {
+      const host = stage.querySelector('.preview-frame-host');
+      if (host) {
+        host.insertAdjacentHTML('beforeend', `
+          <div class="preview-frame-unreachable">
+            <strong>Frontend reachability check</strong><br>
+            Couldn't confirm <code>${escape(FRONTEND_URL)}</code> responded in time.
+            If you see "This site can't be reached", start the live-lesson frontend:
+            <br><br>
+            <code>cd solutions/business/live-lesson/frontend && npm run dev</code>
+            <br><br>
+            Then refresh. (Override the URL with <code>?frontend=https://your-host</code>.)
+          </div>
+        `);
+      }
+    }
+  }, 4000);
+  iframe.addEventListener('load', () => {
+    iframe.dataset.loaded = '1';
+    clearTimeout(failTimer);
   });
 }
 
-function renderTeacherStage(stage) {
-  const story = state.story;
-  const submissions = story.classSubmissions || [];
-  if (submissions.length === 0) {
-    stage.innerHTML = `
-      <div class="stage-header">
-        <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.teacherTitle'))}</div>
-      </div>
-      <div class="empty"><strong>${escape(t('preview.teacher.emptyHead'))}</strong>${escape(t('preview.teacher.empty'))}</div>
-    `;
-    return;
-  }
-  const rows = submissions.map(s => {
-    const score = s.score ?? '—';
-    const pill = score === '—' ? '' : score >= 80 ? 'hi' : score >= 50 ? 'mid' : 'lo';
-    return `<div class="teacher-row">
-      <span>${escape(s.studentId)}</span>
-      <span>${escape(s.name)}</span>
-      <span><span class="score-pill ${pill}">${score}</span></span>
-      <span>${s.submittedAt ? new Date(s.submittedAt).toLocaleTimeString() : '—'}</span>
-    </div>`;
-  }).join('');
-  stage.innerHTML = `
-    <div class="stage-header">
-      <div class="stage-title"><em>${escape(state.activeStoryName)}</em> · ${escape(t('preview.stage.teacherTitle'))}</div>
-      <div>${submissions.length} ${escape(t('preview.teacher.students'))}</div>
-    </div>
-    <div class="section" style="padding:0">
-      <div class="teacher-row head"><span>${escape(t('preview.teacher.id'))}</span><span>${escape(t('preview.teacher.name'))}</span><span>${escape(t('preview.teacher.score'))}</span><span>${escape(t('preview.teacher.submittedAt'))}</span></div>
-      ${rows}
-    </div>
-  `;
-}
+function renderStudentStage(stage) { renderIframeStage(stage, 'student'); }
+function renderTeacherStage(stage) { renderIframeStage(stage, 'teacher'); }
 
 function renderInspectorStage(stage) {
   stage.innerHTML = `

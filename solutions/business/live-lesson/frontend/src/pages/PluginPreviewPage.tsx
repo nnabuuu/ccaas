@@ -32,6 +32,9 @@ export default function PluginPreviewPage() {
   const bundleId = params.get('bundle')
   const storyName = params.get('story') ?? 'Default'
   const role = (params.get('role') ?? 'student') as Role
+  // ?embed=1 — hide the built-in top chrome so the page can be iframed by
+  // the exercise-preview chrome without showing two title/role bars.
+  const embed = params.get('embed') === '1'
 
   const [loaded, setLoaded] = useState<LoadedPreviewStory | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -85,8 +88,8 @@ export default function PluginPreviewPage() {
   return (
     <MockSessionProvider>
       <div style={{ minHeight: '100vh', background: '#f4f3ef', display: 'flex', flexDirection: 'column' }}>
-        <PreviewChrome loaded={loaded} role={role} onSwitchRole={switchRole} />
-        <div style={{ flex: 1, padding: '24px 32px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+        {!embed && <PreviewChrome loaded={loaded} role={role} onSwitchRole={switchRole} />}
+        <div style={{ flex: 1, padding: embed ? '0' : '24px 32px', maxWidth: embed ? 'none' : 1200, margin: '0 auto', width: '100%' }}>
           {role === 'student' ? (
             <StudentStage plugin={plugin} story={loaded.story} />
           ) : (
