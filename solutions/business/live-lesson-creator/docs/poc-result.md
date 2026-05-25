@@ -7,17 +7,32 @@
 
 | | Status |
 |---|---|
-| Both backends boot from clean checkout | ✅ (after fixing one circular DI bug — see drive-by below) |
-| `solution.json` auto-import (tenant + session templates) | ✅ |
-| live-lesson `GET /api/projects/:id/artifacts` | ✅ |
-| live-lesson `PUT /api/projects/:id/artifacts` | ✅ — content round-trips through `project_files.content` |
-| ccaas `GET /projects/:id/changes` SSE subscriber stream | ✅ — sends `subscribed` event on open |
-| ccaas `POST /projects/:id/invalidate` (trigger early sync) | ✅ — returns `{accepted: N}` (`N=0` when no session bound) |
-| Agent session reads + edits manifest, change event fires | ⚠️ **NOT verified end-to-end** — blocked on 3 operational glue items below |
+| Both backends boot from clean checkout | OK (after fixing one circular DI bug — see drive-by below) |
+| `solution.json` auto-import (tenant + session templates) | OK |
+| **`solution.json` auto-import (skills from `skills/*` glob)** | **OK — added in follow-up** |
+| live-lesson `GET /api/projects/:id/artifacts` | OK |
+| live-lesson `PUT /api/projects/:id/artifacts` | OK — content round-trips through `project_files.content` |
+| ccaas `GET /projects/:id/changes` SSE subscriber stream | OK — sends `subscribed` event on open |
+| ccaas `POST /projects/:id/invalidate` (trigger early sync) | OK — returns `{accepted: N}` (`N=0` when no session bound) |
+| **ccaas `POST /sessions/:id/bind-project` endpoint** | **OK — added in follow-up** |
+| **Bootstrap sync delivers SSE `updated` events on bind** | **OK — verified end-to-end in `scripts/poc-smoke.sh`** |
+| Agent session reads + edits manifest via Claude CLI | Not yet — needs an actual Claude CLI subscription / API key (real LLM call) |
 
-The architecture is **sound** and both halves work in isolation. To drive the full agent loop in a PoC, three glue items need closing.
+The three glue items from the original PoC are now closed (see ["Glue items resolved"](#glue-items-resolved) below). The architecture is operational: a fresh session can bind to a project, the bootstrap sync fires, change events arrive on the SSE stream. Real agent edits require an LLM connection that the PoC env doesn't have configured (out of scope for the wiring proof).
 
-## Operational glue items (blocking full end-to-end PoC)
+## Glue items resolved
+
+All three blockers from the first PoC pass are now fixed:
+
+1. **Skill auto-import**: `SolutionLoaderService.importFromConfig` now accepts a `solutionDir` argument; when present (the filesystem auto-discovery path), it walks the `config.skills` glob, reads each `skills/<name>/SKILL.md`, parses YAML frontmatter via `validateSkillFrontmatter`, recursively collects sibling files (`tools/`, `examples/`, `scripts/`), and calls `SkillsService.create()`. Idempotent — existing `(tenantId, slug)` is skipped. Body-only `POST /admin/solutions/import` skips skills with a warning (the source tree isn't reachable). Verified: `manifest-editor` skill + 5 sibling files land in `skills` + `skill_files` tables on boot.
+
+2. **`POST /api/v1/sessions/:sessionId/bind-project`**: thin controller wrapping `SessionService.bindToProject`. Body: `{ projectId, tenantId }`. Fires `session.bound` → `SessionAssetSyncer.onSessionBound` → first artifact load. Idempotent. Verified: bind triggers two SSE `updated` events (one per scaffolded file) on `/projects/:pid/changes`.
+
+3. **`SessionMetadata` entity registration**: was missing from `TypeOrmModule.forRoot()` entities list in `app.module.ts` (declared in `SessionsModule` `forFeature` but not at the root) — caused `EntityMetadataNotFoundError` on the first `bindToProject` call. Added to the root entity list.
+
+Plus the operational helper `scripts/poc-smoke.sh` does the full sequence end-to-end + asserts the SSE events arrived. Run it any time to re-verify after a refactor.
+
+## Original glue items (now historical — kept for context)
 
 ### 1. Skill files don't auto-import from `solution.json`
 

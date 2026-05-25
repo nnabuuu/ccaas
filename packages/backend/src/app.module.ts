@@ -52,6 +52,7 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
+import { SessionMetadata } from './sessions/entities/session-metadata.entity';
 import { SessionArtifactSnapshot } from './sessions/agent-runtime/session-artifact-snapshot.entity';
 import { SolutionsModule } from './solutions/solutions.module';
 import { BundleModule } from './bundles/bundle.module';
@@ -108,6 +109,7 @@ import { BuilderModule } from './builder/builder.module';
         MessageQueue,
         Session,
         SessionArtifactSnapshot,
+        SessionMetadata,
         // Storage entities
         LargeContent,
         SystemPromptVersion,

@@ -17,6 +17,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import matter from 'gray-matter';
 import { TenantsService } from '../tenants/tenants.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
@@ -25,8 +26,10 @@ import { BundleService } from '../bundles/bundle.service';
 import type {
   McpServerDefinition,
   SessionTemplateConfig,
+  SkillReferenceV3,
 } from './dto/solution-config.dto';
 import { validateSolutionConfig } from './dto/solution-config.dto';
+import { validateSkillFrontmatter } from './dto/skill-frontmatter.dto';
 
 // ============================================================================
 // Types
@@ -46,6 +49,19 @@ export interface ImportSolutionConfig {
    * bidirectional artifact sync omit it.
    */
   artifactUrl?: string;
+  /**
+   * Skill references — typically `["skills/*"]` glob. Only honoured when
+   * importFromConfig() is invoked with a solutionDir (i.e. via filesystem
+   * auto-discovery). Body-only admin imports lack the source tree so
+   * skills get skipped with a warning.
+   */
+  skills?: SkillReferenceV3[];
+}
+
+export interface SkillImportResult {
+  slug: string;
+  action: 'created' | 'skipped' | 'error';
+  error?: string;
 }
 
 export interface LoadResult {
@@ -144,7 +160,8 @@ export class SolutionLoaderService implements OnModuleInit {
         // (tenant + mode + mcpServers + sessionTemplates + artifactUrl).
         // Cast through unknown — we've validated the shape via Zod.
         const config = validated.data as unknown as ImportSolutionConfig;
-        await this.importFromConfig(config);
+        // Pass solutionDir so filesystem-resolved skills get imported too.
+        await this.importFromConfig(config, { solutionDir: path.join(dir, entry.name) });
         imported++;
         this.logger.log(
           `auto-imported solution from ${file} (tenant=${config.tenant?.slug})`,
@@ -169,7 +186,7 @@ export class SolutionLoaderService implements OnModuleInit {
    * Ensures tenant → registers MCP servers → syncs bundles →
    * registers triggers → applies session templates.
    */
-  async importFromConfig(config: ImportSolutionConfig): Promise<LoadResult> {
+  async importFromConfig(config: ImportSolutionConfig, opts?: { solutionDir?: string }): Promise<LoadResult> {
     const warnings: string[] = [];
     const mode: 'simple' | 'advanced' = config.mode ?? 'simple';
 
@@ -232,6 +249,22 @@ export class SolutionLoaderService implements OnModuleInit {
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
+    // Step 5.5: Import skills from filesystem (only when we have a solutionDir;
+    // body-only admin imports skip this and emit a warning so the operator
+    // knows skill content didn't land).
+    let skillResults: SkillImportResult[] = [];
+    if (config.skills && config.skills.length > 0) {
+      if (opts?.solutionDir) {
+        skillResults = await this.importSkills(tenantId, opts.solutionDir, config.skills, warnings);
+      } else {
+        warnings.push(
+          `Skipped ${config.skills.length} skill ref(s) — importFromConfig() ` +
+          `called without solutionDir (body-only import). Register skills via ` +
+          `POST /api/v1/skills or move the call to filesystem auto-discovery.`,
+        );
+      }
+    }
+
     // Step 6: Stamp solutionAppliedAt + persist artifactUrl in a single
     // update. The partial-merge semantics on tenants.update preserve
     // other config keys (webhookUrl, customSystemPrompt, etc.); re-import
@@ -256,11 +289,17 @@ export class SolutionLoaderService implements OnModuleInit {
       errors: [],
     };
 
+    const skillsCreated = skillResults.filter((s) => s.action === 'created').length;
+    const skillsSkipped = skillResults.filter((s) => s.action === 'skipped').length;
+    const skillsErrored = skillResults.filter((s) => s.action === 'error').length;
     this.logger.log(
       `Imported "${config.tenant.name}": ` +
       `${mcpResults.filter((m) => m.action === 'created').length} MCP servers created, ` +
       `${mcpResults.filter((m) => m.action === 'updated').length} updated, ` +
-      `${templateCount} session template(s)`,
+      `${templateCount} session template(s), ` +
+      `${skillsCreated} skill(s) created` +
+      (skillsSkipped ? `, ${skillsSkipped} skipped (already exist)` : '') +
+      (skillsErrored ? `, ${skillsErrored} skill(s) failed` : ''),
     );
 
     return {
@@ -278,6 +317,157 @@ export class SolutionLoaderService implements OnModuleInit {
    */
   getStatus(): LoaderStatus {
     return { ...this.status };
+  }
+
+  // --------------------------------------------------------------------------
+  // Skill Filesystem Import
+  // --------------------------------------------------------------------------
+
+  /**
+   * Walk the `skills: [...]` references against the solution's source tree.
+   * Each ref can be a `skills/*` glob (or `string` short form), a `{folder}`
+   * object, or a `{slug, name}` object. For glob / folder forms, every dir
+   * containing a `SKILL.md` becomes one skill in the DB; the SKILL.md
+   * supplies name/description via YAML frontmatter; sibling files (tools/*,
+   * examples/*, scripts/*) become skill_files rows.
+   *
+   * Idempotent: existing (tenantId, slug) is left untouched. The skill
+   * upsert/version-bump path is the API's job (`PUT /api/v1/skills/:id` +
+   * `POST :id/versions`) — auto-import doesn't try to upgrade in-place
+   * because the body might include locally-edited content.
+   *
+   * Per-skill try/catch — one malformed SKILL.md doesn't block siblings.
+   */
+  private async importSkills(
+    tenantId: string,
+    solutionDir: string,
+    refs: SkillReferenceV3[],
+    warnings: string[],
+  ): Promise<SkillImportResult[]> {
+    const results: SkillImportResult[] = [];
+    const seen = new Set<string>(); // dedupe (same slug imported by two refs)
+
+    for (const ref of refs) {
+      try {
+        const skillDirs = this.resolveSkillRef(solutionDir, ref);
+        for (const skillDir of skillDirs) {
+          const slug = path.basename(skillDir);
+          if (seen.has(slug)) continue;
+          seen.add(slug);
+          try {
+            const result = await this.importOneSkill(tenantId, skillDir, slug);
+            results.push(result);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            results.push({ slug, action: 'error', error: msg });
+            warnings.push(`skill "${slug}": ${msg}`);
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        warnings.push(`skill ref ${JSON.stringify(ref)}: ${msg}`);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Resolve a single skill reference into a list of skill directories on disk.
+   * Supports the three v3 forms: short string, `{folder}`, `{slug, name}`.
+   * Glob support is limited to a trailing `*` (e.g. `skills/*` →
+   * every subdir of skills/) — full glob isn't worth dragging in a dep for.
+   */
+  private resolveSkillRef(solutionDir: string, ref: SkillReferenceV3): string[] {
+    const folder = typeof ref === 'string' ? ref : ('folder' in ref ? ref.folder : `skills/${ref.slug}`);
+    const isGlob = folder.endsWith('/*');
+    const baseRel = isGlob ? folder.slice(0, -2) : folder;
+    const baseAbs = path.join(solutionDir, baseRel);
+
+    if (!fs.existsSync(baseAbs)) return [];
+    if (!isGlob) {
+      // Single skill folder
+      if (!fs.statSync(baseAbs).isDirectory()) return [];
+      return [baseAbs];
+    }
+    // Glob — enumerate subdirs with a SKILL.md
+    return fs.readdirSync(baseAbs, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => path.join(baseAbs, e.name))
+      .filter((dir) => fs.existsSync(path.join(dir, 'SKILL.md')));
+  }
+
+  /** Build CreateSkillDto from a skill dir + call SkillsService.create. */
+  private async importOneSkill(
+    tenantId: string,
+    skillDir: string,
+    slug: string,
+  ): Promise<SkillImportResult> {
+    // Skip if already registered — auto-import is bootstrap, not upgrade.
+    const existing = await this.skills.findOne(tenantId, slug);
+    if (existing) {
+      return { slug, action: 'skipped' };
+    }
+
+    const skillMdPath = path.join(skillDir, 'SKILL.md');
+    if (!fs.existsSync(skillMdPath)) {
+      throw new Error(`SKILL.md not found in ${skillDir}`);
+    }
+
+    const raw = fs.readFileSync(skillMdPath, 'utf8');
+    const parsed = matter(raw);
+    const fmResult = validateSkillFrontmatter(parsed.data);
+    if (!fmResult.success) {
+      const issues = fmResult.errors.map((e) => `${e.path}: ${e.message}`).join('; ');
+      throw new Error(`invalid frontmatter: ${issues}`);
+    }
+
+    // Collect sibling files (everything under skillDir except SKILL.md itself)
+    const files = this.collectSkillFiles(skillDir, skillDir);
+
+    await this.skills.create(tenantId, {
+      slug,
+      name: fmResult.data.name,
+      description: fmResult.data.description,
+      content: parsed.content, // SKILL.md body (markdown, no frontmatter)
+      scope: 'tenant',
+      type: 'skill',
+      files,
+    });
+
+    return { slug, action: 'created' };
+  }
+
+  /**
+   * Recursively collect non-SKILL.md files under skillDir. Returns relative
+   * paths from skillDir root. Skips anything > 1MB (the SkillFile size cap)
+   * and node_modules / hidden dirs.
+   */
+  private collectSkillFiles(skillDir: string, root: string): Array<{ relativePath: string; content: string }> {
+    const out: Array<{ relativePath: string; content: string }> = [];
+    const entries = fs.readdirSync(skillDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const abs = path.join(skillDir, entry.name);
+      if (entry.isDirectory()) {
+        out.push(...this.collectSkillFiles(abs, root));
+        continue;
+      }
+      // Skip the SKILL.md at the skill root (content already captured)
+      const rel = path.relative(root, abs);
+      if (rel === 'SKILL.md') continue;
+      try {
+        const stat = fs.statSync(abs);
+        if (stat.size > 1024 * 1024) {
+          this.logger.warn(`skipping ${abs} — exceeds 1MB skill_file cap`);
+          continue;
+        }
+        out.push({ relativePath: rel, content: fs.readFileSync(abs, 'utf8') });
+      } catch (err) {
+        this.logger.warn(`skipping ${abs} — ${err instanceof Error ? err.message : err}`);
+      }
+    }
+    return out;
   }
 
   // --------------------------------------------------------------------------

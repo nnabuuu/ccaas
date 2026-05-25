@@ -648,6 +648,44 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
     return { success: true };
   }
 
+  /**
+   * Bind a session to a project so the agent-runtime sync layer knows
+   * which artifacts to load/save. Fires `session.bound` → triggers
+   * `SessionAssetSyncer.onSessionBound` which bootstraps the workspace
+   * from `RestProjectArtifactSource.loadArtifacts(projectId)`.
+   *
+   * Idempotent: re-binding the same projectId is a no-op write + no-op
+   * sync converge.
+   *
+   * POST /api/v1/sessions/:sessionId/bind-project
+   * body: { projectId: string, tenantId: string }
+   */
+  @Post(':sessionId/bind-project')
+  @OptionalAuth()
+  @ApiOperation({
+    summary: '绑定 session 到 project / Bind Session to Project',
+    description:
+      'Tells agent-runtime which project this session edits. Required ' +
+      'before the agent can read/write project artifacts. Idempotent.',
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiResponse({ status: 200, description: '绑定成功 / Bound' })
+  @ApiResponse({ status: 400, description: 'projectId / tenantId missing' })
+  @ApiResponse({ status: 404, description: '会话不存在 / Session not found' })
+  async bindToProject(
+    @Param('sessionId') sessionId: string,
+    @Body() body: { projectId?: string; tenantId?: string },
+  ): Promise<{ success: true; sessionId: string; projectId: string }> {
+    if (!body?.projectId) {
+      throw new BadRequestException('projectId required in request body');
+    }
+    if (!body?.tenantId) {
+      throw new BadRequestException('tenantId required in request body');
+    }
+    await this.sessionService.bindToProject(sessionId, body.tenantId, body.projectId);
+    return { success: true, sessionId, projectId: body.projectId };
+  }
+
 
   /**
    * List files in session workspace

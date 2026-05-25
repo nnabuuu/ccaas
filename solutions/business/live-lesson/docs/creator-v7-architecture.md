@@ -403,13 +403,14 @@ ccaas 的 admin 端点 + skill 写都要 admin scope。今天 PoC 用 `AUTH_ALLO
 
 按风险排序（已修复 / 待修复标注在前）：
 
-1. **[FIXED in working tree]** `SessionService ↔ SessionMetadataService` 循环依赖 —— forwardRef 双向修复，待 commit。详见 [poc-result.md drive-by 节](../../live-lesson-creator/docs/poc-result.md)。
-2. **[CRITICAL]** `SolutionLoaderService` 自动注册 skills —— 不然每次添加新 skill 要手动 API POST + 写 admin auth 流程。详见 [poc-result.md §1](../../live-lesson-creator/docs/poc-result.md)。
-3. **[CRITICAL]** `POST /api/v1/sessions/:id/bind-project { projectId }` 公开 HTTP 端点 —— `bindToProject` 内部能力没暴露。详见 [poc-result.md §2](../../live-lesson-creator/docs/poc-result.md)。
-4. **[CRITICAL — deploy blocker]** Auth 模式 —— 给老师 API key 的流程 + UI 怎么获取 + 多租户隔离。
-5. **[HIGH]** live-lesson 是否也发 SSE —— 直接决定多客户端一致性的取舍。
-6. **[HIGH]** Review tab 的 `POST /api/projects/:id/audit` —— manifest 业务规则审计端点（schema 校验之外）。
-7. **[MEDIUM]** `manifest-editor` skill 完整化 —— PoC 写了 quiz + observe + lint；剩下 10 个 answerKey schema 文档 + scaffold + discuss 配置 等。
+1. **[FIXED]** `SessionService ↔ SessionMetadataService` 循环依赖 —— forwardRef 双向修复。
+2. **[FIXED]** `SolutionLoaderService` 自动注册 skills —— 现在 walk solution.json 的 `skills` glob，从文件系统 import SKILL.md + 兄弟文件到 `skills` / `skill_files` 表。详见 `poc-result.md`。
+3. **[FIXED]** `POST /api/v1/sessions/:id/bind-project { projectId, tenantId }` 公开 HTTP 端点。绑定后 bootstrap sync 触发，change SSE 立即吐两条 `updated` 事件（per scaffolded file）。
+4. **[FIXED]** `SessionMetadata` entity 没在 root `TypeOrmModule.forRoot()` 里 —— 加到 entities 列表。这是发现 G2 时 surface 出来的。
+5. **[CRITICAL — deploy blocker]** Auth 模式 —— 给老师 API key 的流程 + UI 怎么获取 + 多租户隔离。今天 PoC 走 `AUTH_ALLOW_ANONYMOUS=true` 绕过。
+6. **[HIGH]** live-lesson 是否也发 SSE —— 直接决定多客户端一致性的取舍。
+7. **[HIGH]** Review tab 的 `POST /api/projects/:id/audit` —— manifest 业务规则审计端点（schema 校验之外）。
+8. **[MEDIUM]** `manifest-editor` skill 完整化 —— PoC 写了 quiz + observe + lint；剩下 10 个 answerKey schema 文档 + scaffold + discuss 配置 等。
 
 ---
 
