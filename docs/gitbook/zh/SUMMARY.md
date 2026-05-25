@@ -92,4 +92,4 @@
 * [solution.json 配置参考 (v3.0)](reference/solution-json.md)
 * [最佳实践汇总](reference/best-practices.md)
 * [Runtime REST API（fs + metadata）](reference/runtime-api.md)
-* [@kedge-agentic/agentfs-runtime 包参考](reference/agentfs-runtime.md)
+* [@kedge-agentic/agent-runtime 包参考](reference/agent-runtime.md)

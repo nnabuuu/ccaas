@@ -278,13 +278,13 @@ If you disable the sandbox (`WORKSPACE_BASH_SANDBOX=none`), the right-hand path 
 
 Two different materializers, two different jobs:
 
-### 4.1 `BaseMaterializer` (@kedge-agentic/agentfs-runtime)
+### 4.1 `BaseMaterializer` (@kedge-agentic/agent-runtime/workspace)
 
 Runs **at backend startup**, once. Projects DB skills + MCP servers to `${baseDir}/tenants/<tenantId>/{skills,mcp-servers}/`. This baseDir is the agentfs `--base` argument, overlaid into every session mount.
 
-`@kedge-agentic/agentfs-runtime` is the Phase A extracted pure version, zero framework deps. `ContentSource` is the port (backend provides a TypeORM adapter). See `reference/agentfs-runtime.md`.
+The `workspace/` sub-module of `@kedge-agentic/agent-runtime` is the Phase A extracted pure version, zero framework deps. `ContentSource` is the port (backend provides a TypeORM adapter). See `reference/agent-runtime.md`.
 
-Code: `packages/agentfs-runtime/src/core/base-materializer.ts` (pure) + `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts` (adapter).
+Code: `packages/agent-runtime/src/workspace/base-materializer.ts` (pure) + `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts` (adapter).
 
 ### 4.2 `SessionAssetMaterializer` (backend)
 
@@ -302,7 +302,7 @@ File: `packages/backend/src/sessions/services/session-asset-materializer.service
 | Where | `${WORKSPACE_DIR}/_agentfs_base/...` (overlay base) | `<session-root>/...` (session's own delta) |
 | Source | DB (Skills / McpServer entities) | Disk (solution directory) |
 | For | skill content shared across all sessions | this session's own data copy |
-| Package | `@kedge-agentic/agentfs-runtime` | backend-private |
+| Package | `@kedge-agentic/agent-runtime` (`workspace/` sub-module) | backend-private |
 
 ### 4.3 Where the two materializers sit on the timeline
 

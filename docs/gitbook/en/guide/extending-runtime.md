@@ -57,14 +57,14 @@ Every new session under this tenant: `SessionAssetMaterializer` copies these dir
 
 **Problem**: by default the ccaas backend stores skills in its own TypeORM SQLite. You may want to load from plain JSON / an external API / your own DB.
 
-**How**: implement `@kedge-agentic/agentfs-runtime`'s `ContentSource` interface (**only 2 methods**):
+**How**: implement `@kedge-agentic/agent-runtime`'s `ContentSource` interface (**only 2 methods**):
 
 ```ts
 // my-content-source.ts
 import { readFileSync } from 'node:fs';
 import type {
   ContentSource, SkillContent, McpServerContent,
-} from '@kedge-agentic/agentfs-runtime';
+} from '@kedge-agentic/agent-runtime';
 
 export class JsonFileContentSource implements ContentSource {
   constructor(private jsonPath: string) {}
@@ -102,13 +102,13 @@ providers: [
 Test with `InMemoryContentSource`:
 
 ```ts
-import { InMemoryContentSource } from '@kedge-agentic/agentfs-runtime/testing';
+import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
 
 const src = new InMemoryContentSource([/* fixtures */]);
 // + your adapter test uses jest mocks + InMemoryContentSource for compare
 ```
 
-Full API + adapter-writing notes: `reference/agentfs-runtime.md`.
+Full API + adapter-writing notes: `reference/agent-runtime.md`.
 
 ---
 
@@ -232,5 +232,5 @@ Details: `reference/runtime-api.md` § Metadata KV endpoints + [[sandbox-mount-v
 
 - `platform/runtime-architecture.md` — where these extension points sit in the overall layers
 - `reference/runtime-api.md` — full REST endpoint spec
-- `reference/agentfs-runtime.md` — ContentSource port details
+- `reference/agent-runtime.md` — ContentSource port details
 - `examples/demo-sandbox.md` — a complete case using nearly all of these extension points

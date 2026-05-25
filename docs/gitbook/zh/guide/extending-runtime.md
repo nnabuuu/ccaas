@@ -57,14 +57,14 @@ SOLUTION_DIRS=<你的 slug>:$PWD/solutions/business/<你的 slug> \
 
 **问题**：默认 ccaas backend 把 skill 存在它自己的 TypeORM SQLite 里。你可能想从纯 JSON 文件 / 外部 API / 自己的 DB 加载。
 
-**做法**：实现 `@kedge-agentic/agentfs-runtime` 的 `ContentSource` 接口（**只有 2 个方法**）：
+**做法**：实现 `@kedge-agentic/agent-runtime` 的 `ContentSource` 接口（**只有 2 个方法**）：
 
 ```ts
 // my-content-source.ts
 import { readFileSync } from 'node:fs';
 import type {
   ContentSource, SkillContent, McpServerContent,
-} from '@kedge-agentic/agentfs-runtime';
+} from '@kedge-agentic/agent-runtime';
 
 export class JsonFileContentSource implements ContentSource {
   constructor(private jsonPath: string) {}
@@ -103,13 +103,13 @@ providers: [
 测试：用 `InMemoryContentSource`：
 
 ```ts
-import { InMemoryContentSource } from '@kedge-agentic/agentfs-runtime/testing';
+import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
 
 const src = new InMemoryContentSource([/* fixtures */]);
 // + 你的 adapter 测试用 jest mock + InMemoryContentSource compare
 ```
 
-详细 API + 写 adapter 的注意事项：`reference/agentfs-runtime.md`。
+详细 API + 写 adapter 的注意事项：`reference/agent-runtime.md`。
 
 ---
 
@@ -233,5 +233,5 @@ curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 
 - `platform/runtime-architecture.md` — 这些扩展点在整个层级里的位置
 - `reference/runtime-api.md` — REST endpoint 完整 spec
-- `reference/agentfs-runtime.md` — ContentSource port 详细
+- `reference/agent-runtime.md` — ContentSource port 详细
 - `examples/demo-sandbox.md` — 一个用到几乎所有扩展点的完整 case

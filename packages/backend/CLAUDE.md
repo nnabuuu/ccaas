@@ -50,7 +50,7 @@ The sessions module contains the new runtime layer. See **[gitbook → Runtime �
 | Local provider | `src/sessions/workspace/local-provider.ts` | mkdir + symlink (today's default) |
 | Agentfs provider | `src/sessions/workspace/agentfs-provider.ts` | full agentfs CLI lifecycle (init/mount/snapshot/rollback/diff/timeline); FUSE on Linux, NFS on macOS |
 | Provider selector | `src/sessions/workspace/workspace-provider.factory.ts` | `WORKSPACE_PROVIDER=local\|agentfs` |
-| Base materializer | (extracted) `@kedge-agentic/agentfs-runtime` package | DB skills → disk projection for agentfs `--base` overlay |
+| Base materializer | (extracted) `@kedge-agentic/agent-runtime` package (workspace sub-module) | DB skills → disk projection for agentfs `--base` overlay |
 | TypeORM adapter | `src/sessions/workspace/typeorm-skill-content-source.ts` | implements `ContentSource` over our Skill/SkillFile/McpServer entities |
 | Per-session asset seed | `src/sessions/services/session-asset-materializer.service.ts` | copies `SOLUTION_DIRS[slug]/{entities,resources}/` into each session's workspace root |
 | Bash sandbox | `src/sessions/sandbox/sandbox.service.ts` + `just-bash-mcp/server.mjs` | injects `__ccaas_bash` MCP server, denies native Bash, steers via system prompt |

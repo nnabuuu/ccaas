@@ -275,13 +275,13 @@ agentfs provider 的关键模型：每个 session 看到的文件系统是 **共
 
 两个不同的 materializer，做两件不同的事：
 
-### 4.1 `BaseMaterializer`（@kedge-agentic/agentfs-runtime）
+### 4.1 `BaseMaterializer`（@kedge-agentic/agent-runtime/workspace）
 
 跑在 **后端启动时**，一次。把 DB 里的 skills + MCP servers 投影到 `${baseDir}/tenants/<tenantId>/{skills,mcp-servers}/`。这个 baseDir 是 agentfs 的 `--base` 参数，每个 session mount 的时候 overlay 上去。
 
-`@kedge-agentic/agentfs-runtime` 包是 Phase A 抽取出来的纯净版本，零框架依赖。`ContentSource` 接口是端口（backend 提供 TypeORM 适配器）。详见 `reference/agentfs-runtime.md`。
+`@kedge-agentic/agent-runtime` 包的 `workspace/` 子模块（Phase A 抽取出来的纯净版本，零框架依赖）。`ContentSource` 接口是端口（backend 提供 TypeORM 适配器）。详见 `reference/agent-runtime.md`。
 
-代码：`packages/agentfs-runtime/src/core/base-materializer.ts`（纯）+ `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts`（适配器）。
+代码：`packages/agent-runtime/src/workspace/base-materializer.ts`（纯）+ `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts`（适配器）。
 
 ### 4.2 `SessionAssetMaterializer`（backend）
 
@@ -299,7 +299,7 @@ agentfs provider 的关键模型：每个 session 看到的文件系统是 **共
 | 写到哪 | `${WORKSPACE_DIR}/_agentfs_base/...`（overlay base） | `<session-root>/...`（session 自己的 delta） |
 | 来源 | DB（Skills / McpServer 实体） | Disk（solution 目录） |
 | 适用 | 所有 session 共享的 skill 内容 | 当前 session 自己的数据副本 |
-| 包 | `@kedge-agentic/agentfs-runtime` | backend 私有 |
+| 包 | `@kedge-agentic/agent-runtime`（`workspace/` 子模块） | backend 私有 |
 
 ### 4.3 两个 materializer 在时间轴上的位置
 

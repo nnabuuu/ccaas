@@ -92,4 +92,4 @@
 * [solution.json Reference (v3.0)](reference/solution-json.md)
 * [Best Practices](reference/best-practices.md)
 * [Runtime REST API (fs + metadata)](reference/runtime-api.md)
-* [@kedge-agentic/agentfs-runtime Package Reference](reference/agentfs-runtime.md)
+* [@kedge-agentic/agent-runtime Package Reference](reference/agent-runtime.md)

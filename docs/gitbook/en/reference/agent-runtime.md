@@ -1,204 +1,221 @@
-# `@kedge-agentic/agentfs-runtime` package reference
+# `@kedge-agentic/agent-runtime` Package Reference
 
-> Framework-free agentfs runtime layer. Phase A: `BaseMaterializer` + `ContentSource` port + `Logger` port. No NestJS / TypeORM / Express dependencies; pure TypeScript + `node:fs` / `node:crypto`.
+> Framework-free runtime for ccaas agentic services. Current version v0.2 (Phase 0).
+> **2026-05 rename note**: this package was previously `@kedge-agentic/agentfs-runtime` (v0.1) when it contained only the workspace layer. The rename signals the broader scope: workspace + project + artifact + schema + sync.
 
-## When you need this package
+## Phase status
 
-| You want to… | Reach for |
-|---|---|
-| Modify BaseMaterializer behavior in ccaas backend | Edit this package |
-| Reuse BaseMaterializer logic in another project (not a NestJS/TypeORM user) | Import this package + implement your own `ContentSource` |
-| Use a non-TypeORM skill source in ccaas backend (e.g. plain JSON files) | Implement `ContentSource`, replace `TypeOrmSkillContentSource` |
-| Mock BaseMaterializer input in tests | Use `InMemoryContentSource` from `@kedge-agentic/agentfs-runtime/testing` |
-| Build a solution backend without going through ccaas to project skills | This package is **enough** (pure logic), but you still need to decide where the skill content comes from |
+| Phase | Sub-module | Status |
+|---|---|---|
+| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped (was v0.1's entirety) |
+| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped (this version) |
+| 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped (interfaces only, no impls) |
+| 1 | TypeORM `ProjectStore` + `ArtifactStore`; Zod schema adapter; `MarkdownArtifactEditor` | ⏳ next |
+| 2 | ChangeStream impl (in-memory → Redis) | ⏳ later |
+| 3 | live-lesson migration onto the new abstractions | ⏳ last |
 
-## Package design
+Full design rationale: `docs/AGENT_RUNTIME_DESIGN.md`.
 
-Clean architecture, single direction of dependency: **consumer → this package / core**, never the reverse.
+## Import paths
 
-```
-src/
-├── core/
-│   ├── types.ts          ← ContentSource port + value objects
-│   ├── logger.ts         ← Logger port + noopLogger
-│   └── base-materializer.ts  ← pure class
-├── testing/
-│   └── in-memory-content-source.ts  ← test helper (exposed via /testing subpath)
-└── index.ts              ← public API
-```
+Root re-exports the full surface:
 
-Public API:
 ```ts
 import {
-  BaseMaterializer,
-  ContentSource, SkillContent, SkillFileContent, McpServerContent, MaterializeResult,
-  Logger, noopLogger,
-} from '@kedge-agentic/agentfs-runtime';
-
-import { InMemoryContentSource } from '@kedge-agentic/agentfs-runtime/testing';
+  // workspace
+  BaseMaterializer, ContentSource, Logger, noopLogger,
+  // artifact
+  JsonEditProvider, Artifact, ArtifactEditor, EditOperation, EditResult,
+  // project
+  Project, ProjectStore,
+  // schema
+  SchemaValidator, SchemaRegistry,
+  // sync
+  ChangeStream, ChangeEvent,
+} from '@kedge-agentic/agent-runtime';
 ```
 
-## `ContentSource` port — the core extension point
+Sub-path imports (requires `moduleResolution: node16 | nodenext | bundler` in tsconfig):
 
-Only two methods, **minimum-knowledge** by design:
+```ts
+import { BaseMaterializer } from '@kedge-agentic/agent-runtime/workspace';
+import { JsonEditProvider } from '@kedge-agentic/agent-runtime/artifact';
+import type { Project } from '@kedge-agentic/agent-runtime/project';
+```
+
+`testing/` exposes `InMemoryContentSource` separately for test use.
+
+## `workspace/`
 
 ```ts
 interface ContentSource {
   listActiveSkills(): Promise<ReadonlyArray<SkillContent>>;
   listActiveMcpServers(): Promise<ReadonlyArray<McpServerContent>>;
 }
+
+class BaseMaterializer {
+  constructor(source: ContentSource, baseDir: string, logger?: Logger);
+  getBaseDir(): string;
+  materialize(): Promise<MaterializeResult>;
+}
 ```
 
-Value objects:
+Projects skills + MCP servers from a `ContentSource` (a port you implement against your storage) to a host directory for agentfs's `--base` overlay. See [Runtime Architecture](../platform/runtime-architecture.md) § 4.1.
+
+ccaas backend's TypeORM adapter: `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts`.
+
+## `artifact/`
+
+**Phase 0 shipped: `JsonEditProvider`** — concrete implementation for editing JSON artifacts.
 
 ```ts
-interface SkillContent {
-  id: string;                     // any stable unique identifier; written into .skill.json
+interface Artifact<TContent = unknown> {
+  id: string;
+  projectId: string;
+  path: string;                      // relative path within the project
+  type: 'markdown' | 'json' | 'binary' | string;
+  content: TContent;
+  attributes: Readonly<Record<string, unknown>>;
+  schemaId?: string;                  // triggers SchemaRegistry validation
+  updatedAt: string;
+}
+
+type EditOperation =
+  | { op: 'field_set'; path: string; value: unknown }            // JSON Pointer
+  | { op: 'json_patch'; ops: ReadonlyArray<unknown> }             // RFC 6902
+  | { op: 'str_replace'; old_string: string; new_string: string } // for markdown editor
+  | { op: 'replace'; content: unknown };
+
+interface ArtifactEditor<TContent = unknown> {
+  serialize(artifact: Artifact<TContent>): string;
+  edit(artifact: Artifact<TContent>, ops: ReadonlyArray<EditOperation>): Promise<EditResult<TContent>>;
+}
+```
+
+### JsonEditProvider usage
+
+```ts
+import { JsonEditProvider } from '@kedge-agentic/agent-runtime';
+import { z } from 'zod';
+
+const ManifestSchema = z.object({ /* ... */ });
+const validator = {
+  validate: (v: unknown) => {
+    const r = ManifestSchema.safeParse(v);
+    return r.success ? { ok: true, value: r.data } : { ok: false, error: r.error.message };
+  },
+};
+
+const editor = new JsonEditProvider({ validator });
+
+const result = await editor.edit(artifact, [
+  { op: 'field_set', path: '/lessons/0/title', value: 'Updated title' },
+  { op: 'json_patch', ops: [{ op: 'remove', path: '/draft' }] },
+]);
+
+if (result.success) {
+  await artifactStore.save(result.artifact!);
+} else {
+  console.error('edit failed:', result.error);
+  // input is NOT mutated — atomicity guarantee
+}
+```
+
+**Supported ops**:
+- `field_set` — RFC 6901 JSON Pointer; missing intermediate objects are auto-created
+- `json_patch` — RFC 6902 add / remove / replace subset
+- `replace` — wholesale content replace
+
+**Not supported**: `str_replace` (that's the markdown editor's job); `copy` / `move` / `test` (added when needed)
+
+**Schema validation**: optional `validator` constructor arg. Validation runs *after* all ops apply; on failure returns `success: false` and **the input artifact is untouched** (atomicity).
+
+### Future editors (Phase 1)
+
+- `MarkdownArtifactEditor` — wraps `@kedge-agentic/context-layer`'s `DocumentEditProvider` so markdown artifacts use the same unified interface
+- `BinaryEditor` — wholesale binary blob replacement, backed by an object-storage adapter
+
+## `project/` (Phase 0 interface skeleton)
+
+```ts
+interface Project {
+  id: string;
   tenantId: string;
-  slug: string;                   // URL-safe; used as directory name
-  name: string;
+  title: string;
   description?: string;
-  content: string;                // SKILL.md body
-  files: ReadonlyArray<SkillFileContent>;  // sub-files (progressive disclosure)
+  status: 'draft' | 'active' | 'archived';
+  attributes: Readonly<Record<string, unknown>>;  // solution-specific extras
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface SkillFileContent {
-  relativePath: string;           // **no `..` or absolute path**; materializer rejects
-  content: string;
-}
-
-interface McpServerContent {
-  tenantId: string;
-  slug: string;
-  name: string;
-  type: string;                   // 'stdio' | 'sse' | ...
-  config: unknown;                // adapter-defined shape; materializer JSON-stringifies it
+interface ProjectStore {
+  load(projectId: string): Promise<Project | null>;
+  list(tenantId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
+  save(project: Project): Promise<void>;
+  delete(projectId: string): Promise<void>;
 }
 ```
 
-## `BaseMaterializer` — the pure class
+**Phase 0 has interfaces only, no impls**. Phase 1 will ship a TypeORM-based impl for the ccaas backend; solutions can write their own.
+
+Primary driving case: live-lesson's `CourseProject` is currently bespoke; see [Project Pattern Catalog](../../../docs/PROJECT_PATTERN_CATALOG.md).
+
+## `schema/` (Phase 0 interface skeleton)
 
 ```ts
-import { BaseMaterializer } from '@kedge-agentic/agentfs-runtime';
-
-const m = new BaseMaterializer(
-  contentSource,    // an instance of ContentSource
-  '/abs/base/dir',  // root for agentfs --base
-  logger,           // optional; defaults to noopLogger
-);
-
-const result = await m.materialize();
-// → { baseDir, skillsWritten, skillFilesWritten, mcpServersWritten, durationMs }
-```
-
-Output layout:
-
-```
-${baseDir}/
-└── tenants/
-    └── {tenantId}/
-        ├── skills/
-        │   └── {slug}/
-        │       ├── SKILL.md       ← skill.content
-        │       ├── .skill.json    ← { id, name, description }
-        │       └── <relativePath> ← each SkillFileContent
-        └── mcp-servers/
-            └── {slug}/
-                └── config.json    ← { name, type, config }
-```
-
-**Idempotent**: each file is sha1-gated. A re-run does not write unchanged content. Safe to call on every backend startup.
-
-**Safety**: `SkillFileContent.relativePath` may not contain `..` segments or absolute paths — the materializer uses `safeJoinUnderDir` to reject and log a warn, **skipping that one file** and continuing the rest (one malicious row should not halt the whole materialize).
-
-## `Logger` port
-
-```ts
-interface Logger {
-  log(message: string): void;
-  warn(message: string): void;
-  error(message: string): void;
-  debug(message: string): void;
+interface SchemaValidator<T = unknown> {
+  validate(value: unknown): { ok: true; value: T } | { ok: false; error: string };
 }
 
-const noopLogger: Logger = { log() {}, warn() {}, error() {}, debug() {} };
-```
-
-To bridge to NestJS / pino / console:
-```ts
-import { Logger as NestLogger } from '@nestjs/common';
-
-const adapter = new (class implements Logger {
-  private l = new NestLogger('BaseMaterializer');
-  log(m: string)   { this.l.log(m); }
-  warn(m: string)  { this.l.warn(m); }
-  error(m: string) { this.l.error(m); }
-  debug(m: string) { this.l.debug(m); }
-})();
-```
-
-Reference: `NestLoggerAdapter` in `packages/backend/src/sessions/workspace/base-materializer.factory.ts`.
-
-## Writing a non-TypeORM `ContentSource`
-
-Example: load skills from a JSON file (good for prototypes / static deploys).
-
-```ts
-import { readFileSync } from 'node:fs';
-import type { ContentSource, SkillContent, McpServerContent } from '@kedge-agentic/agentfs-runtime';
-
-export class JsonFileContentSource implements ContentSource {
-  constructor(private readonly jsonPath: string) {}
-
-  async listActiveSkills(): Promise<ReadonlyArray<SkillContent>> {
-    const data = JSON.parse(readFileSync(this.jsonPath, 'utf8'));
-    return data.skills ?? [];
-  }
-
-  async listActiveMcpServers(): Promise<ReadonlyArray<McpServerContent>> {
-    const data = JSON.parse(readFileSync(this.jsonPath, 'utf8'));
-    return data.mcpServers ?? [];
-  }
+interface SchemaRegistry {
+  register(schemaId: string, validator: SchemaValidator): void;
+  get(schemaId: string): SchemaValidator | undefined;
+  validate(schemaId: string, value: unknown): ValidationResult;
 }
 ```
 
-Then:
+Schema-library agnostic — Zod, JSON Schema, TypeBox, any of them can be wrapped as a `SchemaValidator` adapter.
+
+Phase 1 will ship a Zod adapter.
+
+## `sync/` (Phase 0 interface skeleton)
+
 ```ts
-const src = new JsonFileContentSource('./skills.json');
-const m = new BaseMaterializer(src, '/var/agentfs/base');
+interface ChangeEvent {
+  projectId: string;
+  path: string;
+  source: 'agent' | 'gui' | 'system';
+  kind: 'created' | 'updated' | 'deleted';
+  at: string;
+  actor?: string;
+}
+
+interface ChangeStream {
+  subscribe(projectId: string, listener: (ev: ChangeEvent) => void): () => void;
+  publish(event: ChangeEvent): void;
+}
+```
+
+Bidirectional update stream between agent and GUI. Phase 2 will ship an in-memory pub/sub first, Redis-backed later. Conflict-resolution strategy is **unresolved** (design doc lists candidates).
+
+## `testing/`
+
+```ts
+import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
+
+const src = new InMemoryContentSource([
+  { id: 's1', tenantId: 't1', slug: 'hello', name: 'Hello', content: '# H', files: [] },
+]);
+const m = new BaseMaterializer(src, '/tmp/test-base');
 await m.materialize();
 ```
 
-## Test helper
-
-```ts
-import { InMemoryContentSource } from '@kedge-agentic/agentfs-runtime/testing';
-
-const src = new InMemoryContentSource(
-  [{ id: 's1', tenantId: 't1', slug: 'hello', name: 'Hello',
-     content: '# Hello', files: [] }],
-  [],  // mcp servers
-);
-const m = new BaseMaterializer(src, '/tmp/baseDir-for-test');
-await m.materialize();
-```
-
-ccaas backend's `TypeOrmSkillContentSource` tests use this helper to validate the adapter's mapping behavior.
-
-## Phase B / C (future)
-
-| Phase | Scope |
-|---|---|
-| **A** | BaseMaterializer + ContentSource + Logger ports (**shipped**) |
-| B | `WorkspaceProvider` interface + `LocalWorkspaceProvider` + `AgentfsWorkspaceProvider` (with an `AgentfsCliAdapter` port to decouple CLI invocation) |
-| C | `SandboxService` + `just-bash-mcp/server.mjs` (possibly as a separate `@kedge-agentic/sandbox-bash` package) |
-
-Trigger for B/C: a real second consumer surfaces, or a need to open-source the runtime layer. With only the ccaas backend consuming today, premature extraction is a liability.
+For downstream adapter unit tests.
 
 ## See also
 
-- Package source: `packages/agentfs-runtime/`
-- Package README: `packages/agentfs-runtime/README.md` (mini quickstart)
-- Design rationale: `packages/vfs-poc/docs/WORKSPACE_PROVIDER.md` (archive, but original design basis)
-- Adapter reference: `packages/backend/src/sessions/workspace/typeorm-skill-content-source.ts`
-- Factory reference: `packages/backend/src/sessions/workspace/base-materializer.factory.ts`
+- Full design intent: `docs/AGENT_RUNTIME_DESIGN.md`
+- live-lesson's current bespoke implementation: `docs/PROJECT_PATTERN_CATALOG.md`
+- Use the workspace abstraction in your own solution: [Solution Runtime Extension Points](../guide/extending-runtime.md)
+- Source: `packages/agent-runtime/`
