@@ -53,6 +53,13 @@ export interface Story {
   initialRole?: 'student' | 'teacher';
   /** Class-wide submissions for teacher-view stories */
   classSubmissions?: MockSubmission[];
+  /**
+   * Pre-baked observe data fed straight to the plugin's ObserveClassView.
+   * Use when generating one from `classSubmissions` would just push grading
+   * back into bundle code — each class-view has its own narrower shape
+   * (McObserveData / MapObserveData / EvidenceObserveData / …).
+   */
+  classObserveData?: Record<string, unknown>;
   /** Markdown notes shown in the Inspector */
   notes?: string;
   /** Plugin-specific opaque metadata (custom wrapper consumption only) */

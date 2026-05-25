@@ -22,6 +22,8 @@ import { loadStory, type LoadedPreviewStory } from './preview/loadStory'
 import { getExerciseType } from '../components/student/exercise/plugins/registry'
 import '../components/student/exercise/plugins/built-in' // side-effect: registers all 11 plugins
 import type { ExerciseUIPlugin } from '../components/student/exercise/plugins/types'
+import '../styles/teacher-base.css'
+import '../styles/teacher-observe.css'
 
 type Role = 'student' | 'teacher'
 
@@ -271,7 +273,7 @@ function SubmitBar({
   )
 }
 
-/* ── Teacher stage (placeholder for P2) ──────────────────────────────── */
+/* ── Teacher stage ───────────────────────────────────────────────────── */
 
 function TeacherStage({ plugin, story }: { plugin: ExerciseUIPlugin; story: LoadedPreviewStory['story'] }) {
   const ClassView = plugin.ObserveClassView
@@ -282,14 +284,20 @@ function TeacherStage({ plugin, story }: { plugin: ExerciseUIPlugin; story: Load
       </div>
     )
   }
-  // P2 will wire classSubmissions through the proper observe-data shape.
+  if (!story.classObserveData) {
+    return (
+      <div style={{ padding: 40, color: '#7a4d0e', background: '#f6edda', borderRadius: 8 }}>
+        <strong>该 story 缺少 classObserveData</strong>
+        <br />
+        <span style={{ fontSize: 12 }}>
+          在 *.stories.mjs 中给本 story 加 <code>classObserveData</code>（对应 ObserveClassView 的 data shape）即可启用教师视角。
+        </span>
+      </div>
+    )
+  }
   return (
-    <div style={{ padding: 40, color: '#5c5b56', background: '#edece7', borderRadius: 8 }}>
-      <strong>教师视角 (P2 待实现)</strong>
-      <br />
-      <span style={{ fontSize: 12 }}>
-        将在 P2 把 story.classSubmissions ({story.classSubmissions?.length ?? 0} 条) 喂给 ObserveClassView 渲染。
-      </span>
+    <div className="m2-shell" style={{ padding: 0 }}>
+      <ClassView data={story.classObserveData} onStudentSelect={() => { /* no-op in preview */ }} />
     </div>
   )
 }

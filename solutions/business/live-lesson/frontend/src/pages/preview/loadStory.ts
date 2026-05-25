@@ -20,6 +20,7 @@ export interface PreviewStory {
     score?: number
     submittedAt?: number
   }>
+  classObserveData?: Record<string, unknown>
   notes?: string
   metadata?: Record<string, unknown>
   locale?: 'zh' | 'en'
