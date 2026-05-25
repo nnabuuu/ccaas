@@ -26,6 +26,7 @@ import { CliProcessService, ResolvedAttachment } from './services/cli-process.se
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
 import { WORKSPACE_PROVIDER, type WorkspaceProvider } from './workspace/types';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
@@ -92,6 +93,7 @@ export class SessionService implements OnModuleDestroy {
     private readonly workspaceService: WorkspaceService,
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
     private readonly streamRegistry: StreamRegistryService,
+    private readonly sessionAssetMaterializer: SessionAssetMaterializer,
     @Inject(WORKSPACE_PROVIDER)
     private readonly workspaceProvider: WorkspaceProvider,
     @InjectRepository(SessionEntity)
@@ -196,6 +198,11 @@ export class SessionService implements OnModuleDestroy {
     // `this.createMcpSymlinks(session)` gateway-driven path, invoked
     // once `session.mcpServers` is populated.
     const handle = await this.workspaceProvider.create({ sessionId, tenantId });
+
+    // Seed entities/ + resources/ from the registered solution dir (if any)
+    // into the session workspace root. No-op when SOLUTION_DIRS env is unset
+    // or the tenant isn't in the map. Idempotent (SHA-1 gate per file).
+    await this.sessionAssetMaterializer.materialize(handle.path, tenantId);
 
     const session: ManagedSession = {
       sessionId,

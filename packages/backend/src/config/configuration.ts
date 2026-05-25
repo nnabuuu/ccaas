@@ -37,6 +37,13 @@ export default () => ({
     bashSandbox: (process.env.WORKSPACE_BASH_SANDBOX
       ?? (process.env.WORKSPACE_PROVIDER === 'agentfs' ? 'just-bash' : 'none')) as
       'just-bash' | 'none',
+    // Map of tenant-slug → absolute solution directory. Used by
+    // SessionAssetMaterializer to copy entities/ + resources/ into each
+    // new session's workspace at create time. Format:
+    //   SOLUTION_DIRS=demo-sandbox:/abs/path,article-analyzer:/abs/path2
+    // The colon-after-slug splits slug from path; subsequent colons
+    // (drive letters on Windows, etc.) are preserved in the path.
+    solutionDirs: parseSolutionDirs(process.env.SOLUTION_DIRS),
   },
 
   database: {
@@ -77,3 +84,16 @@ export default () => ({
 
   debug: process.env.DEBUG === 'true',
 });
+
+function parseSolutionDirs(raw: string | undefined): Record<string, string> {
+  if (!raw) return {};
+  const out: Record<string, string> = {};
+  for (const pair of raw.split(',').map((p) => p.trim()).filter(Boolean)) {
+    const idx = pair.indexOf(':');
+    if (idx <= 0 || idx === pair.length - 1) continue;
+    const slug = pair.slice(0, idx).trim();
+    const dir = pair.slice(idx + 1).trim();
+    if (slug && dir) out[slug] = dir;
+  }
+  return out;
+}

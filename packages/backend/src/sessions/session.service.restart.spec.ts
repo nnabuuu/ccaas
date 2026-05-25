@@ -19,6 +19,7 @@ import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
 import { mockWorkspaceProvider } from './workspace/__mocks__/mock-provider';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type { ManagedSession } from '../common/interfaces/session.interface';
@@ -75,6 +76,10 @@ describe('SessionService - Session Restart (Week 4)', () => {
         {
           provide: StreamRegistryService,
           useValue: { cleanupSession: jest.fn() },
+        },
+        {
+          provide: SessionAssetMaterializer,
+          useValue: { materialize: jest.fn().mockResolvedValue(null) },
         },
         {
           provide: getRepositoryToken(SessionEntity),

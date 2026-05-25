@@ -32,6 +32,7 @@ import { MessageQueueService } from './services/message-queue.service';
 import { MessageWorkerService } from './services/message-worker.service';
 import { ConversationMetadataService } from './services/conversation-metadata.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
 import { LocalWorkspaceProvider } from './workspace/local-provider';
 import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
 import { BaseMaterializer } from './workspace/base-materializer';
@@ -80,6 +81,7 @@ import { BundleModule } from '../bundles/bundle.module';
     MessageWorkerService,
     ConversationMetadataService,
     StreamRegistryService,
+    SessionAssetMaterializer,
     LocalWorkspaceProvider,
     AgentfsWorkspaceProvider,
     BaseMaterializer,
