@@ -7,10 +7,11 @@ import { test, expect } from '@playwright/test'
  * table); P3 replaced that with an iframe so the chrome shows the real
  * production React component instead.
  *
- * These tests only check the chrome's own DOM (iframe element + src
- * attribute). They do NOT require the frontend dev server to be running —
- * the iframe will just fail to load, but the chrome's stage rendering
- * has already happened by then.
+ * These tests only assert on the chrome's own DOM (iframe element src
+ * attribute) — they do NOT require the frontend dev server to be running.
+ * The iframe would fail to load against the test environment, but the
+ * chrome's URL generation is what we're testing here. Asserting on src via
+ * toHaveAttribute (not toBeVisible) makes that contract explicit.
  */
 test.describe('preview chrome — iframe stage', () => {
   test('clicking a story mounts an iframe with the right URL params', async ({ page }) => {
@@ -19,10 +20,9 @@ test.describe('preview chrome — iframe stage', () => {
     await page.getByText('Default — correct selection').click()
 
     const iframe = page.locator('#preview-iframe')
-    await expect(iframe).toBeVisible({ timeout: 5_000 })
+    await expect(iframe).toHaveAttribute('src', /\/exercise-demo\?/, { timeout: 5_000 })
 
-    const src = await iframe.getAttribute('src')
-    expect(src).toMatch(/\/exercise-demo\?/)
+    const src = (await iframe.getAttribute('src')) ?? ''
     expect(src).toContain('bundle=quiz')
     expect(src).toContain('story=Default')
     expect(src).toContain('role=student')
@@ -34,12 +34,17 @@ test.describe('preview chrome — iframe stage', () => {
     await page.goto('/')
     await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
     await page.getByText('Default — correct selection').click()
-    await expect(page.locator('#preview-iframe')).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('#preview-iframe')).toHaveAttribute(
+      'src',
+      /role=student/,
+      { timeout: 5_000 },
+    )
 
     await page.getByRole('button', { name: '教师视角' }).click()
 
-    const src = await page.locator('#preview-iframe').getAttribute('src')
-    expect(src).toContain('role=teacher')
+    // Single assertion waits for the src to flip from student → teacher.
+    await expect(page.locator('#preview-iframe')).toHaveAttribute('src', /role=teacher/)
+    const src = (await page.locator('#preview-iframe').getAttribute('src')) ?? ''
     expect(src).not.toContain('role=student')
   })
 
@@ -50,9 +55,24 @@ test.describe('preview chrome — iframe stage', () => {
     await page.goto('/?frontend=http://example.test:9999')
     await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
     await page.getByText('Default — correct selection').click()
-    await expect(page.locator('#preview-iframe')).toBeVisible({ timeout: 5_000 })
 
-    const src = await page.locator('#preview-iframe').getAttribute('src')
-    expect(src).toMatch(/^http:\/\/example\.test:9999\/exercise-demo/)
+    await expect(page.locator('#preview-iframe')).toHaveAttribute(
+      'src',
+      /^http:\/\/example\.test:9999\/exercise-demo/,
+      { timeout: 5_000 },
+    )
+  })
+
+  test('javascript: scheme in ?frontend= is rejected, falls back to default', async ({ page }) => {
+    // Open-redirect / XSS guard: scheme is locked to http: / https:.
+    await page.goto('/?frontend=javascript:alert(1)')
+    await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
+    await page.getByText('Default — correct selection').click()
+
+    await expect(page.locator('#preview-iframe')).toHaveAttribute(
+      'src',
+      /^http:\/\/localhost:5283\/exercise-demo/,
+      { timeout: 5_000 },
+    )
   })
 })

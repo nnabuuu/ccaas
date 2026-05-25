@@ -289,19 +289,33 @@ function t(key) {
 // via `?frontend=http://other-host:1234`; the value is also persisted in
 // sessionStorage so reloads remember it. Production deployments can set this
 // once via window.PREVIEW_FRONTEND_URL on the embedding page.
+//
+// Scheme is locked to http: / https: — javascript: and data: URIs in an
+// iframe src can execute against this chrome's origin.
+function sanitizeFrontendUrl(raw) {
+  if (!raw) return null;
+  try {
+    const u = new URL(String(raw));
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return (u.origin + u.pathname).replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+}
 const FRONTEND_URL = (() => {
-  const fromQuery = new URLSearchParams(location.search).get('frontend');
+  const fromQuery = sanitizeFrontendUrl(new URLSearchParams(location.search).get('frontend'));
   if (fromQuery) {
     try { sessionStorage.setItem('preview:frontend-url', fromQuery); } catch {}
-    return fromQuery.replace(/\/$/, '');
+    return fromQuery;
   }
   try {
-    const stored = sessionStorage.getItem('preview:frontend-url');
-    if (stored) return stored.replace(/\/$/, '');
+    const stored = sanitizeFrontendUrl(sessionStorage.getItem('preview:frontend-url'));
+    if (stored) return stored;
   } catch {}
-  if (typeof window !== 'undefined' && window.PREVIEW_FRONTEND_URL) {
-    return String(window.PREVIEW_FRONTEND_URL).replace(/\/$/, '');
-  }
+  const globalUrl = sanitizeFrontendUrl(
+    typeof window !== 'undefined' ? window.PREVIEW_FRONTEND_URL : null,
+  );
+  if (globalUrl) return globalUrl;
   return 'http://localhost:5283';
 })();
 
@@ -441,6 +455,7 @@ function renderIframeStage(stage, role) {
         src="${escape(src)}"
         title="Exercise preview"
         loading="eager"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       ></iframe>
     </div>
   `;
