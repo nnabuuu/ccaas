@@ -51,8 +51,8 @@ sub-files only when you actually need them**:
 
 ## When asked to edit an entity
 
-A solution backend is running at `http://host.docker.internal:3008` (or
-`http://localhost:3008` if not in container) that exposes:
+A solution backend is running at `http://host.docker.internal:3010` (or
+`http://localhost:3010` if not in container) that exposes:
 
 ```
 GET  /api/demo-sandbox/entities/:id        → current markdown

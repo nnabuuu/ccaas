@@ -20,11 +20,11 @@ PUT  /api/demo-sandbox/entities/:id           # body: { ops: EditOperation[] }
 
 ```bash
 # 1. Read current state via the API (NOT the file — file lags the API)
-curl -s http://localhost:3001/api/demo-sandbox/entities/initech > /tmp/initech.md
+curl -s http://localhost:3010/api/demo-sandbox/entities/initech > /tmp/initech.md
 cat /tmp/initech.md
 
 # 2. Submit an edit
-curl -X PUT http://localhost:3001/api/demo-sandbox/entities/initech \
+curl -X PUT http://localhost:3010/api/demo-sandbox/entities/initech \
   -H 'Content-Type: application/json' \
   -d '{
     "ops": [
@@ -37,7 +37,7 @@ curl -X PUT http://localhost:3001/api/demo-sandbox/entities/initech \
   }'
 
 # 3. Verify
-curl -s http://localhost:3001/api/demo-sandbox/entities/initech | grep status
+curl -s http://localhost:3010/api/demo-sandbox/entities/initech | grep status
 ```
 
 ## When to use this vs `echo > file`

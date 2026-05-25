@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>demo-sandbox · ccaas</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161a22;
+    --panel-2: #1d2230;
+    --border: #2a3142;
+    --fg: #d7dce5;
+    --fg-dim: #828a99;
+    --accent: #5da9ff;
+    --green: #6acb6f;
+    --orange: #e8a040;
+    --red: #e85c5c;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--fg);
+    font: 13px/1.45 system-ui, -apple-system, "PingFang SC", sans-serif;
+  }
+  body { display: flex; flex-direction: column; }
+  header {
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel);
+  }
+  header h1 { margin: 0; font-size: 13px; font-weight: 600; }
+  header .meta { color: var(--fg-dim); font-family: var(--mono); font-size: 11px; }
+  header .spacer { flex: 1; }
+  header button {
+    background: var(--panel-2); color: var(--fg); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
+  }
+  header button:hover { background: var(--border); }
+  main {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr;
+    grid-template-rows: 1fr 280px;
+    grid-template-areas:
+      "entities before after"
+      "prompt   prompt  prompt";
+    flex: 1; min-height: 0;
+  }
+  .panel { border-right: 1px solid var(--border); display: flex; flex-direction: column; min-width: 0; }
+  .panel-title {
+    padding: 6px 12px; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--fg-dim);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title .pill {
+    background: var(--panel-2); color: var(--fg);
+    padding: 1px 6px; border-radius: 8px;
+    font-size: 10px; text-transform: none; letter-spacing: 0;
+  }
+  .panel-body { flex: 1; overflow: auto; min-height: 0; }
+
+  /* Entity list */
+  #entities { grid-area: entities; }
+  #entity-list { padding: 4px 0; }
+  .entity {
+    padding: 6px 12px; cursor: pointer;
+    border-left: 3px solid transparent;
+    font-family: var(--mono); font-size: 12px;
+  }
+  .entity:hover { background: var(--panel-2); }
+  .entity.active { background: var(--panel-2); border-left-color: var(--accent); }
+  .entity .id { color: var(--fg); }
+  .entity .hint { color: var(--fg-dim); font-size: 10px; margin-top: 2px; }
+
+  /* Before / After panes */
+  #before { grid-area: before; }
+  #after  { grid-area: after; border-right: none; }
+  pre.entity-content {
+    margin: 0; padding: 12px;
+    font-family: var(--mono); font-size: 12px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  pre.entity-content .frontmatter { color: var(--fg-dim); }
+  pre.entity-content .added { background: rgba(106,203,111,0.18); }
+  pre.entity-content .removed {
+    background: rgba(232,92,92,0.15);
+    text-decoration: line-through; opacity: 0.7;
+  }
+  .empty-hint {
+    padding: 24px; color: var(--fg-dim);
+    text-align: center; font-style: italic;
+  }
+
+  /* Prompt + log */
+  #prompt { grid-area: prompt; border-top: 1px solid var(--border); border-right: none; display: flex; flex-direction: column; }
+  .prompt-row {
+    display: flex; gap: 8px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .prompt-row textarea {
+    flex: 1; min-height: 44px; max-height: 80px;
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; resize: vertical;
+    font: 13px/1.4 system-ui, sans-serif;
+  }
+  .prompt-row .col { display: flex; flex-direction: column; gap: 6px; }
+  .prompt-row button {
+    background: var(--accent); color: #fff; border: none;
+    padding: 6px 18px; border-radius: 4px;
+    font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+  .prompt-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .prompt-row button.secondary {
+    background: var(--panel-2); color: var(--fg);
+    border: 1px solid var(--border); font-weight: 400;
+    padding: 4px 12px; font-size: 11px;
+  }
+  .examples {
+    padding: 6px 12px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .examples .label { color: var(--fg-dim); font-size: 11px; align-self: center; margin-right: 4px; }
+  .examples .chip {
+    background: var(--panel-2); color: var(--fg);
+    padding: 3px 9px; border-radius: 12px;
+    font-size: 11px; cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .examples .chip:hover { background: var(--border); }
+  #log-pane { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; }
+  .log-row {
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 0; display: flex; gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .log-row .ts { color: var(--fg-dim); flex-shrink: 0; }
+  .log-row .tag {
+    flex-shrink: 0; padding: 0 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+  }
+  .tag-info    { background: rgba(93,169,255,0.18); color: var(--accent); }
+  .tag-tool    { background: rgba(232,160,64,0.18); color: var(--orange); }
+  .tag-status  { background: rgba(106,203,111,0.18); color: var(--green); }
+  .tag-error   { background: rgba(232,92,92,0.18); color: var(--red); }
+  .tag-msg     { background: rgba(255,255,255,0.06); color: var(--fg); }
+  .log-row .body { flex: 1; min-width: 0; word-break: break-word; }
+  .log-row .body .dim { color: var(--fg-dim); }
+
+  .session-id {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--fg-dim); padding: 4px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>demo-sandbox · ccaas</h1>
+  <span class="meta">B2B SaaS · just-bash MCP · DocumentEditProvider</span>
+  <span class="spacer"></span>
+  <button id="btn-reset" title="Clear log & start a fresh session id">↻ Reset session</button>
+</header>
+
+<main>
+  <section id="entities" class="panel">
+    <div class="panel-title">Entities <span class="pill" id="entity-count">…</span></div>
+    <div class="panel-body">
+      <div id="entity-list" class="empty-hint">loading…</div>
+    </div>
+  </section>
+
+  <section id="before" class="panel">
+    <div class="panel-title">Before <span class="pill" id="before-id">—</span></div>
+    <div class="panel-body">
+      <pre class="entity-content" id="before-content"><div class="empty-hint">pick an entity from the left to view its content</div></pre>
+    </div>
+  </section>
+
+  <section id="after" class="panel">
+    <div class="panel-title">After <span class="pill" id="after-status">awaiting run</span></div>
+    <div class="panel-body">
+      <pre class="entity-content" id="after-content"><div class="empty-hint">runs the agent against the prompt below — once it finishes, the selected entity is re-fetched and diff'd here</div></pre>
+    </div>
+  </section>
+
+  <section id="prompt" class="panel">
+    <div class="panel-title">Prompt → Agent</div>
+    <div class="examples">
+      <span class="label">try:</span>
+      <span class="chip">Which customer is at risk of churning? Cite the file path.</span>
+      <span class="chip">Read initech.md, then PUT status=renewal_at_risk via the entity API at http://localhost:3010/api/demo-sandbox/entities/initech</span>
+      <span class="chip">Summarize Q1 revenue by segment using the JSON file.</span>
+    </div>
+    <div class="prompt-row">
+      <textarea id="prompt-input" placeholder="Describe what the agent should do. It can ls/grep/cat under entities/ and resources/, and curl the entity API to write."></textarea>
+      <div class="col">
+        <button id="btn-run">▶ Run</button>
+        <button id="btn-cancel" class="secondary" disabled>cancel</button>
+      </div>
+    </div>
+    <div id="log-pane"></div>
+    <div class="session-id" id="session-id-bar">session: <span id="session-id">—</span></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+// ─── DOM handles ───────────────────────────────────────────────────────────
+const $entityList   = document.getElementById('entity-list');
+const $entityCount  = document.getElementById('entity-count');
+const $beforeId     = document.getElementById('before-id');
+const $beforeContent= document.getElementById('before-content');
+const $afterStatus  = document.getElementById('after-status');
+const $afterContent = document.getElementById('after-content');
+const $prompt       = document.getElementById('prompt-input');
+const $btnRun       = document.getElementById('btn-run');
+const $btnCancel    = document.getElementById('btn-cancel');
+const $btnReset     = document.getElementById('btn-reset');
+const $log          = document.getElementById('log-pane');
+const $sessionId    = document.getElementById('session-id');
+
+// ─── state ─────────────────────────────────────────────────────────────────
+let selectedEntity = null;        // string id
+let beforeContent  = null;        // raw md text captured at click time
+let currentSessionId = null;
+let currentAbort = null;
+
+// ─── entity API helpers ────────────────────────────────────────────────────
+async function fetchEntities() {
+  const r = await fetch('/api/demo-sandbox/entities');
+  return (await r.json()).ids;
+}
+async function fetchEntity(id) {
+  const r = await fetch('/api/demo-sandbox/entities/' + encodeURIComponent(id));
+  if (!r.ok) throw new Error('GET entity ' + id + ' → HTTP ' + r.status);
+  return (await r.json()).content;
+}
+
+// ─── entity list rendering ─────────────────────────────────────────────────
+async function loadEntities() {
+  try {
+    const ids = await fetchEntities();
+    $entityCount.textContent = ids.length;
+    $entityList.classList.remove('empty-hint');
+    $entityList.innerHTML = '';
+    for (const id of ids) {
+      const el = document.createElement('div');
+      el.className = 'entity';
+      el.dataset.id = id;
+      el.innerHTML = '<div class="id">' + id + '</div>' +
+                     '<div class="hint">entities/customers/' + id + '.md</div>';
+      el.onclick = () => selectEntity(id);
+      $entityList.appendChild(el);
+    }
+  } catch (err) {
+    $entityList.textContent = 'failed to load entities: ' + err.message;
+  }
+}
+
+async function selectEntity(id) {
+  selectedEntity = id;
+  for (const el of $entityList.children) {
+    el.classList.toggle('active', el.dataset.id === id);
+  }
+  $beforeId.textContent = id;
+  $beforeContent.textContent = 'loading…';
+  try {
+    beforeContent = await fetchEntity(id);
+    $beforeContent.textContent = beforeContent;
+    $afterContent.innerHTML = '<div class="empty-hint">no "after" yet — run a prompt that mutates this entity</div>';
+    $afterStatus.textContent = 'awaiting run';
+  } catch (err) {
+    $beforeContent.textContent = 'load failed: ' + err.message;
+  }
+}
+
+// ─── line-level diff (Myers-ish, naive but cheap) ──────────────────────────
+function renderDiff(before, after) {
+  const a = before.split('\n');
+  const b = after.split('\n');
+  const setB = new Set(b);
+  const setA = new Set(a);
+  // Greedy line-by-line — fine for a 50-line entity, no LCS overhead.
+  const lines = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) {
+      lines.push({ kind: 'eq', text: a[i] });
+      i++; j++;
+    } else if (j < b.length && !setA.has(b[j])) {
+      lines.push({ kind: 'add', text: b[j] });
+      j++;
+    } else if (i < a.length && !setB.has(a[i])) {
+      lines.push({ kind: 'del', text: a[i] });
+      i++;
+    } else {
+      // both contain the other's current line somewhere else; advance cheapest
+      if (i < a.length) { lines.push({ kind: 'del', text: a[i] }); i++; }
+      if (j < b.length) { lines.push({ kind: 'add', text: b[j] }); j++; }
+    }
+  }
+  return lines.map(l => {
+    const esc = l.text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if (l.kind === 'add') return '<span class="added">+ ' + esc + '</span>';
+    if (l.kind === 'del') return '<span class="removed">- ' + esc + '</span>';
+    return '  ' + esc;
+  }).join('\n');
+}
+
+// ─── log rendering ─────────────────────────────────────────────────────────
+function logRow(tag, body, tagClass = 'tag-info') {
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  const ts = new Date().toISOString().slice(11, 19);
+  row.innerHTML =
+    '<span class="ts">' + ts + '</span>' +
+    '<span class="tag ' + tagClass + '">' + tag + '</span>' +
+    '<span class="body"></span>';
+  row.querySelector('.body').textContent = body;
+  $log.appendChild(row);
+  $log.scrollTop = $log.scrollHeight;
+}
+
+function describeEvent(evt) {
+  // The wrapper shape: { seq, sessionId, timestamp, event: { type, ... } }
+  // OR our proxy's meta events have their own shape (session / error).
+  const e = evt.event ?? evt;
+  switch (e.type) {
+    case 'agent_status':
+      return { tag: 'STATUS', cls: 'tag-status', body: e.status + (e.error ? ' — ' + e.error : '') };
+    case 'tool_activity':
+      return { tag: 'TOOL', cls: 'tag-tool',
+        body: (e.tool ?? e.toolName ?? '?') + ' ' + (e.phase ?? '') +
+              (e.summary ? ' · ' + e.summary : '') };
+    case 'message':
+    case 'assistant_message':
+    case 'agent_message':
+      return { tag: 'MSG', cls: 'tag-msg', body: (e.content ?? e.text ?? '').slice(0, 200) };
+    case 'thinking':
+      return { tag: 'THINK', cls: 'tag-msg', body: (e.content ?? '').slice(0, 160) };
+    default:
+      return { tag: (e.type ?? 'EVT').toUpperCase(), cls: 'tag-info',
+               body: JSON.stringify(e).slice(0, 200) };
+  }
+}
+
+// ─── SSE consumer (POST + ReadableStream, since EventSource is GET-only) ──
+async function runPrompt(message, sessionId) {
+  const ac = new AbortController();
+  currentAbort = ac;
+  $btnRun.disabled = true;
+  $btnCancel.disabled = false;
+  $afterStatus.textContent = 'running…';
+  logRow('RUN', 'POST /demo/run sessionId=' + (sessionId ?? '(new)'));
+
+  try {
+    const r = await fetch('/demo/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, sessionId }),
+      signal: ac.signal,
+    });
+    if (!r.ok || !r.body) {
+      logRow('ERROR', 'HTTP ' + r.status + ' from demo backend', 'tag-error');
+      return;
+    }
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      // SSE frame separator is blank line ("\n\n").
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+        handleFrame(frame);
+      }
+    }
+    logRow('END', 'stream closed', 'tag-info');
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      logRow('CANCEL', 'aborted by user', 'tag-error');
+    } else {
+      logRow('ERROR', err.message ?? String(err), 'tag-error');
+    }
+  } finally {
+    $btnRun.disabled = false;
+    $btnCancel.disabled = true;
+    currentAbort = null;
+    // Re-fetch the selected entity, render diff
+    if (selectedEntity) {
+      try {
+        const after = await fetchEntity(selectedEntity);
+        if (after !== beforeContent) {
+          $afterContent.innerHTML = renderDiff(beforeContent, after);
+          $afterStatus.textContent = 'changed ✓';
+        } else {
+          $afterContent.textContent = after;
+          $afterStatus.textContent = 'no change';
+        }
+      } catch (err) {
+        $afterContent.textContent = 'refresh failed: ' + err.message;
+      }
+    }
+  }
+}
+
+function handleFrame(frame) {
+  // Frame may have: optional `event: <name>` line(s) + a `data: <json>` line.
+  const lines = frame.split('\n');
+  let eventName = 'message';
+  let dataStr = '';
+  for (const line of lines) {
+    if (line.startsWith('event:')) eventName = line.slice(6).trim();
+    else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+    // ignore id:, retry:, comments
+  }
+  if (!dataStr) return;
+  let payload;
+  try { payload = JSON.parse(dataStr); }
+  catch { logRow('?', dataStr.slice(0, 200), 'tag-info'); return; }
+
+  if (eventName === 'session') {
+    currentSessionId = payload.sessionId;
+    $sessionId.textContent = currentSessionId;
+    logRow('SESSION', currentSessionId);
+    return;
+  }
+  if (eventName === 'error') {
+    logRow('ERROR', JSON.stringify(payload).slice(0, 200), 'tag-error');
+    return;
+  }
+  const d = describeEvent(payload);
+  logRow(d.tag, d.body, d.cls);
+}
+
+// ─── wiring ────────────────────────────────────────────────────────────────
+$btnRun.onclick = () => {
+  const msg = $prompt.value.trim();
+  if (!msg) return;
+  runPrompt(msg, currentSessionId);
+};
+$btnCancel.onclick = () => currentAbort?.abort();
+$btnReset.onclick = () => {
+  currentSessionId = null;
+  $sessionId.textContent = '—';
+  $log.innerHTML = '';
+  $afterContent.innerHTML = '<div class="empty-hint">no "after" yet — run a prompt that mutates this entity</div>';
+  $afterStatus.textContent = 'awaiting run';
+  if (selectedEntity) selectEntity(selectedEntity); // re-baseline before
+};
+// example chips → fill prompt
+document.querySelectorAll('.examples .chip').forEach(chip => {
+  chip.onclick = () => { $prompt.value = chip.textContent; $prompt.focus(); };
+});
+
+// boot
+loadEntities();
+</script>
+</body>
+</html>
