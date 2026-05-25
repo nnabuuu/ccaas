@@ -82,6 +82,7 @@ describe('LocalWorkspaceProvider', () => {
       snapshot: false,
       multiMount: false,
       fastClone: false,
+      observability: false,
     });
   });
 });

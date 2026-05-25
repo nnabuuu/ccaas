@@ -32,6 +32,7 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { BaseMaterializer } from './base-materializer';
 import type {
   CreateOpts, WorkspaceCapabilities, WorkspaceHandle, WorkspaceProvider,
+  FsDiffEntry, FsTimelineEntry, TimelineOpts,
 } from './types';
 
 const execFileAsync = promisify(execFile);
@@ -202,6 +203,8 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
       path: mountPoint,
       snapshot: (label) => this.snapshot(sessionId, label),
       rollback: (label) => this.rollback(sessionId, label),
+      diff: () => this.diff(sessionId),
+      timeline: (opts) => this.timeline(sessionId, opts),
     };
   }
 
@@ -252,7 +255,74 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
   }
 
   capabilities(): WorkspaceCapabilities {
-    return { snapshot: true, multiMount: false, fastClone: false };
+    return { snapshot: true, multiMount: false, fastClone: false, observability: true };
+  }
+
+  /**
+   * Read-only inspection of what the agent has written into the delta vs
+   * the immutable base. Implementation: copy the SQLite delta (+ WAL
+   * sidecars) to a temp dir, run `agentfs diff` against the copy, parse
+   * the text output, clean up.
+   *
+   * Why the copy: the FUSE/NFS daemon holds an exclusive lock on the
+   * live delta, so `agentfs diff <live-path>` errors with "Locking
+   * error". A simple cp during a live session captures a near-real-time
+   * view (last few WAL pages may be missing, accepted for an
+   * observability read).
+   *
+   * Output format (text, one line per change):
+   *   A d /.claude                           ← added directory
+   *   A f /.claude/settings.local.json       ← added file
+   *   M f /entities/customers/initech.md     ← modified file
+   *   D f /resources/stale.md                ← removed file
+   */
+  async diff(sessionId: string): Promise<FsDiffEntry[]> {
+    return this.withReadonlyDeltaCopy(sessionId, async (dbPath) => {
+      const { stdout } = await execFileAsync(this.binPath, ['diff', dbPath]);
+      return parseDiffOutput(stdout);
+    });
+  }
+
+  async timeline(sessionId: string, opts?: TimelineOpts): Promise<FsTimelineEntry[]> {
+    return this.withReadonlyDeltaCopy(sessionId, async (dbPath) => {
+      const args = ['timeline', '--format', 'json', dbPath];
+      if (opts?.limit) args.splice(2, 0, '--limit', String(opts.limit));
+      if (opts?.filter) args.splice(2, 0, '--filter', opts.filter);
+      if (opts?.status) args.splice(2, 0, '--status', opts.status);
+      const { stdout } = await execFileAsync(this.binPath, args);
+      const trimmed = stdout.trim();
+      if (!trimmed) return [];
+      try {
+        return JSON.parse(trimmed) as FsTimelineEntry[];
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`agentfs timeline returned non-JSON: ${msg}; first 200 chars: ${trimmed.slice(0, 200)}`);
+      }
+    });
+  }
+
+  /**
+   * Copy delta DB + sidecars to a tmpdir, hand the copy path to `fn`,
+   * always clean up. The copy is acceptably consistent for read-only
+   * queries (cf. SQLite live-backup pattern); for write operations use
+   * `snapshot`/`rollback` which cycle the daemon.
+   */
+  private async withReadonlyDeltaCopy<T>(
+    sessionId: string,
+    fn: (dbPath: string) => Promise<T>,
+  ): Promise<T> {
+    const liveBase = this.deltaDbPath(sessionId);
+    if (!fs.existsSync(liveBase)) {
+      throw new Error(`no delta db at ${liveBase} — session may have been destroyed`);
+    }
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentfs-ro-'));
+    try {
+      const copyBase = path.join(tmpDir, `${sessionId}.db`);
+      this.copyDbSet(liveBase, copyBase);
+      return await fn(copyBase);
+    } finally {
+      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    }
   }
 
   /** Snapshot the WAL set (matching vfs-poc's pattern). Returns the snapshot path. */
@@ -330,4 +400,29 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
       if (fs.existsSync(src)) fs.copyFileSync(src, dest);
     }
   }
+}
+
+/**
+ * Parse `agentfs diff` text output into structured entries.
+ * Skips header lines (`Using agent: ...`, `Base: ...`) and blank lines.
+ * Format per change line:
+ *   <OP> <TYPE> <PATH>
+ *     OP   ∈ {A, M, D}  (added / modified / removed)
+ *     TYPE ∈ {f, d}     (file / directory)
+ *     PATH = whitespace-separated tail (joined; agentfs paths don't contain newlines)
+ */
+function parseDiffOutput(stdout: string): FsDiffEntry[] {
+  const OPS: Record<string, FsDiffEntry['op']> = { A: 'added', M: 'modified', D: 'removed' };
+  const TYPES: Record<string, FsDiffEntry['type']> = { f: 'file', d: 'directory' };
+  const out: FsDiffEntry[] = [];
+  for (const raw of stdout.split('\n')) {
+    const line = raw.trimEnd();
+    if (!line) continue;
+    // Skip well-known headers
+    if (line.startsWith('Using agent:') || line.startsWith('Base:')) continue;
+    const m = /^([AMD])\s+([fd])\s+(.+)$/.exec(line);
+    if (!m) continue; // ignore anything we don't recognize rather than throwing
+    out.push({ op: OPS[m[1]], type: TYPES[m[2]], path: m[3] });
+  }
+  return out;
 }

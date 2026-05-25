@@ -17,6 +17,7 @@ import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
 import { ConversationsAliasController } from './conversations-alias.controller';
 import { QueueController } from './queue.controller';
+import { SessionFsController } from './session-fs.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -33,6 +34,7 @@ import { MessageWorkerService } from './services/message-worker.service';
 import { ConversationMetadataService } from './services/conversation-metadata.service';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
+import { SessionFsService } from './services/session-fs.service';
 import { LocalWorkspaceProvider } from './workspace/local-provider';
 import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
 import { BaseMaterializer } from './workspace/base-materializer';
@@ -62,7 +64,7 @@ import { BundleModule } from '../bundles/bundle.module';
     FilesModule,
     BundleModule,
   ],
-  controllers: [SessionsController, ConversationsAliasController, QueueController],
+  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController],
   providers: [
     SessionsController,
     SessionsGateway,
@@ -82,6 +84,7 @@ import { BundleModule } from '../bundles/bundle.module';
     ConversationMetadataService,
     StreamRegistryService,
     SessionAssetMaterializer,
+    SessionFsService,
     LocalWorkspaceProvider,
     AgentfsWorkspaceProvider,
     BaseMaterializer,

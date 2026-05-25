@@ -44,6 +44,17 @@ export interface WorkspaceHandle {
   snapshot?(label: string): Promise<string>;
   /** Optional: revert workspace to a previously-taken snapshot. */
   rollback?(label: string): Promise<void>;
+  /**
+   * Optional: list of file-level changes the agent has made since
+   * session creation, relative to the immutable base. Agentfs-only.
+   * Returns an empty array when the agent hasn't touched anything.
+   */
+  diff?(): Promise<FsDiffEntry[]>;
+  /**
+   * Optional: chronological list of tool-call events the agentfs SDK
+   * recorded in its built-in audit log. Agentfs-only.
+   */
+  timeline?(opts?: TimelineOpts): Promise<FsTimelineEntry[]>;
 }
 
 export interface WorkspaceCapabilities {
@@ -53,6 +64,40 @@ export interface WorkspaceCapabilities {
   multiMount: boolean;
   /** True if creating a session by branching from another is cheap. */
   fastClone: boolean;
+  /** True if `diff`/`timeline` are implemented on returned handles. */
+  observability: boolean;
+}
+
+/**
+ * One change in the agent's per-session delta vs the base filesystem.
+ * Maps from `agentfs diff` output lines like `A f /path/to/file`.
+ */
+export interface FsDiffEntry {
+  op: 'added' | 'modified' | 'removed';
+  type: 'file' | 'directory';
+  path: string;
+}
+
+export interface TimelineOpts {
+  limit?: number;
+  filter?: string;
+  status?: 'pending' | 'success' | 'error';
+}
+
+/**
+ * Matches the JSON shape of `agentfs timeline --format json` output,
+ * which is itself a re-export of the SDK's `ToolCall` interface.
+ */
+export interface FsTimelineEntry {
+  id: number;
+  name: string;
+  parameters?: unknown;
+  result?: unknown;
+  error?: string;
+  status: 'pending' | 'success' | 'error';
+  started_at: number;
+  completed_at?: number;
+  duration_ms?: number;
 }
 
 /**

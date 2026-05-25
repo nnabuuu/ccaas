@@ -78,6 +78,6 @@ export class LocalWorkspaceProvider implements WorkspaceProvider {
   }
 
   capabilities(): WorkspaceCapabilities {
-    return { snapshot: false, multiMount: false, fastClone: false };
+    return { snapshot: false, multiMount: false, fastClone: false, observability: false };
   }
 }
