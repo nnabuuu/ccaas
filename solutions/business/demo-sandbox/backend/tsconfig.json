@@ -12,6 +12,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
+    "paths": {
+      "@kedge-agentic/context-layer/core": ["../../../../packages/context-layer/dist/core/index.d.ts"]
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

@@ -18,10 +18,10 @@ import { resolve, join, basename } from 'node:path';
 import matter from 'gray-matter';
 
 // Subpath import — context-layer's main index doesn't re-export
-// DocumentEditProvider; only its `./core` subpath does. Using the
-// long dist path here so this file works under nest's default
-// moduleResolution=node (no need for node16/bundler upgrade).
-import { DocumentEditProvider } from '@kedge-agentic/context-layer/dist/core/document-edit-provider.js';
+// DocumentEditProvider; only its `./core` subpath does. tsc resolves
+// the type via the `paths` mapping in tsconfig.json; node resolves
+// the runtime via the package's `exports` field.
+import { DocumentEditProvider } from '@kedge-agentic/context-layer/core';
 import type { EntityDocument, ContentToAttrConfig } from '@kedge-agentic/entity-document';
 
 interface DemoEntity {

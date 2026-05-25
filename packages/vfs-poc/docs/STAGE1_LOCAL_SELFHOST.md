@@ -4,6 +4,11 @@
 > local `claude` CLI, but keep claude **completely sandboxed** —
 > neither host filesystem nor host bash is reachable.
 
+> 🚀 **Want a hands-on demo?** Jump to
+> [`solutions/business/demo-sandbox/README.md`](../../../solutions/business/demo-sandbox/README.md)
+> — a B2B SaaS dataset (customers / revenue / plans) + progressive-disclosure
+> skill + DocumentEditProvider, all wired to showcase the sandbox.
+
 ## What this setup gives you
 
 | Layer | Sandbox | How |
