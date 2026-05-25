@@ -9,9 +9,11 @@ import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import type { GradeResult, RichContentQuizAnswerKey, RichContentPart } from '../../schemas';
+import type { GradeResult, RichContentQuizAnswerKey } from '../../schemas';
 import { getCachedTaskMap } from './task-map-cache';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../../schemas/classroom';
+import { computeScaffoldResponse } from '../../domain/exercise-types/rich-content-quiz/scaffold-logic';
+import { computeRcqAggregateScore } from '../../domain/exercise-types/rich-content-quiz/aggregate-score';
 
 @Injectable()
 export class StudentSubmissionService {
@@ -164,43 +166,18 @@ export class StudentSubmissionService {
     partProgress.images = data.images;     // latest (backward compat)
     partProgress.score = partScore;        // latest
 
-    // Check scaffold
-    let scaffoldResponse: SubmitResponse['scaffold'] = null;
+    // Compute scaffold response + new completion state via shared helper
+    // (see domain/exercise-types/rich-content-quiz/scaffold-logic.ts).
     const isCorrect = partScore.total >= 100;
-
-    if (!isCorrect) {
-      // Wrong answer — use scaffold if available, else synthesize basic retry
-      if (partDef.scaffold) {
-        const nextLevel = partProgress.scaffoldLevel + 1;
-        if (nextLevel < partDef.scaffold.levels.length) {
-          partProgress.scaffoldLevel = nextLevel;
-          partProgress.completed = false;
-          const isLastLevel = nextLevel === partDef.scaffold.levels.length - 1;
-          const levelDef = partDef.scaffold.levels[nextLevel];
-          scaffoldResponse = {
-            level: nextLevel,
-            hintZh: levelDef.hintZh,
-            hintImage: levelDef.hintImage,
-            canRetry: !isLastLevel,
-            steps: levelDef.steps as NonNullable<SubmitResponse['scaffold']>['steps'],
-          };
-        } else {
-          // All scaffold levels exhausted — mark as completed
-          partProgress.completed = true;
-        }
-      } else {
-        // No scaffold defined — synthesize basic retry scaffold from LLM feedback
-        partProgress.completed = false;
-        scaffoldResponse = {
-          level: 0,
-          hintZh: partScore.llmFeedback || '答案不正确，请重新检查你的计算过程。',
-          canRetry: true,
-        };
-      }
-    } else {
-      // Correct answer
-      partProgress.completed = true;
-    }
+    const scaffoldOut = computeScaffoldResponse({
+      partDef,
+      prevScaffoldLevel: partProgress.scaffoldLevel,
+      isCorrect,
+      llmFeedback: partScore.llmFeedback,
+    });
+    const scaffoldResponse: SubmitResponse['scaffold'] = scaffoldOut.scaffold;
+    partProgress.scaffoldLevel = scaffoldOut.nextScaffoldLevel;
+    partProgress.completed = scaffoldOut.completed;
 
     // Attach sampleSolution when part is completed
     if (partProgress.completed && partDef.sampleSolution) {
@@ -224,7 +201,7 @@ export class StudentSubmissionService {
     }
 
     // Compute aggregate score across all completed parts
-    const aggregateScore = this.computeAggregateScore(answerKey.parts, partsProgress);
+    const aggregateScore = computeRcqAggregateScore(answerKey.parts, partsProgress);
 
     // Merge data for storage — only pick known fields from user data
     const mergedData: Record<string, unknown> = {
@@ -337,7 +314,7 @@ export class StudentSubmissionService {
     }
 
     const allCompleted = answerKey.parts.every(p => partsProgress[p.id]?.completed);
-    const aggregateScore = this.computeAggregateScore(answerKey.parts, partsProgress);
+    const aggregateScore = computeRcqAggregateScore(answerKey.parts, partsProgress);
 
     const mergedData: Record<string, unknown> = {
       ...existingData,
@@ -381,32 +358,6 @@ export class StudentSubmissionService {
       partId,
       nextPartId,
       sampleSolution: partDef.sampleSolution ?? null,
-    };
-  }
-
-  /** Compute weighted aggregate score from all completed parts. */
-  private computeAggregateScore(parts: RichContentPart[], partsProgress: Record<string, any>): GradeResult {
-    let totalWeight = 0;
-    let weightedSum = 0;
-    const byDimension: Record<string, number | boolean> = {};
-
-    for (const part of parts) {
-      const pp = partsProgress[part.id];
-      if (!pp?.score) continue;
-
-      const partWeight = part.rubric.reduce((sum, r) => sum + r.weight, 0);
-      totalWeight += partWeight;
-      weightedSum += (pp.score.total / 100) * partWeight;
-
-      // Namespace dimensions by part id
-      for (const [key, val] of Object.entries(pp.score.byDimension || {})) {
-        byDimension[`${part.id}_${key}`] = val as number | boolean;
-      }
-    }
-
-    return {
-      total: totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) : 0,
-      byDimension,
     };
   }
 

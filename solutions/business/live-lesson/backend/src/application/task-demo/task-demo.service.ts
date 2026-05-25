@@ -14,8 +14,11 @@ import {
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { ExerciseService } from '../exercise/exercise.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
+import { GradingService } from '../exercise/grading.service';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
-import type { ExerciseSpec } from '../../schemas';
+import { computeScaffoldResponse, type ScaffoldResponse } from '../../domain/exercise-types/rich-content-quiz/scaffold-logic';
+import { computeRcqAggregateScore } from '../../domain/exercise-types/rich-content-quiz/aggregate-score';
+import type { ExerciseSpec, RichContentPart, RichContentQuizAnswerKey } from '../../schemas';
 
 // Shared with ClassroomService (same alphabet — 30 chars, no 0/O/1/I/L).
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -39,6 +42,11 @@ export interface SubmitTaskDemoResult {
   allCorrect: boolean;
   items: Array<Record<string, any>>;
   submittedAt: string;
+  // ── rich-content-quiz parts flow only (omitted for other types) ──
+  partId?: string;
+  scaffold?: ScaffoldResponse | null;
+  nextPartId?: string | null;
+  sampleSolution?: string | null;
 }
 
 export interface Respondent extends RespondentSummary {
@@ -69,6 +77,7 @@ export class TaskDemoService {
     private readonly exerciseService: ExerciseService,
     private readonly manifestCache: ManifestCacheService,
     private readonly exerciseRegistry: ExerciseTypeRegistry,
+    private readonly gradingService: GradingService,
   ) {}
 
   // ── Lifecycle ──
@@ -153,6 +162,18 @@ export class TaskDemoService {
     const student = await this.studentRepo.findBySessionAndId(session.id, studentId);
     if (!student) throw new NotFoundException('Student not found in this session');
 
+    // Rich-content-quiz parts flow — multi-part scaffold-driven grading.
+    // Mirror of StudentSubmissionService.submit() dispatch (`student-
+    // submission.service.ts:64-74`): partId in payload → submitPart;
+    // partId + _pass → passPart (acknowledge scaffold and proceed).
+    const partId = typeof data.partId === 'string' ? data.partId : undefined;
+    if (partId) {
+      if (data._pass === true) {
+        return this.passPart(session, studentId, partId);
+      }
+      return this.submitPart(session, studentId, data, partId);
+    }
+
     const step = session.currentStep;
     // Reuse production grading path — sanitize/registry/grader all unchanged.
     const checkResult = await this.exerciseService.checkAnswer(session, studentId, step, data);
@@ -165,37 +186,16 @@ export class TaskDemoService {
       ? Math.round((items.filter((i) => i.correct === true).length / items.length) * 100)
       : (checkResult.allCorrect ? 100 : 0);
 
-    // Read-then-insert race guard: maxAttempt + 1 can collide with a
-    // concurrent submit (double-click, simultaneous tabs). The entity has
-    // UNIQUE(sessionId, studentId, attempt); on violation we re-read and
-    // retry. Loop bounded so a sustained collision storm surfaces an error
-    // instead of looping forever.
-    let saved;
-    for (let tries = 0; tries < 5; tries++) {
-      const nextAttempt = (await this.attemptRepo.maxAttempt(session.id, studentId)) + 1;
-      try {
-        saved = await this.attemptRepo.insert({
-          sessionId: session.id,
-          lessonId: session.lessonId,
-          studentId,
-          step,
-          attempt: nextAttempt,
-          dataJson: data as Record<string, any>,
-          scoreJson: { total },
-          checkItemsJson: (checkResult.items ?? []) as Array<Record<string, any>>,
-        });
-        break;
-      } catch (err: any) {
-        const isUniqueViolation = err?.message?.includes('UNIQUE')
-          || err?.code === 'SQLITE_CONSTRAINT'
-          || err?.code === '23505'; // postgres
-        if (!isUniqueViolation) throw err;
-        // Loop again with a fresh maxAttempt read.
-      }
-    }
-    if (!saved) {
-      throw new ConflictException('Could not record submission — too many concurrent attempts');
-    }
+    // Race-guarded append (helper handles UNIQUE-violation retry).
+    const saved = await this.insertWithRetry({
+      sessionId: session.id,
+      lessonId: session.lessonId,
+      studentId,
+      step,
+      dataJson: data as Record<string, any>,
+      scoreJson: { total },
+      checkItemsJson: (checkResult.items ?? []) as Array<Record<string, any>>,
+    });
 
     return {
       attempt: saved.attempt,
@@ -204,6 +204,227 @@ export class TaskDemoService {
       items: checkResult.items ?? [],
       submittedAt: saved.submittedAt.toISOString(),
     };
+  }
+
+  // ── Rich-content-quiz parts flow ──
+
+  /**
+   * Per-part submission. Mirrors StudentSubmissionService.submitPart but
+   * writes to task_demo_attempts (append-only) instead of reading_submissions
+   * (UPSERT). Prior partsProgress is recovered from the most recent attempt
+   * for (session, student); the new attempt carries the merged state forward.
+   */
+  private async submitPart(
+    session: { id: string; lessonId: string; currentStep: number },
+    studentId: string,
+    data: Record<string, unknown>,
+    partId: string,
+  ): Promise<SubmitTaskDemoResult> {
+    const step = session.currentStep;
+    const partDef = await this.resolvePartDef(session.lessonId, step, partId);
+
+    // Recover prior partsProgress from the most recent attempt for this
+    // student (task_demo_attempts is append-only — every submit is its own
+    // row, the latest row carries the most up-to-date progress).
+    const prior = await this.attemptRepo.findLatestByStudent(session.id, studentId);
+    const priorParts = (prior?.dataJson?.parts as Record<string, any> | undefined) ?? {};
+    const partProgress = priorParts[partId] ?? { attempts: 0, completed: false, scaffoldLevel: -1 };
+
+    // Grade by constructing a synthetic image-upload key from this part —
+    // identical to production submitPart so the same plugin grader (vision
+    // LLM for handwriting/photos) runs.
+    const syntheticKey: Record<string, unknown> = {
+      type: 'image-upload',
+      prompt: partDef.prompt,
+      rubric: partDef.rubric,
+      sampleSolution: partDef.sampleSolution,
+      aiSystemPrompt: partDef.aiSystemPrompt,
+      accepts: partDef.accepts,
+    };
+    const partScore = (await this.gradingService.grade(syntheticKey, data)) ?? {
+      total: 0,
+      byDimension: {},
+    };
+
+    partProgress.attempts = (partProgress.attempts ?? 0) + 1;
+    if (!partProgress.attemptsHistory) partProgress.attemptsHistory = [];
+    partProgress.attemptsHistory.push({
+      version: partProgress.attempts,
+      images: data.images as string[] | undefined,
+      method: (data.method as string | undefined) ?? 'photo',
+      score: partScore,
+      submittedAt: new Date().toISOString(),
+    });
+    partProgress.images = data.images;
+    partProgress.score = partScore;
+
+    // Use shared scaffold helper (same call as production submitPart).
+    const isCorrect = partScore.total >= 100;
+    const scaffoldOut = computeScaffoldResponse({
+      partDef,
+      prevScaffoldLevel: partProgress.scaffoldLevel,
+      isCorrect,
+      llmFeedback: partScore.llmFeedback,
+    });
+    partProgress.scaffoldLevel = scaffoldOut.nextScaffoldLevel;
+    partProgress.completed = scaffoldOut.completed;
+    if (partProgress.completed && partDef.sampleSolution) {
+      partProgress.sampleSolution = partDef.sampleSolution;
+    }
+
+    const partsProgress = { ...priorParts, [partId]: partProgress };
+
+    const allParts = await this.resolveAllParts(session.lessonId, step);
+    const nextPartId = this.computeNextPartId(allParts, partsProgress, partId, partProgress.completed);
+    const allCompleted = allParts.every((p) => partsProgress[p.id]?.completed);
+    const aggregate = allCompleted ? computeRcqAggregateScore(allParts, partsProgress) : null;
+
+    const mergedData: Record<string, any> = {
+      ...data,
+      parts: partsProgress,
+      currentPartId: partProgress.completed ? (nextPartId ?? partId) : partId,
+    };
+
+    const saved = await this.insertWithRetry({
+      sessionId: session.id,
+      lessonId: session.lessonId,
+      studentId,
+      step,
+      dataJson: mergedData,
+      scoreJson: (allCompleted ? aggregate : partScore) as Record<string, any>,
+      checkItemsJson: null,
+    });
+
+    return {
+      attempt: saved.attempt,
+      score: saved.scoreJson,
+      allCorrect: allCompleted && (aggregate?.total ?? 0) === 100,
+      items: [],
+      submittedAt: saved.submittedAt.toISOString(),
+      partId,
+      scaffold: scaffoldOut.scaffold,
+      nextPartId: partProgress.completed ? nextPartId : null,
+      sampleSolution: partProgress.completed ? (partDef.sampleSolution ?? null) : null,
+    };
+  }
+
+  /** Student saw a scaffold and chose to skip — mark this part completed
+   *  without grading. Guard: only valid AFTER at least one scaffold was
+   *  shown (matches production passPart). */
+  private async passPart(
+    session: { id: string; lessonId: string; currentStep: number },
+    studentId: string,
+    partId: string,
+  ): Promise<SubmitTaskDemoResult> {
+    const step = session.currentStep;
+    const partDef = await this.resolvePartDef(session.lessonId, step, partId);
+
+    const prior = await this.attemptRepo.findLatestByStudent(session.id, studentId);
+    const priorParts = (prior?.dataJson?.parts as Record<string, any> | undefined) ?? {};
+    const partProgress = priorParts[partId];
+    if (!partProgress || (partProgress.scaffoldLevel ?? -1) < 0) {
+      throw new BadRequestException('Cannot pass a part before any scaffold has been shown');
+    }
+
+    partProgress.completed = true;
+    if (partDef.sampleSolution) partProgress.sampleSolution = partDef.sampleSolution;
+    const partsProgress = { ...priorParts, [partId]: partProgress };
+
+    const allParts = await this.resolveAllParts(session.lessonId, step);
+    const nextPartId = this.computeNextPartId(allParts, partsProgress, partId, true);
+    const allCompleted = allParts.every((p) => partsProgress[p.id]?.completed);
+    const aggregate = allCompleted ? computeRcqAggregateScore(allParts, partsProgress) : null;
+
+    const mergedData: Record<string, any> = {
+      partId,
+      _pass: true,
+      parts: partsProgress,
+      currentPartId: nextPartId ?? partId,
+    };
+
+    const saved = await this.insertWithRetry({
+      sessionId: session.id,
+      lessonId: session.lessonId,
+      studentId,
+      step,
+      dataJson: mergedData,
+      scoreJson: (allCompleted ? aggregate : (partProgress.score ?? null)) as Record<string, any> | null,
+      checkItemsJson: null,
+    });
+
+    return {
+      attempt: saved.attempt,
+      score: saved.scoreJson,
+      allCorrect: allCompleted && (aggregate?.total ?? 0) === 100,
+      items: [],
+      submittedAt: saved.submittedAt.toISOString(),
+      partId,
+      nextPartId,
+      sampleSolution: partDef.sampleSolution ?? null,
+    };
+  }
+
+  private async resolvePartDef(lessonId: string, step: number, partId: string): Promise<RichContentPart> {
+    const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
+    const steps: Array<Record<string, unknown>> = (manifest.readingSteps ?? []) as any;
+    const stepDef = steps.find((s) => s.idx === step);
+    const ak = stepDef?.answerKey as RichContentQuizAnswerKey | undefined;
+    if (!ak || ak.type !== 'rich-content-quiz' || !ak.parts) {
+      throw new BadRequestException('Step does not declare a rich-content-quiz with parts');
+    }
+    const partDef = ak.parts.find((p) => p.id === partId);
+    if (!partDef) throw new NotFoundException(`Part "${partId}" not found at step ${step}`);
+    return partDef;
+  }
+
+  private async resolveAllParts(lessonId: string, step: number): Promise<RichContentPart[]> {
+    const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+    const steps: Array<Record<string, unknown>> = (manifest?.readingSteps ?? []) as any;
+    const stepDef = steps.find((s) => s.idx === step);
+    const ak = stepDef?.answerKey as RichContentQuizAnswerKey | undefined;
+    return ak?.parts ?? [];
+  }
+
+  private computeNextPartId(
+    allParts: RichContentPart[],
+    partsProgress: Record<string, any>,
+    currentPartId: string,
+    currentCompleted: boolean,
+  ): string | null {
+    if (!currentCompleted) return null;
+    const ids = allParts.map((p) => p.id);
+    const idx = ids.indexOf(currentPartId);
+    for (let i = idx + 1; i < ids.length; i++) {
+      if (!partsProgress[ids[i]]?.completed) return ids[i];
+    }
+    return null;
+  }
+
+  /** Insert a new TaskDemoAttempt row using the existing race-guarded retry
+   *  loop (same as the main submit path) — shared between the
+   *  single-shot and parts flows. */
+  private async insertWithRetry(rec: {
+    sessionId: string;
+    lessonId: string;
+    studentId: string;
+    step: number;
+    dataJson: Record<string, any>;
+    scoreJson: Record<string, any> | null;
+    checkItemsJson: Array<Record<string, any>> | null;
+  }) {
+    for (let tries = 0; tries < 5; tries++) {
+      const nextAttempt = (await this.attemptRepo.maxAttempt(rec.sessionId, rec.studentId)) + 1;
+      try {
+        return await this.attemptRepo.insert({ ...rec, attempt: nextAttempt });
+      } catch (err: any) {
+        const isUniqueViolation = err?.message?.includes('UNIQUE')
+          || err?.code === 'SQLITE_CONSTRAINT'
+          || err?.code === '23505';
+        if (!isUniqueViolation) throw err;
+      }
+    }
+    throw new ConflictException('Could not record submission — too many concurrent attempts');
   }
 
   // ── Admin / replay views ──
@@ -259,3 +480,4 @@ function toReplayEntry(rec: TaskDemoAttemptRecord): ReplayEntry {
     submittedAt: rec.submittedAt.toISOString(),
   };
 }
+

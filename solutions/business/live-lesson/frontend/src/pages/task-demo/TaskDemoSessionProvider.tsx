@@ -7,15 +7,15 @@ type SessionCtxValue = ComponentProps<typeof SessionCtx.Provider>['value']
 
 /**
  * Wraps SessionCtx for /task-demo so plugins that route through
- * `ctx.submit(step, data)` (notably select-evidence — selfManagedSubmit=true)
- * hit /api/task-demo/:code/submit instead of the classroom backend.
+ * `ctx.submit(step, data)` hit /api/task-demo/:code/submit instead of the
+ * classroom backend. Two consumers today:
  *
- * KNOWN GAP — rich-content-quiz scaffold flow is NOT supported. Production
- * `/submit` response carries `scaffold`, `partId`, `nextPartId`,
- * `sampleSolution` which drive RichContentQuizExercise's multi-part
- * walkthrough. /api/task-demo/:code/submit returns only `{attempt, score,
- * allCorrect, items}` — so the scaffold branch silently no-ops and every
- * submission jumps to "correct". Tracked in docs/task-demo.md backlog.
+ *   - select-evidence (selfManagedSubmit=true) — calls ctx.submit per
+ *     "Check evidence" click.
+ *   - rich-content-quiz — calls ctx.submit per part submission and reads
+ *     back `scaffold` / `partId` / `nextPartId` / `sampleSolution` to drive
+ *     its multi-part walkthrough. The backend submitPart fills these
+ *     fields when `data.partId` is set; we pass them through here.
  */
 export function TaskDemoSessionProvider({
   code,
@@ -42,9 +42,18 @@ export function TaskDemoSessionProvider({
       try {
         const result = await taskDemoApi.submit(code, studentId, data)
         onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as Record<string, unknown> | null, items: result.items })
-        // SubmitResult has more optional fields (scaffold / partId / etc.)
-        // we never produce for task-demo — leave them undefined.
-        const ret: SubmitResult = { ok: true, score: result.score as Record<string, unknown> | null }
+        // Forward scaffold/partId/nextPartId/sampleSolution so plugins like
+        // rich-content-quiz can drive their state machine. Backend submitPart
+        // populates them when data.partId is set; non-part submits leave
+        // them undefined.
+        const ret: SubmitResult = {
+          ok: true,
+          score: result.score as Record<string, unknown> | null,
+          ...(result.partId !== undefined && { partId: result.partId }),
+          ...(result.scaffold !== undefined && { scaffold: result.scaffold }),
+          ...(result.nextPartId !== undefined && { nextPartId: result.nextPartId }),
+          ...(result.sampleSolution !== undefined && { sampleSolution: result.sampleSolution }),
+        }
         return ret
       } catch (err) {
         // eslint-disable-next-line no-console

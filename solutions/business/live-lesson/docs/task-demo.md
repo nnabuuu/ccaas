@@ -137,21 +137,11 @@ public deploy (`?token=<jwt>` on `/respondents` + `/replay/:studentId`).
 | `fill-blank` | ✅ | Default path |
 | `select-evidence` | ✅ | selfManagedSubmit; submit wired via `props.submit` |
 | `image-upload` | ⚠️ | Renders, but AI grading requires live LLM — verify env |
-| `rich-content-quiz` | ❌ | See gap below |
+| `rich-content-quiz` | ✅ | Multi-part scaffold flow works; see `task-demo.service.submitPart` / `passPart` |
 | `guided-discovery` | ❌ | See gap below |
 
 ### Known gaps
 
-- [ ] **rich-content-quiz scaffold flow is unsupported.**
-      `RichContentQuizExercise` calls `useContext(SessionCtx).submit`
-      and reads `result.scaffold` / `result.partId` /
-      `result.nextPartId` / `result.sampleSolution` to drive its
-      multi-part walkthrough. The task-demo `ctx.submit` (in
-      `TaskDemoSessionProvider`) returns only `{ok, score}` — those
-      fields are always undefined, so the plugin treats every submit
-      as "all correct, advance" and the multi-part flow collapses.
-      Sales should send rich-content-quiz demos via `/exercise-demo`
-      (bundle-based) instead.
 - [ ] **guided-discovery has no working submit path in `/task-demo`.**
       `GdPluginComp` in `built-in.tsx` doesn't call `props.submit` or
       `ctx.submit`; in production the multi-step grading runs through

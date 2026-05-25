@@ -31,6 +31,22 @@ export interface SubmitResult {
   allCorrect: boolean
   items: Array<Record<string, unknown>>
   submittedAt: string
+  // ── rich-content-quiz parts flow (omitted for single-shot types) ──
+  partId?: string
+  scaffold?: {
+    level: number
+    hintZh: string
+    hintImage?: string
+    canRetry: boolean
+    steps?: Array<{
+      title: string
+      hintZh?: string
+      widget?: string
+      props?: Record<string, unknown>
+    }>
+  } | null
+  nextPartId?: string | null
+  sampleSolution?: string | null
 }
 
 export interface Respondent {

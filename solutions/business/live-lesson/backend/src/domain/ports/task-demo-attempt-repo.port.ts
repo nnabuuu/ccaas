@@ -39,4 +39,7 @@ export interface TaskDemoAttemptRepoPort {
   summarizeBySession(sessionId: string): Promise<RespondentSummary[]>;
   /** All attempts for one student in this session, ordered by attempt asc. */
   findByStudent(sessionId: string, studentId: string): Promise<TaskDemoAttemptRecord[]>;
+  /** Most recent attempt for (session, student); null if none — used by
+   *  rich-content-quiz parts flow to read the prior partsProgress state. */
+  findLatestByStudent(sessionId: string, studentId: string): Promise<TaskDemoAttemptRecord | null>;
 }

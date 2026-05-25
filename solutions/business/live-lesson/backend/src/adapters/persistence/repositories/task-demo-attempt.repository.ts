@@ -65,4 +65,11 @@ export class TypeOrmTaskDemoAttemptRepository implements TaskDemoAttemptRepoPort
       order: { attempt: 'ASC' },
     });
   }
+
+  findLatestByStudent(sessionId: string, studentId: string): Promise<TaskDemoAttemptRecord | null> {
+    return this.repo.findOne({
+      where: { sessionId, studentId },
+      order: { attempt: 'DESC' },
+    });
+  }
 }

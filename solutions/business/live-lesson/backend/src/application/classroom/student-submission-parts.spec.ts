@@ -404,22 +404,27 @@ describe('StudentSubmissionService — submitPart multi-image', () => {
     expect(data.parts.p2.attempts).toBe(1);
   });
 
-  it('_pass on no-scaffold part is rejected (scaffoldLevel never bumped)', async () => {
+  it('_pass on no-scaffold part is allowed after a synthesised hint was shown', async () => {
     const { session, student } = await setup();
-    // Wrong answer on p2 (no scaffold) → synthesized scaffold, but scaffoldLevel stays -1
+    // Wrong answer on p2 (no scaffold) → synthesised scaffold from llmFeedback;
+    // the helper bumps scaffoldLevel to 0 so the _pass guard knows a hint
+    // has been seen (previously this stayed at -1, blocking _pass forever
+    // on parts without a configured scaffold ladder).
     gradeSpy.mockResolvedValueOnce({ total: 50, byDimension: { c2: 1 } });
     await service.submit(session, student.id, 1, {
       partId: 'p2',
       images: ['data:image/jpeg;base64,wrong'],
     });
 
-    // Try to pass — rejected because scaffoldLevel is -1 (passPart guard)
     const passResult = await service.submit(session, student.id, 1, {
       partId: 'p2',
       _pass: true,
       images: [],
     });
-    expect(passResult.ok).toBe(false);
+    expect(passResult.ok).toBe(true);
+    expect(passResult.partId).toBe('p2');
+    // p2 was the last part in this fixture (or near it); _pass should advance.
+    expect(passResult.sampleSolution).toBeTruthy();
   });
 
   it('multiple retries on no-scaffold part all return canRetry=true', async () => {
