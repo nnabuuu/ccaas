@@ -1,5 +1,14 @@
 # Agent Session Runtime — P0 Validation Report
 
+> **Archive note (2026-05-25)**: this report references POC runners
+> (`packages/vfs-poc/validation/{git,sandbox}/`,
+> `scripts/run-linux-v1.sh`, `docker/`) that have been removed after
+> the production code in `packages/backend/src/sessions/` superseded
+> them. The **results** (`validation/results/*.json`) are preserved
+> here as immutable evidence; re-running V1/V2 would now require
+> resurrecting the runners from git history (commit `f7c90e41` or
+> earlier).
+
 > **验证日期**: v1 2026-05-24, v2/v3 2026-05-25, **v4 (本次修订) 2026-05-25 (Linux Docker)**
 > **平台**:
 > - macOS 14.x (darwin arm64), agentfs NFS export

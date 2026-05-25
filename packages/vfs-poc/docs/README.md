@@ -1,9 +1,17 @@
 # vfs-poc docs
 
-Documentation index for the agentfs virtual-FS POC + everything we've
-validated about it. The POC itself lives in `packages/vfs-poc/src/`,
-`validation/`, `scripts/`, `docker/`. **This `docs/` folder is the
-authoritative narrative**; in-tree comments cover only line-level intent.
+> **Archive note**: the POC source (`src/`, `validation/git`,
+> `validation/sandbox`, `docker/`, and the demo scripts) was removed
+> 2026-05-25 after the production code in
+> `packages/backend/src/sessions/{workspace,sandbox}/` superseded it.
+> What this `docs/` folder describes was, at its time of writing, the
+> live POC; today it serves as the **authoritative design narrative**
+> backing the production implementation. Validation results in
+> `packages/vfs-poc/validation/results/` are preserved as immutable
+> evidence of the v1/v2 passes.
+
+Documentation index for the agentfs virtual-FS work + everything we've
+validated about it.
 
 ## Documents
 

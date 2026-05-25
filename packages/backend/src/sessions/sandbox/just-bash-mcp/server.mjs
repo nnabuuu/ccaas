@@ -8,8 +8,8 @@
  * `WORKSPACE_PROVIDER=agentfs` is the agentfs FUSE/NFS mount, so the
  * sandbox stacks: just-bash interpreter + agentfs FS isolation).
  *
- * Ported from `packages/vfs-poc/src/just-bash-mcp/server.ts`.
- * V2 validation (docs/VALIDATION_REPORT.md round 3) confirmed claude
+ * Design source: packages/vfs-poc/docs/VALIDATION_REPORT.md round 3
+ * confirmed claude
  * routes Bash through this MCP when `--disallowed-tools Bash` is set
  * and system prompt steers it.
  *

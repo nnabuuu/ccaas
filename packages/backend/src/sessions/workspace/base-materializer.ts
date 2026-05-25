@@ -2,8 +2,10 @@
  * BaseMaterializer — projects ccaas skills + mcp servers onto a host
  * directory tree that agentfs `--base` overlays into every session mount.
  *
- * Ported from `packages/vfs-poc/src/base-materializer.ts`, swapped from
- * raw better-sqlite3 → TypeORM repositories. Output layout matches the
+ * Design rationale + sanity-check derivation:
+ *   `packages/vfs-poc/docs/WORKSPACE_PROVIDER.md` ("BaseMaterializer" section).
+ * Originally prototyped in vfs-poc with raw better-sqlite3; this production
+ * version uses TypeORM repositories. Output layout matches the
  * existing `tenants/{tenantId}/skills/{slug}/` + `mcp-servers/{slug}/`
  * convention so claude sees identical relative paths whether running
  * in a plain local workspace dir or in an agentfs overlay mount.

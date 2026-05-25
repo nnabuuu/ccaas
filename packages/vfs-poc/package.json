@@ -1,31 +1,9 @@
 {
   "name": "@kedge-agentic/vfs-poc",
   "private": true,
-  "version": "0.0.1",
-  "description": "POC: replace direct local-workspace mapping with agentfs overlay + just-bash sandbox, validate spawned claude-code CLI works in virtual FS",
-  "type": "module",
+  "version": "0.0.2",
+  "description": "Design + validation archive for the agentfs overlay + just-bash sandbox work. Production code lives in packages/backend/src/sessions/{workspace,sandbox}/. See README.md.",
   "scripts": {
-    "materialize-base": "tsx scripts/materialize-base.ts",
-    "demo:single": "tsx scripts/run-single-session.ts",
-    "demo:snapshot": "tsx scripts/run-snapshot.ts",
-    "demo:concurrent": "tsx scripts/run-concurrent.ts",
-    "mcp:just-bash": "tsx src/just-bash-mcp/server.ts",
-    "mcp:files": "tsx src/files-mcp/server.ts",
-    "validate:v1": "tsx validation/git/run-all.ts",
-    "validate:v2": "tsx validation/sandbox/run-configs.ts",
-    "test": "node --import tsx --test test/fs-isolation.spec.ts",
-    "clean": "rm -rf .delta-store /tmp/vfs-poc"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "agentfs-sdk": "^0.6.4",
-    "better-sqlite3": "^11.0.0",
-    "just-bash": "^3.0.1"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.10",
-    "@types/node": "^20.11.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "build-agentfs-fix": "bash scripts/build-agentfs-fix.sh"
   }
 }

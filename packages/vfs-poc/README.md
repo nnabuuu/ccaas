@@ -1,85 +1,61 @@
-# @kedge-agentic/vfs-poc
+# @kedge-agentic/vfs-poc — design + validation archive
 
-POC: 用 **agentfs overlay** 替代 ccaas 现在的"每 session 一个真实 host 目录",并把 **just-bash** 作为 agent 的 Bash MCP 工具,验证 `claude` CLI 可以 spawn 在虚拟 FS 上工作。
+> **Status: archive.** All POC source has been ported into the
+> production ccaas backend (`packages/backend/src/sessions/`). This
+> directory preserves the design documents and validation results
+> that backed those decisions, plus the build-agentfs-fix script
+> still needed for first-time setup.
 
-📖 **完整文档见 [`docs/`](./docs/README.md)** — architecture overview, validation report, WorkspaceProvider design draft.
-
-## 三个验证目标
-
-| Goal | Demo | 通过判据 |
-|---|---|---|
-| G1: claude 跑在虚拟 FS | `npm run demo:single` | claude 写文件 → 落入 mount,base 不变 |
-| G2: 快照/回滚 | `npm run demo:snapshot` | 写 3 个文件 → 快照 → 改/删 → rollback → 状态恢复 |
-| G3: 多 session 并发隔离 | `npm run demo:concurrent` | 5 个 session 并发,各自看到自己的文件,base 共享无重复 |
-
-`npm test` 是 G3 的自动化断言。
-
-## 一次性环境准备 (macOS)
-
-```bash
-# 1. 装 agentfs CLI (装到 ~/.cargo/bin)
-curl -fsSL https://github.com/tursodatabase/agentfs/releases/latest/download/agentfs-installer.sh | sh
-export PATH="$HOME/.cargo/bin:$PATH"
-agentfs --version  # 应该输出 v0.6.4 或更新
-
-# 2. (V1 需要) build + 装我们 fork 的 patched agentfs
-#    默认 branch = feat/nfs-drop-appledouble (NFS fix + AppleDouble drop)
-#    详情见 docs/VALIDATION_REPORT.md
-bash packages/vfs-poc/scripts/build-agentfs-fix.sh
-
-# 想跑"bare mode"(无应用层 workaround,验证 server 端拦截足够)?
-#   VFS_POC_BARE=1 npm run validate:v1
-
-# 想在 Linux Docker 上跑全套矩阵 (patched fork + upstream baseline)?
-# (验证 production 形态:Linux FUSE 不需要 fork)
-#   bash packages/vfs-poc/scripts/run-linux-v1.sh
-#   # 结果 in /tmp/vfs-poc-linux-results/v1-linux-*.json
-#   # 也归档在 validation/results/v1-linux-*.json (checkin'd)
-
-# 3. 装 npm 依赖
-cd packages/vfs-poc && npm install
-
-# 4. claude CLI 必须在 PATH 上 (ccaas 已经依赖)
-claude --version
-```
-
-## 跑 POC
-
-```bash
-# 从 ccaas 主 db 物化出 base 目录到 /tmp/vfs-poc/base/
-npm run materialize-base
-
-# 三个 demo
-npm run demo:single
-npm run demo:snapshot
-npm run demo:concurrent
-
-# 自动化断言
-npm test
-
-# 清理 (卸载所有挂载、删 delta、删 base)
-npm run clean
-```
-
-## 架构
+## What's here
 
 ```
-ccaas main db
-  ↓ BaseMaterializer (一次性物化)
-/tmp/vfs-poc/base/                  ← agentfs --base (host 目录,只读)
-  ↓ N 个 agentfs init --base
-session-A delta.db   session-B delta.db   ...
-  ↓ agentfs mount (NFS on macOS, FUSE on Linux)
-/tmp/vfs-poc/mnt/A   /tmp/vfs-poc/mnt/B   ...
-  ↓ spawn claude --cwd=mount
-claude (host process)
-  ↓ Bash tool → MCP → just-bash sandbox
+packages/vfs-poc/
+├── docs/                  # ← authoritative design narrative; KEEP using this
+│   ├── ARCHITECTURE.md            — overall agentfs + just-bash layer model
+│   ├── WORKSPACE_PROVIDER.md      — runtime FS/meta API design + risk register
+│   ├── VALIDATION_REPORT.md       — v1–v4 validation rounds with raw results
+│   └── STAGE1_LOCAL_SELFHOST.md   — operator quickstart
+├── validation/results/    # ← v1/v2 validation outputs (immutable history)
+└── scripts/
+    └── build-agentfs-fix.sh       — builds our fork (rail44 NFS fix + AppleDouble drop)
+                                    — referenced by STAGE1 quickstart
 ```
 
-## 显式 out-of-scope
+## Where the code went
 
-- 不动 `packages/backend`(POC 跑通后另开 PR 起 WorkspaceProvider 抽象)
-- 不做 base 热更新
-- 不做 session 跨节点迁移
-- 不做 quota/资源限制
-- 不替代 WriteFileTrackerHook
+| POC file (removed) | Production location |
+|---|---|
+| `src/just-bash-mcp/server.ts` | `packages/backend/src/sessions/sandbox/just-bash-mcp/server.mjs` |
+| `src/base-materializer.ts` | `packages/backend/src/sessions/workspace/base-materializer.ts` (TypeORM-backed) |
+| `src/session-fs-manager.ts` + `src/platform/mount.ts` | `packages/backend/src/sessions/workspace/agentfs-provider.ts` |
+| `src/claude-runner.ts` | `packages/backend/src/sessions/services/cli-process.service.ts` |
+| `src/files-mcp/server.ts` | (not productionized — was a parallel POC; superseded by the just-bash route) |
+| validation runners (git/sandbox/) | removed; results in `validation/results/` are the historical record |
+| `scripts/run-*.ts` + `run-linux-v1.sh` | removed; ran against the POC src/ which is gone |
+
+For the design rationale of *why* each component looks like it does in
+production, read `docs/ARCHITECTURE.md` (the layered model) and
+`docs/WORKSPACE_PROVIDER.md` (the abstraction + risk register).
+
+## Why we kept the archive
+
+- **`docs/` is still the authoritative narrative** — backend code
+  comments still link back to specific sections (e.g. AgentfsProvider
+  cites WORKSPACE_PROVIDER.md sanity check B).
+- **`validation/results/*.json`** are immutable evidence of v1/v2
+  validation passes; useful when someone asks "did you verify FUSE on
+  Linux?"
+- **`scripts/build-agentfs-fix.sh`** still needed for first-time
+  setup of the rail44-fix fork; referenced from
+  `docs/STAGE1_LOCAL_SELFHOST.md`.
+
+## If you're looking for…
+
+- **Hands-on demo**: `solutions/business/demo-sandbox/` ships a working
+  B2B SaaS demo on top of all this. `npm run dev` in there + visit
+  `http://localhost:3010/`.
+- **REST API surface** for the runtime: see
+  `docs/STAGE1_LOCAL_SELFHOST.md` "Inspect what the agent did" section
+  for curl examples.
+- **Stage-2 plans** (per-tenant isolation, encryption, etc.): see the
+  "Out of scope" sections in `docs/WORKSPACE_PROVIDER.md`.

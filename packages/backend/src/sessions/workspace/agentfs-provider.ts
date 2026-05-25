@@ -1,7 +1,8 @@
 /**
  * AgentfsWorkspaceProvider — virtual FS per session via the agentfs binary.
  *
- * Architecture (ported from packages/vfs-poc/src/{session-fs-manager,platform/mount}.ts):
+ * Architecture (design source: packages/vfs-poc/docs/ARCHITECTURE.md +
+ * docs/WORKSPACE_PROVIDER.md):
  *   - One shared base dir (materialized once at startup by BaseMaterializer)
  *     hosts read-only skills + mcp-servers content for all tenants.
  *   - Each session gets:
@@ -350,7 +351,7 @@ export class AgentfsWorkspaceProvider implements WorkspaceProvider {
     }
   }
 
-  /** Snapshot the WAL set (matching vfs-poc's pattern). Returns the snapshot path. */
+  /** Snapshot the WAL set (pattern validated in vfs-poc v2). Returns the snapshot path. */
   async snapshot(sessionId: string, label: string): Promise<string> {
     const daemon = this.daemons.get(sessionId);
     if (!daemon) throw new Error(`snapshot: no live session ${sessionId}`);
