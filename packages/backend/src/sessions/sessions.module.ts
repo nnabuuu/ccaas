@@ -46,6 +46,7 @@ import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory
 import { WORKSPACE_PROVIDER } from './workspace/types';
 import { SandboxService } from './sandbox/sandbox.service';
 import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
+import { ProjectChangesController } from './agent-runtime/project-changes.controller';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -69,7 +70,7 @@ import { BundleModule } from '../bundles/bundle.module';
     FilesModule,
     BundleModule,
   ],
-  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController],
+  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController, ProjectChangesController],
   providers: [
     SessionsController,
     SessionsGateway,

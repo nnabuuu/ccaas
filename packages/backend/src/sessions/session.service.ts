@@ -62,6 +62,13 @@ export class SessionService implements OnModuleDestroy {
   private sessions = new Map<string, ManagedSession>();
   private clientSessions = new Map<string, Set<string>>();
   /**
+   * agent-runtime sync layer: sessionId → bound projectId. Populated by
+   * `bindToProject`; cleared when the session is removed from `sessions`.
+   * Provides O(n) reverse lookup for `findSessionsByProjectId`, which the
+   * invalidate REST endpoint and any cross-session sync orchestration use.
+   */
+  private projectBindings = new Map<string, string>();
+  /**
    * Per-sessionId Promise dedup for concurrent getOrCreateSession calls
    * (sanity check A in WORKSPACE_PROVIDER.md). Map.has + Map.set are
    * synchronous, preserving the atomicity that today's
@@ -288,7 +295,25 @@ export class SessionService implements OnModuleDestroy {
       'projectId',
       projectId,
     );
+    this.projectBindings.set(sessionId, projectId);
     this.eventEmitter.emit('session.bound', { sessionId, tenantId, projectId });
+  }
+
+  /**
+   * Reverse lookup for the agent-runtime invalidate endpoint:
+   * which active sessions are bound to `projectId`. Walks the
+   * in-memory bindings map; only returns sessions that are still
+   * live in `this.sessions` (filters out stale entries from
+   * pre-cleanup races).
+   */
+  findSessionsByProjectId(projectId: string): string[] {
+    const out: string[] = [];
+    for (const [sid, pid] of this.projectBindings) {
+      if (pid === projectId && this.sessions.has(sid)) {
+        out.push(sid);
+      }
+    }
+    return out;
   }
 
   /**
@@ -386,6 +411,7 @@ export class SessionService implements OnModuleDestroy {
 
     this.sessions.delete(sessionId);
     this.clientSessions.get(session.clientId)?.delete(sessionId);
+    this.projectBindings.delete(sessionId);
 
     this.eventMapperService.clearSessionState(sessionId);
 
