@@ -67,6 +67,14 @@ export class SessionService implements OnModuleDestroy {
    * requests would race on agentfs init --force (sanity check B).
    */
   private pendingCreates = new Map<string, Promise<ManagedSession>>();
+  /**
+   * In-flight `workspaceProvider.close(sessionId)` promises, populated
+   * synchronously by `closeSession`. Lets graceful `shutdown()` await
+   * unmount completion before the process exits (otherwise the agentfs
+   * daemon would survive the backend briefly). For non-shutdown callers
+   * (GC, eviction) close still appears fire-and-forget.
+   */
+  private pendingCloses = new Map<string, Promise<void>>();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   private readonly workspaceDir: string;
@@ -116,8 +124,8 @@ export class SessionService implements OnModuleDestroy {
     });
   }
 
-  onModuleDestroy() {
-    this.shutdown();
+  async onModuleDestroy(): Promise<void> {
+    await this.shutdown();
   }
 
   /**
@@ -336,13 +344,20 @@ export class SessionService implements OnModuleDestroy {
     this.eventMapperService.clearSessionState(sessionId);
 
     // Release provider resources (no-op for LocalProvider; unmounts for
-    // AgentfsProvider). Fire-and-forget — closeSession is sync and we
-    // don't want unmount failure to throw at callers (idle GC, max-session
-    // eviction, manual close). Errors are logged.
-    this.workspaceProvider.close(sessionId).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`workspaceProvider.close(${sessionId}) failed: ${msg}`);
-    });
+    // AgentfsProvider). Fire-and-forget for non-shutdown callers (idle GC,
+    // max-session eviction, manual close) so they don't block on unmount.
+    // The promise is parked in `pendingCloses` so `shutdown()` can await
+    // graceful unmount before the process exits (otherwise the agentfs
+    // mount daemon outlives the backend; see v5 validation finding).
+    const closePromise = this.workspaceProvider.close(sessionId)
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`workspaceProvider.close(${sessionId}) failed: ${msg}`);
+      })
+      .finally(() => {
+        this.pendingCloses.delete(sessionId);
+      });
+    this.pendingCloses.set(sessionId, closePromise);
 
     // Phase 2: Update database to mark session as closed (fire-and-forget)
     this.updateSessionInDatabase(sessionId, {
@@ -915,10 +930,19 @@ export class SessionService implements OnModuleDestroy {
     await this.updateSessionInDatabase(sessionId, updates);
   }
 
+  /** Hard cap on how long shutdown waits for any single workspace unmount. */
+  private static readonly SHUTDOWN_CLOSE_TIMEOUT_MS = 5000;
+
   /**
-   * Graceful shutdown
+   * Graceful shutdown.
+   *
+   * Closes every live session synchronously (state cleanup), then awaits
+   * the in-flight `workspaceProvider.close()` promises with a hard timeout
+   * so the process doesn't hang on a stuck unmount. Without the await,
+   * agentfs mount daemons survive backend exit briefly (their socket peer
+   * only times out a few seconds later).
    */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     this.logger.log('Shutting down...');
 
     if (this.cleanupInterval) {
@@ -931,6 +955,26 @@ export class SessionService implements OnModuleDestroy {
 
     for (const sessionId of this.sessions.keys()) {
       this.closeSession(sessionId);
+    }
+
+    // Snapshot pending close promises BEFORE clearing state — the .finally()
+    // handler on each promise removes its entry from pendingCloses, but our
+    // local snapshot keeps Promise references alive for the await below.
+    const pending = Array.from(this.pendingCloses.values());
+    if (pending.length > 0) {
+      this.logger.log(`Awaiting ${pending.length} workspace close(s) to flush…`);
+      await Promise.race([
+        Promise.all(pending),
+        new Promise<void>((resolve) =>
+          setTimeout(() => {
+            this.logger.warn(
+              `Shutdown timed out after ${SessionService.SHUTDOWN_CLOSE_TIMEOUT_MS}ms — ` +
+              `${this.pendingCloses.size} workspace close(s) may not have flushed`,
+            );
+            resolve();
+          }, SessionService.SHUTDOWN_CLOSE_TIMEOUT_MS),
+        ),
+      ]);
     }
 
     this.sessions.clear();

@@ -24,6 +24,12 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  // Wire SIGTERM/SIGINT → onModuleDestroy. Without this, NestJS just exits
+  // when the process is signaled and lifecycle hooks never run, so e.g.
+  // SessionService.shutdown's awaited `workspaceProvider.close()` calls
+  // (which unmount agentfs FUSE/NFS sessions cleanly) are skipped.
+  app.enableShutdownHooks();
+
   // Get configuration for CORS
   const configService = app.get(ConfigService);
   const isProduction = configService.get<string>('NODE_ENV') === 'production';

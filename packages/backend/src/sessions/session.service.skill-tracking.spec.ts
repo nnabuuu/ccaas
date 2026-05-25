@@ -93,8 +93,8 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
     eventMapperService = module.get(EventMapperService);
   });
 
-  afterEach(() => {
-    service.shutdown(); // Clear cleanup interval timer
+  afterEach(async () => {
+    await service.shutdown(); // Clear cleanup interval timer + flush pending closes
     jest.clearAllMocks();
   });
 

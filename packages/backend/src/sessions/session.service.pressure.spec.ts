@@ -115,8 +115,8 @@ describe('SessionService — Pressure-Based Cleanup', () => {
     (service as any).maxProcessingMs = 1_800_000;
   });
 
-  afterEach(() => {
-    service.shutdown();
+  afterEach(async () => {
+    await service.shutdown();
     jest.clearAllMocks();
   });
 

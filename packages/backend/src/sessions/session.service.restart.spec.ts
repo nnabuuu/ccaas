@@ -89,8 +89,8 @@ describe('SessionService - Session Restart (Week 4)', () => {
     eventMapperService = module.get(EventMapperService);
   });
 
-  afterEach(() => {
-    service.shutdown();
+  afterEach(async () => {
+    await service.shutdown();
     jest.clearAllMocks();
   });
 
