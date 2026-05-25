@@ -1,0 +1,22 @@
+{
+  "$schema": "https://kedge.agentic/schemas/solution-v3.json",
+  "schemaVersion": "3.0",
+  "tenant": {
+    "slug": "live-lesson-creator",
+    "name": "Live Lesson Creator",
+    "description": "Agent-assisted authoring for live-lesson course projects. The agent edits ProjectFile artifacts (plan/lesson-plan.md, execution/manifest.json) via the bidirectional artifact sync against the live-lesson backend."
+  },
+  "mode": "simple",
+  "discovery": { "enabled": true },
+  "skills": ["skills/*"],
+  "mcpServers": {},
+  "sessionTemplates": {
+    "edit-lesson": {
+      "description": "Conversational lesson authoring — agent reads/edits the project's manifest + plan files, respecting Zod schema for exercise answerKeys.",
+      "enabledSkills": ["manifest-editor"],
+      "skillPromptMode": "inline"
+    }
+  },
+  "artifactUrl": "http://localhost:3007/api",
+  "_artifactUrl_note": "PoC ONLY — hardcoded localhost. Before any non-laptop deploy, point this at the live-lesson backend's reachable URL (via env-templated import or `PUT /tenants/:id { config: { artifactUrl } }` at runtime)."
+}

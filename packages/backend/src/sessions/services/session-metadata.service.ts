@@ -22,9 +22,11 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   PayloadTooLargeException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -45,6 +47,11 @@ export interface SessionMetadataRow {
 @Injectable()
 export class SessionMetadataService {
   constructor(
+    // SessionService ↔ SessionMetadataService is a circular dep
+    // (SessionService also injects SessionMetadataService) — forwardRef
+    // breaks the cycle so Nest can construct both. The constructor body
+    // doesn't deref `sessions` so the lazy resolution is safe.
+    @Inject(forwardRef(() => SessionService))
     private readonly sessions: SessionService,
     @InjectRepository(SessionMetadata)
     private readonly repo: Repository<SessionMetadata>,

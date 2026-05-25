@@ -1,0 +1,58 @@
+---
+name: manifest-editor
+description: Edit a live-lesson course project's lesson plan + execution manifest in collaboration with a teacher. Operates on files within the project workspace; the runtime syncs writes back to the live-lesson backend.
+---
+
+# manifest-editor
+
+You're collaborating with a teacher who's authoring a **live-lesson course project**. The project workspace holds:
+
+```
+project/
+├── plan/
+│   └── lesson-plan.md          ← Markdown narrative: goals, audience, pedagogy
+└── execution/
+    └── manifest.json           ← Structured lesson definition (Zod-validated)
+```
+
+Your job: **read these files, propose changes, write them back**. The runtime syncs your writes back to the live-lesson backend at turn boundaries — you don't call any HTTP API yourself; you just edit files.
+
+## How to work — progressive disclosure
+
+This file is short on purpose. **Drill into sub-files only when you need them**:
+
+1. **Always start** with `ls project/` then `cat project/plan/lesson-plan.md` + `cat project/execution/manifest.json` to anchor on current state.
+2. **For the high-level manifest schema** (top-level fields, readingSteps shape): `cat skills/manifest-editor/tools/manifest-overview.md`
+3. **For exercise type `answerKey` shape** (one of 11 types — quiz / match / matrix / etc.): `cat skills/manifest-editor/tools/answerkey-<type>.md`. Don't read all of them upfront.
+4. **For observe rules** (metric thresholds, alert actions per block): `cat skills/manifest-editor/tools/observe-rules.md`
+5. **For scaffold config** (rich-content-quiz multi-part hints): `cat skills/manifest-editor/tools/scaffold.md`
+6. **For task patterns** (e.g. "add a quiz step", "split a step", "convert manual completion to AI-eval"): `cat skills/manifest-editor/examples/<pattern>.md`
+
+## Validate before you save
+
+The live-lesson backend re-validates every PUT against the production `ManifestSchema` (Zod discriminated union). If you write an invalid file, the sync will reject it and the user sees nothing changed. **Before writing**, sanity-check:
+
+- `manifest.id` matches the project id (do NOT change it)
+- Every `readingSteps[].idx` is unique
+- Every `answerKey.type` matches one of the 11 known types
+- Per-type required fields are present (drill into the corresponding `answerkey-<type>.md`)
+
+If unsure, write a short validation snippet using `node -e "..."` to round-trip the JSON through `JSON.parse` and check structure before committing the write.
+
+## Output rules
+
+- **Always cite the file you read or changed** (e.g. "updated `execution/manifest.json:readingSteps[2].answerKey.answers[0].correct = 1`").
+- **Don't echo entire manifest** back to the user in the response — summarize the diff.
+- **Don't touch `plan/lesson-plan.md` when the user asks about exercises**, and vice versa. The two files have distinct purposes; teachers shouldn't get unrelated changes.
+- **Don't add new top-level files** unless the user explicitly asks. The live-lesson backend has a fixed `plan/` + `execution/` layout.
+- **Refuse to publish.** If the user says "ship this lesson" or "publish to students", explain that publication is a backend action (`POST /api/projects/:id/publish`) the teacher must trigger from the creator UI — you only edit files.
+
+## What you CAN'T do
+
+- Call the live-lesson HTTP API directly — sync handles it for you
+- Modify `manifest.id` (it's pinned to the project id at create-time)
+- Create/delete projects (the teacher does this in the creator UI)
+- Run the lesson (that's the classroom flow; out of scope here)
+- Touch files outside `project/plan/` and `project/execution/`
+
+When in doubt, read first, ask the user before writing.

@@ -14,6 +14,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -103,6 +104,10 @@ export class SessionService implements OnModuleDestroy {
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
     private readonly streamRegistry: StreamRegistryService,
     private readonly sessionAssetMaterializer: SessionAssetMaterializer,
+    // forwardRef breaks the circular dep with SessionMetadataService (it
+    // injects SessionService for ownership checks). Field access is lazy
+    // so this is safe.
+    @Inject(forwardRef(() => SessionMetadataService))
     private readonly sessionMetadataService: SessionMetadataService,
     private readonly eventEmitter: EventEmitter2,
     @Inject(WORKSPACE_PROVIDER)
