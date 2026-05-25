@@ -106,11 +106,20 @@ abstractions stabilize from Phase 0/1/2. The pattern catalog
 |---|---|---|---|
 | A (was v0.1) | `workspace/` only | ~1 week | ✅ shipped |
 | 0 (v0.2) | rename to `agent-runtime`; sub-module skeletons (types only) for project/artifact/schema/sync; ship `JsonEditProvider` | ~4 days | ✅ shipped |
-| 1 | TypeORM `ProjectStore` + `ArtifactStore`; Zod schema adapter; `MarkdownArtifactEditor`; `BinaryEditor`; blob storage abstraction | ~2 weeks | next |
-| 2 | `ChangeStream` in-memory; mid-session re-materialization; conflict markers | ~1-2 weeks | later |
-| 3 | live-lesson migration; pattern catalog deltas; first non-live-lesson consumer | ~2-3 weeks | last |
+| **1 (v0.3)** | **`ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`; backend `SessionAssetSyncer` orchestrator at turn boundaries; `bindToProject` + session-bound bootstrap; `RestProjectArtifactSource` adapter for cross-process solutions; `/projects/:id/{changes,invalidate}` REST; live-lesson `/artifacts` endpoint contract** | ~1.5 weeks | ✅ **shipped** |
+| 2 | Redis-backed `ChangeStream` (cross-instance fanout); `BinaryArtifactSource` + blob storage; `MarkdownArtifactEditor` wrapping `DocumentEditProvider`; Zod schema adapter; conflict markers in GUI | ~1-2 weeks | next |
+| 3 | live-lesson full migration onto new abstractions (drop bespoke project entity if applicable); pattern catalog deltas; first non-live-lesson consumer | ~2-3 weeks | last |
 
-Total: ~1.5–2 months end-to-end.
+Total: ~1.5–2 months end-to-end. Phases A, 0, 1 = ~3 weeks shipped.
+
+### Phase 1 — what's deliberately not in scope (Phase 2+ backlog)
+
+* Redis-backed cross-process `ChangeStream` (single-instance only today)
+* Per-field projection (1 entity → N files via column-mapping) — Phase 1 is strictly 1 row = 1 file via `ProjectArtifactSource`. Solutions compose multiple rows internally.
+* Binary blob projection
+* `MarkdownArtifactEditor` (Phase 0's `JsonEditProvider` already covers JSON artifacts)
+* Zod entity hooks on live-lesson's `ProjectFile` for schema enforcement at the entity boundary
+* Frontend SSE consumer of `/projects/:id/changes`
 
 ## Open design questions (still unresolved)
 

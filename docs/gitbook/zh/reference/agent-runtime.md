@@ -1,18 +1,19 @@
 # `@kedge-agentic/agent-runtime` 包参考
 
-> 框架无关的 ccaas agentic runtime 包。当前版本 v0.2（Phase 0）。
+> 框架无关的 ccaas agentic runtime 包。当前版本 v0.3（Phase 1）。
 > **2026-05 改名提示**：本包此前叫 `@kedge-agentic/agentfs-runtime`（v0.1），当时只有 workspace 一层。改名后承载 workspace + project + artifact + schema + sync 五个子模块。
 
 ## 当前阶段状态
 
 | 阶段 | 子模块 | 状态 |
 |---|---|---|
-| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped（即 v0.1 的全部） |
-| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped（本版本） |
-| 0 | `project/` `schema/` `sync/` — 接口骨架 | ✅ shipped（只有 interface，没有实现） |
-| 1 | TypeORM `ProjectStore` + `ArtifactStore`；Zod schema adapter；`MarkdownArtifactEditor` | ⏳ 下一步 |
-| 2 | ChangeStream impl（in-memory → Redis） | ⏳ 之后 |
-| 3 | live-lesson 迁移到新抽象上 | ⏳ 最后 |
+| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped |
+| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
+| 0 | `project/` `schema/` `sync/` — 接口骨架 | ✅ shipped |
+| **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped（本版本）** |
+| **1 (backend)** | **`SessionAssetSyncer` + `RestProjectArtifactSource` + `/projects/:id/{changes,invalidate}` REST + `bindToProject` 钩子** | **✅ shipped（packages/backend）** |
+| 2 | Redis-backed ChangeStream（跨进程 fan-out）；BinaryArtifactSource；MarkdownArtifactEditor | ⏳ 之后 |
+| 3 | live-lesson 完全迁移到新抽象上 | ⏳ 最后 |
 
 设计推导完整版：`docs/AGENT_RUNTIME_DESIGN.md`。
 
@@ -179,7 +180,130 @@ Schema 库无关 —— Zod、JSON Schema、TypeBox 任意一种都能写成 `Sc
 
 Phase 1 会附带一个 Zod adapter。
 
-## `sync/`（Phase 0 接口骨架）
+## Phase 1 —— 双向同步（pull-based）
+
+**核心交付**：solution backend 照常用 REST 写自己的 DB（任何方式都行：TypeORM、原始 SQL、批处理），runtime 在 agent **每轮结束的空闲窗口** 自动把变化拉到 agent 工作区的 `artifacts/` 目录；agent 修改的文件在下一轮空闲时反向写回 DB。**Solution 代码完全不变**——只需要实现一个 ~30 行的接口或暴露 3 个 REST endpoint。
+
+### 设计中心：`ProjectArtifactSource`
+
+```ts
+import type { ProjectArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
+
+export interface ArtifactSnapshot {
+  readonly path: string;       // workspace 相对路径，如 'lesson-plan.md'
+  readonly content: string;
+  readonly type: string;       // 'md' | 'json' | solution 自定义
+  readonly attributes?: Readonly<Record<string, unknown>>;
+}
+
+export interface ProjectArtifactSource {
+  loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>>;
+  saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void>;
+  deleteArtifact?(projectId: string, path: string): Promise<void>;
+}
+```
+
+Solution 实现这一个接口，runtime 负责其余的全部：snapshot diff、conflict 解决、agent 工作区写盘、change event 广播。
+
+### 冲突解决（已锁定）
+
+按路径 P 的 4 格真值表：
+
+| dbChanged | fsChanged | 处理 |
+|---|---|---|
+| no | no | no-op |
+| yes | no | DB 内容 → 写到 fs（gui 编辑） |
+| no | yes | 从 fs 读 → saveArtifact 写 DB（agent 编辑） |
+| yes | yes | **agent 赢**：保存 agent 版本到 DB；发 `conflict_agent_wins` ChangeEvent，附带被丢弃的 DB 版本给 GUI 提示 |
+
+无时间戳、无时钟比较——正确性来自 turn-bounded snapshot diff 的不变量。
+
+### `SyncEngine.plan()` — 纯逻辑
+
+```ts
+import { SyncEngine, type SyncPlan, type FsDelta } from '@kedge-agentic/agent-runtime';
+
+const plan: SyncPlan = new SyncEngine().plan({
+  sessionId, dbNow, fsDelta, previousSnapshot, now: new Date().toISOString(),
+  hasher: (s) => createHash('sha256').update(s).digest('hex'),
+});
+// plan.actions: SyncAction[] — write_fs / delete_fs / save_db / delete_db / conflict_agent_wins
+// plan.nextSnapshot: SnapshotEntry[] — 写完之后该把 SnapshotStore 切到这个状态
+```
+
+纯函数、无 I/O —— 适合在自动化测试里穷举 4 格 conflict matrix。
+
+### `InMemoryChangeStream`
+
+`ChangeStream` 接口的单进程默认实现。Per-projectId fan-out + microtask scheduling（一个 listener 抛错不会影响兄弟 listener，unsubscribe-during-dispatch 也安全）。Phase 2 会出 Redis 版做跨进程。
+
+### `SnapshotStore`
+
+```ts
+interface SnapshotStore {
+  list(sessionId: string): Promise<ReadonlyArray<SnapshotEntry>>;
+  put(entry: SnapshotEntry): Promise<void>;
+  remove(sessionId: string, path: string): Promise<void>;
+  clear(sessionId: string): Promise<void>;
+}
+```
+
+Runtime 自带 `InMemorySnapshotStore` 给测试用；backend 提供 TypeORM-backed 实现（`SessionArtifactSnapshot` entity），存的是 `(sessionId, path) → sha256(content)`，~64 字节/行。重启后 syncer 能恢复 diff 的不变量。
+
+## backend wiring（packages/backend 私有但解释下流程）
+
+### `SessionAssetSyncer`（orchestrator）
+
+`@OnEvent('session.turn.complete')` —— 在 `CliProcessService` 的 cli 退出钩子上挂着。每个 turn 边界：
+
+1. 从 `session_metadata['projectId']` 拿到绑定的 projectId（无绑定 → no-op）
+2. 并行拉 `(source.loadArtifacts, /fs/diff, snapshotStore.list)`
+3. `SyncEngine.plan()` 生成动作列表
+4. 应用动作：写文件到 mount（Spike 0 已验证 idle 窗口下 host fs.writeFile 通过 FUSE 是安全的）、调 source.saveArtifact、删两边
+5. 替换 snapshot
+6. 发 ChangeEvent
+
+`@OnEvent('session.bound')` —— 在 `SessionService.bindToProject()` 调用时触发，跑同一个 `sync()` 方法。空 snapshot ⇒ 把整套 artifact 初始化进工作区。
+
+### `RestProjectArtifactSource`（跨进程 adapter）
+
+适用于 solution backend 跟 ccaas 是**独立进程**的场景（如 live-lesson 在 :3007、ccaas 在 :3001）。Solution 暴露 3 个 REST endpoint：
+
+```
+GET  {base}/projects/:projectId/artifacts
+     → [{ path, content, type, attributes? }]
+
+PUT  {base}/projects/:projectId/artifacts?path=<encoded>
+     body { content, type, attributes? }   # upsert
+
+DELETE {base}/projects/:projectId/artifacts?path=<encoded>
+     # idempotent — 404 视作已删除
+```
+
+ccaas 通过 `SOLUTION_ARTIFACT_URL` 环境变量配置 baseUrl，`AgentRuntimeModule.forRoot()` 自动启用该 adapter。
+
+### REST endpoints（GUI 用的）
+
+```
+GET   /api/v1/projects/:projectId/changes    # SSE — 监听 ChangeEvent
+POST  /api/v1/projects/:projectId/invalidate # 提前请求一次 sync（可选优化）
+```
+
+### Solution 集成两行
+
+```ts
+// solution backend：在创建 project-scoped agent session 后立刻调
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+  method: 'POST', body: JSON.stringify({ projectId }),
+});
+
+// 或者通过 SDK 直接：
+sessionsClient.bindToProject(sessionId, projectId);
+```
+
+后端 `SessionService.bindToProject(sessionId, tenantId, projectId)` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。
+
+## 旧的 `sync/`（Phase 0 接口骨架，仍然存在）
 
 ```ts
 interface ChangeEvent {
@@ -197,7 +321,7 @@ interface ChangeStream {
 }
 ```
 
-agent ↔ GUI 双向更新流。Phase 2 会先出 in-memory pub/sub，再出 Redis 版。冲突解决策略当前**未定**（设计文档里列了几个候选）。
+Phase 1 的 `InMemoryChangeStream` 实现了上面这个接口。Phase 2 的 Redis 版本会替换实现、不动接口。
 
 ## `testing/`
 

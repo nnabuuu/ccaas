@@ -1,18 +1,19 @@
 # `@kedge-agentic/agent-runtime` Package Reference
 
-> Framework-free runtime for ccaas agentic services. Current version v0.2 (Phase 0).
+> Framework-free runtime for ccaas agentic services. Current version v0.3 (Phase 1).
 > **2026-05 rename note**: this package was previously `@kedge-agentic/agentfs-runtime` (v0.1) when it contained only the workspace layer. The rename signals the broader scope: workspace + project + artifact + schema + sync.
 
 ## Phase status
 
 | Phase | Sub-module | Status |
 |---|---|---|
-| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped (was v0.1's entirety) |
-| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped (this version) |
-| 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped (interfaces only, no impls) |
-| 1 | TypeORM `ProjectStore` + `ArtifactStore`; Zod schema adapter; `MarkdownArtifactEditor` | ⏳ next |
-| 2 | ChangeStream impl (in-memory → Redis) | ⏳ later |
-| 3 | live-lesson migration onto the new abstractions | ⏳ last |
+| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped |
+| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
+| 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped |
+| **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped (this version)** |
+| **1 (backend)** | **`SessionAssetSyncer` + `RestProjectArtifactSource` + `/projects/:id/{changes,invalidate}` REST + `bindToProject` hook** | **✅ shipped (packages/backend)** |
+| 2 | Redis-backed ChangeStream (cross-process); BinaryArtifactSource; MarkdownArtifactEditor | ⏳ later |
+| 3 | live-lesson full migration onto the new abstractions | ⏳ last |
 
 Full design rationale: `docs/AGENT_RUNTIME_DESIGN.md`.
 
@@ -179,7 +180,129 @@ Schema-library agnostic — Zod, JSON Schema, TypeBox, any of them can be wrappe
 
 Phase 1 will ship a Zod adapter.
 
-## `sync/` (Phase 0 interface skeleton)
+## Phase 1 — bidirectional sync (pull-based)
+
+**Headline**: solutions write their DB however they want (TypeORM, raw SQL, batch jobs); the runtime auto-projects changes into the agent's workspace `artifacts/` dir at every turn boundary, and propagates the agent's fs edits back to the DB. **No solution code changes** — only a ~30-line interface impl or 3 REST endpoints.
+
+### Design center: `ProjectArtifactSource`
+
+```ts
+import type { ProjectArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
+
+export interface ArtifactSnapshot {
+  readonly path: string;       // workspace-relative, e.g. 'lesson-plan.md'
+  readonly content: string;
+  readonly type: string;       // 'md' | 'json' | solution-defined
+  readonly attributes?: Readonly<Record<string, unknown>>;
+}
+
+export interface ProjectArtifactSource {
+  loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>>;
+  saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void>;
+  deleteArtifact?(projectId: string, path: string): Promise<void>;
+}
+```
+
+Solution implements this interface; runtime owns everything else: snapshot diff, conflict resolution, agent-workspace write-through, change broadcast.
+
+### Conflict resolution (locked)
+
+Per-path truth table:
+
+| dbChanged | fsChanged | Resolution |
+|---|---|---|
+| no | no | no-op |
+| yes | no | DB content → write into fs (gui edit) |
+| no | yes | read fs → saveArtifact to DB (agent edit) |
+| yes | yes | **AGENT WINS**: persist agent's version to DB; emit `conflict_agent_wins` ChangeEvent with the discarded DB version so the GUI can warn the user |
+
+No timestamps, no clock comparisons. Correctness follows from the turn-bounded snapshot-diff invariant.
+
+### `SyncEngine.plan()` — pure logic
+
+```ts
+import { SyncEngine, type SyncPlan, type FsDelta } from '@kedge-agentic/agent-runtime';
+
+const plan: SyncPlan = new SyncEngine().plan({
+  sessionId, dbNow, fsDelta, previousSnapshot, now: new Date().toISOString(),
+  hasher: (s) => createHash('sha256').update(s).digest('hex'),
+});
+// plan.actions: SyncAction[] — write_fs / delete_fs / save_db / delete_db / conflict_agent_wins
+// plan.nextSnapshot: SnapshotEntry[] — what the SnapshotStore should commit after apply
+```
+
+Pure function, no I/O — exhaustively unit-testable against the 4-case conflict matrix.
+
+### `InMemoryChangeStream`
+
+The single-process default `ChangeStream` impl. Per-projectId fanout + microtask scheduling (a throwing listener doesn't break siblings; unsubscribe-during-dispatch is safe). Phase 2 will swap to Redis for multi-process deployments.
+
+### `SnapshotStore`
+
+```ts
+interface SnapshotStore {
+  list(sessionId: string): Promise<ReadonlyArray<SnapshotEntry>>;
+  put(entry: SnapshotEntry): Promise<void>;
+  remove(sessionId: string, path: string): Promise<void>;
+  clear(sessionId: string): Promise<void>;
+}
+```
+
+Runtime ships `InMemorySnapshotStore` for tests; backend provides a TypeORM-backed impl over `SessionArtifactSnapshot` entity, storing `(sessionId, path) → sha256(content)` rows at ~64 bytes each. After a process restart the syncer's diff invariant remains intact.
+
+## Backend wiring (packages/backend-private, documented here for the flow)
+
+### `SessionAssetSyncer` (orchestrator)
+
+`@OnEvent('session.turn.complete')` — hooked on `CliProcessService`'s cli-exit boundary. Per turn:
+
+1. Look up bound projectId from `session_metadata['projectId']` (no binding → no-op).
+2. Parallel-fetch `(source.loadArtifacts, /fs/diff, snapshotStore.list)`.
+3. `SyncEngine.plan()` produces the action list.
+4. Apply: writes through the mount (Spike 0 verified host fs.writeFile through FUSE is safe in the idle window), calls source.saveArtifact, deletes on either side.
+5. Replace snapshot.
+6. Publish ChangeEvents.
+
+`@OnEvent('session.bound')` — fires when `SessionService.bindToProject()` is called, runs the same `sync()`. Empty snapshot ⇒ every DB-side artifact bootstraps into the workspace before the agent's first turn.
+
+### `RestProjectArtifactSource` (cross-process adapter)
+
+For solutions running as a **separate process** from ccaas (e.g., live-lesson on :3007, ccaas on :3001). Solution exposes 3 REST endpoints:
+
+```
+GET  {base}/projects/:projectId/artifacts
+     → [{ path, content, type, attributes? }]
+
+PUT  {base}/projects/:projectId/artifacts?path=<encoded>
+     body { content, type, attributes? }   # upsert
+
+DELETE {base}/projects/:projectId/artifacts?path=<encoded>
+     # idempotent — 404 treated as already-deleted
+```
+
+ccaas reads `SOLUTION_ARTIFACT_URL` env var for the baseUrl; `AgentRuntimeModule.forRoot()` auto-selects this adapter when the var is set.
+
+### REST endpoints (consumed by GUI)
+
+```
+GET   /api/v1/projects/:projectId/changes    # SSE feed of ChangeEvents
+POST  /api/v1/projects/:projectId/invalidate # request early sync (optional optimization)
+```
+
+### Solution integration — 2 lines
+
+```ts
+// Solution backend: right after creating a project-scoped agent session
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+  method: 'POST', body: JSON.stringify({ projectId }),
+});
+// or via the SDK
+sessionsClient.bindToProject(sessionId, projectId);
+```
+
+`SessionService.bindToProject(sessionId, tenantId, projectId)` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state.
+
+## Legacy `sync/` (Phase 0 interface skeleton, still present)
 
 ```ts
 interface ChangeEvent {
@@ -197,7 +320,7 @@ interface ChangeStream {
 }
 ```
 
-Bidirectional update stream between agent and GUI. Phase 2 will ship an in-memory pub/sub first, Redis-backed later. Conflict-resolution strategy is **unresolved** (design doc lists candidates).
+Phase 1's `InMemoryChangeStream` implements the above. Phase 2's Redis-backed variant swaps the impl without touching the interface.
 
 ## `testing/`
 
