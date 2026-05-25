@@ -12,6 +12,7 @@ authoritative narrative**; in-tree comments cover only line-level intent.
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | The layered model: upstream agentfs → rail44 NFS fix → `feat/nfs-drop-appledouble` → ccaas POC. Why each layer exists, what runs where (macOS dev / Linux production), the fork-vs-upstream decision |
 | [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) | The four validation rounds (v1–v4): macOS NFS bring-up, rail44 fix verification, server-side AppleDouble drop, Linux Docker production form. Per-test data, performance comparisons, spec impact |
 | [WORKSPACE_PROVIDER.md](./WORKSPACE_PROVIDER.md) | (in progress) Design for the backend `WorkspaceProvider` abstraction that integrates agentfs into ccaas. Captures sanity-check findings, risk register, scope decisions before code |
+| [STAGE1_LOCAL_SELFHOST.md](./STAGE1_LOCAL_SELFHOST.md) | Quickstart for running ccaas locally with both FS (agentfs) + Bash (just-bash MCP) sandboxed. Includes env vars, verification log lines, troubleshooting |
 
 ## External references
 

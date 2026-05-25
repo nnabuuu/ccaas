@@ -301,18 +301,26 @@ in `.finally()` to ensure cleanup on success and failure.
 
 ## Out of scope for this PR (queued follow-ups)
 
-- `HeadlessExecutionService` (scheduled tasks) provider integration —
-  same shape as SessionService but separate file, separate PR
-- WriteFileTrackerHook / attachment.service / skill-router routed
-  through provider methods (rather than raw `workspaceDir` string)
-- Session admin tools to re-mount closed agentfs sessions for forensic
-  file inspection (UI feature)
-- Session migration tooling (local → agentfs)
-- macOS dev experience polish (`npm run dev:backend` should "just work"
-  when `WORKSPACE_PROVIDER=agentfs` — auto base-materialize, etc.)
-- Backend Dockerfile (entirely missing today — opportunity to add a
-  `--privileged` capable one when we ship agentfs production)
-- Per-tenant agentfs encryption (`--key/--cipher` agentfs flags)
+Re-prioritized 2026-05-25 once **stage-1 = local self-host** became the
+actual target shape. Stage-1 quickstart lives in
+[`STAGE1_LOCAL_SELFHOST.md`](./STAGE1_LOCAL_SELFHOST.md). For stage-1,
+"sandboxed bash" was the real gap and shipped alongside this PR; the
+other items shifted as follows:
+
+| # | Item | Original framing | Stage-1 priority | Rationale |
+|---|---|---|---|---|
+| 1 | `HeadlessExecutionService` (scheduled tasks) provider integration | follow-up PR | **MEDIUM — deferred** | Only matters if the user actually wires scheduled tasks; not the hot path for stage-1. Same provider shape applies when revisited. |
+| 2 | WriteFileTrackerHook / attachment / skill-router → provider methods | follow-up PR | **LOW — deferred** | These read `workspaceDir` (string) today, which equals the agentfs mount path = already works. Cosmetic plumbing improvement, no behavior change. |
+| 3 | Forensic UI for closed agentfs sessions (re-mount snapshot) | follow-up PR | **LOW — deferred** | No current product ask; agentfs snapshot CLI works if needed manually. |
+| 4 | Session migration tooling (local → agentfs) | follow-up PR | **DROPPED** | Stage-1 = fresh local deploys, no legacy session corpus to migrate. |
+| 5 | macOS `npm run dev:backend` ergonomics polish | follow-up PR | **LOW — deferred** | Stage-1 quickstart documents the manual `WORKSPACE_AGENTFS_BIN` path; auto-detect is nice-to-have. |
+| 6 | Backend Dockerfile / k8s manifest | follow-up PR | **DROPPED for stage-1** | Local self-host runs bare-metal Node (FUSE / NFS both need host kernel access). Re-evaluate if stage-2 = hosted SaaS. |
+| 7 | Per-tenant agentfs encryption (`--key/--cipher`) | follow-up PR | **DROPPED for stage-1** | Single-user local-deploy has no multi-tenant secret isolation requirement. Re-add when stage-2 = multi-tenant SaaS. |
+
+**Shipped alongside this PR instead** (replacing items 4/6/7 on the
+priority list): bash sandbox via `just-bash` MCP wired into
+`CliProcessService` — see `packages/backend/src/sessions/sandbox/` and
+the [stage-1 quickstart](./STAGE1_LOCAL_SELFHOST.md).
 
 ## Definition of Done
 
