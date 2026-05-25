@@ -25,12 +25,13 @@ import {
 
 import {
   CHANGE_STREAM,
-  PROJECT_ARTIFACT_SOURCE,
+  PROJECT_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './agent-runtime.module';
 import { SessionAssetSyncer, ARTIFACTS_DIR } from './session-asset-syncer.service';
 import { SessionService } from '../session.service';
 import { SessionMetadataService } from '../services/session-metadata.service';
+import { TenantsService } from '../../tenants/tenants.service';
 import type { FsDiffEntry } from '../workspace/types';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -89,6 +90,7 @@ describe('SessionAssetSyncer', () => {
   let sessionSvc: { getSession: jest.Mock };
   let metaSvc: { get: jest.Mock };
   let syncer: SessionAssetSyncer;
+  let sourceRegistry: { getForTenantSlug: jest.Mock };
 
   beforeEach(async () => {
     workspaceDir = await makeWorkspace();
@@ -108,17 +110,26 @@ describe('SessionAssetSyncer', () => {
       }),
     };
 
+    const registry = {
+      getForTenantSlug: jest.fn(() => source),
+    };
+    const tenantsSvc = {
+      findOne: jest.fn(async (id: string) => ({ id, slug: 'live-lesson' })),
+    };
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         SessionAssetSyncer,
-        { provide: PROJECT_ARTIFACT_SOURCE, useValue: source },
+        { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: registry },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
         { provide: SessionMetadataService, useValue: metaSvc },
+        { provide: TenantsService, useValue: tenantsSvc },
       ],
     }).compile();
     syncer = moduleRef.get(SessionAssetSyncer);
+    sourceRegistry = registry;
   });
 
   afterEach(async () => {
@@ -230,14 +241,19 @@ describe('SessionAssetSyncer', () => {
       // deleteArtifact intentionally omitted
     };
 
+    const localRegistry = {
+      getForTenantSlug: jest.fn(() => noDeleteSource),
+    };
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         SessionAssetSyncer,
-        { provide: PROJECT_ARTIFACT_SOURCE, useValue: noDeleteSource },
+        { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: localRegistry },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
         { provide: SessionMetadataService, useValue: metaSvc },
+        { provide: TenantsService, useValue: { findOne: jest.fn(async () => null) } },
       ],
     }).compile();
     const localSyncer = moduleRef.get(SessionAssetSyncer);
@@ -269,6 +285,17 @@ describe('SessionAssetSyncer', () => {
       contentHash: sha256('first-load'),
       type: 'md',
     });
+  });
+
+  it('no-op when registry returns null for the session tenant (unconfigured)', async () => {
+    // Simulate a tenant with no per-tenant URL AND no default fallback.
+    sourceRegistry.getForTenantSlug.mockReturnValueOnce(null);
+    source.rows = [{ path: 'lesson.md', content: 'v1', type: 'md' }];
+
+    await syncer.sync(SID);
+
+    expect(source.saved).toEqual([]);
+    expect(existsSync(path.join(workspaceDir, ARTIFACTS_DIR, 'lesson.md'))).toBe(false);
   });
 
   it('non-complete turn statuses are ignored by onTurnComplete', async () => {

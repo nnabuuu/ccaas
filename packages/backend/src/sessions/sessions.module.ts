@@ -47,6 +47,7 @@ import { WORKSPACE_PROVIDER } from './workspace/types';
 import { SandboxService } from './sandbox/sandbox.service';
 import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
 import { ProjectChangesController } from './agent-runtime/project-changes.controller';
+import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -69,6 +70,9 @@ import { BundleModule } from '../bundles/bundle.module';
     MessagesModule,
     FilesModule,
     BundleModule,
+    // Agent-runtime sync layer: solutions override the artifact source via
+    // SOLUTION_ARTIFACT_URL{,S} env vars; default is a no-op source.
+    AgentRuntimeModule.forRoot(),
   ],
   controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController, ProjectChangesController],
   providers: [

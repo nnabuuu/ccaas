@@ -28,10 +28,11 @@ import {
   AgentRuntimeModule,
   CHANGE_STREAM,
   PROJECT_ARTIFACT_SOURCE,
+  PROJECT_ARTIFACT_SOURCE_REGISTRY,
 } from './agent-runtime.module';
+import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
-import { SessionService } from '../session.service';
-import { SessionMetadataService } from '../services/session-metadata.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 class FakeArtifactSource implements ProjectArtifactSource {
@@ -54,17 +55,19 @@ const repoMock = {
   delete: jest.fn(),
 };
 
-function compileWith(options?: { artifactSource?: typeof FakeArtifactSource }) {
+function compileWith(options?: { artifactSource?: typeof FakeArtifactSource; envUrls?: Record<string, string>; envUrl?: string }) {
+  const cfgMap: Record<string, unknown> = {
+    'workspace.solutionArtifactUrls': options?.envUrls ?? {},
+    'workspace.solutionArtifactUrl': options?.envUrl,
+  };
   const builder: TestingModuleBuilder = Test.createTestingModule({
-    imports: [AgentRuntimeModule.forRoot(options ?? {})],
-    providers: [
-      { provide: SessionService, useValue: { getSession: jest.fn(() => undefined) } },
-      { provide: SessionMetadataService, useValue: { get: jest.fn() } },
-    ],
+    imports: [AgentRuntimeModule.forRoot({ artifactSource: options?.artifactSource })],
   });
   return builder
     .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
     .useValue(repoMock)
+    .overrideProvider(ConfigService)
+    .useValue({ get: (k: string, d?: unknown) => cfgMap[k] ?? d })
     .compile();
 }
 
@@ -108,6 +111,58 @@ describe('AgentRuntimeModule', () => {
     const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
     expect(typeof source.loadArtifacts).toBe('function');
     expect(typeof source.saveArtifact).toBe('function');
+  });
+
+  describe('PROJECT_ARTIFACT_SOURCE_REGISTRY (Phase 1.5)', () => {
+    it('binds to a ProjectArtifactSourceRegistry instance', async () => {
+      const moduleRef = await compileWith();
+      const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
+      expect(registry).toBeInstanceOf(ProjectArtifactSourceRegistry);
+    });
+
+    it('legacy SOLUTION_ARTIFACT_URL → defaultSource picks up unknown tenants', async () => {
+      const moduleRef = await compileWith({ envUrl: 'http://legacy.local/api' });
+      const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
+      // any slug not in the (empty) map falls back to default
+      expect(registry.getForTenantSlug('any-tenant')).not.toBeNull();
+    });
+
+    it('SOLUTION_ARTIFACT_URLS → per-tenant entries beat defaultSource', async () => {
+      const moduleRef = await compileWith({
+        envUrl: 'http://default.local/api',
+        envUrls: { 'live-lesson': 'http://live.local/api', demo: 'http://demo.local/api' },
+      });
+      const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
+      const live = registry.getForTenantSlug('live-lesson');
+      const demo = registry.getForTenantSlug('demo');
+      const fallback = registry.getForTenantSlug('other');
+      // 3 distinct sources: live, demo, default
+      expect(live).not.toBe(demo);
+      expect(live).not.toBe(fallback);
+      expect(demo).not.toBe(fallback);
+    });
+
+    it('explicit artifactSource takes precedence over both env vars', async () => {
+      const moduleRef = await compileWith({
+        artifactSource: FakeArtifactSource,
+        envUrl: 'http://legacy.local/api',
+        envUrls: { demo: 'http://demo.local/api' },
+      });
+      const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
+      // The default fallback is the explicit FakeArtifactSource, not the legacy URL.
+      // Per-tenant env entries still apply (they're independent).
+      const fallback = registry.getForTenantSlug('unknown');
+      expect(fallback).toBeInstanceOf(FakeArtifactSource);
+    });
+
+    it('no env vars + no explicit source → defaultSource is null, unknown tenant returns null', async () => {
+      const moduleRef = await compileWith();
+      const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
+      // No env was supplied; defaults to no fallback. Note: PROJECT_ARTIFACT_SOURCE
+      // (the legacy single-source token) is bound to NoopArtifactSource so direct
+      // injectors keep working, but the registry sees null as its defaultSource.
+      expect(registry.getForTenantSlug('unknown')).toBeNull();
+    });
   });
 });
 

@@ -280,7 +280,24 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 treated as already-deleted
 ```
 
-ccaas reads `SOLUTION_ARTIFACT_URL` env var for the baseUrl; `AgentRuntimeModule.forRoot()` auto-selects this adapter when the var is set.
+ccaas reads env vars for the baseUrl; `AgentRuntimeModule.forRoot()` auto-selects this adapter when either is set. **Two config shapes**:
+
+```bash
+# Single solution (v0.3 — still supported as legacy default)
+SOLUTION_ARTIFACT_URL=http://localhost:3007/api
+
+# Multiple solutions (v0.3.1 — same CSV shape as SOLUTION_DIRS)
+SOLUTION_ARTIFACT_URLS=live-lesson:http://localhost:3007/api,demo:http://localhost:3010/api
+```
+
+**Resolution priority** (highest → lowest):
+
+1. `AgentRuntimeModule.forRoot({ artifactSource: ... })` explicit injection (test-only)
+2. `SOLUTION_ARTIFACT_URLS` per-tenant entries — routed via `session.tenantId → tenant.slug`
+3. `SOLUTION_ARTIFACT_URL` as defaultSource fallback — applied to any tenant whose slug isn't in the per-tenant map
+4. Neither set → syncer no-ops for that tenant
+
+Both env vars can coexist: the per-tenant map names specific tenants, the single URL catches the rest. Same CSV-with-first-colon grammar as `SOLUTION_DIRS=slug:abspath,...` (see `packages/backend/CLAUDE.md`) — URL `://` survives the first-colon-only split.
 
 ### REST endpoints (consumed by GUI)
 

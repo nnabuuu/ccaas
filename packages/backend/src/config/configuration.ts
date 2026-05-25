@@ -44,6 +44,16 @@ export default () => ({
     // The colon-after-slug splits slug from path; subsequent colons
     // (drive letters on Windows, etc.) are preserved in the path.
     solutionDirs: parseSolutionDirs(process.env.SOLUTION_DIRS),
+    // agent-runtime sync layer — solution backend REST callback URL(s).
+    // Two shapes supported (resolution priority below):
+    //   SOLUTION_ARTIFACT_URLS=slug:url,slug2:url2   (per-tenant; new)
+    //   SOLUTION_ARTIFACT_URL=url                    (single, legacy default-for-all)
+    // The per-tenant map matches against the bound session's tenant.slug;
+    // tenants without an explicit entry fall back to the legacy single URL.
+    // URLs containing `://` survive the first-colon-only split (same logic
+    // as SOLUTION_DIRS' Windows-drive-letter handling).
+    solutionArtifactUrls: parseSolutionArtifactUrls(process.env.SOLUTION_ARTIFACT_URLS),
+    solutionArtifactUrl: process.env.SOLUTION_ARTIFACT_URL?.trim() || undefined,
   },
 
   database: {
@@ -94,23 +104,41 @@ export default () => ({
 const SOLUTION_SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
 
 function parseSolutionDirs(raw: string | undefined): Record<string, string> {
+  return parseSlugMap(raw, 'SOLUTION_DIRS');
+}
+
+function parseSolutionArtifactUrls(raw: string | undefined): Record<string, string> {
+  return parseSlugMap(raw, 'SOLUTION_ARTIFACT_URLS');
+}
+
+/**
+ * Shared CSV-of-slug:value parser. Splits each pair on the FIRST colon
+ * so values containing colons (Windows drive letters, URLs with `://`)
+ * survive. Slugs are validated against `SOLUTION_SLUG_RE`; malformed
+ * entries are skipped with a warning, not a throw, so a single bad
+ * entry doesn't poison the whole config.
+ */
+function parseSlugMap(
+  raw: string | undefined,
+  envName: string,
+): Record<string, string> {
   if (!raw) return {};
   const out: Record<string, string> = {};
   for (const pair of raw.split(',').map((p) => p.trim()).filter(Boolean)) {
     const idx = pair.indexOf(':');
     if (idx <= 0 || idx === pair.length - 1) continue;
     const slug = pair.slice(0, idx).trim();
-    const dir = pair.slice(idx + 1).trim();
-    if (!slug || !dir) continue;
+    const value = pair.slice(idx + 1).trim();
+    if (!slug || !value) continue;
     if (!SOLUTION_SLUG_RE.test(slug)) {
       // eslint-disable-next-line no-console
       console.warn(
-        `[configuration] SOLUTION_DIRS: ignoring entry with invalid slug "${slug}" ` +
+        `[configuration] ${envName}: ignoring entry with invalid slug "${slug}" ` +
         `(must match ${SOLUTION_SLUG_RE})`,
       );
       continue;
     }
-    out[slug] = dir;
+    out[slug] = value;
   }
   return out;
 }

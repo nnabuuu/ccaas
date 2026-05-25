@@ -54,13 +54,15 @@ import { SyncEngine } from '@kedge-agentic/agent-runtime';
 
 import { SessionService } from '../session.service';
 import { SessionMetadataService } from '../services/session-metadata.service';
+import { TenantsService } from '../../tenants/tenants.service';
 import type { FsDiffEntry } from '../workspace/types';
 
 import {
   CHANGE_STREAM,
-  PROJECT_ARTIFACT_SOURCE,
+  PROJECT_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './tokens';
+import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
 
 /** Workspace-relative directory holding live artifact projections. */
 export const ARTIFACTS_DIR = 'artifacts';
@@ -87,12 +89,17 @@ export class SessionAssetSyncer {
   /** Per-projectId mutex so two sessions on the same project don't race. */
   private readonly projectLocks = new Map<string, Promise<void>>();
 
+  /** Cache of `tenantId → slug` lookups; slugs are stable per tenant. */
+  private readonly tenantSlugCache = new Map<string, string | null>();
+
   constructor(
-    @Inject(PROJECT_ARTIFACT_SOURCE) private readonly source: ProjectArtifactSource,
+    @Inject(PROJECT_ARTIFACT_SOURCE_REGISTRY)
+    private readonly sourceRegistry: ProjectArtifactSourceRegistry,
     @Inject(SNAPSHOT_STORE) private readonly snapshots: SnapshotStore,
     @Inject(CHANGE_STREAM) private readonly changes: ChangeStream,
     private readonly sessions: SessionService,
     private readonly metadata: SessionMetadataService,
+    private readonly tenants: TenantsService,
   ) {}
 
   @OnEvent('session.turn.complete')
@@ -144,13 +151,26 @@ export class SessionAssetSyncer {
       return;
     }
 
+    // Resolve the tenant-specific source: tenantId → slug (via TenantsService,
+    // cached locally since slugs are stable) → registry.getForTenantSlug.
+    // Null means this tenant has no configured artifact source AND there's
+    // no default fallback — treat the same as "no binding": no-op.
+    const slug = await this.resolveSlug(session.tenantId);
+    const source = this.sourceRegistry.getForTenantSlug(slug);
+    if (!source) {
+      this.logger.debug(
+        `sync: session ${sessionId} tenant=${session.tenantId} has no artifact source configured, skipping`,
+      );
+      return;
+    }
+
     // Serialize syncs per projectId: each new request chains onto the
     // previous one so two sessions on the same project don't race the
     // SyncEngine.plan inputs or the SnapshotStore writes.
     const prior = this.projectLocks.get(projectId);
     const run = (async () => {
       await prior?.catch(() => undefined);
-      await this.doSync(sessionId, projectId, session.workspaceDir);
+      await this.doSync(sessionId, projectId, session.workspaceDir, source);
     })();
     const settled: Promise<void> = run.then(
       () => undefined,
@@ -173,12 +193,13 @@ export class SessionAssetSyncer {
     sessionId: string,
     projectId: string,
     workspaceDir: string,
+    source: ProjectArtifactSource,
   ): Promise<void> {
     const artifactsDir = path.join(workspaceDir, ARTIFACTS_DIR);
     await fs.mkdir(artifactsDir, { recursive: true });
 
     const [dbNow, previousSnapshot, fsDelta] = await Promise.all([
-      this.source.loadArtifacts(projectId),
+      source.loadArtifacts(projectId),
       this.snapshots.list(sessionId),
       this.buildFsDelta(sessionId, artifactsDir),
     ]);
@@ -193,7 +214,7 @@ export class SessionAssetSyncer {
       // When the solution can't delete, the engine plans `write_fs`
       // (restore from DB) instead of `delete_db` so the agent's
       // delete is reverted on next read rather than silently dropped.
-      allowDelete: typeof this.source.deleteArtifact === 'function',
+      allowDelete: typeof source.deleteArtifact === 'function',
     });
 
     if (plan.actions.length === 0) {
@@ -206,7 +227,7 @@ export class SessionAssetSyncer {
     );
 
     for (const action of plan.actions) {
-      await this.applyAction(action, projectId, artifactsDir);
+      await this.applyAction(action, projectId, artifactsDir, source);
     }
 
     // Replace the snapshot wholesale — actions are over, the new
@@ -226,6 +247,7 @@ export class SessionAssetSyncer {
     action: SyncAction,
     projectId: string,
     artifactsDir: string,
+    source: ProjectArtifactSource,
   ): Promise<void> {
     const filePath = (rel: string) => path.join(artifactsDir, rel);
     switch (action.kind) {
@@ -236,7 +258,7 @@ export class SessionAssetSyncer {
         await fs.rm(filePath(action.path), { force: true });
         break;
       case 'save_db':
-        await this.source.saveArtifact(projectId, {
+        await source.saveArtifact(projectId, {
           path: action.path,
           content: action.content,
           type: action.type,
@@ -246,13 +268,13 @@ export class SessionAssetSyncer {
         // SyncEngine only plans this when allowDelete=true, so source
         // is guaranteed to have deleteArtifact. The guard is belt-and-
         // -braces against future refactors.
-        if (this.source.deleteArtifact) {
-          await this.source.deleteArtifact(projectId, action.path);
+        if (source.deleteArtifact) {
+          await source.deleteArtifact(projectId, action.path);
         }
         break;
       case 'conflict_agent_wins':
         // Persist agent's version to DB; fs already has it.
-        await this.source.saveArtifact(projectId, {
+        await source.saveArtifact(projectId, {
           path: action.path,
           content: action.agentContent,
           type: action.agentType,
@@ -310,6 +332,22 @@ export class SessionAssetSyncer {
         throw new Error(`unreachable: unhandled action kind`);
       }
     }
+  }
+
+  /**
+   * Resolve `tenantId → slug` via TenantsService, cached locally.
+   * Slugs are stable per tenant in practice (renaming would break
+   * sessionId references), so cache invalidation is a non-goal.
+   */
+  private async resolveSlug(tenantId: string | undefined): Promise<string | null> {
+    if (!tenantId) return null;
+    if (this.tenantSlugCache.has(tenantId)) {
+      return this.tenantSlugCache.get(tenantId) ?? null;
+    }
+    const tenant = await this.tenants.findOne(tenantId);
+    const slug = tenant?.slug ?? null;
+    this.tenantSlugCache.set(tenantId, slug);
+    return slug;
   }
 
   /**

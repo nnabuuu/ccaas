@@ -53,7 +53,6 @@ import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
 import { SessionArtifactSnapshot } from './sessions/agent-runtime/session-artifact-snapshot.entity';
-import { AgentRuntimeModule } from './sessions/agent-runtime/agent-runtime.module';
 import { SolutionsModule } from './solutions/solutions.module';
 import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
@@ -133,12 +132,10 @@ import { BuilderModule } from './builder/builder.module';
     McpModule,
     StorageModule,
 
-    // Agent-runtime sync layer (global). Without a solution-provided
-    // ProjectArtifactSource it falls back to a no-op source — safe to
-    // register unconditionally. Solutions override the source by
-    // calling AgentRuntimeModule.forRoot({ artifactSource: ... }) in
-    // their own app module before SessionsModule.
-    AgentRuntimeModule.forRoot(),
+    // Note: AgentRuntimeModule.forRoot() is imported by SessionsModule
+    // (transitively reaches AppModule via SessionsModule below). Solutions
+    // override the artifact source through env vars (SOLUTION_ARTIFACT_URL{,S}),
+    // not by recalling forRoot here.
 
     // Feature modules
     SessionsModule, // Unified session management (WebSocket + REST)

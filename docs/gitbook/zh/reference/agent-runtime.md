@@ -280,7 +280,24 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 视作已删除
 ```
 
-ccaas 通过 `SOLUTION_ARTIFACT_URL` 环境变量配置 baseUrl，`AgentRuntimeModule.forRoot()` 自动启用该 adapter。
+ccaas 通过环境变量配置 baseUrl，`AgentRuntimeModule.forRoot()` 自动启用该 adapter。**两种配置形态**：
+
+```bash
+# 单 solution（v0.3 起兼容保留）
+SOLUTION_ARTIFACT_URL=http://localhost:3007/api
+
+# 多 solution（v0.3.1 起新增；跟 SOLUTION_DIRS 完全同构）
+SOLUTION_ARTIFACT_URLS=live-lesson:http://localhost:3007/api,demo:http://localhost:3010/api
+```
+
+**解析优先级**（高 → 低）：
+
+1. `AgentRuntimeModule.forRoot({ artifactSource: ... })` 显式注入（仅测试用）
+2. `SOLUTION_ARTIFACT_URLS` 的 per-tenant 条目 —— 按 `session.tenantId → tenant.slug` 路由
+3. `SOLUTION_ARTIFACT_URL` 作为 default fallback —— 任何 slug 没在 map 里的 tenant 走这里
+4. 都没设 → 该 tenant 的 syncer no-op
+
+两个 env var 可以同时存在：per-tenant map 管命名 tenant，单 URL 兜底其他人。跟 `packages/backend/CLAUDE.md` 里的 `SOLUTION_DIRS=slug:abspath,...` 是同一套 CSV 语法（`:` 之后的内容 —— URL 里的 `://` —— 不会被二次切割）。
 
 ### REST endpoints（GUI 用的）
 
