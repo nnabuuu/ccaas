@@ -1,7 +1,7 @@
-# WorkspaceProvider — backend integration design (DRAFT)
+# WorkspaceProvider — backend integration design
 
-> Status: **IN PROGRESS** — sanity-check phase
-> Owner: in-flight
+> Status: **IMPLEMENTED**
+> Code: `packages/backend/src/sessions/workspace/`
 > Last edit: 2026-05-25
 
 The vfs-poc proves agentfs works on macOS NFS + Linux FUSE (see
@@ -347,3 +347,13 @@ in `.finally()` to ensure cleanup on success and failure.
 
 - 2026-05-25 — initial draft, captures findings F1-F6, leaves A/B sanity checks pending
 - 2026-05-25 — sanity checks A (concurrency) + B (init --force race) resolved; defense-in-depth dual-Map dedup pattern decided; risk register updated
+- 2026-05-25 — **IMPLEMENTED**. Lands in `packages/backend/src/sessions/workspace/`:
+  - `types.ts` — `WorkspaceProvider`, `WorkspaceHandle`, `CreateOpts`, `WorkspaceCapabilities`, `WORKSPACE_PROVIDER` DI token
+  - `local-provider.ts` — wraps today's mkdir + symlink (bit-identical)
+  - `agentfs-provider.ts` — full agentfs CLI lifecycle (init/mount/unmount/snapshot/rollback) + inFlight Map dedup + onModuleInit binary check + stale-mount scan
+  - `base-materializer.ts` — TypeORM-backed port of vfs-poc's materializer
+  - `workspace-provider.factory.ts` — `useFactory` selects local vs agentfs by config
+  - `local-provider.spec.ts` (7 tests), `workspace-provider.factory.spec.ts` (4 tests), `base-materializer.spec.ts` (5 tests), `agentfs-provider.integration.spec.ts` (3 tests, gated by `INTEGRATION_AGENTFS=1`)
+  - SessionService integration: `pendingCreates` Map dedup + `provider.create/close` calls
+  - 4 existing session.service spec files updated with shared `mockWorkspaceProvider()` helper
+  - Full backend suite: **1361/1361 pass** (3 integration skipped without env); AgentfsProvider integration: **3/3 pass** on macOS NFS

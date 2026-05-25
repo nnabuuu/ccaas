@@ -14,6 +14,7 @@ import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { mockWorkspaceProvider } from './workspace/__mocks__/mock-provider';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 
 describe('SessionService - templateName persistence', () => {
@@ -79,6 +80,7 @@ describe('SessionService - templateName persistence', () => {
           provide: getRepositoryToken(SessionEntity),
           useValue: mockSessionRepo,
         },
+        mockWorkspaceProvider(),
       ],
     }).compile();
 

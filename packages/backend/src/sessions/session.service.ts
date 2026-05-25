@@ -8,6 +8,7 @@
  */
 
 import {
+  Inject,
   Injectable,
   OnModuleDestroy,
   Logger,
@@ -25,6 +26,7 @@ import { CliProcessService, ResolvedAttachment } from './services/cli-process.se
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { WORKSPACE_PROVIDER, type WorkspaceProvider } from './workspace/types';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
   ManagedSession,
@@ -56,6 +58,15 @@ export class SessionService implements OnModuleDestroy {
   private readonly logger = new Logger(SessionService.name);
   private sessions = new Map<string, ManagedSession>();
   private clientSessions = new Map<string, Set<string>>();
+  /**
+   * Per-sessionId Promise dedup for concurrent getOrCreateSession calls
+   * (sanity check A in WORKSPACE_PROVIDER.md). Map.has + Map.set are
+   * synchronous, preserving the atomicity that today's
+   * "sync mkdir before any await" gave us. Provider create() is now
+   * async (subprocess for agentfs) so without this, two concurrent
+   * requests would race on agentfs init --force (sanity check B).
+   */
+  private pendingCreates = new Map<string, Promise<ManagedSession>>();
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   private readonly workspaceDir: string;
@@ -73,6 +84,8 @@ export class SessionService implements OnModuleDestroy {
     private readonly workspaceService: WorkspaceService,
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
     private readonly streamRegistry: StreamRegistryService,
+    @Inject(WORKSPACE_PROVIDER)
+    private readonly workspaceProvider: WorkspaceProvider,
     @InjectRepository(SessionEntity)
     private readonly sessionRepository: Repository<SessionEntity>,
   ) {
@@ -117,23 +130,39 @@ export class SessionService implements OnModuleDestroy {
     userId?: string,
     tenantId?: string,
   ): Promise<ManagedSession> {
-    let session = this.sessions.get(sessionId);
-
-    if (session) {
-      session.socket = socket;
-      session.lastActivity = new Date();
-      // Preserve userId if it was set before
-      if (!session.userId && userId) {
-        session.userId = userId;
-      }
-      // Backfill tenantId if it was missing
-      if (!session.tenantId && tenantId) {
-        session.tenantId = tenantId;
-      }
+    const existing = this.sessions.get(sessionId);
+    if (existing) {
+      existing.socket = socket;
+      existing.lastActivity = new Date();
+      if (!existing.userId && userId) existing.userId = userId;
+      if (!existing.tenantId && tenantId) existing.tenantId = tenantId;
       this.logger.log(`Reusing existing session ${sessionId}`);
-      return session;
+      return existing;
     }
 
+    // De-dup concurrent create calls for the same sessionId. Map.has +
+    // Map.set are synchronous, preserving the atomicity invariant that
+    // today's pre-async-provider code relied on (everything happened
+    // synchronously before the first await). See WORKSPACE_PROVIDER.md
+    // sanity check A.
+    const inFlight = this.pendingCreates.get(sessionId);
+    if (inFlight) {
+      this.logger.log(`Reusing in-flight create for session ${sessionId}`);
+      return inFlight;
+    }
+    const promise = this._createNewSession(sessionId, clientId, socket, userId, tenantId)
+      .finally(() => this.pendingCreates.delete(sessionId));
+    this.pendingCreates.set(sessionId, promise);
+    return promise;
+  }
+
+  private async _createNewSession(
+    sessionId: string,
+    clientId: string,
+    socket: Socket | null,
+    userId?: string,
+    tenantId?: string,
+  ): Promise<ManagedSession> {
     // Proactive pressure cleanup: if utilization ≥ high threshold, run cleanup now
     // (don't wait for the 5-min timer)
     const utilizationPct = (this.sessions.size / this.maxSessions) * 100;
@@ -151,28 +180,18 @@ export class SessionService implements OnModuleDestroy {
       }
     }
 
-    const workspaceDir = path.join(this.workspaceDir, 'sessions', sessionId);
-    fs.mkdirSync(workspaceDir, { recursive: true });
+    // WorkspaceProvider handles mkdir + .claude/settings.local.json +
+    // createMcpSymlinks for LocalProvider; for AgentfsProvider it also
+    // initializes the delta db + FUSE/NFS mount. Both yield the same
+    // ${WORKSPACE_DIR}/sessions/{id}/ path so consumers reading
+    // `session.workspaceDir` as a string keep working.
+    const handle = await this.workspaceProvider.create({
+      sessionId,
+      tenantId,
+      // mcpServers may be wired in later by a higher layer; pass-through if present.
+    });
 
-    // Create .claude directory with pre-approved permissions
-    // This allows Claude Code CLI to write files without interactive approval
-    const claudeDir = path.join(workspaceDir, '.claude');
-    const mcpServersDir = path.join(claudeDir, 'mcp-servers');
-    fs.mkdirSync(mcpServersDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(claudeDir, 'settings.local.json'),
-      JSON.stringify({
-        permissions: {
-          allow: ['Bash(*)', 'Write(*)', 'Edit(*)', 'Read(*)'],
-          deny: [],
-        },
-        // Disable global plugins to prevent conflicts with workspace skills
-        // Solutions should manage their own skills via CCAAS database
-        enabledPlugins: {},
-      }, null, 2),
-    );
-
-    session = {
+    const session: ManagedSession = {
       sessionId,
       clientId,
       cliProcess: null,
@@ -183,10 +202,11 @@ export class SessionService implements OnModuleDestroy {
       createdAt: new Date(),
       messageCount: 0,
       buffer: '',
-      workspaceDir,
-      userId, // Week 3: Track user
-      tenantId, // Persist tenantId from queue
-      syncedSkillIds: new Set(), // Week 3: Track synced skills
+      workspaceDir: handle.path,
+      workspaceHandle: handle,
+      userId,
+      tenantId,
+      syncedSkillIds: new Set(),
     };
 
     this.sessions.set(sessionId, session);
@@ -199,7 +219,6 @@ export class SessionService implements OnModuleDestroy {
     this.logger.log(`Created new session ${sessionId} for client ${clientId}`);
     this.logger.log(`Active sessions: ${this.sessions.size}/${this.maxSessions}`);
 
-    // Phase 2: Dual-write to database (awaited, graceful failure)
     try {
       await this.persistSessionToDatabase(session);
     } catch (error) {
@@ -317,6 +336,15 @@ export class SessionService implements OnModuleDestroy {
     this.clientSessions.get(session.clientId)?.delete(sessionId);
 
     this.eventMapperService.clearSessionState(sessionId);
+
+    // Release provider resources (no-op for LocalProvider; unmounts for
+    // AgentfsProvider). Fire-and-forget — closeSession is sync and we
+    // don't want unmount failure to throw at callers (idle GC, max-session
+    // eviction, manual close). Errors are logged.
+    this.workspaceProvider.close(sessionId).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`workspaceProvider.close(${sessionId}) failed: ${msg}`);
+    });
 
     // Phase 2: Update database to mark session as closed (fire-and-forget)
     this.updateSessionInDatabase(sessionId, {

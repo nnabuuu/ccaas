@@ -8,11 +8,23 @@ import type { ChildProcess } from 'node:child_process';
 import type { Writable } from 'node:stream';
 import type { Socket } from 'socket.io';
 import type { SessionEvent } from './session-event.interface';
+import type { WorkspaceHandle } from '../../sessions/workspace/types';
 
 /**
  * Status of a managed session
  */
 export type SessionStatus = 'idle' | 'processing' | 'error' | 'closed' | 'cancelling';
+
+/**
+ * MCP server stdio spawn spec, passed in from solution backends and used
+ * by the workspace provider + cli-process to wire MCP access.
+ */
+export interface McpServerConfig {
+  command: string;
+  args: string[];
+  description?: string;
+  env?: Record<string, string>;
+}
 
 /**
  * A managed CLI session with persistent process
@@ -49,12 +61,12 @@ export interface ManagedSession {
   syncedSkillIds?: Set<string>;
 
   // MCP servers configuration passed from solution backends
-  mcpServers?: Record<string, {
-    command: string;
-    args: string[];
-    description?: string;
-    env?: Record<string, string>;
-  }>;
+  mcpServers?: Record<string, McpServerConfig>;
+
+  // Set by WorkspaceProvider.create — gives downstream consumers access to
+  // provider-specific capabilities (snapshot/rollback). The string path is
+  // still available as `workspaceDir` above for path-string consumers.
+  workspaceHandle?: WorkspaceHandle;
 
   // Skill-specific system prompt injected via --append-system-prompt
   appendSystemPrompt?: string;

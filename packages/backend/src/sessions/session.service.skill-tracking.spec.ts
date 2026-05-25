@@ -18,6 +18,7 @@ import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { mockWorkspaceProvider } from './workspace/__mocks__/mock-provider';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type { ManagedSession } from '../common/interfaces/session.interface';
 
@@ -83,6 +84,7 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
           provide: getRepositoryToken(SessionEntity),
           useValue: { save: jest.fn(), update: jest.fn() },
         },
+        mockWorkspaceProvider(),
       ],
     }).compile();
 

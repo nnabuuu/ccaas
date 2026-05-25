@@ -15,6 +15,18 @@ export default () => ({
     maxProcessingMs: parseInt(process.env.MAX_PROCESSING_MS || '1800000', 10), // 30 min hard cap for stuck sessions
     cleanupPressureHighThreshold: parseInt(process.env.CLEANUP_PRESSURE_HIGH || '80', 10),     // % → start aggressive eviction
     cleanupPressureCriticalThreshold: parseInt(process.env.CLEANUP_PRESSURE_CRITICAL || '90', 10), // % → evict all idle immediately
+    // WorkspaceProvider selector. 'local' (default) = today's behavior (mkdir + symlink).
+    // 'agentfs' = virtual fs per session via the agentfs binary. See
+    // packages/vfs-poc/docs/WORKSPACE_PROVIDER.md for the full design.
+    provider: process.env.WORKSPACE_PROVIDER || 'local',
+    agentfs: {
+      // Path to the agentfs CLI binary. Default assumes it's on PATH.
+      binPath: process.env.WORKSPACE_AGENTFS_BIN || 'agentfs',
+      // Where the materialized read-only base lives. Defaults under workspace.dir.
+      baseDir: process.env.WORKSPACE_AGENTFS_BASE_DIR || '', // '' = use ${workspace.dir}/_agentfs_base
+      // Where per-session SQLite delta dbs live. Defaults under workspace.dir.
+      deltaStore: process.env.WORKSPACE_AGENTFS_DELTA_STORE || '', // '' = use ${workspace.dir}/_agentfs_deltas
+    },
   },
 
   database: {

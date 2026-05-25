@@ -32,8 +32,16 @@ import { MessageQueueService } from './services/message-queue.service';
 import { MessageWorkerService } from './services/message-worker.service';
 import { ConversationMetadataService } from './services/conversation-metadata.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { LocalWorkspaceProvider } from './workspace/local-provider';
+import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
+import { BaseMaterializer } from './workspace/base-materializer';
+import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory';
+import { WORKSPACE_PROVIDER } from './workspace/types';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
+import { Skill } from '../skills/entities/skill.entity';
+import { SkillFile } from '../skills/entities/skill-file.entity';
+import { McpServer } from '../mcp/entities/mcp-server.entity';
 import { Turn } from '../admin/entities/turn.entity';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
@@ -44,7 +52,7 @@ import { BundleModule } from '../bundles/bundle.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MessageQueue, Session]),
+    TypeOrmModule.forFeature([MessageQueue, Session, Skill, SkillFile, McpServer]),
     TurnsModule,
     SkillsModule,
     TenantsModule,
@@ -71,7 +79,11 @@ import { BundleModule } from '../bundles/bundle.module';
     MessageWorkerService,
     ConversationMetadataService,
     StreamRegistryService,
+    LocalWorkspaceProvider,
+    AgentfsWorkspaceProvider,
+    BaseMaterializer,
+    WorkspaceProviderFactory,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER],
 })
 export class SessionsModule {}
