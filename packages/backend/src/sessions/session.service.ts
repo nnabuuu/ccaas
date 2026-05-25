@@ -180,16 +180,14 @@ export class SessionService implements OnModuleDestroy {
       }
     }
 
-    // WorkspaceProvider handles mkdir + .claude/settings.local.json +
-    // createMcpSymlinks for LocalProvider; for AgentfsProvider it also
-    // initializes the delta db + FUSE/NFS mount. Both yield the same
-    // ${WORKSPACE_DIR}/sessions/{id}/ path so consumers reading
-    // `session.workspaceDir` as a string keep working.
-    const handle = await this.workspaceProvider.create({
-      sessionId,
-      tenantId,
-      // mcpServers may be wired in later by a higher layer; pass-through if present.
-    });
+    // WorkspaceProvider handles mkdir + .claude/settings.local.json. For
+    // AgentfsProvider it also initializes the delta db + FUSE/NFS mount.
+    // Both yield the same ${WORKSPACE_DIR}/sessions/{id}/ path so
+    // consumers reading `session.workspaceDir` as a string keep working.
+    // MCP symlinks are NOT created here — that's the existing
+    // `this.createMcpSymlinks(session)` gateway-driven path, invoked
+    // once `session.mcpServers` is populated.
+    const handle = await this.workspaceProvider.create({ sessionId, tenantId });
 
     const session: ManagedSession = {
       sessionId,

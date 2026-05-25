@@ -330,6 +330,59 @@ npm run clean
 
 ---
 
+## v5 — backend `WORKSPACE_PROVIDER=agentfs` end-to-end (2026-05-25)
+
+WorkspaceProvider implementation shipped (commit `c9ebd806`,
+`packages/backend/src/sessions/workspace/`). Verified the ccaas
+backend runs against agentfs in real session lifecycle:
+
+```bash
+WORKSPACE_PROVIDER=agentfs WORKSPACE_DIR=/tmp/ws-poc-test \
+  WORKSPACE_AGENTFS_BIN=$HOME/.cargo/bin/agentfs \
+  PORT=3018 npm run start
+```
+
+Verdict per phase:
+
+| Phase | Result |
+|---|---|
+| `onModuleInit` binary check | ✅ `agentfs binary OK: agentfs 9180ed4` |
+| `BaseMaterializer` run | ✅ 0 skills + 0 mcp on empty fixture db |
+| `POST /sessions/:id/messages` (new session) | ✅ triggers `provider.create` |
+| `mount` output | ✅ `127.0.0.1:/ on /private/tmp/ws-poc-test/sessions/{sid}` (nfs) |
+| Delta db files | ✅ `{sid}.db` (4KB) + `{sid}.db-wal` (creates during writes) |
+| `.claude/` scaffolding inside mount | ✅ settings.local.json, mcp-servers/, skills/ |
+| `claude` CLI spawn with `cwd=mount` | ✅ `[CliProcessService] Working directory: /tmp/ws-poc-test/sessions/{sid}` |
+| Writes inside mount land in delta WAL | ✅ WAL grew 4KB → 363KB after a single user-mode write |
+| Base dir untouched | ✅ `/_agentfs_base/` empty after writes |
+| Delta survives backend shutdown | ✅ db + wal preserved; remount reads back written content |
+
+### v5 finding: graceful shutdown does not await mount unmount
+
+`SessionService.closeSession` fires `workspaceProvider.close(sessionId).catch(...)`
+without awaiting. On `SIGTERM`, NestJS triggers `onModuleDestroy` → 
+`SessionService.shutdown` → iterates sessions calling `closeSession`,
+but the process exits before async unmount RPCs flush. Result:
+agentfs mount daemons (`agentfs mount -f -a {id}`) outlive the
+backend process briefly — they DO auto-unmount when their socket
+peer disappears, but the timing is racy.
+
+Practical impact: low — data is preserved in the delta db; daemons
+self-cleanup within seconds; next backend start's `unmountStale()`
+scan would catch any stragglers.
+
+Follow-up (queued, NOT this PR): make `SessionService.shutdown` 
+`await` a `Promise.all` of all `provider.close(sessionId)` calls so
+shutdown blocks on graceful unmount. Risk: hangs shutdown if a
+single unmount stalls — add a 5s timeout per session.
+
+### Cross-platform `WORKSPACE_PROVIDER=agentfs` operational matrix
+
+| Platform | Status | Notes |
+|---|---|---|
+| macOS NFS (dev) | ✅ verified v5 | requires `nnabuuu/agentfs` fork build (`scripts/build-agentfs-fix.sh`) |
+| Linux FUSE (production candidate) | 🟡 unverified at backend level | V1 validated standalone (v4); backend integration test pending |
+
 ## 修订历史
 
 - **v1 — 2026-05-24** (初版): macOS NFS 平台 V1 + V2 全量执行,2 个 P0 都得到判定。V1 0/10 因 fchmod+close 问题全 fail,初步定性 spec D2 BLOCKED。
