@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@kedge-agentic/common": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.0",
     "@nestjs/core": "^10.3.0",
@@ -40,6 +41,7 @@
     "class-validator": "^0.14.0",
     "fast-glob": "^3.3.3",
     "gray-matter": "^4.0.3",
+    "just-bash": "^3.0.1",
     "liteque": "^0.8.0",
     "pptxgenjs": "^4.0.1",
     "reflect-metadata": "^0.2.0",

@@ -1,0 +1,7 @@
+{
+  "name": "@kedge-agentic/backend-ccaas-bash-mcp",
+  "private": true,
+  "type": "module",
+  "main": "server.mjs",
+  "description": "Marker package.json — forces ESM treatment for server.mjs so it can import ESM-only just-bash, regardless of backend's CJS compile target."
+}
