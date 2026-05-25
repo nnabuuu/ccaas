@@ -37,6 +37,7 @@
   * [6.6 Testing](tutorial/06-implementation/06-testing.md)
   * [6.7 Conversation Persistence](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. Deployment](tutorial/07-deployment.md)
+* [8. Adding Sandbox Capabilities (Advanced)](tutorial/08-sandbox.md)
 
 ## Examples <a href="#examples" id="examples"></a>
 

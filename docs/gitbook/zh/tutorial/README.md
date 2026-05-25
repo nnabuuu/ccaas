@@ -86,6 +86,14 @@
 |------|---------|---------|
 | [7. 部署上线](07-deployment.md) | 环境配置、监控、扩展 | 生产就绪的部署清单 |
 
+### 第五阶段（进阶，可选）：沙箱化（第 8 章）
+
+如果你的 Solution 需要多租户隔离、安全的「试错」工作流、或对 AI 文件操作的可审计性，给已经部署的 Solution 加上 stage-1 sandbox。
+
+| 章节 | 学习内容 | 关键产出 |
+|------|---------|---------|
+| [8. 为 Solution 加入沙箱能力](08-sandbox.md) | agentfs 启用、entities/+resources/ seed、SKILL 适应沙箱、snapshot/rollback、metadata KV | Solution 升级为沙箱化形态 |
+
 ## 如何使用本教程
 
 ### 推荐方式

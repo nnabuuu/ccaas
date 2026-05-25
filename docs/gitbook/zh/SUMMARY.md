@@ -37,6 +37,7 @@
   * [6.6 测试](tutorial/06-implementation/06-testing.md)
   * [6.7 会话持久化](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. 部署上线](tutorial/07-deployment.md)
+* [8. 为 Solution 加入沙箱能力（进阶）](tutorial/08-sandbox.md)
 
 ## 案例 <a href="#examples" id="examples"></a>
 

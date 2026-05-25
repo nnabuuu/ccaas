@@ -86,6 +86,14 @@ Finally, we prepare the solution for real-world use.
 |---------|---------------|-----------------|
 | [7. Deployment](07-deployment.md) | Environment config, monitoring, scaling | Production-ready deployment checklist |
 
+### Phase 5 (Advanced, Optional): Sandboxing (Chapter 8)
+
+If your solution needs multi-tenant isolation, safe try-and-discard workflows, or auditability of AI file operations, add the stage-1 sandbox on top of your already-deployed solution.
+
+| Chapter | What You Learn | Key Deliverable |
+|---------|---------------|-----------------|
+| [8. Adding Sandbox Capabilities](08-sandbox.md) | enable agentfs, seed entities/+resources/, make SKILL sandbox-aware, snapshot/rollback, metadata KV | Solution upgraded to sandboxed shape |
+
 ## How to Use This Tutorial
 
 ### Recommended Approach
