@@ -64,6 +64,15 @@ Every iteration requires walking the full integration path. The feedback loop is
 
 **Core thesis**: One Runtime layer + one Mini Backend, three UI shells. Mini Backend reuses real Plugin code (ensuring behavioral consistency) but strips out SQLite / Observer / Discuss / Snapshot — subsystems irrelevant to single-plugin preview.
 
+> **2026-05 implementation note**: The CLI shell's stage rendering no longer uses hand-rolled vanilla JS templates. The chrome (`packages/exercise-preview/web/index.html`) now embeds the production frontend's `/exercise-demo?bundle=X&story=Y&role=Z&embed=1` route (`solutions/business/live-lesson/frontend/src/pages/PluginPreviewPage.tsx`) via an iframe. So the student view renders the real production component (`QuizExercise.tsx` etc.) and the teacher view renders the real `ObserveClassView` (`McClassView` / `MatrixClassView` / …) — what customers see is pixel-identical to a real classroom.
+>
+> - Preview-server (`:4321`) serves the chrome + bundles API
+> - Frontend dev server (`:5283`) serves the iframe content; its own vite proxy routes `/preview/*` back to :4321
+> - `FRONTEND_URL` is configurable: `?frontend=` URL param (persisted to `sessionStorage`) → `window.PREVIEW_FRONTEND_URL` global → default `http://localhost:5283`
+> - 11 example bundles live in `packages/exercise-preview/bundles/`, one per exercise type; the six types with an `ObserveClassView` also ship a `classObserveData` mock so the teacher-toggle works
+>
+> See [`bundles/README.md`](../../../packages/exercise-preview/bundles/README.md) for usage.
+
 ### 2.1 Why embedded mini NestJS instead of pure-frontend mock
 
 | Approach | Pros | Cons | Adopted |

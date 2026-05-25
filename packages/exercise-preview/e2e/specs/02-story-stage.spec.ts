@@ -1,48 +1,58 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Browser-level verification that opening a story renders the stage with
- * locale-aware buttons. Exercises the dynamic templates that use t() inside
- * `innerHTML = `...${t('...')}...` ` so we catch any t() call sites that
- * the i18n parity unit test can't see (those run at the TS-string level,
- * not after the template literal is interpolated into the live DOM).
+ * Browser-level verification that opening a story mounts an iframe pointing
+ * at the production frontend's /exercise-demo route. Pre-P3 this spec
+ * tested the chrome's hand-rendered student stage (a JSON dump + score
+ * table); P3 replaced that with an iframe so the chrome shows the real
+ * production React component instead.
+ *
+ * These tests only check the chrome's own DOM (iframe element + src
+ * attribute). They do NOT require the frontend dev server to be running —
+ * the iframe will just fail to load, but the chrome's stage rendering
+ * has already happened by then.
  */
-test.describe('preview iframe — story stage render', () => {
-  test('clicking a story shows the stage with default zh-CN buttons', async ({ page }) => {
+test.describe('preview chrome — iframe stage', () => {
+  test('clicking a story mounts an iframe with the right URL params', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
-
-    // Click the first story (quiz-demo ships "Default — correct selection")
     await page.getByText('Default — correct selection').click()
 
-    // Stage now shows the buttons + section labels. Default locale = zh-CN.
-    await expect(page.getByRole('button', { name: '提交 / 检查' })).toBeVisible({ timeout: 5_000 })
-    await expect(page.getByRole('button', { name: '重置' })).toBeVisible()
-    // Section labels (rendered from t()-interpolated innerHTML)
-    await expect(page.getByText(/AnswerKey（学生可见的安全字段）/)).toBeVisible()
+    const iframe = page.locator('#preview-iframe')
+    await expect(iframe).toBeVisible({ timeout: 5_000 })
+
+    const src = await iframe.getAttribute('src')
+    expect(src).toMatch(/\/exercise-demo\?/)
+    expect(src).toContain('bundle=quiz')
+    expect(src).toContain('story=Default')
+    expect(src).toContain('role=student')
+    // embed=1 hides the iframe's own chrome bar (P3 contract with frontend)
+    expect(src).toContain('embed=1')
   })
 
-  test('set-locale en re-renders the stage buttons + section labels', async ({ page }) => {
+  test('role toggle reloads iframe with the new role param', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
     await page.getByText('Default — correct selection').click()
-    await expect(page.getByRole('button', { name: '提交 / 检查' })).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('#preview-iframe')).toBeVisible({ timeout: 5_000 })
 
-    // Establish trust + switch locale
-    await page.evaluate(() => {
-      window.postMessage({ source: 'kedge-playground', type: 'noop' }, window.location.origin)
-    })
-    await page.waitForTimeout(50)
-    await page.evaluate(() => {
-      window.postMessage(
-        { source: 'kedge-playground', type: 'set-locale', payload: { locale: 'en' } },
-        window.location.origin,
-      )
-    })
+    await page.getByRole('button', { name: '教师视角' }).click()
 
-    // Dynamic stage re-renders through applyLocale().
-    await expect(page.getByRole('button', { name: 'Submit / Check' })).toBeVisible({ timeout: 5_000 })
-    await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible()
-    await expect(page.getByText(/AnswerKey \(student-safe sanitized\)/)).toBeVisible()
+    const src = await page.locator('#preview-iframe').getAttribute('src')
+    expect(src).toContain('role=teacher')
+    expect(src).not.toContain('role=student')
+  })
+
+  test('?frontend= URL override flows through to iframe src', async ({ page }) => {
+    // Override the default localhost:5283 default with a fake host. The
+    // chrome must honour the override (sessionStorage + URL param path) and
+    // emit iframe src pointing at the new host.
+    await page.goto('/?frontend=http://example.test:9999')
+    await expect(page.getByText('Quiz Demo Bundle')).toBeVisible({ timeout: 10_000 })
+    await page.getByText('Default — correct selection').click()
+    await expect(page.locator('#preview-iframe')).toBeVisible({ timeout: 5_000 })
+
+    const src = await page.locator('#preview-iframe').getAttribute('src')
+    expect(src).toMatch(/^http:\/\/example\.test:9999\/exercise-demo/)
   })
 })

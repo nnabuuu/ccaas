@@ -64,6 +64,15 @@ MCP server → 创建 classroom session → 假扮学生 join → 走 listen/pra
 
 **核心论点**：一层 Runtime + 一层 Mini Backend，三个 UI 壳。Mini Backend 复用真实 Plugin 代码（保证行为一致），但剥离 SQLite / Observer / Discuss / Snapshot 等与单插件预览无关的子系统。
 
+> **2026-05 实现备忘**：CLI 壳的 Stage 渲染不再走 vanilla JS 模板。Chrome（`packages/exercise-preview/web/index.html`）现在以 iframe 嵌入生产前端的 `/exercise-demo?bundle=X&story=Y&role=Z&embed=1` 路由（`solutions/business/live-lesson/frontend/src/pages/PluginPreviewPage.tsx`）。学生视角因此直接渲染真生产组件（`QuizExercise.tsx` 等），教师视角渲染真 `ObserveClassView`（`McClassView` / `MatrixClassView` …），客户看到的 UI 与真实课堂 1:1。
+>
+> - Preview-server (`:4321`) 服务 chrome + bundles API
+> - Frontend dev server (`:5283`) 服务 iframe 内容；通过自己的 vite proxy 把 `/preview/*` 反代回 :4321
+> - `FRONTEND_URL` 可配置：`?frontend=` URL 参数（落到 `sessionStorage`）→ `window.PREVIEW_FRONTEND_URL` 全局 → 默认 `http://localhost:5283`
+> - 11 个示例 bundle 在 `packages/exercise-preview/bundles/`，每种 exercise type 一个；有 `ObserveClassView` 的类型还附带 `classObserveData` mock 数据
+>
+> 详见 [`bundles/README.md`](../../../packages/exercise-preview/bundles/README.md)。
+
 ### 2.1 为什么选择嵌入式 mini NestJS 而不是纯前端 mock
 
 | 方案 | 优点 | 缺点 | 是否采用 |
