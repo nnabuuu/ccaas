@@ -107,10 +107,12 @@ abstractions stabilize from Phase 0/1/2. The pattern catalog
 | A (was v0.1) | `workspace/` only | ~1 week | ✅ shipped |
 | 0 (v0.2) | rename to `agent-runtime`; sub-module skeletons (types only) for project/artifact/schema/sync; ship `JsonEditProvider` | ~4 days | ✅ shipped |
 | **1 (v0.3)** | **`ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`; backend `SessionAssetSyncer` orchestrator at turn boundaries; `bindToProject` + session-bound bootstrap; `RestProjectArtifactSource` adapter for cross-process solutions; `/projects/:id/{changes,invalidate}` REST; live-lesson `/artifacts` endpoint contract** | ~1.5 weeks | ✅ **shipped** |
+| **1.5** | env-CSV tenant routing (`SOLUTION_ARTIFACT_URLS=slug:url,...`) | — | ⚠️ **superseded by 1.6** |
+| **1.6** | **declarative registration via `solution.json` + auto-discovery: `artifactUrl` field on solution.json + Tenant.config (existing JSON blob); `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/<slug>/solution.json` with Zod validation; `TenantsService.{create,update}` emit `tenant.config.changed` events; `ProjectArtifactSourceRegistry` reads tenant.config lazily, caches per slug, evicts on event. Zero env vars for URL routing. Dev workflow becomes zero-key.** | ~3 hours | ✅ **shipped** |
 | 2 | Redis-backed `ChangeStream` (cross-instance fanout); `BinaryArtifactSource` + blob storage; `MarkdownArtifactEditor` wrapping `DocumentEditProvider`; Zod schema adapter; conflict markers in GUI | ~1-2 weeks | next |
 | 3 | live-lesson full migration onto new abstractions (drop bespoke project entity if applicable); pattern catalog deltas; first non-live-lesson consumer | ~2-3 weeks | last |
 
-Total: ~1.5–2 months end-to-end. Phases A, 0, 1 = ~3 weeks shipped.
+Total: ~1.5–2 months end-to-end. Phases A, 0, 1, 1.6 = ~3 weeks shipped.
 
 ### Phase 1 — what's deliberately not in scope (Phase 2+ backlog)
 

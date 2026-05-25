@@ -16,11 +16,13 @@ on NestJS, TypeORM, or Express — just `node:fs` / `node:crypto` /
 | Phase | Sub-module | Status |
 |---|---|---|
 | A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped (was the entirety of v0.1) |
-| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped (this version) |
-| 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped (interfaces only; no impls yet) |
-| 1 | concrete impls (TypeORM ProjectStore + ArtifactStore + Zod adapter + MarkdownEditor) | ⏳ next |
-| 2 | ChangeStream impl (in-memory then Redis-backed) | ⏳ later |
-| 3 | live-lesson migration onto the new abstractions | ⏳ last |
+| 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
+| 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped |
+| **1** | **pull-based bidirectional sync — `ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`. Backend ships `SessionAssetSyncer` orchestrator hooked at agent turn boundaries.** | ✅ **shipped (this version)** |
+| **1.5** | tenant-keyed routing (later recanted into Phase 1.6 — see below) | ⚠️ superseded |
+| **1.6** | **`solution.json` + auto-discovery: solutions declare `artifactUrl` in their config file; `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and writes through to `tenant.config.artifactUrl`. Registry caches per slug + invalidates via `tenant.config.changed` event. Runtime updates via `PUT /tenants/:id` take effect on next sync without restart.** | ✅ **shipped** |
+| 2 | Redis-backed `ChangeStream` (cross-process fanout); `BinaryArtifactSource`; `MarkdownArtifactEditor`; Zod schema adapter | ⏳ next |
+| 3 | live-lesson full migration onto the new abstractions | ⏳ last |
 
 ## Import paths
 
@@ -131,10 +133,49 @@ const validator: SchemaValidator = {
 };
 ```
 
-### `sync/`
+### `sync/` — Phase 1 shipped
 
-Interface skeleton for bidirectional change streams (agent ↔ GUI).
-Phase 2. In-memory pub/sub impl first, Redis-backed later.
+The bidirectional sync engine. Pure, framework-free, exhaustively
+unit-tested.
+
+```ts
+import {
+  InMemoryChangeStream,
+  InMemorySnapshotStore,
+  SyncEngine,
+  type ProjectArtifactSource,
+  type ArtifactSnapshot,
+} from '@kedge-agentic/agent-runtime';
+
+// 1. Solution implements this one interface (~30 lines wrapping
+//    whatever storage they like — TypeORM, raw SQL, REST API):
+class MySource implements ProjectArtifactSource {
+  async loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>> {
+    /* ... query DB, return [{ path, content, type }] */ return [];
+  }
+  async saveArtifact(projectId: string, a: ArtifactSnapshot): Promise<void> {
+    /* ... upsert into your store */
+  }
+}
+
+// 2. At each agent turn boundary the orchestrator calls SyncEngine.plan
+//    to resolve the 4-case conflict matrix per path:
+const plan = new SyncEngine().plan({
+  sessionId, dbNow, fsDelta, previousSnapshot,
+  now: new Date().toISOString(),
+  hasher: (s) => createHash('sha256').update(s).digest('hex'),
+  allowDelete: typeof source.deleteArtifact === 'function',
+});
+// plan.actions: SyncAction[] (write_fs | delete_fs | save_db | delete_db | conflict_agent_wins)
+// plan.nextSnapshot: SnapshotEntry[] — commit after applying actions
+```
+
+Conflict semantics (locked): **agent wins on dual writes**. Provable
+from the turn-bounded snapshot-diff invariant. No timestamps, no
+clock comparisons.
+
+Phase 2 will swap `InMemoryChangeStream` for a Redis-backed impl
+without touching the `ChangeStream` interface.
 
 ### `testing/`
 

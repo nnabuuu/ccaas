@@ -80,6 +80,7 @@ Operator quickstart: **[gitbook → 本地自托管](../../docs/gitbook/zh/getti
 | `WORKSPACE_AGENTFS_BASE_DIR` | `${WORKSPACE_DIR}/_agentfs_base` | shared overlay base for materialized skills |
 | `WORKSPACE_AGENTFS_DELTA_STORE` | `${WORKSPACE_DIR}/_agentfs_deltas` | per-session SQLite delta dbs |
 | `SOLUTION_DIRS` | empty | CSV `slug:abspath` to register solution dirs for per-session asset seed |
+| `SOLUTIONS_DIR` | empty | Root dir whose subdirs each contain a `solution.json`. `SolutionLoaderService.onModuleInit` auto-imports each at boot (tenant + skills + MCP + `tenant.config.artifactUrl`). Unset → no auto-import; use `POST /admin/solutions/import` instead. |
 
 ## Database Schema
 

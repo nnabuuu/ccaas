@@ -2,7 +2,7 @@
 
 > You already know the existing solution template (Skills + MCP + sessionTemplates). This page teaches the 4 new stage-1 extension points: (1) seed your own data into every session, (2) write a custom `ContentSource` to replace TypeORM, (3) wrap high-risk agent prompts in snapshot/rollback, (4) use metadata KV to store your solution's own session state. Each comes with a minimal copy-pasteable example.
 
-## TL;DR — 4 extension points cheat sheet
+## TL;DR — 5 extension points cheat sheet
 
 | I want | Reach for |
 |---|---|
@@ -10,6 +10,7 @@
 | Replace TypeORM as the skill source (load from JSON / API / different DB) | Implement the `ContentSource` interface |
 | Give the agent a "try, can rollback" workflow | `POST /sessions/:id/fs/snapshot` + `/fs/rollback` |
 | Store solution's own session state (step count, variant, flag) | `GET/PUT /sessions/:id/meta/:key` |
+| **Bidirectional sync of business entities between agent ↔ solution DB (Phase 1.6)** | Add `artifactUrl` to `solution.json` + expose 3 REST endpoints on your solution backend |
 
 Details below.
 
@@ -198,6 +199,67 @@ Details: `reference/runtime-api.md` § Metadata KV endpoints + [[sandbox-mount-v
 
 ---
 
+## 5. Bidirectional artifact sync (agent-runtime sync layer)
+
+**Problem**: your solution already has business entities (live-lesson's `CourseProject` + `ProjectFile`, or similar) that users edit via GUI/REST. You want the agent to see file-shaped projections of those entities (`ls`/`cat`/`Edit`), and have the agent's edits flow back to the DB automatically.
+
+**Architecture**: pull-based, sync runs once per agent turn boundary. Full design in [`reference/agent-runtime.md`](../reference/agent-runtime.md) § Phase 1.
+
+### How (two steps)
+
+**Step 1: declare `artifactUrl` in `solution.json`**
+
+```jsonc
+{
+  "schemaVersion": "3.0",
+  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "artifactUrl": "http://localhost:3007/api",
+  "skills": ["./skills/*"]
+}
+```
+
+**Step 2: implement 3 REST endpoints on your solution backend**
+
+ccaas calls back to these to load/save artifacts:
+
+```
+GET    {artifactUrl}/projects/:projectId/artifacts
+       → [{ path, content, type, attributes? }]      # full load
+
+PUT    {artifactUrl}/projects/:projectId/artifacts?path=<encoded>
+       body { content, type, attributes? }           # upsert (agent → DB)
+
+DELETE {artifactUrl}/projects/:projectId/artifacts?path=<encoded>
+       # optional; agent file delete → DB row delete
+```
+
+See live-lesson's `solutions/business/live-lesson/backend/src/project/project.controller.ts` for a reference impl (`listArtifacts` / `upsertArtifact` / `deleteArtifact`).
+
+### Bind the session to a project
+
+```ts
+// After your solution backend creates a project-scoped agent session:
+await sessionsClient.bindToProject(sessionId, projectId);
+// → fires `session.bound` event → SessionAssetSyncer immediately hits
+// your GET endpoint, materializes all artifacts under
+// <workspace>/artifacts/ before the agent's first turn.
+```
+
+### Conflict semantics
+
+Locked behavior: **agent wins**. If the same path was edited on both
+sides during a turn, the agent's version persists to the DB and the
+discarded DB version is surfaced via a `conflict_agent_wins`
+ChangeEvent so the GUI can warn the user.
+
+### Runtime URL updates
+
+`PUT /tenants/:id` with `{ config: { artifactUrl } }` triggers a
+`tenant.config.changed` event; the registry evicts its cached entry
+and the next sync turn uses the new URL. No backend restart.
+
+---
+
 ## Some possible combinations
 
 **A/B experiment + sandbox**:
@@ -234,3 +296,4 @@ Details: `reference/runtime-api.md` § Metadata KV endpoints + [[sandbox-mount-v
 - `reference/runtime-api.md` — full REST endpoint spec
 - `reference/agent-runtime.md` — ContentSource port details
 - `examples/demo-sandbox.md` — a complete case using nearly all of these extension points
+- `reference/agent-runtime.md` — full Phase 1 sync API (`ProjectArtifactSource` / `SyncEngine` / conflict truth table)

@@ -2,7 +2,7 @@
 
 > 你已经会用现有的 solution 模板（Skills + MCP + sessionTemplates）。这页教你 stage-1 的 4 个新扩展点：（1）seed 自己的数据进每个 session，（2）写自己的 `ContentSource` 替换 TypeORM，（3）用 snapshot/rollback 包住高风险 agent prompt，（4）用 metadata KV 存 solution 自己的状态。每个都带一个能拷贝的最小范例。
 
-## TL;DR — 4 个扩展点速查
+## TL;DR — 5 个扩展点速查
 
 | 我想 | 改哪里 |
 |---|---|
@@ -10,6 +10,7 @@
 | 替换 TypeORM skill 来源（从 JSON / API / 别的 DB） | 实现 `ContentSource` 接口 |
 | 给 agent 一个「试错可回滚」的工作流 | `POST /sessions/:id/fs/snapshot` + `/fs/rollback` |
 | 存 solution 自己的会话状态（步数、变体、flag） | `GET/PUT /sessions/:id/meta/:key` |
+| **agent ↔ solution DB 双向同步业务实体（Phase 1.6）** | `solution.json` 加 `artifactUrl` + 在 solution 里实现 3 个 REST endpoint |
 
 下面每个展开。
 
@@ -199,6 +200,61 @@ curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 
 ---
 
+## 5. 双向 artifact 同步（agent-runtime 同步层）
+
+**问题**：你的 solution 已经有了一套业务实体（live-lesson 的 `CourseProject` + `ProjectFile`，或者类似的），用户通过 GUI/REST 改这些实体；你想让 agent 在 session 里 `ls`/`cat`/`Edit` 这些实体的文件版本，而且 agent 改了之后能自动同步回 DB。
+
+**架构**：pull-based，在每个 agent turn 边界 sync 一次。详情参考 [`reference/agent-runtime.md`](../reference/agent-runtime.md) 的 Phase 1 章节。
+
+### 做法（两步）
+
+**第一步：solution.json 加 `artifactUrl`**
+
+```jsonc
+{
+  "schemaVersion": "3.0",
+  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "artifactUrl": "http://localhost:3007/api",
+  "skills": ["./skills/*"]
+}
+```
+
+**第二步：在 solution backend 暴露 3 个 REST endpoint**
+
+ccaas 通过这 3 个 endpoint 回调到 solution backend：
+
+```
+GET    {artifactUrl}/projects/:projectId/artifacts
+       → [{ path, content, type, attributes? }]      # 全量 load
+
+PUT    {artifactUrl}/projects/:projectId/artifacts?path=<encoded>
+       body { content, type, attributes? }           # upsert（agent 写回 DB）
+
+DELETE {artifactUrl}/projects/:projectId/artifacts?path=<encoded>
+       # 可选；agent 删文件 → DB 删行
+```
+
+Live-lesson 的实现见 `solutions/business/live-lesson/backend/src/project/project.controller.ts` 的 `listArtifacts` / `upsertArtifact` / `deleteArtifact`。
+
+### Session 创建时绑定 project
+
+```ts
+// solution backend 调 ccaas SDK / REST 后
+await sessionsClient.bindToProject(sessionId, projectId);
+// 触发 session.bound 事件 → SessionAssetSyncer 立刻调你的 GET endpoint
+// 把所有 artifact 写到 session workspace 的 artifacts/ 目录
+```
+
+### 冲突？
+
+锁定行为：**Agent 赢**。如果 turn 中同一路径 DB 和 fs 都改了，agent 的版本写回 DB，被丢弃的 DB 版本在 `conflict_agent_wins` ChangeEvent 里给 GUI 提示。
+
+### 运行时改 artifactUrl
+
+`PUT /tenants/:id` 的 partial-merge `config` 会自动发 `tenant.config.changed`，registry 失效缓存，下一轮 sync 就走新 URL。不用重启 backend。
+
+---
+
 ## 一些可能的组合用法
 
 **A/B 实验 + 沙箱**：
@@ -235,3 +291,4 @@ curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 - `reference/runtime-api.md` — REST endpoint 完整 spec
 - `reference/agent-runtime.md` — ContentSource port 详细
 - `examples/demo-sandbox.md` — 一个用到几乎所有扩展点的完整 case
+- `reference/agent-runtime.md` — Phase 1 sync 层全部 API（`ProjectArtifactSource` / `SyncEngine` / 冲突真值表）
