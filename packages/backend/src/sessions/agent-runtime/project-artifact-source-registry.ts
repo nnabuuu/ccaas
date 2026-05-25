@@ -36,6 +36,15 @@ export class ProjectArtifactSourceRegistry {
       );
     } else if (defaultSource) {
       this.logger.log('single default source registered (no per-tenant overrides)');
+    } else {
+      // Loud-on-empty: an operator who fat-fingers SOLUTION_ARTIFACT_URLS
+      // (e.g. forgets the colon → parseSlugMap silently skips the entry)
+      // otherwise sees zero output. Warn so the misconfig surfaces in
+      // routine boot logs.
+      this.logger.warn(
+        'no artifact sources configured — syncer will no-op for all tenants ' +
+          '(set SOLUTION_ARTIFACT_URL or SOLUTION_ARTIFACT_URLS to enable)',
+      );
     }
   }
 

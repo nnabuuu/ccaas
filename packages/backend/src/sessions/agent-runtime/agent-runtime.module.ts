@@ -10,17 +10,32 @@
  *     not in the per-tenant map.
  *   - `SNAPSHOT_STORE`, `CHANGE_STREAM` — unchanged from phase 1.
  *
- * Resolution priority (highest → lowest):
- *   1. `options.artifactSource` (explicit Type<ProjectArtifactSource>) →
- *      registered as the registry's defaultSource. Test-friendly.
- *   2. `SOLUTION_ARTIFACT_URLS=slug:url,...` env var → per-tenant
- *      `RestProjectArtifactSource` instances keyed by slug.
- *   3. `SOLUTION_ARTIFACT_URL=url` env var (legacy single) →
- *      registered as the registry's defaultSource.
- *   4. Nothing → NoopArtifactSource as defaultSource (syncer no-ops).
+ * Resolution has **two independent axes**:
  *
- * `SOLUTION_ARTIFACT_URLS` and `SOLUTION_ARTIFACT_URL` can coexist:
- * the map handles named tenants, the single URL handles everyone else.
+ *   A) Per-tenant entries (env-driven only):
+ *      `SOLUTION_ARTIFACT_URLS=slug:url,...` → one `RestProjectArtifactSource`
+ *      per slug. Whenever a session's tenant.slug matches an entry, that
+ *      source wins (regardless of what `defaultSource` is).
+ *
+ *   B) `defaultSource` (used when no per-tenant entry matches), priority:
+ *      1. `options.artifactSource` (explicit Type — test-only)
+ *      2. `SOLUTION_ARTIFACT_URL=url` env var (legacy single)
+ *      3. null → syncer no-ops for tenants without an explicit entry
+ *
+ * `SOLUTION_ARTIFACT_URLS` (axis A) and `SOLUTION_ARTIFACT_URL` (axis B)
+ * coexist: the map handles named tenants, the single URL catches the rest.
+ * When both `options.artifactSource` AND `SOLUTION_ARTIFACT_URL` are set,
+ * the explicit option wins and the env var is logged as ignored.
+ *
+ * Per-tenant `RestProjectArtifactSource` instances are constructed eagerly
+ * at module-init; malformed URLs throw at boot (fail-fast) rather than at
+ * first sync (which would only surface in the syncer's swallow-and-log).
+ *
+ * **Single forRoot() call site**: this module is NOT @Global (avoids an
+ * NestJS DI recursion when interacting with @Global TenantsModule under
+ * test isolation). It's imported exactly once — by `SessionsModule` — and
+ * the registry token is re-exported through that module's exports. Any
+ * other consumer should import `SessionsModule`, not re-call forRoot().
  *
  * Why not put this in the runtime package? The runtime is framework-
  * free by design (no NestJS, no TypeORM). Backends bring the NestJS
@@ -162,13 +177,11 @@ function buildRegistry(
     'workspace.solutionArtifactUrls',
     {},
   );
-  const legacyUrl = cfg.get<string | undefined>(
-    'workspace.solutionArtifactUrl',
-    undefined,
-  );
+  const legacyUrl = cfg.get<string>('workspace.solutionArtifactUrl');
 
   const perTenant = new Map<string, ProjectArtifactSource>();
   for (const [slug, url] of Object.entries(perTenantUrls)) {
+    assertValidUrl(url, `SOLUTION_ARTIFACT_URLS[${slug}]`);
     perTenant.set(slug, new RestProjectArtifactSource(url));
   }
 
@@ -176,11 +189,35 @@ function buildRegistry(
   if (options.artifactSource) {
     // The DI-resolved instance was passed in as `explicitSource`.
     defaultSource = explicitSource;
+    if (legacyUrl) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[agent-runtime] SOLUTION_ARTIFACT_URL is set but ignored because ' +
+          'options.artifactSource takes precedence (test-injection wins).',
+      );
+    }
   } else if (legacyUrl) {
+    assertValidUrl(legacyUrl, 'SOLUTION_ARTIFACT_URL');
     defaultSource = new RestProjectArtifactSource(legacyUrl);
   }
   // else: defaultSource stays null — tenants without an explicit
   // entry get no source and the syncer no-ops for them.
 
   return new ProjectArtifactSourceRegistry(perTenant, defaultSource);
+}
+
+/**
+ * Fail-fast URL validation: parse via `new URL(...)` so a typo in the
+ * env var surfaces at module init rather than at the first sync turn
+ * (where `RestProjectArtifactSource.fetch()` failure is swallowed by
+ * the syncer's error handler and produces only a flat log line).
+ */
+function assertValidUrl(url: string, context: string): void {
+  try {
+    new URL(url);
+  } catch {
+    throw new Error(
+      `[agent-runtime] ${context}: invalid URL "${url}"`,
+    );
+  }
 }

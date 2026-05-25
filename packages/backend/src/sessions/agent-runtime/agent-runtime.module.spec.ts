@@ -142,17 +142,35 @@ describe('AgentRuntimeModule', () => {
       expect(demo).not.toBe(fallback);
     });
 
-    it('explicit artifactSource takes precedence over both env vars', async () => {
+    it('explicit artifactSource takes precedence over legacy URL for defaultSource, but per-tenant entries are independent', async () => {
       const moduleRef = await compileWith({
         artifactSource: FakeArtifactSource,
         envUrl: 'http://legacy.local/api',
         envUrls: { demo: 'http://demo.local/api' },
       });
       const registry = moduleRef.get<ProjectArtifactSourceRegistry>(PROJECT_ARTIFACT_SOURCE_REGISTRY);
-      // The default fallback is the explicit FakeArtifactSource, not the legacy URL.
-      // Per-tenant env entries still apply (they're independent).
+      // unknown slug → defaultSource is FakeArtifactSource (explicit wins over legacy URL)
       const fallback = registry.getForTenantSlug('unknown');
       expect(fallback).toBeInstanceOf(FakeArtifactSource);
+      // demo slug → per-tenant entry is independent of defaultSource resolution;
+      // it's a RestProjectArtifactSource, NOT the explicit FakeArtifactSource.
+      // This pins the "two independent axes" contract — future refactors that
+      // make explicit source override per-tenant entries should fail here.
+      const demo = registry.getForTenantSlug('demo');
+      expect(demo).not.toBeInstanceOf(FakeArtifactSource);
+      expect(demo).not.toBe(fallback);
+    });
+
+    it('fails fast at module init when SOLUTION_ARTIFACT_URLS has a malformed URL', async () => {
+      await expect(
+        compileWith({ envUrls: { 'live-lesson': 'not a real url at all' } }),
+      ).rejects.toThrow(/SOLUTION_ARTIFACT_URLS\[live-lesson\]: invalid URL/);
+    });
+
+    it('fails fast at module init when SOLUTION_ARTIFACT_URL is malformed', async () => {
+      await expect(
+        compileWith({ envUrl: 'not a real url' }),
+      ).rejects.toThrow(/SOLUTION_ARTIFACT_URL: invalid URL/);
     });
 
     it('no env vars + no explicit source → defaultSource is null, unknown tenant returns null', async () => {
