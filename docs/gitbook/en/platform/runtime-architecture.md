@@ -134,6 +134,72 @@ Selected via `WORKSPACE_PROVIDER=local | agentfs` env. `WorkspaceProviderFactory
 
 Design derivation: `packages/vfs-poc/docs/WORKSPACE_PROVIDER.md` (concurrency safety, agentfs init --force race, stale mount cleanup at startup, etc.).
 
+### 2.1 On-disk structure: local vs agentfs
+
+```
+LOCAL provider                              AGENTFS provider
+═══════════════                             ════════════════
+
+${WORKSPACE_DIR}/                           ${WORKSPACE_DIR}/
+└── sessions/                               ├── _agentfs_base/                 ← startup-materialized
+    └── <id>/      ◄── agent cwd            │   └── tenants/{X}/
+        ├── .claude/                        │       ├── skills/{Y}/...
+        └── (agent writes here)             │       └── mcp-servers/...
+                                            │
+   ↑                                        ├── _agentfs_deltas/
+   real host dir                            │   └── <id>.db (+ WAL)            ← per-session
+   (no isolation)                           │
+                                            └── sessions/
+                                                └── <id>/  ◄── agent cwd
+                                                    ├── .claude/
+                                                    ├── tenants/.../skills/    (from base, overlay)
+                                                    ├── entities/              (from SessionAssetMaterializer)
+                                                    ├── resources/             (same)
+                                                    └── (agent writes → delta)
+                                                       ↑
+                                                       FUSE/NFS mount point
+                                                       (virtual; per-session view)
+```
+
+### 2.2 How base overlay + per-session delta layer together
+
+The key mental model for the agentfs provider: each session's filesystem is the union of a **shared read-only base** and a **session-private read-write delta**.
+
+```
+                ┌─────────────────────────────────────────┐
+                │  agent's CWD view (mount point)          │
+                │  e.g. ${WORKSPACE_DIR}/sessions/abc/     │
+                │  agent ls/cat/write — can't tell base    │
+                │  from delta                              │
+                └─────────────────────┬───────────────────┘
+                                      │
+                  ┌───────────────────┴───────────────────┐
+                  │   read = check delta first, else base │
+                  │   write = always goes to delta only   │
+                  └─────┬─────────────────────────┬───────┘
+                        │                          │
+                        ▼                          ▼
+            ┌──────────────────────┐  ┌─────────────────────────┐
+            │ Per-session DELTA     │  │ Shared BASE              │
+            │ SQLite + WAL          │  │ (read-only union)        │
+            │ _agentfs_deltas/      │  │ _agentfs_base/           │
+            │   <id>.db             │  │   tenants/{X}/           │
+            │                       │  │     skills/{Y}/SKILL.md  │
+            │ ← all agent writes    │  │     mcp-servers/{Z}/...  │
+            │ ← session-private     │  │                          │
+            │ ← discarded on        │  │ ← populated ONCE at       │
+            │   destroy()           │  │   backend startup by      │
+            │                       │  │   BaseMaterializer;       │
+            │                       │  │   then immutable          │
+            └──────────────────────┘  └─────────────────────────┘
+```
+
+**Why this organization**:
+- Multiple sessions share one copy of skill content (base) — saves disk + speeds up mount
+- Per-session writes don't pollute each other (delta isolation)
+- On close the delta stays (can be queried, can be re-mounted); only destroy() deletes it
+- snapshot/rollback operates only on the delta; the base never changes
+
 ---
 
 ## 3. The sandbox layer — how bash gets isolated
@@ -156,6 +222,55 @@ Standalone stdio MCP process. One per session. Env `CCAAS_SANDBOX_ROOT` points a
 **Key**: under `WORKSPACE_PROVIDER=agentfs`, `CCAAS_SANDBOX_ROOT` IS the agentfs mount point, so **bash and claude's native Read/Write/Edit land in the same SQLite delta** — no data inconsistency.
 
 Why not use Turso's `agentfs-sdk/just-bash` direct integration (skip the mount)? See [[sandbox-mount-vs-sdk]] design record: the mount has to exist anyway (claude's native tools go through host fs), so we put bash on the same code path. Single mental model.
+
+### 3.3 Tool routing inside the agent
+
+The diagram below shows why "native Read/Write/Edit and mcp__ccaas_bash__bash end up at the same data":
+
+```
+              ┌─────────────────────────────────────────────────┐
+              │  claude CLI process                              │
+              │                                                   │
+              │  Read │ Write │ Edit │ Grep │ Glob   ← native    │
+              │  Bash  (disabled by --disallowed-tools)           │
+              │  mcp____ccaas_bash__bash             ← injected  │
+              └────┬──────────────────────────────┬──────────────┘
+                   │                              │
+                   │ host fs syscall              │ MCP stdio
+                   │ (open, read, write, ...)     │
+                   ▼                              ▼
+           ┌──────────────┐               ┌──────────────────────┐
+           │  kernel       │               │ just-bash MCP child   │
+           └──────┬───────┘               │  process (server.mjs)  │
+                  │                       │                        │
+                  │                       │  ReadWriteFs({         │
+                  │                       │    root: <mount path>  │
+                  │                       │  })                    │
+                  │                       │       │                │
+                  │                       └───────┼────────────────┘
+                  │                               │
+                  │       same mount path         │
+                  └───────────────┬───────────────┘
+                                  ▼
+              ┌─────────────────────────────────────────┐
+              │ agentfs mount point                      │
+              │ (Linux FUSE / macOS NFS)                 │
+              └────────────────┬────────────────────────┘
+                               │
+                               ▼
+                       ┌────────────────────┐
+                       │ agentfs daemon      │
+                       │  ↓                  │
+                       │ SQLite delta DB     │
+                       │  + base overlay ref │
+                       └────────────────────┘
+
+→ Both paths terminate at the same SQLite delta. Result: a file the
+  agent wrote with bash is readable a second later via Read; the inverse
+  is also true. No "bash sees one view / file tools see another" drift.
+```
+
+If you disable the sandbox (`WORKSPACE_BASH_SANDBOX=none`), the right-hand path disappears and Bash falls back to the host shell, escaping the mount. That's why the default is to force `sandbox=just-bash` whenever `provider=agentfs`.
 
 ---
 
@@ -188,6 +303,39 @@ File: `packages/backend/src/sessions/services/session-asset-materializer.service
 | Source | DB (Skills / McpServer entities) | Disk (solution directory) |
 | For | skill content shared across all sessions | this session's own data copy |
 | Package | `@kedge-agentic/agentfs-runtime` | backend-private |
+
+### 4.3 Where the two materializers sit on the timeline
+
+```
+ BACKEND START                          APP READY ─────────────► PER-SESSION CREATE  ─────────────► CLOSE/TTL
+     │                                       │                          │
+     │                                       │                          │
+     ▼                                       │                          ▼
+┌─────────────────────────┐                  │           ┌─────────────────────────────────┐
+│ BaseMaterializer        │                  │           │ SessionAssetMaterializer        │
+│ .materialize()           │                  │           │ .materialize(handle.path,       │
+│                          │                  │           │              tenantId)          │
+│ DB (Skills, McpServer) ─▶│                  │           │                                  │
+│ ${baseDir}/              │                  │           │ disk solutionDirs[slug]/   ─▶   │
+│   tenants/{X}/           │                  │           │ <sessionDir>/                    │
+│     skills/{Y}/SKILL.md  │                  │           │   entities/                      │
+│     mcp-servers/...      │                  │           │   resources/                     │
+└─────────────────────────┘                  │           └─────────────────────────────────┘
+   ↑                                         │              ↑
+   runs once                                 │              runs every session create
+   sha1 idempotent                           │              sha1 idempotent
+   failure → fail-fast (backend won't boot)  │              failure → log + continue spawn
+                                             │
+                                             │
+                                       ─ ─ ─ ┴─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+                                       what the agent sees when it starts:
+                                         · base content (from BaseMaterializer, overlay)
+                                         · its own session's entities/+resources/
+                                           (from SessionAssetMaterializer, in delta)
+                                         · whatever it write/edits later (also delta)
+```
+
+Note: BaseMaterializer's failures are fatal (reported at startup); SessionAssetMaterializer's failures are soft (the agent still spawns, just won't see the seeded entities). Deliberate — a misconfigured solution dir shouldn't kill all sessions.
 
 ---
 

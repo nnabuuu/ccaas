@@ -134,6 +134,70 @@ claude 看到的世界：
 
 设计推导见 `packages/vfs-poc/docs/WORKSPACE_PROVIDER.md`（含并发安全性、agentfs init --force race、停机时挂载清理的 sanity check）。
 
+### 2.1 两种 provider 落盘结构对比
+
+```
+LOCAL provider                              AGENTFS provider
+═══════════════                             ════════════════
+
+${WORKSPACE_DIR}/                           ${WORKSPACE_DIR}/
+└── sessions/                               ├── _agentfs_base/                 ← startup-materialized
+    └── <id>/      ◄── agent cwd            │   └── tenants/{X}/
+        ├── .claude/                        │       ├── skills/{Y}/...
+        └── (agent 写在这里)                 │       └── mcp-servers/...
+                                            │
+   ↑                                        ├── _agentfs_deltas/
+   真实 host 目录                            │   └── <id>.db (+ WAL)            ← 每会话
+   (无隔离)                                  │
+                                            └── sessions/
+                                                └── <id>/  ◄── agent cwd
+                                                    ├── .claude/
+                                                    ├── tenants/.../skills/    (来自 base, overlay)
+                                                    ├── entities/              (来自 SessionAssetMaterializer)
+                                                    ├── resources/             (同上)
+                                                    └── (agent 写入 → delta)
+                                                       ↑
+                                                       FUSE/NFS 挂载点
+                                                       (虚拟；每会话独立视角)
+```
+
+### 2.2 Base overlay + 每会话 delta 是怎么叠加的
+
+agentfs provider 的关键模型：每个 session 看到的文件系统是 **共享只读 base** 和 **会话私有可写 delta** 的并集。
+
+```
+                ┌─────────────────────────────────────────┐
+                │  agent's CWD view (mount point)          │
+                │  e.g. ${WORKSPACE_DIR}/sessions/abc/     │
+                │  agent 做 ls/cat/write — 看不到 base     │
+                │  vs delta 的区别                          │
+                └─────────────────────┬───────────────────┘
+                                      │
+                  ┌───────────────────┴───────────────────┐
+                  │   读 = 先查 delta，没有再查 base       │
+                  │   写 = 永远落到 delta                  │
+                  └─────┬─────────────────────────┬───────┘
+                        │                          │
+                        ▼                          ▼
+            ┌──────────────────────┐  ┌─────────────────────────┐
+            │ 每会话 DELTA          │  │ 共享 BASE                │
+            │ SQLite + WAL          │  │ (只读 union)             │
+            │ _agentfs_deltas/      │  │ _agentfs_base/           │
+            │   <id>.db             │  │   tenants/{X}/           │
+            │                       │  │     skills/{Y}/SKILL.md  │
+            │ ← agent 全部写入      │  │     mcp-servers/{Z}/...  │
+            │ ← 会话私有            │  │                          │
+            │ ← destroy() 时删       │  │ ← 后端启动时 BaseMaterializer 一次性 │
+            │                       │  │   投影；之后不变          │
+            └──────────────────────┘  └─────────────────────────┘
+```
+
+**为什么这样组织**：
+- 多个 session 共享同一份 skill 内容（base），省磁盘 + 加快 mount
+- 每个 session 的写入互不污染（delta 隔离）
+- close session 时 delta 留着（可查、可重启），destroy session 时才删
+- snapshot/rollback 只操作 delta，base 永不变
+
 ---
 
 ## 3. Sandbox 层 — bash 怎么被隔离
@@ -156,6 +220,54 @@ claude 看到的世界：
 **关键**：因为 `WorkspaceProvider=agentfs` 时 `CCAAS_SANDBOX_ROOT` 就是 agentfs 挂载点，**bash 和 claude 的原生 Read/Write/Edit 落到的是同一个 SQLite delta**，没有数据不一致问题。
 
 为什么不用 Turso 的 `agentfs-sdk/just-bash` 直连 SQLite（绕过 mount）？见 [[sandbox-mount-vs-sdk]] 决策记录：mount 必须存在（因为 claude 原生工具走 host fs），既然存在就让 bash 也走 mount，单一心智模型。
+
+### 3.3 Agent 内部的工具路由
+
+下图说明「为什么 native Read/Write/Edit 和 mcp__ccaas_bash__bash 最后落到同一份数据」：
+
+```
+              ┌─────────────────────────────────────────────────┐
+              │  claude CLI 进程                                  │
+              │                                                   │
+              │  Read │ Write │ Edit │ Grep │ Glob   ← native    │
+              │  Bash  (--disallowed-tools 禁用)                  │
+              │  mcp____ccaas_bash__bash             ← 注入的 MCP │
+              └────┬──────────────────────────────┬──────────────┘
+                   │                              │
+                   │ host fs syscall              │ MCP stdio
+                   │ (open, read, write, ...)     │
+                   ▼                              ▼
+           ┌──────────────┐               ┌──────────────────────┐
+           │  kernel       │               │ just-bash MCP 子进程  │
+           └──────┬───────┘               │  (server.mjs)         │
+                  │                       │                        │
+                  │                       │  ReadWriteFs({         │
+                  │                       │    root: <mount path>  │
+                  │                       │  })                    │
+                  │                       │       │                │
+                  │                       └───────┼────────────────┘
+                  │                               │
+                  │       同一个 mount path        │
+                  └───────────────┬───────────────┘
+                                  ▼
+              ┌─────────────────────────────────────────┐
+              │ agentfs mount point                      │
+              │ (Linux FUSE / macOS NFS)                 │
+              └────────────────┬────────────────────────┘
+                               │
+                               ▼
+                       ┌────────────────────┐
+                       │ agentfs daemon      │
+                       │  ↓                  │
+                       │ SQLite delta DB     │
+                       │  + base overlay ref │
+                       └────────────────────┘
+
+→ 两条路径都终止于同一个 SQLite delta。结果：agent 用 bash 写的文件，
+  下一秒用 Read 读得到；反过来也成立。没有「bash 看到一份 / 文件 tool 看到另一份」的不一致。
+```
+
+如果禁掉 sandbox（`WORKSPACE_BASH_SANDBOX=none`），右边那条路径消失，Bash 工具重新走 host bash，会逃出 mount。这就是为什么默认行为是 provider=agentfs 时强制 sandbox=just-bash。
 
 ---
 
@@ -188,6 +300,39 @@ claude 看到的世界：
 | 来源 | DB（Skills / McpServer 实体） | Disk（solution 目录） |
 | 适用 | 所有 session 共享的 skill 内容 | 当前 session 自己的数据副本 |
 | 包 | `@kedge-agentic/agentfs-runtime` | backend 私有 |
+
+### 4.3 两个 materializer 在时间轴上的位置
+
+```
+ BACKEND 启动                            APP READY ─────────────► PER-SESSION CREATE  ─────────────► CLOSE/TTL
+     │                                        │                          │
+     │                                        │                          │
+     ▼                                        │                          ▼
+┌─────────────────────────┐                   │           ┌─────────────────────────────────┐
+│ BaseMaterializer        │                   │           │ SessionAssetMaterializer        │
+│ .materialize()           │                   │           │ .materialize(handle.path,       │
+│                          │                   │           │              tenantId)          │
+│ DB (Skills, McpServer) ─▶│                   │           │                                  │
+│ ${baseDir}/              │                   │           │ disk solutionDirs[slug]/   ─▶   │
+│   tenants/{X}/           │                   │           │ <sessionDir>/                    │
+│     skills/{Y}/SKILL.md  │                   │           │   entities/                      │
+│     mcp-servers/...      │                   │           │   resources/                     │
+└─────────────────────────┘                   │           └─────────────────────────────────┘
+   ↑                                          │              ↑
+   一次性                                      │              每个 session create 都跑
+   sha1 idempotent                            │              sha1 idempotent
+   失败 → fail-fast (后端起不来)               │              失败 → log + 继续 spawn agent
+                                              │
+                                              │
+                                       ─ ─ ─ ─┴─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+                                       agent 起来时看到的文件视角：
+                                         · base 内容（来自 BaseMaterializer，overlay）
+                                         · 自己 session 的 entities/+resources/
+                                           （来自 SessionAssetMaterializer，写到 delta）
+                                         · 自己后续 write/edit 的文件（也落到 delta）
+```
+
+注意：BaseMaterializer 的失败是致命的（启动期就报）；SessionAssetMaterializer 的失败是软失败（agent 起来后照样能跑，只是看不到 seed 的 entities）。这是有意识的设计 —— solution 目录配错不应该让所有 session 都崩。
 
 ---
 
