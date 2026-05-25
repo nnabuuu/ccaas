@@ -8,6 +8,7 @@
 * [Key Concepts](platform/concepts.md)
 * [Core Value: Skills + MCP](platform/value.md)
 * [Platform Architecture](platform/architecture.md)
+* [Runtime Architecture (sandbox + workspace + materializer)](platform/runtime-architecture.md)
 * [Core Capabilities](platform/capabilities.md)
 * [Solution Showcase](platform/solutions.md)
 * [Pricing](platform/pricing.md)
@@ -17,6 +18,7 @@
 * [Overview](getting-started/README.md)
 * [Installation](getting-started/installation.md)
 * [5-Minute Quickstart](getting-started/quickstart.md)
+* [Local Self-Host (stage-1 sandbox)](getting-started/local-self-host.md)
 
 ## Solution Builder Tutorial <a href="#tutorial" id="tutorial"></a>
 
@@ -45,6 +47,7 @@
   * [Pure Skill Design: Zero-MCP Architecture](examples/mckinsey-cli/skill-design.md)
 * [Article Analyzer UI/UX Redesign](examples/article-analyzer-ui-redesign.md)
 * [Context Layer @ Reference Picker](examples/reference-picker.md)
+* [demo-sandbox (sandbox full-stack case)](examples/demo-sandbox.md)
 
 ## Developer Guide <a href="#guide" id="guide"></a>
 
@@ -64,6 +67,7 @@
 * [Conversation Persistence](guide/conversation-persistence.md)
 * [Context Layer](guide/context-layer.md)
 * [Harness Engineering](guide/harness-engineering.md)
+* [Solution Runtime Extension Points](guide/extending-runtime.md)
 
 ## Advanced Configuration <a href="#advanced" id="advanced"></a>
 
@@ -86,3 +90,5 @@
 
 * [solution.json Reference (v3.0)](reference/solution-json.md)
 * [Best Practices](reference/best-practices.md)
+* [Runtime REST API (fs + metadata)](reference/runtime-api.md)
+* [@kedge-agentic/agentfs-runtime Package Reference](reference/agentfs-runtime.md)
