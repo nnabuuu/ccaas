@@ -144,22 +144,27 @@ export class SessionAssetSyncer {
       return;
     }
 
-    // Serialize syncs per projectId.
+    // Serialize syncs per projectId: each new request chains onto the
+    // previous one so two sessions on the same project don't race the
+    // SyncEngine.plan inputs or the SnapshotStore writes.
     const prior = this.projectLocks.get(projectId);
     const run = (async () => {
       await prior?.catch(() => undefined);
       await this.doSync(sessionId, projectId, session.workspaceDir);
     })();
-    this.projectLocks.set(projectId, run.then(
+    const settled: Promise<void> = run.then(
       () => undefined,
       () => undefined,
-    ));
+    );
+    this.projectLocks.set(projectId, settled);
     try {
       await run;
     } finally {
-      // GC if nothing new chained in
-      if (this.projectLocks.get(projectId) && (await prior?.catch(() => undefined), true)) {
-        // Leave the lock; next call replaces it. Cheap.
+      // GC the lock if no later sync has chained onto ours. Reference
+      // equality means we only delete the entry we wrote; if another
+      // call has already replaced it, that one owns the slot.
+      if (this.projectLocks.get(projectId) === settled) {
+        this.projectLocks.delete(projectId);
       }
     }
   }
@@ -185,6 +190,10 @@ export class SessionAssetSyncer {
       previousSnapshot,
       now: new Date().toISOString(),
       hasher: sha256Hasher,
+      // When the solution can't delete, the engine plans `write_fs`
+      // (restore from DB) instead of `delete_db` so the agent's
+      // delete is reverted on next read rather than silently dropped.
+      allowDelete: typeof this.source.deleteArtifact === 'function',
     });
 
     if (plan.actions.length === 0) {
@@ -234,14 +243,11 @@ export class SessionAssetSyncer {
         });
         break;
       case 'delete_db':
+        // SyncEngine only plans this when allowDelete=true, so source
+        // is guaranteed to have deleteArtifact. The guard is belt-and-
+        // -braces against future refactors.
         if (this.source.deleteArtifact) {
           await this.source.deleteArtifact(projectId, action.path);
-        } else {
-          this.logger.warn(
-            `agent deleted ${action.path} but solution's ProjectArtifactSource ` +
-              `doesn't implement deleteArtifact; row will reappear on next ` +
-              `load. Define deleteArtifact() if propagating deletes is desired.`,
-          );
         }
         break;
       case 'conflict_agent_wins':
@@ -254,6 +260,13 @@ export class SessionAssetSyncer {
         // The conflict event is published separately by actionToEvent;
         // here we only do the persistence work.
         break;
+      default: {
+        // Exhaustiveness check — adding a new SyncAction kind without
+        // handling it here will surface as a typecheck error.
+        const _exhaust: never = action;
+        void _exhaust;
+        break;
+      }
     }
   }
 
@@ -291,6 +304,11 @@ export class SessionAssetSyncer {
           at,
           actor: 'conflict-agent-wins',
         };
+      default: {
+        const _exhaust: never = action;
+        void _exhaust;
+        throw new Error(`unreachable: unhandled action kind`);
+      }
     }
   }
 

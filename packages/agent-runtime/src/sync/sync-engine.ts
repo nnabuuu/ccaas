@@ -75,11 +75,22 @@ export interface SyncEngineInput {
   readonly previousSnapshot: ReadonlyArray<SnapshotEntry>;
   readonly now: string;
   readonly hasher: ContentHasher;
+  /**
+   * Whether the orchestrator's `ProjectArtifactSource` supports
+   * `deleteArtifact`. Defaults to `true`. When `false`, the engine
+   * substitutes `write_fs` (restore-from-DB) for `delete_db` actions
+   * so an agent-side delete is reverted on the next sync rather than
+   * silently dropped, which would loop forever (`delete_db` planned,
+   * warn-only no-op, plan again, ...). The agent reads the restored
+   * file next turn — clear signal that delete is unsupported.
+   */
+  readonly allowDelete?: boolean;
 }
 
 export class SyncEngine {
   plan(input: SyncEngineInput): SyncPlan {
     const { sessionId, dbNow, fsDelta, previousSnapshot, now, hasher } = input;
+    const allowDelete = input.allowDelete !== false;
 
     const prevByPath = new Map<string, SnapshotEntry>(
       previousSnapshot.map((e) => [e.path, e]),
@@ -137,12 +148,38 @@ export class SyncEngine {
         continue;
       }
 
-      // Agent deleted; DB still has it but unchanged → propagate delete to DB.
-      // If DB also changed, we treat agent-delete as winning (agent intent
-      // is explicit destruction).
+      // Agent deleted. Three sub-cases:
+      //   - !db: consistent (both empty); no-op.
+      //   - db && allowDelete: propagate delete to DB; whether DB also
+      //     changed is currently subsumed under agent-wins semantics
+      //     (we do NOT emit a separate conflict event for delete-vs-edit;
+      //     documented as a known gap, tracked for Phase 2).
+      //   - db && !allowDelete: source can't delete. Restore the file
+      //     in fs so the agent observes the un-delete next turn rather
+      //     than looping silently. Snapshot reflects the restored state.
       if (fsDel) {
-        actions.push({ kind: 'delete_db', path });
-        // no nextSnapshot entry — gone from both sides
+        if (!db) {
+          // no nextSnapshot entry — gone from both sides
+          continue;
+        }
+        if (allowDelete) {
+          actions.push({ kind: 'delete_db', path });
+          // no nextSnapshot entry — gone from both sides
+          continue;
+        }
+        actions.push({
+          kind: 'write_fs',
+          path,
+          content: db.content,
+          type: db.type,
+        });
+        nextSnapshot.push({
+          sessionId,
+          path,
+          contentHash: hasher(db.content),
+          type: db.type,
+          updatedAt: now,
+        });
         continue;
       }
 

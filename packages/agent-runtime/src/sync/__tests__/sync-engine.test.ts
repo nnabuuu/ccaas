@@ -30,6 +30,7 @@ function plan(
   dbNow: ReadonlyArray<ArtifactSnapshot>,
   fsDelta: FsDelta,
   previousSnapshot: ReadonlyArray<SnapshotEntry>,
+  opts: { allowDelete?: boolean } = {},
 ) {
   return new SyncEngine().plan({
     sessionId: SID,
@@ -38,6 +39,7 @@ function plan(
     previousSnapshot,
     now: NOW,
     hasher,
+    ...(opts.allowDelete !== undefined && { allowDelete: opts.allowDelete }),
   });
 }
 
@@ -165,5 +167,35 @@ describe('SyncEngine.plan — multi-path scenarios', () => {
     // fs-only change wins; type updates to whatever the agent wrote
     expect(result.actions[0].kind).toBe('conflict_agent_wins');
     expect(result.nextSnapshot[0].type).toBe('json');
+  });
+});
+
+describe('SyncEngine.plan — allowDelete option', () => {
+  it('allowDelete=true (default): agent delete + DB has row → delete_db', () => {
+    const db = [artifact('lesson.md', 'v1')];
+    const fsDelta: FsDelta = { modified: [], deleted: ['lesson.md'] };
+    const result = plan(db, fsDelta, [snap('lesson.md', 'v1')]);
+    expect(result.actions).toEqual([{ kind: 'delete_db', path: 'lesson.md' }]);
+    expect(result.nextSnapshot).toHaveLength(0);
+  });
+
+  it('allowDelete=false + agent delete + DB has row → write_fs (restore from DB), no delete_db', () => {
+    const db = [artifact('lesson.md', 'v1')];
+    const fsDelta: FsDelta = { modified: [], deleted: ['lesson.md'] };
+    const result = plan(db, fsDelta, [snap('lesson.md', 'v1')], { allowDelete: false });
+    expect(result.actions).toEqual([
+      { kind: 'write_fs', path: 'lesson.md', content: 'v1', type: 'md' },
+    ]);
+    // Snapshot reflects the restored state — so next sync sees no change,
+    // breaking the loop the old code would have created.
+    expect(result.nextSnapshot).toHaveLength(1);
+    expect(result.nextSnapshot[0].contentHash).toBe(hasher('v1'));
+  });
+
+  it('allowDelete=false + agent delete + DB does NOT have row → no-op', () => {
+    const fsDelta: FsDelta = { modified: [], deleted: ['ghost.md'] };
+    const result = plan([], fsDelta, []);
+    expect(result.actions).toEqual([]);
+    expect(result.nextSnapshot).toHaveLength(0);
   });
 });

@@ -280,6 +280,11 @@ export class ProjectService {
   }
 
   private sanitizePath(p: string): string {
+    // Defense in depth — block escape attempts that posix.normalize alone
+    // misses on weird platforms / mixed-OS clients.
+    if (p.includes('\0') || p.includes('\\')) {
+      throw new BadRequestException('Invalid file path: null bytes and backslashes are not allowed');
+    }
     const normalized = posixPath.normalize(p);
     if (normalized.startsWith('..') || normalized.startsWith('/')) {
       throw new BadRequestException('Invalid file path: must be relative and not escape project root');

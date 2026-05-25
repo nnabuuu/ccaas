@@ -222,6 +222,41 @@ describe('SessionAssetSyncer', () => {
     expect(source.saved).toEqual([]);
   });
 
+  it('agent delete restores file from DB when source lacks deleteArtifact', async () => {
+    // Override the source to NOT implement deleteArtifact.
+    const noDeleteSource: ProjectArtifactSource = {
+      loadArtifacts: async () => [{ path: 'lesson.md', content: 'v1', type: 'md' }],
+      saveArtifact: jest.fn(async () => undefined),
+      // deleteArtifact intentionally omitted
+    };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        SessionAssetSyncer,
+        { provide: PROJECT_ARTIFACT_SOURCE, useValue: noDeleteSource },
+        { provide: SNAPSHOT_STORE, useValue: snapshots },
+        { provide: CHANGE_STREAM, useValue: changes },
+        { provide: SessionService, useValue: sessionSvc },
+        { provide: SessionMetadataService, useValue: metaSvc },
+      ],
+    }).compile();
+    const localSyncer = moduleRef.get(SessionAssetSyncer);
+
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+      diffEntries: [{ op: 'removed', type: 'file', path: '/artifacts/lesson.md' }],
+    }));
+
+    await localSyncer.sync(SID);
+
+    // File should be restored on the agent's workspace, not deleted from DB.
+    const restored = await fs.readFile(
+      path.join(workspaceDir, ARTIFACTS_DIR, 'lesson.md'), 'utf8',
+    );
+    expect(restored).toBe('v1');
+    expect(noDeleteSource.saveArtifact).not.toHaveBeenCalled();
+  });
+
   it('snapshot updated to reflect post-sync state', async () => {
     source.rows = [{ path: 'lesson.md', content: 'first-load', type: 'md' }];
     await syncer.sync(SID);
