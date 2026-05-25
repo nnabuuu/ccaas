@@ -5,13 +5,15 @@
  *   - the `PROJECT_ARTIFACT_SOURCE` token to the solution-provided
  *     impl when one is passed, or to the no-op default when omitted
  *   - the `CHANGE_STREAM` token to an `InMemoryChangeStream`
- *   - exports the snapshot-store class
+ *   - the `SessionAssetSyncer` provider, which depends on
+ *     `SessionService` + `SessionMetadataService` — those are mocked
+ *     here since they live in the parent `SessionsModule`
  *
  * These are pure DI tests — no database, no agentfs, no live sessions.
  */
 
 import { Injectable } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import {
@@ -28,6 +30,8 @@ import {
   PROJECT_ARTIFACT_SOURCE,
 } from './agent-runtime.module';
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
+import { SessionService } from '../session.service';
+import { SessionMetadataService } from '../services/session-metadata.service';
 
 @Injectable()
 class FakeArtifactSource implements ProjectArtifactSource {
@@ -50,6 +54,20 @@ const repoMock = {
   delete: jest.fn(),
 };
 
+function compileWith(options?: { artifactSource?: typeof FakeArtifactSource }) {
+  const builder: TestingModuleBuilder = Test.createTestingModule({
+    imports: [AgentRuntimeModule.forRoot(options ?? {})],
+    providers: [
+      { provide: SessionService, useValue: { getSession: jest.fn(() => undefined) } },
+      { provide: SessionMetadataService, useValue: { get: jest.fn() } },
+    ],
+  });
+  return builder
+    .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
+    .useValue(repoMock)
+    .compile();
+}
+
 describe('AgentRuntimeModule', () => {
   beforeEach(() => {
     repoMock.find.mockClear();
@@ -58,12 +76,7 @@ describe('AgentRuntimeModule', () => {
   });
 
   it('resolves the solution-provided artifact source via PROJECT_ARTIFACT_SOURCE', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AgentRuntimeModule.forRoot({ artifactSource: FakeArtifactSource })],
-    })
-      .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
-      .useValue(repoMock)
-      .compile();
+    const moduleRef = await compileWith({ artifactSource: FakeArtifactSource });
 
     const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
     expect(source).toBeInstanceOf(FakeArtifactSource);
@@ -74,13 +87,7 @@ describe('AgentRuntimeModule', () => {
   });
 
   it('falls back to a no-op source when no artifact source is provided', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AgentRuntimeModule.forRoot()],
-    })
-      .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
-      .useValue(repoMock)
-      .compile();
-
+    const moduleRef = await compileWith();
     const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
     const out = await source.loadArtifacts('p1');
     expect(out).toEqual([]);
@@ -89,13 +96,7 @@ describe('AgentRuntimeModule', () => {
   });
 
   it('binds CHANGE_STREAM to an InMemoryChangeStream singleton', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AgentRuntimeModule.forRoot()],
-    })
-      .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
-      .useValue(repoMock)
-      .compile();
-
+    const moduleRef = await compileWith();
     const stream = moduleRef.get<ChangeStream>(CHANGE_STREAM);
     expect(stream).toBeInstanceOf(InMemoryChangeStream);
     // resolve again and confirm singleton (same instance)
@@ -103,15 +104,8 @@ describe('AgentRuntimeModule', () => {
   });
 
   it('uses a no-op source that satisfies the ProjectArtifactSource contract', async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AgentRuntimeModule.forRoot()],
-    })
-      .overrideProvider(getRepositoryToken(SessionArtifactSnapshot))
-      .useValue(repoMock)
-      .compile();
-
+    const moduleRef = await compileWith();
     const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
-    // The no-op should expose loadArtifacts and saveArtifact methods.
     expect(typeof source.loadArtifacts).toBe('function');
     expect(typeof source.saveArtifact).toBe('function');
   });

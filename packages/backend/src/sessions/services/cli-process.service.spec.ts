@@ -11,6 +11,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CliProcessService } from './cli-process.service';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
@@ -53,6 +54,7 @@ describe('CliProcessService - handleCLIClose', () => {
             systemPromptSteer: () => '',
           },
         },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -230,6 +232,7 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
           },
         },
         { provide: SandboxService, useValue: sandbox },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
     return module.get<CliProcessService>(CliProcessService);

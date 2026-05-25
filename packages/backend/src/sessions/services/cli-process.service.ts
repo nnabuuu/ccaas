@@ -13,6 +13,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { spawn, ChildProcess } from 'node:child_process';
 import type { Writable } from 'node:stream';
 import * as fs from 'node:fs';
@@ -77,6 +78,7 @@ export class CliProcessService {
     private readonly eventMapperService: EventMapperService,
     private readonly workspaceService: WorkspaceService,
     private readonly sandboxService: SandboxService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
     this.claudeCliPath = this.configService.get('CLAUDE_CLI_PATH', 'claude');
@@ -612,6 +614,16 @@ export class CliProcessService {
         ...(code !== 0 && { error: `AgentEngine exited with code ${code}` }),
       });
     }
+
+    // Global event for the agent-runtime sync layer. Fires once per turn
+    // boundary (clean exit OR error OR cancellation). Subscribers gate on
+    // `status: 'complete'` to run the syncer; other states are no-ops.
+    this.eventEmitter.emit('session.turn.complete', {
+      sessionId: session.sessionId,
+      tenantId: session.tenantId,
+      status: wasCancelled ? 'cancelled' : code === 0 ? 'complete' : 'error',
+      exitCode: code,
+    });
   }
 
   /**

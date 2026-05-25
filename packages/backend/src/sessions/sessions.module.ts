@@ -45,6 +45,7 @@ import { baseMaterializerProvider } from './workspace/base-materializer.factory'
 import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory';
 import { WORKSPACE_PROVIDER } from './workspace/types';
 import { SandboxService } from './sandbox/sandbox.service';
+import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -96,7 +97,8 @@ import { BundleModule } from '../bundles/bundle.module';
     baseMaterializerProvider,
     WorkspaceProviderFactory,
     SandboxService,
+    SessionAssetSyncer,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer],
 })
 export class SessionsModule {}

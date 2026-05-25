@@ -31,13 +31,13 @@ import { InMemoryChangeStream } from '@kedge-agentic/agent-runtime';
 
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
 import { TypeOrmSnapshotStore } from './typeorm-snapshot-store';
+import {
+  PROJECT_ARTIFACT_SOURCE,
+  SNAPSHOT_STORE,
+  CHANGE_STREAM,
+} from './tokens';
 
-/** DI token for `@Inject(PROJECT_ARTIFACT_SOURCE)` on the syncer. */
-export const PROJECT_ARTIFACT_SOURCE = 'PROJECT_ARTIFACT_SOURCE';
-/** DI token for the runtime's `SnapshotStore` port. */
-export const SNAPSHOT_STORE = 'SNAPSHOT_STORE';
-/** DI token for the runtime's `ChangeStream` port. */
-export const CHANGE_STREAM = 'CHANGE_STREAM';
+export { PROJECT_ARTIFACT_SOURCE, SNAPSHOT_STORE, CHANGE_STREAM };
 
 export interface AgentRuntimeModuleOptions {
   /**
@@ -96,7 +96,12 @@ export class AgentRuntimeModule {
         ...(options.artifactSource ? [options.artifactSource] : [NoopArtifactSource]),
         sourceProvider,
       ],
-      exports: [PROJECT_ARTIFACT_SOURCE, SNAPSHOT_STORE, CHANGE_STREAM, TypeOrmSnapshotStore],
+      exports: [
+        PROJECT_ARTIFACT_SOURCE,
+        SNAPSHOT_STORE,
+        CHANGE_STREAM,
+        TypeOrmSnapshotStore,
+      ],
     };
   }
 }
