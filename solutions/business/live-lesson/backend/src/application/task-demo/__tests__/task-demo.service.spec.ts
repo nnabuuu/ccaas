@@ -190,6 +190,15 @@ describe('TaskDemoService', () => {
         service.submit(code, '00000000-0000-0000-0000-000000000000', { answers: [1, 2] }),
       ).rejects.toThrow(/not found/i);
     });
+
+    it('records partial score (per-item percentage), not just 0/100', async () => {
+      const { code } = await service.create(QUIZ_MANIFEST.id, 1);
+      const { studentId } = await service.claim(code, 'alice');
+      // 1 of 2 correct → 50%
+      const r = await service.submit(code, studentId, { answers: [1, 99] });
+      expect(r.allCorrect).toBe(false);
+      expect(r.score?.total).toBe(50);
+    });
   });
 
   describe('listRespondents + getReplay', () => {

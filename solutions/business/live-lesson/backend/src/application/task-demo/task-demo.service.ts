@@ -124,6 +124,14 @@ export class TaskDemoService {
     // Reuse production grading path — sanitize/registry/grader all unchanged.
     const checkResult = await this.exerciseService.checkAnswer(session, studentId, step, data);
 
+    // Derive a per-item % from checkItems so partial credit shows up in the
+    // replay timeline (e.g. 2/3 → 67%, not 0%). For types where the grader
+    // didn't return items, fall back to allCorrect ? 100 : 0.
+    const items = (checkResult.items ?? []) as Array<{ correct?: boolean }>;
+    const total = items.length > 0
+      ? Math.round((items.filter((i) => i.correct === true).length / items.length) * 100)
+      : (checkResult.allCorrect ? 100 : 0);
+
     const nextAttempt = (await this.attemptRepo.maxAttempt(session.id, studentId)) + 1;
     const saved = await this.attemptRepo.insert({
       sessionId: session.id,
@@ -132,7 +140,7 @@ export class TaskDemoService {
       step,
       attempt: nextAttempt,
       dataJson: data as Record<string, any>,
-      scoreJson: checkResult.allCorrect ? { total: 100 } : { total: 0 },
+      scoreJson: { total },
       checkItemsJson: (checkResult.items ?? []) as Array<Record<string, any>>,
     });
 
