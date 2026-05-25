@@ -484,6 +484,22 @@ describe('enrichExerciseFromSpec — manifest fallback', () => {
     expect(exercise.gdTitle).toBe('Fallback title')
   })
 
+  it('guided-discovery: manifest ak.steps fallback for gdSteps', () => {
+    // Offline preview path (exercise-preview demo framework) passes raw
+    // answerKey with schema-name fields (steps, summary), not the
+    // post-sanitize gd-prefixed fields the production API path emits.
+    const ak = {
+      type: 'guided-discovery',
+      title: 'Raw schema',
+      steps: [{ id: 's1', title: 'Step', type: 'observation_choice', choices: [] }],
+      summary: { formula: 'a=b' },
+    }
+    const { exercise } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.gdTitle).toBe('Raw schema')
+    expect(exercise.gdSteps).toHaveLength(1)
+    expect(exercise.gdSummary).toEqual({ formula: 'a=b' })
+  })
+
   it('rich-content-quiz: injects parts/subType from manifest ak, serverCheck=false', () => {
     const ak = {
       type: 'rich-content-quiz',

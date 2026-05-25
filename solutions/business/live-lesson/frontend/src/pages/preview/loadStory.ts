@@ -38,9 +38,11 @@ export async function loadStory(
   bundleId: string,
   storyName: string,
 ): Promise<LoadedPreviewStory> {
+  // bundleId / storyName come from URL params — JSON.stringify keeps log
+  // output well-formed if either contains quotes or newlines.
   const res = await fetch(`/preview/bundles/${encodeURIComponent(bundleId)}`)
   if (!res.ok) {
-    throw new Error(`Failed to load bundle "${bundleId}" (${res.status})`)
+    throw new Error(`Failed to load bundle ${JSON.stringify(bundleId)} (${res.status})`)
   }
   const bundle = (await res.json()) as {
     bundleId: string
@@ -51,7 +53,7 @@ export async function loadStory(
   const story = bundle.stories[storyName]
   if (!story) {
     throw new Error(
-      `Story "${storyName}" not in bundle "${bundleId}". Available: [${Object.keys(bundle.stories).join(', ')}]`,
+      `Story ${JSON.stringify(storyName)} not in bundle ${JSON.stringify(bundleId)}. Available: [${Object.keys(bundle.stories).join(', ')}]`,
     )
   }
   return { bundleId: bundle.bundleId, storyName, story, plugin: bundle.plugin, meta: bundle.meta }

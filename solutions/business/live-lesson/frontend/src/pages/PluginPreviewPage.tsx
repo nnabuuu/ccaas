@@ -158,14 +158,16 @@ function PreviewChrome({
 function StudentStage({ plugin, story }: { plugin: ExerciseUIPlugin; story: LoadedPreviewStory['story'] }) {
   // Build an `exercise` from the answerKey via the plugin's enrichFromManifest.
   // This is the same offline path used in production when no API spec is available.
-  const exercise = useMemo(() => {
-    const ex: Record<string, unknown> = { type: plugin.type }
-    plugin.enrichFromManifest?.(ex, story.answerKey)
+  // Use Record<string, any> rather than unknown so plugin.Component (which takes
+  // Record<string, any>) accepts the value without casting at the call site.
+  const exercise = useMemo<Record<string, any>>(() => {
+    const ex: Record<string, any> = { type: plugin.type }
+    plugin.enrichFromManifest?.(ex, story.answerKey as Record<string, any>)
     return ex
   }, [plugin, story.answerKey])
 
-  const [ans, setAns] = useState<Record<string, unknown>>(story.initialAns ?? {})
-  const [checkResultState, setCheckResultState] = useState<Record<string, unknown>>({})
+  const [ans, setAns] = useState<Record<string, any>>(story.initialAns ?? {})
+  const [checkResultState, setCheckResultState] = useState<Record<string, any>>({})
   const [allDone, setAllDone] = useState(false)
   const [softDone, setSoftDone] = useState(false)
 
@@ -174,20 +176,14 @@ function StudentStage({ plugin, story }: { plugin: ExerciseUIPlugin; story: Load
   return (
     <div>
       <Component
-        exercise={exercise as any}
+        exercise={exercise}
         ans={ans}
-        setAns={(updater) =>
-          setAns((prev) => (typeof updater === 'function' ? (updater as (p: typeof prev) => typeof prev)(prev) : updater))
-        }
+        setAns={setAns}
         allDone={allDone}
         softDone={softDone}
-        reviewData={story.reviewData as any}
+        reviewData={story.reviewData}
         checkResultState={checkResultState}
-        setCheckResultState={(updater) =>
-          setCheckResultState((prev) =>
-            typeof updater === 'function' ? (updater as (p: typeof prev) => typeof prev)(prev) : updater,
-          )
-        }
+        setCheckResultState={setCheckResultState}
         onDone={() => {
           setAllDone(true)
           setSoftDone(true)
@@ -214,6 +210,10 @@ function StudentStage({ plugin, story }: { plugin: ExerciseUIPlugin; story: Load
   )
 }
 
+// First-submit baseline for plugin.localGrade — empty correct set + no prior
+// attempts. Per-plugin localGrade implementations diverge from here.
+const EMPTY_PREV_GRADE = { correctQs: new Set<number>(), attempts: {} as Record<number, any[]> }
+
 function SubmitBar({
   plugin,
   exercise,
@@ -222,24 +222,19 @@ function SubmitBar({
   onResult,
 }: {
   plugin: ExerciseUIPlugin
-  exercise: Record<string, unknown>
-  ans: Record<string, unknown>
-  checkResultState: Record<string, unknown>
+  exercise: Record<string, any>
+  ans: Record<string, any>
+  checkResultState: Record<string, any>
   onResult: (out: import('../components/student/exercise/plugins/types').CheckResultHandlerOutput) => void
 }) {
-  const canSubmit = plugin.canSubmit(exercise as any, ans, checkResultState)
+  const canSubmit = plugin.canSubmit(exercise, ans, checkResultState)
   return (
     <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
       <button
         disabled={!canSubmit}
         onClick={() => {
           // Local grade path: works for quiz/match/order/etc. that ship `localGrade`.
-          const result = plugin.localGrade?.(
-            exercise as any,
-            ans,
-            { correctQs: new Set(), attempts: {} },
-            1,
-          )
+          const result = plugin.localGrade?.(exercise, ans, EMPTY_PREV_GRADE, 1)
           if (result) {
             onResult({
               checkResultState: {

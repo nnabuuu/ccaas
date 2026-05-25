@@ -461,24 +461,22 @@ function renderIframeStage(stage, role) {
   `;
 
   // Show a hint if the iframe fails to load (frontend probably not running).
+  // Both branches close over the same `iframe` + `host` refs — single lookup.
   const iframe = document.getElementById('preview-iframe');
+  const host = stage.querySelector('.preview-frame-host');
   const failTimer = setTimeout(() => {
-    if (iframe && !iframe.dataset.loaded) {
-      const host = stage.querySelector('.preview-frame-host');
-      if (host) {
-        host.insertAdjacentHTML('beforeend', `
-          <div class="preview-frame-unreachable">
-            <strong>Frontend reachability check</strong><br>
-            Couldn't confirm <code>${escape(FRONTEND_URL)}</code> responded in time.
-            If you see "This site can't be reached", start the live-lesson frontend:
-            <br><br>
-            <code>cd solutions/business/live-lesson/frontend && npm run dev</code>
-            <br><br>
-            Then refresh. (Override the URL with <code>?frontend=https://your-host</code>.)
-          </div>
-        `);
-      }
-    }
+    if (iframe.dataset.loaded || !host) return;
+    host.insertAdjacentHTML('beforeend', `
+      <div class="preview-frame-unreachable">
+        <strong>Frontend reachability check</strong><br>
+        Couldn't confirm <code>${escape(FRONTEND_URL)}</code> responded in time.
+        If you see "This site can't be reached", start the live-lesson frontend:
+        <br><br>
+        <code>cd solutions/business/live-lesson/frontend && npm run dev</code>
+        <br><br>
+        Then refresh. (Override the URL with <code>?frontend=https://your-host</code>.)
+      </div>
+    `);
   }, 4000);
   iframe.addEventListener('load', () => {
     iframe.dataset.loaded = '1';
