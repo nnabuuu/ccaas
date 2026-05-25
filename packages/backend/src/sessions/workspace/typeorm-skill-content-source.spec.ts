@@ -7,8 +7,8 @@
  *   - `Skill.description: null` → undefined on the VO
  *   - `McpServer.config: string` → JSON.parse-d object
  *
- * The materializer's own behavior is tested in the agentfs-runtime
- * package; this spec covers only the adapter layer.
+ * The materializer's own behavior is tested in the agent-runtime
+ * package (workspace sub-module); this spec covers only the adapter layer.
  */
 
 import { Test } from '@nestjs/testing';

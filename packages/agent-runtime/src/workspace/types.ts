@@ -1,5 +1,5 @@
 /**
- * Public types for the agentfs-runtime core.
+ * Public types for the agent-runtime `workspace/` sub-module.
  *
  * `ContentSource` is the central port: adapters implement it against
  * whatever storage they like (TypeORM repositories, raw SQL,

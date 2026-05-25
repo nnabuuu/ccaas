@@ -1,6 +1,6 @@
 /**
  * NestJS factory wiring for `BaseMaterializer` (from
- * @kedge-agentic/agentfs-runtime).
+ * @kedge-agentic/agent-runtime).
  *
  * The pure BaseMaterializer is framework-free; this factory bridges:
  *   - reads agentfs base-dir config from ConfigService
@@ -20,7 +20,7 @@ import * as path from 'node:path';
 import {
   BaseMaterializer,
   type Logger as PortLogger,
-} from '@kedge-agentic/agentfs-runtime';
+} from '@kedge-agentic/agent-runtime';
 
 import { TypeOrmSkillContentSource } from './typeorm-skill-content-source';
 

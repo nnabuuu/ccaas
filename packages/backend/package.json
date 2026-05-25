@@ -23,7 +23,7 @@
     "solution:migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate-solution.ts"
   },
   "dependencies": {
-    "@kedge-agentic/agentfs-runtime": "*",
+    "@kedge-agentic/agent-runtime": "*",
     "@kedge-agentic/common": "^0.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@nestjs/common": "^10.3.0",

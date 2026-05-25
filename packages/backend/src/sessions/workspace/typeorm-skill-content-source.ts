@@ -1,6 +1,6 @@
 /**
  * TypeOrmSkillContentSource — TypeORM-backed adapter for
- * `ContentSource` (from @kedge-agentic/agentfs-runtime).
+ * `ContentSource` (from @kedge-agentic/agent-runtime).
  *
  * This is the *adapter* in the clean-architecture sense: it knows
  * about TypeORM, NestJS, our specific `Skill` / `SkillFile` / `McpServer`
@@ -26,7 +26,7 @@ import type {
   ContentSource,
   SkillContent,
   McpServerContent,
-} from '@kedge-agentic/agentfs-runtime';
+} from '@kedge-agentic/agent-runtime';
 
 import { Skill } from '../../skills/entities/skill.entity';
 import { McpServer } from '../../mcp/entities/mcp-server.entity';

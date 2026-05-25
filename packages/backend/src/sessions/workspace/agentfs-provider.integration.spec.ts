@@ -21,7 +21,7 @@ import * as path from 'node:path';
 import { Skill } from '../../skills/entities/skill.entity';
 import { SkillFile } from '../../skills/entities/skill-file.entity';
 import { McpServer } from '../../mcp/entities/mcp-server.entity';
-import { BaseMaterializer } from '@kedge-agentic/agentfs-runtime';
+import { BaseMaterializer } from '@kedge-agentic/agent-runtime';
 import { AgentfsWorkspaceProvider } from './agentfs-provider';
 
 const ENABLED = process.env.INTEGRATION_AGENTFS === '1';

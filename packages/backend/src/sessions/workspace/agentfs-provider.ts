@@ -30,7 +30,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 
-import { BaseMaterializer } from '@kedge-agentic/agentfs-runtime';
+import { BaseMaterializer } from '@kedge-agentic/agent-runtime';
 import type {
   CreateOpts, WorkspaceCapabilities, WorkspaceHandle, WorkspaceProvider,
   FsDiffEntry, FsTimelineEntry, TimelineOpts,
