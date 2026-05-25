@@ -71,6 +71,52 @@ export class ProjectController {
     return this.service.deleteFile(id, filePath);
   }
 
+  // ── Agent-runtime contract ──
+  // Three endpoints under /projects/:id/artifacts that ccaas's
+  // `RestProjectArtifactSource` calls at turn boundaries. Solutions wanting
+  // bidirectional agent↔GUI sync MUST satisfy this contract. See
+  // packages/backend/src/sessions/agent-runtime/rest-project-artifact-source.ts
+  // for the consumer.
+
+  /**
+   * Return all artifacts for the project with content inlined.
+   * Shape: [{ path, content, type }]
+   */
+  @Get(':id/artifacts')
+  listArtifacts(@Param('id') id: string) {
+    return this.service.listArtifactsWithContent(id);
+  }
+
+  /**
+   * Upsert one artifact. Creates if missing, overwrites if present.
+   * Body: { content: string, type: string, attributes?: object }
+   */
+  @Put(':id/artifacts')
+  @ApiQuery({ name: 'path', required: true })
+  upsertArtifact(
+    @Param('id') id: string,
+    @Query('path') filePath: string,
+    @Body() dto: { content: string; type: string; attributes?: Record<string, unknown> },
+  ) {
+    if (!filePath) {
+      throw new BadRequestException('Query parameter "path" is required');
+    }
+    return this.service.upsertArtifact(id, filePath, dto.content, dto.type);
+  }
+
+  /**
+   * Delete one artifact. Idempotent (404 is treated as already-deleted by
+   * the runtime adapter).
+   */
+  @Delete(':id/artifacts')
+  @ApiQuery({ name: 'path', required: true })
+  deleteArtifact(@Param('id') id: string, @Query('path') filePath: string) {
+    if (!filePath) {
+      throw new BadRequestException('Query parameter "path" is required');
+    }
+    return this.service.deleteFile(id, filePath);
+  }
+
   // ── Publish ──
 
   @Post(':id/publish')

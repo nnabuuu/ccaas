@@ -130,6 +130,68 @@ export class ProjectService {
     return this.fileRepo.save(file);
   }
 
+  /**
+   * Agent-runtime contract: list ALL project artifacts WITH content as a flat
+   * shape `{path, content, type, attributes?}[]`. Distinct from `listFiles`
+   * which is lightweight (no content) for the GUI's file tree.
+   *
+   * Called by ccaas's `RestProjectArtifactSource.loadArtifacts` at each turn
+   * boundary, so keep this query cheap. Live-lesson projects are small
+   * (5-10 files); a single SELECT * is fine.
+   */
+  async listArtifactsWithContent(
+    projectId: string,
+  ): Promise<Array<{ path: string; content: string; type: string }>> {
+    await this.ensureProject(projectId);
+    const rows = await this.fileRepo.find({
+      where: { projectId },
+      order: { path: 'ASC' },
+    });
+    return rows.map((r) => ({
+      path: r.path,
+      content: r.content,
+      type: r.fileType,
+    }));
+  }
+
+  /**
+   * Agent-runtime contract: upsert one artifact. Creates if not exists,
+   * overwrites if it does. Updates `fileType` on each call so the agent
+   * can promote a `.txt` to a `.md` by changing the path's extension.
+   *
+   * Called by ccaas's `RestProjectArtifactSource.saveArtifact` when the
+   * agent edits a file. Idempotent — repeating with the same content is
+   * a no-op-ish write.
+   */
+  async upsertArtifact(
+    projectId: string,
+    filePath: string,
+    content: string,
+    fileType: string,
+  ): Promise<void> {
+    await this.ensureProject(projectId);
+    const safePath = this.sanitizePath(filePath);
+    const existing = await this.fileRepo.findOne({
+      where: { projectId, path: safePath },
+    });
+    if (existing) {
+      existing.content = content;
+      existing.fileType = fileType;
+      existing.updatedAt = this.now();
+      await this.fileRepo.save(existing);
+    } else {
+      await this.fileRepo.save(
+        this.fileRepo.create({
+          projectId,
+          path: safePath,
+          content,
+          fileType,
+        }),
+      );
+    }
+    await this.projectRepo.update(projectId, { updatedAt: this.now() });
+  }
+
   async deleteFile(projectId: string, filePath: string): Promise<void> {
     const safePath = this.sanitizePath(filePath);
     const file = await this.fileRepo.findOne({ where: { projectId, path: safePath } });
