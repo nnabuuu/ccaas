@@ -11,7 +11,7 @@ import { SkillFile } from '../../skills/entities/skill-file.entity';
 import { McpServer } from '../../mcp/entities/mcp-server.entity';
 import { LocalWorkspaceProvider } from './local-provider';
 import { AgentfsWorkspaceProvider } from './agentfs-provider';
-import { BaseMaterializer } from './base-materializer';
+import { BaseMaterializer } from '@kedge-agentic/agentfs-runtime';
 import { WorkspaceProviderFactory } from './workspace-provider.factory';
 import { WORKSPACE_PROVIDER } from './types';
 

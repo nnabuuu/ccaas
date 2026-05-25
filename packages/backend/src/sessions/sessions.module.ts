@@ -40,7 +40,8 @@ import { SessionMetadataService } from './services/session-metadata.service';
 import { SessionMetadata } from './entities/session-metadata.entity';
 import { LocalWorkspaceProvider } from './workspace/local-provider';
 import { AgentfsWorkspaceProvider } from './workspace/agentfs-provider';
-import { BaseMaterializer } from './workspace/base-materializer';
+import { TypeOrmSkillContentSource } from './workspace/typeorm-skill-content-source';
+import { baseMaterializerProvider } from './workspace/base-materializer.factory';
 import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory';
 import { WORKSPACE_PROVIDER } from './workspace/types';
 import { SandboxService } from './sandbox/sandbox.service';
@@ -91,7 +92,8 @@ import { BundleModule } from '../bundles/bundle.module';
     SessionMetadataService,
     LocalWorkspaceProvider,
     AgentfsWorkspaceProvider,
-    BaseMaterializer,
+    TypeOrmSkillContentSource,
+    baseMaterializerProvider,
     WorkspaceProviderFactory,
     SandboxService,
   ],
