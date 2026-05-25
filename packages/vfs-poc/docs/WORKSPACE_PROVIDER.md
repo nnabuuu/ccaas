@@ -338,6 +338,34 @@ the [stage-1 quickstart](./STAGE1_LOCAL_SELFHOST.md).
 6. Code review on the diff
 7. VALIDATION_REPORT.md gets a v5 section: "WorkspaceProvider integration"
 
+## Runtime FS + metadata API (post-stage-1 polish)
+
+The `WorkspaceProvider` abstraction's *runtime* surface — what operators
+and solutions can call against a live session, beyond just getting the
+workspace path:
+
+| Endpoint | What | Backed by |
+|---|---|---|
+| `GET /api/v1/sessions/:id/fs/diff` | files changed in the delta vs base | `agentfs diff <delta-copy>` (snapshot-cp pattern to bypass FUSE lock) |
+| `GET /api/v1/sessions/:id/fs/timeline?limit=&filter=&status=` | tool-call audit log | `agentfs timeline --format json <delta-copy>` |
+| `POST /api/v1/sessions/:id/fs/snapshot` body: `{ label }` | checkpoint mutable state | `WorkspaceHandle.snapshot(label)` — daemon cycle + cp |
+| `POST /api/v1/sessions/:id/fs/rollback` body: `{ label }` → 204 | revert to a snapshot | `WorkspaceHandle.rollback(label)` |
+| `GET /api/v1/sessions/:id/meta` | list per-session metadata | backend SQLite `session_metadata` table |
+| `GET /api/v1/sessions/:id/meta/:key` | single metadata read | (same) |
+| `PUT /api/v1/sessions/:id/meta/:key` body: `{ value }` | upsert; 64KB/value, 256KB/session caps | (same) |
+| `DELETE /api/v1/sessions/:id/meta/:key` → 204 | remove key | (same) |
+
+All gated behind `Auth('admin')` + `TenantGuard` for stage-1. FS
+endpoints return 400 against `WORKSPACE_PROVIDER=local`. Metadata is
+provider-agnostic — backend-owned SQLite, decoupled from agentfs's
+internal KvStore so it works equally with both providers and outlives
+session cleanup. See [`STAGE1_LOCAL_SELFHOST.md`](./STAGE1_LOCAL_SELFHOST.md#inspect-what-the-agent-did--runtime-api)
+for curl examples.
+
+The demo-sandbox solution's frontend at `:3010` exposes the fs/diff
+output as a "FS changes" side panel that auto-refreshes per session
+run — useful as a visual sanity check.
+
 ## Risk register
 
 | # | Risk | Mitigation | Severity | Status |

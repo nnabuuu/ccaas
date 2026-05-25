@@ -100,6 +100,71 @@ with these names — collisions log a warning and the ccaas entry wins.
 | Linux: `fuse: device not found` | kernel module not loaded | `sudo modprobe fuse` |
 | Linux: permission denied accessing mount as non-root | missing `user_allow_other` in `/etc/fuse.conf` | uncomment that line and restart backend |
 
+## Inspect what the agent did — Runtime API
+
+Once a session is running (or recently completed but still in memory),
+the ccaas backend exposes the AgentFS observability + control surface:
+
+```bash
+KEY=sk-your-admin-key
+TENANT=demo-sandbox   # or your tenant slug
+SID=demo-1234         # the session id
+
+# 1. List every file the agent changed in its sandbox vs the base
+curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/diff" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" | python3 -m json.tool
+# → [ { op: "added", type: "file", path: "/_scratch/notes.md" }, ... ]
+
+# 2. Chronological tool-call log (mkdir / write / read / ...) recorded
+#    by AgentFS's built-in audit
+curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/timeline?limit=50" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" | python3 -m json.tool
+
+# 3. Checkpoint before a risky agent prompt; rollback if it goes wrong
+curl -s -X POST "http://localhost:3001/api/v1/sessions/$SID/fs/snapshot" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H 'Content-Type: application/json' \
+  -d '{"label":"before-risky"}'
+# (run another turn that might mess things up)
+curl -s -X POST "http://localhost:3001/api/v1/sessions/$SID/fs/rollback" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H 'Content-Type: application/json' \
+  -d '{"label":"before-risky"}'
+# → 204; subsequent fs/diff shows the post-rollback state
+```
+
+The demo-sandbox frontend at `:3010` ships with a "FS changes" side
+panel that auto-fetches this after each session run — easiest way to
+see the diff visually before reaching for curl.
+
+### Per-session metadata KV (backend-owned, provider-agnostic)
+
+Stash workflow state without polluting the agent's FS view:
+
+```bash
+# Set
+curl -s -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/step" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H 'Content-Type: application/json' \
+  -d '{"value":{"current":3,"total":10}}'
+# → { key, value: {current:3,total:10}, updatedAt }
+
+# Read
+curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/step" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT"
+
+# List all keys
+curl -s "http://localhost:3001/api/v1/sessions/$SID/meta" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT"
+
+# Delete
+curl -s -X DELETE "http://localhost:3001/api/v1/sessions/$SID/meta/step" \
+  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT"
+```
+
+Caps: 64 KB per value, 256 KB total per session. Larger payloads
+belong in the session FS, not the KV.
+
 ## What stage-1 does NOT give you
 
 These are out of scope for local self-host and remain backlogged:
