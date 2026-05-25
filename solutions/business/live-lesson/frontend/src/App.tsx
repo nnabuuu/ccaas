@@ -3,6 +3,7 @@ import CourseSelectionPage from './pages/CourseSelectionPage'
 import TeacherPage from './pages/TeacherPage'
 import DemoPage from './pages/DemoPage'
 import PluginPreviewPage from './pages/PluginPreviewPage'
+import TaskDemoPage from './pages/TaskDemoPage'
 import JoinPage from './pages/JoinPage'
 import SessionPage from './pages/SessionPage'
 import HowToJoinPage from './pages/HowToJoinPage'
@@ -17,6 +18,8 @@ function App() {
       <Route path="/session/:sessionId/watch" element={<TeacherPage />} />
       <Route path="/session/:sessionId/demo" element={<DemoPage />} />
       <Route path="/exercise-demo" element={<PluginPreviewPage />} />
+      <Route path="/task-demo/:code" element={<TaskDemoPage />} />
+      <Route path="/task-demo/:code/:mode" element={<TaskDemoPage />} />
       <Route path="/how-to-join" element={<HowToJoinPage />} />
       <Route path="/sessions" element={<SessionListPage />} />
     </Routes>
