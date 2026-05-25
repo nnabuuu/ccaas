@@ -1025,7 +1025,9 @@ const guidedDiscoveryPlugin: ExerciseUIPlugin = {
     if (ak.gdTitle) ex.gdTitle = ak.gdTitle
     else if (ak.title) ex.gdTitle = ak.title
     if (ak.gdSteps) ex.gdSteps = ak.gdSteps
+    else if (ak.steps) ex.gdSteps = ak.steps
     if (ak.gdSummary) ex.gdSummary = ak.gdSummary
+    else if (ak.summary) ex.gdSummary = ak.summary
   },
 }
 
