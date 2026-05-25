@@ -124,24 +124,56 @@ public deploy (`?token=<jwt>` on `/respondents` + `/replay/:studentId`).
       per-student soft cap (e.g. 200 attempts → 429) protects against
       script loops bloating `task_demo_attempts`.
 
+### Demo-readiness by exercise type
+
+| Type | `/task-demo` ready? | Notes |
+|---|---|---|
+| `quiz` | ✅ | Default path |
+| `match` | ✅ | Default path |
+| `order` | ✅ | Default path |
+| `stance` | ✅ | Default path |
+| `matrix` | ✅ | Default path |
+| `map` | ✅ | Default path |
+| `fill-blank` | ✅ | Default path |
+| `select-evidence` | ✅ | selfManagedSubmit; submit wired via `props.submit` |
+| `image-upload` | ⚠️ | Renders, but AI grading requires live LLM — verify env |
+| `rich-content-quiz` | ❌ | See gap below |
+| `guided-discovery` | ❌ | See gap below |
+
 ### Known gaps
 
-- [ ] **Rich-content-quiz scaffold flow is unsupported in AnswerMode.**
-      Production `POST /submit` returns `scaffold` / `partId` /
-      `nextPartId` / `sampleSolution` which drive the multi-part
-      walkthrough. `/api/task-demo/:code/submit` returns only
-      `{attempt, score, allCorrect, items}`, so the scaffold branch
-      no-ops and every submit jumps to "correct". For now, sales should
-      not share a rich-content-quiz `/task-demo` link with customers —
-      use `/exercise-demo` (bundle-based) instead, or stick to
-      quiz / match / select-evidence / matrix / map / stance / order /
-      fill-blank / guided-discovery.
+- [ ] **rich-content-quiz scaffold flow is unsupported.**
+      `RichContentQuizExercise` calls `useContext(SessionCtx).submit`
+      and reads `result.scaffold` / `result.partId` /
+      `result.nextPartId` / `result.sampleSolution` to drive its
+      multi-part walkthrough. The task-demo `ctx.submit` (in
+      `TaskDemoSessionProvider`) returns only `{ok, score}` — those
+      fields are always undefined, so the plugin treats every submit
+      as "all correct, advance" and the multi-part flow collapses.
+      Sales should send rich-content-quiz demos via `/exercise-demo`
+      (bundle-based) instead.
+- [ ] **guided-discovery has no working submit path in `/task-demo`.**
+      `GdPluginComp` in `built-in.tsx` doesn't call `props.submit` or
+      `ctx.submit`; in production the multi-step grading runs through
+      `PracticePhase`'s centralized SubmitBar instead, but task-demo
+      hides that bar (`selfManagedSubmit: true`). Result: clicking
+      through derivation steps in `/task-demo/<code>?user=...` does
+      nothing — no attempt persists, replay is empty. Same recommendation
+      as above: use `/exercise-demo` until task-demo special-cases
+      guided-discovery (either render the SubmitBar even for
+      selfManagedSubmit plugins, or route grading through a custom
+      submit hook).
 - [ ] **`sanitizeManifest` is block-list based** — it strips
       `discuss.systemPrompt` / `discuss.goal` + per-step answerKey, but
       anything new added to the manifest (e.g. `teacherView`,
       `instructorNotes`, `evalRubric`, lesson-level `coachingPrompt`)
       will leak through to the unauthenticated task-demo URL. Switch to
       an allow-list, or add a `sanitizeForPublicShare()` wrapper.
+- [ ] **`plugins/types.ts` declares `submit?: (step, data) => void`,
+      production reality is `Promise<SubmitResult>`.** The two
+      interfaces have drifted. Update the prop type so plugins that
+      need the result (rich-content-quiz) can read it safely without
+      `as any`. (Out of scope for task-demo — fix in production code.)
 
 ### Nice-to-have
 

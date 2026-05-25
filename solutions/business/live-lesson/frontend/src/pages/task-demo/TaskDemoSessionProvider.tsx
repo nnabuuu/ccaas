@@ -36,12 +36,22 @@ export function TaskDemoSessionProvider({
     restoredSubmissions: {},
     discussMeta: null,
     submit: async (_step, data) => {
-      const result = await taskDemoApi.submit(code, studentId, data)
-      onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as Record<string, unknown> | null, items: result.items })
-      // SubmitResult has more optional fields (scaffold / partId / etc.)
-      // we never produce for task-demo — leave them undefined.
-      const ret: SubmitResult = { ok: true, score: result.score as Record<string, unknown> | null }
-      return ret
+      // Catch network / 4xx / 5xx so callers like RichContentQuizExercise
+      // (which has only try/finally for the submitting flag) get a
+      // failed-but-not-rejected result they can branch on via `ok`.
+      try {
+        const result = await taskDemoApi.submit(code, studentId, data)
+        onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as Record<string, unknown> | null, items: result.items })
+        // SubmitResult has more optional fields (scaffold / partId / etc.)
+        // we never produce for task-demo — leave them undefined.
+        const ret: SubmitResult = { ok: true, score: result.score as Record<string, unknown> | null }
+        return ret
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[task-demo] ctx.submit failed:', err)
+        const failed: SubmitResult = { ok: false, score: null }
+        return failed
+      }
     },
   }
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>

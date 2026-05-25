@@ -183,8 +183,12 @@ function ExerciseSurface({
         checkResultState={checkResultState}
         setCheckResultState={setCheckResultState}
         onDone={() => { setAllDone(true); setSoftDone(true) }}
-        stepIdx={0}
-        taskId={1}
+        // Forward the actual lesson step. Plugins like rich-content-quiz
+        // pass it to ctx.submit as the `step` arg — backend ignores
+        // (currentStep is the source of truth) but matching production
+        // shape avoids surprises if anyone ever adds step-aware logic.
+        stepIdx={spec.step}
+        taskId={spec.step}
         locale="zh"
         onOverlayChange={setOverlay}
         submit={pluginSubmit}
