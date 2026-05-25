@@ -339,10 +339,11 @@ export class SessionAssetSyncer {
    * Slugs are stable per tenant in practice (renaming would break
    * sessionId references), so cache invalidation is a non-goal.
    *
-   * TODO(phase-2): if the tenants REST API ever exposes mid-run slug
-   * rename, expose a `flushTenantCache(tenantId)` and have the tenant
-   * update path call it. Until then, long-lived backend processes that
-   * see a slug rename require a restart for the routing to refresh.
+   * Phase 2 enhancement: if the tenants REST API ever exposes mid-run
+   * slug rename, expose a `flushTenantCache(tenantId)` and have the
+   * tenant update path call it. Until then, long-lived backend processes
+   * that see a slug rename require a restart for the routing to refresh.
+   * Tracked in docs/AGENT_RUNTIME_DESIGN.md § Open design questions.
    */
   private async resolveSlug(tenantId: string | undefined): Promise<string | null> {
     if (!tenantId) return null;

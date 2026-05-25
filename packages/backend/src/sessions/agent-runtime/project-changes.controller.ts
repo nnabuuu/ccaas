@@ -66,12 +66,25 @@ export class ProjectChangesController {
       const unsubscribe = this.changes.subscribe(projectId, (ev: ChangeEvent) => {
         subscriber.next({ data: ev });
       });
-      // initial keep-alive comment + welcome event so the GUI knows the
-      // subscription is live even before the first real change.
-      subscriber.next({ data: { projectId, kind: 'subscribed', at: new Date().toISOString() } as any });
+      // Initial keep-alive welcome event so the GUI knows the subscription
+      // is live even before the first real change. SSE `data` accepts
+      // string | object — Record<string, unknown> is fine and lets us
+      // include arbitrary metadata without an `as any` escape.
+      const welcome: Record<string, unknown> = {
+        projectId,
+        kind: 'subscribed',
+        at: new Date().toISOString(),
+      };
+      subscriber.next({ data: welcome });
       // Heartbeat every 30s so intermediate proxies don't time out.
       const heartbeat = setInterval(
-        () => subscriber.next({ data: { kind: 'heartbeat', at: new Date().toISOString() } as any }),
+        () => {
+          const beat: Record<string, unknown> = {
+            kind: 'heartbeat',
+            at: new Date().toISOString(),
+          };
+          subscriber.next({ data: beat });
+        },
         30_000,
       );
       return () => {
