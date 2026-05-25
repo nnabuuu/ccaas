@@ -31,6 +31,32 @@ import * as path from 'node:path';
 import type { ContentSource, MaterializeResult } from './types.js';
 import { noopLogger, type Logger } from './logger.js';
 
+/**
+ * Reject a `SkillFileContent.relativePath` that would escape the
+ * skill's own directory via `..` segments or absolute prefixes.
+ * Defense in depth — adapters should sanitize too, but skill content
+ * ultimately comes from tenant-authored input via the skills API, and
+ * the materializer writes as the backend process. Returns the safe
+ * absolute path or throws.
+ */
+function safeJoinUnderDir(parentDir: string, relativePath: string): string {
+  if (path.isAbsolute(relativePath)) {
+    throw new Error(
+      `unsafe relativePath: must be relative, got absolute "${relativePath}"`,
+    );
+  }
+  const joined = path.resolve(parentDir, relativePath);
+  // resolve normalizes '..' segments — verify the result stays under parent.
+  // Use path.sep + path.relative for cross-platform correctness.
+  const rel = path.relative(parentDir, joined);
+  if (rel === '' || rel.startsWith('..') || path.isAbsolute(rel)) {
+    throw new Error(
+      `unsafe relativePath: escapes parent dir, got "${relativePath}"`,
+    );
+  }
+  return joined;
+}
+
 export class BaseMaterializer {
   constructor(
     private readonly contentSource: ContentSource,
@@ -66,7 +92,19 @@ export class BaseMaterializer {
       skillsWritten++;
 
       for (const f of s.files) {
-        this.writeIfChanged(path.join(skillDir, f.relativePath), f.content);
+        let target: string;
+        try {
+          target = safeJoinUnderDir(skillDir, f.relativePath);
+        } catch (err) {
+          // Skip + log loudly. Don't throw — one bad skill file shouldn't
+          // halt materialization of every other skill in the source.
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.warn(
+            `skill ${s.tenantId}/${s.slug}: ignoring file ${JSON.stringify(f.relativePath)} — ${msg}`,
+          );
+          continue;
+        }
+        this.writeIfChanged(target, f.content);
         skillFilesWritten++;
       }
     }

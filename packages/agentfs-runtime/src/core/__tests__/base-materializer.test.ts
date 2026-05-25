@@ -25,21 +25,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { BaseMaterializer } from '../base-materializer.js';
-import type {
-  ContentSource,
-  SkillContent,
-  McpServerContent,
-} from '../types.js';
+import { InMemoryContentSource } from '../../testing/in-memory-content-source.js';
+import type { ContentSource } from '../types.js';
 import type { Logger } from '../logger.js';
-
-class InMemoryContentSource implements ContentSource {
-  constructor(
-    private readonly skills: ReadonlyArray<SkillContent> = [],
-    private readonly mcps: ReadonlyArray<McpServerContent> = [],
-  ) {}
-  async listActiveSkills() { return this.skills; }
-  async listActiveMcpServers() { return this.mcps; }
-}
 
 function captureLogger(): Logger & { entries: string[] } {
   const entries: string[] = [];
@@ -173,5 +161,51 @@ describe('BaseMaterializer', () => {
   it('getBaseDir reflects the constructor arg verbatim', () => {
     const bm = new BaseMaterializer(new InMemoryContentSource(), '/some/where');
     expect(bm.getBaseDir()).toBe('/some/where');
+  });
+
+  // ─── path-traversal defense in depth ───────────────────────────────────
+
+  describe('skill file relativePath safety', () => {
+    function withTraversal(relativePath: string) {
+      return new InMemoryContentSource([
+        { id: 's1', tenantId: 't1', slug: 'hello', name: '', content: '',
+          files: [
+            { relativePath: 'safe.md', content: 'safe' },
+            { relativePath, content: 'pwned' },
+          ],
+        },
+      ]);
+    }
+
+    it('skips files whose relativePath contains `..` segments', async () => {
+      const logger = captureLogger();
+      const r = await new BaseMaterializer(
+        withTraversal('../../etc/passwd'), baseDir, logger,
+      ).materialize();
+      expect(r.skillFilesWritten).toBe(1); // only safe.md
+      expect(fs.existsSync(path.join(baseDir, 'etc/passwd'))).toBe(false);
+      // and we logged loudly
+      expect(logger.entries.some((e) => e.startsWith('WARN') && e.includes('escapes parent dir'))).toBe(true);
+    });
+
+    it('skips files whose relativePath is absolute', async () => {
+      const logger = captureLogger();
+      await new BaseMaterializer(
+        withTraversal('/etc/passwd'), baseDir, logger,
+      ).materialize();
+      expect(fs.existsSync('/etc/passwd-pwned-by-test')).toBe(false);
+      expect(logger.entries.some((e) => e.includes('must be relative'))).toBe(true);
+    });
+
+    it('continues materializing the rest of the source after a bad file', async () => {
+      const r = await new BaseMaterializer(
+        withTraversal('../escape.md'), baseDir,
+      ).materialize();
+      // safe.md still written
+      expect(fs.readFileSync(
+        path.join(baseDir, 'tenants/t1/skills/hello/safe.md'),
+        'utf8',
+      )).toBe('safe');
+    });
   });
 });
