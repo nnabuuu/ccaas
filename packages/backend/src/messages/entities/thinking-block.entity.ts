@@ -19,7 +19,7 @@ export type ThinkingStatus = 'in_progress' | 'complete' | 'interrupted';
 @Index('IDX_thinking_blocks_session_created_at', ['sessionId', 'createdAt'])
 @Index('IDX_thinking_blocks_message_id', ['messageId'])
 @Index('IDX_thinking_blocks_thinking_id', ['thinkingId'])
-@Index('IDX_thinking_blocks_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_thinking_blocks_tenant_created_at', ['solutionId', 'createdAt'])
 export class ThinkingBlock {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -33,11 +33,11 @@ export class ThinkingBlock {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_thinking_blocks_tenant_id')
-  tenantId?: string;
+  solutionId?: string;
 
   /**
    * Unique identifier for this thinking block (links start/delta/end events)

@@ -6,8 +6,8 @@
  *   PUT    /api/v1/sessions/:id/meta/:key   body: { value: unknown }
  *   DELETE /api/v1/sessions/:id/meta/:key   → 204
  *
- * Auth: `Auth('admin')` for stage-1. Tenant ownership enforced by the
- * service against the session's in-memory tenantId.
+ * Auth: `Auth('admin')` for stage-1. Solution ownership enforced by the
+ * service against the session's in-memory solutionId.
  */
 
 import {
@@ -23,8 +23,8 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Auth } from '../auth/decorators';
-import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
-import { TenantGuard } from '../tenants/tenant.guard';
+import { CurrentTenant } from '../common/decorators/current-solution.decorator';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
 import { SessionMetadataService } from './services/session-metadata.service';
 
 interface ValueBody {
@@ -33,45 +33,45 @@ interface ValueBody {
 
 @ApiTags('sessions-meta')
 @Controller('api/v1/sessions/:id/meta')
-@UseGuards(TenantGuard)
+@UseGuards(SolutionAuthGuard)
 export class SessionMetadataController {
   constructor(private readonly svc: SessionMetadataService) {}
 
   @Get()
   @Auth('admin')
-  list(@CurrentTenant() tenantId: string, @Param('id') id: string) {
-    return this.svc.list(id, tenantId);
+  list(@CurrentTenant() solutionId: string, @Param('id') id: string) {
+    return this.svc.list(id, solutionId);
   }
 
   @Get(':key')
   @Auth('admin')
   get(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('key') key: string,
   ) {
-    return this.svc.get(id, tenantId, key);
+    return this.svc.get(id, solutionId, key);
   }
 
   @Put(':key')
   @Auth('admin')
   put(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('key') key: string,
     @Body() body: ValueBody,
   ) {
-    return this.svc.put(id, tenantId, key, body?.value);
+    return this.svc.put(id, solutionId, key, body?.value);
   }
 
   @Delete(':key')
   @Auth('admin')
   @HttpCode(204)
   async delete(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('key') key: string,
   ): Promise<void> {
-    await this.svc.delete(id, tenantId, key);
+    await this.svc.delete(id, solutionId, key);
   }
 }

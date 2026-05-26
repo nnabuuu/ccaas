@@ -23,7 +23,7 @@ src/
 ├── skills/            # Skill CRUD, versioning, routing
 ├── mcp/               # MCP server pool, REST adapter
 ├── scheduler/         # Cron/interval/once task execution
-├── tenants/           # Multi-tenancy
+├── solutions/         # Solution CRUD (entity formerly known as Tenant; renamed in α)
 ├── messages/          # Message persistence
 ├── files/             # File management
 ├── hooks/             # Tool hooks
@@ -33,7 +33,7 @@ src/
 ## Key Modules
 
 - **ChatModule** — SSE endpoints for session messages, events, cancellation. Socket.IO gateway is deprecated. See [gitbook SSE docs](../../docs/designs/).
-- **AuthModule** — API key + 10 scopes (`chat`, `skills:*`, `mcp:*`, `admin`, `builder`, `analytics:read`). Decorators: `@Public()`, `@Auth('scope')`, `@TenantId()`. Includes Dev Login (`POST /auth/login`, non-production only) and User Management (`/users`, `/users/tenants`). See [docs/AUTHENTICATION_AND_AUTHORIZATION.md](./docs/AUTHENTICATION_AND_AUTHORIZATION.md).
+- **AuthModule** — API key + 10 scopes (`chat`, `skills:*`, `mcp:*`, `admin`, `builder`, `analytics:read`). Decorators: `@Public()`, `@Auth('scope')`, `@SolutionId()`. Includes Dev Login (`POST /auth/login`, non-production only) and User Management (`/users`, `/users/solutions`). See [docs/AUTHENTICATION_AND_AUTHORIZATION.md](./docs/AUTHENTICATION_AND_AUTHORIZATION.md).
 - **SkillsModule** — CRUD, versioning, trigger-based routing. Register skills: `npm run skill:import -- <solution-name>`. See [docs/SKILL_REGISTRATION.md](./docs/SKILL_REGISTRATION.md).
 - **McpModule** — Server pool lifecycle, health checks, REST-to-MCP adapter. See [docs/MCP_SETUP_AND_TESTING.md](./docs/MCP_SETUP_AND_TESTING.md).
 - **SchedulerModule** — Cron/interval/once tasks, headless AgentEngine execution, retry logic, missed-run detection.
@@ -85,7 +85,7 @@ Operator quickstart: **[gitbook → 本地自托管](../../docs/gitbook/zh/getti
 
 ## Database Schema
 
-TypeORM + SQLite (upgradeable to PostgreSQL): `tenants`, `users`, `user_tenants`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`.
+TypeORM + SQLite (upgradeable to PostgreSQL): `solutions` (formerly `tenants`), `users`, `user_solutions`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`. Note: α renamed the entity but the env var name `CCAAS_API_KEY` and a few legacy fields (e.g. `SkillContent.tenantId` in the agent-runtime npm port) stay as-is intentionally.
 
 ## Development Commands
 

@@ -320,7 +320,7 @@ describe('FilesController', () => {
         mockMulterFile.originalname,
         'session-1',
         null, // messageId should be null
-        undefined, // tenantId
+        undefined, // solutionId
         undefined, // targetPath
         expect.stringContaining('sessions/session-1'), // fallback workspaceDir
       );

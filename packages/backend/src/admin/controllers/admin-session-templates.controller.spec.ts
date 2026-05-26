@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminSessionTemplatesController } from './admin-session-templates.controller';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { AuditService } from '../services/audit.service';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import type { RequestContext } from '../../auth/types';
 
 const TENANT_ID = 'tenant-uuid-1234';
@@ -32,7 +32,7 @@ const mockCtx: RequestContext = { apiKeyId: 'admin-key-id' } as RequestContext;
 
 describe('AdminSessionTemplatesController', () => {
   let controller: AdminSessionTemplatesController;
-  let tenantsService: jest.Mocked<TenantsService>;
+  let tenantsService: jest.Mocked<SolutionsService>;
   let auditService: jest.Mocked<AuditService>;
 
   beforeEach(async () => {
@@ -40,7 +40,7 @@ describe('AdminSessionTemplatesController', () => {
       controllers: [AdminSessionTemplatesController],
       providers: [
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: {
             findOne: jest.fn(),
             update: jest.fn().mockResolvedValue({}),
@@ -58,12 +58,12 @@ describe('AdminSessionTemplatesController', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(AdminTenantAccessGuard)
+      .overrideGuard(AdminSolutionAccessGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
     controller = module.get(AdminSessionTemplatesController);
-    tenantsService = module.get(TenantsService) as jest.Mocked<TenantsService>;
+    tenantsService = module.get(SolutionsService) as jest.Mocked<SolutionsService>;
     auditService = module.get(AuditService) as jest.Mocked<AuditService>;
   });
 

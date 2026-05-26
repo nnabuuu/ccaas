@@ -22,10 +22,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { ApiKeyService } from '../../auth/api-key.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { AuditService } from '../services/audit.service';
 import { CreateApiKeyAdminDto } from '../dto/create-api-key-admin.dto';
 import {
@@ -41,11 +41,11 @@ const UUID_REGEX =
 @ApiTags('admin')
 @Controller('api/v1/admin/api-keys')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminApiKeysController {
   constructor(
     private readonly apiKeyService: ApiKeyService,
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -56,7 +56,7 @@ export class AdminApiKeysController {
    */
   @Get()
   async findAll(
-    @Query('tenantId') tenantId: string,
+    @Query('solutionId') solutionId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
   ): Promise<{
@@ -65,15 +65,15 @@ export class AdminApiKeysController {
     page: number;
     limit: number;
   }> {
-    // Validate tenantId is required
-    if (!tenantId) {
-      throw new BadRequestException('tenantId query parameter is required');
+    // Validate solutionId is required
+    if (!solutionId) {
+      throw new BadRequestException('solutionId query parameter is required');
     }
 
     // Validate tenant exists
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Parse and validate pagination
@@ -117,7 +117,7 @@ export class AdminApiKeysController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && apiKey.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && apiKey.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this API key');
     }
 
@@ -137,9 +137,9 @@ export class AdminApiKeysController {
     @Ctx() ctx: RequestContext,
   ): Promise<CreateApiKeyResponse & { warning: string }> {
     // Validate tenant exists
-    const tenant = await this.tenantsService.findOne(dto.tenantId);
+    const tenant = await this.tenantsService.findOne(dto.solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${dto.tenantId}`);
+      throw new NotFoundException(`Solution not found: ${dto.solutionId}`);
     }
 
     // Create the API key
@@ -151,7 +151,7 @@ export class AdminApiKeysController {
       action: 'apikey.create',
       targetType: 'apikey',
       targetId: result.apiKey.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         name: dto.name,
         keyPrefix: result.apiKey.keyPrefix,
@@ -191,7 +191,7 @@ export class AdminApiKeysController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && previous.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && previous.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this API key');
     }
 
@@ -204,7 +204,7 @@ export class AdminApiKeysController {
       action: 'apikey.update',
       targetType: 'apikey',
       targetId: id,
-      tenantId: previous.tenantId,
+      solutionId: previous.solutionId,
       metadata: {
         previousValue: {
           name: previous.name,
@@ -250,7 +250,7 @@ export class AdminApiKeysController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && existing.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this API key');
     }
 
@@ -268,7 +268,7 @@ export class AdminApiKeysController {
       action: 'apikey.revoke',
       targetType: 'apikey',
       targetId: id,
-      tenantId: existing.tenantId,
+      solutionId: existing.solutionId,
       metadata: {
         keyPrefix: existing.keyPrefix,
         name: existing.name,
@@ -300,7 +300,7 @@ export class AdminApiKeysController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && existing.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this API key');
     }
 
@@ -310,7 +310,7 @@ export class AdminApiKeysController {
       action: 'apikey.delete',
       targetType: 'apikey',
       targetId: id,
-      tenantId: existing.tenantId,
+      solutionId: existing.solutionId,
       metadata: {
         keyPrefix: existing.keyPrefix,
         name: existing.name,

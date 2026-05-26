@@ -79,7 +79,7 @@ export class HeadlessExecutionService {
       try {
         const syncResult = await this.skillSyncService.syncToSession(
           sessionWorkspace,
-          task.tenantId,
+          task.solutionId,
           {
             publishedOnly: true,
             skillSlugs: task.enabledSkills,
@@ -131,7 +131,7 @@ export class HeadlessExecutionService {
         if (buffer.trim()) {
           try {
             const cliEvent: CLIEvent = JSON.parse(buffer);
-            this.processEvent(cliEvent, sessionId, task.tenantId, result, onEvent);
+            this.processEvent(cliEvent, sessionId, task.solutionId, result, onEvent);
           } catch {
             // Ignore incomplete JSON
           }
@@ -198,7 +198,7 @@ export class HeadlessExecutionService {
           if (!line.trim()) continue;
           try {
             const cliEvent: CLIEvent = JSON.parse(line);
-            this.processEvent(cliEvent, sessionId, task.tenantId, result, onEvent);
+            this.processEvent(cliEvent, sessionId, task.solutionId, result, onEvent);
           } catch {
             this.logger.warn(`Failed to parse headless CLI output: ${line.slice(0, 100)}...`);
           }
@@ -227,7 +227,7 @@ export class HeadlessExecutionService {
   async executeJob(
     params: {
       sessionId: string;
-      tenantId: string;
+      solutionId: string;
       prompt: string;
       mcpServers?: Record<string, unknown>;
       enabledSkills?: string[];
@@ -235,7 +235,7 @@ export class HeadlessExecutionService {
     options?: HeadlessExecuteOptions,
     onEvent?: (event: SessionEvent) => void,
   ): Promise<HeadlessResult> {
-    const { sessionId, tenantId, prompt, mcpServers, enabledSkills } = params;
+    const { sessionId, solutionId, prompt, mcpServers, enabledSkills } = params;
     const timeoutMs = options?.timeoutMs ?? 600000;
     const preserveWorkspace = options?.preserveWorkspace ?? false;
     const resumeSessionId = options?.resumeSessionId;
@@ -262,7 +262,7 @@ export class HeadlessExecutionService {
       try {
         const syncResult = await this.skillSyncService.syncToSession(
           sessionWorkspace,
-          tenantId,
+          solutionId,
           { publishedOnly: true, skillSlugs: enabledSkills },
         );
         this.logger.log(`Synced ${syncResult.skillCount} skills for job session ${sessionId}`);
@@ -312,7 +312,7 @@ export class HeadlessExecutionService {
         if (buffer.trim()) {
           try {
             const cliEvent: CLIEvent = JSON.parse(buffer);
-            this.processEvent(cliEvent, sessionId, tenantId, result, onEvent);
+            this.processEvent(cliEvent, sessionId, solutionId, result, onEvent);
           } catch {
             // Ignore incomplete JSON
           }
@@ -376,7 +376,7 @@ export class HeadlessExecutionService {
           if (!line.trim()) continue;
           try {
             const cliEvent: CLIEvent = JSON.parse(line);
-            this.processEvent(cliEvent, sessionId, tenantId, result, onEvent);
+            this.processEvent(cliEvent, sessionId, solutionId, result, onEvent);
           } catch {
             this.logger.warn(`Failed to parse job CLI output: ${line.slice(0, 100)}...`);
           }
@@ -401,14 +401,14 @@ export class HeadlessExecutionService {
   private processEvent(
     cliEvent: CLIEvent,
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     result: HeadlessResult,
     onEvent?: (event: SessionEvent) => void,
   ): void {
     const frontendEvents = this.eventMapperService.mapToSessionEvents(
       cliEvent,
       sessionId,
-      `scheduled_${tenantId}`,
+      `scheduled_${solutionId}`,
     );
 
     for (const event of frontendEvents) {

@@ -37,13 +37,13 @@ export class SchedulerController {
 
   @Get()
   async findAll(
-    @Query('tenantId') tenantId?: string,
+    @Query('solutionId') solutionId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.schedulerService.findAll({
-      tenantId,
+      solutionId,
       status,
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,

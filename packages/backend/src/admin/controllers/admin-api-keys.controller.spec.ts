@@ -6,9 +6,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminApiKeysController } from './admin-api-keys.controller';
 import { ApiKeyService } from '../../auth/api-key.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { AuditService } from '../services/audit.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 import type { RequestContext, ApiKeyScope } from '../../auth/types';
 import type {
   ApiKeyResponse,
@@ -18,13 +18,13 @@ import type {
 describe('AdminApiKeysController', () => {
   let controller: AdminApiKeysController;
   let apiKeyService: jest.Mocked<ApiKeyService>;
-  let tenantsService: jest.Mocked<TenantsService>;
+  let tenantsService: jest.Mocked<SolutionsService>;
   let auditService: jest.Mocked<AuditService>;
 
   const mockTenant = {
     id: 'tenant-uuid',
     slug: 'default',
-    name: 'Default Tenant',
+    name: 'Default Solution',
     status: 'active',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -32,7 +32,7 @@ describe('AdminApiKeysController', () => {
 
   const mockApiKeyResponse: ApiKeyResponse = {
     id: 'key-uuid',
-    tenantId: 'tenant-uuid',
+    solutionId: 'tenant-uuid',
     name: 'Test Key',
     keyPrefix: 'sk-default-abc',
     scopes: ['chat', 'skills:read'] as ApiKeyScope[],
@@ -62,7 +62,7 @@ describe('AdminApiKeysController', () => {
   };
 
   const mockContext: RequestContext = {
-    tenantId: 'tenant-uuid',
+    solutionId: 'tenant-uuid',
     tenant: mockTenant as any,
     apiKeyId: 'admin-key-uuid',
     apiKeyScopes: ['admin'] as ApiKeyScope[],
@@ -94,15 +94,15 @@ describe('AdminApiKeysController', () => {
       controllers: [AdminApiKeysController],
       providers: [
         { provide: ApiKeyService, useValue: mockApiKeyService },
-        { provide: TenantsService, useValue: mockTenantsService },
+        { provide: SolutionsService, useValue: mockTenantsService },
         { provide: AuditService, useValue: mockAuditService },
-        { provide: UserTenantService, useValue: { findUserInTenant: jest.fn() } },
+        { provide: UserSolutionService, useValue: { findUserInTenant: jest.fn() } },
       ],
     }).compile();
 
     controller = module.get<AdminApiKeysController>(AdminApiKeysController);
     apiKeyService = module.get(ApiKeyService);
-    tenantsService = module.get(TenantsService);
+    tenantsService = module.get(SolutionsService);
     auditService = module.get(AuditService);
   });
 
@@ -128,7 +128,7 @@ describe('AdminApiKeysController', () => {
       });
     });
 
-    it('should throw BadRequestException when tenantId missing', async () => {
+    it('should throw BadRequestException when solutionId missing', async () => {
       await expect(controller.findAll('', '1', '50')).rejects.toThrow(
         BadRequestException,
       );
@@ -197,7 +197,7 @@ describe('AdminApiKeysController', () => {
 
   describe('create', () => {
     const createDto = {
-      tenantId: 'tenant-uuid',
+      solutionId: 'tenant-uuid',
       name: 'Test Key',
       scopes: ['chat', 'skills:read'] as ApiKeyScope[],
     };
@@ -234,7 +234,7 @@ describe('AdminApiKeysController', () => {
         action: 'apikey.create',
         targetType: 'apikey',
         targetId: 'key-uuid',
-        tenantId: 'tenant-uuid',
+        solutionId: 'tenant-uuid',
         metadata: expect.objectContaining({
           name: 'Test Key',
           keyPrefix: 'sk-default-abc',

@@ -113,7 +113,7 @@ export const SessionTemplateSchema = z.object({
 // ============================================================================
 
 /**
- * Tenant configuration - identifies the solution on the platform
+ * Solution configuration - identifies the solution on the platform
  */
 export const TenantConfigSchema = z.object({
   name: z.string().min(1),
@@ -326,7 +326,7 @@ export const SolutionConfigV3Schema = z.object({
   schemaVersion: z.literal('3.0'),
 
   // ============ CCAAS Core Configuration ============
-  /** Tenant identification - required by CCAAS Core */
+  /** Solution identification - required by CCAAS Core */
   tenant: TenantConfigSchema,
 
   /**
@@ -373,7 +373,7 @@ export const SolutionConfigV3Schema = z.object({
    * `tenant.config.artifactUrl`; `ProjectArtifactSourceRegistry` reads
    * it at session-sync time and routes per session's tenant.slug.
    *
-   * Mutable at runtime via `PUT /tenants/:id { config: { artifactUrl } }`
+   * Mutable at runtime via `PUT /solutions/:id { config: { artifactUrl } }`
    * — registry cache invalidates via the `tenant.config.changed` event.
    *
    * Optional: solutions without bidirectional sync just omit it.
@@ -407,7 +407,7 @@ export type SolutionConfigV1 = z.infer<typeof SolutionConfigV1Schema>;
 /** Skill reference (v3) */
 export type SkillReferenceV3 = z.infer<typeof SkillReferenceV3Schema>;
 
-/** Tenant configuration */
+/** Solution configuration */
 export type TenantConfig = z.infer<typeof TenantConfigSchema>;
 
 /** Discovery configuration */

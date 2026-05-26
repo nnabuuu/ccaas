@@ -14,7 +14,7 @@ describe('BuilderApiKeysController', () => {
   let auditService: any;
 
   const builderCtx: RequestContext = {
-    tenantId: 'default',
+    solutionId: 'default',
     tenant: { id: 'default' } as any,
     apiKeyId: 'key-builder',
     apiKeyScopes: ['builder'],
@@ -138,7 +138,7 @@ describe('BuilderApiKeysController', () => {
   // ── update ──────────────────────────────────────────────────────────
 
   it('should update key for owned tenant', async () => {
-    apiKeyService.findById.mockResolvedValue({ id: 'k1', tenantId: 't1', name: 'Old', scopes: ['chat'] });
+    apiKeyService.findById.mockResolvedValue({ id: 'k1', solutionId: 't1', name: 'Old', scopes: ['chat'] });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue({ isActive: true });
     apiKeyService.update.mockResolvedValue({ id: 'k1', name: 'New', scopes: ['chat'] });
@@ -148,7 +148,7 @@ describe('BuilderApiKeysController', () => {
   });
 
   it('should reject admin scope in update', async () => {
-    apiKeyService.findById.mockResolvedValue({ id: 'k1', tenantId: 't1' });
+    apiKeyService.findById.mockResolvedValue({ id: 'k1', solutionId: 't1' });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue({ isActive: true });
 
@@ -161,7 +161,7 @@ describe('BuilderApiKeysController', () => {
 
   it('should revoke key for owned tenant', async () => {
     apiKeyService.findById
-      .mockResolvedValueOnce({ id: 'k1', tenantId: 't1', status: 'active', keyPrefix: 'sk-test', name: 'Key' })
+      .mockResolvedValueOnce({ id: 'k1', solutionId: 't1', status: 'active', keyPrefix: 'sk-test', name: 'Key' })
       .mockResolvedValueOnce({ id: 'k1', status: 'revoked' });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue({ isActive: true });
@@ -171,7 +171,7 @@ describe('BuilderApiKeysController', () => {
   });
 
   it('should throw 400 when revoking already-revoked key', async () => {
-    apiKeyService.findById.mockResolvedValue({ id: 'k1', tenantId: 't1', status: 'revoked' });
+    apiKeyService.findById.mockResolvedValue({ id: 'k1', solutionId: 't1', status: 'revoked' });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue({ isActive: true });
 
@@ -183,7 +183,7 @@ describe('BuilderApiKeysController', () => {
   // ── delete ──────────────────────────────────────────────────────────
 
   it('should delete key for owned tenant', async () => {
-    apiKeyService.findById.mockResolvedValue({ id: 'k1', tenantId: 't1', keyPrefix: 'sk-test', name: 'Key' });
+    apiKeyService.findById.mockResolvedValue({ id: 'k1', solutionId: 't1', keyPrefix: 'sk-test', name: 'Key' });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue({ isActive: true });
 
@@ -201,7 +201,7 @@ describe('BuilderApiKeysController', () => {
   });
 
   it('should throw 403 when deleting key from non-owned tenant', async () => {
-    apiKeyService.findById.mockResolvedValue({ id: 'k1', tenantId: 't1' });
+    apiKeyService.findById.mockResolvedValue({ id: 'k1', solutionId: 't1' });
     tenantsService.findOne.mockResolvedValue({ id: 't1' });
     userTenantService.findUserInTenant.mockResolvedValue(null);
 

@@ -43,7 +43,7 @@ const mockBundleService = {
   getAvailableBundles: jest.fn().mockReturnValue([]),
 };
 
-describe('SolutionsModule', () => {
+describe('SolutionLoaderModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
@@ -61,14 +61,14 @@ describe('SolutionsModule', () => {
               { get: () => undefined } as any, // ConfigService — no SOLUTIONS_DIR
             ),
           inject: [
-            'TenantsService',
+            'SolutionsService',
             'SkillsService',
             'McpPoolService',
             EventMapperService,
             BundleService,
           ],
         },
-        { provide: 'TenantsService', useValue: mockTenantsService },
+        { provide: 'SolutionsService', useValue: mockTenantsService },
         { provide: 'SkillsService', useValue: mockSkillsService },
         { provide: 'McpPoolService', useValue: mockMcpPoolService },
         {
@@ -101,21 +101,21 @@ describe('SolutionsModule', () => {
   });
 
   describe('module metadata', () => {
-    it('SolutionsModule should be importable', async () => {
-      const { SolutionsModule } = await import('./solutions.module');
-      expect(SolutionsModule).toBeDefined();
+    it('SolutionLoaderModule should be importable', async () => {
+      const { SolutionLoaderModule } = await import('./solution-loader.module');
+      expect(SolutionLoaderModule).toBeDefined();
     });
 
-    it('SolutionsModule should export SolutionLoaderService', async () => {
-      const { SolutionsModule } = await import('./solutions.module');
-      const exports = Reflect.getMetadata('exports', SolutionsModule);
+    it('SolutionLoaderModule should export SolutionLoaderService', async () => {
+      const { SolutionLoaderModule } = await import('./solution-loader.module');
+      const exports = Reflect.getMetadata('exports', SolutionLoaderModule);
       expect(exports).toBeDefined();
       expect(exports).toContain(SolutionLoaderService);
     });
 
-    it('SolutionsModule should declare SolutionLoaderService as provider', async () => {
-      const { SolutionsModule } = await import('./solutions.module');
-      const providers = Reflect.getMetadata('providers', SolutionsModule);
+    it('SolutionLoaderModule should declare SolutionLoaderService as provider', async () => {
+      const { SolutionLoaderModule } = await import('./solution-loader.module');
+      const providers = Reflect.getMetadata('providers', SolutionLoaderModule);
       expect(providers).toBeDefined();
       expect(providers).toContain(SolutionLoaderService);
     });

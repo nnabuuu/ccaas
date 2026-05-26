@@ -66,11 +66,11 @@ describe('CcaasUpstream', () => {
   });
 
   describe('resolveTenantId (caching)', () => {
-    it('returns the cached tenantId on subsequent calls without re-fetching', async () => {
+    it('returns the cached solutionId on subsequent calls without re-fetching', async () => {
       let calls = 0;
       mockFetch(async () => {
         calls++;
-        return jsonResponse({ tenantId: 'tnt-cached' });
+        return jsonResponse({ solutionId: 'tnt-cached' });
       });
 
       const a = await upstream.resolveTenantId();
@@ -92,7 +92,7 @@ describe('CcaasUpstream', () => {
         calls++;
         // Slight delay so the parallel calls definitely overlap.
         await new Promise((r) => setTimeout(r, 10));
-        return jsonResponse({ tenantId: 'tnt-concurrent' });
+        return jsonResponse({ solutionId: 'tnt-concurrent' });
       });
 
       const results = await Promise.all([
@@ -118,7 +118,7 @@ describe('CcaasUpstream', () => {
       mockFetch(async () => {
         calls++;
         if (calls === 1) return new Response('forbidden', { status: 403 });
-        return jsonResponse({ tenantId: 'tnt-retry-ok' });
+        return jsonResponse({ solutionId: 'tnt-retry-ok' });
       });
 
       await expect(upstream.resolveTenantId()).rejects.toThrow(ServiceUnavailableException);
@@ -134,8 +134,8 @@ describe('CcaasUpstream', () => {
       await expect(upstream.resolveTenantId()).rejects.toThrow(ServiceUnavailableException);
     });
 
-    it('throws 503 when upstream returns no tenantId field', async () => {
-      mockFetch(async () => jsonResponse({ tenantSlug: 'x' })); // missing tenantId
+    it('throws 503 when upstream returns no solutionId field', async () => {
+      mockFetch(async () => jsonResponse({ tenantSlug: 'x' })); // missing solutionId
       await expect(upstream.resolveTenantId()).rejects.toThrow(ServiceUnavailableException);
     });
   });

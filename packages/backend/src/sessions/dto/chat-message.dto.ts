@@ -23,7 +23,7 @@ export class ChatMessageDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsArray()
@@ -74,7 +74,7 @@ export class SendMessageDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsObject()

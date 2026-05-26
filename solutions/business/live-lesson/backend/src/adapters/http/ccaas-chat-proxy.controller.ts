@@ -4,7 +4,7 @@
  *
  * Same architectural rationale as `CcaasProxyController`: the browser
  * must never see the ccaas master key. The solution backend holds
- * `CCAAS_API_KEY` in env, injects it (and the resolved tenantId) on
+ * `CCAAS_API_KEY` in env, injects it (and the resolved solutionId) on
  * upstream requests, and pipes the response back.
  *
  * Split from CcaasProxyController because the URL prefix differs
@@ -14,7 +14,7 @@
  * Routes:
  *   GET  /api/sessions/:sid/messages         → history proxy
  *   POST /api/sessions/:sid/messages         → chat SSE proxy (raw Express)
- *   POST /api/sessions/:sid/bind-project     → bind proxy w/ injected tenantId
+ *   POST /api/sessions/:sid/bind-project     → bind proxy w/ injected solutionId
  *
  * **Why no /auth/me proxy**: the only thing the browser used /auth/me
  * for was tenant resolution, and that's now server-side via
@@ -44,7 +44,7 @@ import { CcaasUpstream } from './ccaas-upstream.service';
 import { scrubToken } from './scrub-token';
 
 /**
- * Browser body for POST /api/sessions/:sid/bind-project. tenantId is
+ * Browser body for POST /api/sessions/:sid/bind-project. solutionId is
  * intentionally NOT here — the proxy injects it server-side from the
  * env-cached value (see CcaasUpstream.resolveTenantId).
  */
@@ -144,8 +144,8 @@ export class CcaasChatProxyController {
    * Proxy ccaas's `POST /api/v1/sessions/:sid/attach-workspace-source`.
    * Browser body keeps the domain word — `{ projectId }` — because
    * live-lesson DOES have projects; this proxy translates into ccaas's
-   * generic descriptor shape (`{ sourceUrl, sourceIdentity, tenantId }`).
-   * Server-side injects tenantId from the env-cached resolver and
+   * generic descriptor shape (`{ sourceUrl, sourceIdentity, solutionId }`).
+   * Server-side injects solutionId from the env-cached resolver and
    * derives sourceUrl from `LIVE_LESSON_PUBLIC_URL` / `BACKEND_URL`.
    *
    * Why this translation lives here (β-1 of the α+β refactor — see
@@ -165,7 +165,7 @@ export class CcaasChatProxyController {
    *   409 → ConflictException (session already attached to a different
    *         workspace source; UI should suggest "start a new conversation")
    *   403 → ForbiddenException (cross-tenant guard tripped; impossible
-   *         under the proxy's injected tenantId, but pass through if it
+   *         under the proxy's injected solutionId, but pass through if it
    *         ever happens so misconfigs are visible rather than masked
    *         as 502)
    *   other 4xx + any 5xx → BadGatewayException (502) — generic upstream issue
@@ -174,7 +174,7 @@ export class CcaasChatProxyController {
   @ApiOperation({
     summary:
       'Proxy ccaas attach-workspace-source (browser keeps {projectId}; ' +
-      'proxy translates + injects tenantId + sourceUrl)',
+      'proxy translates + injects solutionId + sourceUrl)',
   })
   @ApiParam({ name: 'sessionId', type: String })
   async bindProject(
@@ -189,7 +189,7 @@ export class CcaasChatProxyController {
       throw new BadRequestException('projectId required in request body');
     }
     const { url, key } = this.upstream.resolveCcaas();
-    const tenantId = await this.upstream.resolveTenantId();
+    const solutionId = await this.upstream.resolveTenantId();
     const sourceUrl = resolveArtifactBaseUrl();
     let upstreamRes: globalThis.Response;
     try {
@@ -204,7 +204,7 @@ export class CcaasChatProxyController {
           body: JSON.stringify({
             sourceUrl,
             sourceIdentity: body.projectId,
-            tenantId,
+            solutionId,
           }),
         },
       );
@@ -232,7 +232,7 @@ export class CcaasChatProxyController {
           );
         case 403:
           // Cross-tenant guard tripped upstream. Should be impossible
-          // since the proxy injects tenantId from the env-cached value,
+          // since the proxy injects solutionId from the env-cached value,
           // but if a misconfig ever produces it, surface honestly.
           throw new ForbiddenException(
             'ccaas rejected attach: tenant mismatch (check CCAAS_API_KEY env)',
@@ -253,7 +253,7 @@ export class CcaasChatProxyController {
    * frames ourselves: headers + flush, then pipe upstream chunks
    * verbatim to the browser, then `res.end()` on completion / abort.
    *
-   * tenantId is injected server-side; browser sends just `{ message,
+   * solutionId is injected server-side; browser sends just `{ message,
    * projectId?, enabledSkills?, templateName? }`. AbortController is
    * wired to the response 'close' event so a client disconnect tears
    * down the upstream connection (no leaked open sockets).
@@ -265,7 +265,7 @@ export class CcaasChatProxyController {
    */
   @Post('messages')
   @ApiOperation({
-    summary: 'Proxy ccaas chat send + SSE response (raw Express; tenantId injected)',
+    summary: 'Proxy ccaas chat send + SSE response (raw Express; solutionId injected)',
   })
   @ApiParam({ name: 'sessionId', type: String })
   async sendMessage(
@@ -283,7 +283,7 @@ export class CcaasChatProxyController {
     // failure bubbles as a normal HTTP 503 (caught by Nest's exception
     // filter) instead of a half-written SSE stream the browser would
     // see as a successful-but-empty turn.
-    const tenantId = await this.upstream.resolveTenantId();
+    const solutionId = await this.upstream.resolveTenantId();
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -309,7 +309,7 @@ export class CcaasChatProxyController {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
-          body: JSON.stringify({ ...body, tenantId }),
+          body: JSON.stringify({ ...body, solutionId }),
           signal: controller.signal,
         },
       );

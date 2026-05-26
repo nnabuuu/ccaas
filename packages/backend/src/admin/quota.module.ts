@@ -8,13 +8,13 @@
 
 import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TenantQuota } from './entities/tenant-quota.entity';
+import { SolutionQuota } from './entities/solution-quota.entity';
 import { QuotaService } from './quota.service';
 import { QuotaGuard } from './guards/quota.guard';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([TenantQuota])],
+  imports: [TypeOrmModule.forFeature([SolutionQuota])],
   providers: [QuotaService, QuotaGuard],
   exports: [QuotaService, QuotaGuard],
 })

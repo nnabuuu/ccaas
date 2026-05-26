@@ -1,5 +1,5 @@
 import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
-import { UserRole } from '../entities/user-tenant.entity';
+import { UserRole } from '../entities/user-solution.entity';
 
 export class CreateUserTenantDto {
   @IsUUID()
@@ -8,7 +8,7 @@ export class CreateUserTenantDto {
 
   @IsUUID()
   @IsNotEmpty()
-  tenantId: string;
+  solutionId: string;
 
   @IsEnum(['admin', 'developer', 'viewer'])
   @IsNotEmpty()

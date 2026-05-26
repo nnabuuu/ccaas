@@ -1,7 +1,7 @@
 /**
  * ProjectArtifactSourceRegistry unit tests — tenant.config-backed lookup.
  *
- * Mocks TenantsService and exercises:
+ * Mocks SolutionsService and exercises:
  *   - cache hit returns instance, doesn't re-query
  *   - cache miss + tenant has artifactUrl → constructs RestWorkspaceArtifactSource
  *   - cache miss + tenant has no artifactUrl → caches null (negative cache)
@@ -11,7 +11,7 @@
  */
 
 import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
-import { TENANT_CONFIG_CHANGED } from '../../tenants/tenant-config-events';
+import { SOLUTION_CONFIG_CHANGED } from '../../solutions/solution-config-events';
 import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 
 const tenant = (slug: string, artifactUrl?: string) => ({
@@ -37,7 +37,7 @@ describe('ProjectArtifactSourceRegistry', () => {
     expect(tenants.findOne).toHaveBeenCalledWith('live-lesson');
   });
 
-  it('cache hit does not re-query TenantsService', async () => {
+  it('cache hit does not re-query SolutionsService', async () => {
     tenants.findOne.mockResolvedValueOnce(tenant('demo', 'http://localhost:3010/api'));
     const first = await registry.getForTenantSlug('demo');
     const second = await registry.getForTenantSlug('demo');
@@ -99,8 +99,8 @@ describe('ProjectArtifactSourceRegistry', () => {
       const first = await registry.getForTenantSlug('live-lesson');
       expect(first).toBeInstanceOf(RestWorkspaceArtifactSource);
 
-      // Simulate the event: TenantsService.update writes new URL, then fires.
-      registry.onTenantConfigChanged({ tenantId: 'id-live-lesson', slug: 'live-lesson' });
+      // Simulate the event: SolutionsService.update writes new URL, then fires.
+      registry.onTenantConfigChanged({ solutionId: 'id-live-lesson', slug: 'live-lesson' });
 
       // Next lookup re-queries; new mock returns the new URL.
       tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://b.local/api'));
@@ -117,7 +117,7 @@ describe('ProjectArtifactSourceRegistry', () => {
       const aFirst = await registry.getForTenantSlug('a');
       const bFirst = await registry.getForTenantSlug('b');
 
-      registry.onTenantConfigChanged({ tenantId: 'id-a', slug: 'a' });
+      registry.onTenantConfigChanged({ solutionId: 'id-a', slug: 'a' });
 
       // a re-queries; b stays cached
       tenants.findOne.mockResolvedValueOnce(tenant('a', 'http://a2.local/api'));

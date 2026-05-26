@@ -2,9 +2,9 @@
  * GET /api/v1/auth/me — caller identity introspection.
  *
  * Used by the creator UI (and any other browser frontend) at boot to
- * resolve the tenantId that goes with the API key in localStorage.
+ * resolve the solutionId that goes with the API key in localStorage.
  * Without this, the UI can't construct a valid bind-project body
- * (which requires the session's owning tenantId).
+ * (which requires the session's owning solutionId).
  *
  * Returns the same identity facts the ApiKeyGuard already attached to
  * the request — no fresh DB hit beyond what the guard performed.
@@ -14,7 +14,7 @@
  *   - Without a key:
  *     - AUTH_ALLOW_ANONYMOUS=true  → request gets `isAnonymous=true`
  *       context with the default tenant. We surface that honestly:
- *       `{ tenantId: <default>, isAnonymous: true }`.
+ *       `{ solutionId: <default>, isAnonymous: true }`.
  *     - AUTH_ALLOW_ANONYMOUS=false → ApiKeyGuard rejects with 401
  *       (UI uses 401 as the "show paste-key banner" signal).
  */
@@ -25,7 +25,7 @@ import { Auth, Ctx } from './decorators';
 import type { RequestContext, ApiKeyScope } from './types';
 
 export interface MeResponse {
-  tenantId: string;
+  solutionId: string;
   tenantSlug: string;
   apiKeyId?: string;
   scopes: ApiKeyScope[];
@@ -40,8 +40,8 @@ export class MeController {
   @ApiOperation({
     summary: 'Resolve caller identity (tenant + scopes)',
     description:
-      'Returns the tenantId, tenant slug, scopes attached to the API ' +
-      'key. The UI uses tenantId for bind-project body composition. ' +
+      'Returns the solutionId, tenant slug, scopes attached to the API ' +
+      'key. The UI uses solutionId for bind-project body composition. ' +
       'Returns 401 when no key is present and anonymous access is ' +
       'disabled — the frontend treats 401 as a "paste your API key" ' +
       'prompt.',
@@ -51,7 +51,7 @@ export class MeController {
     description: 'Caller identity',
     schema: {
       properties: {
-        tenantId: { type: 'string', format: 'uuid' },
+        solutionId: { type: 'string', format: 'uuid' },
         tenantSlug: { type: 'string' },
         apiKeyId: { type: 'string', format: 'uuid', nullable: true },
         scopes: { type: 'array', items: { type: 'string' } },
@@ -71,7 +71,7 @@ export class MeController {
       throw new Error('auth context missing; ApiKeyGuard misconfigured');
     }
     return {
-      tenantId: ctx.tenantId,
+      solutionId: ctx.solutionId,
       tenantSlug: ctx.tenant.slug,
       apiKeyId: ctx.apiKeyId,
       scopes: ctx.apiKeyScopes ?? [],

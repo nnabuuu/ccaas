@@ -6,8 +6,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminBuilderUsersController } from './admin-builder-users.controller';
 import { UsersService } from '../../users/users.service';
-import { UserTenantService } from '../../users/user-tenant.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { UserSolutionService } from '../../users/user-solution.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
 import type { RequestContext, ApiKeyScope } from '../../auth/types';
@@ -15,8 +15,8 @@ import type { RequestContext, ApiKeyScope } from '../../auth/types';
 describe('AdminBuilderUsersController', () => {
   let controller: AdminBuilderUsersController;
   let usersService: jest.Mocked<UsersService>;
-  let tenantsService: jest.Mocked<TenantsService>;
-  let userTenantService: jest.Mocked<UserTenantService>;
+  let tenantsService: jest.Mocked<SolutionsService>;
+  let userTenantService: jest.Mocked<UserSolutionService>;
   let apiKeyService: jest.Mocked<ApiKeyService>;
   let auditService: jest.Mocked<AuditService>;
 
@@ -31,7 +31,7 @@ describe('AdminBuilderUsersController', () => {
 
   const mockTenant = {
     id: 'tenant-uuid',
-    name: 'Builder Tenant',
+    name: 'Builder Solution',
     slug: 'builder-tenant',
     status: 'active',
     createdAt: new Date(),
@@ -41,7 +41,7 @@ describe('AdminBuilderUsersController', () => {
   const mockUserTenant = {
     id: 'ut-uuid',
     userId: 'user-uuid',
-    tenantId: 'tenant-uuid',
+    solutionId: 'tenant-uuid',
     role: 'admin',
     isActive: true,
   };
@@ -62,7 +62,7 @@ describe('AdminBuilderUsersController', () => {
   };
 
   const mockContext: RequestContext = {
-    tenantId: 'admin-tenant-uuid',
+    solutionId: 'admin-tenant-uuid',
     tenant: { id: 'admin-tenant-uuid' } as any,
     apiKeyId: 'admin-key-uuid',
     apiKeyScopes: ['admin'] as ApiKeyScope[],
@@ -80,11 +80,11 @@ describe('AdminBuilderUsersController', () => {
           useValue: { create: jest.fn() },
         },
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: { create: jest.fn() },
         },
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: { create: jest.fn() },
         },
         {
@@ -100,8 +100,8 @@ describe('AdminBuilderUsersController', () => {
 
     controller = module.get(AdminBuilderUsersController);
     usersService = module.get(UsersService);
-    tenantsService = module.get(TenantsService);
-    userTenantService = module.get(UserTenantService);
+    tenantsService = module.get(SolutionsService);
+    userTenantService = module.get(UserSolutionService);
     apiKeyService = module.get(ApiKeyService);
     auditService = module.get(AuditService);
   });
@@ -121,7 +121,7 @@ describe('AdminBuilderUsersController', () => {
     const dto = {
       email: 'builder@example.com',
       name: 'Builder User',
-      tenantName: 'Builder Tenant',
+      tenantName: 'Builder Solution',
     };
 
     it('should create user, tenant, user-tenant link, and API key', async () => {
@@ -134,12 +134,12 @@ describe('AdminBuilderUsersController', () => {
         name: 'Builder User',
       });
       expect(tenantsService.create).toHaveBeenCalledWith({
-        name: 'Builder Tenant',
+        name: 'Builder Solution',
         slug: undefined,
       });
       expect(userTenantService.create).toHaveBeenCalledWith({
         userId: 'user-uuid',
-        tenantId: 'tenant-uuid',
+        solutionId: 'tenant-uuid',
         role: 'admin',
       });
       expect(apiKeyService.create).toHaveBeenCalledWith('tenant-uuid', {
@@ -164,7 +164,7 @@ describe('AdminBuilderUsersController', () => {
       await controller.create(dtoWithSlug, mockContext);
 
       expect(tenantsService.create).toHaveBeenCalledWith({
-        name: 'Builder Tenant',
+        name: 'Builder Solution',
         slug: 'custom-slug',
       });
     });
@@ -179,7 +179,7 @@ describe('AdminBuilderUsersController', () => {
         action: 'builderUser.create',
         targetType: 'user',
         targetId: 'user-uuid',
-        tenantId: 'tenant-uuid',
+        solutionId: 'tenant-uuid',
         metadata: {
           name: 'Builder User',
           tenantSlug: 'builder-tenant',
@@ -206,7 +206,7 @@ describe('AdminBuilderUsersController', () => {
     it('should throw 409 when tenant slug conflicts', async () => {
       usersService.create.mockResolvedValue(mockUser as any);
       tenantsService.create.mockRejectedValue(
-        new AlreadyExistsException("Tenant with slug 'builder-tenant' already exists"),
+        new AlreadyExistsException("Solution with slug 'builder-tenant' already exists"),
       );
 
       await expect(controller.create(dto, mockContext)).rejects.toThrow(

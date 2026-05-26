@@ -15,7 +15,7 @@ import { Skill } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
 import { SkillFile } from './entities/skill-file.entity';
 import { SkillVersionFile } from './entities/skill-version-file.entity';
-import { TenantsModule } from '../tenants/tenants.module';
+import { SolutionsModule } from '../solutions/solutions.module';
 import { McpModule } from '../mcp/mcp.module';
 import { UsersModule } from '../users/users.module';
 import { SessionsModule } from '../sessions/sessions.module';
@@ -23,7 +23,7 @@ import { SessionsModule } from '../sessions/sessions.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Skill, SkillVersion, SkillFile, SkillVersionFile]),
-    forwardRef(() => TenantsModule),
+    forwardRef(() => SolutionsModule),
     forwardRef(() => UsersModule),
     forwardRef(() => SessionsModule), // Week 5: SessionService for affected sessions
     McpModule,

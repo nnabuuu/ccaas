@@ -16,7 +16,7 @@
  *   - PUT  /api/v1/skills/:id/files         ← additional skill files (progressive disclosure subdirs)
  *   - POST /api/v1/skills/:id/publish       ← make available to sessions
  *
- * All requests are tagged with `X-Tenant-Id: demo-sandbox` so ccaas's
+ * All requests are tagged with `X-Solution-Id: demo-sandbox` so ccaas's
  * TenantGuard resolves the right tenant context.
  */
 
@@ -120,7 +120,7 @@ export class SolutionRegisterService implements OnApplicationBootstrap, OnModule
       throw new Error(`solution/import HTTP ${resp.status}: ${await resp.text()}`);
     }
     const result = await resp.json();
-    this.logger.log(`Solution registered: tenantId=${result.tenantId}`);
+    this.logger.log(`Solution registered: solutionId=${result.solutionId}`);
   }
 
   private async registerSkills(ccaasUrl: string, apiKey: string): Promise<void> {

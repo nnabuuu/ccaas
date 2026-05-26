@@ -1,10 +1,10 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { AdminTenantAccessGuard } from './admin-tenant-access.guard';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { AdminSolutionAccessGuard } from './admin-solution-access.guard';
+import { UserSolutionService } from '../../users/user-solution.service';
 
-describe('AdminTenantAccessGuard', () => {
-  let guard: AdminTenantAccessGuard;
-  let userTenantService: jest.Mocked<Pick<UserTenantService, 'findUserInTenant'>>;
+describe('AdminSolutionAccessGuard', () => {
+  let guard: AdminSolutionAccessGuard;
+  let userTenantService: jest.Mocked<Pick<UserSolutionService, 'findUserInTenant'>>;
 
   function createContext(overrides: {
     context?: any;
@@ -31,8 +31,8 @@ describe('AdminTenantAccessGuard', () => {
     userTenantService = {
       findUserInTenant: jest.fn(),
     };
-    guard = new AdminTenantAccessGuard(
-      userTenantService as unknown as UserTenantService,
+    guard = new AdminSolutionAccessGuard(
+      userTenantService as unknown as UserSolutionService,
     );
   });
 
@@ -45,19 +45,19 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['admin'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       },
-      params: { tenantId: 'any-tenant' },
+      params: { solutionId: 'any-tenant' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).not.toHaveBeenCalled();
   });
 
-  it('should pass through when no tenantId in request (list endpoints)', async () => {
+  it('should pass through when no solutionId in request (list endpoints)', async () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
     });
@@ -68,10 +68,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      params: { tenantId: 'tenant-1' },
+      params: { solutionId: 'tenant-1' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).not.toHaveBeenCalled();
@@ -85,10 +85,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      params: { tenantId: 'tenant-2' },
+      params: { solutionId: 'tenant-2' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).toHaveBeenCalledWith(
@@ -103,10 +103,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      params: { tenantId: 'tenant-3' },
+      params: { solutionId: 'tenant-3' },
     });
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
   });
@@ -115,10 +115,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         // no userId
       },
-      params: { tenantId: 'tenant-2' },
+      params: { solutionId: 'tenant-2' },
     });
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
   });
@@ -131,15 +131,15 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      params: { tenantId: 'tenant-2' },
+      params: { solutionId: 'tenant-2' },
     });
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
   });
 
-  it('should extract tenantId from query params', async () => {
+  it('should extract solutionId from query params', async () => {
     userTenantService.findUserInTenant.mockResolvedValue({
       isActive: true,
     } as any);
@@ -147,10 +147,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      query: { tenantId: 'tenant-2' },
+      query: { solutionId: 'tenant-2' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).toHaveBeenCalledWith(
@@ -159,7 +159,7 @@ describe('AdminTenantAccessGuard', () => {
     );
   });
 
-  it('should extract tenantId from request body', async () => {
+  it('should extract solutionId from request body', async () => {
     userTenantService.findUserInTenant.mockResolvedValue({
       isActive: true,
     } as any);
@@ -167,10 +167,10 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      body: { tenantId: 'tenant-2' },
+      body: { solutionId: 'tenant-2' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).toHaveBeenCalledWith(
@@ -179,23 +179,23 @@ describe('AdminTenantAccessGuard', () => {
     );
   });
 
-  it('should NOT extract tenantId from :id route param (non-tenant resource IDs)', async () => {
-    // :id may be an API key, MCP server, or audit log — not a tenantId.
-    // Guard should pass through (no tenantId found) rather than mis-interpret :id.
+  it('should NOT extract solutionId from :id route param (non-tenant resource IDs)', async () => {
+    // :id may be an API key, MCP server, or audit log — not a solutionId.
+    // Guard should pass through (no solutionId found) rather than mis-interpret :id.
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
       params: { id: 'some-api-key-uuid' },
     });
-    // No tenantId extracted → pass through
+    // No solutionId extracted → pass through
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).not.toHaveBeenCalled();
   });
 
-  it('should extract tenantId from X-Tenant-Id header', async () => {
+  it('should extract solutionId from X-Solution-Id header', async () => {
     userTenantService.findUserInTenant.mockResolvedValue({
       isActive: true,
     } as any);
@@ -203,7 +203,7 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
       headers: { 'x-tenant-id': 'tenant-2' },
@@ -219,9 +219,9 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['chat'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       },
-      params: { tenantId: 'tenant-2' },
+      params: { solutionId: 'tenant-2' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
   });
@@ -230,11 +230,11 @@ describe('AdminTenantAccessGuard', () => {
     const ctx = createContext({
       context: {
         apiKeyScopes: ['builder'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      params: { tenantId: 'tenant-1' }, // own tenant
-      query: { tenantId: 'tenant-2' },  // different tenant
+      params: { solutionId: 'tenant-1' }, // own tenant
+      query: { solutionId: 'tenant-2' },  // different tenant
     });
     // Route param takes priority, so tenant-1 == own tenant → allowed
     expect(await guard.canActivate(ctx)).toBe(true);

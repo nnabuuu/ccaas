@@ -1,5 +1,5 @@
 /**
- * Admin Tenants Controller Tests
+ * Admin Solutions Controller Tests
  *
  * Tests for input validation in tenant lookup.
  */
@@ -7,26 +7,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { AdminTenantsController } from './admin-tenants.controller';
-import { TenantsService } from '../../tenants/tenants.service';
+import { AdminSolutionsController } from './admin-solutions-crud.controller';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { SkillsService } from '../../skills/skills.service';
 import { AuditService } from '../services/audit.service';
-import { TenantQuota } from '../entities/tenant-quota.entity';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { SolutionQuota } from '../entities/solution-quota.entity';
+import { UserSolutionService } from '../../users/user-solution.service';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 
-describe('AdminTenantsController', () => {
-  let controller: AdminTenantsController;
-  let tenantsService: jest.Mocked<TenantsService>;
+describe('AdminSolutionsController', () => {
+  let controller: AdminSolutionsController;
+  let tenantsService: jest.Mocked<SolutionsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [AdminTenantsController],
+      controllers: [AdminSolutionsController],
       providers: [
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: {
             findAll: jest.fn().mockResolvedValue([]),
             findOne: jest.fn(),
@@ -48,14 +48,14 @@ describe('AdminTenantsController', () => {
           },
         },
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: {
             findByUser: jest.fn().mockResolvedValue([]),
             findUserInTenant: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(TenantQuota),
+          provide: getRepositoryToken(SolutionQuota),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
             findOne: jest.fn(),
@@ -69,26 +69,26 @@ describe('AdminTenantsController', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(AdminTenantAccessGuard)
+      .overrideGuard(AdminSolutionAccessGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
-    controller = module.get<AdminTenantsController>(AdminTenantsController);
-    tenantsService = module.get(TenantsService);
+    controller = module.get<AdminSolutionsController>(AdminSolutionsController);
+    tenantsService = module.get(SolutionsService);
   });
 
   describe('findAll', () => {
     it('should return all tenants for admin', async () => {
       const mockTenants = [
-        { id: 'tenant-1', name: 'Tenant One', slug: 'tenant-one' },
-        { id: 'tenant-2', name: 'Tenant Two', slug: 'tenant-two' },
+        { id: 'tenant-1', name: 'Solution One', slug: 'tenant-one' },
+        { id: 'tenant-2', name: 'Solution Two', slug: 'tenant-two' },
       ];
 
       tenantsService.findAll = jest.fn().mockResolvedValue(mockTenants);
 
       const ctx = {
         apiKeyScopes: ['admin'],
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       } as any;
 
       const result = await controller.findAll(ctx);
@@ -102,7 +102,7 @@ describe('AdminTenantsController', () => {
     describe('valid inputs', () => {
       it('should accept valid UUID', async () => {
         const validUuid = '123e4567-e89b-12d3-a456-426614174000';
-        const mockTenant = { id: validUuid, name: 'Test Tenant', slug: 'test' };
+        const mockTenant = { id: validUuid, name: 'Test Solution', slug: 'test' };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -114,7 +114,7 @@ describe('AdminTenantsController', () => {
 
       it('should accept valid UUID (uppercase)', async () => {
         const validUuid = '123E4567-E89B-12D3-A456-426614174000';
-        const mockTenant = { id: validUuid.toLowerCase(), name: 'Test Tenant', slug: 'test' };
+        const mockTenant = { id: validUuid.toLowerCase(), name: 'Test Solution', slug: 'test' };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -125,7 +125,7 @@ describe('AdminTenantsController', () => {
 
       it('should accept valid slug (lowercase letters)', async () => {
         const validSlug = 'my-tenant';
-        const mockTenant = { id: 'some-uuid', name: 'My Tenant', slug: validSlug };
+        const mockTenant = { id: 'some-uuid', name: 'My Solution', slug: validSlug };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -137,7 +137,7 @@ describe('AdminTenantsController', () => {
 
       it('should accept valid slug (with numbers)', async () => {
         const validSlug = 'tenant123';
-        const mockTenant = { id: 'some-uuid', name: 'Tenant 123', slug: validSlug };
+        const mockTenant = { id: 'some-uuid', name: 'Solution 123', slug: validSlug };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -148,7 +148,7 @@ describe('AdminTenantsController', () => {
 
       it('should accept valid slug (with underscores)', async () => {
         const validSlug = 'tenant_name';
-        const mockTenant = { id: 'some-uuid', name: 'Tenant Name', slug: validSlug };
+        const mockTenant = { id: 'some-uuid', name: 'Solution Name', slug: validSlug };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -159,7 +159,7 @@ describe('AdminTenantsController', () => {
 
       it('should accept valid slug (with hyphens)', async () => {
         const validSlug = 'tenant-name-123';
-        const mockTenant = { id: 'some-uuid', name: 'Tenant Name', slug: validSlug };
+        const mockTenant = { id: 'some-uuid', name: 'Solution Name', slug: validSlug };
 
         tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -238,7 +238,7 @@ describe('AdminTenantsController', () => {
         tenantsService.findOne = jest.fn().mockResolvedValue(null);
 
         await expect(controller.findOne(validUuid)).rejects.toThrow(NotFoundException);
-        await expect(controller.findOne(validUuid)).rejects.toThrow(`Tenant not found: ${validUuid}`);
+        await expect(controller.findOne(validUuid)).rejects.toThrow(`Solution not found: ${validUuid}`);
       });
 
       it('should throw NotFoundException for valid slug that does not exist', async () => {
@@ -264,7 +264,7 @@ describe('AdminTenantsController', () => {
 
     it('should handle uppercase slug (case insensitive pattern)', async () => {
       const uppercaseSlug = 'MYTENANT';
-      const mockTenant = { id: 'some-uuid', name: 'My Tenant', slug: 'mytenant' };
+      const mockTenant = { id: 'some-uuid', name: 'My Solution', slug: 'mytenant' };
 
       tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -276,7 +276,7 @@ describe('AdminTenantsController', () => {
 
     it('should handle mixed case slug', async () => {
       const mixedCaseSlug = 'MyTenant123';
-      const mockTenant = { id: 'some-uuid', name: 'My Tenant', slug: 'mytenant123' };
+      const mockTenant = { id: 'some-uuid', name: 'My Solution', slug: 'mytenant123' };
 
       tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 
@@ -287,7 +287,7 @@ describe('AdminTenantsController', () => {
 
     it('should handle numeric-only slug', async () => {
       const numericSlug = '12345';
-      const mockTenant = { id: 'some-uuid', name: 'Tenant 12345', slug: '12345' };
+      const mockTenant = { id: 'some-uuid', name: 'Solution 12345', slug: '12345' };
 
       tenantsService.findOne = jest.fn().mockResolvedValue(mockTenant);
 

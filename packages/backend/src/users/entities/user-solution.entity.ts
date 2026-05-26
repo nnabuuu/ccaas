@@ -9,13 +9,13 @@ import {
   Index,
 } from 'typeorm';
 import { User } from './user.entity';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Solution } from '../../solutions/entities/solution.entity';
 
 export type UserRole = 'admin' | 'developer' | 'viewer';
 
 @Entity('user_tenants')
-@Index(['userId', 'tenantId'], { unique: true })
-export class UserTenant {
+@Index(['userId', 'solutionId'], { unique: true })
+export class UserSolution {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -23,7 +23,7 @@ export class UserTenant {
   userId: string;
 
   @Column()
-  tenantId: string;
+  solutionId: string;
 
   @Column({ type: 'varchar' })
   role: UserRole;
@@ -38,9 +38,9 @@ export class UserTenant {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Tenant)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
+  @ManyToOne(() => Solution)
+  @JoinColumn({ name: 'solutionId' })
+  tenant: Solution;
 
   @CreateDateColumn()
   joinedAt: Date;

@@ -63,7 +63,7 @@ import {
 interface MockSession {
   sessionId: string;
   clientId: string;
-  tenantId?: string;
+  solutionId?: string;
   workspaceDir: string;
   currentUserMessageId?: string;
   currentAssistantMessageId?: string;
@@ -147,21 +147,21 @@ describe('Chat Flow Integration Tests', () => {
     mockSession = {
       sessionId,
       clientId: 'test-client',
-      tenantId: testTenantId,
+      solutionId: testTenantId,
       workspaceDir: sessionDir,
     };
 
     // Create message records like the real ChatGateway does
     const userMessage = await messagesService.create({
       sessionId: mockSession.sessionId,
-      tenantId: testTenantId,
+      solutionId: testTenantId,
       role: 'user',
       content: 'Test message',
     });
 
     const assistantMessage = await messagesService.create({
       sessionId: mockSession.sessionId,
-      tenantId: testTenantId,
+      solutionId: testTenantId,
       role: 'assistant',
       content: '',
     });
@@ -183,7 +183,7 @@ describe('Chat Flow Integration Tests', () => {
         return {
           sessionId: mockSession.sessionId,
           clientId: mockSession.clientId,
-          tenantId: mockSession.tenantId,
+          solutionId: mockSession.solutionId,
           workspaceDir: mockSession.workspaceDir,
           currentUserMessageId: mockSession.currentUserMessageId,
           currentAssistantMessageId: mockSession.currentAssistantMessageId,
@@ -388,7 +388,7 @@ describe('Chat Flow Integration Tests', () => {
       const event = usage[0];
       expect(event.inputTokens).toBe(150);
       expect(event.outputTokens).toBe(75);
-      expect(event.tenantId).toBe(testTenantId);
+      expect(event.solutionId).toBe(testTenantId);
     });
   });
 
@@ -623,7 +623,7 @@ describe('Chat Flow Integration Tests', () => {
       // Token usage
       const usage = await tokenUsageService.getBySessionId(mockSession.sessionId);
       expect(usage.length).toBeGreaterThanOrEqual(1);
-      expect(usage[0].tenantId).toBe(testTenantId);
+      expect(usage[0].solutionId).toBe(testTenantId);
     });
   });
 

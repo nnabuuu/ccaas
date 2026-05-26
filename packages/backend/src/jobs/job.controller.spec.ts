@@ -18,7 +18,7 @@ describe('JobController', () => {
 
   const mockJob = {
     id: 'job-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     type: 'notebooklm_podcast',
     name: 'Generate Podcast',
     prompt: 'Create a podcast',
@@ -56,7 +56,7 @@ describe('JobController', () => {
   describe('POST /api/v1/jobs', () => {
     it('delegates to jobService.create', async () => {
       const dto = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         type: 'notebooklm_podcast',
         name: 'Generate Podcast',
         prompt: 'Create a podcast',
@@ -74,7 +74,7 @@ describe('JobController', () => {
       const result = await controller.findAll('tenant-1', 'session-1', 'pending', '2', '10');
 
       expect(service.findAll).toHaveBeenCalledWith({
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         sessionId: 'session-1',
         status: 'pending',
         page: 2,
@@ -87,7 +87,7 @@ describe('JobController', () => {
       await controller.findAll(undefined, undefined, undefined, undefined, undefined);
 
       expect(service.findAll).toHaveBeenCalledWith({
-        tenantId: undefined,
+        solutionId: undefined,
         sessionId: undefined,
         status: undefined,
         page: undefined,

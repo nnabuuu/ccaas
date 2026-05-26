@@ -8,7 +8,7 @@
  * File renamed from `session.service.bind-project.spec.ts` in β-2
  * (2026-05-26). Both code paths are exercised here:
  *
- *   1. The legacy `bindToProject(sessionId, tenantId, projectId)`
+ *   1. The legacy `bindToProject(sessionId, solutionId, projectId)`
  *      alias is tested in the first describe block. Now a deprecated
  *      delegating alias that calls attachWorkspaceSource internally
  *      with `{sourceIdentity: projectId}`. These tests stayed verbatim
@@ -16,7 +16,7 @@
  *      path still works for legacy callers (the `bind-project` HTTP
  *      route + e2e helper).
  *
- *   2. The canonical `attachWorkspaceSource(sessionId, tenantId,
+ *   2. The canonical `attachWorkspaceSource(sessionId, solutionId,
  *      WorkspaceSource)` method is tested in the second describe
  *      block. Covers the new behavior: `sourceUrl` + `sourceSchemaHash`
  *      persistence to session_metadata, the extended `session.bound`
@@ -106,7 +106,7 @@ describe('SessionService.bindToProject — legacy alias path (CRITICAL #1)', () 
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('rejects with BadRequestException when tenantId is missing', async () => {
+  it('rejects with BadRequestException when solutionId is missing', async () => {
     const socket: any = { id: 'socket-1', emit: jest.fn() };
     await service.getOrCreateSession('sess-novtenant', 'client-1', socket);
 
@@ -123,11 +123,11 @@ describe('SessionService.bindToProject — legacy alias path (CRITICAL #1)', () 
 
   // ----- CRITICAL #1 cross-tenant defence --------------------------------
 
-  it('rejects with ForbiddenException when body tenantId mismatches session tenant', async () => {
+  it('rejects with ForbiddenException when body solutionId mismatches session tenant', async () => {
     const socket: any = { id: 'socket-2', emit: jest.fn() };
     // Create session owned by tenant-A.
     const sess = await service.getOrCreateSession('sess-owned-A', 'client-2', socket, undefined, 'tenant-A');
-    expect(sess.tenantId).toBe('tenant-A');
+    expect(sess.solutionId).toBe('tenant-A');
 
     // Attacker holding tenant-B credentials tries to bind sess-owned-A.
     await expect(
@@ -139,18 +139,18 @@ describe('SessionService.bindToProject — legacy alias path (CRITICAL #1)', () 
     expect(eventEmitter.emit).not.toHaveBeenCalledWith('session.bound', expect.anything());
   });
 
-  it('adopts caller tenantId when session has no owning tenant yet', async () => {
-    // Anonymous-first: session created without tenantId; first authed
+  it('adopts caller solutionId when session has no owning tenant yet', async () => {
+    // Anonymous-first: session created without solutionId; first authed
     // caller (e.g. via bind-project) claims it. The session is now
     // pinned to that tenant and a subsequent mismatched call is rejected.
     const socket: any = { id: 'socket-3', emit: jest.fn() };
     const sess = await service.getOrCreateSession('sess-anon', 'client-3', socket);
-    expect(sess.tenantId).toBeUndefined();
+    expect(sess.solutionId).toBeUndefined();
 
     await service.bindToProject('sess-anon', 'tenant-A', 'proj-x');
-    expect(service.getSession('sess-anon')?.tenantId).toBe('tenant-A');
+    expect(service.getSession('sess-anon')?.solutionId).toBe('tenant-A');
 
-    // Second caller with a different tenantId is now rejected.
+    // Second caller with a different solutionId is now rejected.
     await expect(
       service.bindToProject('sess-anon', 'tenant-B', 'proj-x'),
     ).rejects.toThrow(ForbiddenException);
@@ -202,7 +202,7 @@ describe('SessionService.bindToProject — legacy alias path (CRITICAL #1)', () 
     // `workspaceSource`. Both fields hold the same identity.
     expect(eventEmitter.emit).toHaveBeenCalledWith('session.bound', {
       sessionId: 'sess-happy',
-      tenantId: 'tenant-A',
+      solutionId: 'tenant-A',
       projectId: 'proj-happy',
       workspaceSource: { sourceIdentity: 'proj-happy' },
     });
@@ -298,7 +298,7 @@ describe('SessionService.attachWorkspaceSource (canonical, β-2)', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('rejects with BadRequestException when tenantId is missing', async () => {
+  it('rejects with BadRequestException when solutionId is missing', async () => {
     const socket: any = { id: 'socket-1', emit: jest.fn() };
     await service.getOrCreateSession('sess-canon-1', 'client-1', socket);
 
@@ -386,7 +386,7 @@ describe('SessionService.attachWorkspaceSource (canonical, β-2)', () => {
 
     expect(eventEmitter.emit).toHaveBeenCalledWith('session.bound', {
       sessionId: 'sess-event',
-      tenantId: 'tenant-A',
+      solutionId: 'tenant-A',
       // Compat field carries the same value as workspaceSource.sourceIdentity.
       projectId: 'proj-event',
       workspaceSource: {

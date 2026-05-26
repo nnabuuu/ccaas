@@ -1,20 +1,20 @@
 /**
- * Tenants Controller Tests
+ * Solutions Controller Tests
  *
  * Tests for tenant management endpoints including authentication and auto-create API key feature.
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { TenantsController } from './tenants.controller';
-import { TenantsService } from './tenants.service';
+import { SolutionsController } from './solutions.controller';
+import { SolutionsService } from './solutions.service';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { ScopesGuard } from '../auth/guards/scopes.guard';
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-describe('TenantsController', () => {
-  let controller: TenantsController;
-  let service: jest.Mocked<TenantsService>;
+describe('SolutionsController', () => {
+  let controller: SolutionsController;
+  let service: jest.Mocked<SolutionsService>;
   let apiKeyGuard: ApiKeyGuard;
   let scopesGuard: ScopesGuard;
 
@@ -27,10 +27,10 @@ describe('TenantsController', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [TenantsController],
+      controllers: [SolutionsController],
       providers: [
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: mockTenantsService,
         },
         {
@@ -51,8 +51,8 @@ describe('TenantsController', () => {
       })
       .compile();
 
-    controller = module.get<TenantsController>(TenantsController);
-    service = module.get(TenantsService) as jest.Mocked<TenantsService>;
+    controller = module.get<SolutionsController>(SolutionsController);
+    service = module.get(SolutionsService) as jest.Mocked<SolutionsService>;
     apiKeyGuard = module.get(ApiKeyGuard);
     scopesGuard = module.get(ScopesGuard);
   });
@@ -69,7 +69,7 @@ describe('TenantsController', () => {
   describe('create - backward compatibility', () => {
     it('should create tenant without API key when autoCreateApiKey not specified', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
       };
 
@@ -77,7 +77,7 @@ describe('TenantsController', () => {
         id: 'tenant-123',
         tenant: {
           id: 'tenant-123',
-          name: 'Test Tenant',
+          name: 'Test Solution',
           slug: 'test-tenant',
           createdAt: new Date(),
           status: 'active',
@@ -100,7 +100,7 @@ describe('TenantsController', () => {
 
     it('should create tenant without API key when autoCreateApiKey is false', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         autoCreateApiKey: false,
       };
@@ -109,7 +109,7 @@ describe('TenantsController', () => {
         id: 'tenant-123',
         tenant: {
           id: 'tenant-123',
-          name: 'Test Tenant',
+          name: 'Test Solution',
           slug: 'test-tenant',
           createdAt: new Date(),
           status: 'active',
@@ -133,7 +133,7 @@ describe('TenantsController', () => {
   describe('create - auto-create API key', () => {
     it('should create tenant with API key when autoCreateApiKey is true', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         autoCreateApiKey: true,
       };
@@ -142,7 +142,7 @@ describe('TenantsController', () => {
         id: 'tenant-123',
         tenant: {
           id: 'tenant-123',
-          name: 'Test Tenant',
+          name: 'Test Solution',
           slug: 'test-tenant',
           createdAt: new Date(),
           status: 'active',
@@ -153,7 +153,7 @@ describe('TenantsController', () => {
         },
         apiKey: {
           id: 'key-456',
-          name: 'Default API Key for Test Tenant',
+          name: 'Default API Key for Test Solution',
           keyPrefix: 'sk-testtena-abc',
           scopes: ['skills:read', 'skills:execute', 'chat'],
           rateLimitRpm: 60,
@@ -185,8 +185,8 @@ describe('TenantsController', () => {
   describe('findAll', () => {
     it('should return all tenants', async () => {
       const mockTenants = [
-        { id: 'tenant-1', name: 'Tenant One', slug: 'tenant-one', status: 'active' },
-        { id: 'tenant-2', name: 'Tenant Two', slug: 'tenant-two', status: 'active' },
+        { id: 'tenant-1', name: 'Solution One', slug: 'tenant-one', status: 'active' },
+        { id: 'tenant-2', name: 'Solution Two', slug: 'tenant-two', status: 'active' },
       ];
 
       service.findAll.mockResolvedValue(mockTenants as any);
@@ -202,7 +202,7 @@ describe('TenantsController', () => {
     it('should return a tenant by id', async () => {
       const mockTenant = {
         id: 'tenant-123',
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         status: 'active',
       };
@@ -218,7 +218,7 @@ describe('TenantsController', () => {
     it('should throw NotFoundException when tenant not found', async () => {
       service.findOne.mockResolvedValue(null);
 
-      await expect(controller.findOne('nonexistent')).rejects.toThrow('Tenant not found: nonexistent');
+      await expect(controller.findOne('nonexistent')).rejects.toThrow('Solution not found: nonexistent');
     });
   });
 

@@ -54,7 +54,7 @@ describe('LocalWorkspaceProvider', () => {
     // Sanity guard: providers must not duplicate WorkspaceService.createMcpSymlinks
     // (called later by SessionService.createMcpSymlinks once mcpServers wired).
     // If a future change adds it here, this test should explicitly break.
-    const handle = await provider.create({ sessionId: 's-mcp', tenantId: 't1' });
+    const handle = await provider.create({ sessionId: 's-mcp', solutionId: 't1' });
     // No assertion needed beyond "create() returned without error and didn't
     // try to inject a WorkspaceService" — the absence of a WorkspaceService
     // provider in beforeEach would have thrown if create() depended on it.

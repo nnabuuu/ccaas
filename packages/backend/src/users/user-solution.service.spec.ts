@@ -1,5 +1,5 @@
 /**
- * UserTenantService Unit Tests
+ * UserSolutionService Unit Tests
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -7,19 +7,19 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { AlreadyExistsException } from '../protocol/http-exceptions';
-import { UserTenantService } from './user-tenant.service';
-import { UserTenant } from './entities/user-tenant.entity';
-import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
-import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
+import { UserSolutionService } from './user-solution.service';
+import { UserSolution } from './entities/user-solution.entity';
+import { CreateUserTenantDto } from './dto/create-user-solution.dto';
+import { UpdateUserTenantDto } from './dto/update-user-solution.dto';
 
-describe('UserTenantService', () => {
-  let service: UserTenantService;
-  let repository: jest.Mocked<Repository<UserTenant>>;
+describe('UserSolutionService', () => {
+  let service: UserSolutionService;
+  let repository: jest.Mocked<Repository<UserSolution>>;
 
   const mockUserTenant = {
     id: 'ut-123',
     userId: 'user-123',
-    tenantId: 'tenant-123',
+    solutionId: 'tenant-123',
     role: 'developer' as const,
     canCreateSkills: true,
     isActive: true,
@@ -53,16 +53,16 @@ describe('UserTenantService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        UserTenantService,
+        UserSolutionService,
         {
-          provide: getRepositoryToken(UserTenant),
+          provide: getRepositoryToken(UserSolution),
           useValue: mockRepository,
         },
       ],
     }).compile();
 
-    service = module.get<UserTenantService>(UserTenantService);
-    repository = module.get(getRepositoryToken(UserTenant));
+    service = module.get<UserSolutionService>(UserSolutionService);
+    repository = module.get(getRepositoryToken(UserSolution));
   });
 
   afterEach(() => {
@@ -73,7 +73,7 @@ describe('UserTenantService', () => {
     it('should create a user-tenant relationship with admin role', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         role: 'admin',
       };
 
@@ -84,7 +84,7 @@ describe('UserTenantService', () => {
       const result = await service.create(createDto);
 
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { userId: 'user-123', tenantId: 'tenant-123' },
+        where: { userId: 'user-123', solutionId: 'tenant-123' },
       });
       expect(repository.create).toHaveBeenCalledWith({
         ...createDto,
@@ -97,7 +97,7 @@ describe('UserTenantService', () => {
     it('should create a user-tenant relationship with developer role', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         role: 'developer',
       };
 
@@ -114,7 +114,7 @@ describe('UserTenantService', () => {
     it('should create a user-tenant relationship with viewer role', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         role: 'viewer',
       };
 
@@ -131,7 +131,7 @@ describe('UserTenantService', () => {
     it('should respect explicit canCreateSkills value', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         role: 'developer',
         canCreateSkills: false, // Explicitly set to false
       };
@@ -148,7 +148,7 @@ describe('UserTenantService', () => {
     it('should throw AlreadyExistsException if relationship already exists', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         role: 'developer',
       };
 
@@ -170,7 +170,7 @@ describe('UserTenantService', () => {
 
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('ut');
       expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('ut.user', 'user');
-      expect(mockQb.where).toHaveBeenCalledWith('ut.tenantId = :tenantId', { tenantId: 'tenant-123' });
+      expect(mockQb.where).toHaveBeenCalledWith('ut.solutionId = :solutionId', { solutionId: 'tenant-123' });
       expect(mockQb.andWhere).toHaveBeenCalledWith('ut.isActive = :isActive', { isActive: true });
       expect(mockQb.orderBy).toHaveBeenCalledWith('ut.joinedAt', 'DESC');
       expect(result).toEqual(userTenants);
@@ -265,7 +265,7 @@ describe('UserTenantService', () => {
       const result = await service.findUserInTenant('user-123', 'tenant-123');
 
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { userId: 'user-123', tenantId: 'tenant-123' },
+        where: { userId: 'user-123', solutionId: 'tenant-123' },
         relations: ['user', 'tenant'],
       });
       expect(result).toEqual(mockUserTenant);
@@ -350,7 +350,7 @@ describe('UserTenantService', () => {
 
   describe('canPerformAction', () => {
     it('should return true for admin with viewer requirement', () => {
-      const adminUserTenant = { ...mockUserTenant, role: 'admin' as const, isActive: true } as UserTenant;
+      const adminUserTenant = { ...mockUserTenant, role: 'admin' as const, isActive: true } as UserSolution;
 
       const result = service.canPerformAction(adminUserTenant, 'viewer');
 
@@ -358,7 +358,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return true for developer with developer requirement', () => {
-      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserTenant;
+      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserSolution;
 
       const result = service.canPerformAction(devUserTenant, 'developer');
 
@@ -366,7 +366,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return false for viewer with developer requirement', () => {
-      const viewerUserTenant = { ...mockUserTenant, role: 'viewer' as const, isActive: true } as UserTenant;
+      const viewerUserTenant = { ...mockUserTenant, role: 'viewer' as const, isActive: true } as UserSolution;
 
       const result = service.canPerformAction(viewerUserTenant, 'developer');
 
@@ -374,7 +374,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return false for inactive user', () => {
-      const inactiveUserTenant = { ...mockUserTenant, isActive: false } as UserTenant;
+      const inactiveUserTenant = { ...mockUserTenant, isActive: false } as UserSolution;
 
       const result = service.canPerformAction(inactiveUserTenant, 'viewer');
 
@@ -390,7 +390,7 @@ describe('UserTenantService', () => {
 
   describe('canEditResource', () => {
     it('should return true for admin editing any resource', () => {
-      const adminUserTenant = { ...mockUserTenant, role: 'admin' as const, isActive: true } as UserTenant;
+      const adminUserTenant = { ...mockUserTenant, role: 'admin' as const, isActive: true } as UserSolution;
 
       const result = service.canEditResource(adminUserTenant, 'other-user-id', 'user-123');
 
@@ -398,7 +398,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return true for developer editing own resource', () => {
-      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserTenant;
+      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserSolution;
 
       const result = service.canEditResource(devUserTenant, 'user-123', 'user-123');
 
@@ -406,7 +406,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return false for developer editing others resource', () => {
-      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserTenant;
+      const devUserTenant = { ...mockUserTenant, role: 'developer' as const, isActive: true } as UserSolution;
 
       const result = service.canEditResource(devUserTenant, 'other-user-id', 'user-123');
 
@@ -414,7 +414,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return false for viewer', () => {
-      const viewerUserTenant = { ...mockUserTenant, role: 'viewer' as const, isActive: true } as UserTenant;
+      const viewerUserTenant = { ...mockUserTenant, role: 'viewer' as const, isActive: true } as UserSolution;
 
       const result = service.canEditResource(viewerUserTenant, 'user-123', 'user-123');
 
@@ -422,7 +422,7 @@ describe('UserTenantService', () => {
     });
 
     it('should return false for inactive user', () => {
-      const inactiveUserTenant = { ...mockUserTenant, isActive: false } as UserTenant;
+      const inactiveUserTenant = { ...mockUserTenant, isActive: false } as UserSolution;
 
       const result = service.canEditResource(inactiveUserTenant, 'user-123', 'user-123');
 

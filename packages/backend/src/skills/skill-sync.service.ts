@@ -35,7 +35,7 @@ export class SkillSyncService {
    */
   async syncToSession(
     sessionDir: string,
-    tenantId: string,
+    solutionId: string,
     options: SyncOptions = {},
   ): Promise<SyncResult> {
     const startTime = Date.now();
@@ -45,7 +45,7 @@ export class SkillSyncService {
 
     const { publishedOnly = true, skillSlugs, includeManifest = false } = options;
 
-    this.logger.log(`Syncing skills for tenant ${tenantId} to ${sessionDir}`);
+    this.logger.log(`Syncing skills for tenant ${solutionId} to ${sessionDir}`);
 
     // Create .claude/skills directory in session workspace
     const skillsDir = path.join(sessionDir, '.claude', 'skills');
@@ -53,15 +53,15 @@ export class SkillSyncService {
 
     // Get skills for tenant
     let skills = publishedOnly
-      ? await this.skillsService.findPublished(tenantId)
-      : (await this.skillsService.findAll(tenantId, { limit: 1000 })).items;
+      ? await this.skillsService.findPublished(solutionId)
+      : (await this.skillsService.findAll(solutionId, { limit: 1000 })).items;
 
     // Filter by slugs if specified
     if (skillSlugs) {
       skills = skills.filter((s) => skillSlugs.includes(s.slug));
     }
 
-    this.logger.log(`Found ${skills.length} skills to sync for tenant ${tenantId}`);
+    this.logger.log(`Found ${skills.length} skills to sync for tenant ${solutionId}`);
 
     // Sync each skill
     for (const skill of skills) {
@@ -159,10 +159,10 @@ export class SkillSyncService {
    */
   async syncSingleSkill(
     sessionDir: string,
-    tenantId: string,
+    solutionId: string,
     skillIdOrSlug: string,
   ): Promise<boolean> {
-    const result = await this.syncToSession(sessionDir, tenantId, {
+    const result = await this.syncToSession(sessionDir, solutionId, {
       skillSlugs: [skillIdOrSlug],
     });
     return result.skillCount > 0;

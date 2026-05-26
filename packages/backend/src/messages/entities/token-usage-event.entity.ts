@@ -22,7 +22,7 @@ export interface ContextWindowUsage {
 @Index('IDX_token_usage_events_session_created_at', ['sessionId', 'createdAt'])
 @Index('IDX_token_usage_events_message_id', ['messageId'])
 @Index('IDX_token_usage_events_model', ['model'])
-@Index('IDX_token_usage_events_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_token_usage_events_tenant_created_at', ['solutionId', 'createdAt'])
 export class TokenUsageEvent {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -36,11 +36,11 @@ export class TokenUsageEvent {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_token_usage_events_tenant_id')
-  tenantId?: string;
+  solutionId?: string;
 
   /**
    * Model used (e.g., 'claude-opus-4.5', 'claude-sonnet-4')

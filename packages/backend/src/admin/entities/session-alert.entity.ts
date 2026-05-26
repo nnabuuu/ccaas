@@ -48,18 +48,18 @@ export interface AlertThreshold {
 }
 
 @Entity('session_alerts')
-@Index('IDX_session_alerts_tenant_enabled', ['tenantId', 'enabled'])
+@Index('IDX_session_alerts_tenant_enabled', ['solutionId', 'enabled'])
 @Index('IDX_session_alerts_alert_type_enabled', ['alertType', 'enabled'])
 export class SessionAlert {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   /**
-   * Tenant this alert belongs to (null for global alerts)
+   * Solution this alert belongs to (null for global alerts)
    */
   @Column({ type: 'varchar', length: 64, nullable: true })
   @Index('IDX_session_alerts_tenant_id')
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   /**
    * Type of alert

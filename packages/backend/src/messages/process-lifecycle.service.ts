@@ -11,7 +11,7 @@ import { ProcessLifecycleEvent, ProcessEventType } from './entities/process-life
 
 export interface CreateProcessEventDto {
   sessionId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   eventType: ProcessEventType;
   pid?: number | null;
   exitCode?: number | null;
@@ -38,7 +38,7 @@ export class ProcessLifecycleService {
   async recordEvent(dto: CreateProcessEventDto): Promise<ProcessLifecycleEvent> {
     const event = this.eventRepository.create({
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId ?? undefined,
+      solutionId: dto.solutionId ?? undefined,
       eventType: dto.eventType,
       pid: dto.pid ?? null,
       exitCode: dto.exitCode ?? null,
@@ -63,11 +63,11 @@ export class ProcessLifecycleService {
     pid: number,
     command?: string,
     workingDir?: string,
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<ProcessLifecycleEvent> {
     return this.recordEvent({
       sessionId,
-      tenantId,
+      solutionId,
       eventType: 'spawn',
       pid,
       command,
@@ -83,11 +83,11 @@ export class ProcessLifecycleService {
     pid: number | null,
     exitCode: number | null,
     signal?: string,
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<ProcessLifecycleEvent> {
     return this.recordEvent({
       sessionId,
-      tenantId,
+      solutionId,
       eventType: 'exit',
       pid,
       exitCode,
@@ -103,11 +103,11 @@ export class ProcessLifecycleService {
     pid: number | null,
     errorMessage?: string,
     stderr?: string,
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<ProcessLifecycleEvent> {
     return this.recordEvent({
       sessionId,
-      tenantId,
+      solutionId,
       eventType: 'crash',
       pid,
       errorMessage,
@@ -122,11 +122,11 @@ export class ProcessLifecycleService {
     sessionId: string,
     pid: number | null,
     signal: string = 'SIGTERM',
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<ProcessLifecycleEvent> {
     return this.recordEvent({
       sessionId,
-      tenantId,
+      solutionId,
       eventType: 'kill',
       pid,
       signal,

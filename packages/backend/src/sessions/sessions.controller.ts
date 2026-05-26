@@ -44,7 +44,7 @@ import { AttachmentService } from './services/attachment.service';
 import { CliProcessService } from './services/cli-process.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -55,12 +55,12 @@ import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
 import { v4 as uuidv4 } from 'uuid';
 import { QuotaGuard } from '../admin/guards/quota.guard';
-import { TenantGuard } from '../tenants/tenant.guard';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
 import { OptionalAuth, Auth, Ctx } from '../auth/decorators';
 import type { RequestContext } from '../auth/types';
 import { Session } from '../admin/entities/session.entity';
 import { TurnsService } from '../admin/services/turns.service';
-import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { CurrentTenant } from '../common/decorators/current-solution.decorator';
 import {
   ListConversationsQuery,
   SearchConversationsQuery,
@@ -82,7 +82,7 @@ export class SessionsController {
     private readonly cliProcessService: CliProcessService,
     private readonly skillSyncService: SkillSyncService,
     private readonly skillsService: SkillsService,
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly messagesService: MessagesService,
     private readonly conversationContextService: ConversationContextService,
     private readonly streamRegistry: StreamRegistryService,
@@ -100,7 +100,7 @@ export class SessionsController {
    * GET /api/v1/sessions
    */
   @Get()
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({
     summary: '列出会话 / List sessions',
@@ -113,7 +113,7 @@ export class SessionsController {
   @ApiResponse({ status: 200, description: 'Session list' })
   async listSessions(
     @Query() query: ListConversationsQuery,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.max(1, Math.min(100, query.limit ?? 20));
@@ -121,9 +121,9 @@ export class SessionsController {
 
     const qb = this.sessionRepository.createQueryBuilder('session');
 
-    // Tenant isolation — tenantId set by TenantGuard
-    if (tenantId) {
-      qb.andWhere('session.tenantId = :tenantId', { tenantId });
+    // Solution isolation — solutionId set by SolutionAuthGuard
+    if (solutionId) {
+      qb.andWhere('session.solutionId = :solutionId', { solutionId });
     }
 
     qb.andWhere('session.status != :closed', { closed: 'closed' });
@@ -151,7 +151,7 @@ export class SessionsController {
    * GET /api/v1/sessions/search
    */
   @Get('search')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({ summary: '搜索会话 / Search sessions by title' })
   @ApiQuery({ name: 'q', required: true, type: String })
@@ -160,12 +160,12 @@ export class SessionsController {
   @ApiResponse({ status: 200, description: 'Search results' })
   async searchSessions(
     @Query() query: SearchConversationsQuery,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
     const qb = this.sessionRepository.createQueryBuilder('session');
 
-    if (tenantId) {
-      qb.andWhere('session.tenantId = :tenantId', { tenantId });
+    if (solutionId) {
+      qb.andWhere('session.solutionId = :solutionId', { solutionId });
     }
 
     qb.andWhere('session.status != :closed', { closed: 'closed' });
@@ -188,7 +188,7 @@ export class SessionsController {
    * PATCH /api/v1/sessions/:sessionId
    */
   @Patch(':sessionId')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @Auth('chat')
   @ApiOperation({ summary: '更新会话 / Update session metadata' })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
@@ -200,7 +200,7 @@ export class SessionsController {
     @Ctx() ctx: RequestContext,
   ) {
     const session = await this.sessionRepository.findOne({
-      where: { sessionId, tenantId: ctx.tenantId },
+      where: { sessionId, solutionId: ctx.solutionId },
     });
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
@@ -217,7 +217,7 @@ export class SessionsController {
    * DELETE /api/v1/sessions/:sessionId
    */
   @Delete(':sessionId')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @Auth('chat')
   @ApiOperation({ summary: '删除会话 / Soft delete a session' })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
@@ -228,7 +228,7 @@ export class SessionsController {
     @Ctx() ctx: RequestContext,
   ) {
     const session = await this.sessionRepository.findOne({
-      where: { sessionId, tenantId: ctx.tenantId },
+      where: { sessionId, solutionId: ctx.solutionId },
     });
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
@@ -245,7 +245,7 @@ export class SessionsController {
    * GET /api/v1/sessions/:sessionId/turns
    */
   @Get(':sessionId/turns')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({ summary: '获取会话 Turn 列表 / Get session turns' })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
@@ -253,10 +253,10 @@ export class SessionsController {
   @ApiResponse({ status: 404, description: 'Session not found' })
   async getSessionTurns(
     @Param('sessionId') sessionId: string,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
     const where: Record<string, string> = { sessionId };
-    if (tenantId) where.tenantId = tenantId;
+    if (solutionId) where.solutionId = solutionId;
 
     const session = await this.sessionRepository.findOne({ where });
     if (!session) {
@@ -332,18 +332,18 @@ Response is \`text/event-stream\`, closed when Turn completes.
 
     let { enabledSkills } = data;
 
-    // Auto-resolve tenantId from API key if not provided in body
-    if (!data.tenantId) {
-      data.tenantId = ctx?.tenantId;
+    // Auto-resolve solutionId from API key if not provided in body
+    if (!data.solutionId) {
+      data.solutionId = ctx?.solutionId;
     }
 
-    if (!data.tenantId) {
+    if (!data.solutionId) {
       this.streamRegistry.emit(sessionId, {
         type: 'error',
         sessionId,
         timestamp: new Date().toISOString(),
         code: 'MISSING_TENANT_ID',
-        message: 'tenantId is required',
+        message: 'solutionId is required',
         recoverable: false,
       });
       this.streamRegistry.closeSession(sessionId);
@@ -353,8 +353,8 @@ Response is \`text/event-stream\`, closed when Turn completes.
     try {
       // Resolve tenant UUID once — reused for both skill loading and system
       // prompt generation, eliminating a redundant DB round-trip per request.
-      const tenant = await this.tenantsService.findOne(data.tenantId);
-      const resolvedTenantId = tenant?.id || data.tenantId;
+      const tenant = await this.tenantsService.findOne(data.solutionId);
+      const resolvedTenantId = tenant?.id || data.solutionId;
 
       // Auto-load tenant skills if not provided AND no template will resolve them
       this.logger.debug(
@@ -513,7 +513,7 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
    * Backend writes the response to CLI stdin, resuming the paused LLM.
    */
   @Post(':sessionId/control-response')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({
     summary: '提交控制响应 / Submit Control Response',
@@ -642,9 +642,9 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
   })
   restartSession(
     @Param('sessionId') sessionId: string,
-    @Body() body?: { tenantId?: string },
+    @Body() body?: { solutionId?: string },
   ) {
-    const success = this.sessionService.restartSession(sessionId, body?.tenantId);
+    const success = this.sessionService.restartSession(sessionId, body?.solutionId);
     if (!success) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
@@ -665,7 +665,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    *
    * Idempotent on same sourceIdentity; reattaching to a different
    * identity returns 409 (use a fresh session). Cross-tenant attaches
-   * are rejected with 403 — the body's tenantId must match the
+   * are rejected with 403 — the body's solutionId must match the
    * session's owning tenant (enforced in
    * `SessionService.attachWorkspaceSource`).
    *
@@ -696,8 +696,8 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
     status: 200,
     description: 'Attached',
   })
-  @ApiResponse({ status: 400, description: 'sourceUrl / sourceIdentity / tenantId missing' })
-  @ApiResponse({ status: 403, description: 'tenant mismatch — body tenantId differs from session owner' })
+  @ApiResponse({ status: 400, description: 'sourceUrl / sourceIdentity / solutionId missing' })
+  @ApiResponse({ status: 403, description: 'tenant mismatch — body solutionId differs from session owner' })
   @ApiResponse({ status: 404, description: 'Session not found' })
   @ApiResponse({ status: 409, description: 'session already attached to a different sourceIdentity' })
   async attachWorkspaceSource(
@@ -715,7 +715,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
     // same sessionId attaches twice with the same sourceIdentity but a
     // different sourceUrl, the second value DOES overwrite — by design,
     // for the case where a solution moves between dev/staging hosts.
-    await this.sessionService.attachWorkspaceSource(sessionId, body.tenantId, {
+    await this.sessionService.attachWorkspaceSource(sessionId, body.solutionId, {
       sourceIdentity: body.sourceIdentity,
       sourceUrl: body.sourceUrl,
       ...(body.sourceSchemaHash ? { sourceSchemaHash: body.sourceSchemaHash } : {}),
@@ -743,7 +743,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    *
    * Idempotent on same projectId; rebinding to a different project
    * returns 409 (use a fresh session). Cross-tenant binds are rejected
-   * with 403 — the body's tenantId must match the session's owning
+   * with 403 — the body's solutionId must match the session's owning
    * tenant (enforced in SessionService.bindToProject).
    *
    * TODO(auth): @OptionalAuth + AUTH_ALLOW_ANONYMOUS=true is dev-only.
@@ -764,15 +764,15 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
   })
   @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
   @ApiResponse({ status: 200, description: '绑定成功 / Bound' })
-  @ApiResponse({ status: 400, description: 'projectId / tenantId missing' })
-  @ApiResponse({ status: 403, description: 'tenant mismatch — body tenantId differs from session owner' })
+  @ApiResponse({ status: 400, description: 'projectId / solutionId missing' })
+  @ApiResponse({ status: 403, description: 'tenant mismatch — body solutionId differs from session owner' })
   @ApiResponse({ status: 404, description: '会话不存在 / Session not found' })
   @ApiResponse({ status: 409, description: 'session already bound to a different projectId' })
   async bindToProject(
     @Param('sessionId') sessionId: string,
     @Body() body: BindProjectDto,
   ): Promise<{ success: true; sessionId: string; projectId: string }> {
-    await this.sessionService.bindToProject(sessionId, body.tenantId, body.projectId);
+    await this.sessionService.bindToProject(sessionId, body.solutionId, body.projectId);
     return { success: true, sessionId, projectId: body.projectId };
   }
 

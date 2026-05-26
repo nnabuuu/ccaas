@@ -19,9 +19,9 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { ApiKey } from './entities/api-key.entity';
-import { Tenant } from '../tenants/entities/tenant.entity';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { Solution } from '../solutions/entities/solution.entity';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 import { UsersService } from '../users/users.service';
 import type {
   ApiKeyScope,
@@ -54,9 +54,9 @@ export class ApiKeyService implements OnModuleInit {
   constructor(
     @InjectRepository(ApiKey)
     private readonly apiKeyRepository: Repository<ApiKey>,
-    @Inject(forwardRef(() => TenantsService))
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    @Inject(forwardRef(() => SolutionsService))
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
@@ -127,10 +127,10 @@ export class ApiKeyService implements OnModuleInit {
    *   var is set for CI/CD reproducibility. Not exposed via REST API.
    * @internal
    */
-  async create(tenantId: string, dto: CreateApiKeyDto, rawKeyOverride?: string): Promise<CreateApiKeyResponse> {
-    const tenant = await this.tenantsService.findOne(tenantId);
+  async create(solutionId: string, dto: CreateApiKeyDto, rawKeyOverride?: string): Promise<CreateApiKeyResponse> {
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Generate raw key with prefix, or use override if provided.
@@ -171,7 +171,7 @@ export class ApiKeyService implements OnModuleInit {
     }
 
     const apiKey = this.apiKeyRepository.create({
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       name: dto.name,
       keyHash,
       keyPrefix: rawKey.substring(0, 16),
@@ -206,9 +206,9 @@ export class ApiKeyService implements OnModuleInit {
   /**
    * Find API keys for a tenant
    */
-  async findByTenantId(tenantId: string): Promise<ApiKeyResponse[]> {
+  async findByTenantId(solutionId: string): Promise<ApiKeyResponse[]> {
     const keys = await this.apiKeyRepository.find({
-      where: { tenantId },
+      where: { solutionId },
       order: { createdAt: 'DESC' },
     });
 
@@ -314,7 +314,7 @@ export class ApiKeyService implements OnModuleInit {
   /**
    * Validate an API key and return the tenant context
    */
-  async validateKey(rawKey: string): Promise<{ apiKey: ApiKey; tenant: Tenant }> {
+  async validateKey(rawKey: string): Promise<{ apiKey: ApiKey; tenant: Solution }> {
     if (!rawKey || !rawKey.startsWith(API_KEY_PREFIX)) {
       throw new SessionExpiredException('Invalid API key format');
     }
@@ -338,7 +338,7 @@ export class ApiKeyService implements OnModuleInit {
     }
 
     if (!apiKey.tenant || apiKey.tenant.status !== 'active') {
-      throw new SessionExpiredException('Tenant is not active');
+      throw new SessionExpiredException('Solution is not active');
     }
 
     // Update last used
@@ -371,7 +371,7 @@ export class ApiKeyService implements OnModuleInit {
       if (apiKey.userId && user) {
         userTenant = await this.userTenantService.findUserInTenant(apiKey.userId, tenant.id);
 
-        // Builder must be active in home tenant; cross-tenant checked per-request in TenantGuard
+        // Builder must be active in home tenant; cross-tenant checked per-request in SolutionAuthGuard
         if (!userTenant || !userTenant.isActive) {
           if (apiKey.scopes?.includes('builder')) {
             throw new SessionExpiredException('Builder user is not active in the key\'s home tenant');
@@ -381,7 +381,7 @@ export class ApiKeyService implements OnModuleInit {
       }
 
       return {
-        tenantId: tenant.id,
+        solutionId: tenant.id,
         tenant,
         apiKeyId: apiKey.id,
         apiKeyScopes: apiKey.scopes,
@@ -407,7 +407,7 @@ export class ApiKeyService implements OnModuleInit {
     }
 
     return {
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       tenant,
       requestId,
       timestamp,
@@ -509,7 +509,7 @@ export class ApiKeyService implements OnModuleInit {
   private toResponse(key: ApiKey): ApiKeyResponse {
     return {
       id: key.id,
-      tenantId: key.tenantId,
+      solutionId: key.solutionId,
       name: key.name,
       keyPrefix: key.keyPrefix,
       scopes: key.scopes,

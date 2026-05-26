@@ -7,7 +7,7 @@
  *
  * Request body for POST /api/v1/sessions/:sessionId/bind-project.
  *
- * Tenant note: the body-supplied tenantId is validated against the
+ * Solution note: the body-supplied solutionId is validated against the
  * session's owning tenant inside `SessionService.bindToProject` (a
  * deprecated alias that delegates to `attachWorkspaceSource`). The
  * DTO only enforces shape; the service enforces ownership.
@@ -33,5 +33,5 @@ export class BindProjectDto {
   })
   @IsString()
   @IsNotEmpty()
-  tenantId: string;
+  solutionId: string;
 }

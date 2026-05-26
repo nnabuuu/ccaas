@@ -5,7 +5,7 @@
  *   - key grammar: ^[A-Za-z0-9_.-]{1,200}$
  *   - per-value size: 64 KB after JSON.stringify
  *   - per-session total size: 256 KB across all keys
- *   - tenant ownership: session must be in memory AND its tenantId
+ *   - tenant ownership: session must be in memory AND its solutionId
  *     must match the caller (mirrors `SessionFsService`)
  *
  * Backed by the backend's TypeORM SQLite (`session_metadata` table),
@@ -57,19 +57,19 @@ export class SessionMetadataService {
     private readonly repo: Repository<SessionMetadata>,
   ) {}
 
-  async list(sessionId: string, tenantId: string): Promise<SessionMetadataRow[]> {
-    this.requireOwnedSession(sessionId, tenantId);
+  async list(sessionId: string, solutionId: string): Promise<SessionMetadataRow[]> {
+    this.requireOwnedSession(sessionId, solutionId);
     const rows = await this.repo.find({ where: { sessionId } });
     return rows.map(this.toRow);
   }
 
   async get(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     key: string,
   ): Promise<SessionMetadataRow> {
     this.requireKey(key);
-    this.requireOwnedSession(sessionId, tenantId);
+    this.requireOwnedSession(sessionId, solutionId);
     const row = await this.repo.findOne({ where: { sessionId, key } });
     if (!row) throw new NotFoundException(`no metadata for ${sessionId}/${key}`);
     return this.toRow(row);
@@ -77,12 +77,12 @@ export class SessionMetadataService {
 
   async put(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     key: string,
     value: unknown,
   ): Promise<SessionMetadataRow> {
     this.requireKey(key);
-    this.requireOwnedSession(sessionId, tenantId);
+    this.requireOwnedSession(sessionId, solutionId);
 
     const serialized = JSON.stringify(value ?? null);
     const byteLen = Buffer.byteLength(serialized, 'utf8');
@@ -118,15 +118,15 @@ export class SessionMetadataService {
       sessionId,
       key,
       value: serialized,
-      tenantId,
+      solutionId,
     });
     const saved = await this.repo.save(fresh);
     return this.toRow(saved);
   }
 
-  async delete(sessionId: string, tenantId: string, key: string): Promise<void> {
+  async delete(sessionId: string, solutionId: string, key: string): Promise<void> {
     this.requireKey(key);
-    this.requireOwnedSession(sessionId, tenantId);
+    this.requireOwnedSession(sessionId, solutionId);
     const result = await this.repo.delete({ sessionId, key });
     if (!result.affected) {
       throw new NotFoundException(`no metadata for ${sessionId}/${key}`);
@@ -144,21 +144,21 @@ export class SessionMetadataService {
   }
 
   /**
-   * Tenant ownership — same defensive-not-load-bearing semantics as
+   * Solution ownership — same defensive-not-load-bearing semantics as
    * `SessionFsService.requireOwnedSession`. Admin scope (current
    * stage-1 control) is cross-tenant by design; the equality check
    * catches admin-with-wrong-header mistakes. Stage-2 may add a
    * tenant-bound `sessions:meta` scope where this check becomes the
    * real security boundary.
    */
-  private requireOwnedSession(sessionId: string, tenantId: string) {
+  private requireOwnedSession(sessionId: string, solutionId: string) {
     const session = this.sessions.getSession(sessionId);
     if (!session) {
       throw new NotFoundException(
         `session not found or not active: ${sessionId}`,
       );
     }
-    if (session.tenantId && session.tenantId !== tenantId) {
+    if (session.solutionId && session.solutionId !== solutionId) {
       throw new ForbiddenException(
         `session ${sessionId} belongs to a different tenant`,
       );

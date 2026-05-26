@@ -8,8 +8,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { TenantQuota } from './entities/tenant-quota.entity';
-import { PLAN_DEFAULT_TOKEN_QUOTA, TenantPlan } from '../tenants/entities/tenant.entity';
+import { SolutionQuota } from './entities/solution-quota.entity';
+import { PLAN_DEFAULT_TOKEN_QUOTA, TenantPlan } from '../solutions/entities/solution.entity';
 
 export interface QuotaCheckResult {
   allowed: boolean;
@@ -24,21 +24,21 @@ export class QuotaService {
   private readonly logger = new Logger(QuotaService.name);
 
   constructor(
-    @InjectRepository(TenantQuota)
-    private readonly quotaRepository: Repository<TenantQuota>,
+    @InjectRepository(SolutionQuota)
+    private readonly quotaRepository: Repository<SolutionQuota>,
   ) {}
 
   /**
    * Get or create the monthly quota for a tenant.
    * If the period has expired, resets usage and advances the period.
    */
-  async getOrCreateQuota(tenantId: string, plan: TenantPlan): Promise<TenantQuota> {
+  async getOrCreateQuota(solutionId: string, plan: TenantPlan): Promise<SolutionQuota> {
     let quota = await this.quotaRepository.findOne({
-      where: { tenantId, period: 'monthly' },
+      where: { solutionId, period: 'monthly' },
     });
 
     if (!quota) {
-      quota = await this.createDefaultQuota(tenantId, plan);
+      quota = await this.createDefaultQuota(solutionId, plan);
     } else if (new Date(quota.periodEnd) < new Date()) {
       quota = await this.resetQuota(quota);
     }
@@ -50,8 +50,8 @@ export class QuotaService {
    * Check whether a tenant is within their token quota.
    * Returns allowed=true if maxTokens === -1 (unlimited/BYOK).
    */
-  async checkQuota(tenantId: string, plan: TenantPlan): Promise<QuotaCheckResult> {
-    const quota = await this.getOrCreateQuota(tenantId, plan);
+  async checkQuota(solutionId: string, plan: TenantPlan): Promise<QuotaCheckResult> {
+    const quota = await this.getOrCreateQuota(solutionId, plan);
 
     // -1 = unlimited (BYOK plan)
     if (quota.maxTokens === -1) {
@@ -78,32 +78,32 @@ export class QuotaService {
    * Atomically increment token usage for a tenant's monthly quota.
    * Logs a warning when the alert threshold is crossed.
    */
-  async incrementTokenUsage(tenantId: string, tokens: number): Promise<void> {
+  async incrementTokenUsage(solutionId: string, tokens: number): Promise<void> {
     // Atomic update to avoid race conditions
     const result = await this.quotaRepository
       .createQueryBuilder()
-      .update(TenantQuota)
+      .update(SolutionQuota)
       .set({ currentTokens: () => `currentTokens + ${Math.round(tokens)}` })
-      .where('tenantId = :tenantId AND period = :period', {
-        tenantId,
+      .where('solutionId = :solutionId AND period = :period', {
+        solutionId,
         period: 'monthly',
       })
       .execute();
 
     if (result.affected === 0) {
-      this.logger.warn(`No quota record found for tenant ${tenantId}, skipping increment`);
+      this.logger.warn(`No quota record found for tenant ${solutionId}, skipping increment`);
       return;
     }
 
     // Check alert threshold (non-blocking)
     const quota = await this.quotaRepository.findOne({
-      where: { tenantId, period: 'monthly' },
+      where: { solutionId, period: 'monthly' },
     });
     if (quota && quota.maxTokens > 0) {
       const usagePercent = (quota.currentTokens / quota.maxTokens) * 100;
       if (usagePercent >= quota.alertThreshold) {
         this.logger.warn(
-          `Tenant ${tenantId} quota alert: ${quota.currentTokens}/${quota.maxTokens} tokens ` +
+          `Solution ${solutionId} quota alert: ${quota.currentTokens}/${quota.maxTokens} tokens ` +
             `(${Math.round(usagePercent)}% used, threshold: ${quota.alertThreshold}%)`,
         );
       }
@@ -137,7 +137,7 @@ export class QuotaService {
   /**
    * Create a default monthly quota for a tenant based on their plan.
    */
-  async createDefaultQuota(tenantId: string, plan: TenantPlan): Promise<TenantQuota> {
+  async createDefaultQuota(solutionId: string, plan: TenantPlan): Promise<SolutionQuota> {
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -145,7 +145,7 @@ export class QuotaService {
     const maxTokens = PLAN_DEFAULT_TOKEN_QUOTA[plan];
 
     const quota = this.quotaRepository.create({
-      tenantId,
+      solutionId,
       period: 'monthly',
       maxTokens,
       maxSessions: 0, // not enforced
@@ -160,7 +160,7 @@ export class QuotaService {
 
     const saved = await this.quotaRepository.save(quota);
     this.logger.log(
-      `Created default quota for tenant ${tenantId}: ` +
+      `Created default quota for tenant ${solutionId}: ` +
         `maxTokens=${maxTokens === -1 ? 'unlimited' : maxTokens}`,
     );
     return saved;
@@ -169,7 +169,7 @@ export class QuotaService {
   /**
    * Reset a quota record for the next period.
    */
-  private async resetQuota(quota: TenantQuota): Promise<TenantQuota> {
+  private async resetQuota(quota: SolutionQuota): Promise<SolutionQuota> {
     const now = new Date();
     quota.currentTokens = 0;
     quota.currentSessions = 0;
@@ -178,7 +178,7 @@ export class QuotaService {
     quota.periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     const saved = await this.quotaRepository.save(quota);
-    this.logger.log(`Reset quota for tenant ${quota.tenantId}`);
+    this.logger.log(`Reset quota for tenant ${quota.solutionId}`);
     return saved;
   }
 }

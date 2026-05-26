@@ -76,7 +76,7 @@ export interface WorkspaceSource {
 export interface SessionDetails {
   sessionId: string;
   userId?: string;
-  tenantId?: string;
+  solutionId?: string;
   status: string;
   needsRestart: boolean;
   syncedSkillCount: number;
@@ -188,14 +188,14 @@ export class SessionService implements OnModuleDestroy {
     clientId: string,
     socket: Socket | null,
     userId?: string,
-    tenantId?: string,
+    solutionId?: string,
   ): Promise<ManagedSession> {
     const existing = this.sessions.get(sessionId);
     if (existing) {
       existing.socket = socket;
       existing.lastActivity = new Date();
       if (!existing.userId && userId) existing.userId = userId;
-      if (!existing.tenantId && tenantId) existing.tenantId = tenantId;
+      if (!existing.solutionId && solutionId) existing.solutionId = solutionId;
       this.logger.log(`Reusing existing session ${sessionId}`);
       return existing;
     }
@@ -210,7 +210,7 @@ export class SessionService implements OnModuleDestroy {
       this.logger.log(`Reusing in-flight create for session ${sessionId}`);
       return inFlight;
     }
-    const promise = this._createNewSession(sessionId, clientId, socket, userId, tenantId)
+    const promise = this._createNewSession(sessionId, clientId, socket, userId, solutionId)
       .finally(() => this.pendingCreates.delete(sessionId));
     this.pendingCreates.set(sessionId, promise);
     return promise;
@@ -221,7 +221,7 @@ export class SessionService implements OnModuleDestroy {
     clientId: string,
     socket: Socket | null,
     userId?: string,
-    tenantId?: string,
+    solutionId?: string,
   ): Promise<ManagedSession> {
     // Proactive pressure cleanup: if utilization ≥ high threshold, run cleanup now
     // (don't wait for the 5-min timer)
@@ -247,12 +247,12 @@ export class SessionService implements OnModuleDestroy {
     // MCP symlinks are NOT created here — that's the existing
     // `this.createMcpSymlinks(session)` gateway-driven path, invoked
     // once `session.mcpServers` is populated.
-    const handle = await this.workspaceProvider.create({ sessionId, tenantId });
+    const handle = await this.workspaceProvider.create({ sessionId, solutionId });
 
     // Seed entities/ + resources/ from the registered solution dir (if any)
     // into the session workspace root. No-op when SOLUTION_DIRS env is unset
     // or the tenant isn't in the map. Idempotent (SHA-1 gate per file).
-    await this.sessionAssetMaterializer.materialize(handle.path, tenantId);
+    await this.sessionAssetMaterializer.materialize(handle.path, solutionId);
 
     const session: ManagedSession = {
       sessionId,
@@ -268,7 +268,7 @@ export class SessionService implements OnModuleDestroy {
       workspaceDir: handle.path,
       workspaceHandle: handle,
       userId,
-      tenantId,
+      solutionId,
       syncedSkillIds: new Set(),
     };
 
@@ -330,32 +330,32 @@ export class SessionService implements OnModuleDestroy {
    */
   async attachWorkspaceSource(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     source: WorkspaceSource,
   ): Promise<void> {
     if (!source?.sourceIdentity) {
       throw new BadRequestException('sourceIdentity required');
     }
-    if (!tenantId) {
-      throw new BadRequestException('tenantId required');
+    if (!solutionId) {
+      throw new BadRequestException('solutionId required');
     }
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new NotFoundException(`session ${sessionId} not found`);
     }
-    // Cross-tenant defence. If the session already has a tenantId (set
-    // by an earlier message or by createSession), the caller's tenantId
+    // Cross-tenant defence. If the session already has a solutionId (set
+    // by an earlier message or by createSession), the caller's solutionId
     // MUST match — otherwise an attacker who knows a sessionId from
     // tenant A could attach it under tenant B and steal its workspace
-    // stream. If the session has no tenantId yet (anonymous-first
-    // pattern), accept and assign the caller's tenantId here.
-    if (session.tenantId && session.tenantId !== tenantId) {
+    // stream. If the session has no solutionId yet (anonymous-first
+    // pattern), accept and assign the caller's solutionId here.
+    if (session.solutionId && session.solutionId !== solutionId) {
       throw new ForbiddenException(
         `session ${sessionId} is owned by a different tenant`,
       );
     }
-    if (!session.tenantId) {
-      session.tenantId = tenantId;
+    if (!session.solutionId) {
+      session.solutionId = solutionId;
     }
     // Re-attach-to-different-source conflict. Same sourceIdentity is
     // idempotent (used to re-trigger bootstrap sync after a refactor);
@@ -378,14 +378,14 @@ export class SessionService implements OnModuleDestroy {
     // see ghost rows.
     await this.sessionMetadataService.put(
       sessionId,
-      tenantId,
+      solutionId,
       'projectId',
       source.sourceIdentity,
     );
     if (source.sourceUrl) {
       await this.sessionMetadataService.put(
         sessionId,
-        tenantId,
+        solutionId,
         'workspaceSourceUrl',
         source.sourceUrl,
       );
@@ -393,7 +393,7 @@ export class SessionService implements OnModuleDestroy {
     if (source.sourceSchemaHash) {
       await this.sessionMetadataService.put(
         sessionId,
-        tenantId,
+        solutionId,
         'workspaceSourceSchemaHash',
         source.sourceSchemaHash,
       );
@@ -404,7 +404,7 @@ export class SessionService implements OnModuleDestroy {
     // - `workspaceSource` for β-3 listeners that want the full descriptor
     this.eventEmitter.emit('session.bound', {
       sessionId,
-      tenantId,
+      solutionId,
       projectId: source.sourceIdentity,
       workspaceSource: { ...source },
     });
@@ -446,7 +446,7 @@ export class SessionService implements OnModuleDestroy {
 
   /**
    * @deprecated since β-2 (2026-05-26) — use
-   * `attachWorkspaceSource(sessionId, tenantId, { sourceIdentity })`.
+   * `attachWorkspaceSource(sessionId, solutionId, { sourceIdentity })`.
    * Kept as a delegating alias for the duration of the β
    * backwards-compat window so the legacy `bind-project` route + any
    * straggler SDK callers keep working. Will be removed in the
@@ -454,7 +454,7 @@ export class SessionService implements OnModuleDestroy {
    */
   async bindToProject(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     projectId: string,
   ): Promise<void> {
     // Validate projectId here so the alias preserves the old error
@@ -465,7 +465,7 @@ export class SessionService implements OnModuleDestroy {
     if (!projectId) {
       throw new BadRequestException('projectId required');
     }
-    return this.attachWorkspaceSource(sessionId, tenantId, {
+    return this.attachWorkspaceSource(sessionId, solutionId, {
       sourceIdentity: projectId,
     });
   }
@@ -649,13 +649,13 @@ export class SessionService implements OnModuleDestroy {
   /**
    * Get session statistics, optionally filtered by tenant
    */
-  getStats(tenantId?: string): SessionStats {
+  getStats(solutionId?: string): SessionStats {
     let idle = 0;
     let processing = 0;
     let total = 0;
 
     for (const session of this.sessions.values()) {
-      if (tenantId && session.tenantId !== tenantId) continue;
+      if (solutionId && session.solutionId !== solutionId) continue;
       total++;
       if (session.status === 'idle') idle++;
       if (session.status === 'processing') processing++;
@@ -695,18 +695,18 @@ export class SessionService implements OnModuleDestroy {
    * Week 4: Enhanced to throw errors and update skillSyncedAt
    *
    * @param sessionId - The session ID to restart
-   * @param tenantId - Optional tenant ID for verification
+   * @param solutionId - Optional tenant ID for verification
    * @throws Error if session not found or tenant mismatch
    */
-  async restartSession(sessionId: string, tenantId?: string): Promise<void> {
+  async restartSession(sessionId: string, solutionId?: string): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
     }
 
     // Verify tenant ownership if provided
-    if (tenantId && session.tenantId !== tenantId) {
-      throw new Error(`Tenant ${tenantId} cannot restart session owned by ${session.tenantId}`);
+    if (solutionId && session.solutionId !== solutionId) {
+      throw new Error(`Solution ${solutionId} cannot restart session owned by ${session.solutionId}`);
     }
 
     // Kill AgentEngine if running
@@ -755,7 +755,7 @@ export class SessionService implements OnModuleDestroy {
     return {
       sessionId: session.sessionId,
       userId: session.userId,
-      tenantId: session.tenantId,
+      solutionId: session.solutionId,
       status: session.status,
       needsRestart: session.needsRestart || false,
       syncedSkillCount: session.syncedSkillIds?.size || 0,
@@ -798,10 +798,10 @@ export class SessionService implements OnModuleDestroy {
   /**
    * Get all sessions for a tenant
    */
-  getSessionsByTenant(tenantId: string): ManagedSession[] {
+  getSessionsByTenant(solutionId: string): ManagedSession[] {
     const sessions: ManagedSession[] = [];
     for (const session of this.sessions.values()) {
-      if (session.tenantId === tenantId) {
+      if (session.solutionId === solutionId) {
         sessions.push(session);
       }
     }
@@ -815,16 +815,16 @@ export class SessionService implements OnModuleDestroy {
    * - If skillId provided: Only marks sessions that have that skill synced
    * - If skillId omitted: Marks all tenant sessions (backward compatibility)
    *
-   * @param tenantId - The tenant ID
+   * @param solutionId - The tenant ID
    * @param skillId - Optional skill ID to filter sessions (Week 3)
    * @returns Array of affected session IDs
    */
-  markSessionsForRestart(tenantId: string, skillId?: string): string[] {
+  markSessionsForRestart(solutionId: string, skillId?: string): string[] {
     const affectedSessionIds: string[] = [];
 
     // Week 3: If skillId provided, only mark sessions with that skill
     if (skillId) {
-      const affectedSessions = this.getAffectedSessions(tenantId, skillId);
+      const affectedSessions = this.getAffectedSessions(solutionId, skillId);
       for (const session of affectedSessions) {
         session.needsRestart = true;
         affectedSessionIds.push(session.sessionId);
@@ -833,7 +833,7 @@ export class SessionService implements OnModuleDestroy {
     } else {
       // Backward compatibility: Mark all tenant sessions
       for (const session of this.sessions.values()) {
-        if (session.tenantId === tenantId) {
+        if (session.solutionId === solutionId) {
           session.needsRestart = true;
           affectedSessionIds.push(session.sessionId);
           this.logger.debug(`Marked session ${session.sessionId} as needing restart`);
@@ -843,7 +843,7 @@ export class SessionService implements OnModuleDestroy {
 
     if (affectedSessionIds.length > 0) {
       this.logger.log(
-        `Marked ${affectedSessionIds.length} sessions for tenant ${tenantId} as needing restart${skillId ? ` (skill: ${skillId})` : ''}`,
+        `Marked ${affectedSessionIds.length} sessions for tenant ${solutionId} as needing restart${skillId ? ` (skill: ${skillId})` : ''}`,
       );
     }
 
@@ -880,16 +880,16 @@ export class SessionService implements OnModuleDestroy {
    * Week 3: Returns only sessions that have the specified skill synced.
    * Used for precise session restart marking.
    *
-   * @param tenantId - The tenant ID
+   * @param solutionId - The tenant ID
    * @param skillId - The skill ID
    * @returns Array of sessions that have this skill synced
    */
-  getAffectedSessions(tenantId: string, skillId: string): ManagedSession[] {
+  getAffectedSessions(solutionId: string, skillId: string): ManagedSession[] {
     const affected: ManagedSession[] = [];
 
     for (const session of this.sessions.values()) {
       // Must match tenant
-      if (session.tenantId !== tenantId) {
+      if (session.solutionId !== solutionId) {
         continue;
       }
 
@@ -900,7 +900,7 @@ export class SessionService implements OnModuleDestroy {
     }
 
     this.logger.debug(
-      `Found ${affected.length} sessions affected by skill ${skillId} in tenant ${tenantId}`,
+      `Found ${affected.length} sessions affected by skill ${skillId} in tenant ${solutionId}`,
     );
 
     return affected;
@@ -1093,7 +1093,7 @@ export class SessionService implements OnModuleDestroy {
     try {
       await this.sessionRepository.save({
         sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
+        solutionId: session.solutionId || null,
         userId: session.userId || null,
         clientId: session.clientId,
         status: session.status,
@@ -1167,11 +1167,11 @@ export class SessionService implements OnModuleDestroy {
       estimatedCost?: number;
     },
   ): Promise<void> {
-    // Backfill tenantId for sessions that were created before the fix
+    // Backfill solutionId for sessions that were created before the fix
     const session = this.sessions.get(sessionId);
     const updates: Partial<SessionEntity> = { ...stats };
-    if (session?.tenantId) {
-      updates.tenantId = session.tenantId;
+    if (session?.solutionId) {
+      updates.solutionId = session.solutionId;
     }
     await this.updateSessionInDatabase(sessionId, updates);
   }

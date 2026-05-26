@@ -20,8 +20,8 @@ import {
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SessionsController } from './sessions.controller';
 import { OptionalAuth, Auth, Ctx } from '../auth/decorators';
-import { TenantGuard } from '../tenants/tenant.guard';
-import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
+import { CurrentTenant } from '../common/decorators/current-solution.decorator';
 import type { RequestContext } from '../auth/types';
 import {
   ListConversationsQuery,
@@ -35,29 +35,29 @@ export class ConversationsAliasController {
   constructor(private readonly sessionsController: SessionsController) {}
 
   @Get()
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({ summary: '[Alias] → GET /api/v1/sessions' })
   listConversations(
     @Query() query: ListConversationsQuery,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
-    return this.sessionsController.listSessions(query, tenantId);
+    return this.sessionsController.listSessions(query, solutionId);
   }
 
   @Get('search')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({ summary: '[Alias] → GET /api/v1/sessions/search' })
   searchConversations(
     @Query() query: SearchConversationsQuery,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
-    return this.sessionsController.searchSessions(query, tenantId);
+    return this.sessionsController.searchSessions(query, solutionId);
   }
 
   @Patch(':id')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @Auth('chat')
   @ApiOperation({ summary: '[Alias] → PATCH /api/v1/sessions/:id' })
   updateConversation(
@@ -69,7 +69,7 @@ export class ConversationsAliasController {
   }
 
   @Delete(':id')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @Auth('chat')
   @ApiOperation({ summary: '[Alias] → DELETE /api/v1/sessions/:id' })
   deleteConversation(
@@ -80,13 +80,13 @@ export class ConversationsAliasController {
   }
 
   @Get(':id/turns')
-  @UseGuards(TenantGuard)
+  @UseGuards(SolutionAuthGuard)
   @OptionalAuth()
   @ApiOperation({ summary: '[Alias] → GET /api/v1/sessions/:id/turns' })
   getConversationTurns(
     @Param('id') id: string,
-    @CurrentTenant() tenantId: string | undefined,
+    @CurrentTenant() solutionId: string | undefined,
   ) {
-    return this.sessionsController.getSessionTurns(id, tenantId);
+    return this.sessionsController.getSessionTurns(id, solutionId);
   }
 }

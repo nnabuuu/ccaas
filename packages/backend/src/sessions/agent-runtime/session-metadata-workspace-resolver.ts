@@ -14,15 +14,15 @@
  *
  * The 2b-2 plan called for solutions to ship their own resolver
  * querying their own DB (e.g. `LiveLessonProjectTenantResolver` →
- * `CourseProject.tenantId`). That works but forces every solution to
+ * `CourseProject.solutionId`). That works but forces every solution to
  * add a tenant column + migration AND requires a cross-process
  * callback (ccaas → solution REST) at every SSE/invalidate request —
  * extra latency, extra failure modes, extra schema rollout.
  *
  * The attach-workspace-source flow (`POST /sessions/:id/attach-workspace-source`,
  * plus its deprecated `bind-project` alias) already writes
- * `session_metadata(sessionId, tenantId, key='projectId', value=<sourceIdentity>)`
- * with the caller's tenantId on it. That's by construction the source
+ * `session_metadata(sessionId, solutionId, key='projectId', value=<sourceIdentity>)`
+ * with the caller's solutionId on it. That's by construction the source
  * of truth for "who owns this workspace from ccaas's point of view".
  * This resolver reuses it directly via a single indexed SQLite lookup
  * — no callbacks, no schema change.
@@ -100,7 +100,7 @@ export class SessionMetadataWorkspaceResolver implements ProjectTenantResolver {
         raw: identity,
         quoted,
       })
-      .andWhere('m.tenantId = :tenantId', { tenantId: callerTenantId })
+      .andWhere('m.solutionId = :solutionId', { solutionId: callerTenantId })
       .getCount();
     if (count === 0) {
       this.logger.debug(

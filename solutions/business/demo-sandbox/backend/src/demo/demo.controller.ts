@@ -136,7 +136,7 @@ export class DemoController {
           'x-tenant-id': TENANT_SLUG,
         },
         body: JSON.stringify({
-          tenantId: TENANT_SLUG,
+          solutionId: TENANT_SLUG,
           templateName: SESSION_TEMPLATE,
           message: body.message,
         }),

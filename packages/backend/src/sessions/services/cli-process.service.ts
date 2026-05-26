@@ -620,7 +620,7 @@ export class CliProcessService {
     // `status: 'complete'` to run the syncer; other states are no-ops.
     this.eventEmitter.emit('session.turn.complete', {
       sessionId: session.sessionId,
-      tenantId: session.tenantId,
+      solutionId: session.solutionId,
       status: wasCancelled ? 'cancelled' : code === 0 ? 'complete' : 'error',
       exitCode: code,
     });

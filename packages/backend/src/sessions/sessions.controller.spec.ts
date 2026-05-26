@@ -9,7 +9,7 @@ import { SkillManagementService } from './services/skill-management.service';
 import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { StreamRegistryService } from './services/stream-registry.service';
@@ -23,7 +23,7 @@ import { TurnsService } from '../admin/services/turns.service';
 import { CliProcessService } from './services/cli-process.service';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { ScopesGuard } from '../auth/guards/scopes.guard';
-import { TenantGuard } from '../tenants/tenant.guard';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
 
 // ── sendMessage (queue-routed) ────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
         { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue([]) } },
         { provide: SkillSyncService, useValue: {} },
         { provide: SkillsService, useValue: skillsService },
-        { provide: TenantsService, useValue: tenantsService },
+        { provide: SolutionsService, useValue: tenantsService },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: streamRegistry },
@@ -96,7 +96,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
-      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(SolutionAuthGuard).useValue({ canActivate: () => true })
       .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
       .compile();
 
@@ -114,7 +114,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
   it('calls messageQueueService.enqueue() with correct payload', async () => {
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       autoClose: true,
     };
 
@@ -137,7 +137,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
 
     const dto: SendMessageDto = {
       message: 'teach me',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
     };
 
     await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
@@ -156,7 +156,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
 
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       appendSystemPrompt: 'Extra instruction.',
     };
 
@@ -173,7 +173,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
   it('does NOT call orchestrateMessage (worker handles orchestration)', async () => {
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       autoClose: true,
     };
 
@@ -185,7 +185,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
   it('does NOT call sessionService.closeSession (worker handles autoClose)', async () => {
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       autoClose: true,
     };
 
@@ -197,7 +197,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
   it('does NOT call streamRegistry.closeSession in success path (worker closes SSE)', async () => {
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
     };
 
     await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
@@ -210,7 +210,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
 
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       autoClose: true,
     };
 
@@ -229,7 +229,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
 
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
     };
 
     await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
@@ -280,7 +280,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
         { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue([]) } },
         { provide: SkillSyncService, useValue: {} },
         { provide: SkillsService, useValue: skillsService },
-        { provide: TenantsService, useValue: tenantsService },
+        { provide: SolutionsService, useValue: tenantsService },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: streamRegistry },
@@ -293,7 +293,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
-      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(SolutionAuthGuard).useValue({ canActivate: () => true })
       .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
       .compile();
 
@@ -304,7 +304,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
   const mockCtx: any = undefined;
 
   it('subscribes the response to the stream registry before enqueuing', async () => {
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', solutionId: 'tenant-123' }, mockRes, mockCtx);
 
     // subscribe must be called first, so the stream is ready before the worker fires
     expect(streamRegistry.subscribe).toHaveBeenCalledWith(
@@ -321,7 +321,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     ];
     streamRegistry.getEventsSince.mockReturnValue(buffered);
 
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123', afterSeq: 4 }, mockRes, mockCtx);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', solutionId: 'tenant-123', afterSeq: 4 }, mockRes, mockCtx);
 
     expect(streamRegistry.getEventsSince).toHaveBeenCalledWith(SESSION_ID, 4);
     expect(mockRes.write).toHaveBeenCalledWith(
@@ -330,12 +330,12 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
   });
 
   it('does not call getEventsSince when afterSeq is undefined', async () => {
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', solutionId: 'tenant-123' }, mockRes, mockCtx);
 
     expect(streamRegistry.getEventsSince).not.toHaveBeenCalled();
   });
 
-  it('emits MISSING_TENANT_ID error and closes SSE when tenantId is absent', async () => {
+  it('emits MISSING_TENANT_ID error and closes SSE when solutionId is absent', async () => {
     await controller.sendMessage(SESSION_ID, { message: 'hi' } as any, mockRes, mockCtx);
 
     expect(streamRegistry.emit).toHaveBeenCalledWith(
@@ -353,7 +353,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       { slug: 'writer', enabled: true },
     ]);
 
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', solutionId: 'tenant-123' }, mockRes, mockCtx);
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
       SESSION_ID,
@@ -366,7 +366,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
   it('does NOT call findPublished when templateName is provided (defers to orchestration)', async () => {
     const dto: SendMessageDto = {
       message: 'match knowledge points',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       templateName: 'kp-search',
     };
 
@@ -389,7 +389,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
 
     const dto: SendMessageDto = {
       message: 'hello',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
     };
 
     await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
@@ -409,7 +409,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
 
     await controller.sendMessage(
       SESSION_ID,
-      { message: 'hi', tenantId: 'tenant-123', appendSystemPrompt: '   ' },
+      { message: 'hi', solutionId: 'tenant-123', appendSystemPrompt: '   ' },
       mockRes,
       mockCtx,
     );
@@ -422,8 +422,8 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     );
   });
 
-  it('auto-resolves tenantId from API key context when body has no tenantId', async () => {
-    const ctxWithTenant: any = { tenantId: 'tenant-from-key' };
+  it('auto-resolves solutionId from API key context when body has no solutionId', async () => {
+    const ctxWithTenant: any = { solutionId: 'tenant-from-key' };
 
     await controller.sendMessage(
       SESSION_ID,
@@ -437,7 +437,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       SESSION_ID,
       expect.objectContaining({ code: 'MISSING_TENANT_ID' }),
     );
-    // Should call findOne with the auto-resolved tenantId from API key
+    // Should call findOne with the auto-resolved solutionId from API key
     expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-from-key');
     // Should enqueue (resolvedTenantId comes from tenant.id returned by mock)
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
@@ -460,7 +460,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
   const mockSession = {
     id: 'test-session',
     clientId: 'client-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
   };
 
   const mockSubAgents = [
@@ -503,7 +503,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: AttachmentService, useValue: {} },
         { provide: SkillSyncService, useValue: {} },
         { provide: SkillsService, useValue: {} },
-        { provide: TenantsService, useValue: {} },
+        { provide: SolutionsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]), getSubscriberCount: jest.fn().mockReturnValue(0) }) },
@@ -516,7 +516,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
-      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(SolutionAuthGuard).useValue({ canActivate: () => true })
       .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
       .compile();
 
@@ -635,8 +635,8 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
 //
 // β-2 of the α+β refactor (~/.claude/plans/kind-exploring-mango.md):
 // the new route calls the canonical service method
-// `attachWorkspaceSource(sessionId, tenantId, source)`; the legacy
-// `bind-project` route still calls `bindToProject(sessionId, tenantId,
+// `attachWorkspaceSource(sessionId, solutionId, source)`; the legacy
+// `bind-project` route still calls `bindToProject(sessionId, solutionId,
 // projectId)` which is now a deprecated delegating alias at the
 // service layer. These tests pin the wire contract for both routes;
 // the service-level alias equivalence is verified in
@@ -669,7 +669,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
         { provide: AttachmentService, useValue: {} },
         { provide: SkillSyncService, useValue: {} },
         { provide: SkillsService, useValue: {} },
-        { provide: TenantsService, useValue: {} },
+        { provide: SolutionsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: {} },
@@ -682,7 +682,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
-      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(SolutionAuthGuard).useValue({ canActivate: () => true })
       .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
       .compile();
 
@@ -694,12 +694,12 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
       await controller.attachWorkspaceSource(SESSION_ID, {
         sourceUrl: 'http://localhost:3007/api/projects',
         sourceIdentity: 'proj-abc',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       });
 
       // β-2 contract: the new route threads sourceUrl through to the
       // service. Pre-β-2 this called the legacy bindToProject with
-      // just (sessionId, tenantId, projectId) and dropped sourceUrl.
+      // just (sessionId, solutionId, projectId) and dropped sourceUrl.
       expect(sessionService.attachWorkspaceSource).toHaveBeenCalledWith(
         SESSION_ID,
         'tenant-1',
@@ -718,7 +718,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
         sourceUrl: 'http://x',
         sourceIdentity: 'p',
         sourceSchemaHash: 'sha256:abcd',
-        tenantId: 't',
+        solutionId: 't',
       });
       expect(sessionService.attachWorkspaceSource).toHaveBeenCalledWith(
         SESSION_ID,
@@ -735,7 +735,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
       const out = await controller.attachWorkspaceSource(SESSION_ID, {
         sourceUrl: 'http://localhost:3007/api/projects',
         sourceIdentity: 'proj-abc',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       });
 
       expect(out).toEqual({
@@ -757,14 +757,14 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
         sourceUrl: 'http://x',
         sourceIdentity: 'p',
         sourceSchemaHash: 'sha256:abcd',
-        tenantId: 't',
+        solutionId: 't',
       });
       expect(withHash.workspaceSource.sourceSchemaHash).toBe('sha256:abcd');
 
       const withoutHash = await controller.attachWorkspaceSource(SESSION_ID, {
         sourceUrl: 'http://x',
         sourceIdentity: 'p',
-        tenantId: 't',
+        solutionId: 't',
       });
       expect(withoutHash.workspaceSource).not.toHaveProperty('sourceSchemaHash');
     });
@@ -775,7 +775,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
         controller.attachWorkspaceSource(SESSION_ID, {
           sourceUrl: 'http://x',
           sourceIdentity: 'p',
-          tenantId: 't',
+          solutionId: 't',
         }),
       ).rejects.toThrow('already attached');
     });
@@ -785,7 +785,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
     it('still calls the legacy bindToProject service method (no migration to the new method yet)', async () => {
       const out = await controller.bindToProject(SESSION_ID, {
         projectId: 'proj-legacy',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       });
 
       // The old route is supposed to keep calling the deprecated

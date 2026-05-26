@@ -62,7 +62,7 @@ describe('ToolEventsService', () => {
       const result = await service.recordStart({
         messageId: testMessageId,
         sessionId: 'test-session-123',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         toolUseId: 'toolu_read_001',
         toolName: 'Read',
         toolInput: { file_path: '/test/file.txt' },
@@ -103,7 +103,7 @@ describe('ToolEventsService', () => {
       const result = await service.recordEnd({
         messageId: testMessageId,
         sessionId: 'test-session-123',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         toolUseId: 'toolu_read_err_001',
         toolName: 'Read',
         toolInput: { file_path: '/nonexistent/file.txt' },
@@ -191,7 +191,7 @@ describe('ToolEventsService', () => {
       const result = await service.recordEnd({
         messageId: testMessageId,
         sessionId: 'test-session-123',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         toolUseId: 'toolu_read_full_001',
         toolName: 'Read',
         toolInput: { file_path: '/nonexistent/file.txt' },

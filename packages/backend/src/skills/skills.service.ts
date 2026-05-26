@@ -61,11 +61,11 @@ export class SkillsService {
    * Three writes (skill row, files, initial version snapshot) all run
    * inside a single transaction so a mid-create failure rolls everything
    * back. Without this, `SolutionLoaderService` auto-import would see a
-   * dangling skill row on the next boot via `findOne(tenantId, slug)`
+   * dangling skill row on the next boot via `findOne(solutionId, slug)`
    * and silently skip the re-import — leaving the skill permanently
    * without a version + files.
    */
-  async create(tenantId: string, dto: CreateSkillDto, userId?: string): Promise<Skill> {
+  async create(solutionId: string, dto: CreateSkillDto, userId?: string): Promise<Skill> {
     const slug = dto.slug || this.generateSlug(dto.name);
 
     const saved = await this.skillRepository.manager.transaction(async (manager) => {
@@ -73,14 +73,14 @@ export class SkillsService {
       // create can't slip past (the unique index would catch it too,
       // but the message is friendlier here).
       const existing = await manager.findOne(Skill, {
-        where: { tenantId, slug },
+        where: { solutionId, slug },
       });
       if (existing) {
         throw new AlreadyExistsException(`Skill with slug '${slug}' already exists`);
       }
 
       const skill = manager.create(Skill, {
-        tenantId,
+        solutionId,
         createdBy: userId || null,
         scope: dto.scope || 'tenant',
         name: dto.name,
@@ -137,21 +137,21 @@ export class SkillsService {
         await manager.save(SkillVersionFile, versionFiles);
       }
 
-      this.logger.log(`Created skill ${saved.name} (${saved.slug}) for tenant ${tenantId}`);
+      this.logger.log(`Created skill ${saved.name} (${saved.slug}) for tenant ${solutionId}`);
       return saved;
     });
 
     // Notify AFTER commit succeeds — listeners may load the skill back
     // from the DB and a notifier-inside-the-callback would fire while
     // the row is still uncommitted.
-    SkillChangeNotifier.notify(tenantId, saved.id, saved.slug, 'created');
+    SkillChangeNotifier.notify(solutionId, saved.id, saved.slug, 'created');
     return saved;
   }
 
   /**
    * Find all skills for a tenant with pagination and filtering
    */
-  async findAll(tenantId: string, query: ListSkillsDto, userId?: string): Promise<PaginatedResult<Skill>> {
+  async findAll(solutionId: string, query: ListSkillsDto, userId?: string): Promise<PaginatedResult<Skill>> {
     const {
       page = 1,
       limit = 20,
@@ -164,7 +164,7 @@ export class SkillsService {
       scope,
     } = query;
 
-    const where: FindOptionsWhere<Skill> = { tenantId };
+    const where: FindOptionsWhere<Skill> = { solutionId };
 
     if (status) {
       where.status = status;
@@ -178,7 +178,7 @@ export class SkillsService {
     }
 
     const qb = this.skillRepository.createQueryBuilder('skill');
-    qb.where('skill.tenantId = :tenantId', { tenantId });
+    qb.where('skill.solutionId = :solutionId', { solutionId });
 
     if (status) {
       qb.andWhere('skill.status = :status', { status });
@@ -236,17 +236,17 @@ export class SkillsService {
   /**
    * Find a skill by ID or slug
    */
-  async findOne(tenantId: string, idOrSlug: string): Promise<Skill | null> {
+  async findOne(solutionId: string, idOrSlug: string): Promise<Skill | null> {
     // Try by ID first
     let skill = await this.skillRepository.findOne({
-      where: { id: idOrSlug, tenantId },
+      where: { id: idOrSlug, solutionId },
       relations: ['creator'],
     });
 
     if (!skill) {
       // Try by slug
       skill = await this.skillRepository.findOne({
-        where: { slug: idOrSlug, tenantId },
+        where: { slug: idOrSlug, solutionId },
         relations: ['creator'],
       });
     }
@@ -257,15 +257,15 @@ export class SkillsService {
   /**
    * Find a skill with versions
    */
-  async findOneWithVersions(tenantId: string, idOrSlug: string): Promise<Skill | null> {
+  async findOneWithVersions(solutionId: string, idOrSlug: string): Promise<Skill | null> {
     let skill = await this.skillRepository.findOne({
-      where: { id: idOrSlug, tenantId },
+      where: { id: idOrSlug, solutionId },
       relations: ['versions'],
     });
 
     if (!skill) {
       skill = await this.skillRepository.findOne({
-        where: { slug: idOrSlug, tenantId },
+        where: { slug: idOrSlug, solutionId },
         relations: ['versions'],
       });
     }
@@ -276,8 +276,8 @@ export class SkillsService {
   /**
    * Update a skill
    */
-  async update(tenantId: string, idOrSlug: string, dto: UpdateSkillDto): Promise<Skill> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async update(solutionId: string, idOrSlug: string, dto: UpdateSkillDto): Promise<Skill> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -312,7 +312,7 @@ export class SkillsService {
     this.logger.log(`Updated skill ${saved.name} (${saved.slug})`);
 
     // Notify listeners of skill update
-    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'updated');
+    SkillChangeNotifier.notify(skill.solutionId, saved.id, saved.slug, 'updated');
 
     // Week 5: Emit skill_updated event with affected sessions
     await this.emitSkillUpdatedEvent(saved);
@@ -327,7 +327,7 @@ export class SkillsService {
   private async emitSkillUpdatedEvent(skill: Skill): Promise<void> {
     // Get affected sessions
     const affectedSessions = this.sessionService.getAffectedSessions(
-      skill.tenantId,
+      skill.solutionId,
       skill.id,
     );
 
@@ -352,7 +352,7 @@ export class SkillsService {
       },
       affectedSessions: sessionDetails,
       impact,
-      tenantId: skill.tenantId,
+      solutionId: skill.solutionId,
     });
   }
 
@@ -373,8 +373,8 @@ export class SkillsService {
   /**
    * Soft delete (archive) a skill
    */
-  async archive(tenantId: string, idOrSlug: string): Promise<void> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async archive(solutionId: string, idOrSlug: string): Promise<void> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -385,14 +385,14 @@ export class SkillsService {
     this.logger.log(`Archived skill ${skill.name} (${skill.slug})`);
 
     // Notify listeners of skill archive
-    SkillChangeNotifier.notify(skill.tenantId, skill.id, skill.slug, 'archived');
+    SkillChangeNotifier.notify(skill.solutionId, skill.id, skill.slug, 'archived');
   }
 
   /**
    * Publish a skill
    */
-  async publish(tenantId: string, idOrSlug: string): Promise<Skill> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async publish(solutionId: string, idOrSlug: string): Promise<Skill> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -404,7 +404,7 @@ export class SkillsService {
     this.logger.log(`Published skill ${saved.name} (${saved.slug})`);
 
     // Notify listeners of skill publish (this is when it becomes available to sessions)
-    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'published');
+    SkillChangeNotifier.notify(skill.solutionId, saved.id, saved.slug, 'published');
 
     // Week 5: Emit skill_updated event with affected sessions
     await this.emitSkillUpdatedEvent(saved);
@@ -415,8 +415,8 @@ export class SkillsService {
   /**
    * Unpublish a skill (set status back to draft)
    */
-  async unpublish(tenantId: string, idOrSlug: string): Promise<Skill> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async unpublish(solutionId: string, idOrSlug: string): Promise<Skill> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -428,7 +428,7 @@ export class SkillsService {
     this.logger.log(`Unpublished skill ${saved.name} (${saved.slug})`);
 
     // Notify listeners of skill unpublish
-    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'unpublished');
+    SkillChangeNotifier.notify(skill.solutionId, saved.id, saved.slug, 'unpublished');
 
     return saved;
   }
@@ -517,8 +517,8 @@ export class SkillsService {
   /**
    * Rollback to a specific version
    */
-  async rollbackToVersion(tenantId: string, idOrSlug: string, version: string): Promise<Skill> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async rollbackToVersion(solutionId: string, idOrSlug: string, version: string): Promise<Skill> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -570,17 +570,17 @@ export class SkillsService {
   /**
    * Find published skills for a tenant
    */
-  async findPublished(tenantId: string): Promise<Skill[]> {
+  async findPublished(solutionId: string): Promise<Skill[]> {
     return this.skillRepository.find({
-      where: { tenantId, status: 'published' },
+      where: { solutionId, status: 'published' },
     });
   }
 
   /**
    * Toggle the enabled state of a skill
    */
-  async toggle(tenantId: string, idOrSlug: string): Promise<Skill> {
-    const skill = await this.findOne(tenantId, idOrSlug);
+  async toggle(solutionId: string, idOrSlug: string): Promise<Skill> {
+    const skill = await this.findOne(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }

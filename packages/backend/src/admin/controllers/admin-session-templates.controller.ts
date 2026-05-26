@@ -1,7 +1,7 @@
 /**
  * Admin Session Templates Controller
  *
- * Admin API for managing session templates under /api/v1/admin/tenants/:tenantId/session-templates
+ * Admin API for managing session templates under /api/v1/admin/solutions/:solutionId/session-templates
  */
 
 import {
@@ -21,10 +21,10 @@ import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
-import { TenantsService } from '../../tenants/tenants.service';
-import { Tenant, PLAN_MAX_SESSION_TTL_MS } from '../../tenants/entities/tenant.entity';
+import { SolutionsService } from '../../solutions/solutions.service';
+import { Solution, PLAN_MAX_SESSION_TTL_MS } from '../../solutions/entities/solution.entity';
 import { AuditService } from '../services/audit.service';
 import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import {
@@ -37,15 +37,15 @@ import {
 
 const MAX_TEMPLATES_PER_TENANT = 50;
 
-@Controller('api/v1/admin/tenants/:tenantId/session-templates')
+@Controller('api/v1/admin/solutions/:solutionId/session-templates')
 @ApiTags('admin')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminSessionTemplatesController {
   private readonly logger = new Logger(AdminSessionTemplatesController.name);
 
   constructor(
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly auditService: AuditService,
   ) {}
 
@@ -53,15 +53,15 @@ export class AdminSessionTemplatesController {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  private async findTenantOrThrow(tenantId: string): Promise<Tenant> {
-    const tenant = await this.tenantsService.findOne(tenantId);
+  private async findTenantOrThrow(solutionId: string): Promise<Solution> {
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
     return tenant;
   }
 
-  private getTemplates(tenant: Tenant): Record<string, SessionTemplateBodyDto> {
+  private getTemplates(tenant: Solution): Record<string, SessionTemplateBodyDto> {
     return { ...(tenant.config.sessionTemplates || {}) };
   }
 
@@ -84,7 +84,7 @@ export class AdminSessionTemplatesController {
 
   private capTemplateTtl(
     template: SessionTemplateBodyDto,
-    tenant: Tenant,
+    tenant: Solution,
   ): SessionTemplateBodyDto {
     if (template.sessionTtlMs === undefined) return template;
     const max = PLAN_MAX_SESSION_TTL_MS[tenant.plan];
@@ -112,15 +112,15 @@ export class AdminSessionTemplatesController {
   // ---------------------------------------------------------------------------
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId/session-templates
+   * GET /api/v1/admin/solutions/:solutionId/session-templates
    *
    * List all session templates for a tenant
    */
   @Get()
   @ApiOperation({ summary: 'List all session templates for a tenant' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
-  async listTemplates(@Param('tenantId') tenantId: string) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
+  async listTemplates(@Param('solutionId') solutionId: string) {
+    const tenant = await this.findTenantOrThrow(solutionId);
 
     return {
       templates: tenant.config.sessionTemplates || {},
@@ -129,19 +129,19 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId/session-templates/:name
+   * GET /api/v1/admin/solutions/:solutionId/session-templates/:name
    *
    * Get a specific session template
    */
   @Get(':name')
   @ApiOperation({ summary: 'Get a specific session template' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   @ApiParam({ name: 'name', description: 'Template name' })
   async getTemplate(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Param('name') name: string,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const templates = this.getTemplates(tenant);
     const template = this.getTemplateOrThrow(templates, name);
 
@@ -149,19 +149,19 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * POST /api/v1/admin/tenants/:tenantId/session-templates
+   * POST /api/v1/admin/solutions/:solutionId/session-templates
    *
    * Create a new session template
    */
   @Post()
   @ApiOperation({ summary: 'Create a new session template' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   async createTemplate(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() dto: CreateSessionTemplateDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const templates = this.getTemplates(tenant);
 
     if (templates[dto.name]) {
@@ -172,13 +172,13 @@ export class AdminSessionTemplatesController {
 
     if (Object.keys(templates).length >= MAX_TEMPLATES_PER_TENANT) {
       throw new BadRequestException(
-        `Tenant has reached the maximum of ${MAX_TEMPLATES_PER_TENANT} session templates`,
+        `Solution has reached the maximum of ${MAX_TEMPLATES_PER_TENANT} session templates`,
       );
     }
 
     const cappedTemplate = this.capTemplateTtl(dto.template, tenant);
     templates[dto.name] = cappedTemplate;
-    await this.tenantsService.update(tenantId, {
+    await this.tenantsService.update(solutionId, {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
@@ -187,7 +187,7 @@ export class AdminSessionTemplatesController {
       action: 'sessionTemplate.create',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: { templateName: dto.name, template: dto.template },
     });
 
@@ -195,27 +195,27 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * PUT /api/v1/admin/tenants/:tenantId/session-templates/:name
+   * PUT /api/v1/admin/solutions/:solutionId/session-templates/:name
    *
    * Update an existing session template
    */
   @Put(':name')
   @ApiOperation({ summary: 'Update an existing session template' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   @ApiParam({ name: 'name', description: 'Template name' })
   async updateTemplate(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Param('name') name: string,
     @Body() dto: UpdateSessionTemplateDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const templates = this.getTemplates(tenant);
     const previousTemplate = this.getTemplateOrThrow(templates, name);
 
     const cappedTemplate = this.capTemplateTtl(dto.template, tenant);
     templates[name] = cappedTemplate;
-    await this.tenantsService.update(tenantId, {
+    await this.tenantsService.update(solutionId, {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
@@ -224,7 +224,7 @@ export class AdminSessionTemplatesController {
       action: 'sessionTemplate.update',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: { templateName: name, previousValue: previousTemplate, newValue: dto.template },
     });
 
@@ -232,20 +232,20 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * DELETE /api/v1/admin/tenants/:tenantId/session-templates/:name
+   * DELETE /api/v1/admin/solutions/:solutionId/session-templates/:name
    *
    * Delete a session template
    */
   @Delete(':name')
   @ApiOperation({ summary: 'Delete a session template' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   @ApiParam({ name: 'name', description: 'Template name' })
   async deleteTemplate(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Param('name') name: string,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const templates = this.getTemplates(tenant);
     const deletedTemplate = this.getTemplateOrThrow(templates, name);
 
@@ -257,14 +257,14 @@ export class AdminSessionTemplatesController {
       delete updatedConfig.defaultSessionTemplate;
     }
 
-    await this.tenantsService.update(tenantId, { config: updatedConfig });
+    await this.tenantsService.update(solutionId, { config: updatedConfig });
 
     await this.tryLogAudit({
       adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.delete',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: { templateName: name, deletedTemplate },
     });
 
@@ -272,7 +272,7 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * POST /api/v1/admin/tenants/:tenantId/session-templates/sync
+   * POST /api/v1/admin/solutions/:solutionId/session-templates/sync
    *
    * Bulk-upsert session templates from solution.json or external callers.
    * Never deletes existing templates — only adds or updates the provided ones.
@@ -280,13 +280,13 @@ export class AdminSessionTemplatesController {
    */
   @Post('sync')
   @ApiOperation({ summary: 'Bulk-sync session templates (upsert, never deletes)' })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   async syncTemplates(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() dto: SyncSessionTemplatesBodyDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const existing = this.getTemplates(tenant);
 
     // MAJOR-1: Validate each template body individually (class-validator cannot
@@ -314,7 +314,7 @@ export class AdminSessionTemplatesController {
     }
 
     const synced = await this.tenantsService.syncSessionTemplates(
-      tenantId,
+      solutionId,
       dto.templates as Record<string, Record<string, unknown>>,
     );
 
@@ -324,7 +324,7 @@ export class AdminSessionTemplatesController {
       action: 'sessionTemplate.sync',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: { templateNames: Object.keys(dto.templates), count: synced },
     });
 
@@ -332,7 +332,7 @@ export class AdminSessionTemplatesController {
   }
 
   /**
-   * POST /api/v1/admin/tenants/:tenantId/session-templates/:name/preview
+   * POST /api/v1/admin/solutions/:solutionId/session-templates/:name/preview
    *
    * Preview template resolution with optional explicit params
    */
@@ -340,14 +340,14 @@ export class AdminSessionTemplatesController {
   @ApiOperation({
     summary: 'Preview template resolution with optional explicit params',
   })
-  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  @ApiParam({ name: 'solutionId', description: 'Solution ID' })
   @ApiParam({ name: 'name', description: 'Template name' })
   async previewTemplate(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Param('name') name: string,
     @Body() dto: PreviewTemplateDto,
   ) {
-    const tenant = await this.findTenantOrThrow(tenantId);
+    const tenant = await this.findTenantOrThrow(solutionId);
     const templates = this.getTemplates(tenant);
     const template = this.getTemplateOrThrow(templates, name);
 

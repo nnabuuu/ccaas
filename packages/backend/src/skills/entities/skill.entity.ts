@@ -24,13 +24,13 @@ export type SkillStatus = 'draft' | 'review' | 'published' | 'deprecated' | 'arc
 export type SkillScope = 'tenant' | 'personal';
 
 @Entity('skills')
-@Index('idx_skills_tenant_slug', ['tenantId', 'slug'], { unique: true })
+@Index('idx_skills_tenant_slug', ['solutionId', 'slug'], { unique: true })
 export class Skill {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  tenantId: string;
+  solutionId: string;
 
   @Column({ nullable: true })
   createdBy?: string | null;

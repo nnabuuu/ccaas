@@ -18,8 +18,8 @@ const scryptAsync = promisify(crypto.scrypt) as (
 ) => Promise<Buffer>;
 import { User } from '../users/entities/user.entity';
 import { ApiKeyService } from './api-key.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 
 const SCRYPT_KEYLEN = 64;
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
@@ -33,8 +33,8 @@ export class DevLoginService implements OnModuleInit {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly apiKeyService: ApiKeyService,
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -64,12 +64,12 @@ export class DevLoginService implements OnModuleInit {
       },
     ];
 
-    const tenantId = await this.resolveDefaultTenantId();
+    const solutionId = await this.resolveDefaultTenantId();
     const seeded: string[] = [];
 
     for (const spec of devUsers) {
       const user = await this.ensureUser(spec);
-      await this.ensureUserTenant(user.id, tenantId, spec.role);
+      await this.ensureUserTenant(user.id, solutionId, spec.role);
       seeded.push(spec.username);
     }
 
@@ -121,10 +121,10 @@ export class DevLoginService implements OnModuleInit {
     return user;
   }
 
-  private async ensureUserTenant(userId: string, tenantId: string, role: 'admin' | 'developer' | 'viewer') {
-    const userTenant = await this.userTenantService.findUserInTenant(userId, tenantId);
+  private async ensureUserTenant(userId: string, solutionId: string, role: 'admin' | 'developer' | 'viewer') {
+    const userTenant = await this.userTenantService.findUserInTenant(userId, solutionId);
     if (!userTenant) {
-      await this.userTenantService.create({ userId, tenantId, role });
+      await this.userTenantService.create({ userId, solutionId, role });
     }
   }
 
@@ -144,8 +144,8 @@ export class DevLoginService implements OnModuleInit {
     }
 
     // Create a session API key with 24h expiry
-    const tenantId = await this.resolveDefaultTenantId();
-    const { rawKey } = await this.apiKeyService.create(tenantId, {
+    const solutionId = await this.resolveDefaultTenantId();
+    const { rawKey } = await this.apiKeyService.create(solutionId, {
       name: 'Dev login session',
       scopes: ['admin'],
       userId: user.id,

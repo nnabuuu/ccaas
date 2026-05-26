@@ -43,7 +43,7 @@ export class SessionMetadata {
 
   /** Optional: tenant the session belongs to, for filterable bulk queries. */
   @Column({ type: 'text', nullable: true })
-  tenantId: string | null;
+  solutionId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

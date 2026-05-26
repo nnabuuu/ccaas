@@ -12,11 +12,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { UserTenantService } from './user-tenant.service';
+import { UserSolutionService } from './user-solution.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
-import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
+import { CreateUserTenantDto } from './dto/create-user-solution.dto';
+import { UpdateUserTenantDto } from './dto/update-user-solution.dto';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { RequireScopes } from '../auth/decorators';
 
@@ -26,7 +26,7 @@ import { RequireScopes } from '../auth/decorators';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly userTenantService: UserTenantService,
+    private readonly userTenantService: UserSolutionService,
   ) {}
 
   @Post()
@@ -60,17 +60,17 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-  // UserTenant endpoints
-  @Post('tenants')
+  // UserSolution endpoints
+  @Post('solutions')
   @RequireScopes('admin')
   createUserTenant(@Body() createUserTenantDto: CreateUserTenantDto) {
     return this.userTenantService.create(createUserTenantDto);
   }
 
-  @Get('tenants/by-tenant/:tenantId')
+  @Get('tenants/by-tenant/:solutionId')
   @RequireScopes('admin')
-  findByTenant(@Param('tenantId') tenantId: string) {
-    return this.userTenantService.findByTenant(tenantId);
+  findByTenant(@Param('solutionId') solutionId: string) {
+    return this.userTenantService.findByTenant(solutionId);
   }
 
   @Get('tenants/by-user/:userId')

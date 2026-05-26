@@ -17,7 +17,7 @@ import { SkillSyncService } from '../skills/skill-sync.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
 import { MessagesService } from '../messages/messages.service';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { ToolEventsService } from '../messages/tool-events.service';
 import { ThinkingBlocksService } from '../messages/thinking-blocks.service';
 import { ProcessLifecycleService } from '../messages/process-lifecycle.service';
@@ -109,7 +109,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
           useValue: mockMessagesService,
         },
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: mockTenantsService,
         },
         {
@@ -203,7 +203,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
           },
         ],
         impact: 'low',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
       };
 
       // Emit event after a short delay to ensure listener is registered
@@ -234,7 +234,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
         },
         affectedSessions: [],
         impact: 'low',
-        tenantId: 'tenant-456',
+        solutionId: 'tenant-456',
       };
 
       setTimeout(() => {
@@ -269,7 +269,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
           canRestart: true,
         })),
         impact: 'high',
-        tenantId: 'tenant-789',
+        solutionId: 'tenant-789',
       };
 
       setTimeout(() => {
@@ -309,7 +309,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
           },
         ],
         impact: 'low',
-        tenantId: 'tenant-abc',
+        solutionId: 'tenant-abc',
       };
 
       setTimeout(() => {

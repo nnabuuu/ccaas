@@ -49,8 +49,8 @@ class FakeRepo {
   }
 }
 
-async function build(opts: { tenantId?: string; missing?: boolean } = {}) {
-  const session = opts.missing ? undefined : { sessionId: SESSION_ID, tenantId: opts.tenantId ?? TENANT };
+async function build(opts: { solutionId?: string; missing?: boolean } = {}) {
+  const session = opts.missing ? undefined : { sessionId: SESSION_ID, solutionId: opts.solutionId ?? TENANT };
   const repo = new FakeRepo();
   const module = await Test.createTestingModule({
     providers: [
@@ -157,7 +157,7 @@ describe('SessionMetadataService', () => {
     });
 
     it('403 when tenant mismatch', async () => {
-      const { svc } = await build({ tenantId: 'tenant-other' });
+      const { svc } = await build({ solutionId: 'tenant-other' });
       await expect(svc.list(SESSION_ID, TENANT)).rejects.toBeInstanceOf(ForbiddenException);
       await expect(svc.put(SESSION_ID, TENANT, 'k', 1)).rejects.toBeInstanceOf(ForbiddenException);
       await expect(svc.delete(SESSION_ID, TENANT, 'k')).rejects.toBeInstanceOf(ForbiddenException);

@@ -26,7 +26,7 @@ export type ApiErrorType =
 @Entity('api_error_events')
 @Index('IDX_api_error_events_session_created_at', ['sessionId', 'createdAt'])
 @Index('IDX_api_error_events_error_type', ['errorType'])
-@Index('IDX_api_error_events_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_api_error_events_tenant_created_at', ['solutionId', 'createdAt'])
 export class ApiErrorEvent {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -36,11 +36,11 @@ export class ApiErrorEvent {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_api_error_events_tenant_id')
-  tenantId?: string;
+  solutionId?: string;
 
   /**
    * Associated message ID (if available)

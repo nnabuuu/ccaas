@@ -1,5 +1,5 @@
 /**
- * Tenant Quota Entity
+ * Solution Quota Entity
  *
  * Tracks usage quotas and current consumption for each tenant.
  */
@@ -16,14 +16,14 @@ import {
 export type QuotaPeriod = 'monthly' | 'daily';
 
 @Entity('tenant_quotas')
-@Index('IDX_tenant_quotas_tenant_period', ['tenantId', 'period'], { unique: true })
-export class TenantQuota {
+@Index('IDX_tenant_quotas_tenant_period', ['solutionId', 'period'], { unique: true })
+export class SolutionQuota {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ type: 'varchar', length: 64 })
   @Index('IDX_tenant_quotas_tenant_id')
-  tenantId!: string;
+  solutionId!: string;
 
   @Column({ type: 'varchar', length: 20, default: 'monthly' })
   period!: QuotaPeriod;

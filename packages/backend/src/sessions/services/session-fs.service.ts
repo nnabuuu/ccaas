@@ -11,7 +11,7 @@
  *   POST  /api/v1/sessions/:id/fs/snapshot
  *   POST  /api/v1/sessions/:id/fs/rollback
  *
- * Auth: callers handle the `Auth('admin')` + `TenantGuard` decorators
+ * Auth: callers handle the `Auth('admin')` + `SolutionAuthGuard` decorators
  * at the controller layer. We enforce session existence here so the
  * provider methods only see real session ids.
  */
@@ -46,8 +46,8 @@ export class SessionFsService {
     private readonly sessions: SessionService,
   ) {}
 
-  async diff(sessionId: string, tenantId: string): Promise<FsDiffEntry[]> {
-    const session = this.requireOwnedSession(sessionId, tenantId);
+  async diff(sessionId: string, solutionId: string): Promise<FsDiffEntry[]> {
+    const session = this.requireOwnedSession(sessionId, solutionId);
     if (!session.workspaceHandle?.diff) {
       throw this.unsupported('diff');
     }
@@ -56,10 +56,10 @@ export class SessionFsService {
 
   async timeline(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     opts?: TimelineOpts,
   ): Promise<FsTimelineEntry[]> {
-    const session = this.requireOwnedSession(sessionId, tenantId);
+    const session = this.requireOwnedSession(sessionId, solutionId);
     if (!session.workspaceHandle?.timeline) {
       throw this.unsupported('timeline');
     }
@@ -68,11 +68,11 @@ export class SessionFsService {
 
   async snapshot(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     label: string,
   ): Promise<SnapshotResult> {
     this.requireValidLabel(label);
-    const session = this.requireOwnedSession(sessionId, tenantId);
+    const session = this.requireOwnedSession(sessionId, solutionId);
     this.requireSessionIdle(session, 'snapshot');
     if (!session.workspaceHandle?.snapshot) {
       throw this.unsupported('snapshot');
@@ -83,11 +83,11 @@ export class SessionFsService {
 
   async rollback(
     sessionId: string,
-    tenantId: string,
+    solutionId: string,
     label: string,
   ): Promise<void> {
     this.requireValidLabel(label);
-    const session = this.requireOwnedSession(sessionId, tenantId);
+    const session = this.requireOwnedSession(sessionId, solutionId);
     this.requireSessionIdle(session, 'rollback');
     if (!session.workspaceHandle?.rollback) {
       throw this.unsupported('rollback');
@@ -106,10 +106,10 @@ export class SessionFsService {
   }
 
   /**
-   * Tenant ownership check.
+   * Solution ownership check.
    *
    * **Auth model for stage-1**: these endpoints are gated `Auth('admin')`
-   * at the controller layer, which means TenantGuard reads `x-tenant-id`
+   * at the controller layer, which means SolutionAuthGuard reads `x-tenant-id`
    * from the request header (admin keys can cross-tenant freely). The
    * equality check below is therefore *defensive*: an admin caller who
    * sends the wrong tenant header gets 403 instead of accidentally
@@ -118,14 +118,14 @@ export class SessionFsService {
    * unrestricted). Stage-2 may add a `sessions:fs` granular scope for
    * tenant-bound keys, at which point this check becomes load-bearing.
    */
-  private requireOwnedSession(sessionId: string, tenantId: string) {
+  private requireOwnedSession(sessionId: string, solutionId: string) {
     const session = this.sessions.getSession(sessionId);
     if (!session) {
       throw new NotFoundException(
         `session not found or not active: ${sessionId} (sessions purged from memory after close)`,
       );
     }
-    if (session.tenantId && session.tenantId !== tenantId) {
+    if (session.solutionId && session.solutionId !== solutionId) {
       throw new ForbiddenException(
         `session ${sessionId} belongs to a different tenant`,
       );

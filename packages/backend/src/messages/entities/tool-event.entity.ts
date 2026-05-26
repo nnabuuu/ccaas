@@ -28,7 +28,7 @@ export interface ToolDecisionLogic {
 @Index('IDX_tool_events_session_created_at', ['sessionId', 'createdAt'])
 @Index('IDX_tool_events_message_created_at', ['messageId', 'createdAt'])
 @Index('IDX_tool_events_tool_use_id', ['toolUseId'])
-@Index('IDX_tool_events_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_tool_events_tenant_created_at', ['solutionId', 'createdAt'])
 export class ToolEvent {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -46,11 +46,11 @@ export class ToolEvent {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_tool_events_tenant_id')
-  tenantId?: string;
+  solutionId?: string;
 
   @Column()
   toolUseId!: string; // Unique ID per tool invocation (links start/end)

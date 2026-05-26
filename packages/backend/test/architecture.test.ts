@@ -80,7 +80,7 @@ describe('Architecture Rules', () => {
         'SkillVersion',
         'User',
         'ApiKey',
-        'Tenant',
+        'Solution',
 
         // Message and communication
         'Message',
@@ -98,7 +98,7 @@ describe('Architecture Rules', () => {
         // Admin and monitoring
         'AdminAuditLog',
         'SessionAlert',
-        'TenantQuota',
+        'SolutionQuota',
 
         // Scheduled tasks
         'ScheduledTask',

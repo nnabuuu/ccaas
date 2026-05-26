@@ -12,7 +12,7 @@ import { ThinkingBlock, ThinkingStatus } from './entities/thinking-block.entity'
 export interface CreateThinkingBlockDto {
   messageId: string;
   sessionId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   thinkingId: string;
   content?: string;
   sequenceNumber?: number;
@@ -47,7 +47,7 @@ export class ThinkingBlocksService {
     const block = this.thinkingRepository.create({
       messageId: dto.messageId,
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId ?? undefined,
+      solutionId: dto.solutionId ?? undefined,
       thinkingId: dto.thinkingId,
       content: dto.content || '',
       sequenceNumber: dto.sequenceNumber ?? existingCount,

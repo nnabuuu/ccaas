@@ -16,8 +16,8 @@ import {
 export type SessionStatus = 'idle' | 'processing' | 'error' | 'closed' | 'cancelling';
 
 @Entity('sessions')
-@Index('IDX_sessions_tenant_created_at', ['tenantId', 'createdAt'])
-@Index('IDX_sessions_tenant_status', ['tenantId', 'status'])
+@Index('IDX_sessions_tenant_created_at', ['solutionId', 'createdAt'])
+@Index('IDX_sessions_tenant_status', ['solutionId', 'status'])
 export class Session {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -30,11 +30,11 @@ export class Session {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', length: 64, nullable: true })
   @Index('IDX_sessions_tenant_id')
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   /**
    * User ID for user-scoped session history

@@ -123,7 +123,7 @@ describe('Job Lifecycle Integration Tests', () => {
   // Helper to create a standard job
   async function createTestJob(overrides?: Partial<Parameters<typeof jobService.create>[0]>) {
     return jobService.create({
-      tenantId: testTenantId,
+      solutionId: testTenantId,
       type: 'notebooklm_podcast',
       name: 'Generate AI Podcast',
       prompt: 'Create a podcast episode about AI safety research',
@@ -145,7 +145,7 @@ describe('Job Lifecycle Integration Tests', () => {
       expect(fromDb!.status).toBe('pending');
       expect(fromDb!.attempts).toBe(0);
       expect(fromDb!.type).toBe('notebooklm_podcast');
-      expect(fromDb!.tenantId).toBe(testTenantId);
+      expect(fromDb!.solutionId).toBe(testTenantId);
 
       // Verify enqueue was called
       expect(mockQueueService.enqueue).toHaveBeenCalledWith(
@@ -153,7 +153,7 @@ describe('Job Lifecycle Integration Tests', () => {
           jobEntityId: job.id,
           type: 'notebooklm_podcast',
           prompt: 'Create a podcast episode about AI safety research',
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
           enabledSkills: ['notebooklm'],
         }),
@@ -168,7 +168,7 @@ describe('Job Lifecycle Integration Tests', () => {
       await capturedHandlers.run({
         data: {
           jobEntityId: job.id,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           prompt: job.prompt,
           mcpServers: job.mcpServers,
           enabledSkills: job.enabledSkills,
@@ -185,7 +185,7 @@ describe('Job Lifecycle Integration Tests', () => {
       // Verify executeJob was called
       expect(mockHeadlessExecution.executeJob).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           prompt: 'Create a podcast episode about AI safety research',
         }),
         expect.objectContaining({
@@ -207,7 +207,7 @@ describe('Job Lifecycle Integration Tests', () => {
       });
 
       const runResult = await capturedHandlers.run({
-        data: { jobEntityId: job.id, tenantId: testTenantId, prompt: job.prompt },
+        data: { jobEntityId: job.id, solutionId: testTenantId, prompt: job.prompt },
       });
 
       // Set up workspace with real files
@@ -264,7 +264,7 @@ describe('Job Lifecycle Integration Tests', () => {
       });
 
       await capturedHandlers.run({
-        data: { jobEntityId: job.id, tenantId: testTenantId, prompt: job.prompt },
+        data: { jobEntityId: job.id, solutionId: testTenantId, prompt: job.prompt },
       });
 
       fromDb = await jobRepo.findOneBy({ id: job.id });
@@ -327,7 +327,7 @@ describe('Job Lifecycle Integration Tests', () => {
 
       // First run, then fail
       await capturedHandlers.run({
-        data: { jobEntityId: job.id, tenantId: testTenantId, prompt: job.prompt },
+        data: { jobEntityId: job.id, solutionId: testTenantId, prompt: job.prompt },
       });
       const afterRun = await jobRepo.findOneBy({ id: job.id });
       const bgSessionId = afterRun!.bgSessionId;
@@ -386,7 +386,7 @@ describe('Job Lifecycle Integration Tests', () => {
 
       // Transition to running
       await capturedHandlers.run({
-        data: { jobEntityId: job.id, tenantId: testTenantId, prompt: job.prompt },
+        data: { jobEntityId: job.id, solutionId: testTenantId, prompt: job.prompt },
       });
 
       const cancelled = await jobService.cancel(job.id);
@@ -417,11 +417,11 @@ describe('Job Lifecycle Integration Tests', () => {
       await jobRepo.update(jobs[0].id, { status: 'failed' });
     });
 
-    it('filters by tenantId', async () => {
-      const result = await jobService.findAll({ tenantId: testTenantId });
+    it('filters by solutionId', async () => {
+      const result = await jobService.findAll({ solutionId: testTenantId });
       expect(result.total).toBe(5);
 
-      const empty = await jobService.findAll({ tenantId: 'nonexistent-tenant' });
+      const empty = await jobService.findAll({ solutionId: 'nonexistent-tenant' });
       expect(empty.total).toBe(0);
     });
 
@@ -439,26 +439,26 @@ describe('Job Lifecycle Integration Tests', () => {
     });
 
     it('paginates correctly: page 1 of 3', async () => {
-      const page1 = await jobService.findAll({ tenantId: testTenantId, page: 1, limit: 2 });
+      const page1 = await jobService.findAll({ solutionId: testTenantId, page: 1, limit: 2 });
       expect(page1.data.length).toBe(2);
       expect(page1.total).toBe(5);
       expect(page1.totalPages).toBe(3);
       expect(page1.page).toBe(1);
 
-      const page3 = await jobService.findAll({ tenantId: testTenantId, page: 3, limit: 2 });
+      const page3 = await jobService.findAll({ solutionId: testTenantId, page: 3, limit: 2 });
       expect(page3.data.length).toBe(1);
     });
   });
 
-  describe('Multi-Tenant Isolation', () => {
+  describe('Multi-Solution Isolation', () => {
     it('jobs from tenant-A not visible to tenant-B filter', async () => {
-      await createTestJob({ name: 'Tenant A Job' });
+      await createTestJob({ name: 'Solution A Job' });
 
-      // Create a job with different tenantId (bypass service to set arbitrary tenantId)
+      // Create a job with different solutionId (bypass service to set arbitrary solutionId)
       const otherJob = jobRepo.create({
-        tenantId: 'other-tenant-id',
+        solutionId: 'other-tenant-id',
         type: 'test',
-        name: 'Tenant B Job',
+        name: 'Solution B Job',
         prompt: 'test',
         status: 'pending',
         attempts: 0,
@@ -467,13 +467,13 @@ describe('Job Lifecycle Integration Tests', () => {
       });
       await jobRepo.save(otherJob);
 
-      const tenantAJobs = await jobService.findAll({ tenantId: testTenantId });
-      const tenantBJobs = await jobService.findAll({ tenantId: 'other-tenant-id' });
+      const tenantAJobs = await jobService.findAll({ solutionId: testTenantId });
+      const tenantBJobs = await jobService.findAll({ solutionId: 'other-tenant-id' });
 
       expect(tenantAJobs.total).toBe(1);
       expect(tenantBJobs.total).toBe(1);
-      expect(tenantAJobs.data[0].name).toBe('Tenant A Job');
-      expect(tenantBJobs.data[0].name).toBe('Tenant B Job');
+      expect(tenantAJobs.data[0].name).toBe('Solution A Job');
+      expect(tenantBJobs.data[0].name).toBe('Solution B Job');
     });
   });
 
@@ -488,7 +488,7 @@ describe('Job Lifecycle Integration Tests', () => {
 
       // Run (running)
       await capturedHandlers.run({
-        data: { jobEntityId: job.id, tenantId: testTenantId, prompt: job.prompt },
+        data: { jobEntityId: job.id, solutionId: testTenantId, prompt: job.prompt },
       });
 
       // Complete

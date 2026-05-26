@@ -26,13 +26,13 @@ import { Skill } from '../../src/skills/entities/skill.entity';
 import { SkillVersion } from '../../src/skills/entities/skill-version.entity';
 import { SkillFile } from '../../src/skills/entities/skill-file.entity';
 import { SkillVersionFile } from '../../src/skills/entities/skill-version-file.entity';
-import { TenantQuota } from '../../src/admin/entities/tenant-quota.entity';
-import { Tenant } from '../../src/tenants/entities/tenant.entity';
+import { SolutionQuota } from '../../src/admin/entities/solution-quota.entity';
+import { Solution } from '../../src/solutions/entities/solution.entity';
 import { ApiKey } from '../../src/auth/entities/api-key.entity';
 import { McpServer } from '../../src/mcp/entities/mcp-server.entity';
 import { JobEntity } from '../../src/jobs/entities/job.entity';
 import { User } from '../../src/users/entities/user.entity';
-import { UserTenant } from '../../src/users/entities/user-tenant.entity';
+import { UserSolution } from '../../src/users/entities/user-solution.entity';
 import { Session } from '../../src/admin/entities/session.entity';
 import { Turn } from '../../src/admin/entities/turn.entity';
 
@@ -53,15 +53,15 @@ export const TEST_ENTITIES = [
   SkillVersion,
   SkillFile,
   SkillVersionFile,
-  Tenant,
-  TenantQuota,
+  Solution,
+  SolutionQuota,
   ApiKey,
   McpServer,
   SessionAlert,
   AdminAuditLog,
   JobEntity,
   User,
-  UserTenant,
+  UserSolution,
   Session,
   Turn,
 ];
@@ -120,15 +120,15 @@ export async function clearTestDatabase(dataSource: DataSource): Promise<void> {
  * Seed test data for common scenarios
  */
 export async function seedTestData(dataSource: DataSource): Promise<{
-  tenant: Tenant;
+  tenant: Solution;
   apiKey: ApiKey;
 }> {
-  const tenantRepo = dataSource.getRepository(Tenant);
+  const tenantRepo = dataSource.getRepository(Solution);
   const apiKeyRepo = dataSource.getRepository(ApiKey);
 
   // Create test tenant
   const tenant = tenantRepo.create({
-    name: 'Test Tenant',
+    name: 'Test Solution',
     slug: 'test-tenant',
     config: {},
     status: 'active',
@@ -137,7 +137,7 @@ export async function seedTestData(dataSource: DataSource): Promise<{
 
   // Create test API key
   const apiKey = apiKeyRepo.create({
-    tenantId: tenant.id,
+    solutionId: tenant.id,
     name: 'Test API Key',
     keyHash: 'test-key-hash-' + Date.now(),
     keyPrefix: 'sk-test',

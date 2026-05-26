@@ -7,13 +7,13 @@
 import { ExecutionContext } from '@nestjs/common';
 import { QuotaGuard } from './quota.guard';
 import { QuotaService } from '../quota.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { QuotaExceededException } from '../../protocol/http-exceptions';
 
 describe('QuotaGuard', () => {
   let guard: QuotaGuard;
   let quotaService: jest.Mocked<QuotaService>;
-  let tenantsService: jest.Mocked<TenantsService>;
+  let tenantsService: jest.Mocked<SolutionsService>;
 
   const createMockContext = (body: Record<string, unknown> = {}): ExecutionContext =>
     ({
@@ -34,7 +34,7 @@ describe('QuotaGuard', () => {
     guard = new QuotaGuard(quotaService, tenantsService);
   });
 
-  it('should allow when no tenantId in body', async () => {
+  it('should allow when no solutionId in body', async () => {
     const ctx = createMockContext({});
     const result = await guard.canActivate(ctx);
     expect(result).toBe(true);
@@ -43,7 +43,7 @@ describe('QuotaGuard', () => {
 
   it('should allow when tenant not found', async () => {
     tenantsService.findOne.mockResolvedValue(null);
-    const ctx = createMockContext({ tenantId: 'unknown' });
+    const ctx = createMockContext({ solutionId: 'unknown' });
 
     const result = await guard.canActivate(ctx);
     expect(result).toBe(true);
@@ -64,7 +64,7 @@ describe('QuotaGuard', () => {
       resetsAt: '2026-04-01T00:00:00.000Z',
     });
 
-    const ctx = createMockContext({ tenantId: 't1' });
+    const ctx = createMockContext({ solutionId: 't1' });
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
@@ -84,7 +84,7 @@ describe('QuotaGuard', () => {
       resetsAt: '2026-04-01T00:00:00.000Z',
     });
 
-    const ctx = createMockContext({ tenantId: 't1' });
+    const ctx = createMockContext({ solutionId: 't1' });
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
@@ -104,7 +104,7 @@ describe('QuotaGuard', () => {
       resetsAt: '2026-04-01T00:00:00.000Z',
     });
 
-    const ctx = createMockContext({ tenantId: 't1' });
+    const ctx = createMockContext({ solutionId: 't1' });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(QuotaExceededException);
   });
@@ -123,7 +123,7 @@ describe('QuotaGuard', () => {
       resetsAt: '2026-04-01T00:00:00.000Z',
     });
 
-    const ctx = createMockContext({ tenantId: 't1' });
+    const ctx = createMockContext({ solutionId: 't1' });
 
     try {
       await guard.canActivate(ctx);

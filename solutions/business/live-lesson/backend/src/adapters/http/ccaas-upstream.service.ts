@@ -3,7 +3,7 @@
  * browser to ccaas. Owns:
  *   - env resolution (CCAAS_URL + CCAAS_API_KEY) with operator-friendly
  *     fail-loud when the key is missing
- *   - tenantId resolution from the env key (lazy + cached)
+ *   - solutionId resolution from the env key (lazy + cached)
  *   - SSE / fetch error wrapping with token scrubbing
  *   - small upstream-body helpers used by error paths
  *
@@ -27,7 +27,7 @@ const DEFAULT_CCAAS_URL = 'http://localhost:3001';
 export class CcaasUpstream {
   private readonly logger = new Logger(CcaasUpstream.name);
   /**
-   * Once-per-process cache of the tenantId derived from `CCAAS_API_KEY`.
+   * Once-per-process cache of the solutionId derived from `CCAAS_API_KEY`.
    * One solution backend = one ccaas tenant (by design), so this never
    * needs to change unless the operator rotates the key and restarts.
    *
@@ -66,14 +66,14 @@ export class CcaasUpstream {
   }
 
   /**
-   * Resolve the ccaas tenantId for the env-held API key. ccaas exposes
-   * `GET /api/v1/auth/me` which returns `{ tenantId, ... }` given an
+   * Resolve the ccaas solutionId for the env-held API key. ccaas exposes
+   * `GET /api/v1/auth/me` which returns `{ solutionId, ... }` given an
    * Authorization header. We call that once on the first request that
    * needs it (typically the first POST /sessions/:sid/bind-project or
    * /messages) and cache forever.
    *
    * Why cache forever: the env key identifies the tenant; the env can't
-   * change without a process restart; therefore the tenantId can't
+   * change without a process restart; therefore the solutionId can't
    * change without a process restart.
    *
    * Throws 503 if ccaas is unreachable OR the key isn't valid — both
@@ -111,22 +111,22 @@ export class CcaasUpstream {
           'check CCAAS_API_KEY env var',
       );
     }
-    let body: { tenantId?: string };
+    let body: { solutionId?: string };
     try {
-      body = (await res.json()) as { tenantId?: string };
+      body = (await res.json()) as { solutionId?: string };
     } catch (err) {
       throw new ServiceUnavailableException(
         `ccaas /auth/me returned non-JSON: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-    if (!body?.tenantId) {
+    if (!body?.solutionId) {
       throw new ServiceUnavailableException(
-        'ccaas /auth/me returned no tenantId; check CCAAS_API_KEY env var',
+        'ccaas /auth/me returned no solutionId; check CCAAS_API_KEY env var',
       );
     }
-    this.cachedTenantId = body.tenantId;
-    this.logger.log(`Resolved ccaas tenantId: ${body.tenantId}`);
-    return body.tenantId;
+    this.cachedTenantId = body.solutionId;
+    this.logger.log(`Resolved ccaas solutionId: ${body.solutionId}`);
+    return body.solutionId;
   }
 
   /**

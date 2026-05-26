@@ -8,12 +8,12 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { SkillPermissionGuard } from './skill-permission.guard';
 import { SkillsService } from '../skills.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 
 describe('SkillPermissionGuard', () => {
   let guard: SkillPermissionGuard;
   let skillsService: jest.Mocked<SkillsService>;
-  let userTenantService: jest.Mocked<UserTenantService>;
+  let userTenantService: jest.Mocked<UserSolutionService>;
   let reflector: jest.Mocked<Reflector>;
 
   beforeEach(() => {
@@ -65,7 +65,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true },
           },
@@ -89,7 +89,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -113,7 +113,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -137,7 +137,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -163,7 +163,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'viewer', isActive: true },
           },
@@ -188,7 +188,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true, canCreateSkills: true },
           },
@@ -206,7 +206,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true, canCreateSkills: true },
           },
@@ -224,7 +224,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true, canCreateSkills: false },
           },
@@ -244,7 +244,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'viewer', isActive: true, canCreateSkills: false },
           },
@@ -262,7 +262,7 @@ describe('SkillPermissionGuard', () => {
           method: 'PATCH',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true },
           },
@@ -292,7 +292,7 @@ describe('SkillPermissionGuard', () => {
           method: 'PATCH',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -317,7 +317,7 @@ describe('SkillPermissionGuard', () => {
           method: 'PATCH',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -346,7 +346,7 @@ describe('SkillPermissionGuard', () => {
           method: 'DELETE',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true },
           },
@@ -370,7 +370,7 @@ describe('SkillPermissionGuard', () => {
           method: 'DELETE',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },
@@ -395,7 +395,7 @@ describe('SkillPermissionGuard', () => {
           method: 'GET',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             isAnonymous: true,
           },
         };
@@ -416,7 +416,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             isAnonymous: true,
           },
         };
@@ -429,14 +429,14 @@ describe('SkillPermissionGuard', () => {
       });
     });
 
-    describe('Cross-Tenant Resolution', () => {
-      it('should use request.tenantId (target) over context.tenantId (caller)', async () => {
+    describe('Cross-Solution Resolution', () => {
+      it('should use request.solutionId (target) over context.solutionId (caller)', async () => {
         const request = {
           method: 'GET',
           params: { id: 'skill-123' },
-          tenantId: 'tenant-target',
+          solutionId: 'tenant-target',
           context: {
-            tenantId: 'tenant-caller',
+            solutionId: 'tenant-caller',
             userId: 'user-123',
             apiKeyScopes: ['admin'],
             userTenant: { role: 'admin', isActive: true },
@@ -456,13 +456,13 @@ describe('SkillPermissionGuard', () => {
         expect(skillsService.findOne).toHaveBeenCalledWith('tenant-target', 'skill-123');
       });
 
-      it('should fall back to context.tenantId when request.tenantId is absent', async () => {
+      it('should fall back to context.solutionId when request.solutionId is absent', async () => {
         const request = {
           method: 'GET',
           params: { id: 'skill-456' },
-          // no request.tenantId — TenantGuard not applied or no header
+          // no request.solutionId — SolutionAuthGuard not applied or no header
           context: {
-            tenantId: 'tenant-from-context',
+            solutionId: 'tenant-from-context',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true },
           },
@@ -487,7 +487,7 @@ describe('SkillPermissionGuard', () => {
         const request = {
           method: 'POST',
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             // No userTenant
           },
@@ -505,7 +505,7 @@ describe('SkillPermissionGuard', () => {
           method: 'PATCH',
           params: { id: 'skill-999' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'admin', isActive: true },
           },
@@ -524,7 +524,7 @@ describe('SkillPermissionGuard', () => {
           method: 'PATCH',
           params: { id: 'skill-123' },
           context: {
-            tenantId: 'tenant-123',
+            solutionId: 'tenant-123',
             userId: 'user-123',
             userTenant: { role: 'developer', isActive: true },
           },

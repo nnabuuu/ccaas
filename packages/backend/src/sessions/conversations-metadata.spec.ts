@@ -22,7 +22,7 @@ describe('ConversationMetadataService', () => {
   ): Session => ({
     id: `uuid-${sessionId}`,
     sessionId,
-    tenantId: 'tenant-a',
+    solutionId: 'tenant-a',
     userId: null,
     clientId: `client-${sessionId}`,
     status: 'idle' as any,

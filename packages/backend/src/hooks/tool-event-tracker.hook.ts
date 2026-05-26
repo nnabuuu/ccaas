@@ -50,7 +50,7 @@ export function createToolEventTrackerHook(deps: ToolEventTrackerDeps): ToolHook
         await toolEventsService.recordStart({
           messageId: session.currentAssistantMessageId,
           sessionId: context.sessionId,
-          tenantId: session.tenantId || null,
+          solutionId: session.solutionId || null,
           toolUseId: info.toolId,
           toolName: info.toolName,
           toolInput: info.input,
@@ -92,7 +92,7 @@ export function createToolEventTrackerHook(deps: ToolEventTrackerDeps): ToolHook
         await toolEventsService.recordEnd({
           messageId: session.currentAssistantMessageId,
           sessionId: context.sessionId,
-          tenantId: session.tenantId || null,
+          solutionId: session.solutionId || null,
           toolUseId: context.toolUseId,
           toolName: result.toolName,
           toolInput: result.input,

@@ -6,7 +6,7 @@
  *   - 400 when provider's handle lacks the method (local provider)
  *   - 400 on invalid label format for snapshot/rollback
  *   - 404 when session id not in the in-memory map
- *   - 403 when caller's tenantId doesn't match session.tenantId
+ *   - 403 when caller's solutionId doesn't match session.solutionId
  */
 
 import { Test } from '@nestjs/testing';
@@ -27,7 +27,7 @@ const TENANT = 'tenant-1';
 function fakeSession(overrides: Partial<any> = {}) {
   return {
     sessionId: 's-1',
-    tenantId: TENANT,
+    solutionId: TENANT,
     status: 'idle',
     workspaceHandle: {
       path: '/tmp/x',
@@ -161,14 +161,14 @@ describe('SessionFsService', () => {
       await expect(svc.diff('missing', TENANT)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('403 when tenantId mismatches session.tenantId', async () => {
-      const session = fakeSession({ tenantId: 'tenant-other' });
+    it('403 when solutionId mismatches session.solutionId', async () => {
+      const session = fakeSession({ solutionId: 'tenant-other' });
       const svc = await build(session);
       await expect(svc.diff('s-1', TENANT)).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('no ownership check when session.tenantId is undefined (anonymous session)', async () => {
-      const session = fakeSession({ tenantId: undefined });
+    it('no ownership check when session.solutionId is undefined (anonymous session)', async () => {
+      const session = fakeSession({ solutionId: undefined });
       const svc = await build(session);
       await expect(svc.diff('s-1', TENANT)).resolves.toBeDefined();
     });

@@ -53,7 +53,7 @@ describe('WriteFileTrackerHook', () => {
     id: 'file-uuid-1',
     messageId: 'msg-123',
     sessionId: 'session-123',
-    tenantId: 'tenant-123',
+    solutionId: 'tenant-123',
     originalPath: 'docs/test.md',
     storedPath: '/storage/tenant-123/msg-123/test.md',
     filename: 'test.md',
@@ -91,7 +91,7 @@ describe('WriteFileTrackerHook', () => {
       buffer: '',
       workspaceDir: '/tmp/workspace',
       currentAssistantMessageId: 'msg-123',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
     };
 
     mockGetSession = jest.fn().mockReturnValue(mockSession);
@@ -136,7 +136,7 @@ describe('WriteFileTrackerHook', () => {
         expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith({
           messageId: 'msg-123',
           sessionId: 'session-123',
-          tenantId: 'tenant-123',
+          solutionId: 'tenant-123',
           originalPath: '/workspace/reports/summary.md',
           workspaceDir: '/tmp/workspace',
         });
@@ -268,39 +268,39 @@ describe('WriteFileTrackerHook', () => {
       });
     });
 
-    describe('tenantId propagation', () => {
-      it('should pass tenantId from session to filesService', async () => {
-        mockSession.tenantId = 'custom-tenant';
+    describe('solutionId propagation', () => {
+      it('should pass solutionId from session to filesService', async () => {
+        mockSession.solutionId = 'custom-tenant';
 
         await hook.afterToolResult(createWriteResult(), createContext());
 
         expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: 'custom-tenant',
+            solutionId: 'custom-tenant',
           }),
         );
       });
 
-      it('should handle undefined tenantId', async () => {
-        mockSession.tenantId = undefined;
+      it('should handle undefined solutionId', async () => {
+        mockSession.solutionId = undefined;
 
         await hook.afterToolResult(createWriteResult(), createContext());
 
         expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: undefined,
+            solutionId: undefined,
           }),
         );
       });
 
-      it('should handle null tenantId', async () => {
-        (mockSession as any).tenantId = null;
+      it('should handle null solutionId', async () => {
+        (mockSession as any).solutionId = null;
 
         await hook.afterToolResult(createWriteResult(), createContext());
 
         expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: null,
+            solutionId: null,
           }),
         );
       });

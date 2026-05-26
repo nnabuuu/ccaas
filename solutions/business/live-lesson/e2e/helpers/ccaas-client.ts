@@ -60,7 +60,7 @@ export function getCreatorTenantId(slug = CREATOR_TENANT_SLUG): string {
 
 // ── HTTP helpers ─────────────────────────────────────────────────────
 
-export interface BindBody { projectId: string; tenantId: string }
+export interface BindBody { projectId: string; solutionId: string }
 export interface BindResponse { success: true; sessionId: string; projectId: string }
 
 /** Generate a UUID for a fresh session id. Crypto-random; safe in tests. */
@@ -71,7 +71,7 @@ export function newSessionId(): string {
 /** POST /api/v1/sessions/:sid/messages — spawns the engine + triggers a turn. */
 export async function postFirstMessage(opts: {
   sessionId: string;
-  tenantId: string;
+  solutionId: string;
   message?: string;
   templateName?: string;
   /** Timeout in ms. The SSE response stays open for the whole turn (~5-15s). */
@@ -85,7 +85,7 @@ export async function postFirstMessage(opts: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: opts.message ?? 'hi',
-        tenantId: opts.tenantId,
+        solutionId: opts.solutionId,
         templateName: opts.templateName ?? CREATOR_TEMPLATE,
       }),
       signal: controller.signal,

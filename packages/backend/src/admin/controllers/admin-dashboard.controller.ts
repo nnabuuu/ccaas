@@ -8,7 +8,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { SessionService } from '../../sessions/session.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
@@ -19,7 +19,7 @@ import { DashboardSummary, RecentSession } from '../dto/admin.dto';
 @ApiTags('admin')
 @Controller('api/v1/admin/dashboard')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminDashboardController {
   constructor(
     private readonly sessionService: SessionService,
@@ -36,12 +36,12 @@ export class AdminDashboardController {
    */
   @Get('summary')
   async getSummary(
-    @Query('tenantId') tenantId: string | undefined,
+    @Query('solutionId') solutionId: string | undefined,
     @Ctx() ctx: RequestContext,
   ): Promise<DashboardSummary> {
     // Builder keys: always enforce own-tenant (defense-in-depth, guard also validates)
     if (!isAdminScope(ctx)) {
-      tenantId = ctx.tenantId;
+      solutionId = ctx.solutionId;
     }
     const [
       sessionStats,
@@ -49,22 +49,22 @@ export class AdminDashboardController {
       tokens24h,
       errorRate24h,
     ] = await Promise.all([
-      this.sessionService.getStats(tenantId),
-      this.analyticsService.getMessagesCount24h(tenantId),
-      this.analyticsService.getTotalTokens24h(tenantId),
-      this.sessionManagerService.getErrorRate24h(tenantId),
+      this.sessionService.getStats(solutionId),
+      this.analyticsService.getMessagesCount24h(solutionId),
+      this.analyticsService.getTotalTokens24h(solutionId),
+      this.sessionManagerService.getErrorRate24h(solutionId),
     ]);
 
-    // Get skills and API keys count (tenant-scoped if tenantId provided)
+    // Get skills and API keys count (tenant-scoped if solutionId provided)
     let totalSkills = 0;
     let publishedSkillsCount = 0;
     let activeApiKeys = 0;
 
-    if (tenantId) {
+    if (solutionId) {
       const [skills, publishedSkills, apiKeys] = await Promise.all([
-        this.skillsService.findAll(tenantId, { page: 1, limit: 1 }),
-        this.skillsService.findPublished(tenantId),
-        this.apiKeyService.findByTenantId(tenantId),
+        this.skillsService.findAll(solutionId, { page: 1, limit: 1 }),
+        this.skillsService.findPublished(solutionId),
+        this.apiKeyService.findByTenantId(solutionId),
       ]);
       totalSkills = skills.total;
       publishedSkillsCount = publishedSkills.length;
@@ -93,16 +93,16 @@ export class AdminDashboardController {
   @Get('recent-sessions')
   async getRecentSessions(
     @Query('limit') limit: string | undefined,
-    @Query('tenantId') tenantId: string | undefined,
+    @Query('solutionId') solutionId: string | undefined,
     @Ctx() ctx: RequestContext,
   ): Promise<RecentSession[]> {
     // Builder keys: always enforce own-tenant (defense-in-depth, guard also validates)
     if (!isAdminScope(ctx)) {
-      tenantId = ctx.tenantId;
+      solutionId = ctx.solutionId;
     }
     return this.sessionManagerService.getRecentSessions(
       limit ? parseInt(limit, 10) : 10,
-      tenantId,
+      solutionId,
     );
   }
 

@@ -96,7 +96,7 @@ describe('ApiKeyService', () => {
   describe('update() - userId handling', () => {
     const existingKey = {
       id: 'key-1',
-      tenantId: 'tenant-1',
+      solutionId: 'tenant-1',
       name: 'Existing Key',
       keyPrefix: 'sk-test-1234567',
       scopes: ['builder'] as any,

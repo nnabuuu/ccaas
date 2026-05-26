@@ -4,9 +4,9 @@
  * Type definitions for authentication and authorization.
  */
 
-import type { Tenant } from '../tenants/entities/tenant.entity';
+import type { Solution } from '../solutions/entities/solution.entity';
 import type { User } from '../users/entities/user.entity';
-import type { UserTenant } from '../users/entities/user-tenant.entity';
+import type { UserSolution } from '../users/entities/user-solution.entity';
 
 // ============================================================================
 // API KEY TYPES
@@ -38,13 +38,13 @@ export interface ApiKeyMetadata {
 // ============================================================================
 
 export interface RequestContext {
-  tenantId: string;
-  tenant: Tenant;
+  solutionId: string;
+  tenant: Solution;
   apiKeyId?: string;
   apiKeyScopes?: ApiKeyScope[];
   userId?: string;
   user?: User;
-  userTenant?: UserTenant; // User-tenant association with role
+  userTenant?: UserSolution; // User-tenant association with role
   requestId: string;
   timestamp: Date;
   isAnonymous?: boolean;

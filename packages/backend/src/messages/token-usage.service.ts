@@ -23,7 +23,7 @@ const MODEL_PRICING: Record<string, { input: number; output: number; cached: num
 export interface CreateTokenUsageDto {
   messageId: string;
   sessionId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -61,7 +61,7 @@ export class TokenUsageService {
     const event = this.usageRepository.create({
       messageId: dto.messageId,
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId ?? undefined,
+      solutionId: dto.solutionId ?? undefined,
       model: dto.model,
       inputTokens: dto.inputTokens,
       outputTokens: dto.outputTokens,
@@ -82,10 +82,10 @@ export class TokenUsageService {
     );
 
     // Update tenant quota (fire-and-forget, non-critical path)
-    if (dto.tenantId && this.quotaService) {
+    if (dto.solutionId && this.quotaService) {
       const totalTokens = dto.inputTokens + dto.outputTokens;
-      this.quotaService.incrementTokenUsage(dto.tenantId, totalTokens).catch((err) =>
-        this.logger.warn(`Failed to update quota for tenant ${dto.tenantId}: ${err}`),
+      this.quotaService.incrementTokenUsage(dto.solutionId, totalTokens).catch((err) =>
+        this.logger.warn(`Failed to update quota for tenant ${dto.solutionId}: ${err}`),
       );
     }
 
@@ -224,7 +224,7 @@ export class TokenUsageService {
    * Get usage by model for a tenant
    */
   async getTenantUsageByModel(
-    tenantId: string,
+    solutionId: string,
     startDate?: Date,
     endDate?: Date,
   ): Promise<Array<{
@@ -236,7 +236,7 @@ export class TokenUsageService {
   }>> {
     const qb = this.usageRepository
       .createQueryBuilder('usage')
-      .where('usage.tenantId = :tenantId', { tenantId })
+      .where('usage.solutionId = :solutionId', { solutionId })
       .select('usage.model', 'model')
       .addSelect('SUM(usage.inputTokens)', 'totalInputTokens')
       .addSelect('SUM(usage.outputTokens)', 'totalOutputTokens')

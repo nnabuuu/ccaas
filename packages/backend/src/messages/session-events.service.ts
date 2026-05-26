@@ -25,7 +25,7 @@ export class SessionEventsService {
    */
   async recordEvent(
     sessionId: string,
-    tenantId: string | null,
+    solutionId: string | null,
     event: { type: string; messageId?: string; [key: string]: unknown },
   ): Promise<void> {
     const seq = (this.seqCounters.get(sessionId) ?? 0) + 1;
@@ -33,7 +33,7 @@ export class SessionEventsService {
 
     await this.repo.save({
       sessionId,
-      tenantId,
+      solutionId,
       messageId: event.messageId ?? null,
       type: event.type,
       payload: event,

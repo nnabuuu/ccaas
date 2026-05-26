@@ -64,7 +64,7 @@ import { SkillFile } from '../skills/entities/skill-file.entity';
 import { McpServer } from '../mcp/entities/mcp-server.entity';
 import { Turn } from '../admin/entities/turn.entity';
 import { SkillsModule } from '../skills/skills.module';
-import { TenantsModule } from '../tenants/tenants.module';
+import { SolutionsModule } from '../solutions/solutions.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
 import { TurnsModule } from '../admin/turns.module';
@@ -75,12 +75,12 @@ import { BundleModule } from '../bundles/bundle.module';
     TypeOrmModule.forFeature([MessageQueue, Session, Skill, SkillFile, McpServer, SessionMetadata]),
     TurnsModule,
     SkillsModule,
-    TenantsModule,
+    SolutionsModule,
     MessagesModule,
     FilesModule,
     BundleModule,
     // Agent-runtime sync layer: source URL lives on `tenant.config.artifactUrl`
-    // (set via solution.json auto-discovery or `PUT /tenants/:id`).
+    // (set via solution.json auto-discovery or `PUT /solutions/:id`).
     // `ProjectArtifactSourceRegistry` (provided below) reads it lazily +
     // invalidates on `tenant.config.changed` events.
     AgentRuntimeModule.forRoot(),
@@ -115,9 +115,9 @@ import { BundleModule } from '../bundles/bundle.module';
     SandboxService,
     SessionAssetSyncer,
     // Agent-runtime registry lives here (not in AgentRuntimeModule) because
-    // it depends on TenantsService — which is reachable from SessionsModule
-    // via the TenantsModule import above, but pulling TenantsModule into
-    // AgentRuntimeModule creates DI grief (TenantGuard → UserTenantService).
+    // it depends on SolutionsService — which is reachable from SessionsModule
+    // via the SolutionsModule import above, but pulling SolutionsModule into
+    // AgentRuntimeModule creates DI grief (SolutionAuthGuard → UserSolutionService).
     ProjectArtifactSourceRegistry,
     {
       provide: PROJECT_ARTIFACT_SOURCE_REGISTRY,
@@ -132,7 +132,7 @@ import { BundleModule } from '../bundles/bundle.module';
       useExisting: ProjectBinaryArtifactSourceRegistry,
     },
     // Phase 2b-2: WorkspaceChangesController auth uses this resolver to map
-    // workspace identity → tenantId. Overrides the AgentRuntimeModule's
+    // workspace identity → solutionId. Overrides the AgentRuntimeModule's
     // DenyAll default. Lives here (not in AgentRuntimeModule) because it
     // depends on the SessionMetadata repo registered above — wiring it
     // in AgentRuntimeModule would mean re-importing TypeOrmModule for

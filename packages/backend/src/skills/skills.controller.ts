@@ -26,8 +26,8 @@ import {
   CreateVersionDto,
 } from './dto/skill.dto';
 import { UpsertSkillFilesDto } from './dto/skill-file.dto';
-import { TenantGuard } from '../tenants/tenant.guard';
-import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
+import { CurrentTenant } from '../common/decorators/current-solution.decorator';
 import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
 import { SkillPermissionGuard } from './guards/skill-permission.guard';
 import { OptionalAuth, Auth, CurrentUser, type CurrentUserData } from '../auth/decorators';
@@ -41,41 +41,41 @@ export class SkillsController {
    * List all skills for the tenant (anonymous read allowed)
    */
   @Get()
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @OptionalAuth()
   async findAll(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Query() query: ListSkillsDto,
     @CurrentUser() currentUser: CurrentUserData,
   ) {
-    return this.skillsService.findAll(tenantId, query, currentUser?.userId);
+    return this.skillsService.findAll(solutionId, query, currentUser?.userId);
   }
 
   /**
    * Create a new skill (requires auth)
    */
   @Post()
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async create(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Body() dto: CreateSkillDto,
     @CurrentUser() currentUser: CurrentUserData,
   ) {
-    return this.skillsService.create(tenantId, dto, currentUser.userId);
+    return this.skillsService.create(solutionId, dto, currentUser.userId);
   }
 
   /**
    * Get a skill by ID or slug (anonymous read allowed)
    */
   @Get(':id')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @OptionalAuth()
   async findOne(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    const skill = await this.skillsService.findOneWithVersions(tenantId, id);
+    const skill = await this.skillsService.findOneWithVersions(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -96,27 +96,27 @@ export class SkillsController {
    * Update a skill
    */
   @Put(':id')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async update(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Body() dto: UpdateSkillDto,
   ) {
-    return this.skillsService.update(tenantId, id, dto);
+    return this.skillsService.update(solutionId, id, dto);
   }
 
   /**
    * Archive (soft delete) a skill
    */
   @Delete(':id')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async remove(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    await this.skillsService.archive(tenantId, id);
+    await this.skillsService.archive(solutionId, id);
     return { success: true };
   }
 
@@ -124,39 +124,39 @@ export class SkillsController {
    * Publish a skill
    */
   @Post(':id/publish')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async publish(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    return this.skillsService.publish(tenantId, id);
+    return this.skillsService.publish(solutionId, id);
   }
 
   /**
    * Unpublish a skill (set status back to draft)
    */
   @Post(':id/unpublish')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async unpublish(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    return this.skillsService.unpublish(tenantId, id);
+    return this.skillsService.unpublish(solutionId, id);
   }
 
   /**
    * List versions of a skill
    */
   @Get(':id/versions')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @OptionalAuth()
   async listVersions(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -167,14 +167,14 @@ export class SkillsController {
    * Create a new version
    */
   @Post(':id/versions')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async createVersion(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Body() dto: CreateVersionDto,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -185,27 +185,27 @@ export class SkillsController {
    * Rollback to a specific version
    */
   @Post(':id/rollback/:version')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async rollback(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('version') version: string,
   ) {
-    return this.skillsService.rollbackToVersion(tenantId, id, version);
+    return this.skillsService.rollbackToVersion(solutionId, id, version);
   }
 
   /**
    * Toggle skill enabled/disabled state
    */
   @Patch(':id/toggle')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async toggle(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id', ParseIdOrSlugPipe) id: string,
   ) {
-    return this.skillsService.toggle(tenantId, id);
+    return this.skillsService.toggle(solutionId, id);
   }
 
   // =========================================================================
@@ -216,13 +216,13 @@ export class SkillsController {
    * List all files for a skill (metadata only, no content)
    */
   @Get(':id/files')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @OptionalAuth()
   async listFiles(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -240,14 +240,14 @@ export class SkillsController {
    * Get a single file with content
    */
   @Get(':id/files/:fileId')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @OptionalAuth()
   async getFile(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -262,14 +262,14 @@ export class SkillsController {
    * Batch upsert files for a skill
    */
   @Put(':id/files')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async upsertFiles(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Body() dto: UpsertSkillFilesDto,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
@@ -280,14 +280,14 @@ export class SkillsController {
    * Delete a single file by relativePath
    */
   @Delete(':id/files/:relativePath(*)')
-  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @UseGuards(SolutionAuthGuard, SkillPermissionGuard)
   @Auth('skills:write')
   async deleteFile(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Param('relativePath') relativePath: string,
   ) {
-    const skill = await this.skillsService.findOne(tenantId, id);
+    const skill = await this.skillsService.findOne(solutionId, id);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }

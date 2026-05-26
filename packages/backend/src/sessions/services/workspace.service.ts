@@ -35,7 +35,7 @@ export class WorkspaceService {
    * @param session - Session with mcpServers configuration
    */
   async createMcpSymlinks(session: ManagedSession): Promise<void> {
-    if (!session.tenantId || !session.mcpServers) {
+    if (!session.solutionId || !session.mcpServers) {
       return;
     }
 
@@ -49,7 +49,7 @@ export class WorkspaceService {
       const firstArg = config.args[0];
       if (!firstArg.startsWith('tenants/')) continue;
 
-      // Extract server name from tenant path: tenants/{tenantId}/mcp-servers/{serverName}/...
+      // Extract server name from tenant path: tenants/{solutionId}/mcp-servers/{serverName}/...
       const pathParts = firstArg.split('/');
       if (pathParts.length < 4 || pathParts[2] !== 'mcp-servers') continue;
 
@@ -59,7 +59,7 @@ export class WorkspaceService {
       const tenantMcpPath = path.join(
         workspaceRoot,
         'tenants',
-        session.tenantId,
+        session.solutionId,
         'mcp-servers',
         mcpServerName,
       );
@@ -82,11 +82,11 @@ export class WorkspaceService {
   /**
    * Resolve MCP server paths from tenant-relative to session-relative symlink paths
    *
-   * Transforms args: tenants/{tenantId}/mcp-servers/{server}/dist/index.js
+   * Transforms args: tenants/{solutionId}/mcp-servers/{server}/dist/index.js
    * To: .claude/mcp-servers/{server}/dist/index.js
    *
-   * Transforms env vars: tenants/{tenantId}/solution-backend/agri.db
-   * To: /absolute/path/to/workspace/tenants/{tenantId}/solution-backend/agri.db
+   * Transforms env vars: tenants/{solutionId}/solution-backend/agri.db
+   * To: /absolute/path/to/workspace/tenants/{solutionId}/solution-backend/agri.db
    *
    * @param mcpServers - MCP server configuration
    * @returns Resolved configuration with session-relative args and absolute env paths
@@ -114,7 +114,7 @@ export class WorkspaceService {
           // If arg looks like tenant path, convert to session-relative symlink path
           if (arg.startsWith('tenants/')) {
             const pathParts = arg.split('/');
-            // Extract: tenants/{tenantId}/mcp-servers/{serverName}/{...rest}
+            // Extract: tenants/{solutionId}/mcp-servers/{serverName}/{...rest}
             if (pathParts.length >= 4 && pathParts[2] === 'mcp-servers') {
               const serverName = pathParts[3];
               const relPath = pathParts.slice(4).join('/');  // Path after server name

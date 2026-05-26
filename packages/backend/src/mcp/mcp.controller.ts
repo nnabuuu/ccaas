@@ -24,8 +24,8 @@ import {
   UpdateMcpServerDto,
   ListMcpServersDto,
 } from './dto/mcp-server.dto';
-import { TenantGuard } from '../tenants/tenant.guard';
-import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
+import { CurrentTenant } from '../common/decorators/current-solution.decorator';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
@@ -33,7 +33,7 @@ import { McpServer } from './entities/mcp-server.entity';
 
 @ApiTags('mcp')
 @Controller('api/v1/mcp-servers')
-@UseGuards(ApiKeyGuard, TenantGuard)
+@UseGuards(ApiKeyGuard, SolutionAuthGuard)
 export class McpController {
   private readonly logger = new Logger(McpController.name);
 
@@ -48,13 +48,13 @@ export class McpController {
    */
   @Get()
   async findAll(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Query() query: ListMcpServersDto,
   ) {
     const { limit = 50, page = 1, type, status, query: searchQuery } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: any = { solutionId };
 
     if (type) {
       // Normalize type: 'stdio' -> 'custom'
@@ -90,10 +90,10 @@ export class McpController {
    */
   @Post()
   async create(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Body() dto: CreateMcpServerDto,
   ) {
-    this.logger.log(`Creating MCP server: ${dto.name} for tenant ${tenantId}`);
+    this.logger.log(`Creating MCP server: ${dto.name} for tenant ${solutionId}`);
 
     // Normalize type: 'stdio' -> 'custom'
     const normalizedType = dto.type === 'stdio' ? 'custom' : dto.type;
@@ -106,7 +106,7 @@ export class McpController {
       config: dto.config,
     };
 
-    const saved = await this.mcpPoolService.create(tenantId, createDto);
+    const saved = await this.mcpPoolService.create(solutionId, createDto);
 
     this.logger.log(`MCP server ${saved.id} created successfully`);
 
@@ -118,10 +118,10 @@ export class McpController {
    */
   @Get(':id')
   async findOne(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    const mcpServer = await this.mcpPoolService.findOne(tenantId, id);
+    const mcpServer = await this.mcpPoolService.findOne(solutionId, id);
 
     if (!mcpServer) {
       throw new NotFoundException(`MCP server not found: ${id}`);
@@ -135,13 +135,13 @@ export class McpController {
    */
   @Put(':id')
   async update(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
     @Body() dto: UpdateMcpServerDto,
   ) {
-    this.logger.log(`Updating MCP server: ${id} for tenant ${tenantId}`);
+    this.logger.log(`Updating MCP server: ${id} for tenant ${solutionId}`);
 
-    const updated = await this.mcpPoolService.update(tenantId, id, dto);
+    const updated = await this.mcpPoolService.update(solutionId, id, dto);
 
     this.logger.log(`MCP server ${id} updated successfully`);
 
@@ -153,12 +153,12 @@ export class McpController {
    */
   @Delete(':id')
   async remove(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
-    this.logger.log(`Deleting MCP server: ${id} for tenant ${tenantId}`);
+    this.logger.log(`Deleting MCP server: ${id} for tenant ${solutionId}`);
 
-    await this.mcpPoolService.delete(tenantId, id);
+    await this.mcpPoolService.delete(solutionId, id);
 
     this.logger.log(`MCP server ${id} deleted successfully`);
 
@@ -170,11 +170,11 @@ export class McpController {
    */
   @Post(':id/health')
   async healthCheck(
-    @CurrentTenant() tenantId: string,
+    @CurrentTenant() solutionId: string,
     @Param('id') id: string,
   ) {
     try {
-      const health = await this.mcpPoolService.checkHealth(tenantId, id);
+      const health = await this.mcpPoolService.checkHealth(solutionId, id);
       return {
         serverId: id,
         health,

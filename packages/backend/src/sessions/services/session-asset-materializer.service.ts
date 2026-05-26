@@ -17,7 +17,7 @@
  * No-op when:
  *   - `SOLUTION_DIRS` env unset / tenant slug not in the map
  *   - Source `entities/` / `resources/` directory doesn't exist
- *   - `tenantId` is undefined (anonymous session)
+ *   - `solutionId` is undefined (anonymous session)
  */
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
@@ -26,7 +26,7 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 
 const ASSET_SUBDIRS = ['entities', 'resources'] as const;
 
@@ -55,7 +55,7 @@ export class SessionAssetMaterializer {
 
   constructor(
     @Inject(ConfigService) cfg: ConfigService,
-    private readonly tenants: TenantsService,
+    private readonly tenants: SolutionsService,
   ) {
     this.solutionDirs = cfg.get<Record<string, string>>(
       'workspace.solutionDirs',
@@ -76,11 +76,11 @@ export class SessionAssetMaterializer {
    */
   async materialize(
     sessionDir: string,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
   ): Promise<MaterializeAssetsResult | null> {
-    if (!tenantId || Object.keys(this.solutionDirs).length === 0) return null;
+    if (!solutionId || Object.keys(this.solutionDirs).length === 0) return null;
 
-    const tenant = await this.tenants.findOne(tenantId);
+    const tenant = await this.tenants.findOne(solutionId);
     if (!tenant) return null;
 
     const solutionDir = this.solutionDirs[tenant.slug];

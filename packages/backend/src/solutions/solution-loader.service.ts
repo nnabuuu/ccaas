@@ -3,7 +3,7 @@
  *
  * Imports solution configuration from a request body (not filesystem).
  * Orchestrates:
- *   1. Ensure tenant exists (via TenantsService)
+ *   1. Ensure tenant exists (via SolutionsService)
  *   2. Register MCP servers with upsert logic (via McpPoolService)
  *   3. Sync enabled bundles
  *   4. Register tool event triggers (via EventMapperService)
@@ -18,7 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import matter from 'gray-matter';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
 import { EventMapperService } from '../sessions/event-mapper.service';
@@ -108,7 +108,7 @@ export interface SkillImportResult {
 export interface LoadResult {
   slug: string;
   name: string;
-  tenantId: string;
+  solutionId: string;
   mcpServers: McpServerLoadResult[];
   warnings: string[];
   templateCount?: number;
@@ -144,7 +144,7 @@ export class SolutionLoaderService implements OnModuleInit {
   };
 
   constructor(
-    private readonly tenants: TenantsService,
+    private readonly tenants: SolutionsService,
     private readonly skills: SkillsService,
     private readonly mcpPool: McpPoolService,
     private readonly eventMapper: EventMapperService,
@@ -164,9 +164,9 @@ export class SolutionLoaderService implements OnModuleInit {
    * In prod, leave `SOLUTIONS_DIR` unset to opt out — solutions are
    * imported explicitly via `POST /api/v1/admin/solutions/import`.
    *
-   * Ordering: this runs AFTER `TenantsService.onModuleInit` (which seeds
+   * Ordering: this runs AFTER `SolutionsService.onModuleInit` (which seeds
    * the default tenant) because Nest resolves modules in import-graph
-   * order and `SolutionsModule` depends on `TenantsModule`.
+   * order and `SolutionLoaderModule` depends on `SolutionsModule`.
    */
   async onModuleInit(): Promise<void> {
     const dir = this.cfg.get<string>('solutions.dir');
@@ -232,7 +232,7 @@ export class SolutionLoaderService implements OnModuleInit {
     const mode: 'simple' | 'advanced' = config.mode ?? 'simple';
 
     // Step 1: Ensure tenant exists
-    const tenantId = await this.ensureTenant(config, warnings);
+    const solutionId = await this.ensureTenant(config, warnings);
 
     // Step 2: Register MCP servers
     // In simple mode, filter out MCP servers that are already provided by bundles
@@ -241,7 +241,7 @@ export class SolutionLoaderService implements OnModuleInit {
       mode,
     );
     const mcpResults = await this.registerMcpServers(
-      tenantId,
+      solutionId,
       filteredMcpServers,
       warnings,
     );
@@ -263,7 +263,7 @@ export class SolutionLoaderService implements OnModuleInit {
     }
 
     const syncedBundles = await this.syncEnabledBundles(
-      tenantId,
+      solutionId,
       bundleIdsToSync,
       mode === 'simple'
         ? 'simple mode — auto-enabled all built-in bundles'
@@ -280,13 +280,13 @@ export class SolutionLoaderService implements OnModuleInit {
 
     const allTriggers = [...bundleTriggers, ...solutionTriggers];
     if (allTriggers.length > 0) {
-      this.eventMapper.registerTenantToolTriggers(tenantId, allTriggers);
+      this.eventMapper.registerTenantToolTriggers(solutionId, allTriggers);
     }
 
     // Step 5: Apply session templates (upsert — merge with existing)
     let templateCount = 0;
     if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
-      await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
+      await this.applySessionTemplates(solutionId, config.sessionTemplates, warnings);
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
@@ -296,7 +296,7 @@ export class SolutionLoaderService implements OnModuleInit {
     let skillResults: SkillImportResult[] = [];
     if (config.skills && config.skills.length > 0) {
       if (opts?.solutionDir) {
-        skillResults = await this.importSkills(tenantId, opts.solutionDir, config.skills, warnings);
+        skillResults = await this.importSkills(solutionId, opts.solutionDir, config.skills, warnings);
       } else {
         warnings.push(
           `Skipped ${config.skills.length} skill ref(s) — importFromConfig() ` +
@@ -317,7 +317,7 @@ export class SolutionLoaderService implements OnModuleInit {
     if (config.artifactUrl) {
       tenantConfigPatch.artifactUrl = config.artifactUrl;
     }
-    await this.tenants.update(tenantId, { config: tenantConfigPatch });
+    await this.tenants.update(solutionId, { config: tenantConfigPatch });
 
     // Update status
     const mcpRegistered = mcpResults.filter(
@@ -346,7 +346,7 @@ export class SolutionLoaderService implements OnModuleInit {
     return {
       slug: config.tenant.slug,
       name: config.tenant.name,
-      tenantId,
+      solutionId,
       mcpServers: mcpResults,
       warnings,
       templateCount,
@@ -372,7 +372,7 @@ export class SolutionLoaderService implements OnModuleInit {
    * supplies name/description via YAML frontmatter; sibling files (tools/*,
    * examples/*, scripts/*) become skill_files rows.
    *
-   * Idempotent: existing (tenantId, slug) is left untouched. The skill
+   * Idempotent: existing (solutionId, slug) is left untouched. The skill
    * upsert/version-bump path is the API's job (`PUT /api/v1/skills/:id` +
    * `POST :id/versions`) — auto-import doesn't try to upgrade in-place
    * because the body might include locally-edited content.
@@ -380,7 +380,7 @@ export class SolutionLoaderService implements OnModuleInit {
    * Per-skill try/catch — one malformed SKILL.md doesn't block siblings.
    */
   private async importSkills(
-    tenantId: string,
+    solutionId: string,
     solutionDir: string,
     refs: SkillReferenceV3[],
     warnings: string[],
@@ -396,7 +396,7 @@ export class SolutionLoaderService implements OnModuleInit {
           if (seen.has(slug)) continue;
           seen.add(slug);
           try {
-            const result = await this.importOneSkill(tenantId, skillDir, slug);
+            const result = await this.importOneSkill(solutionId, skillDir, slug);
             results.push(result);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -467,12 +467,12 @@ export class SolutionLoaderService implements OnModuleInit {
 
   /** Build CreateSkillDto from a skill dir + call SkillsService.create. */
   private async importOneSkill(
-    tenantId: string,
+    solutionId: string,
     skillDir: string,
     slug: string,
   ): Promise<SkillImportResult> {
     // Skip if already registered — auto-import is bootstrap, not upgrade.
-    const existing = await this.skills.findOne(tenantId, slug);
+    const existing = await this.skills.findOne(solutionId, slug);
     if (existing) {
       return { slug, action: 'skipped' };
     }
@@ -494,7 +494,7 @@ export class SolutionLoaderService implements OnModuleInit {
     const budget: WalkBudget = { bytes: 0, count: 0, root: path.resolve(skillDir) };
     const files = this.collectSkillFiles(skillDir, skillDir, budget);
 
-    await this.skills.create(tenantId, {
+    await this.skills.create(solutionId, {
       slug,
       name: fmResult.data.name,
       description: fmResult.data.description,
@@ -586,7 +586,7 @@ export class SolutionLoaderService implements OnModuleInit {
   }
 
   // --------------------------------------------------------------------------
-  // Tenant Registration
+  // Solution Registration
   // --------------------------------------------------------------------------
 
   /**
@@ -601,7 +601,7 @@ export class SolutionLoaderService implements OnModuleInit {
 
     const existing = await this.tenants.findOne(slug);
     if (existing) {
-      this.logger.debug(`Tenant "${slug}" already exists (${existing.id})`);
+      this.logger.debug(`Solution "${slug}" already exists (${existing.id})`);
       return existing.id;
     }
 
@@ -625,7 +625,7 @@ export class SolutionLoaderService implements OnModuleInit {
    * Uses upsert logic: create if new, update if exists.
    */
   private async registerMcpServers(
-    tenantId: string,
+    solutionId: string,
     mcpServers: Record<string, McpServerDefinition>,
     warnings: string[],
   ): Promise<McpServerLoadResult[]> {
@@ -634,7 +634,7 @@ export class SolutionLoaderService implements OnModuleInit {
     for (const [slug, serverDef] of Object.entries(mcpServers)) {
       try {
         const result = await this.registerOneMcpServer(
-          tenantId,
+          solutionId,
           slug,
           serverDef,
           warnings,
@@ -659,16 +659,16 @@ export class SolutionLoaderService implements OnModuleInit {
    * Register a single MCP server with upsert logic.
    */
   private async registerOneMcpServer(
-    tenantId: string,
+    solutionId: string,
     slug: string,
     serverDef: McpServerDefinition,
     warnings: string[],
   ): Promise<McpServerLoadResult> {
-    const existing = await this.mcpPool.findOne(tenantId, slug);
+    const existing = await this.mcpPool.findOne(solutionId, slug);
 
     if (existing) {
       // MCP server already exists - update config
-      await this.mcpPool.update(tenantId, existing.id, {
+      await this.mcpPool.update(solutionId, existing.id, {
         name: serverDef.description || slug,
         description: serverDef.description,
         config: {
@@ -703,7 +703,7 @@ export class SolutionLoaderService implements OnModuleInit {
       },
     };
 
-    const created = await this.mcpPool.create(tenantId, dto);
+    const created = await this.mcpPool.create(solutionId, dto);
 
     return {
       slug,
@@ -722,14 +722,14 @@ export class SolutionLoaderService implements OnModuleInit {
    * Uses upsert logic: merges declared templates with any existing ones.
    */
   private async applySessionTemplates(
-    tenantId: string,
+    solutionId: string,
     templates: Record<string, SessionTemplateConfig>,
     warnings: string[],
   ): Promise<void> {
-    const tenant = await this.tenants.findOne(tenantId);
+    const tenant = await this.tenants.findOne(solutionId);
     if (!tenant) {
-      warnings.push(`Cannot apply session templates: tenant "${tenantId}" not found`);
-      this.logger.warn(`Cannot apply session templates: tenant "${tenantId}" not found`);
+      warnings.push(`Cannot apply session templates: tenant "${solutionId}" not found`);
+      this.logger.warn(`Cannot apply session templates: tenant "${solutionId}" not found`);
       return;
     }
 
@@ -740,7 +740,7 @@ export class SolutionLoaderService implements OnModuleInit {
     for (const [templateName, template] of Object.entries(templates)) {
       for (const entry of template.enabledSkills ?? []) {
         const slug = typeof entry === 'string' ? entry : entry.slug;
-        const skill = await this.skills.findOne(tenantId, slug);
+        const skill = await this.skills.findOne(solutionId, slug);
         if (!skill) {
           warnings.push(
             `Session template "${templateName}": skill slug "${slug}" not found in tenant — ` +
@@ -750,14 +750,14 @@ export class SolutionLoaderService implements OnModuleInit {
       }
     }
 
-    await this.tenants.update(tenantId, {
+    await this.tenants.update(solutionId, {
       config: { sessionTemplates: merged },
     });
 
     warnings.push(
       `Applied ${Object.keys(templates).length} session template(s): ${Object.keys(templates).join(', ')}`,
     );
-    this.logger.log(`Applied session templates for tenant "${tenantId}"`);
+    this.logger.log(`Applied session templates for tenant "${solutionId}"`);
   }
 
   // --------------------------------------------------------------------------
@@ -770,24 +770,24 @@ export class SolutionLoaderService implements OnModuleInit {
    * Returns the final merged list of enabled bundle IDs.
    */
   private async syncEnabledBundles(
-    tenantId: string,
+    solutionId: string,
     bundleIdsToSync: string[],
     logMessage: string,
   ): Promise<string[]> {
     if (bundleIdsToSync.length === 0) {
-      const tenant = await this.tenants.findOne(tenantId);
+      const tenant = await this.tenants.findOne(solutionId);
       return tenant?.config?.enabledBundles ?? [];
     }
 
-    const tenant = await this.tenants.findOne(tenantId);
+    const tenant = await this.tenants.findOne(solutionId);
     const existing = new Set(tenant?.config?.enabledBundles ?? []);
     const merged = [...new Set([...existing, ...bundleIdsToSync])];
 
     if (merged.length > existing.size) {
-      await this.tenants.update(tenantId, {
+      await this.tenants.update(solutionId, {
         config: { enabledBundles: merged },
       });
-      this.logger.log(`Tenant ${tenantId}: ${logMessage}: [${merged.join(', ')}]`);
+      this.logger.log(`Solution ${solutionId}: ${logMessage}: [${merged.join(', ')}]`);
     }
     return merged;
   }

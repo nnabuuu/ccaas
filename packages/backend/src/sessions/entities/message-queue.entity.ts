@@ -65,7 +65,7 @@ export interface MessageQueuePayload {
 @Entity('message_queue')
 @Index('IDX_message_queue_session_status_created', ['sessionId', 'status', 'createdAt'])
 @Index('IDX_message_queue_status_retry', ['status', 'nextRetryAt'])
-@Index('IDX_message_queue_tenant_status', ['tenantId', 'status'])
+@Index('IDX_message_queue_tenant_status', ['solutionId', 'status'])
 export class MessageQueue {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -77,7 +77,7 @@ export class MessageQueue {
   clientId: string;
 
   @Column({ type: 'varchar', nullable: true })
-  tenantId: string | null;
+  solutionId: string | null;
 
   @Column({ type: 'simple-json' })
   payload: MessageQueuePayload;

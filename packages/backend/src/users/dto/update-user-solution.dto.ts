@@ -1,5 +1,5 @@
 import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
-import { UserRole } from '../entities/user-tenant.entity';
+import { UserRole } from '../entities/user-solution.entity';
 
 export class UpdateUserTenantDto {
   @IsEnum(['admin', 'developer', 'viewer'])

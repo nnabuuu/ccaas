@@ -1,5 +1,5 @@
 /**
- * TenantGuard Unit Tests
+ * SolutionAuthGuard Unit Tests
  *
  * Covers: default tenant fallback, header/query resolution,
  * tenant validation, cross-tenant access control, context immutability.
@@ -10,14 +10,14 @@ import {
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
-import { TenantGuard } from './tenant.guard';
-import { TenantsService } from './tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionAuthGuard } from './solution-auth.guard';
+import { SolutionsService } from './solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 
-describe('TenantGuard', () => {
-  let guard: TenantGuard;
-  let tenantsService: jest.Mocked<Pick<TenantsService, 'findOne' | 'getDefaultTenantId'>>;
-  let userTenantService: jest.Mocked<Pick<UserTenantService, 'findUserInTenant'>>;
+describe('SolutionAuthGuard', () => {
+  let guard: SolutionAuthGuard;
+  let tenantsService: jest.Mocked<Pick<SolutionsService, 'findOne' | 'getDefaultTenantId'>>;
+  let userTenantService: jest.Mocked<Pick<UserSolutionService, 'findUserInTenant'>>;
 
   beforeEach(() => {
     tenantsService = {
@@ -29,7 +29,7 @@ describe('TenantGuard', () => {
       findUserInTenant: jest.fn(),
     };
 
-    guard = new TenantGuard(tenantsService as any, userTenantService as any);
+    guard = new SolutionAuthGuard(tenantsService as any, userTenantService as any);
   });
 
   afterEach(() => {
@@ -61,7 +61,7 @@ describe('TenantGuard', () => {
 
     expect(result).toBe(true);
     expect(request.tenant).toBe(defaultTenant);
-    expect(request.tenantId).toBe('default-tenant');
+    expect(request.solutionId).toBe('default-tenant');
     expect(tenantsService.getDefaultTenantId).toHaveBeenCalled();
   });
 
@@ -71,7 +71,7 @@ describe('TenantGuard', () => {
     const ctx = createMockContext({});
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
-    await expect(guard.canActivate(ctx)).rejects.toThrow('Tenant ID required');
+    await expect(guard.canActivate(ctx)).rejects.toThrow('Solution ID required');
   });
 
   it('should use API key tenant when no header is provided', async () => {
@@ -80,7 +80,7 @@ describe('TenantGuard', () => {
 
     const request: Record<string, any> = {
       context: {
-        tenantId: 'tenant-from-key',
+        solutionId: 'tenant-from-key',
         apiKeyId: 'key-1',
         apiKeyScopes: ['chat'],
       },
@@ -90,18 +90,18 @@ describe('TenantGuard', () => {
 
     expect(result).toBe(true);
     expect(request.tenant).toBe(apiKeyTenant);
-    expect(request.tenantId).toBe('tenant-from-key');
+    expect(request.solutionId).toBe('tenant-from-key');
     expect(tenantsService.getDefaultTenantId).not.toHaveBeenCalled();
   });
 
-  it('should prefer X-Tenant-Id header over API key tenant', async () => {
+  it('should prefer X-Solution-Id header over API key tenant', async () => {
     const headerTenant = { id: 'tenant-header', status: 'active' };
     tenantsService.findOne.mockResolvedValue(headerTenant as any);
 
     const request: Record<string, any> = {
       headers: { 'x-tenant-id': 'tenant-header' },
       context: {
-        tenantId: 'tenant-from-key',
+        solutionId: 'tenant-from-key',
         apiKeyId: 'key-1',
         apiKeyScopes: ['admin'],
       },
@@ -110,13 +110,13 @@ describe('TenantGuard', () => {
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
-    expect(request.tenantId).toBe('tenant-header');
+    expect(request.solutionId).toBe('tenant-header');
     expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-header');
   });
 
   // ── Header / query resolution ─────────────────────────────────────────
 
-  it('should resolve tenant from X-Tenant-Id header', async () => {
+  it('should resolve tenant from X-Solution-Id header', async () => {
     const tenant = { id: 'tenant-abc', status: 'active' };
     tenantsService.findOne.mockResolvedValue(tenant as any);
 
@@ -128,7 +128,7 @@ describe('TenantGuard', () => {
 
     expect(result).toBe(true);
     expect(request.tenant).toBe(tenant);
-    expect(request.tenantId).toBe('tenant-abc');
+    expect(request.solutionId).toBe('tenant-abc');
     expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-abc');
   });
 
@@ -138,16 +138,16 @@ describe('TenantGuard', () => {
 
     const request: Record<string, any> = {
       headers: {},
-      query: { tenantId: 'tenant-query' },
+      query: { solutionId: 'tenant-query' },
     };
     const ctx = createMockContext(request);
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
-    expect(request.tenantId).toBe('tenant-query');
+    expect(request.solutionId).toBe('tenant-query');
   });
 
-  // ── Tenant validation ─────────────────────────────────────────────────
+  // ── Solution validation ─────────────────────────────────────────────────
 
   it('should throw 401 for non-existent tenant', async () => {
     tenantsService.findOne.mockResolvedValue(null);
@@ -171,7 +171,7 @@ describe('TenantGuard', () => {
     });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
-    await expect(guard.canActivate(ctx)).rejects.toThrow('Tenant is not active');
+    await expect(guard.canActivate(ctx)).rejects.toThrow('Solution is not active');
   });
 
   // ── Cross-tenant access control ───────────────────────────────────────
@@ -183,7 +183,7 @@ describe('TenantGuard', () => {
     const request: Record<string, any> = {
       headers: { 'x-tenant-id': 'tenant-target' },
       context: {
-        tenantId: 'tenant-caller',
+        solutionId: 'tenant-caller',
         apiKeyId: 'key-1',
         apiKeyScopes: ['admin'],
       },
@@ -193,7 +193,7 @@ describe('TenantGuard', () => {
 
     expect(result).toBe(true);
     expect(request.tenant).toBe(targetTenant);
-    expect(request.tenantId).toBe('tenant-target');
+    expect(request.solutionId).toBe('tenant-target');
   });
 
   it('should deny non-admin key cross-tenant access with 403', async () => {
@@ -203,7 +203,7 @@ describe('TenantGuard', () => {
     const ctx = createMockContext({
       headers: { 'x-tenant-id': 'tenant-target' },
       context: {
-        tenantId: 'tenant-caller',
+        solutionId: 'tenant-caller',
         apiKeyId: 'key-2',
         apiKeyScopes: ['chat'],
       },
@@ -222,7 +222,7 @@ describe('TenantGuard', () => {
     const request: Record<string, any> = {
       headers: { 'x-tenant-id': 'tenant-same' },
       context: {
-        tenantId: 'tenant-same',
+        solutionId: 'tenant-same',
         apiKeyId: 'key-3',
         apiKeyScopes: ['chat'],
       },
@@ -240,14 +240,14 @@ describe('TenantGuard', () => {
     tenantsService.findOne.mockResolvedValue(targetTenant as any);
     userTenantService.findUserInTenant.mockResolvedValue({
       userId: 'user-1',
-      tenantId: 'tenant-target',
+      solutionId: 'tenant-target',
       isActive: true,
     } as any);
 
     const request: Record<string, any> = {
       headers: { 'x-tenant-id': 'tenant-target' },
       context: {
-        tenantId: 'tenant-caller',
+        solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
         apiKeyScopes: ['builder'],
         userId: 'user-1',
@@ -268,7 +268,7 @@ describe('TenantGuard', () => {
     const ctx = createMockContext({
       headers: { 'x-tenant-id': 'tenant-target' },
       context: {
-        tenantId: 'tenant-caller',
+        solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
         apiKeyScopes: ['builder'],
         userId: 'user-1',
@@ -285,7 +285,7 @@ describe('TenantGuard', () => {
     const ctx = createMockContext({
       headers: { 'x-tenant-id': 'tenant-target' },
       context: {
-        tenantId: 'tenant-caller',
+        solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
         apiKeyScopes: ['builder'],
         // no userId
@@ -317,7 +317,7 @@ describe('TenantGuard', () => {
     tenantsService.findOne.mockResolvedValue(targetTenant as any);
 
     const originalContext = Object.freeze({
-      tenantId: 'tenant-caller',
+      solutionId: 'tenant-caller',
       apiKeyId: 'key-1',
       apiKeyScopes: ['admin'],
     });
@@ -331,6 +331,6 @@ describe('TenantGuard', () => {
 
     // context must still be the original frozen object — any mutation would throw
     expect(request.context).toBe(originalContext);
-    expect(request.context.tenantId).toBe('tenant-caller');
+    expect(request.context.solutionId).toBe('tenant-caller');
   });
 });

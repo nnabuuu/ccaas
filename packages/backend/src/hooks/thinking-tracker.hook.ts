@@ -56,7 +56,7 @@ export function createThinkingTracker(deps: ThinkingTrackerDeps) {
             await thinkingBlocksService.startThinking({
               messageId,
               sessionId,
-              tenantId: session.tenantId || null,
+              solutionId: session.solutionId || null,
               thinkingId: event.thinkingId,
               content: event.content,
             });

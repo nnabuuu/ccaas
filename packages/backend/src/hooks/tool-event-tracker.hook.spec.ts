@@ -1,7 +1,7 @@
 /**
  * Tool Event Tracker Hook Tests
  *
- * Tests for tenantId propagation in tool event tracking.
+ * Tests for solutionId propagation in tool event tracking.
  */
 
 import { createToolEventTrackerHook, ToolEventTrackerDeps } from './tool-event-tracker.hook';
@@ -53,7 +53,7 @@ describe('ToolEventTrackerHook', () => {
       buffer: '',
       workspaceDir: '/tmp/session-123',
       currentAssistantMessageId: 'msg-123',
-      tenantId: 'tenant-tool',
+      solutionId: 'tenant-tool',
     };
 
     mockGetSession = jest.fn().mockReturnValue(mockSession);
@@ -74,24 +74,24 @@ describe('ToolEventTrackerHook', () => {
       agentType: 'main',
     };
 
-    it('should pass tenantId from session to recordStart', async () => {
+    it('should pass solutionId from session to recordStart', async () => {
       await hook.onToolStart!(baseStartInfo, createContext());
 
       expect(mockToolEventsService.recordStart).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: 'tenant-tool',
+          solutionId: 'tenant-tool',
         }),
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await hook.onToolStart!(baseStartInfo, createContext());
 
       expect(mockToolEventsService.recordStart).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: null,
+          solutionId: null,
         }),
       );
     });
@@ -102,7 +102,7 @@ describe('ToolEventTrackerHook', () => {
       expect(mockToolEventsService.recordStart).toHaveBeenCalledWith({
         messageId: 'msg-123',
         sessionId: 'session-123',
-        tenantId: 'tenant-tool',
+        solutionId: 'tenant-tool',
         toolUseId: 'tool-use-123',
         toolName: 'Read',
         toolInput: { file_path: '/tmp/test.txt' },
@@ -167,24 +167,24 @@ describe('ToolEventTrackerHook', () => {
       durationMs: 50,
     };
 
-    it('should pass tenantId from session to recordEnd', async () => {
+    it('should pass solutionId from session to recordEnd', async () => {
       await hook.afterToolResult!(baseResult, createContext());
 
       expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: 'tenant-tool',
+          solutionId: 'tenant-tool',
         }),
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await hook.afterToolResult!(baseResult, createContext());
 
       expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: null,
+          solutionId: null,
         }),
       );
     });
@@ -195,7 +195,7 @@ describe('ToolEventTrackerHook', () => {
       expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith({
         messageId: 'msg-123',
         sessionId: 'session-123',
-        tenantId: 'tenant-tool',
+        solutionId: 'tenant-tool',
         toolUseId: 'tool-use-123',
         toolName: 'Read',
         toolInput: { file_path: '/tmp/test.txt' },
@@ -314,9 +314,9 @@ describe('ToolEventTrackerHook', () => {
     });
   });
 
-  describe('tenantId edge cases', () => {
-    it('should handle empty string tenantId', async () => {
-      mockSession.tenantId = '';
+  describe('solutionId edge cases', () => {
+    it('should handle empty string solutionId', async () => {
+      mockSession.solutionId = '';
 
       await hook.onToolStart!(
         { toolId: 'tool-123', toolName: 'Read', input: {} },
@@ -326,12 +326,12 @@ describe('ToolEventTrackerHook', () => {
       // Empty string is falsy, should become null
       expect(mockToolEventsService.recordStart).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: null,
+          solutionId: null,
         }),
       );
     });
 
-    it('should preserve tenantId between start and end events', async () => {
+    it('should preserve solutionId between start and end events', async () => {
       const context = createContext();
 
       await hook.onToolStart!(
@@ -345,10 +345,10 @@ describe('ToolEventTrackerHook', () => {
       );
 
       expect(mockToolEventsService.recordStart).toHaveBeenCalledWith(
-        expect.objectContaining({ tenantId: 'tenant-tool' }),
+        expect.objectContaining({ solutionId: 'tenant-tool' }),
       );
       expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
-        expect.objectContaining({ tenantId: 'tenant-tool' }),
+        expect.objectContaining({ solutionId: 'tenant-tool' }),
       );
     });
   });

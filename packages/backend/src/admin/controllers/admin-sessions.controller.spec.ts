@@ -11,12 +11,12 @@ import { AdminSessionsController } from './admin-sessions.controller';
 import { SessionManagerService, PaginatedSessions } from '../services/session-manager.service';
 import { SessionQueryDto, SessionListItem } from '../dto/admin.dto';
 import { ApiKeyService } from '../../auth/api-key.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 import type { RequestContext } from '../../auth/types';
 
 describe('AdminSessionsController', () => {
   const adminCtx = {
-    tenantId: 'tenant-a',
+    solutionId: 'tenant-a',
     apiKeyScopes: ['admin'],
     requestId: 'req-1',
     timestamp: new Date(),
@@ -30,7 +30,7 @@ describe('AdminSessionsController', () => {
     overrides: Partial<SessionListItem> = {},
   ): SessionListItem => ({
     sessionId,
-    tenantId: 'tenant-a',
+    solutionId: 'tenant-a',
     clientId: `client-${sessionId}`,
     status: 'idle',
     messageCount: 5,
@@ -67,7 +67,7 @@ describe('AdminSessionsController', () => {
           },
         },
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: {
             findUserInTenant: jest.fn(),
           },
@@ -108,7 +108,7 @@ describe('AdminSessionsController', () => {
       });
 
       const query: SessionQueryDto = {
-        tenantId: 'tenant-a',
+        solutionId: 'tenant-a',
         status: 'processing',
         page: 2,
         pageSize: 25,
@@ -141,7 +141,7 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(detail);
 
-      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
+      const ctx = { solutionId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
       const result = await controller.getSessionDetail('s1', ctx);
 
       expect(result).toEqual(detail);
@@ -151,7 +151,7 @@ describe('AdminSessionsController', () => {
     it('should throw NotFoundException when session not found', async () => {
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(null);
 
-      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
+      const ctx = { solutionId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
       await expect(controller.getSessionDetail('nonexistent', ctx)).rejects.toThrow(
         NotFoundException,
       );
@@ -165,7 +165,7 @@ describe('AdminSessionsController', () => {
     it('should return success when kill succeeds', async () => {
       sessionManagerService.killSession = jest.fn().mockResolvedValue(true);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
+      const ctx = { apiKeyId: 'admin-key', solutionId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const result = await controller.killSession('s1', ctx);
 
       expect(result.success).toBe(true);
@@ -174,7 +174,7 @@ describe('AdminSessionsController', () => {
     it('should return failure when kill fails', async () => {
       sessionManagerService.killSession = jest.fn().mockResolvedValue(false);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
+      const ctx = { apiKeyId: 'admin-key', solutionId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const result = await controller.killSession('s1', ctx);
 
       expect(result.success).toBe(false);
@@ -198,7 +198,7 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
+      const ctx = { apiKeyId: 'admin-key', solutionId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const dto = { sessionIds: ['s1', 's2', 's3'] };
       const result = await controller.bulkKillSessions(ctx, dto);
 
@@ -217,7 +217,7 @@ describe('AdminSessionsController', () => {
     // Note: Validation tests removed - class-validator handles these at framework level
     // Empty array and >100 sessions validation happens via ValidationPipe before controller
 
-    it('should use tenantId as adminId when apiKeyId is not available', async () => {
+    it('should use solutionId as adminId when apiKeyId is not available', async () => {
       const mockResult = {
         totalRequested: 1,
         successCount: 1,
@@ -226,7 +226,7 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
-      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any; // No apiKeyId
+      const ctx = { solutionId: 'tenant-a', apiKeyScopes: ['admin'] } as any; // No apiKeyId
       const dto = { sessionIds: ['s1'] };
       await controller.bulkKillSessions(ctx, dto);
 

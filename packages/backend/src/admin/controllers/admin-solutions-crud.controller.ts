@@ -1,5 +1,5 @@
 /**
- * Admin Tenants Controller
+ * Admin Solutions Controller
  *
  * Admin API for tenant management under unified /api/v1/admin path.
  */
@@ -21,15 +21,15 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
-import { TenantsService } from '../../tenants/tenants.service';
-import { UpdateTenantDto } from '../../tenants/dto/tenant.dto';
+import { SolutionsService } from '../../solutions/solutions.service';
+import { UpdateTenantDto } from '../../solutions/dto/solution.dto';
 import { SkillsService } from '../../skills/skills.service';
 import { AuditService } from '../services/audit.service';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
+import { UserSolutionService } from '../../users/user-solution.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TenantQuota } from '../entities/tenant-quota.entity';
+import { SolutionQuota } from '../entities/solution-quota.entity';
 
 // UUID regex pattern
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -37,23 +37,23 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const SLUG_REGEX = /^[a-z0-9][a-z0-9_-]*$/i;
 
 @ApiTags('admin')
-@Controller('api/v1/admin/tenants')
+@Controller('api/v1/admin/solutions')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
-export class AdminTenantsController {
-  private readonly logger = new Logger(AdminTenantsController.name);
+@UseGuards(AdminSolutionAccessGuard)
+export class AdminSolutionsController {
+  private readonly logger = new Logger(AdminSolutionsController.name);
 
   constructor(
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly skillsService: SkillsService,
     private readonly auditService: AuditService,
-    private readonly userTenantService: UserTenantService,
-    @InjectRepository(TenantQuota)
-    private readonly tenantQuotaRepository: Repository<TenantQuota>,
+    private readonly userTenantService: UserSolutionService,
+    @InjectRepository(SolutionQuota)
+    private readonly tenantQuotaRepository: Repository<SolutionQuota>,
   ) {}
 
   /**
-   * GET /api/v1/admin/tenants
+   * GET /api/v1/admin/solutions
    *
    * List tenants. Admin sees all; builder sees only owned tenants.
    */
@@ -76,51 +76,51 @@ export class AdminTenantsController {
 
     // Fallback: return own tenant only (from API key)
     this.logger.warn(
-      `Tenant list fallback: no userId in context, returning home tenant only`,
+      `Solution list fallback: no userId in context, returning home tenant only`,
     );
     return ctx.tenant ? [ctx.tenant] : [];
   }
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId
+   * GET /api/v1/admin/solutions/:solutionId
    *
    * Get a tenant by ID (UUID) or slug.
-   * Uses :tenantId param so AdminTenantAccessGuard can enforce builder isolation.
+   * Uses :solutionId param so AdminSolutionAccessGuard can enforce builder isolation.
    */
-  @Get(':tenantId')
-  async findOne(@Param('tenantId') tenantId: string) {
+  @Get(':solutionId')
+  async findOne(@Param('solutionId') solutionId: string) {
     // Validate input format
-    if (!tenantId || tenantId.length > 100) {
+    if (!solutionId || solutionId.length > 100) {
       throw new BadRequestException('Invalid tenant identifier');
     }
 
     // Must be either a valid UUID or a valid slug
-    if (!UUID_REGEX.test(tenantId) && !SLUG_REGEX.test(tenantId)) {
+    if (!UUID_REGEX.test(solutionId) && !SLUG_REGEX.test(solutionId)) {
       throw new BadRequestException('Invalid tenant identifier format');
     }
 
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
     return tenant;
   }
 
   /**
-   * PUT /api/v1/admin/tenants/:tenantId
+   * PUT /api/v1/admin/solutions/:solutionId
    *
    * Update tenant basic info (name, description, plan, status, limits, etc.)
    */
-  @Put(':tenantId')
+  @Put(':solutionId')
   @HttpCode(HttpStatus.OK)
   async updateTenant(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() dto: UpdateTenantDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     const previousValue = {
@@ -141,7 +141,7 @@ export class AdminTenantsController {
       action: 'tenant.update',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         previousValue,
         newValue: dto,
@@ -153,21 +153,21 @@ export class AdminTenantsController {
   }
 
   /**
-   * PUT /api/v1/admin/tenants/:tenantId/skills/:skillId/toggle
+   * PUT /api/v1/admin/solutions/:solutionId/skills/:skillId/toggle
    *
    * Toggle a skill's enabled/disabled state
    */
-  @Put(':tenantId/skills/:skillId/toggle')
+  @Put(':solutionId/skills/:skillId/toggle')
   @HttpCode(HttpStatus.OK)
   async toggleSkill(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Param('skillId') skillId: string,
     @Ctx() ctx: RequestContext,
   ) {
     // Resolve tenant
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Find the skill
@@ -186,7 +186,7 @@ export class AdminTenantsController {
       action: 'skill.update',
       targetType: 'skill',
       targetId: skill.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         previousValue: { enabled: previousEnabled },
         newValue: { enabled: toggled.enabled },
@@ -203,20 +203,20 @@ export class AdminTenantsController {
   }
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId/skills
+   * GET /api/v1/admin/solutions/:solutionId/skills
    *
    * Get all skills for a tenant
    */
-  @Get(':tenantId/skills')
+  @Get(':solutionId/skills')
   async getSkills(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
     // Validate tenant exists
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Fetch all skills for this tenant
@@ -239,20 +239,20 @@ export class AdminTenantsController {
   }
 
   /**
-   * PUT /api/v1/admin/tenants/:tenantId/sdk-config
+   * PUT /api/v1/admin/solutions/:solutionId/sdk-config
    *
    * Update SDK configuration for a tenant
    */
-  @Put(':tenantId/sdk-config')
+  @Put(':solutionId/sdk-config')
   @HttpCode(HttpStatus.OK)
   async updateSdkConfig(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() body: { config: Record<string, unknown> },
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     const previousConfig = { ...tenant.config };
@@ -265,7 +265,7 @@ export class AdminTenantsController {
       action: 'tenant.update',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         previousValue: previousConfig,
         newValue: tenant.config,
@@ -277,19 +277,19 @@ export class AdminTenantsController {
   }
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId/quotas
+   * GET /api/v1/admin/solutions/:solutionId/quotas
    *
    * Get quota information for a tenant
    */
-  @Get(':tenantId/quotas')
-  async getQuotas(@Param('tenantId') tenantId: string) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+  @Get(':solutionId/quotas')
+  async getQuotas(@Param('solutionId') solutionId: string) {
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     const quotas = await this.tenantQuotaRepository.find({
-      where: { tenantId: tenant.id },
+      where: { solutionId: tenant.id },
       order: { createdAt: 'DESC' },
     });
 
@@ -323,14 +323,14 @@ export class AdminTenantsController {
   }
 
   /**
-   * PUT /api/v1/admin/tenants/:tenantId/quotas
+   * PUT /api/v1/admin/solutions/:solutionId/quotas
    *
    * Create or update quotas for a tenant
    */
-  @Put(':tenantId/quotas')
+  @Put(':solutionId/quotas')
   @HttpCode(HttpStatus.OK)
   async updateQuotas(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() body: {
       period: 'monthly' | 'daily';
       maxTokens?: number;
@@ -342,14 +342,14 @@ export class AdminTenantsController {
     },
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Find existing quota for the period or create new
     let quota = await this.tenantQuotaRepository.findOne({
-      where: { tenantId: tenant.id, period: body.period },
+      where: { solutionId: tenant.id, period: body.period },
     });
 
     if (quota) {
@@ -368,7 +368,7 @@ export class AdminTenantsController {
         : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
       quota = this.tenantQuotaRepository.create({
-        tenantId: tenant.id,
+        solutionId: tenant.id,
         period: body.period,
         maxTokens: body.maxTokens ?? 1000000,
         maxSessions: body.maxSessions ?? 100,
@@ -387,7 +387,7 @@ export class AdminTenantsController {
       action: 'tenant.update',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         reason: `Updated ${body.period} quotas`,
         newValue: saved,

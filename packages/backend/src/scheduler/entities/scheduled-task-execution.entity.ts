@@ -19,7 +19,7 @@ export class ScheduledTaskExecution {
   taskId: string;
 
   @Column()
-  tenantId: string;
+  solutionId: string;
 
   @Column()
   sessionId: string;

@@ -13,7 +13,7 @@ import { APP_GUARD } from '@nestjs/core';
 import configuration from './config/configuration';
 import { SessionsModule } from './sessions/sessions.module';
 import { SkillsModule } from './skills/skills.module';
-import { TenantsModule } from './tenants/tenants.module';
+import { SolutionsModule } from './solutions/solutions.module';
 import { MessagesModule } from './messages/messages.module';
 import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,7 +26,7 @@ import { Skill } from './skills/entities/skill.entity';
 import { SkillVersion } from './skills/entities/skill-version.entity';
 import { SkillFile } from './skills/entities/skill-file.entity';
 import { SkillVersionFile } from './skills/entities/skill-version-file.entity';
-import { Tenant } from './tenants/entities/tenant.entity';
+import { Solution } from './solutions/entities/solution.entity';
 import { Message } from './messages/entities/message.entity';
 import { ToolEvent } from './messages/entities/tool-event.entity';
 import { ConversationContext } from './messages/entities/conversation-context.entity';
@@ -41,7 +41,7 @@ import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
 import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
-import { AdminAuditLog, SessionAlert, TenantQuota, Turn, Session } from './admin/entities';
+import { AdminAuditLog, SessionAlert, SolutionQuota, Turn, Session } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
@@ -50,11 +50,11 @@ import { JobModule } from './jobs/job.module';
 import { JobEntity } from './jobs/entities/job.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
-import { UserTenant } from './users/entities/user-tenant.entity';
+import { UserSolution } from './users/entities/user-solution.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
 import { SessionMetadata } from './sessions/entities/session-metadata.entity';
 import { SessionArtifactSnapshot } from './sessions/agent-runtime/session-artifact-snapshot.entity';
-import { SolutionsModule } from './solutions/solutions.module';
+import { SolutionLoaderModule } from './solutions/solution-loader.module';
 import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
 
@@ -87,14 +87,14 @@ import { BuilderModule } from './builder/builder.module';
         SkillVersion,
         SkillFile,
         SkillVersionFile,
-        Tenant,
+        Solution,
         ApiKey,
         McpServer,
         AgentFile,
         FileVersion,
         // User entities
         User,
-        UserTenant,
+        UserSolution,
         // Message entities
         Message,
         ToolEvent,
@@ -116,7 +116,7 @@ import { BuilderModule } from './builder/builder.module';
         // Admin entities
         AdminAuditLog,
         SessionAlert,
-        TenantQuota,
+        SolutionQuota,
         Turn,
         // Scheduler entities
         ScheduledTask,
@@ -137,13 +137,13 @@ import { BuilderModule } from './builder/builder.module';
     // Note: AgentRuntimeModule.forRoot() is imported by SessionsModule
     // (transitively reaches AppModule via SessionsModule below). The
     // artifact callback URL lives on `tenant.config.artifactUrl`, set via
-    // solution.json auto-discovery or `PUT /tenants/:id` — no env vars.
+    // solution.json auto-discovery or `PUT /solutions/:id` — no env vars.
 
     // Feature modules
     SessionsModule, // Unified session management (WebSocket + REST)
     HealthModule,   // System health monitoring
     SkillsModule,
-    TenantsModule,
+    SolutionsModule,
     MessagesModule,
     FilesModule,
     UsersModule,
@@ -161,7 +161,7 @@ import { BuilderModule } from './builder/builder.module';
     JobModule,
 
     // Solution auto-discovery
-    SolutionsModule,
+    SolutionLoaderModule,
 
     // Bundle system (platform capability packages)
     BundleModule,

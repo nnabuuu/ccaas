@@ -233,7 +233,7 @@ export class FilesController {
       originalPath: string;   // Absolute path in session workspace
       sessionId?: string;     // Session context
       messageId?: string;     // Optional message context
-      tenantId?: string;      // Optional tenant
+      solutionId?: string;      // Optional tenant
     },
   ): Promise<{
     fileId: string;
@@ -249,7 +249,7 @@ export class FilesController {
     const file = await this.filesService.createFromSessionFile({
       sessionId: dto.sessionId || 'unknown',
       messageId: dto.messageId || null,
-      tenantId: dto.tenantId,
+      solutionId: dto.solutionId,
       originalPath: dto.originalPath,
       workspaceDir,
     });
@@ -269,7 +269,7 @@ export class FilesController {
    *
    * Files are written to:
    * 1. Session workspace (for agent access): .agent-workspace/sessions/{sessionId}/{targetPath}/{filename}
-   * 2. Persistent storage (for versioning): .agent-workspace/files/{tenantId}/{messageId}/{filename}
+   * 2. Persistent storage (for versioning): .agent-workspace/files/{solutionId}/{messageId}/{filename}
    */
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -280,7 +280,7 @@ export class FilesController {
 
 **文件存储位置：**
 1. 会话工作区（Agent 可访问）: \`.agent-workspace/sessions/{sessionId}/{targetPath}/{filename}\`
-2. 持久化存储（版本控制）: \`.agent-workspace/files/{tenantId}/{messageId}/{filename}\`
+2. 持久化存储（版本控制）: \`.agent-workspace/files/{solutionId}/{messageId}/{filename}\`
 
 **支持的文件类型：**
 - 图片：png, jpg, jpeg, gif, webp（最大 10MB）
@@ -311,9 +311,9 @@ Upload files to session workspace for agent processing.
           type: 'string',
           description: '消息 ID（可选）/ Message ID (optional)',
         },
-        tenantId: {
+        solutionId: {
           type: 'string',
-          description: '租户 ID（可选）/ Tenant ID (optional)',
+          description: '租户 ID（可选）/ Solution ID (optional)',
         },
         targetPath: {
           type: 'string',
@@ -335,7 +335,7 @@ Upload files to session workspace for agent processing.
     @UploadedFile() file: Express.Multer.File,
     @Body('sessionId') sessionId: string,
     @Body('messageId') messageId?: string,
-    @Body('tenantId') tenantId?: string,
+    @Body('solutionId') solutionId?: string,
     @Body('targetPath') targetPath?: string,
   ): Promise<FileUploadResult> {
     // Validate input
@@ -359,7 +359,7 @@ Upload files to session workspace for agent processing.
       file.originalname,
       sessionId,
       messageId || null,
-      tenantId,
+      solutionId,
       targetPath,
       workspaceDir, // Pass workspace directory for agent access
     );

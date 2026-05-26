@@ -25,7 +25,7 @@ export type ErrorCode =
   | 'CLI_ERROR' // Claude CLI process error
   | 'MCP_ERROR' // MCP server error
   | 'VALIDATION_ERROR' // Input validation failed
-  | 'QUOTA_EXCEEDED' // Tenant token quota exceeded
+  | 'QUOTA_EXCEEDED' // Solution token quota exceeded
   | 'ALREADY_EXISTS'; // Resource already exists (duplicate slug, email, etc.)
 
 // ============================================================================

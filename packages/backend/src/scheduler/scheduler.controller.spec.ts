@@ -10,7 +10,7 @@ describe('SchedulerController', () => {
 
   const mockTask = {
     id: 'task-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     name: 'Test Task',
     message: 'Hello',
     scheduleType: 'cron',
@@ -50,7 +50,7 @@ describe('SchedulerController', () => {
   describe('POST /', () => {
     it('should create a scheduled task', async () => {
       const dto = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         name: 'Daily Summary',
         message: 'Summarize',
         scheduleType: 'cron' as const,
@@ -69,7 +69,7 @@ describe('SchedulerController', () => {
       const result = await controller.findAll('tenant-1', 'active', '1', '20');
 
       expect(service.findAll).toHaveBeenCalledWith({
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         status: 'active',
         page: 1,
         limit: 20,

@@ -96,11 +96,11 @@ export class AdminAuditLog {
   targetId!: string;
 
   /**
-   * Tenant ID context (for multi-tenant filtering)
+   * Solution ID context (for multi-tenant filtering)
    */
   @Column({ type: 'varchar', length: 64, nullable: true })
   @Index('IDX_admin_audit_log_tenant_id')
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   /**
    * Additional metadata about the action

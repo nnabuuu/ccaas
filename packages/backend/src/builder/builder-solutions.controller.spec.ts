@@ -1,15 +1,15 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { BuilderTenantsController } from './builder-tenants.controller';
+import { BuilderSolutionsController } from './builder-solutions.controller';
 import type { RequestContext } from '../auth/types';
 
-describe('BuilderTenantsController', () => {
-  let controller: BuilderTenantsController;
+describe('BuilderSolutionsController', () => {
+  let controller: BuilderSolutionsController;
   let tenantsService: any;
   let userTenantService: any;
   let auditService: any;
 
   const builderCtx: RequestContext = {
-    tenantId: 'default',
+    solutionId: 'default',
     tenant: { id: 'default' } as any,
     apiKeyId: 'key-builder',
     apiKeyScopes: ['builder'],
@@ -38,7 +38,7 @@ describe('BuilderTenantsController', () => {
       log: jest.fn(),
     };
 
-    controller = new BuilderTenantsController(
+    controller = new BuilderSolutionsController(
       tenantsService,
       userTenantService,
       auditService,
@@ -65,7 +65,7 @@ describe('BuilderTenantsController', () => {
     expect(result.tenant).toBe(tenant);
     expect(userTenantService.create).toHaveBeenCalledWith({
       userId: 'user-1',
-      tenantId: 'new-tenant',
+      solutionId: 'new-tenant',
       role: 'admin',
     });
     expect(auditService.log).toHaveBeenCalledWith(

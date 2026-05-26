@@ -75,9 +75,9 @@ export class SessionManagerService {
    * verifies admin scope before requests reach this service. This check
    * protects against direct service invocations from non-admin contexts.
    *
-   * Deny-by-default: sessions with a null/undefined tenantId are treated as
+   * Deny-by-default: sessions with a null/undefined solutionId are treated as
    * tenant-owned data, not shared resources. Non-admin callers cannot access
-   * them unless the session's tenantId matches their own.
+   * them unless the session's solutionId matches their own.
    */
   private assertTenantAccess(
     sessionTenantId: string | null | undefined,
@@ -111,7 +111,7 @@ export class SessionManagerService {
 
     return {
       sessionId: session.sessionId,
-      tenantId: session.tenantId || null,
+      solutionId: session.solutionId || null,
       clientId: session.clientId,
       status: session.status,
       messageCount: session.messageCount,
@@ -197,8 +197,8 @@ export class SessionManagerService {
     // Build query with filters
     const qb = this.sessionRepository.createQueryBuilder('session');
 
-    if (query.tenantId) {
-      qb.andWhere('session.tenantId = :tenantId', { tenantId: query.tenantId });
+    if (query.solutionId) {
+      qb.andWhere('session.solutionId = :solutionId', { solutionId: query.solutionId });
     }
 
     if (query.status) {
@@ -259,8 +259,8 @@ export class SessionManagerService {
     // Filter sessions
     let filtered = allSessions;
 
-    if (query.tenantId) {
-      filtered = filtered.filter((s) => s.tenantId === query.tenantId);
+    if (query.solutionId) {
+      filtered = filtered.filter((s) => s.solutionId === query.solutionId);
     }
 
     if (query.status) {
@@ -325,7 +325,7 @@ export class SessionManagerService {
   /**
    * Get session detail
    * @param sessionId - Session ID to get details for
-   * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerTenantId - Solution ID of the caller (for authorization)
    */
   async getSessionDetail(
     sessionId: string,
@@ -341,7 +341,7 @@ export class SessionManagerService {
       return null;
     }
 
-    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+    this.assertTenantAccess(session.solutionId, callerTenantId, callerScopes);
 
     // Get token stats for this session
     const tokenStats = await this.getTokenStatsBatch([sessionId]);
@@ -365,7 +365,7 @@ export class SessionManagerService {
    * @param sessionId - Session ID to get timeline for
    * @param limit - Maximum number of events to return
    * @param offset - Offset for pagination
-   * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerTenantId - Solution ID of the caller (for authorization)
    * @param callerScopes - API key scopes of the caller
    * @param turnNumber - Optional turn number to filter events to a specific turn
    */
@@ -382,7 +382,7 @@ export class SessionManagerService {
       this.sessionService.getSession(sessionId) ??
       (await this.sessionRepository.findOne({ where: { sessionId } }));
     if (session) {
-      this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+      this.assertTenantAccess(session.solutionId, callerTenantId, callerScopes);
     }
 
     // Build messageId→turnNumber map from turns
@@ -563,7 +563,7 @@ export class SessionManagerService {
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
-    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+    this.assertTenantAccess(session.solutionId, callerTenantId, callerScopes);
 
     const turns = await this.turnRepository.find({
       where: { sessionId },
@@ -633,7 +633,7 @@ export class SessionManagerService {
    * Force kill a session
    * @param sessionId - Session ID to kill
    * @param adminId - Admin performing the action
-   * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerTenantId - Solution ID of the caller (for authorization)
    */
   async killSession(
     sessionId: string,
@@ -651,7 +651,7 @@ export class SessionManagerService {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
 
-    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+    this.assertTenantAccess(session.solutionId, callerTenantId, callerScopes);
 
     const success = this.sessionService.cancelSession(sessionId);
 
@@ -662,7 +662,7 @@ export class SessionManagerService {
         'session',
         sessionId,
         { clientId: session.clientId, status: session.status },
-        session.tenantId,
+        session.solutionId,
       );
       this.logger.log(`Admin ${adminId} killed session ${sessionId}`);
     } else {
@@ -673,7 +673,7 @@ export class SessionManagerService {
         sessionId,
         'Session has no active process to kill',
         { clientId: session.clientId, status: session.status },
-        session.tenantId,
+        session.solutionId,
       );
     }
 
@@ -684,7 +684,7 @@ export class SessionManagerService {
    * Bulk kill multiple sessions
    * @param sessionIds - Array of session IDs to kill
    * @param adminId - Admin performing the action
-   * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerTenantId - Solution ID of the caller (for authorization)
    */
   async bulkKillSessions(
     sessionIds: string[],
@@ -749,12 +749,12 @@ export class SessionManagerService {
   /**
    * Get recent sessions (for dashboard)
    */
-  async getRecentSessions(limit: number = 10, tenantId?: string): Promise<RecentSession[]> {
+  async getRecentSessions(limit: number = 10, solutionId?: string): Promise<RecentSession[]> {
     let sessions = this.getAllManagedSessions();
 
     // Filter by tenant if specified
-    if (tenantId) {
-      sessions = sessions.filter((s) => s.tenantId === tenantId);
+    if (solutionId) {
+      sessions = sessions.filter((s) => s.solutionId === solutionId);
     }
 
     return sessions
@@ -762,7 +762,7 @@ export class SessionManagerService {
       .slice(0, limit)
       .map((session) => ({
         sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
+        solutionId: session.solutionId || null,
         status: session.status,
         messageCount: session.messageCount,
         createdAt: session.createdAt,
@@ -773,7 +773,7 @@ export class SessionManagerService {
   /**
    * Get error rate in last 24 hours
    */
-  async getErrorRate24h(tenantId?: string): Promise<number> {
+  async getErrorRate24h(solutionId?: string): Promise<number> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const errorQb = this.apiErrorRepository.createQueryBuilder('error')
@@ -782,9 +782,9 @@ export class SessionManagerService {
     const messageQb = this.messageRepository.createQueryBuilder('message')
       .where('message.createdAt >= :oneDayAgo', { oneDayAgo });
 
-    if (tenantId) {
-      errorQb.andWhere('error.tenantId = :tenantId', { tenantId });
-      messageQb.andWhere('message.tenantId = :tenantId', { tenantId });
+    if (solutionId) {
+      errorQb.andWhere('error.solutionId = :solutionId', { solutionId });
+      messageQb.andWhere('message.solutionId = :solutionId', { solutionId });
     }
 
     const [errorCount, totalMessages] = await Promise.all([
@@ -800,7 +800,7 @@ export class SessionManagerService {
   /**
    * Get token breakdown for a specific session
    * @param sessionId - Session ID to get token breakdown for
-   * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerTenantId - Solution ID of the caller (for authorization)
    */
   async getTokenBreakdown(
     sessionId: string,
@@ -812,7 +812,7 @@ export class SessionManagerService {
       this.sessionService.getSession(sessionId) ??
       (await this.sessionRepository.findOne({ where: { sessionId } }));
     if (session) {
-      this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+      this.assertTenantAccess(session.solutionId, callerTenantId, callerScopes);
     }
 
     const result = await this.tokenUsageRepository
@@ -898,7 +898,7 @@ export class SessionManagerService {
       // Upsert session to database
       await this.sessionRepository.save({
         sessionId: managedSession.sessionId,
-        tenantId: managedSession.tenantId || null,
+        solutionId: managedSession.solutionId || null,
         userId: managedSession.userId || null,
         clientId: managedSession.clientId,
         status: managedSession.status,
@@ -1047,8 +1047,8 @@ export class SessionManagerService {
 
     // Check if this tool has a registered trigger (from bundles or solution config)
     let isTriggerTool = false;
-    if (tool.tenantId) {
-      const triggers = this.eventMapper.getTenantToolTriggers(tool.tenantId);
+    if (tool.solutionId) {
+      const triggers = this.eventMapper.getTenantToolTriggers(tool.solutionId);
       isTriggerTool = triggers.some(
         t => t.toolName === normalizedName && t.eventType === 'output_update',
       );

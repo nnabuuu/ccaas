@@ -68,7 +68,7 @@ import { SyncEngine } from '@kedge-agentic/agent-runtime';
 
 import { SessionService } from '../session.service';
 import { SessionMetadataService } from '../services/session-metadata.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import type { FsDiffEntry } from '../workspace/types';
 
 import {
@@ -99,7 +99,7 @@ const sha256BinaryHasher: BinaryContentHasher = (b: Buffer | Uint8Array) =>
 
 export interface SessionTurnCompleteEvent {
   sessionId: string;
-  tenantId?: string;
+  solutionId?: string;
   status: 'complete' | 'error' | 'cancelled';
   exitCode: number | null;
 }
@@ -118,7 +118,7 @@ export interface SessionTurnCompleteEvent {
  */
 export interface SessionBoundEvent {
   sessionId: string;
-  tenantId: string;
+  solutionId: string;
   /** @deprecated since β-2 — use `workspaceSource.sourceIdentity`. */
   projectId: string;
   /**
@@ -162,7 +162,7 @@ export class SessionAssetSyncer {
    */
   private readonly projectLocks = new Map<string, { promise: Promise<void>; registeredAt: number }>();
 
-  /** Cache of `tenantId → slug` lookups; slugs are stable per tenant. */
+  /** Cache of `solutionId → slug` lookups; slugs are stable per tenant. */
   private readonly tenantSlugCache = new Map<string, string | null>();
 
   constructor(
@@ -174,7 +174,7 @@ export class SessionAssetSyncer {
     @Inject(CHANGE_STREAM) private readonly changes: ChangeStream,
     private readonly sessions: SessionService,
     private readonly metadata: SessionMetadataService,
-    private readonly tenants: TenantsService,
+    private readonly tenants: SolutionsService,
   ) {}
 
   @OnEvent('session.turn.complete')
@@ -221,21 +221,21 @@ export class SessionAssetSyncer {
       return;
     }
 
-    const projectId = await this.lookupProjectId(sessionId, session.tenantId);
+    const projectId = await this.lookupProjectId(sessionId, session.solutionId);
     if (!projectId) {
       this.logger.debug(`sync: session ${sessionId} has no projectId binding, skipping`);
       return;
     }
 
-    // Resolve the tenant-specific source: tenantId → slug (via TenantsService,
+    // Resolve the tenant-specific source: solutionId → slug (via SolutionsService,
     // cached locally since slugs are stable) → registry.getForTenantSlug.
     // Null means this tenant has no configured artifact source AND there's
     // no default fallback — treat the same as "no binding": no-op.
-    const slug = await this.resolveSlug(session.tenantId);
+    const slug = await this.resolveSlug(session.solutionId);
     const source = await this.sourceRegistry.getForTenantSlug(slug);
     if (!source) {
       this.logger.debug(
-        `sync: session ${sessionId} tenant=${session.tenantId} has no artifact source configured, skipping`,
+        `sync: session ${sessionId} tenant=${session.solutionId} has no artifact source configured, skipping`,
       );
       return;
     }
@@ -302,7 +302,7 @@ export class SessionAssetSyncer {
     // binary helper) avoids creating `artifacts-binary/` for tenants
     // that aren't using binaries.
     const slug = await this.resolveSlug(
-      this.sessions.getSession(sessionId)?.tenantId,
+      this.sessions.getSession(sessionId)?.solutionId,
     );
     const binarySource = await this.binarySourceRegistry.getForTenantSlug(slug);
     if (binarySource) {
@@ -707,24 +707,24 @@ export class SessionAssetSyncer {
   }
 
   /**
-   * Resolve `tenantId → slug` via TenantsService, cached locally.
+   * Resolve `solutionId → slug` via SolutionsService, cached locally.
    * Slugs are stable per tenant in practice (renaming would break
    * sessionId references), so cache invalidation is a non-goal.
    *
    * Phase 2 enhancement: if the tenants REST API ever exposes mid-run
-   * slug rename, expose a `flushTenantCache(tenantId)` and have the
+   * slug rename, expose a `flushTenantCache(solutionId)` and have the
    * tenant update path call it. Until then, long-lived backend processes
    * that see a slug rename require a restart for the routing to refresh.
    * Tracked in docs/AGENT_RUNTIME_DESIGN.md § Open design questions.
    */
-  private async resolveSlug(tenantId: string | undefined): Promise<string | null> {
-    if (!tenantId) return null;
-    if (this.tenantSlugCache.has(tenantId)) {
-      return this.tenantSlugCache.get(tenantId) ?? null;
+  private async resolveSlug(solutionId: string | undefined): Promise<string | null> {
+    if (!solutionId) return null;
+    if (this.tenantSlugCache.has(solutionId)) {
+      return this.tenantSlugCache.get(solutionId) ?? null;
     }
-    const tenant = await this.tenants.findOne(tenantId);
+    const tenant = await this.tenants.findOne(solutionId);
     const slug = tenant?.slug ?? null;
-    this.tenantSlugCache.set(tenantId, slug);
+    this.tenantSlugCache.set(solutionId, slug);
     return slug;
   }
 
@@ -734,11 +734,11 @@ export class SessionAssetSyncer {
    */
   private async lookupProjectId(
     sessionId: string,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
   ): Promise<string | null> {
-    if (!tenantId) return null;
+    if (!solutionId) return null;
     try {
-      const row = await this.metadata.get(sessionId, tenantId, 'projectId');
+      const row = await this.metadata.get(sessionId, solutionId, 'projectId');
       // SessionMetadataService.toRow already JSON.parses value — receive `unknown`.
       const value = row.value;
       return typeof value === 'string' && value.length > 0 ? value : null;

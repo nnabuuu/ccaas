@@ -10,12 +10,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 // Entities
 import { AdminAuditLog } from './entities/admin-audit-log.entity';
 import { SessionAlert } from './entities/session-alert.entity';
-import { TenantQuota } from './entities/tenant-quota.entity';
+import { SolutionQuota } from './entities/solution-quota.entity';
 import { Session } from './entities/session.entity';
 import { Turn } from './entities/turn.entity';
 
 // Guards
-import { AdminTenantAccessGuard } from './guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from './guards/admin-solution-access.guard';
 
 // Services
 import { AuditService } from './services/audit.service';
@@ -28,7 +28,7 @@ import { AdminSessionsController } from './controllers/admin-sessions.controller
 import { AdminAnalyticsController } from './controllers/admin-analytics.controller';
 import { AdminAuditController } from './controllers/admin-audit.controller';
 import { AdminSkillsController } from './controllers/admin-skills.controller';
-import { AdminTenantsController } from './controllers/admin-tenants.controller';
+import { AdminSolutionsController } from './controllers/admin-solutions-crud.controller';
 import { AdminSdkController } from './controllers/admin-sdk.controller';
 import { AdminApiKeysController } from './controllers/admin-api-keys.controller';
 import { AdminSessionTemplatesController } from './controllers/admin-session-templates.controller';
@@ -37,7 +37,7 @@ import { AdminBundlesController } from './controllers/admin-bundles.controller';
 import { AdminPlaygroundDraftsController } from './controllers/admin-playground-drafts.controller';
 import { PlaygroundDraft } from './entities/playground-draft.entity';
 import { AdminBuilderUsersController } from './controllers/admin-builder-users.controller';
-import { AdminSolutionsController } from './controllers/admin-solutions.controller';
+import { AdminSolutionImportController } from './controllers/admin-solutions.controller';
 import { AdminUsersController } from './controllers/admin-users.controller';
 
 // Dependent modules
@@ -45,9 +45,9 @@ import { SessionsModule } from '../sessions/sessions.module';
 import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
-import { TenantsModule } from '../tenants/tenants.module';
-import { BundleModule } from '../bundles/bundle.module';
 import { SolutionsModule } from '../solutions/solutions.module';
+import { BundleModule } from '../bundles/bundle.module';
+import { SolutionLoaderModule } from '../solutions/solution-loader.module';
 import { TurnsModule } from './turns.module';
 
 // Entities from other modules (for analytics queries)
@@ -59,7 +59,7 @@ import { ApiErrorEvent } from '../messages/entities/api-error-event.entity';
 import { TokenUsageEvent } from '../messages/entities/token-usage-event.entity';
 import { ApiKey } from '../auth/entities/api-key.entity';
 import { Skill } from '../skills/entities/skill.entity';
-import { Tenant } from '../tenants/entities/tenant.entity';
+import { Solution } from '../solutions/entities/solution.entity';
 
 @Module({
   imports: [
@@ -67,7 +67,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       // Admin entities
       AdminAuditLog,
       SessionAlert,
-      TenantQuota,
+      SolutionQuota,
       Session,
       PlaygroundDraft,
       // Turn removed - now in TurnsModule
@@ -80,16 +80,16 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       TokenUsageEvent,
       ApiKey,
       Skill,
-      Tenant,
+      Solution,
     ]),
     TurnsModule,
     SessionsModule,
     SkillsModule,
     AuthModule,
     MessagesModule,
-    TenantsModule,
-    BundleModule,
     SolutionsModule,
+    BundleModule,
+    SolutionLoaderModule,
   ],
   controllers: [
     AdminDashboardController,
@@ -97,7 +97,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminAnalyticsController,
     AdminAuditController,
     AdminSkillsController,
-    AdminTenantsController,
+    AdminSolutionsController,
     AdminSdkController,
     AdminApiKeysController,
     AdminSessionTemplatesController,
@@ -105,11 +105,11 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminBundlesController,
     AdminPlaygroundDraftsController,
     AdminBuilderUsersController,
-    AdminSolutionsController,
+    AdminSolutionImportController,
     AdminUsersController,
   ],
   providers: [
-    AdminTenantAccessGuard,
+    AdminSolutionAccessGuard,
     AuditService,
     AnalyticsService,
     SessionManagerService,

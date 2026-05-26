@@ -14,26 +14,26 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Solution } from '../../solutions/entities/solution.entity';
 import { User } from '../../users/entities/user.entity';
 import type { ApiKeyScope, ApiKeyStatus, ApiKeyMetadata } from '../types';
 
 @Entity('api_keys')
 @Index('IDX_api_keys_key_hash', ['keyHash'], { unique: true })
-@Index('IDX_api_keys_tenant_status', ['tenantId', 'status'])
+@Index('IDX_api_keys_tenant_status', ['solutionId', 'status'])
 export class ApiKey {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column()
-  tenantId!: string;
+  solutionId!: string;
 
   @Column({ nullable: true })
   userId?: string | null;
 
-  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenantId' })
-  tenant?: Tenant;
+  @ManyToOne(() => Solution, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'solutionId' })
+  tenant?: Solution;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'userId' })

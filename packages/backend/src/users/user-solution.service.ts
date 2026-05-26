@@ -2,9 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { UserTenant, UserRole } from './entities/user-tenant.entity';
-import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
-import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
+import { UserSolution, UserRole } from './entities/user-solution.entity';
+import { CreateUserTenantDto } from './dto/create-user-solution.dto';
+import { UpdateUserTenantDto } from './dto/update-user-solution.dto';
 
 export interface UserTenantFilter {
   search?: string;
@@ -13,18 +13,18 @@ export interface UserTenantFilter {
 }
 
 @Injectable()
-export class UserTenantService {
+export class UserSolutionService {
   constructor(
-    @InjectRepository(UserTenant)
-    private userTenantRepository: Repository<UserTenant>,
+    @InjectRepository(UserSolution)
+    private userTenantRepository: Repository<UserSolution>,
   ) {}
 
-  async create(createUserTenantDto: CreateUserTenantDto): Promise<UserTenant> {
+  async create(createUserTenantDto: CreateUserTenantDto): Promise<UserSolution> {
     // Check if user-tenant relationship already exists
     const existing = await this.userTenantRepository.findOne({
       where: {
         userId: createUserTenantDto.userId,
-        tenantId: createUserTenantDto.tenantId,
+        solutionId: createUserTenantDto.solutionId,
       },
     });
 
@@ -43,7 +43,7 @@ export class UserTenantService {
   }
 
   private applyFilters(
-    qb: SelectQueryBuilder<UserTenant>,
+    qb: SelectQueryBuilder<UserSolution>,
     filter?: UserTenantFilter,
   ): void {
     if (filter?.search) {
@@ -60,13 +60,13 @@ export class UserTenantService {
   }
 
   async findByTenant(
-    tenantId: string,
+    solutionId: string,
     options?: { skip?: number; take?: number; filter?: UserTenantFilter },
-  ): Promise<UserTenant[]> {
+  ): Promise<UserSolution[]> {
     const qb = this.userTenantRepository
       .createQueryBuilder('ut')
       .leftJoinAndSelect('ut.user', 'user')
-      .where('ut.tenantId = :tenantId', { tenantId })
+      .where('ut.solutionId = :solutionId', { solutionId })
       .andWhere('ut.isActive = :isActive', { isActive: true });
 
     this.applyFilters(qb, options?.filter);
@@ -79,13 +79,13 @@ export class UserTenantService {
   }
 
   async countByTenant(
-    tenantId: string,
+    solutionId: string,
     filter?: UserTenantFilter,
   ): Promise<number> {
     const qb = this.userTenantRepository
       .createQueryBuilder('ut')
       .leftJoin('ut.user', 'user')
-      .where('ut.tenantId = :tenantId', { tenantId })
+      .where('ut.solutionId = :solutionId', { solutionId })
       .andWhere('ut.isActive = :isActive', { isActive: true });
 
     this.applyFilters(qb, filter);
@@ -93,25 +93,25 @@ export class UserTenantService {
     return qb.getCount();
   }
 
-  async findByUser(userId: string): Promise<UserTenant[]> {
+  async findByUser(userId: string): Promise<UserSolution[]> {
     return this.userTenantRepository.find({
       where: { userId, isActive: true },
       relations: ['tenant'],
     });
   }
 
-  async findUserInTenant(userId: string, tenantId: string): Promise<UserTenant | null> {
+  async findUserInTenant(userId: string, solutionId: string): Promise<UserSolution | null> {
     return this.userTenantRepository.findOne({
-      where: { userId, tenantId },
+      where: { userId, solutionId },
       relations: ['user', 'tenant'],
     });
   }
 
-  async update(id: string, updateUserTenantDto: UpdateUserTenantDto): Promise<UserTenant> {
+  async update(id: string, updateUserTenantDto: UpdateUserTenantDto): Promise<UserSolution> {
     const userTenant = await this.userTenantRepository.findOne({ where: { id } });
 
     if (!userTenant) {
-      throw new NotFoundException(`UserTenant with ID ${id} not found`);
+      throw new NotFoundException(`UserSolution with ID ${id} not found`);
     }
 
     // If role is being updated, auto-adjust canCreateSkills if not explicitly set
@@ -130,7 +130,7 @@ export class UserTenantService {
     const userTenant = await this.userTenantRepository.findOne({ where: { id } });
 
     if (!userTenant) {
-      throw new NotFoundException(`UserTenant with ID ${id} not found`);
+      throw new NotFoundException(`UserSolution with ID ${id} not found`);
     }
 
     userTenant.isActive = false;
@@ -140,7 +140,7 @@ export class UserTenantService {
   /**
    * Check if user has permission to perform an action
    */
-  canPerformAction(userTenant: UserTenant | null, requiredRole: UserRole): boolean {
+  canPerformAction(userTenant: UserSolution | null, requiredRole: UserRole): boolean {
     if (!userTenant || !userTenant.isActive) {
       return false;
     }
@@ -158,7 +158,7 @@ export class UserTenantService {
    * Check if user can edit a specific resource owned by another user
    */
   canEditResource(
-    userTenant: UserTenant | null,
+    userTenant: UserSolution | null,
     resourceOwnerId: string,
     currentUserId: string,
   ): boolean {

@@ -8,7 +8,7 @@ export class CreateMessageDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsEnum(['user', 'assistant'])
   role: MessageRole;
@@ -45,7 +45,7 @@ export class MessageQueryDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsInt()
@@ -75,7 +75,7 @@ export class ToolEventResponseDto {
 export class MessageResponseDto {
   id: string;
   sessionId: string;
-  tenantId: string | null;
+  solutionId: string | null;
   role: MessageRole;
   content: string;
   metadata: MessageMetadata | null;

@@ -7,22 +7,22 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource } from 'typeorm';
 import { ApiKeyService } from './api-key.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 import { UsersService } from '../users/users.service';
 import { User } from '../users/entities/user.entity';
-import { UserTenant } from '../users/entities/user-tenant.entity';
-import { Tenant } from '../tenants/entities/tenant.entity';
+import { UserSolution } from '../users/entities/user-solution.entity';
+import { Solution } from '../solutions/entities/solution.entity';
 import { ApiKey } from './entities/api-key.entity';
-import { TenantQuota } from '../admin/entities/tenant-quota.entity';
+import { SolutionQuota } from '../admin/entities/solution-quota.entity';
 import { QuotaService } from '../admin/quota.service';
 import { createTestDatabaseModule } from '../../test/setup/test-database';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 describe('ApiKeyService - User Resolution Integration', () => {
   let service: ApiKeyService;
-  let tenantsService: TenantsService;
-  let userTenantService: UserTenantService;
+  let tenantsService: SolutionsService;
+  let userTenantService: UserSolutionService;
   let usersService: UsersService;
   let dataSource: DataSource;
 
@@ -41,12 +41,12 @@ describe('ApiKeyService - User Resolution Integration', () => {
           ],
         }),
         createTestDatabaseModule(),
-        TypeOrmModule.forFeature([ApiKey, User, UserTenant, Tenant, TenantQuota]),
+        TypeOrmModule.forFeature([ApiKey, User, UserSolution, Solution, SolutionQuota]),
       ],
       providers: [
         ApiKeyService,
-        TenantsService,
-        UserTenantService,
+        SolutionsService,
+        UserSolutionService,
         UsersService,
         QuotaService,
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
@@ -54,8 +54,8 @@ describe('ApiKeyService - User Resolution Integration', () => {
     }).compile();
 
     service = module.get<ApiKeyService>(ApiKeyService);
-    tenantsService = module.get<TenantsService>(TenantsService);
-    userTenantService = module.get<UserTenantService>(UserTenantService);
+    tenantsService = module.get<SolutionsService>(SolutionsService);
+    userTenantService = module.get<UserSolutionService>(UserSolutionService);
     usersService = module.get<UsersService>(UsersService);
 
     // Get the datasource from the module
@@ -69,30 +69,30 @@ describe('ApiKeyService - User Resolution Integration', () => {
   });
 
   describe('rawKeyOverride (INITIAL_ADMIN_KEY support)', () => {
-    let tenantId: string;
+    let solutionId: string;
 
     beforeAll(async () => {
       const result = await tenantsService.create({
-        name: 'Override Test Tenant',
+        name: 'Override Test Solution',
         slug: 'override-test-tenant',
       });
-      tenantId = result.id;
+      solutionId = result.id;
     });
 
     it('should use rawKeyOverride when valid sk- prefix and min length', async () => {
       const override = 'sk-test-override-12345'  // 22 chars, starts with sk-
-      const { rawKey } = await service.create(tenantId, { name: 'Override Key', scopes: ['chat'] }, override)
+      const { rawKey } = await service.create(solutionId, { name: 'Override Key', scopes: ['chat'] }, override)
 
       expect(rawKey).toBe(override)
 
       // Validate the key works for auth
       const context = await service.createContext(rawKey)
-      expect(context.tenantId).toBe(tenantId)
+      expect(context.solutionId).toBe(solutionId)
     })
 
     it('should fall back to auto-generated key when override lacks sk- prefix', async () => {
       const override = 'no-prefix-key-long-enough'
-      const { rawKey } = await service.create(tenantId, { name: 'No Prefix Key', scopes: ['chat'] }, override)
+      const { rawKey } = await service.create(solutionId, { name: 'No Prefix Key', scopes: ['chat'] }, override)
 
       expect(rawKey).not.toBe(override)
       expect(rawKey.startsWith('sk-')).toBe(true)
@@ -100,7 +100,7 @@ describe('ApiKeyService - User Resolution Integration', () => {
 
     it('should fall back to auto-generated key when override is too short', async () => {
       const override = 'sk-short'  // Only 8 chars, below MIN_KEY_LENGTH of 20
-      const { rawKey } = await service.create(tenantId, { name: 'Short Override Key', scopes: ['chat'] }, override)
+      const { rawKey } = await service.create(solutionId, { name: 'Short Override Key', scopes: ['chat'] }, override)
 
       expect(rawKey).not.toBe(override)
       expect(rawKey.startsWith('sk-')).toBe(true)
@@ -108,19 +108,19 @@ describe('ApiKeyService - User Resolution Integration', () => {
     })
 
     it('should behave identically without rawKeyOverride (backward compat)', async () => {
-      const { rawKey } = await service.create(tenantId, { name: 'No Override Key', scopes: ['chat'] })
+      const { rawKey } = await service.create(solutionId, { name: 'No Override Key', scopes: ['chat'] })
 
       expect(rawKey.startsWith('sk-')).toBe(true)
       expect(rawKey.length).toBeGreaterThan(20)
 
       const context = await service.createContext(rawKey)
-      expect(context.tenantId).toBe(tenantId)
+      expect(context.solutionId).toBe(solutionId)
     })
 
     it('should store override key as hash (raw key not retrievable from DB)', async () => {
       const override = 'sk-deterministic-key-ci'
       const { rawKey, apiKey } = await service.create(
-        tenantId,
+        solutionId,
         { name: 'Hash Test Key', scopes: ['admin'] },
         override,
       )
@@ -133,9 +133,9 @@ describe('ApiKeyService - User Resolution Integration', () => {
 
   describe('User Resolution', () => {
     it('should resolve user from API key', async () => {
-      const tenant = await tenantsService.create({ name: 'Test Tenant', slug: 'test-tenant' });
+      const tenant = await tenantsService.create({ name: 'Test Solution', slug: 'test-tenant' });
       const user = await usersService.create({ email: 'test@example.com', name: 'Test User' });
-      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'developer' });
+      await userTenantService.create({ userId: user.id, solutionId: tenant.id, role: 'developer' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Test Key',
         scopes: ['chat', 'skills:read'],
@@ -156,7 +156,7 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should work without user (backward compatibility)', async () => {
-      const tenant = await tenantsService.create({ name: 'Legacy Tenant', slug: 'legacy-tenant' });
+      const tenant = await tenantsService.create({ name: 'Legacy Solution', slug: 'legacy-tenant' });
       const { rawKey } = await service.create(tenant.id, { name: 'Legacy Key', scopes: ['chat'] });
 
       const context = await service.createContext(rawKey);
@@ -164,14 +164,14 @@ describe('ApiKeyService - User Resolution Integration', () => {
       expect(context.userId).toBeUndefined();
       expect(context.user).toBeUndefined();
       expect(context.userTenant).toBeUndefined();
-      expect(context.tenantId).toBe(tenant.id);
+      expect(context.solutionId).toBe(tenant.id);
       expect(context.isAnonymous).toBe(false);
     });
 
     it('should reject if user is not active in tenant', async () => {
-      const tenant = await tenantsService.create({ name: 'Inactive User Tenant', slug: 'inactive-user-tenant' });
+      const tenant = await tenantsService.create({ name: 'Inactive User Solution', slug: 'inactive-user-tenant' });
       const user = await usersService.create({ email: 'inactive@example.com', name: 'Inactive User' });
-      const userTenant = await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'developer' });
+      const userTenant = await userTenantService.create({ userId: user.id, solutionId: tenant.id, role: 'developer' });
       await userTenantService.update(userTenant.id, { isActive: false });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Inactive User Key',
@@ -186,9 +186,9 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should handle admin role correctly', async () => {
-      const tenant = await tenantsService.create({ name: 'Admin Tenant', slug: 'admin-tenant' });
+      const tenant = await tenantsService.create({ name: 'Admin Solution', slug: 'admin-tenant' });
       const user = await usersService.create({ email: 'admin@example.com', name: 'Admin User' });
-      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'admin' });
+      await userTenantService.create({ userId: user.id, solutionId: tenant.id, role: 'admin' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Admin Key',
         scopes: ['admin'],
@@ -205,9 +205,9 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should handle viewer role correctly', async () => {
-      const tenant = await tenantsService.create({ name: 'Viewer Tenant', slug: 'viewer-tenant' });
+      const tenant = await tenantsService.create({ name: 'Viewer Solution', slug: 'viewer-tenant' });
       const user = await usersService.create({ email: 'viewer@example.com', name: 'Viewer User' });
-      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'viewer' });
+      await userTenantService.create({ userId: user.id, solutionId: tenant.id, role: 'viewer' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Viewer Key',
         scopes: ['chat'],

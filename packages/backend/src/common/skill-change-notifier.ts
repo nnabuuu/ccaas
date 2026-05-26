@@ -7,7 +7,7 @@
  */
 
 export type SkillChangeCallback = (
-  tenantId: string,
+  solutionId: string,
   skillId: string,
   skillSlug: string,
   action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
@@ -37,14 +37,14 @@ class SkillChangeNotifierClass {
    * Notify all listeners of a skill change
    */
   notify(
-    tenantId: string,
+    solutionId: string,
     skillId: string,
     skillSlug: string,
     action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
   ): void {
     for (const listener of this.listeners) {
       try {
-        listener(tenantId, skillId, skillSlug, action);
+        listener(solutionId, skillId, skillSlug, action);
       } catch (error) {
         console.error('Error in skill change listener:', error);
       }

@@ -34,7 +34,7 @@ export class AgentFile {
   sessionId!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   @Column({ type: 'text' })
   originalPath!: string; // Path in session workspace (relative)

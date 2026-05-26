@@ -11,7 +11,7 @@ import { ConversationContext } from './entities/conversation-context.entity';
 
 export interface CreateConversationContextDto {
   sessionId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   systemPromptHash?: string | null;
   skillConfigHashes?: Array<{ slug: string; hash: string }> | null;
   mcpToolsList?: string[] | null;
@@ -47,7 +47,7 @@ export class ConversationContextService {
 
       // Update existing context - use type assertion for simple-json column
       const updateData: Partial<ConversationContext> = {
-        tenantId: dto.tenantId ?? existing.tenantId,
+        solutionId: dto.solutionId ?? existing.solutionId,
         systemPromptHash: dto.systemPromptHash ?? existing.systemPromptHash,
         skillConfigHashes: dto.skillConfigHashes ?? existing.skillConfigHashes,
         mcpToolsList: dto.mcpToolsList ?? existing.mcpToolsList,
@@ -64,7 +64,7 @@ export class ConversationContextService {
     // Create new context
     const context = this.contextRepository.create({
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId || null,
+      solutionId: dto.solutionId || null,
       systemPromptHash: dto.systemPromptHash || null,
       skillConfigHashes: dto.skillConfigHashes || null,
       mcpToolsList: dto.mcpToolsList || null,

@@ -19,7 +19,7 @@ import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/le
   // - CcaasChatProxyController owns `sessions/:sessionId/*` (history,
   //   send + SSE, bind-project). Same architectural rationale: the
   //   browser must never hold a ccaas key — env-held CCAAS_API_KEY +
-  //   server-side tenantId injection via CcaasUpstream.
+  //   server-side solutionId injection via CcaasUpstream.
   controllers: [ProjectController, CcaasProxyController, CcaasChatProxyController],
   providers: [
     ProjectService,
@@ -28,7 +28,7 @@ import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/le
     // can't construct ProjectService, blocking backend boot.
     TypeOrmLessonRepository,
     { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
-    // Shared helper for both proxy controllers (env resolution, tenantId
+    // Shared helper for both proxy controllers (env resolution, solutionId
     // lazy-cache, error wrapping with token scrub).
     CcaasUpstream,
   ],

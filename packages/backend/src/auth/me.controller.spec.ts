@@ -12,12 +12,12 @@
 
 import { MeController, type MeResponse } from './me.controller';
 import type { RequestContext } from './types';
-import type { Tenant } from '../tenants/entities/tenant.entity';
+import type { Solution } from '../solutions/entities/solution.entity';
 
 function makeCtx(overrides: Partial<RequestContext> = {}): RequestContext {
   return {
-    tenantId: 't-uuid-1',
-    tenant: { id: 't-uuid-1', slug: 'live-lesson-creator', name: 'Live Lesson Creator' } as Tenant,
+    solutionId: 't-uuid-1',
+    tenant: { id: 't-uuid-1', slug: 'live-lesson-creator', name: 'Live Lesson Creator' } as Solution,
     apiKeyId: 'k-uuid-1',
     apiKeyScopes: ['chat', 'skills:read'],
     requestId: 'req-1',
@@ -38,7 +38,7 @@ describe('MeController.me', () => {
     const out = controller.me(makeCtx());
 
     const expected: MeResponse = {
-      tenantId: 't-uuid-1',
+      solutionId: 't-uuid-1',
       tenantSlug: 'live-lesson-creator',
       apiKeyId: 'k-uuid-1',
       scopes: ['chat', 'skills:read'],
@@ -54,10 +54,10 @@ describe('MeController.me', () => {
     expect(out.isAnonymous).toBe(true);
     expect(out.apiKeyId).toBeUndefined();
     expect(out.scopes).toEqual([]);
-    // Even anonymous responses carry tenantId — the frontend needs it
+    // Even anonymous responses carry solutionId — the frontend needs it
     // to compose bind-project bodies. The default tenant id is what
     // ApiKeyGuard fills in for anonymous requests.
-    expect(out.tenantId).toBe('t-uuid-1');
+    expect(out.solutionId).toBe('t-uuid-1');
   });
 
   it('defaults scopes to [] when guard did not set them', () => {

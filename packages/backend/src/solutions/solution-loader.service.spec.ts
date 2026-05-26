@@ -1,5 +1,5 @@
 import { SolutionLoaderService, type ImportSolutionConfig } from './solution-loader.service';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService } from '../mcp/mcp-pool.service';
 import { EventMapperService } from '../sessions/event-mapper.service';
@@ -10,7 +10,7 @@ import type { McpServerDefinition } from './dto/solution-config.dto';
 // ============================================================================
 
 /**
- * Tenant mock with two-call pattern:
+ * Solution mock with two-call pattern:
  *  - Call 1 (ensureTenant): findOne(slug) → null (tenant not yet created)
  *  - Call 2+ (applySessionTemplates, etc.): → tenant with empty config
  */
@@ -130,7 +130,7 @@ describe('SolutionLoaderService', () => {
 
       expect(result.slug).toBe('test-solution');
       expect(result.name).toBe('Test Solution');
-      expect(result.tenantId).toBe('tenant-123');
+      expect(result.solutionId).toBe('tenant-123');
       expect(result.mcpServers).toEqual([]);
     });
 
@@ -153,7 +153,7 @@ describe('SolutionLoaderService', () => {
       const result = await loader.importFromConfig(makeConfig());
 
       expect(tenants.create).not.toHaveBeenCalled();
-      expect(result.tenantId).toBe('existing-123');
+      expect(result.solutionId).toBe('existing-123');
     });
 
     it('registers MCP servers from config body', async () => {

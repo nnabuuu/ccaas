@@ -19,7 +19,7 @@ import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/
 export interface CreateFromWriteToolDto {
   messageId: string;
   sessionId: string;
-  tenantId?: string;
+  solutionId?: string;
   originalPath: string; // Path from Write tool (could be absolute or relative)
   workspaceDir: string; // Session workspace directory
 }
@@ -47,11 +47,11 @@ export class FilesService {
   async createFromSessionFile(dto: {
     sessionId: string;
     messageId: string | null;
-    tenantId?: string;
+    solutionId?: string;
     originalPath: string;
     workspaceDir: string;
   }): Promise<AgentFile> {
-    const { messageId, sessionId, tenantId, originalPath, workspaceDir } = dto;
+    const { messageId, sessionId, solutionId, originalPath, workspaceDir } = dto;
 
     // Resolve the source file path
     const sourcePath = path.isAbsolute(originalPath)
@@ -71,8 +71,8 @@ export class FilesService {
     const filename = path.basename(originalPath);
     const mimeType = mimeLookup(filename) || null;
 
-    // Create persistent storage path: files/{tenantId}/{messageId}/{filename}
-    const tenantDir = tenantId || 'default';
+    // Create persistent storage path: files/{solutionId}/{messageId}/{filename}
+    const tenantDir = solutionId || 'default';
     const storedDir = path.join(
       this.persistentStorageBase,
       tenantDir,
@@ -96,7 +96,7 @@ export class FilesService {
     const agentFile = this.fileRepository.create({
       messageId: messageId || null,
       sessionId,
-      tenantId: tenantId || null,
+      solutionId: solutionId || null,
       originalPath,
       storedPath,
       filename,
@@ -115,7 +115,7 @@ export class FilesService {
     this.eventEmitter.emit('file.created', {
       fileId: saved.id,
       sessionId: saved.sessionId,
-      tenantId: saved.tenantId,
+      solutionId: saved.solutionId,
       filename: saved.filename,
       status: saved.status,
       uploadedBy: saved.uploadedBy,
@@ -129,7 +129,7 @@ export class FilesService {
    * Copies the file from session workspace to persistent storage
    */
   async createFromWriteTool(dto: CreateFromWriteToolDto): Promise<AgentFile> {
-    const { messageId, sessionId, tenantId, originalPath, workspaceDir } = dto;
+    const { messageId, sessionId, solutionId, originalPath, workspaceDir } = dto;
 
     // Resolve the source file path
     const sourcePath = path.isAbsolute(originalPath)
@@ -151,8 +151,8 @@ export class FilesService {
     const filename = path.basename(originalPath);
     const mimeType = mimeLookup(filename) || null;
 
-    // Create persistent storage path: files/{tenantId}/{messageId}/{filename}
-    const tenantDir = tenantId || 'default';
+    // Create persistent storage path: files/{solutionId}/{messageId}/{filename}
+    const tenantDir = solutionId || 'default';
     const storedDir = path.join(
       this.persistentStorageBase,
       tenantDir,
@@ -176,7 +176,7 @@ export class FilesService {
     const agentFile = this.fileRepository.create({
       messageId,
       sessionId,
-      tenantId: tenantId || null,
+      solutionId: solutionId || null,
       originalPath,
       storedPath,
       filename,
@@ -193,7 +193,7 @@ export class FilesService {
     this.eventEmitter.emit('file.created', {
       fileId: saved.id,
       sessionId: saved.sessionId,
-      tenantId: saved.tenantId,
+      solutionId: saved.solutionId,
       filename: saved.filename,
       status: saved.status,
       uploadedBy: saved.uploadedBy,
@@ -522,13 +522,13 @@ export class FilesService {
    *
    * Files are written to two locations:
    * 1. Session workspace (for agent access): workspaceDir/{targetPath}/{filename}
-   * 2. Persistent storage (for versioning): .agent-workspace/files/{tenantId}/{subDir}/{filename}
+   * 2. Persistent storage (for versioning): .agent-workspace/files/{solutionId}/{subDir}/{filename}
    *
    * @param fileBuffer - The file content
    * @param originalFilename - Original filename from upload
    * @param sessionId - Session ID
    * @param messageId - Message ID (null for pre-chat uploads)
-   * @param tenantId - Tenant ID (optional)
+   * @param solutionId - Solution ID (optional)
    * @param targetPath - Target path within workspace (optional)
    * @param workspaceDir - Session workspace directory (optional, for agent access)
    */
@@ -537,7 +537,7 @@ export class FilesService {
     originalFilename: string,
     sessionId: string,
     messageId: string | null,
-    tenantId?: string,
+    solutionId?: string,
     targetPath?: string,
     workspaceDir?: string,
   ): Promise<FileUploadResult> {
@@ -567,7 +567,7 @@ export class FilesService {
     // STEP 2: Copy to persistent storage
     // (For version history, survives session cleanup)
     // ==========================================
-    const tenantDir = tenantId || 'default';
+    const tenantDir = solutionId || 'default';
     const subDir = messageId || `session-${sessionId}`;
     const storedDir = path.join(
       this.persistentStorageBase,
@@ -592,7 +592,7 @@ export class FilesService {
     const agentFile = this.fileRepository.create({
       messageId,
       sessionId,
-      tenantId: tenantId || null,
+      solutionId: solutionId || null,
       originalPath,
       storedPath,
       filename,
@@ -611,7 +611,7 @@ export class FilesService {
     this.eventEmitter.emit('file.created', {
       fileId: saved.id,
       sessionId: saved.sessionId,
-      tenantId: saved.tenantId,
+      solutionId: saved.solutionId,
       filename: saved.filename,
       status: saved.status,
       uploadedBy: saved.uploadedBy,
@@ -717,7 +717,7 @@ export class FilesService {
     const versionDir = path.join(
       this.persistentStorageBase,
       'versions',
-      file.tenantId || 'default',
+      file.solutionId || 'default',
       fileId,
     );
     const versionedPath = path.join(versionDir, `${version}-${file.filename}`);
@@ -759,7 +759,7 @@ export class FilesService {
     this.eventEmitter.emit('file.version_created', {
       fileId: file.id,
       sessionId: file.sessionId,
-      tenantId: file.tenantId,
+      solutionId: file.solutionId,
       versionId: saved.id,
       version: saved.version,
       filename: file.filename,
@@ -863,7 +863,7 @@ export class FilesService {
       this.eventEmitter.emit('file.modified', {
         fileId: updated.id,
         sessionId: updated.sessionId,
-        tenantId: updated.tenantId,
+        solutionId: updated.solutionId,
         filename: updated.filename,
         status: updated.status,
         action: 'rollback',

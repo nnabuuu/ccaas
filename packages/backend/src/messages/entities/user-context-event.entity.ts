@@ -16,7 +16,7 @@ import {
 @Entity('user_context_events')
 @Index('IDX_user_context_events_session_created_at', ['sessionId', 'createdAt'])
 @Index('IDX_user_context_events_message_id', ['messageId'])
-@Index('IDX_user_context_events_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_user_context_events_tenant_created_at', ['solutionId', 'createdAt'])
 export class UserContextEvent {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -26,11 +26,11 @@ export class UserContextEvent {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_user_context_events_tenant_id')
-  tenantId?: string;
+  solutionId?: string;
 
   /**
    * Associated message ID (the message this context relates to)

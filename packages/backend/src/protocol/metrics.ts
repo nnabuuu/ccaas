@@ -117,7 +117,7 @@ export interface HealthSubscription {
  * Usage record for billing/analytics
  */
 export interface UsageRecord {
-  tenantId: string;
+  solutionId: string;
   skillId?: string;
   sessionId: string;
   timestamp: number;

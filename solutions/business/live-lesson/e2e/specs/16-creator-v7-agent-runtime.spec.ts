@@ -50,11 +50,11 @@ import { getCcaasApiKeyCached } from '../helpers/api-key';
 // non-trivial (sqlite read or subprocess mint). Project ids are
 // per-test for isolation.
 
-let tenantId: string;
+let solutionId: string;
 let apiKey: string;
 
 test.beforeAll(async () => {
-  tenantId = getCreatorTenantId();
+  solutionId = getCreatorTenantId();
   apiKey = getCcaasApiKeyCached();
   // Sanity ping ccaas — fail fast if backend is down.
   const ping = await fetch(`${CCAAS_URL}/api/v1/health`).catch(() => null);
@@ -88,15 +88,15 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
 
     // 2. POST first message — queues session creation via MessageWorkerService
     const sessionId = newSessionId();
-    const msg = await postFirstMessage({ sessionId, tenantId });
+    const msg = await postFirstMessage({ sessionId, solutionId });
     expect(msg.status).toBe(201);
 
-    // 3. bind — writes session_metadata(projectId → tenantId). Retries
+    // 3. bind — writes session_metadata(projectId → solutionId). Retries
     //    on 404 because the worker may not have inserted the session
     //    into the in-memory map before fetch's headers came back.
     const bind = await bindProjectAfterCreate(
       sessionId,
-      { projectId: project.id, tenantId },
+      { projectId: project.id, solutionId },
     );
     expect(bind.status).toBe(201);
     expect(bind.data).toMatchObject({ success: true, sessionId, projectId: project.id });
@@ -173,7 +173,7 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
     const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId }),
+      body: JSON.stringify({ solutionId }),
     });
     expect(res.status).toBe(400);
     const body = await res.json() as { message?: string | string[] };
@@ -184,7 +184,7 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
     expect(blob.toLowerCase()).toContain('projectid');
   });
 
-  test('bind-project DTO validation: missing tenantId returns 400', async () => {
+  test('bind-project DTO validation: missing solutionId returns 400', async () => {
     const sessionId = newSessionId();
     const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
       method: 'POST',
@@ -199,7 +199,7 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
 
   test('bind-project on unknown session returns 404', async () => {
     const ghostId = newSessionId();
-    const bind = await bindProject(ghostId, { projectId: 'irrelevant', tenantId });
+    const bind = await bindProject(ghostId, { projectId: 'irrelevant', solutionId });
     expect(bind.status).toBe(404);
   });
 

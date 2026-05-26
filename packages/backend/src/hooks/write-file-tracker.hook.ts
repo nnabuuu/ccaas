@@ -93,7 +93,7 @@ export function createWriteFileTrackerHook(deps: WriteFileTrackerDeps): ToolHook
         const agentFile = await filesService.createFromWriteTool({
           messageId,  // Use spawning message for background tasks
           sessionId: context.sessionId,
-          tenantId: session.tenantId,
+          solutionId: session.solutionId,
           originalPath: filePath,
           workspaceDir: session.workspaceDir,
         });

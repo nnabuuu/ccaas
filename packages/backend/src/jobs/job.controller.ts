@@ -39,14 +39,14 @@ export class JobController {
 
   @Get()
   async findAll(
-    @Query('tenantId') tenantId?: string,
+    @Query('solutionId') solutionId?: string,
     @Query('sessionId') sessionId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.jobService.findAll({
-      tenantId,
+      solutionId,
       sessionId,
       status,
       page: page ? parseInt(page, 10) : undefined,

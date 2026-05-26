@@ -20,7 +20,7 @@ describe('HeadlessExecutionService', () => {
 
   const mockTask: Partial<ScheduledTask> = {
     id: 'task-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     name: 'Test Task',
     message: 'Hello Claude',
     scheduleType: 'cron',
@@ -36,7 +36,7 @@ describe('HeadlessExecutionService', () => {
   const mockExecution: Partial<ScheduledTaskExecution> = {
     id: 'exec-1',
     taskId: 'task-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     sessionId: 'scheduled_task-1_abc12345',
     status: 'running',
     startedAt: new Date(),

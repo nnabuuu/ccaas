@@ -22,8 +22,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../auth/decorators';
 import { RequestContext } from '../auth/types';
 import { ApiKeyService } from '../auth/api-key.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 import { AuditService } from '../admin/services/audit.service';
 import {
   CreateApiKeyDto,
@@ -43,24 +43,24 @@ export class BuilderApiKeysController {
 
   constructor(
     private readonly apiKeyService: ApiKeyService,
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
     private readonly auditService: AuditService,
   ) {}
 
   /**
-   * POST /api/v1/builder/tenants/:tenantId/api-keys
+   * POST /api/v1/builder/solutions/:solutionId/api-keys
    *
    * Create an API key for an owned tenant (no admin/builder scope allowed).
    */
-  @Post('tenants/:tenantId/api-keys')
+  @Post('tenants/:solutionId/api-keys')
   async create(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() dto: CreateApiKeyDto,
     @Ctx() ctx: RequestContext,
   ): Promise<CreateApiKeyResponse & { warning: string }> {
     const userId = requireBuilderUserId(ctx);
-    await verifyBuilderTenantOwnership(userId, tenantId, this.tenantsService, this.userTenantService);
+    await verifyBuilderTenantOwnership(userId, solutionId, this.tenantsService, this.userTenantService);
 
     // Prevent privilege escalation
     this.validateNoPrivilegedScopes(dto.scopes);
@@ -68,14 +68,14 @@ export class BuilderApiKeysController {
     // Builder child keys must not inherit userId
     dto.userId = undefined;
 
-    const result = await this.apiKeyService.create(tenantId, dto);
+    const result = await this.apiKeyService.create(solutionId, dto);
 
     await this.auditService.log({
       adminId: ctx.apiKeyId || userId,
       action: 'apikey.create',
       targetType: 'apikey',
       targetId: result.apiKey.id,
-      tenantId,
+      solutionId,
       metadata: {
         name: dto.name,
         keyPrefix: result.apiKey.keyPrefix,
@@ -92,19 +92,19 @@ export class BuilderApiKeysController {
   }
 
   /**
-   * GET /api/v1/builder/tenants/:tenantId/api-keys
+   * GET /api/v1/builder/solutions/:solutionId/api-keys
    *
    * List API keys for an owned tenant.
    */
-  @Get('tenants/:tenantId/api-keys')
+  @Get('tenants/:solutionId/api-keys')
   async findAll(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Ctx() ctx: RequestContext,
   ): Promise<ApiKeyResponse[]> {
     const userId = requireBuilderUserId(ctx);
-    await verifyBuilderTenantOwnership(userId, tenantId, this.tenantsService, this.userTenantService);
+    await verifyBuilderTenantOwnership(userId, solutionId, this.tenantsService, this.userTenantService);
 
-    return this.apiKeyService.findByTenantId(tenantId);
+    return this.apiKeyService.findByTenantId(solutionId);
   }
 
   /**
@@ -131,7 +131,7 @@ export class BuilderApiKeysController {
       action: 'apikey.update',
       targetType: 'apikey',
       targetId: id,
-      tenantId: existing.tenantId,
+      solutionId: existing.solutionId,
       metadata: {
         builderUserId: userId,
         previousValue: { name: existing.name, scopes: existing.scopes },
@@ -170,7 +170,7 @@ export class BuilderApiKeysController {
       action: 'apikey.revoke',
       targetType: 'apikey',
       targetId: id,
-      tenantId: existing.tenantId,
+      solutionId: existing.solutionId,
       metadata: {
         keyPrefix: existing.keyPrefix,
         name: existing.name,
@@ -199,7 +199,7 @@ export class BuilderApiKeysController {
       action: 'apikey.delete',
       targetType: 'apikey',
       targetId: id,
-      tenantId: existing.tenantId,
+      solutionId: existing.solutionId,
       metadata: {
         keyPrefix: existing.keyPrefix,
         name: existing.name,
@@ -228,7 +228,7 @@ export class BuilderApiKeysController {
       throw new NotFoundException(`API key not found: ${keyId}`);
     }
 
-    await verifyBuilderTenantOwnership(userId, existing.tenantId, this.tenantsService, this.userTenantService);
+    await verifyBuilderTenantOwnership(userId, existing.solutionId, this.tenantsService, this.userTenantService);
     return existing;
   }
 

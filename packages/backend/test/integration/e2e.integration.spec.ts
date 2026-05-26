@@ -93,7 +93,7 @@ describe('E2E Integration Tests', () => {
       // Create user message
       const userMessage = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'user',
         content: 'Hello, Claude!',
       });
@@ -101,12 +101,12 @@ describe('E2E Integration Tests', () => {
       expect(userMessage).toBeDefined();
       expect(userMessage.role).toBe('user');
       expect(userMessage.content).toBe('Hello, Claude!');
-      expect(userMessage.tenantId).toBe(testTenantId);
+      expect(userMessage.solutionId).toBe(testTenantId);
 
       // Create assistant response
       const assistantMessage = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Hello! How can I help you today?',
       });
@@ -125,7 +125,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Initial content',
       });
@@ -145,31 +145,31 @@ describe('E2E Integration Tests', () => {
 
       await messagesService.create({
         sessionId: sessionId1,
-        tenantId: tenant1,
+        solutionId: tenant1,
         role: 'user',
-        content: 'Tenant 1 message',
+        content: 'Solution 1 message',
       });
 
       await messagesService.create({
         sessionId: sessionId2,
-        tenantId: tenant2,
+        solutionId: tenant2,
         role: 'user',
-        content: 'Tenant 2 message',
+        content: 'Solution 2 message',
       });
 
       // Query by tenant
       const t1Messages = await messageRepository.find({
-        where: { tenantId: tenant1 },
+        where: { solutionId: tenant1 },
       });
       const t2Messages = await messageRepository.find({
-        where: { tenantId: tenant2 },
+        where: { solutionId: tenant2 },
       });
 
       expect(t1Messages.length).toBe(1);
-      expect(t1Messages[0].content).toBe('Tenant 1 message');
+      expect(t1Messages[0].content).toBe('Solution 1 message');
 
       expect(t2Messages.length).toBe(1);
-      expect(t2Messages[0].content).toBe('Tenant 2 message');
+      expect(t2Messages[0].content).toBe('Solution 2 message');
     });
   });
 
@@ -179,7 +179,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Response content',
       });
@@ -188,7 +188,7 @@ describe('E2E Integration Tests', () => {
       const usage = await tokenUsageService.recordUsage({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -208,7 +208,7 @@ describe('E2E Integration Tests', () => {
         await tokenUsageService.recordUsage({
           messageId: `msg-${i}`,
           sessionId,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           model: 'claude-sonnet-4-20250514',
           inputTokens: 100 * (i + 1),
           outputTokens: 50 * (i + 1),
@@ -230,7 +230,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Response with thinking',
       });
@@ -239,7 +239,7 @@ describe('E2E Integration Tests', () => {
       const thinkingBlock = await thinkingBlocksService.startThinking({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         thinkingId: 'thinking_001',
         content: 'Let me analyze this problem step by step...',
       });
@@ -254,7 +254,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Response',
       });
@@ -263,7 +263,7 @@ describe('E2E Integration Tests', () => {
       await thinkingBlocksService.startThinking({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         thinkingId: 'thinking_002',
         content: 'First thought...',
       });
@@ -285,7 +285,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Response with tool use',
       });
@@ -294,7 +294,7 @@ describe('E2E Integration Tests', () => {
       const startEvent = await toolEventsService.create({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         toolUseId: 'toolu_123',
         toolName: 'Write',
         phase: 'start',
@@ -309,7 +309,7 @@ describe('E2E Integration Tests', () => {
       const endEvent = await toolEventsService.create({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         toolUseId: 'toolu_123',
         toolName: 'Write',
         phase: 'end',
@@ -330,7 +330,7 @@ describe('E2E Integration Tests', () => {
 
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Response with tool error',
       });
@@ -339,7 +339,7 @@ describe('E2E Integration Tests', () => {
       await toolEventsService.create({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         toolUseId: 'toolu_456',
         toolName: 'Bash',
         phase: 'start',
@@ -350,7 +350,7 @@ describe('E2E Integration Tests', () => {
       const endEvent = await toolEventsService.create({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         toolUseId: 'toolu_456',
         toolName: 'Bash',
         phase: 'end',
@@ -372,14 +372,14 @@ describe('E2E Integration Tests', () => {
       // Turn 1: User asks a question
       await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'user',
         content: 'What is TypeScript?',
       });
 
       const response1 = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'TypeScript is a typed superset of JavaScript...',
       });
@@ -387,7 +387,7 @@ describe('E2E Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: response1.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 500,
         outputTokens: 300,
@@ -396,14 +396,14 @@ describe('E2E Integration Tests', () => {
       // Turn 2: Follow-up question
       await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'user',
         content: 'How do I install it?',
       });
 
       const response2 = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'You can install TypeScript using npm...',
       });
@@ -411,7 +411,7 @@ describe('E2E Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: response2.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 800, // Includes previous context
         outputTokens: 200,
@@ -438,7 +438,7 @@ describe('E2E Integration Tests', () => {
       // Create session data
       const message = await messagesService.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -446,7 +446,7 @@ describe('E2E Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 100,
         outputTokens: 50,
@@ -455,7 +455,7 @@ describe('E2E Integration Tests', () => {
       await thinkingBlocksService.startThinking({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         thinkingId: 'think_cleanup',
         content: 'Thinking content',
       });
@@ -465,7 +465,7 @@ describe('E2E Integration Tests', () => {
       await toolEventsService.create({
         messageId: message.id,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         toolUseId: 'toolu_cleanup',
         toolName: 'Read',
         phase: 'end',

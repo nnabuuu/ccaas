@@ -46,20 +46,20 @@ export class SendMessageDto {
   message: string;
 
   @ApiProperty({
-    description: '租户 ID / Tenant ID',
+    description: '租户 ID / Solution ID',
     example: 'tenant-123',
     required: false,
   })
   /**
-   * tenantId is @IsOptional() here so class-validator does not reject the DTO
+   * solutionId is @IsOptional() here so class-validator does not reject the DTO
    * when the field is absent. Runtime enforcement happens inside sendMessage():
-   * if tenantId is missing, an SSE error event is emitted and the stream is
+   * if solutionId is missing, an SSE error event is emitted and the stream is
    * closed immediately — resulting in an application-level 400-equivalent
    * response rather than an HTTP 400.
    */
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @ApiProperty({
     description: '启用的技能 slug 列表 / Enabled skill slugs',

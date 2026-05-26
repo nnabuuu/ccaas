@@ -10,7 +10,7 @@ import {
 
 export class CreateScheduledTaskDto {
   @IsString()
-  tenantId: string;
+  solutionId: string;
 
   @IsString()
   name: string;

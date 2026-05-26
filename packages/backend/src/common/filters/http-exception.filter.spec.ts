@@ -78,7 +78,7 @@ describe('GlobalHttpExceptionFilter', () => {
     });
 
     it('should handle AlreadyExistsException', () => {
-      const exception = new AlreadyExistsException("Tenant with slug 'test' already exists");
+      const exception = new AlreadyExistsException("Solution with slug 'test' already exists");
 
       filter.catch(exception, mockHost);
 
@@ -86,7 +86,7 @@ describe('GlobalHttpExceptionFilter', () => {
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           code: 'ALREADY_EXISTS',
-          message: "Tenant with slug 'test' already exists",
+          message: "Solution with slug 'test' already exists",
           statusCode: 409,
           recoverable: false,
           retryable: false,

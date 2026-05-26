@@ -40,7 +40,7 @@ export class ImportSolutionDto {
    * agent-runtime sync layer — REST base URL ccaas calls back to for
    * artifact load/save (e.g. `http://localhost:3007/api`). Persisted
    * to `tenant.config.artifactUrl`; read by ProjectArtifactSourceRegistry.
-   * Mutable at runtime via `PUT /tenants/:id`.
+   * Mutable at runtime via `PUT /solutions/:id`.
    */
   @IsOptional()
   @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })

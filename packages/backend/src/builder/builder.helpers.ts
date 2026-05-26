@@ -9,9 +9,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { RequestContext } from '../auth/types';
-import type { TenantsService } from '../tenants/tenants.service';
-import type { UserTenantService } from '../users/user-tenant.service';
-import type { Tenant } from '../tenants/entities/tenant.entity';
+import type { SolutionsService } from '../solutions/solutions.service';
+import type { UserSolutionService } from '../users/user-solution.service';
+import type { Solution } from '../solutions/entities/solution.entity';
 
 /**
  * Extract userId from request context or throw 403.
@@ -27,18 +27,18 @@ export function requireBuilderUserId(ctx: RequestContext): string {
 }
 
 /**
- * Verify the builder user owns the tenant (has an active UserTenant record).
+ * Verify the builder user owns the tenant (has an active UserSolution record).
  * Returns the tenant entity.
  */
 export async function verifyBuilderTenantOwnership(
   userId: string,
-  tenantId: string,
-  tenantsService: TenantsService,
-  userTenantService: UserTenantService,
-): Promise<Tenant> {
-  const tenant = await tenantsService.findOne(tenantId);
+  solutionId: string,
+  tenantsService: SolutionsService,
+  userTenantService: UserSolutionService,
+): Promise<Solution> {
+  const tenant = await tenantsService.findOne(solutionId);
   if (!tenant) {
-    throw new NotFoundException(`Tenant not found: ${tenantId}`);
+    throw new NotFoundException(`Solution not found: ${solutionId}`);
   }
 
   const userTenant = await userTenantService.findUserInTenant(userId, tenant.id);

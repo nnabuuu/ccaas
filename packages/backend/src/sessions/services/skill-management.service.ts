@@ -128,16 +128,16 @@ SKILL.md files are the authoritative source for skill usage.
    * Filters published skills to only include those with `enabled: true`.
    * Optionally further filters by a slug allowlist (from session config).
    *
-   * @param tenantId - Tenant to load skills for
+   * @param solutionId - Solution to load skills for
    * @param enabledSkills - Optional slug allowlist; if provided, only matching slugs are returned
    * @returns Array of SkillInfo objects (slug, name, description)
    */
   async loadEnabledSkills(
-    tenantId: string,
+    solutionId: string,
     enabledSkills?: string[],
   ): Promise<SkillInfo[]> {
     // Query all published skills for tenant
-    const allSkills = await this.skillsService.findPublished(tenantId);
+    const allSkills = await this.skillsService.findPublished(solutionId);
 
     // Filter by enabled status and optional slug list
     let filteredSkills = allSkills.filter(skill => skill.enabled);
@@ -280,19 +280,19 @@ After loading, call tools directly — no further ToolSearch needed.`;
    *
    * Convenience method that loads skills and generates prompt in one call.
    *
-   * @param tenantId - Tenant UUID
+   * @param solutionId - Solution UUID
    * @param enabledSkills - Skill slugs to include
    * @returns System prompt string or undefined if no skills
    */
   async generateSystemPromptForSession(
-    tenantId: string,
+    solutionId: string,
     enabledSkills?: string[],
   ): Promise<string | undefined> {
     if (!enabledSkills || enabledSkills.length === 0) {
       return undefined;
     }
 
-    const skills = await this.loadEnabledSkills(tenantId, enabledSkills);
+    const skills = await this.loadEnabledSkills(solutionId, enabledSkills);
 
     if (skills.length === 0) {
       return undefined;

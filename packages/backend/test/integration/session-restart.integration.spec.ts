@@ -144,15 +144,15 @@ describe('Session Restart Integration Tests', () => {
 
     it('should emit skill_updated notification when skill is created', async () => {
       const receivedEvents: Array<{
-        tenantId: string;
+        solutionId: string;
         skillId: string;
         skillSlug: string;
         action: string;
       }> = [];
 
       // Register listener
-      const callback: SkillChangeCallback = (tenantId, skillId, skillSlug, action) => {
-        receivedEvents.push({ tenantId, skillId, skillSlug, action });
+      const callback: SkillChangeCallback = (solutionId, skillId, skillSlug, action) => {
+        receivedEvents.push({ solutionId, skillId, skillSlug, action });
       };
       SkillChangeNotifier.addListener(callback);
 
@@ -169,7 +169,7 @@ describe('Session Restart Integration Tests', () => {
         // Check that create event was received
         expect(receivedEvents).toHaveLength(1);
         expect(receivedEvents[0]).toMatchObject({
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           skillSlug: 'notification-test',
           action: 'created',
         });
@@ -182,7 +182,7 @@ describe('Session Restart Integration Tests', () => {
         // Check that update event was received
         expect(receivedEvents).toHaveLength(2);
         expect(receivedEvents[1]).toMatchObject({
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           skillSlug: 'notification-test',
           action: 'updated',
         });
@@ -193,7 +193,7 @@ describe('Session Restart Integration Tests', () => {
         // Check that publish event was received
         expect(receivedEvents).toHaveLength(3);
         expect(receivedEvents[2]).toMatchObject({
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           skillSlug: 'notification-test',
           action: 'published',
         });
@@ -204,7 +204,7 @@ describe('Session Restart Integration Tests', () => {
         // Check that archive event was received
         expect(receivedEvents).toHaveLength(4);
         expect(receivedEvents[3]).toMatchObject({
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           skillSlug: 'notification-test',
           action: 'archived',
         });
@@ -218,14 +218,14 @@ describe('Session Restart Integration Tests', () => {
       const tenant1Events: string[] = [];
       const tenant2Events: string[] = [];
 
-      const callback1: SkillChangeCallback = (tenantId, skillId, skillSlug, action) => {
-        if (tenantId === 'tenant-1') {
+      const callback1: SkillChangeCallback = (solutionId, skillId, skillSlug, action) => {
+        if (solutionId === 'tenant-1') {
           tenant1Events.push(`${skillSlug}:${action}`);
         }
       };
 
-      const callback2: SkillChangeCallback = (tenantId, skillId, skillSlug, action) => {
-        if (tenantId === 'tenant-2') {
+      const callback2: SkillChangeCallback = (solutionId, skillId, skillSlug, action) => {
+        if (solutionId === 'tenant-2') {
           tenant2Events.push(`${skillSlug}:${action}`);
         }
       };
@@ -253,7 +253,7 @@ describe('Session Restart Integration Tests', () => {
       // Simulate session state
       interface MockSession {
         sessionId: string;
-        tenantId: string;
+        solutionId: string;
         needsRestart: boolean;
         status: string;
         messageCount: number;
@@ -264,7 +264,7 @@ describe('Session Restart Integration Tests', () => {
       // Create mock sessions
       sessions.set('session-1', {
         sessionId: 'session-1',
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         needsRestart: false,
         status: 'processing',
         messageCount: 5,
@@ -272,7 +272,7 @@ describe('Session Restart Integration Tests', () => {
 
       sessions.set('session-2', {
         sessionId: 'session-2',
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         needsRestart: false,
         status: 'idle',
         messageCount: 3,
@@ -280,7 +280,7 @@ describe('Session Restart Integration Tests', () => {
 
       sessions.set('session-3', {
         sessionId: 'session-3',
-        tenantId: 'other-tenant',
+        solutionId: 'other-tenant',
         needsRestart: false,
         status: 'idle',
         messageCount: 1,
@@ -289,7 +289,7 @@ describe('Session Restart Integration Tests', () => {
       // Simulate markSessionsForRestart
       const affectedIds: string[] = [];
       for (const session of sessions.values()) {
-        if (session.tenantId === testTenantId) {
+        if (session.solutionId === testTenantId) {
           session.needsRestart = true;
           affectedIds.push(session.sessionId);
         }

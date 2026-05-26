@@ -16,7 +16,7 @@ describe('McpPoolService', () => {
   let service: McpPoolService;
   let mcpServerRepo: Record<string, jest.Mock>;
 
-  const tenantId = 'tenant-1';
+  const solutionId = 'tenant-1';
 
   beforeEach(async () => {
     mcpServerRepo = {
@@ -58,10 +58,10 @@ describe('McpPoolService', () => {
     it('should create an MCP server successfully when slug is unique', async () => {
       mcpServerRepo.findOne.mockResolvedValue(null);
 
-      const result = await service.create(tenantId, createDto);
+      const result = await service.create(solutionId, createDto);
 
       expect(mcpServerRepo.findOne).toHaveBeenCalledWith({
-        where: { tenantId, slug: 'my-mcp-server' },
+        where: { solutionId, slug: 'my-mcp-server' },
       });
       expect(mcpServerRepo.create).toHaveBeenCalled();
       expect(mcpServerRepo.save).toHaveBeenCalled();
@@ -71,12 +71,12 @@ describe('McpPoolService', () => {
     it('should throw AlreadyExistsException when slug already exists', async () => {
       mcpServerRepo.findOne.mockResolvedValue({
         id: 'existing-id',
-        tenantId,
+        solutionId,
         slug: 'my-mcp-server',
         name: 'Existing Server',
       });
 
-      await expect(service.create(tenantId, createDto)).rejects.toThrow(AlreadyExistsException);
+      await expect(service.create(solutionId, createDto)).rejects.toThrow(AlreadyExistsException);
 
       expect(mcpServerRepo.create).not.toHaveBeenCalled();
       expect(mcpServerRepo.save).not.toHaveBeenCalled();
@@ -85,25 +85,25 @@ describe('McpPoolService', () => {
     it('should include slug in AlreadyExistsException message', async () => {
       mcpServerRepo.findOne.mockResolvedValue({
         id: 'existing-id',
-        tenantId,
+        solutionId,
         slug: 'my-mcp-server',
         name: 'Existing Server',
       });
 
-      await expect(service.create(tenantId, createDto)).rejects.toThrow(/my-mcp-server/);
+      await expect(service.create(solutionId, createDto)).rejects.toThrow(/my-mcp-server/);
     });
 
     it('should generate slug from name when slug is not provided', async () => {
       mcpServerRepo.findOne.mockResolvedValue(null);
 
-      await service.create(tenantId, {
+      await service.create(solutionId, {
         name: 'Weather API',
         type: 'custom' as const,
         config: {},
       });
 
       expect(mcpServerRepo.findOne).toHaveBeenCalledWith({
-        where: { tenantId, slug: 'weather-api' },
+        where: { solutionId, slug: 'weather-api' },
       });
     });
   });

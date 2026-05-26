@@ -16,7 +16,7 @@ import * as path from 'path';
 import { SessionService, ResolvedAttachment } from '../session.service';
 import { EventMapperService } from '../event-mapper.service';
 import { SkillSyncService } from '../../skills/skill-sync.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { MessagesService } from '../../messages/messages.service';
 import { ConversationContextService } from '../../messages/conversation-context.service';
 import { UserContextService } from '../../messages/user-context.service';
@@ -48,8 +48,8 @@ export interface MessageProcessingInput {
   /** Client identifier */
   clientId: string;
 
-  /** Tenant identifier (slug or UUID) */
-  tenantId: string;
+  /** Solution identifier (slug or UUID) */
+  solutionId: string;
 
   /** User message content */
   message: string;
@@ -106,7 +106,7 @@ export class CompletionOrchestrationService {
   constructor(
     private readonly sessionService: SessionService,
     private readonly skillSyncService: SkillSyncService,
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly messagesService: MessagesService,
     private readonly conversationContextService: ConversationContextService,
     private readonly userContextService: UserContextService,
@@ -140,7 +140,7 @@ export class CompletionOrchestrationService {
     const {
       session,
       clientId,
-      tenantId,
+      solutionId,
       message,
       context,
       attachments,
@@ -160,22 +160,22 @@ export class CompletionOrchestrationService {
     this.logger.log(`Orchestrating message for session ${sessionId}`);
 
     // Step 1: Resolve tenant slug/id to actual tenant UUID
-    let resolvedTenantId = tenantId;
+    let resolvedTenantId = solutionId;
     let resolvedTenant: Awaited<ReturnType<typeof this.tenantsService.findOne>> = null;
     try {
-      resolvedTenant = await this.tenantsService.findOne(tenantId);
+      resolvedTenant = await this.tenantsService.findOne(solutionId);
       if (resolvedTenant) {
         resolvedTenantId = resolvedTenant.id;
-        this.logger.debug(`Resolved tenant ${tenantId} to UUID ${resolvedTenantId}`);
+        this.logger.debug(`Resolved tenant ${solutionId} to UUID ${resolvedTenantId}`);
       } else {
-        this.logger.warn(`Tenant not found: ${tenantId}, using as-is`);
+        this.logger.warn(`Solution not found: ${solutionId}, using as-is`);
       }
     } catch (error) {
       this.logger.warn(`Failed to resolve tenant: ${error}`);
     }
 
     // Store tenant context on session (use original for display, resolved for queries)
-    session.tenantId = resolvedTenantId;
+    session.solutionId = resolvedTenantId;
     if (resolvedTenant) {
       session.sessionTtlMs = resolvedTenant.sessionTtlMs;
     }
@@ -202,7 +202,7 @@ export class CompletionOrchestrationService {
         `hasConfig=${!!resolvedTenant?.config}`,
       );
 
-      // Tenant config is a JSON column — use explicit any cast for template fields
+      // Solution config is a JSON column — use explicit any cast for template fields
       const tmpl = resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined;
       if (tmpl) {
         this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
@@ -417,7 +417,7 @@ export class CompletionOrchestrationService {
         this.logger.debug(`Tracked ${syncResult.skillIds.length} synced skills for session ${sessionId}`);
       }
 
-      this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
+      this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${solutionId} (${resolvedTenantId})`);
     } catch (error) {
       this.logger.warn(`Failed to sync skills: ${error}`);
       // Continue without skills - non-fatal
@@ -557,14 +557,14 @@ export class CompletionOrchestrationService {
     // Step 6: Create message records for persistence
     const userMessage = await this.messagesService.create({
       sessionId,
-      tenantId: resolvedTenantId,
+      solutionId: resolvedTenantId,
       role: 'user',
       content: message,
     });
 
     const assistantMessage = await this.messagesService.create({
       sessionId,
-      tenantId: resolvedTenantId,
+      solutionId: resolvedTenantId,
       role: 'assistant',
       content: '', // Will be accumulated as response streams in
     });
@@ -637,7 +637,7 @@ export class CompletionOrchestrationService {
       try {
         await this.conversationContextService.createOrUpdate({
           sessionId,
-          tenantId: resolvedTenantId,
+          solutionId: resolvedTenantId,
           workspaceDir: session.workspaceDir,
           clientId,
         });

@@ -26,7 +26,7 @@ import {
  */
 export interface AuthenticatedRequest extends Request {
   context: RequestContext;
-  tenantId: string;
+  solutionId: string;
 }
 
 @Injectable()
@@ -64,7 +64,7 @@ export class ApiKeyGuard implements CanActivate {
 
       // Attach context to request
       request.context = requestContext;
-      request.tenantId = requestContext.tenantId;
+      request.solutionId = requestContext.solutionId;
       request.tenant = requestContext.tenant;
 
       return true;
@@ -128,7 +128,7 @@ export class ApiKeyGuard implements CanActivate {
     try {
       const requestContext = await this.apiKeyService.createContext();
       request.context = requestContext;
-      request.tenantId = requestContext.tenantId;
+      request.solutionId = requestContext.solutionId;
       request.tenant = requestContext.tenant;
       return true;
     } catch {

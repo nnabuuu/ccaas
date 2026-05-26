@@ -99,7 +99,7 @@ export class WorkspaceAccessGuard implements CanActivate {
     );
     if (!ok) {
       throw new ForbiddenException(
-        `Tenant does not own workspace ${identity}`,
+        `Solution does not own workspace ${identity}`,
       );
     }
     return true;

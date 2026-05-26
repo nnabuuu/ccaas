@@ -1,5 +1,5 @@
 /**
- * Create Tenant User DTO
+ * Create Solution User DTO
  *
  * Input for creating a user within a specific tenant.
  */
@@ -19,7 +19,7 @@ export class CreateTenantUserDto {
 
   @IsUUID()
   @IsNotEmpty()
-  tenantId: string;
+  solutionId: string;
 
   @IsEnum(['admin', 'developer', 'viewer'])
   @IsOptional()

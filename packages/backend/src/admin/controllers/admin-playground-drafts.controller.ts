@@ -4,7 +4,7 @@
  * CRUD endpoints for /admin/playground-drafts (§17 — exercise plugin preview).
  * Replaces the v1 localStorage persistence with a real per-user store.
  *
- * ## Tenant / scope model
+ * ## Solution / scope model
  *
  * - Drafts are owned by a single principal. `ownerId(ctx)` resolves to
  *   `ctx.userId` first, then `ctx.apiKeyId` — never falls back to a shared
@@ -15,10 +15,10 @@
  *
  * - Drafts are *not* tenant-scoped today. A user who belongs to multiple
  *   tenants sees the same draft set everywhere they sign in. If we later
- *   need per-tenant drafts, add a `tenantId` column + composite unique
- *   constraint and key on `(userId, tenantId, bundleId, storyName)`.
+ *   need per-tenant drafts, add a `solutionId` column + composite unique
+ *   constraint and key on `(userId, solutionId, bundleId, storyName)`.
  *
- * - The controller is guarded by AdminTenantAccessGuard so a caller can
+ * - The controller is guarded by AdminSolutionAccessGuard so a caller can
  *   only invoke these endpoints from a tenant they belong to, but the
  *   draft rows themselves are not partitioned by tenant.
  */
@@ -40,7 +40,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { PlaygroundDraft } from '../entities/playground-draft.entity';
 
@@ -52,7 +52,7 @@ interface UpsertBody {
 @ApiTags('admin')
 @Controller('api/v1/admin/playground-drafts')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminPlaygroundDraftsController {
   constructor(
     @InjectRepository(PlaygroundDraft)

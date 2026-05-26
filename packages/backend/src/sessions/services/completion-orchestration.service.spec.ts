@@ -9,7 +9,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CompletionOrchestrationService } from './completion-orchestration.service';
 import { SessionService } from '../session.service';
 import { SkillSyncService } from '../../skills/skill-sync.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { MessagesService } from '../../messages/messages.service';
 import { ConversationContextService } from '../../messages/conversation-context.service';
 import { UserContextService } from '../../messages/user-context.service';
@@ -37,7 +37,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
 
   const baseInput = {
     clientId: 'client-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     message: 'Hello',
     emitEvent: jest.fn(),
   };
@@ -116,7 +116,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         CompletionOrchestrationService,
         { provide: SessionService, useValue: mockSessionService },
         { provide: SkillSyncService, useValue: mockSkillSyncService },
-        { provide: TenantsService, useValue: mockTenantsService },
+        { provide: SolutionsService, useValue: mockTenantsService },
         { provide: MessagesService, useValue: mockMessagesService },
         { provide: ConversationContextService, useValue: mockConversationContextService },
         { provide: UserContextService, useValue: mockUserContextService },
@@ -312,7 +312,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       expect(eventTypes).toContain('agent_status');
     });
 
-    it('should pass correct sessionId and tenantId to recordEvent', async () => {
+    it('should pass correct sessionId and solutionId to recordEvent', async () => {
       await service.orchestrateMessage({
         ...baseInput,
         session: makeSession(0),
@@ -320,7 +320,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
 
       expect(mockSessionEventsService.recordEvent).toHaveBeenCalledWith(
         'test-session-id',           // sessionId
-        'tenant-uuid-1',             // resolved tenantId
+        'tenant-uuid-1',             // resolved solutionId
         expect.objectContaining({ type: 'agent_status' }),
       );
     });
@@ -360,7 +360,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           CompletionOrchestrationService,
           { provide: SessionService, useValue: mockSessService },
           { provide: SkillSyncService, useValue: { syncToSession: jest.fn().mockResolvedValue({ skillCount: 0, skillIds: [] }) } },
-          { provide: TenantsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
+          { provide: SolutionsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
           { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
           { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn().mockResolvedValue(undefined) } },
           { provide: UserContextService, useValue: { recordContext: jest.fn().mockResolvedValue(undefined) } },
@@ -534,7 +534,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           CompletionOrchestrationService,
           { provide: SessionService, useValue: mockSessService },
           { provide: SkillSyncService, useValue: { syncToSession: jest.fn().mockResolvedValue({ skillCount: 0, skillIds: [] }) } },
-          { provide: TenantsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
+          { provide: SolutionsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
           { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
           { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn().mockResolvedValue(undefined) } },
           { provide: UserContextService, useValue: { recordContext: jest.fn().mockResolvedValue(undefined) } },
@@ -758,7 +758,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
             },
           },
           { provide: SkillSyncService, useValue: mockSkillSyncService },
-          { provide: TenantsService, useValue: mockTenantsService },
+          { provide: SolutionsService, useValue: mockTenantsService },
           { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
           { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn() } },
           { provide: UserContextService, useValue: { recordContext: jest.fn() } },

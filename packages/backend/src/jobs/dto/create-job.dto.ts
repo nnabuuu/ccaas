@@ -10,7 +10,7 @@ import {
 
 export class CreateJobDto {
   @IsString()
-  tenantId: string;
+  solutionId: string;
 
   @IsString()
   type: string;

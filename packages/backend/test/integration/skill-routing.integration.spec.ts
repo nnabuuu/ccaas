@@ -235,14 +235,14 @@ describe('Skill Routing Integration Tests', () => {
     });
   });
 
-  describe('Multi-Tenant Skill Isolation', () => {
+  describe('Multi-Solution Skill Isolation', () => {
     it('should only match skills from correct tenant', async () => {
       const tenant1 = 'tenant-1';
       const tenant2 = 'tenant-2';
 
       // Create skills for different tenants and publish them
       await skillsService.create(tenant1, {
-        name: 'Tenant 1 Skill',
+        name: 'Solution 1 Skill',
         slug: 'tenant1-skill',
         type: 'skill',
         content: 'Skill for tenant 1',
@@ -251,7 +251,7 @@ describe('Skill Routing Integration Tests', () => {
       await skillsService.publish(tenant1, 'tenant1-skill');
 
       await skillsService.create(tenant2, {
-        name: 'Tenant 2 Skill',
+        name: 'Solution 2 Skill',
         slug: 'tenant2-skill',
         type: 'skill',
         content: 'Skill for tenant 2',

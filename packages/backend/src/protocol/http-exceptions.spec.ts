@@ -112,10 +112,10 @@ describe('http-exceptions', () => {
 
     it('should create already exists error with custom message', () => {
       const exception = new AlreadyExistsException(
-        "Tenant with slug 'my-tenant' already exists",
+        "Solution with slug 'my-tenant' already exists",
       );
 
-      expect(exception.message).toBe("Tenant with slug 'my-tenant' already exists");
+      expect(exception.message).toBe("Solution with slug 'my-tenant' already exists");
     });
   });
 

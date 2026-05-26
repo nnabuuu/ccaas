@@ -10,14 +10,14 @@ import {
 export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 @Entity('jobs')
-@Index('IDX_jobs_tenant_status', ['tenantId', 'status'])
+@Index('IDX_jobs_tenant_status', ['solutionId', 'status'])
 @Index('IDX_jobs_session', ['sessionId'])
 export class JobEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  tenantId: string;
+  solutionId: string;
 
   @Column({ nullable: true })
   sessionId?: string;

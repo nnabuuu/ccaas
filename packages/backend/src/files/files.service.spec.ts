@@ -34,7 +34,7 @@ describe('FilesService', () => {
     id: 'file-uuid-1',
     messageId: 'msg-uuid-1',
     sessionId: 'session-uuid-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     originalPath: 'reports/summary.md',
     storedPath: '/storage/tenant-1/msg-uuid-1/summary.md',
     filename: 'summary.md',
@@ -98,7 +98,7 @@ describe('FilesService', () => {
     const baseDto = {
       messageId: 'msg-uuid-1',
       sessionId: 'session-uuid-1',
-      tenantId: 'tenant-1',
+      solutionId: 'tenant-1',
       originalPath: 'docs/test.md',
       workspaceDir: '/tmp/workspace',
     };
@@ -135,7 +135,7 @@ describe('FilesService', () => {
           expect.objectContaining({
             messageId: 'msg-uuid-1',
             sessionId: 'session-uuid-1',
-            tenantId: 'tenant-1',
+            solutionId: 'tenant-1',
             originalPath: 'docs/test.md',
             filename: 'test.md',
           }),
@@ -285,32 +285,32 @@ describe('FilesService', () => {
       });
     });
 
-    describe('tenantId handling', () => {
-      it('should use provided tenantId', async () => {
-        const file = mockFile({ tenantId: 'custom-tenant' });
+    describe('solutionId handling', () => {
+      it('should use provided solutionId', async () => {
+        const file = mockFile({ solutionId: 'custom-tenant' });
         repository.create.mockReturnValue(file);
         repository.save.mockResolvedValue(file);
 
         await service.createFromWriteTool({
           ...baseDto,
-          tenantId: 'custom-tenant',
+          solutionId: 'custom-tenant',
         });
 
         expect(repository.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: 'custom-tenant',
+            solutionId: 'custom-tenant',
           }),
         );
       });
 
-      it('should use default tenant directory when tenantId not provided', async () => {
-        const file = mockFile({ tenantId: null });
+      it('should use default tenant directory when solutionId not provided', async () => {
+        const file = mockFile({ solutionId: null });
         repository.create.mockReturnValue(file);
         repository.save.mockResolvedValue(file);
 
         await service.createFromWriteTool({
           ...baseDto,
-          tenantId: undefined,
+          solutionId: undefined,
         });
 
         expect(mockFs.mkdir).toHaveBeenCalledWith(
@@ -319,19 +319,19 @@ describe('FilesService', () => {
         );
       });
 
-      it('should set tenantId to null in record when not provided', async () => {
-        const file = mockFile({ tenantId: null });
+      it('should set solutionId to null in record when not provided', async () => {
+        const file = mockFile({ solutionId: null });
         repository.create.mockReturnValue(file);
         repository.save.mockResolvedValue(file);
 
         await service.createFromWriteTool({
           ...baseDto,
-          tenantId: undefined,
+          solutionId: undefined,
         });
 
         expect(repository.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: null,
+            solutionId: null,
           }),
         );
       });
@@ -691,7 +691,7 @@ describe('FilesService', () => {
 
     it('should use default tenant when not provided', async () => {
       const buffer = Buffer.from('content');
-      repository.create.mockReturnValue(mockFile({ tenantId: null }));
+      repository.create.mockReturnValue(mockFile({ solutionId: null }));
       repository.save.mockResolvedValue(mockFile());
 
       await service.uploadFile(buffer, 'test.txt', 'session-1', 'msg-1');

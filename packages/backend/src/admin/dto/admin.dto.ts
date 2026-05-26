@@ -30,7 +30,7 @@ export interface DashboardSummary {
 
 export interface RecentSession {
   sessionId: string;
-  tenantId: string | null;
+  solutionId: string | null;
   status: string;
   messageCount: number;
   createdAt: Date;
@@ -44,7 +44,7 @@ export interface RecentSession {
 export class SessionQueryDto {
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsString()
@@ -97,7 +97,7 @@ export class SessionQueryDto {
 
 export interface SessionListItem {
   sessionId: string;
-  tenantId: string | null;
+  solutionId: string | null;
   clientId: string;
   status: string;
   messageCount: number;
@@ -161,7 +161,7 @@ export interface SessionTimeline {
 export class AnalyticsQueryDto {
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsEnum(['hourly', 'daily', 'weekly', 'monthly'])
@@ -204,7 +204,7 @@ export interface TokenUsageAnalytics {
 }
 
 export interface CostBreakdown {
-  tenantId: string;
+  solutionId: string;
   tenantName: string;
   inputTokens: number;
   outputTokens: number;
@@ -235,7 +235,7 @@ export interface ApiKeyUsageStats {
   apiKeyId: string;
   keyPrefix: string;
   name: string;
-  tenantId: string;
+  solutionId: string;
   requestCount: number;
   lastUsedAt: Date | null;
   rateLimitHits: number;
@@ -281,7 +281,7 @@ export class AuditLogQueryDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @IsOptional()
   @IsBoolean()

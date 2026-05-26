@@ -23,7 +23,7 @@ export interface MessageMetadata {
 
 @Entity('messages')
 @Index('IDX_messages_session_index', ['sessionId', 'messageIndex'])
-@Index('IDX_messages_tenant_created_at', ['tenantId', 'createdAt'])
+@Index('IDX_messages_tenant_created_at', ['solutionId', 'createdAt'])
 export class Message {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -34,7 +34,7 @@ export class Message {
 
   @Column({ type: 'varchar', nullable: true })
   @Index('IDX_messages_tenant_id')
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   @Column({ type: 'varchar', length: 20 })
   role!: MessageRole;

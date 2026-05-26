@@ -42,7 +42,7 @@ describe('TypeOrmSkillContentSource', () => {
       const { svc } = await build({
         skills: [
           {
-            id: 's-1', tenantId: 't-1', slug: 'hello',
+            id: 's-1', solutionId: 't-1', slug: 'hello',
             name: 'Hello', description: 'a skill', content: '# H\n',
             files: [
               { relativePath: 'tools/x.md', content: 'xx' },
@@ -53,6 +53,11 @@ describe('TypeOrmSkillContentSource', () => {
       });
       const out = await svc.listActiveSkills();
       expect(out).toEqual([{
+        // Port-boundary translation: ccaas-core stores solutionId, but
+        // the agent-runtime SkillContent port uses `tenantId` as its
+        // field name (the npm package wasn't touched by α). The
+        // TypeOrm content source maps internal solutionId → port
+        // tenantId; this assertion pins that contract.
         id: 's-1', tenantId: 't-1', slug: 'hello',
         name: 'Hello', description: 'a skill', content: '# H\n',
         files: [
@@ -65,7 +70,7 @@ describe('TypeOrmSkillContentSource', () => {
     it('normalizes description: null → undefined', async () => {
       const { svc } = await build({
         skills: [{
-          id: 's-1', tenantId: 't-1', slug: 'h', name: '', description: null,
+          id: 's-1', solutionId: 't-1', slug: 'h', name: '', description: null,
           content: '', files: [],
         }],
       });
@@ -76,7 +81,7 @@ describe('TypeOrmSkillContentSource', () => {
     it('treats undefined files as empty array (defensive)', async () => {
       const { svc } = await build({
         skills: [{
-          id: 's-1', tenantId: 't-1', slug: 'h', name: '', description: null,
+          id: 's-1', solutionId: 't-1', slug: 'h', name: '', description: null,
           content: '',
           // no files property at all (e.g. relation not loaded)
         }],
@@ -99,13 +104,14 @@ describe('TypeOrmSkillContentSource', () => {
     it('maps McpServer rows to McpServerContent VOs', async () => {
       const { svc } = await build({
         mcps: [{
-          id: 'm-1', tenantId: 't-1', slug: 'srv',
+          id: 'm-1', solutionId: 't-1', slug: 'srv',
           name: 'My', type: 'stdio',
           config: { command: 'node', args: ['x.js'] },
         }],
       });
       const out = await svc.listActiveMcpServers();
       expect(out).toEqual([{
+        // Same port-boundary translation as listActiveSkills above.
         tenantId: 't-1', slug: 'srv',
         name: 'My', type: 'stdio',
         config: { command: 'node', args: ['x.js'] },
@@ -115,7 +121,7 @@ describe('TypeOrmSkillContentSource', () => {
     it('parses legacy JSON-stringified config', async () => {
       const { svc } = await build({
         mcps: [{
-          tenantId: 't', slug: 's', name: '', type: 'stdio',
+          solutionId: 't', slug: 's', name: '', type: 'stdio',
           config: '{"command":"node","args":["x.js"]}',
         }],
       });

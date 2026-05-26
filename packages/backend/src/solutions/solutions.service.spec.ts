@@ -1,5 +1,5 @@
 /**
- * Tenants Service Tests
+ * Solutions Service Tests
  *
  * Unit tests for tenant management business logic including auto-create API key feature.
  */
@@ -10,15 +10,15 @@ import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { ConfigService } from '@nestjs/config';
-import { TenantsService } from './tenants.service';
-import { Tenant, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/tenant.entity';
+import { SolutionsService } from './solutions.service';
+import { Solution, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/solution.entity';
 import { ApiKeyService } from '../auth/api-key.service';
 import { QuotaService } from '../admin/quota.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
-describe('TenantsService', () => {
-  let service: TenantsService;
-  let tenantRepository: jest.Mocked<Repository<Tenant>>;
+describe('SolutionsService', () => {
+  let service: SolutionsService;
+  let tenantRepository: jest.Mocked<Repository<Solution>>;
   let apiKeyService: jest.Mocked<ApiKeyService>;
   let configService: jest.Mocked<ConfigService>;
 
@@ -46,9 +46,9 @@ describe('TenantsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TenantsService,
+        SolutionsService,
         {
-          provide: getRepositoryToken(Tenant),
+          provide: getRepositoryToken(Solution),
           useValue: mockRepository,
         },
         {
@@ -70,8 +70,8 @@ describe('TenantsService', () => {
       ],
     }).compile();
 
-    service = module.get<TenantsService>(TenantsService);
-    tenantRepository = module.get(getRepositoryToken(Tenant));
+    service = module.get<SolutionsService>(SolutionsService);
+    tenantRepository = module.get(getRepositoryToken(Solution));
     apiKeyService = module.get(ApiKeyService) as jest.Mocked<ApiKeyService>;
     configService = module.get(ConfigService) as jest.Mocked<ConfigService>;
   });
@@ -79,13 +79,13 @@ describe('TenantsService', () => {
   describe('create - without auto-create API key', () => {
     it('should create tenant without API key by default', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
       };
 
       const mockTenant = {
         id: 'tenant-123',
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         status: 'active',
         createdAt: new Date(),
@@ -112,14 +112,14 @@ describe('TenantsService', () => {
 
     it('should create tenant without API key when autoCreateApiKey is false', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         autoCreateApiKey: false,
       };
 
       const mockTenant = {
         id: 'tenant-123',
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         status: 'active',
         createdAt: new Date(),
@@ -144,14 +144,14 @@ describe('TenantsService', () => {
   describe('create - with auto-create API key', () => {
     it('should create tenant with API key when autoCreateApiKey is true', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         autoCreateApiKey: true,
       };
 
       const mockTenant = {
         id: 'tenant-123',
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'test-tenant',
         status: 'active',
         createdAt: new Date(),
@@ -164,7 +164,7 @@ describe('TenantsService', () => {
       const mockApiKeyResponse = {
         apiKey: {
           id: 'key-456',
-          name: 'Default API Key for Test Tenant',
+          name: 'Default API Key for Test Solution',
           keyPrefix: 'sk-testtena-abc',
           scopes: ['skills:read', 'skills:execute', 'chat'],
           rateLimitRpm: 60,
@@ -188,7 +188,7 @@ describe('TenantsService', () => {
 
       expect(result.apiKey).toBeDefined();
       expect(result.apiKey?.id).toBe('key-456');
-      expect(result.apiKey?.name).toBe('Default API Key for Test Tenant');
+      expect(result.apiKey?.name).toBe('Default API Key for Test Solution');
       expect(result.apiKey?.keyPrefix).toBe('sk-testtena-abc');
       expect(result.apiKey?.scopes).toEqual(['skills:read', 'skills:execute', 'chat']);
 
@@ -196,7 +196,7 @@ describe('TenantsService', () => {
       expect(result.warning).toContain('only time');
 
       expect(apiKeyService.create).toHaveBeenCalledWith('tenant-123', {
-        name: 'Default API Key for Test Tenant',
+        name: 'Default API Key for Test Solution',
         scopes: ['skills:read', 'skills:execute', 'chat'],
       });
     });
@@ -283,7 +283,7 @@ describe('TenantsService', () => {
 
     it('should throw AlreadyExistsException if slug already exists', async () => {
       const dto = {
-        name: 'Test Tenant',
+        name: 'Test Solution',
         slug: 'existing-slug',
       };
 
@@ -295,15 +295,15 @@ describe('TenantsService', () => {
       tenantRepository.findOne.mockResolvedValue(existingTenant as any);
 
       await expect(service.create(dto)).rejects.toThrow(AlreadyExistsException);
-      await expect(service.create(dto)).rejects.toThrow("Tenant with slug 'existing-slug' already exists");
+      await expect(service.create(dto)).rejects.toThrow("Solution with slug 'existing-slug' already exists");
     });
   });
 
   describe('findAll', () => {
     it('should return all active tenants', async () => {
       const mockTenants = [
-        { id: 'tenant-1', name: 'Tenant 1', status: 'active' },
-        { id: 'tenant-2', name: 'Tenant 2', status: 'active' },
+        { id: 'tenant-1', name: 'Solution 1', status: 'active' },
+        { id: 'tenant-2', name: 'Solution 2', status: 'active' },
       ];
 
       tenantRepository.find.mockResolvedValue(mockTenants as any);
@@ -358,10 +358,10 @@ describe('TenantsService', () => {
 
   describe('plan-tier TTL', () => {
     it('create() defaults sessionTtlMs to plan default (free→300000)', async () => {
-      const dto = { name: 'Free Tenant', slug: 'free-tenant' };
+      const dto = { name: 'Free Solution', slug: 'free-tenant' };
       const mockTenant = {
         id: 'tenant-free',
-        name: 'Free Tenant',
+        name: 'Free Solution',
         slug: 'free-tenant',
         status: 'active',
         createdAt: new Date(),
@@ -384,10 +384,10 @@ describe('TenantsService', () => {
     });
 
     it('create() defaults sessionTtlMs to plan default (starter→1800000)', async () => {
-      const dto = { name: 'Starter Tenant', slug: 'starter-tenant', plan: 'starter' as const };
+      const dto = { name: 'Starter Solution', slug: 'starter-tenant', plan: 'starter' as const };
       const mockTenant = {
         id: 'tenant-starter',
-        name: 'Starter Tenant',
+        name: 'Starter Solution',
         slug: 'starter-tenant',
         status: 'active',
         createdAt: new Date(),
@@ -409,10 +409,10 @@ describe('TenantsService', () => {
     });
 
     it('create() caps sessionTtlMs at plan max (free tenant cannot get 1800000)', async () => {
-      const dto = { name: 'Free Tenant', slug: 'free-capped', sessionTtlMs: 1800000 };
+      const dto = { name: 'Free Solution', slug: 'free-capped', sessionTtlMs: 1800000 };
       const mockTenant = {
         id: 'tenant-free-capped',
-        name: 'Free Tenant',
+        name: 'Free Solution',
         slug: 'free-capped',
         status: 'active',
         createdAt: new Date(),
@@ -436,7 +436,7 @@ describe('TenantsService', () => {
     it('update() re-caps sessionTtlMs when plan changes', async () => {
       const mockTenant = {
         id: 'tenant-upd',
-        name: 'Tenant',
+        name: 'Solution',
         slug: 'tenant-upd',
         status: 'active',
         config: {},
@@ -499,14 +499,14 @@ describe('TenantsService', () => {
       tenantRepository.findOne.mockResolvedValue(null);
 
       await expect(service.update('nonexistent', { name: 'New' })).rejects.toThrow(NotFoundException);
-      await expect(service.update('nonexistent', { name: 'New' })).rejects.toThrow('Tenant not found: nonexistent');
+      await expect(service.update('nonexistent', { name: 'New' })).rejects.toThrow('Solution not found: nonexistent');
     });
   });
 
   describe('syncSessionTemplates', () => {
     const baseTenant = {
       id: 'tenant-123',
-      name: 'Test Tenant',
+      name: 'Test Solution',
       slug: 'test-tenant',
       status: 'active',
       plan: 'free' as const,

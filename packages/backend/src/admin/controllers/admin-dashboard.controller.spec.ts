@@ -11,12 +11,12 @@ import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
 import { SkillsService } from '../../skills/skills.service';
 import { ApiKeyService } from '../../auth/api-key.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 import type { RequestContext } from '../../auth/types';
 
 describe('AdminDashboardController', () => {
   const adminCtx = {
-    tenantId: 'admin-tenant',
+    solutionId: 'admin-tenant',
     apiKeyScopes: ['admin'],
     requestId: 'req-1',
     timestamp: new Date(),
@@ -75,7 +75,7 @@ describe('AdminDashboardController', () => {
           },
         },
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: {
             findUserInTenant: jest.fn(),
           },
@@ -92,7 +92,7 @@ describe('AdminDashboardController', () => {
   });
 
   describe('getSummary', () => {
-    it('should call analytics services without tenantId when not provided', async () => {
+    it('should call analytics services without solutionId when not provided', async () => {
       await controller.getSummary(undefined, adminCtx);
 
       expect(sessionService.getStats).toHaveBeenCalledWith(undefined);
@@ -101,18 +101,18 @@ describe('AdminDashboardController', () => {
       expect(sessionManagerService.getErrorRate24h).toHaveBeenCalledWith(undefined);
     });
 
-    it('should pass tenantId to analytics services when provided', async () => {
-      const tenantId = 'tenant-123';
-      await controller.getSummary(tenantId, adminCtx);
+    it('should pass solutionId to analytics services when provided', async () => {
+      const solutionId = 'tenant-123';
+      await controller.getSummary(solutionId, adminCtx);
 
-      expect(sessionService.getStats).toHaveBeenCalledWith(tenantId);
-      expect(analyticsService.getMessagesCount24h).toHaveBeenCalledWith(tenantId);
-      expect(analyticsService.getTotalTokens24h).toHaveBeenCalledWith(tenantId);
-      expect(sessionManagerService.getErrorRate24h).toHaveBeenCalledWith(tenantId);
+      expect(sessionService.getStats).toHaveBeenCalledWith(solutionId);
+      expect(analyticsService.getMessagesCount24h).toHaveBeenCalledWith(solutionId);
+      expect(analyticsService.getTotalTokens24h).toHaveBeenCalledWith(solutionId);
+      expect(sessionManagerService.getErrorRate24h).toHaveBeenCalledWith(solutionId);
     });
 
-    it('should fetch tenant-scoped skills and API keys when tenantId provided', async () => {
-      const tenantId = 'tenant-456';
+    it('should fetch tenant-scoped skills and API keys when solutionId provided', async () => {
+      const solutionId = 'tenant-456';
       skillsService.findAll = jest.fn().mockResolvedValue({ items: [], total: 5 });
       skillsService.findPublished = jest.fn().mockResolvedValue([{}, {}]);
       apiKeyService.findByTenantId = jest.fn().mockResolvedValue([
@@ -121,18 +121,18 @@ describe('AdminDashboardController', () => {
         { status: 'revoked' },
       ]);
 
-      const result = await controller.getSummary(tenantId, adminCtx);
+      const result = await controller.getSummary(solutionId, adminCtx);
 
-      expect(skillsService.findAll).toHaveBeenCalledWith(tenantId, { page: 1, limit: 1 });
-      expect(skillsService.findPublished).toHaveBeenCalledWith(tenantId);
-      expect(apiKeyService.findByTenantId).toHaveBeenCalledWith(tenantId);
+      expect(skillsService.findAll).toHaveBeenCalledWith(solutionId, { page: 1, limit: 1 });
+      expect(skillsService.findPublished).toHaveBeenCalledWith(solutionId);
+      expect(apiKeyService.findByTenantId).toHaveBeenCalledWith(solutionId);
 
       expect(result.totalSkills).toBe(5);
       expect(result.publishedSkills).toBe(2);
       expect(result.activeApiKeys).toBe(2);
     });
 
-    it('should return zero counts for skills and API keys when no tenantId', async () => {
+    it('should return zero counts for skills and API keys when no solutionId', async () => {
       const result = await controller.getSummary(undefined, adminCtx);
 
       expect(skillsService.findAll).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe('AdminDashboardController', () => {
 
     it('should return callerScope builder for builder context', async () => {
       const builderCtx = {
-        tenantId: 'builder-tenant',
+        solutionId: 'builder-tenant',
         apiKeyScopes: ['builder'],
         requestId: 'req-2',
         timestamp: new Date(),
@@ -176,19 +176,19 @@ describe('AdminDashboardController', () => {
       const result = await controller.getSummary(undefined, builderCtx);
 
       expect(result.callerScope).toBe('builder');
-      // Builder should always use ctx.tenantId
+      // Builder should always use ctx.solutionId
       expect(sessionService.getStats).toHaveBeenCalledWith('builder-tenant');
     });
 
-    it('should ignore explicit tenantId for builder and use ctx.tenantId', async () => {
+    it('should ignore explicit solutionId for builder and use ctx.solutionId', async () => {
       const builderCtx = {
-        tenantId: 'builder-tenant',
+        solutionId: 'builder-tenant',
         apiKeyScopes: ['builder'],
         requestId: 'req-3',
         timestamp: new Date(),
       } as unknown as RequestContext;
 
-      // Builder passes a different tenantId — should be ignored (defense-in-depth)
+      // Builder passes a different solutionId — should be ignored (defense-in-depth)
       await controller.getSummary('other-tenant', builderCtx);
 
       expect(sessionService.getStats).toHaveBeenCalledWith('builder-tenant');
@@ -197,9 +197,9 @@ describe('AdminDashboardController', () => {
   });
 
   describe('getRecentSessions - builder isolation', () => {
-    it('should force ctx.tenantId for builder keys', async () => {
+    it('should force ctx.solutionId for builder keys', async () => {
       const builderCtx = {
-        tenantId: 'builder-tenant',
+        solutionId: 'builder-tenant',
         apiKeyScopes: ['builder'],
         requestId: 'req-4',
         timestamp: new Date(),
@@ -210,9 +210,9 @@ describe('AdminDashboardController', () => {
       expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(10, 'builder-tenant');
     });
 
-    it('should ignore explicit tenantId for builder in getRecentSessions', async () => {
+    it('should ignore explicit solutionId for builder in getRecentSessions', async () => {
       const builderCtx = {
-        tenantId: 'builder-tenant',
+        solutionId: 'builder-tenant',
         apiKeyScopes: ['builder'],
         requestId: 'req-5',
         timestamp: new Date(),
@@ -225,17 +225,17 @@ describe('AdminDashboardController', () => {
   });
 
   describe('getRecentSessions', () => {
-    it('should call getRecentSessions without tenantId when not provided', async () => {
+    it('should call getRecentSessions without solutionId when not provided', async () => {
       await controller.getRecentSessions(undefined, undefined, adminCtx);
 
       expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(10, undefined);
     });
 
-    it('should pass tenantId to getRecentSessions when provided', async () => {
-      const tenantId = 'tenant-789';
-      await controller.getRecentSessions(undefined, tenantId, adminCtx);
+    it('should pass solutionId to getRecentSessions when provided', async () => {
+      const solutionId = 'tenant-789';
+      await controller.getRecentSessions(undefined, solutionId, adminCtx);
 
-      expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(10, tenantId);
+      expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(10, solutionId);
     });
 
     it('should respect custom limit parameter', async () => {
@@ -244,18 +244,18 @@ describe('AdminDashboardController', () => {
       expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(25, undefined);
     });
 
-    it('should pass both limit and tenantId', async () => {
-      const tenantId = 'tenant-abc';
-      await controller.getRecentSessions('15', tenantId, adminCtx);
+    it('should pass both limit and solutionId', async () => {
+      const solutionId = 'tenant-abc';
+      await controller.getRecentSessions('15', solutionId, adminCtx);
 
-      expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(15, tenantId);
+      expect(sessionManagerService.getRecentSessions).toHaveBeenCalledWith(15, solutionId);
     });
 
     it('should return recent sessions from service', async () => {
       const mockSessions = [
         {
           sessionId: 'session-1',
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
           status: 'idle',
           messageCount: 5,
           createdAt: new Date(),

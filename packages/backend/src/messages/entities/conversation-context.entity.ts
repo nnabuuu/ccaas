@@ -18,7 +18,7 @@ import {
 
 @Entity('conversation_contexts')
 @Index('IDX_conversation_contexts_session_id', ['sessionId'], { unique: true })
-@Index('IDX_conversation_contexts_tenant_id', ['tenantId'])
+@Index('IDX_conversation_contexts_tenant_id', ['solutionId'])
 @Index('IDX_conversation_contexts_created_at', ['createdAt'])
 export class ConversationContext {
   @PrimaryGeneratedColumn('uuid')
@@ -29,7 +29,7 @@ export class ConversationContext {
   sessionId!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   /**
    * Hash of the system prompt used (links to SystemPromptVersion)

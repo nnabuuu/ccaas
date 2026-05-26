@@ -7,14 +7,14 @@
  * Same cache semantics as `ProjectArtifactSourceRegistry`:
  *   - `null` sentinel for "looked up; no binaryArtifactUrl set" so we
  *     don't re-query the DB every turn for tenants that are text-only.
- *   - Cache invalidation via `TENANT_CONFIG_CHANGED` event.
+ *   - Cache invalidation via `SOLUTION_CONFIG_CHANGED` event.
  *   - Lazy construction; nothing eagerly loaded at boot.
  *
  * URL validation: same defense-in-depth as the text registry —
  * http(s) only, no `file://` or `javascript:`.
  *
  * Phase 2b-4 adds the `binaryArtifactUrl` field to `tenant.config`. The
- * existing `TenantsService.update()` partial-merge handles it without
+ * existing `SolutionsService.update()` partial-merge handles it without
  * schema changes (config is a JSON column).
  */
 
@@ -23,19 +23,19 @@ import { OnEvent } from '@nestjs/event-emitter';
 
 import type { BinaryArtifactSource } from '@kedge-agentic/agent-runtime';
 
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { RestBinaryArtifactSource } from './rest-binary-artifact-source';
 import {
-  TENANT_CONFIG_CHANGED,
-  type TenantConfigChangedEvent,
-} from '../../tenants/tenant-config-events';
+  SOLUTION_CONFIG_CHANGED,
+  type SolutionConfigChangedEvent,
+} from '../../solutions/solution-config-events';
 
 @Injectable()
 export class ProjectBinaryArtifactSourceRegistry implements OnModuleInit {
   private readonly logger = new Logger(ProjectBinaryArtifactSourceRegistry.name);
   private readonly cache = new Map<string, BinaryArtifactSource | null>();
 
-  constructor(private readonly tenants: TenantsService) {}
+  constructor(private readonly tenants: SolutionsService) {}
 
   onModuleInit(): void {
     this.logger.log(
@@ -89,8 +89,8 @@ export class ProjectBinaryArtifactSourceRegistry implements OnModuleInit {
     return source;
   }
 
-  @OnEvent(TENANT_CONFIG_CHANGED)
-  onTenantConfigChanged(event: TenantConfigChangedEvent): void {
+  @OnEvent(SOLUTION_CONFIG_CHANGED)
+  onTenantConfigChanged(event: SolutionConfigChangedEvent): void {
     if (this.cache.delete(event.slug)) {
       this.logger.log(
         `binary-source cache evicted for slug=${event.slug} (config changed)`,

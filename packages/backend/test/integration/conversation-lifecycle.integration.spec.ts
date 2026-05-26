@@ -5,7 +5,7 @@
  * - Session creation with metadata
  * - ConversationMetadataService (auto-title, metadata retrieval)
  * - Turn tracking
- * - Tenant isolation
+ * - Solution isolation
  * - Soft delete behavior
  *
  * Uses a minimal module setup (TypeORM + ConversationMetadataService only)
@@ -70,7 +70,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
   async function createTestSession(overrides: Partial<Session> = {}): Promise<Session> {
     const session = sessionRepository.create({
       sessionId: `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      tenantId: testTenantId,
+      solutionId: testTenantId,
       clientId: 'test-client',
       status: 'idle',
       messageCount: 0,
@@ -356,42 +356,42 @@ describe('Conversation Lifecycle Integration Tests', () => {
   });
 
   // =========================================================================
-  // Tenant Isolation
+  // Solution Isolation
   // =========================================================================
 
-  describe('Tenant Isolation', () => {
-    it('should isolate sessions by tenantId', async () => {
+  describe('Solution Isolation', () => {
+    it('should isolate sessions by solutionId', async () => {
       const tenantA = 'tenant-isolation-a';
       const tenantB = 'tenant-isolation-b';
 
-      await createTestSession({ tenantId: tenantA, title: 'Tenant A session' });
-      await createTestSession({ tenantId: tenantA, title: 'Tenant A session 2' });
-      await createTestSession({ tenantId: tenantB, title: 'Tenant B session' });
+      await createTestSession({ solutionId: tenantA, title: 'Solution A session' });
+      await createTestSession({ solutionId: tenantA, title: 'Solution A session 2' });
+      await createTestSession({ solutionId: tenantB, title: 'Solution B session' });
 
       const tenantASessions = await sessionRepository.find({
-        where: { tenantId: tenantA },
+        where: { solutionId: tenantA },
       });
       const tenantBSessions = await sessionRepository.find({
-        where: { tenantId: tenantB },
+        where: { solutionId: tenantB },
       });
 
       expect(tenantASessions.length).toBe(2);
       expect(tenantBSessions.length).toBe(1);
-      expect(tenantASessions.every((s) => s.tenantId === tenantA)).toBe(true);
-      expect(tenantBSessions[0].title).toBe('Tenant B session');
+      expect(tenantASessions.every((s) => s.solutionId === tenantA)).toBe(true);
+      expect(tenantBSessions[0].title).toBe('Solution B session');
     });
 
     it('should not return sessions from other tenants in queries', async () => {
       const tenantA = 'tenant-query-a';
       const tenantB = 'tenant-query-b';
 
-      await createTestSession({ tenantId: tenantA, title: 'Secret session' });
-      await createTestSession({ tenantId: tenantB, title: 'Other session' });
+      await createTestSession({ solutionId: tenantA, title: 'Secret session' });
+      await createTestSession({ solutionId: tenantB, title: 'Other session' });
 
       // Query with tenant filter (simulating ConversationsController)
       const results = await sessionRepository
         .createQueryBuilder('session')
-        .where('session.tenantId = :tenantId', { tenantId: tenantA })
+        .where('session.solutionId = :solutionId', { solutionId: tenantA })
         .getMany();
 
       expect(results.length).toBe(1);
@@ -439,7 +439,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
       // Query only active sessions
       const activeSessions = await sessionRepository
         .createQueryBuilder('session')
-        .where('session.tenantId = :tenantId', { tenantId: testTenantId })
+        .where('session.solutionId = :solutionId', { solutionId: testTenantId })
         .andWhere('session.status != :closed', { closed: 'closed' })
         .getMany();
 
@@ -465,7 +465,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
       // Page 1: limit 2
       const page1 = await sessionRepository
         .createQueryBuilder('session')
-        .where('session.tenantId = :tenantId', { tenantId: testTenantId })
+        .where('session.solutionId = :solutionId', { solutionId: testTenantId })
         .orderBy('session.lastActivity', 'DESC')
         .skip(0)
         .take(2)
@@ -477,7 +477,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
       // Page 2
       const page2 = await sessionRepository
         .createQueryBuilder('session')
-        .where('session.tenantId = :tenantId', { tenantId: testTenantId })
+        .where('session.solutionId = :solutionId', { solutionId: testTenantId })
         .orderBy('session.lastActivity', 'DESC')
         .skip(2)
         .take(2)
@@ -493,7 +493,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
 
       const results = await sessionRepository
         .createQueryBuilder('session')
-        .where('session.tenantId = :tenantId', { tenantId: testTenantId })
+        .where('session.solutionId = :solutionId', { solutionId: testTenantId })
         .andWhere('session.title LIKE :query', { query: '%TypeScript%' })
         .getMany();
 
@@ -507,7 +507,7 @@ describe('Conversation Lifecycle Integration Tests', () => {
       await createTestSession({ title: 'Also pinned', isPinned: true });
 
       const pinned = await sessionRepository.find({
-        where: { tenantId: testTenantId, isPinned: true },
+        where: { solutionId: testTenantId, isPinned: true },
       });
 
       expect(pinned.length).toBe(2);

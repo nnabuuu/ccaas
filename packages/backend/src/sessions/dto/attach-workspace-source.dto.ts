@@ -21,7 +21,7 @@
  *                       segment in {sourceUrl}/{sourceIdentity})
  *   - `sourceSchemaHash` — optional fingerprint so the solution can
  *                       reject stale syncs after a schema change
- *   - `tenantId`      — kept here transitionally because
+ *   - `solutionId`      — kept here transitionally because
  *                       SessionService.attachWorkspaceSource still
  *                       requires it. α phase will sweep this to
  *                       solutionId; future phases may pull it from
@@ -88,10 +88,10 @@ export class AttachWorkspaceSourceDto {
       'auth context entirely.',
     example: 'tenant-uuid',
   })
-  // TODO(β-2): once SessionService is renamed + tenantId is read from
+  // TODO(β-2): once SessionService is renamed + solutionId is read from
   // auth context, drop this field entirely. The wire shape will become
   // strictly `{sourceUrl, sourceIdentity, sourceSchemaHash?}`.
   @IsString()
   @IsNotEmpty()
-  tenantId: string;
+  solutionId: string;
 }

@@ -27,7 +27,7 @@ export interface FilePreviewResponse {
 export interface UploadFileDto {
   sessionId: string;
   messageId: string;
-  tenantId?: string;
+  solutionId?: string;
   targetPath?: string; // Optional target path in virtual file system
 }
 

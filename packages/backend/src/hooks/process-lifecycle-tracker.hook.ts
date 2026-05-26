@@ -35,11 +35,11 @@ export function createProcessLifecycleTracker(deps: ProcessLifecycleTrackerDeps)
   const { processLifecycleService, getSession } = deps;
 
   /**
-   * Get tenantId from session
+   * Get solutionId from session
    */
   const getTenantId = (sessionId: string): string | null => {
     const session = getSession(sessionId);
-    return session?.tenantId || null;
+    return session?.solutionId || null;
   };
 
   return {
@@ -53,8 +53,8 @@ export function createProcessLifecycleTracker(deps: ProcessLifecycleTrackerDeps)
       workingDir?: string,
     ): Promise<void> {
       try {
-        const tenantId = getTenantId(sessionId);
-        await processLifecycleService.recordSpawn(sessionId, pid, command, workingDir, tenantId);
+        const solutionId = getTenantId(sessionId);
+        await processLifecycleService.recordSpawn(sessionId, pid, command, workingDir, solutionId);
         logger.debug(`Recorded spawn for session ${sessionId} (PID: ${pid})`);
       } catch (error) {
         logger.error(`Failed to record spawn: ${error instanceof Error ? error.message : error}`);
@@ -71,8 +71,8 @@ export function createProcessLifecycleTracker(deps: ProcessLifecycleTrackerDeps)
       signal?: string,
     ): Promise<void> {
       try {
-        const tenantId = getTenantId(sessionId);
-        await processLifecycleService.recordExit(sessionId, pid, exitCode, signal, tenantId);
+        const solutionId = getTenantId(sessionId);
+        await processLifecycleService.recordExit(sessionId, pid, exitCode, signal, solutionId);
         logger.debug(`Recorded exit for session ${sessionId} (code: ${exitCode})`);
       } catch (error) {
         logger.error(`Failed to record exit: ${error instanceof Error ? error.message : error}`);
@@ -89,8 +89,8 @@ export function createProcessLifecycleTracker(deps: ProcessLifecycleTrackerDeps)
       stderr?: string,
     ): Promise<void> {
       try {
-        const tenantId = getTenantId(sessionId);
-        await processLifecycleService.recordCrash(sessionId, pid, errorMessage, stderr, tenantId);
+        const solutionId = getTenantId(sessionId);
+        await processLifecycleService.recordCrash(sessionId, pid, errorMessage, stderr, solutionId);
         logger.debug(`Recorded crash for session ${sessionId}`);
       } catch (error) {
         logger.error(`Failed to record crash: ${error instanceof Error ? error.message : error}`);
@@ -106,8 +106,8 @@ export function createProcessLifecycleTracker(deps: ProcessLifecycleTrackerDeps)
       signal: string = 'SIGTERM',
     ): Promise<void> {
       try {
-        const tenantId = getTenantId(sessionId);
-        await processLifecycleService.recordKill(sessionId, pid, signal, tenantId);
+        const solutionId = getTenantId(sessionId);
+        await processLifecycleService.recordKill(sessionId, pid, signal, solutionId);
         logger.debug(`Recorded kill for session ${sessionId}`);
       } catch (error) {
         logger.error(`Failed to record kill: ${error instanceof Error ? error.message : error}`);

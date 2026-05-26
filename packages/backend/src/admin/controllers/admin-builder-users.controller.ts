@@ -19,8 +19,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { UsersService } from '../../users/users.service';
-import { UserTenantService } from '../../users/user-tenant.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { UserSolutionService } from '../../users/user-solution.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
 import { CreateBuilderUserDto } from '../dto/create-builder-user.dto';
@@ -33,8 +33,8 @@ export class AdminBuilderUsersController {
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
     private readonly apiKeyService: ApiKeyService,
     private readonly auditService: AuditService,
   ) {}
@@ -67,7 +67,7 @@ export class AdminBuilderUsersController {
     // 3. Link user to tenant as admin
     await this.userTenantService.create({
       userId: user.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       role: 'admin',
     });
 
@@ -84,7 +84,7 @@ export class AdminBuilderUsersController {
       action: 'builderUser.create',
       targetType: 'user',
       targetId: user.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         name: dto.name,
         tenantSlug: tenant.slug,

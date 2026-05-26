@@ -3,20 +3,20 @@
  * `ProjectArtifactSource` instances.
  *
  * Where the URL lives: `tenant.config.artifactUrl` (set via `solution.json`
- * import on boot, or via `PUT /tenants/:id` at runtime). The registry
+ * import on boot, or via `PUT /solutions/:id` at runtime). The registry
  * caches `slug → ProjectArtifactSource | null` in-memory; null is a
  * deliberate cached value meaning "this tenant has no artifactUrl yet"
  * so we don't re-query the DB every turn for unconfigured tenants.
  *
  * Cache invalidation: subscribes to the `tenant.config.changed` event
- * emitted by `TenantsService.update()`. Eviction is by slug, so the
+ * emitted by `SolutionsService.update()`. Eviction is by slug, so the
  * next sync after a config change reconstructs the source from the
  * fresh `tenant.config.artifactUrl` value.
  *
  * The runtime's `ProjectArtifactSource` interface stays single-tenant
  * pure (no tenant param); routing happens at the orchestrator level
- * (`SessionAssetSyncer` resolves `session.tenantId → tenant.slug`
- * via `TenantsService`, then calls `getForTenantSlug(slug)`).
+ * (`SessionAssetSyncer` resolves `session.solutionId → tenant.slug`
+ * via `SolutionsService`, then calls `getForTenantSlug(slug)`).
  */
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
@@ -24,24 +24,24 @@ import { OnEvent } from '@nestjs/event-emitter';
 
 import type { ProjectArtifactSource } from '@kedge-agentic/agent-runtime';
 
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 import {
-  TENANT_CONFIG_CHANGED,
-  type TenantConfigChangedEvent,
-} from '../../tenants/tenant-config-events';
+  SOLUTION_CONFIG_CHANGED,
+  type SolutionConfigChangedEvent,
+} from '../../solutions/solution-config-events';
 
 @Injectable()
 export class ProjectArtifactSourceRegistry implements OnModuleInit {
   private readonly logger = new Logger(ProjectArtifactSourceRegistry.name);
   /**
    * `null` is a sentinel meaning "looked up; tenant has no artifactUrl
-   * configured." Cached to avoid re-hitting TenantsService every turn
+   * configured." Cached to avoid re-hitting SolutionsService every turn
    * for unconfigured tenants.
    */
   private readonly cache = new Map<string, ProjectArtifactSource | null>();
 
-  constructor(private readonly tenants: TenantsService) {}
+  constructor(private readonly tenants: SolutionsService) {}
 
   onModuleInit(): void {
     // Boot-time sanity log; nothing to eagerly load — sources are
@@ -92,13 +92,13 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
 
   /**
    * Invalidate the cached entry for a tenant whose config changed. Fired
-   * by `TenantsService.update()` whenever the update payload included a
+   * by `SolutionsService.update()` whenever the update payload included a
    * `config` field. The next `getForTenantSlug` call rebuilds the entry
    * from a fresh DB read — covers both new tenants gaining `artifactUrl`
    * and existing tenants having their URL re-pointed.
    */
-  @OnEvent(TENANT_CONFIG_CHANGED)
-  onTenantConfigChanged(event: TenantConfigChangedEvent): void {
+  @OnEvent(SOLUTION_CONFIG_CHANGED)
+  onTenantConfigChanged(event: SolutionConfigChangedEvent): void {
     if (this.cache.delete(event.slug)) {
       this.logger.log(`cache evicted for slug=${event.slug} (config changed)`);
     }

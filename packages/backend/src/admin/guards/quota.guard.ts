@@ -4,7 +4,7 @@
  * Checks tenant token quota before allowing message processing.
  * Applied on SessionsController.sendMessage() to enforce monthly limits.
  *
- * Reads tenantId from request body, looks up tenant plan,
+ * Reads solutionId from request body, looks up tenant plan,
  * and delegates to QuotaService for the actual check.
  */
 
@@ -15,7 +15,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { QuotaService } from '../quota.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { QuotaExceededException } from '../../protocol/http-exceptions';
 
 @Injectable()
@@ -24,20 +24,20 @@ export class QuotaGuard implements CanActivate {
 
   constructor(
     private readonly quotaService: QuotaService,
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const tenantId: string | undefined =
-      request.body?.tenantId ?? request.context?.tenantId;
+    const solutionId: string | undefined =
+      request.body?.solutionId ?? request.context?.solutionId;
 
-    if (!tenantId) {
-      // Let the controller handle missing tenantId
+    if (!solutionId) {
+      // Let the controller handle missing solutionId
       return true;
     }
 
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
       // Let the controller handle invalid tenant
       return true;

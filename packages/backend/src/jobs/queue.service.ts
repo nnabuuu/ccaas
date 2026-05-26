@@ -21,7 +21,7 @@ export interface JobPayload {
   jobEntityId: string;
   type: string;
   prompt: string;
-  tenantId: string;
+  solutionId: string;
   mcpServers?: Record<string, unknown>;
   enabledSkills?: string[];
   resumeSessionId?: string;

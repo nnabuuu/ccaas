@@ -2,4 +2,4 @@
  * Common Entities - Barrel Export
  */
 
-export * from './tenant-scoped.entity';
+export * from './solution-scoped.entity';

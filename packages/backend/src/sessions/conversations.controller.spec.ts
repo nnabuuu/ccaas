@@ -21,9 +21,9 @@ import { SkillManagementService } from './services/skill-management.service';
 import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { TenantGuard } from '../tenants/tenant.guard';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { SolutionAuthGuard } from '../solutions/solution-auth.guard';
+import { UserSolutionService } from '../users/user-solution.service';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { ScopesGuard } from '../auth/guards/scopes.guard';
 import { QuotaGuard } from '../admin/guards/quota.guard';
@@ -60,7 +60,7 @@ describe('SessionsController (list/search/update/delete)', () => {
   ): Session => ({
     id: `uuid-${sessionId}`,
     sessionId,
-    tenantId: 'tenant-a',
+    solutionId: 'tenant-a',
     userId: null,
     clientId: `client-${sessionId}`,
     status: 'idle' as any,
@@ -107,8 +107,8 @@ describe('SessionsController (list/search/update/delete)', () => {
         noopProvider(AttachmentService),
         noopProvider(SkillSyncService),
         noopProvider(SkillsService),
-        noopProvider(TenantsService),
-        noopProvider(UserTenantService),
+        noopProvider(SolutionsService),
+        noopProvider(UserSolutionService),
         noopProvider(MessagesService),
         noopProvider(ConversationContextService),
         noopProvider(StreamRegistryService),
@@ -119,7 +119,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard)
       .useValue({ canActivate: () => true })
-      .overrideGuard(TenantGuard)
+      .overrideGuard(SolutionAuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(QuotaGuard)
       .useValue({ canActivate: () => true })
@@ -156,7 +156,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       expect(result.hasMore).toBe(false);
     });
 
-    it('should filter by tenantId for tenant isolation', async () => {
+    it('should filter by solutionId for tenant isolation', async () => {
       const mockQb = createMockQueryBuilder({
         getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([]),
@@ -169,8 +169,8 @@ describe('SessionsController (list/search/update/delete)', () => {
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'session.tenantId = :tenantId',
-        { tenantId: 'tenant-a' },
+        'session.solutionId = :solutionId',
+        { solutionId: 'tenant-a' },
       );
     });
 
@@ -278,8 +278,8 @@ describe('SessionsController (list/search/update/delete)', () => {
       await controller.searchSessions({ q: 'test' }, 'tenant-b');
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'session.tenantId = :tenantId',
-        { tenantId: 'tenant-b' },
+        'session.solutionId = :solutionId',
+        { solutionId: 'tenant-b' },
       );
     });
 
@@ -321,7 +321,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       const result = await controller.updateSession(
         's1',
         { title: 'New Title' },
-        { tenantId: 'tenant-a' } as any,
+        { solutionId: 'tenant-a' } as any,
       );
 
       expect(result.title).toBe('New Title');
@@ -341,7 +341,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       const result = await controller.updateSession(
         's1',
         { isPinned: true },
-        { tenantId: 'tenant-a' } as any,
+        { solutionId: 'tenant-a' } as any,
       );
 
       expect(result.isPinned).toBe(true);
@@ -354,7 +354,7 @@ describe('SessionsController (list/search/update/delete)', () => {
         controller.updateSession(
           'nonexistent',
           { title: 'New Title' },
-          { tenantId: 'tenant-a' } as any,
+          { solutionId: 'tenant-a' } as any,
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -366,12 +366,12 @@ describe('SessionsController (list/search/update/delete)', () => {
         controller.updateSession(
           's1',
           { title: 'New Title' },
-          { tenantId: 'tenant-a' } as any,
+          { solutionId: 'tenant-a' } as any,
         ),
       ).rejects.toThrow(NotFoundException);
 
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
-        where: { sessionId: 's1', tenantId: 'tenant-a' },
+        where: { sessionId: 's1', solutionId: 'tenant-a' },
       });
     });
   });
@@ -392,7 +392,7 @@ describe('SessionsController (list/search/update/delete)', () => {
 
       const result = await controller.deleteSession(
         's1',
-        { tenantId: 'tenant-a' } as any,
+        { solutionId: 'tenant-a' } as any,
       );
 
       expect(result.success).toBe(true);
@@ -408,7 +408,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.deleteSession('nonexistent', { tenantId: 'tenant-a' } as any),
+        controller.deleteSession('nonexistent', { solutionId: 'tenant-a' } as any),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -416,11 +416,11 @@ describe('SessionsController (list/search/update/delete)', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.deleteSession('s1', { tenantId: 'tenant-a' } as any),
+        controller.deleteSession('s1', { solutionId: 'tenant-a' } as any),
       ).rejects.toThrow(NotFoundException);
 
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
-        where: { sessionId: 's1', tenantId: 'tenant-a' },
+        where: { sessionId: 's1', solutionId: 'tenant-a' },
       });
     });
   });
@@ -482,7 +482,7 @@ describe('SessionsController (list/search/update/delete)', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
-        where: { sessionId: 's1', tenantId: 'tenant-a' },
+        where: { sessionId: 's1', solutionId: 'tenant-a' },
       });
     });
   });

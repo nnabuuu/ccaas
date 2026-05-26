@@ -169,7 +169,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // getOrCreateSession recreates the session if a prior autoClose destroyed it
       const clientId = makeSseClientId(sessionId);
       const userId = queueItem.payload.userId;
-      const session = await this.sessionService.getOrCreateSession(sessionId, clientId, null, userId, queueItem.tenantId ?? undefined);
+      const session = await this.sessionService.getOrCreateSession(sessionId, clientId, null, userId, queueItem.solutionId ?? undefined);
 
       // G4 fix — synchronous bind + bootstrap before spawning the engine.
       //
@@ -188,9 +188,9 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // (subsequent messages in the same conversation), skip entirely —
       // bind/sync are cheap but not free.
       const incomingProjectId = queueItem.payload.projectId;
-      // Require tenantId too: attachWorkspaceSource's input validator
+      // Require solutionId too: attachWorkspaceSource's input validator
       // rejects empty string with BadRequestException — passing `|| ''`
-      // would regress the anonymous-session path (queueItem.tenantId
+      // would regress the anonymous-session path (queueItem.solutionId
       // can be null for guest mode under AUTH_ALLOW_ANONYMOUS=true).
       // Skip the attach entirely when we don't have an explicit tenant;
       // the agent will run on the materializer-only workspace (still
@@ -203,13 +203,13 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // that need the new fields persisted go through the explicit
       // `attach-workspace-source` HTTP route. β-3 may extend the queue
       // payload if a worker-side use case appears.
-      if (incomingProjectId && queueItem.tenantId) {
+      if (incomingProjectId && queueItem.solutionId) {
         const currentBinding =
           this.sessionService.getAttachedWorkspaceSource(sessionId);
         if (currentBinding?.sourceIdentity !== incomingProjectId) {
           await this.sessionService.attachWorkspaceSource(
             sessionId,
-            queueItem.tenantId,
+            queueItem.solutionId,
             { sourceIdentity: incomingProjectId },
           );
           await this.assetSyncer.sync(sessionId);
@@ -226,7 +226,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       const result = await this.orchestrationService.orchestrateMessage({
         session,
         clientId,
-        tenantId: queueItem.tenantId || '',
+        solutionId: queueItem.solutionId || '',
         message: queueItem.payload.message,
         context: queueItem.payload.context,
         enabledSkills: queueItem.payload.enabledSkills ?? (queueItem.payload as any).enabledSkillSlugs,

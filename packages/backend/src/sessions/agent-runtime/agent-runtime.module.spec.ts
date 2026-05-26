@@ -87,7 +87,7 @@ describe('AgentRuntimeModule', () => {
   });
 
   // Note: PROJECT_ARTIFACT_SOURCE_REGISTRY binding lives in SessionsModule
-  // (not AgentRuntimeModule) because the registry depends on TenantsService.
+  // (not AgentRuntimeModule) because the registry depends on SolutionsService.
   // Tests for the registry itself: see project-artifact-source-registry.spec.ts.
 });
 

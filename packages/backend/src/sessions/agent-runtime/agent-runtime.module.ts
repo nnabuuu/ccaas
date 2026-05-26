@@ -7,7 +7,7 @@
  * the URL in their `solution.json`; `SolutionLoaderService` (in
  * `solutions/`) writes it through to `tenant.config` at boot via
  * auto-discovery or at runtime via `POST /admin/solutions/import`.
- * Operators can also update directly via `PUT /tenants/:id`.
+ * Operators can also update directly via `PUT /solutions/:id`.
  *
  * This module therefore no longer parses env vars or constructs
  * per-tenant `RestWorkspaceArtifactSource` instances at init. The
@@ -26,7 +26,7 @@
  * stand up a tenant + the DB lookup; production code uses tenant.config.
  *
  * The module is imported exactly once — by `SessionsModule` — to avoid
- * `@Global` recursion with `@Global TenantsModule`.
+ * `@Global` recursion with `@Global SolutionsModule`.
  */
 
 import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
@@ -133,10 +133,10 @@ export class AgentRuntimeModule {
           useExisting: DenyAllProjectTenantResolver,
         },
         // Note: ProjectArtifactSourceRegistry is NOT registered here. It
-        // depends on TenantsService, which lives in the @Global TenantsModule
+        // depends on SolutionsService, which lives in the @Global SolutionsModule
         // that the consuming module (SessionsModule) imports. Registering it
-        // here would require importing TenantsModule, which pulls in
-        // TenantGuard → UserTenantService and creates DI grief in test
+        // here would require importing SolutionsModule, which pulls in
+        // SolutionAuthGuard → UserSolutionService and creates DI grief in test
         // isolation. SessionsModule registers + binds PROJECT_ARTIFACT_SOURCE_REGISTRY.
       ],
       exports: [

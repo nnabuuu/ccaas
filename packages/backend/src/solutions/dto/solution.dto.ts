@@ -1,5 +1,5 @@
 /**
- * Tenant DTOs
+ * Solution DTOs
  *
  * Data transfer objects for tenant-related operations.
  */
@@ -14,7 +14,7 @@ import {
   IsEmail,
   IsBoolean,
 } from 'class-validator';
-import type { TenantPlan, TenantStatus, Tenant } from '../entities/tenant.entity';
+import type { TenantPlan, TenantStatus, Solution } from '../entities/solution.entity';
 import type { ApiKeyScope } from '../../auth/types';
 
 /**
@@ -115,7 +115,7 @@ export class UpdateTenantDto {
  */
 export interface CreateTenantResponse {
   id: string; // Convenience property - same as tenant.id
-  tenant: Tenant;
+  tenant: Solution;
   apiKey?: {
     id: string;
     name: string;

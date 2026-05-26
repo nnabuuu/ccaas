@@ -6,12 +6,12 @@
 
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { User } from '../../users/entities/user.entity';
-import { UserTenant } from '../../users/entities/user-tenant.entity';
+import { UserSolution } from '../../users/entities/user-solution.entity';
 import type { RequestContext } from '../types';
 
 export interface CurrentUserData {
   user?: User;
-  userTenant?: UserTenant;
+  userTenant?: UserSolution;
   userId?: string;
 }
 

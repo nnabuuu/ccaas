@@ -19,7 +19,7 @@ describe('SkillsService - Toggle', () => {
   let service: SkillsService;
   let skillRepo: Record<string, jest.Mock>;
 
-  const tenantId = 'tenant-123';
+  const solutionId = 'tenant-123';
 
   beforeEach(async () => {
     skillRepo = {
@@ -53,14 +53,14 @@ describe('SkillsService - Toggle', () => {
   it('should toggle enabled: true → false', async () => {
     const mockSkill = {
       id: 'skill-1',
-      tenantId,
+      solutionId,
       name: 'Test Skill',
       slug: 'test-skill',
       enabled: true,
     };
     skillRepo.findOne.mockResolvedValue({ ...mockSkill });
 
-    const result = await service.toggle(tenantId, 'skill-1');
+    const result = await service.toggle(solutionId, 'skill-1');
 
     expect(result.enabled).toBe(false);
     expect(skillRepo.save).toHaveBeenCalledWith(
@@ -71,14 +71,14 @@ describe('SkillsService - Toggle', () => {
   it('should toggle enabled: false → true', async () => {
     const mockSkill = {
       id: 'skill-2',
-      tenantId,
+      solutionId,
       name: 'Disabled Skill',
       slug: 'disabled-skill',
       enabled: false,
     };
     skillRepo.findOne.mockResolvedValue({ ...mockSkill });
 
-    const result = await service.toggle(tenantId, 'skill-2');
+    const result = await service.toggle(solutionId, 'skill-2');
 
     expect(result.enabled).toBe(true);
     expect(skillRepo.save).toHaveBeenCalledWith(
@@ -89,7 +89,7 @@ describe('SkillsService - Toggle', () => {
   it('should throw NotFoundException for non-existent skill', async () => {
     skillRepo.findOne.mockResolvedValue(null);
 
-    await expect(service.toggle(tenantId, 'non-existent')).rejects.toThrow(
+    await expect(service.toggle(solutionId, 'non-existent')).rejects.toThrow(
       NotFoundException,
     );
   });

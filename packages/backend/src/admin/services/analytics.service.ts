@@ -12,7 +12,7 @@ import { Message } from '../../messages/entities/message.entity';
 import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { ApiKey } from '../../auth/entities/api-key.entity';
 import { Skill } from '../../skills/entities/skill.entity';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Solution } from '../../solutions/entities/solution.entity';
 import {
   AnalyticsQueryDto,
   TokenUsageAnalytics,
@@ -49,8 +49,8 @@ export class AnalyticsService {
     private readonly apiKeyRepository: Repository<ApiKey>,
     @InjectRepository(Skill)
     private readonly skillRepository: Repository<Skill>,
-    @InjectRepository(Tenant)
-    private readonly tenantRepository: Repository<Tenant>,
+    @InjectRepository(Solution)
+    private readonly tenantRepository: Repository<Solution>,
   ) {}
 
   /**
@@ -71,11 +71,11 @@ export class AnalyticsService {
   }
 
   /**
-   * Apply tenant filter to query builder if tenantId is provided
+   * Apply tenant filter to query builder if solutionId is provided
    */
-  private applyTenantFilter(qb: any, alias: string, tenantId?: string): any {
-    if (tenantId) {
-      qb.andWhere(`${alias}.tenantId = :tenantId`, { tenantId });
+  private applyTenantFilter(qb: any, alias: string, solutionId?: string): any {
+    if (solutionId) {
+      qb.andWhere(`${alias}.solutionId = :solutionId`, { solutionId });
     }
     return qb;
   }
@@ -84,7 +84,7 @@ export class AnalyticsService {
    * Get token usage analytics
    */
   async getTokenUsage(query: AnalyticsQueryDto): Promise<TokenUsageAnalytics> {
-    const { granularity = 'daily', tenantId } = query;
+    const { granularity = 'daily', solutionId } = query;
     const { start, end } = this.resolveDateRange(query);
 
     let qb = this.tokenUsageRepository
@@ -98,7 +98,7 @@ export class AnalyticsService {
       ])
       .where('usage.createdAt BETWEEN :start AND :end', { start, end });
 
-    qb = this.applyTenantFilter(qb, 'usage', tenantId);
+    qb = this.applyTenantFilter(qb, 'usage', solutionId);
 
     const usageEvents = await qb.getMany();
 
@@ -132,22 +132,22 @@ export class AnalyticsService {
    * Get cost breakdown by tenant, model, and skill
    */
   async getCostBreakdown(query: AnalyticsQueryDto): Promise<CostAnalytics> {
-    const { tenantId } = query;
+    const { solutionId } = query;
     const { start, end } = this.resolveDateRange(query);
 
     // Get usage grouped by tenant
     let usageByTenantQb = this.tokenUsageRepository
       .createQueryBuilder('usage')
-      .select('usage.tenantId', 'tenantId')
+      .select('usage.solutionId', 'solutionId')
       .addSelect('SUM(usage.inputTokens)', 'inputTokens')
       .addSelect('SUM(usage.outputTokens)', 'outputTokens')
       .addSelect('SUM(usage.cachedInputTokens)', 'cachedTokens')
       .where('usage.createdAt BETWEEN :start AND :end', { start, end });
 
-    usageByTenantQb = this.applyTenantFilter(usageByTenantQb, 'usage', tenantId);
+    usageByTenantQb = this.applyTenantFilter(usageByTenantQb, 'usage', solutionId);
 
     const usageByTenant = await usageByTenantQb
-      .groupBy('usage.tenantId')
+      .groupBy('usage.solutionId')
       .getRawMany();
 
     // Get tenant names
@@ -167,8 +167,8 @@ export class AnalyticsService {
       const estimatedCost = this.calculateCost(inputTokens, outputTokens, cachedTokens);
 
       return {
-        tenantId: row.tenantId || 'unknown',
-        tenantName: tenantMap.get(row.tenantId) || 'Unknown',
+        solutionId: row.solutionId || 'unknown',
+        tenantName: tenantMap.get(row.solutionId) || 'Unknown',
         inputTokens,
         outputTokens,
         cachedTokens,
@@ -186,7 +186,7 @@ export class AnalyticsService {
       .where('message.createdAt BETWEEN :start AND :end', { start, end })
       .andWhere("json_extract(message.metadata, '$.model') IS NOT NULL");
 
-    usageByModelQb = this.applyTenantFilter(usageByModelQb, 'message', tenantId);
+    usageByModelQb = this.applyTenantFilter(usageByModelQb, 'message', solutionId);
 
     const usageByModel = await usageByModelQb
       .groupBy("json_extract(message.metadata, '$.model')")
@@ -218,20 +218,20 @@ export class AnalyticsService {
   /**
    * Get API key usage stats
    */
-  async getApiKeyUsage(tenantId?: string): Promise<ApiKeyUsageStats[]> {
+  async getApiKeyUsage(solutionId?: string): Promise<ApiKeyUsageStats[]> {
     const qb = this.apiKeyRepository
       .createQueryBuilder('key')
       .select([
         'key.id',
         'key.keyPrefix',
         'key.name',
-        'key.tenantId',
+        'key.solutionId',
         'key.usageCount',
         'key.lastUsedAt',
       ]);
 
-    if (tenantId) {
-      qb.where('key.tenantId = :tenantId', { tenantId });
+    if (solutionId) {
+      qb.where('key.solutionId = :solutionId', { solutionId });
     }
 
     const keys = await qb.getMany();
@@ -240,7 +240,7 @@ export class AnalyticsService {
       apiKeyId: key.id,
       keyPrefix: key.keyPrefix,
       name: key.name,
-      tenantId: key.tenantId,
+      solutionId: key.solutionId,
       requestCount: key.usageCount,
       lastUsedAt: key.lastUsedAt,
       rateLimitHits: 0, // TODO: Track rate limit hits
@@ -251,14 +251,14 @@ export class AnalyticsService {
   /**
    * Get messages count in last 24 hours
    */
-  async getMessagesCount24h(tenantId?: string): Promise<number> {
+  async getMessagesCount24h(solutionId?: string): Promise<number> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     let qb = this.messageRepository
       .createQueryBuilder('message')
       .where('message.createdAt >= :oneDayAgo', { oneDayAgo });
 
-    qb = this.applyTenantFilter(qb, 'message', tenantId);
+    qb = this.applyTenantFilter(qb, 'message', solutionId);
 
     return qb.getCount();
   }
@@ -266,7 +266,7 @@ export class AnalyticsService {
   /**
    * Get total tokens in last 24 hours
    */
-  async getTotalTokens24h(tenantId?: string): Promise<{ input: number; output: number; total: number }> {
+  async getTotalTokens24h(solutionId?: string): Promise<{ input: number; output: number; total: number }> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     let qb = this.tokenUsageRepository
@@ -275,7 +275,7 @@ export class AnalyticsService {
       .addSelect('SUM(usage.outputTokens)', 'output')
       .where('usage.createdAt >= :oneDayAgo', { oneDayAgo });
 
-    qb = this.applyTenantFilter(qb, 'usage', tenantId);
+    qb = this.applyTenantFilter(qb, 'usage', solutionId);
 
     const result = await qb.getRawOne();
 
@@ -292,7 +292,7 @@ export class AnalyticsService {
    * Granularity parameter is accepted for future compatibility but ignored.
    */
   async getErrorRateTrend(query: AnalyticsQueryDto): Promise<ErrorRateTrend> {
-    const { tenantId } = query;
+    const { solutionId } = query;
     const { start, end } = this.resolveDateRange(query);
 
     // Pre-generate date buckets for full range (daily granularity)
@@ -314,7 +314,7 @@ export class AnalyticsService {
       .addSelect('COUNT(*)', 'errorCount')
       .where('error.createdAt BETWEEN :start AND :end', { start, end });
 
-    errorQb = this.applyTenantFilter(errorQb, 'error', tenantId);
+    errorQb = this.applyTenantFilter(errorQb, 'error', solutionId);
 
     const errorsByDate = await errorQb
       .groupBy('DATE(error.createdAt)')
@@ -327,7 +327,7 @@ export class AnalyticsService {
       .addSelect('COUNT(*)', 'totalMessages')
       .where('message.createdAt BETWEEN :start AND :end', { start, end });
 
-    messageQb = this.applyTenantFilter(messageQb, 'message', tenantId);
+    messageQb = this.applyTenantFilter(messageQb, 'message', solutionId);
 
     const messagesByDate = await messageQb
       .groupBy('DATE(message.createdAt)')

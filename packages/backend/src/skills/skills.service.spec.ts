@@ -20,7 +20,7 @@ describe('SkillsService', () => {
   let skillRepo: Record<string, jest.Mock>;
   let txManager: Record<string, jest.Mock>;
 
-  const tenantId = 'tenant-1';
+  const solutionId = 'tenant-1';
 
   beforeEach(async () => {
     txManager = {
@@ -75,10 +75,10 @@ describe('SkillsService', () => {
       // Duplicate check runs inside the transaction now — returns null = no dup.
       txManager.findOne.mockResolvedValue(null);
 
-      const result = await service.create(tenantId, createDto);
+      const result = await service.create(solutionId, createDto);
 
       expect(txManager.findOne).toHaveBeenCalledWith(Skill, {
-        where: { tenantId, slug: 'my-skill' },
+        where: { solutionId, slug: 'my-skill' },
       });
       expect(txManager.create).toHaveBeenCalled();
       expect(txManager.save).toHaveBeenCalled();
@@ -86,24 +86,24 @@ describe('SkillsService', () => {
     });
 
     it('should throw AlreadyExistsException when slug already exists', async () => {
-      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
+      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', solutionId });
 
-      await expect(service.create(tenantId, createDto)).rejects.toThrow(AlreadyExistsException);
+      await expect(service.create(solutionId, createDto)).rejects.toThrow(AlreadyExistsException);
     });
 
     it('should include slug in AlreadyExistsException message', async () => {
-      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', tenantId });
+      txManager.findOne.mockResolvedValue({ id: 'existing-id', slug: 'my-skill', solutionId });
 
-      await expect(service.create(tenantId, createDto)).rejects.toThrow(/my-skill/);
+      await expect(service.create(solutionId, createDto)).rejects.toThrow(/my-skill/);
     });
 
     it('should generate slug from name when slug is not provided', async () => {
       txManager.findOne.mockResolvedValue(null);
 
-      await service.create(tenantId, { name: 'Hello World', content: 'content', type: 'skill' });
+      await service.create(solutionId, { name: 'Hello World', content: 'content', type: 'skill' });
 
       expect(txManager.findOne).toHaveBeenCalledWith(Skill, {
-        where: { tenantId, slug: 'hello-world' },
+        where: { solutionId, slug: 'hello-world' },
       });
     });
 
@@ -111,7 +111,7 @@ describe('SkillsService', () => {
     // If the SkillVersion or SkillFile save throws mid-create, the whole
     // transaction must roll back — otherwise the skills row survives, and
     // SolutionLoaderService.importOneSkill's idempotency check
-    // (`findOne(tenantId, slug)` -> skip) would skip the re-import on
+    // (`findOne(solutionId, slug)` -> skip) would skip the re-import on
     // every subsequent boot, leaving the skill permanently versionless.
 
     it('rolls back the skill row when a downstream save throws', async () => {
@@ -130,7 +130,7 @@ describe('SkillsService', () => {
         return Promise.resolve({ id: 'saved-1', ...data });
       });
 
-      await expect(service.create(tenantId, createDto)).rejects.toThrow(
+      await expect(service.create(solutionId, createDto)).rejects.toThrow(
         /simulated version-write failure/,
       );
 
@@ -143,7 +143,7 @@ describe('SkillsService', () => {
     it('runs the whole create inside a single transaction', async () => {
       txManager.findOne.mockResolvedValue(null);
 
-      await service.create(tenantId, {
+      await service.create(solutionId, {
         ...createDto,
         files: [{ relativePath: 'tools/check.sh', content: '#!/bin/sh\n' }],
       });

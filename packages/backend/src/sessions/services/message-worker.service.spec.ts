@@ -34,7 +34,7 @@ describe('MessageWorkerService — processMessage', () => {
       id: 'queue-item-1',
       sessionId: SESSION_ID,
       clientId: makeSseClientId(SESSION_ID),
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       payload: {
         message: 'test message',
         enabledSkills: ['tutor'],
@@ -445,8 +445,8 @@ describe('MessageWorkerService — processMessage', () => {
       expect(order).toEqual(['attach', 'sync', 'orchestrate']);
     });
 
-    it('passes tenantId + minimal WorkspaceSource (sourceIdentity only) to attachWorkspaceSource', async () => {
-      await process(makeQueueItem({ tenantId: 'tenant-xyz', payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+    it('passes solutionId + minimal WorkspaceSource (sourceIdentity only) to attachWorkspaceSource', async () => {
+      await process(makeQueueItem({ solutionId: 'tenant-xyz', payload: { message: 'hi', projectId: PROJECT_ID } as any }));
 
       // Queue payload doesn't carry sourceUrl / sourceSchemaHash; worker
       // only knows the identity. Solutions that need the URL persisted
@@ -495,13 +495,13 @@ describe('MessageWorkerService — processMessage', () => {
       );
     });
 
-    it('skips attach when projectId is set but tenantId is missing (anonymous-session regression guard)', async () => {
-      // Anonymous sessions can land here without a tenantId.
-      // attachWorkspaceSource would 400 on empty-string tenantId; the
+    it('skips attach when projectId is set but solutionId is missing (anonymous-session regression guard)', async () => {
+      // Anonymous sessions can land here without a solutionId.
+      // attachWorkspaceSource would 400 on empty-string solutionId; the
       // worker MUST skip the attach in that case rather than fail the
       // message. This guard is load-bearing — was missed in initial G4
       // fix and caught in review.
-      await process(makeQueueItem({ tenantId: null as any, payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ solutionId: null as any, payload: { message: 'hi', projectId: PROJECT_ID } as any }));
 
       expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
       expect(assetSyncer.sync).not.toHaveBeenCalled();
@@ -538,7 +538,7 @@ describe('MessageWorkerService — pollAndProcess', () => {
       id,
       sessionId,
       clientId: makeSseClientId(sessionId),
-      tenantId: 'tenant-1',
+      solutionId: 'tenant-1',
       payload: { message: 'hi' },
       status: 'processing',
       priority: 0,

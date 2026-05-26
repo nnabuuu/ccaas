@@ -136,18 +136,18 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   /**
    * Create a new MCP server
    */
-  async create(tenantId: string, dto: CreateMcpServerDto): Promise<McpServer> {
+  async create(solutionId: string, dto: CreateMcpServerDto): Promise<McpServer> {
     const slug = dto.slug || this.generateSlug(dto.name);
 
     // Check for duplicate
-    const existing = await this.findBySlug(tenantId, slug);
+    const existing = await this.findBySlug(solutionId, slug);
     if (existing) {
       throw new AlreadyExistsException(`MCP server with slug '${slug}' already exists`);
     }
 
     const server = this.mcpServerRepository.create({
       id: crypto.randomUUID(),
-      tenantId,
+      solutionId,
       name: dto.name,
       slug,
       description: dto.description || null,
@@ -183,26 +183,26 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   /**
    * Get an MCP server by ID or slug
    */
-  async findOne(tenantId: string, idOrSlug: string): Promise<McpServer | null> {
+  async findOne(solutionId: string, idOrSlug: string): Promise<McpServer | null> {
     // Try by ID from cache first
     const byId = this.servers.get(idOrSlug);
-    if (byId && byId.server.tenantId === tenantId) {
+    if (byId && byId.server.solutionId === solutionId) {
       return byId.server;
     }
 
     // Try by slug
-    return this.findBySlug(tenantId, idOrSlug);
+    return this.findBySlug(solutionId, idOrSlug);
   }
 
   /**
    * Update an MCP server
    */
   async update(
-    tenantId: string,
+    solutionId: string,
     idOrSlug: string,
     dto: UpdateMcpServerDto,
   ): Promise<McpServer> {
-    const server = await this.findOne(tenantId, idOrSlug);
+    const server = await this.findOne(solutionId, idOrSlug);
     if (!server) {
       throw new NotFoundException(`MCP server not found: ${idOrSlug}`);
     }
@@ -236,8 +236,8 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   /**
    * Delete an MCP server
    */
-  async delete(tenantId: string, idOrSlug: string): Promise<void> {
-    const server = await this.findOne(tenantId, idOrSlug);
+  async delete(solutionId: string, idOrSlug: string): Promise<void> {
+    const server = await this.findOne(solutionId, idOrSlug);
     if (!server) {
       throw new NotFoundException(`MCP server not found: ${idOrSlug}`);
     }
@@ -262,9 +262,9 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
    * List ALL MCP servers for a tenant regardless of status (admin use).
    * Queries the database directly — includes disabled/errored servers.
    */
-  async findAllByTenantId(tenantId: string): Promise<McpServer[]> {
+  async findAllByTenantId(solutionId: string): Promise<McpServer[]> {
     return this.mcpServerRepository.find({
-      where: { tenantId },
+      where: { solutionId },
       order: { name: 'ASC' },
     });
   }
@@ -272,10 +272,10 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   /**
    * List all MCP servers for a tenant
    */
-  async findByTenantId(tenantId: string): Promise<McpServer[]> {
+  async findByTenantId(solutionId: string): Promise<McpServer[]> {
     const servers: McpServer[] = [];
     for (const entry of this.servers.values()) {
-      if (entry.server.tenantId === tenantId) {
+      if (entry.server.solutionId === solutionId) {
         servers.push(entry.server);
       }
     }
@@ -290,13 +290,13 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
    * Get available tools for a session
    */
   async getToolsForSession(
-    tenantId: string,
+    solutionId: string,
     mcpServerIds?: string[],
   ): Promise<McpTool[]> {
     const tools: McpTool[] = [];
 
     for (const entry of this.servers.values()) {
-      if (entry.server.tenantId !== tenantId) continue;
+      if (entry.server.solutionId !== solutionId) continue;
       if (entry.server.status !== 'active') continue;
       if (mcpServerIds && !mcpServerIds.includes(entry.server.id)) continue;
 
@@ -310,13 +310,13 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
    * Execute a tool
    */
   async executeTool(
-    tenantId: string,
+    solutionId: string,
     mcpServerId: string,
     toolName: string,
     input: Record<string, unknown>,
   ): Promise<ToolExecutionResult> {
     const entry = this.servers.get(mcpServerId);
-    if (!entry || entry.server.tenantId !== tenantId) {
+    if (!entry || entry.server.solutionId !== solutionId) {
       return {
         success: false,
         error: `MCP server not found: ${mcpServerId}`,
@@ -372,10 +372,10 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
    * Check health of a specific MCP server
    */
   async checkHealth(
-    tenantId: string,
+    solutionId: string,
     idOrSlug: string,
   ): Promise<HealthCheckResult> {
-    const server = await this.findOne(tenantId, idOrSlug);
+    const server = await this.findOne(solutionId, idOrSlug);
     if (!server) {
       throw new NotFoundException(`MCP server not found: ${idOrSlug}`);
     }
@@ -437,19 +437,19 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   // ==========================================================================
 
   private async findBySlug(
-    tenantId: string,
+    solutionId: string,
     slug: string,
   ): Promise<McpServer | null> {
     // Check cache first
     for (const entry of this.servers.values()) {
-      if (entry.server.tenantId === tenantId && entry.server.slug === slug) {
+      if (entry.server.solutionId === solutionId && entry.server.slug === slug) {
         return entry.server;
       }
     }
 
     // Check database
     return this.mcpServerRepository.findOne({
-      where: { tenantId, slug },
+      where: { solutionId, slug },
     });
   }
 

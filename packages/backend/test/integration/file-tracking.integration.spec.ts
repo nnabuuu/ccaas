@@ -95,7 +95,7 @@ describe('File Tracking Integration Tests', () => {
       // Create a test message first
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -111,7 +111,7 @@ describe('File Tracking Integration Tests', () => {
       const agentFile = await filesService.createFromWriteTool({
         sessionId,
         messageId: message.id,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         originalPath: 'test-file.txt',
         workspaceDir: sessionDir,
       });
@@ -119,7 +119,7 @@ describe('File Tracking Integration Tests', () => {
       expect(agentFile).toBeDefined();
       expect(agentFile.filename).toBe('test-file.txt');
       expect(agentFile.sessionId).toBe(sessionId);
-      expect(agentFile.tenantId).toBe(testTenantId);
+      expect(agentFile.solutionId).toBe(testTenantId);
       expect(agentFile.size).toBe(12); // 'Test content' length
     });
 
@@ -128,7 +128,7 @@ describe('File Tracking Integration Tests', () => {
 
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -141,7 +141,7 @@ describe('File Tracking Integration Tests', () => {
         filesService.createFromWriteTool({
           sessionId,
           messageId: message.id,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           originalPath: 'non-existent.txt',
           workspaceDir: sessionDir,
         }),
@@ -156,7 +156,7 @@ describe('File Tracking Integration Tests', () => {
       // Create test message
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -174,7 +174,7 @@ describe('File Tracking Integration Tests', () => {
         await filesService.createFromWriteTool({
           sessionId,
           messageId: message.id,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           originalPath: filename,
           workspaceDir: sessionDir,
         });
@@ -195,7 +195,7 @@ describe('File Tracking Integration Tests', () => {
       // Create two messages
       const message1 = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'First message',
       });
@@ -203,7 +203,7 @@ describe('File Tracking Integration Tests', () => {
 
       const message2 = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Second message',
       });
@@ -219,7 +219,7 @@ describe('File Tracking Integration Tests', () => {
       await filesService.createFromWriteTool({
         sessionId,
         messageId: message1.id,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         originalPath: 'msg1-file.txt',
         workspaceDir: sessionDir,
       });
@@ -229,7 +229,7 @@ describe('File Tracking Integration Tests', () => {
       await filesService.createFromWriteTool({
         sessionId,
         messageId: message2.id,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         originalPath: 'msg2-file.txt',
         workspaceDir: sessionDir,
       });
@@ -246,7 +246,7 @@ describe('File Tracking Integration Tests', () => {
     });
   });
 
-  describe('Multi-Tenant Isolation', () => {
+  describe('Multi-Solution Isolation', () => {
     it('should isolate files by tenant', async () => {
       const sessionId1 = `session-tenant1-${Date.now()}`;
       const sessionId2 = `session-tenant2-${Date.now()}`;
@@ -256,17 +256,17 @@ describe('File Tracking Integration Tests', () => {
       // Create messages for each tenant
       const message1 = messageRepository.create({
         sessionId: sessionId1,
-        tenantId: tenant1,
+        solutionId: tenant1,
         role: 'assistant',
-        content: 'Tenant 1 message',
+        content: 'Solution 1 message',
       });
       await messageRepository.save(message1);
 
       const message2 = messageRepository.create({
         sessionId: sessionId2,
-        tenantId: tenant2,
+        solutionId: tenant2,
         role: 'assistant',
-        content: 'Tenant 2 message',
+        content: 'Solution 2 message',
       });
       await messageRepository.save(message2);
 
@@ -278,31 +278,31 @@ describe('File Tracking Integration Tests', () => {
 
       // Track files for each tenant
       const file1 = path.join(sessionDir1, 'tenant1-file.txt');
-      fs.writeFileSync(file1, 'Tenant 1 content');
+      fs.writeFileSync(file1, 'Solution 1 content');
       await filesService.createFromWriteTool({
         sessionId: sessionId1,
         messageId: message1.id,
-        tenantId: tenant1,
+        solutionId: tenant1,
         originalPath: 'tenant1-file.txt',
         workspaceDir: sessionDir1,
       });
 
       const file2 = path.join(sessionDir2, 'tenant2-file.txt');
-      fs.writeFileSync(file2, 'Tenant 2 content');
+      fs.writeFileSync(file2, 'Solution 2 content');
       await filesService.createFromWriteTool({
         sessionId: sessionId2,
         messageId: message2.id,
-        tenantId: tenant2,
+        solutionId: tenant2,
         originalPath: 'tenant2-file.txt',
         workspaceDir: sessionDir2,
       });
 
       // Query files by tenant
       const tenant1Files = await fileRepository.find({
-        where: { tenantId: tenant1 },
+        where: { solutionId: tenant1 },
       });
       const tenant2Files = await fileRepository.find({
-        where: { tenantId: tenant2 },
+        where: { solutionId: tenant2 },
       });
 
       expect(tenant1Files.length).toBe(1);
@@ -319,7 +319,7 @@ describe('File Tracking Integration Tests', () => {
 
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -335,7 +335,7 @@ describe('File Tracking Integration Tests', () => {
       const record = await filesService.createFromWriteTool({
         sessionId,
         messageId: message.id,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         originalPath: 'download-test.txt',
         workspaceDir: sessionDir,
       });
@@ -355,7 +355,7 @@ describe('File Tracking Integration Tests', () => {
 
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -376,7 +376,7 @@ describe('File Tracking Integration Tests', () => {
         const record = await filesService.createFromWriteTool({
           sessionId,
           messageId: message.id,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           originalPath: filename,
           workspaceDir: sessionDir,
         });
@@ -392,7 +392,7 @@ describe('File Tracking Integration Tests', () => {
 
       const message = messageRepository.create({
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         role: 'assistant',
         content: 'Test message',
       });
@@ -408,7 +408,7 @@ describe('File Tracking Integration Tests', () => {
         await filesService.createFromWriteTool({
           sessionId,
           messageId: message.id,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           originalPath: filename,
           workspaceDir: sessionDir,
         });

@@ -17,7 +17,7 @@ import {
 @Entity('session_events')
 @Index('IDX_session_events_session_type', ['sessionId', 'type'])
 @Index('IDX_session_events_session_seq', ['sessionId', 'seq'])
-@Index('IDX_session_events_tenant_created', ['tenantId', 'createdAt'])
+@Index('IDX_session_events_tenant_created', ['solutionId', 'createdAt'])
 export class SessionEventRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -26,7 +26,7 @@ export class SessionEventRecord {
   sessionId: string;
 
   @Column({ type: 'varchar', nullable: true })
-  tenantId: string | null;
+  solutionId: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   messageId: string | null;

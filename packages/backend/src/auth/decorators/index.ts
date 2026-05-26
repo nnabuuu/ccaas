@@ -100,8 +100,8 @@ export const Auth = (...scopes: ApiKeyScope[]) => {
  *
  * @example
  * @AuthAdminOrBuilder()
- * @Controller('api/v1/admin/tenants')
- * export class AdminTenantsController { ... }
+ * @Controller('api/v1/admin/solutions')
+ * export class AdminSolutionsController { ... }
  */
 export const AuthAdminOrBuilder = () =>
   applyDecorators(
@@ -119,7 +119,7 @@ export const AuthAdminOrBuilder = () =>
  * @example
  * @Get()
  * async list(@Ctx() ctx: RequestContext) {
- *   const tenantId = ctx.tenantId;
+ *   const solutionId = ctx.solutionId;
  * }
  */
 export const Ctx = createParamDecorator(
@@ -134,13 +134,13 @@ export const Ctx = createParamDecorator(
  *
  * @example
  * @Get()
- * async list(@TenantId() tenantId: string) { ... }
+ * async list(@TenantId() solutionId: string) { ... }
  */
 export const TenantId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string | undefined => {
     const request = ctx.switchToHttp().getRequest();
-    // Prefer operation target (set by TenantGuard), fallback to caller identity (for admin routes without TenantGuard)
-    return request.tenantId ?? request.context?.tenantId;
+    // Prefer operation target (set by SolutionAuthGuard), fallback to caller identity (for admin routes without SolutionAuthGuard)
+    return request.solutionId ?? request.context?.solutionId;
   },
 );
 

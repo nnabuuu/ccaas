@@ -10,7 +10,7 @@ import { ApiKey } from './entities/api-key.entity';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { ScopesGuard } from './guards/scopes.guard';
-import { TenantsModule } from '../tenants/tenants.module';
+import { SolutionsModule } from '../solutions/solutions.module';
 import { UsersModule } from '../users/users.module';
 import { User } from '../users/entities/user.entity';
 import { DevLoginService } from './dev-login.service';
@@ -24,7 +24,7 @@ const enableDevLogin = process.env.NODE_ENV !== 'production'
 @Module({
   imports: [
     TypeOrmModule.forFeature([ApiKey, User]),
-    TenantsModule,
+    SolutionsModule,
     forwardRef(() => UsersModule),
   ],
   controllers: [

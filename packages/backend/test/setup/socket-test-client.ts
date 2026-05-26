@@ -127,7 +127,7 @@ export class SocketTestClient {
   sendChat(options: {
     message: string;
     sessionId?: string;
-    tenantId?: string;
+    solutionId?: string;
   }): void {
     this.emit('chat', options);
   }

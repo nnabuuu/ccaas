@@ -43,7 +43,7 @@ describe('SessionEventsService', () => {
       expect(mockRepo.save).toHaveBeenCalledTimes(2);
       expect(mockRepo.save).toHaveBeenNthCalledWith(1, {
         sessionId: 'session-1',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         messageId: null,
         type: 'agent_status',
         payload: event1,
@@ -51,7 +51,7 @@ describe('SessionEventsService', () => {
       });
       expect(mockRepo.save).toHaveBeenNthCalledWith(2, {
         sessionId: 'session-1',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         messageId: null,
         type: 'tool_activity',
         payload: event2,
@@ -82,11 +82,11 @@ describe('SessionEventsService', () => {
       );
     });
 
-    it('should handle null tenantId', async () => {
+    it('should handle null solutionId', async () => {
       await service.recordEvent('session-1', null, { type: 'test' });
 
       expect(mockRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ tenantId: null }),
+        expect.objectContaining({ solutionId: null }),
       );
     });
   });

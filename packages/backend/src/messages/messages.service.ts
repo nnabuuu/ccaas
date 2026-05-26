@@ -24,7 +24,7 @@ export class MessagesService {
 
     const message = this.messageRepository.create({
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId || null,
+      solutionId: dto.solutionId || null,
       role: dto.role,
       content: dto.content || '',
       metadata: dto.metadata || null,
@@ -140,8 +140,8 @@ export class MessagesService {
       });
     }
 
-    if (dto.tenantId) {
-      qb.andWhere('message.tenantId = :tenantId', { tenantId: dto.tenantId });
+    if (dto.solutionId) {
+      qb.andWhere('message.solutionId = :solutionId', { solutionId: dto.solutionId });
     }
 
     if (dto.limit) {

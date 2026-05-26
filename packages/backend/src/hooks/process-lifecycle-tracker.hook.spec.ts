@@ -1,7 +1,7 @@
 /**
  * Process Lifecycle Tracker Hook Tests
  *
- * Tests for tenantId propagation in process lifecycle tracking.
+ * Tests for solutionId propagation in process lifecycle tracking.
  */
 
 import { createProcessLifecycleTracker, ProcessLifecycleTrackerDeps } from './process-lifecycle-tracker.hook';
@@ -34,7 +34,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       messageCount: 5,
       buffer: '',
       workspaceDir: '/tmp/session-123',
-      tenantId: 'tenant-process',
+      solutionId: 'tenant-process',
     };
 
     mockGetSession = jest.fn().mockReturnValue(mockSession);
@@ -48,7 +48,7 @@ describe('ProcessLifecycleTrackerHook', () => {
   });
 
   describe('onSpawn', () => {
-    it('should pass tenantId from session to recordSpawn', async () => {
+    it('should pass solutionId from session to recordSpawn', async () => {
       await tracker.onSpawn('session-123', 12345, 'npx claude-code', '/workspace');
 
       expect(mockProcessLifecycleService.recordSpawn).toHaveBeenCalledWith(
@@ -60,8 +60,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await tracker.onSpawn('session-123', 12345);
 
@@ -74,7 +74,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session not found', async () => {
+    it('should pass null solutionId when session not found', async () => {
       mockGetSession.mockReturnValue(undefined);
 
       await tracker.onSpawn('session-123', 12345);
@@ -109,7 +109,7 @@ describe('ProcessLifecycleTrackerHook', () => {
   });
 
   describe('onExit', () => {
-    it('should pass tenantId from session to recordExit', async () => {
+    it('should pass solutionId from session to recordExit', async () => {
       await tracker.onExit('session-123', 12345, 0, 'SIGTERM');
 
       expect(mockProcessLifecycleService.recordExit).toHaveBeenCalledWith(
@@ -121,8 +121,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await tracker.onExit('session-123', 12345, 0);
 
@@ -135,7 +135,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session not found', async () => {
+    it('should pass null solutionId when session not found', async () => {
       mockGetSession.mockReturnValue(undefined);
 
       await tracker.onExit('session-123', 12345, 1);
@@ -170,7 +170,7 @@ describe('ProcessLifecycleTrackerHook', () => {
   });
 
   describe('onCrash', () => {
-    it('should pass tenantId from session to recordCrash', async () => {
+    it('should pass solutionId from session to recordCrash', async () => {
       await tracker.onCrash('session-123', 12345, 'Segmentation fault', 'stderr output');
 
       expect(mockProcessLifecycleService.recordCrash).toHaveBeenCalledWith(
@@ -182,8 +182,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await tracker.onCrash('session-123', 12345, 'Error');
 
@@ -196,7 +196,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session not found', async () => {
+    it('should pass null solutionId when session not found', async () => {
       mockGetSession.mockReturnValue(undefined);
 
       await tracker.onCrash('session-123', 12345, 'Error');
@@ -231,7 +231,7 @@ describe('ProcessLifecycleTrackerHook', () => {
   });
 
   describe('onKill', () => {
-    it('should pass tenantId from session to recordKill', async () => {
+    it('should pass solutionId from session to recordKill', async () => {
       await tracker.onKill('session-123', 12345, 'SIGTERM');
 
       expect(mockProcessLifecycleService.recordKill).toHaveBeenCalledWith(
@@ -242,8 +242,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       await tracker.onKill('session-123', 12345);
 
@@ -255,7 +255,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should pass null tenantId when session not found', async () => {
+    it('should pass null solutionId when session not found', async () => {
       mockGetSession.mockReturnValue(undefined);
 
       await tracker.onKill('session-123', 12345);
@@ -309,9 +309,9 @@ describe('ProcessLifecycleTrackerHook', () => {
     });
   });
 
-  describe('tenantId edge cases', () => {
-    it('should handle empty string tenantId', async () => {
-      mockSession.tenantId = '';
+  describe('solutionId edge cases', () => {
+    it('should handle empty string solutionId', async () => {
+      mockSession.solutionId = '';
 
       await tracker.onSpawn('session-123', 12345);
 
@@ -325,7 +325,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should preserve tenantId across different lifecycle events', async () => {
+    it('should preserve solutionId across different lifecycle events', async () => {
       await tracker.onSpawn('session-123', 12345, 'npx claude-code', '/workspace');
       await tracker.onExit('session-123', 12345, 0, 'SIGTERM');
 
@@ -345,8 +345,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should handle UUID tenantId format', async () => {
-      mockSession.tenantId = '123e4567-e89b-12d3-a456-426614174000';
+    it('should handle UUID solutionId format', async () => {
+      mockSession.solutionId = '123e4567-e89b-12d3-a456-426614174000';
 
       await tracker.onSpawn('session-123', 12345);
 
@@ -359,8 +359,8 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should handle slug tenantId format', async () => {
-      mockSession.tenantId = 'my-company-tenant';
+    it('should handle slug solutionId format', async () => {
+      mockSession.solutionId = 'my-company-tenant';
 
       await tracker.onSpawn('session-123', 12345);
 
@@ -375,7 +375,7 @@ describe('ProcessLifecycleTrackerHook', () => {
   });
 
   describe('complete lifecycle flow', () => {
-    it('should track complete process lifecycle with tenantId', async () => {
+    it('should track complete process lifecycle with solutionId', async () => {
       // Spawn
       await tracker.onSpawn('session-123', 12345, 'npx claude-code', '/workspace');
 
@@ -399,7 +399,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should track crash lifecycle with tenantId', async () => {
+    it('should track crash lifecycle with solutionId', async () => {
       // Spawn
       await tracker.onSpawn('session-123', 12345, 'npx claude-code', '/workspace');
 
@@ -415,7 +415,7 @@ describe('ProcessLifecycleTrackerHook', () => {
       );
     });
 
-    it('should track killed process with tenantId', async () => {
+    it('should track killed process with solutionId', async () => {
       // Spawn
       await tracker.onSpawn('session-123', 12345, 'npx claude-code', '/workspace');
 

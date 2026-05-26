@@ -54,7 +54,7 @@ export interface SkillContext {
 
 export interface RoutedSession {
   sessionId: string;
-  tenantId?: string;
+  solutionId?: string;
   skillId?: string;
   skillSlug?: string;
   systemPrompt?: string;
@@ -90,19 +90,19 @@ export class SkillRouterService {
    * Route a chat request to the appropriate skill
    */
   async routeChat(
-    tenantId: string,
+    solutionId: string,
     request: SkillChatRequest,
   ): Promise<SkillContext | null> {
     let skill: Skill | null = null;
 
     // Resolve skill if specified
     if (request.skillId) {
-      skill = await this.skillsService.findOne(tenantId, request.skillId);
+      skill = await this.skillsService.findOne(solutionId, request.skillId);
     } else if (request.skillSlug) {
-      skill = await this.skillsService.findOne(tenantId, request.skillSlug);
+      skill = await this.skillsService.findOne(solutionId, request.skillSlug);
     } else {
       // Try to resolve from message content using triggers
-      skill = await this.resolveSkillFromMessage(tenantId, request.message);
+      skill = await this.resolveSkillFromMessage(solutionId, request.message);
     }
 
     if (!skill) {
@@ -110,17 +110,17 @@ export class SkillRouterService {
     }
 
     // Build skill context
-    return this.buildSkillContext(tenantId, skill as SkillWithContent);
+    return this.buildSkillContext(solutionId, skill as SkillWithContent);
   }
 
   /**
    * Resolve skill from message content using triggers
    */
   private async resolveSkillFromMessage(
-    tenantId: string,
+    solutionId: string,
     message: string,
   ): Promise<Skill | null> {
-    const publishedSkills = await this.skillsService.findPublished(tenantId);
+    const publishedSkills = await this.skillsService.findPublished(solutionId);
     const messageLower = message.toLowerCase();
 
     // Sort by trigger priority
@@ -197,7 +197,7 @@ export class SkillRouterService {
    * Build context for a skill
    */
   private async buildSkillContext(
-    tenantId: string,
+    solutionId: string,
     skill: SkillWithContent,
   ): Promise<SkillContext> {
     // Check cache
@@ -216,7 +216,7 @@ export class SkillRouterService {
     // Get MCP servers and their tools
     const mcpServers = skill.mcpServers?.map((m) => m.mcpServerId) || [];
     const mcpTools = await this.mcpPoolService.getToolsForSession(
-      tenantId,
+      solutionId,
       mcpServers.length > 0 ? mcpServers : undefined,
     );
 
@@ -389,10 +389,10 @@ export class SkillRouterService {
    * Check if a message matches any skill triggers
    */
   async matchesTriggers(
-    tenantId: string,
+    solutionId: string,
     message: string,
   ): Promise<{ matched: boolean; skill?: Skill }> {
-    const skill = await this.resolveSkillFromMessage(tenantId, message);
+    const skill = await this.resolveSkillFromMessage(solutionId, message);
     return {
       matched: skill !== null,
       skill: skill || undefined,

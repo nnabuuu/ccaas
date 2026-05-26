@@ -46,7 +46,7 @@ export default () => ({
     solutionDirs: parseSolutionDirs(process.env.SOLUTION_DIRS),
     // Note: the agent-runtime sync layer's REST callback URL lives in
     // `tenant.config.artifactUrl` (set via solution.json + auto-import,
-    // or via PUT /tenants/:id). No env var needed.
+    // or via PUT /solutions/:id). No env var needed.
   },
 
   database: {

@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { SkillsService } from '../skills.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 import { IS_PUBLIC_KEY } from '../../auth/decorators';
 import type { RequestContext } from '../../auth/types';
 
@@ -23,7 +23,7 @@ export class SkillPermissionGuard implements CanActivate {
 
   constructor(
     private readonly skillsService: SkillsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly userTenantService: UserSolutionService,
     private readonly reflector: Reflector,
   ) {}
 
@@ -42,21 +42,21 @@ export class SkillPermissionGuard implements CanActivate {
     const method = request.method;
     const skillId = request.params?.id;
     const requestContext: RequestContext | undefined = request.context;
-    // Use operation target tenant (set by TenantGuard), not caller identity tenant
-    const tenantId: string | undefined = request.tenantId ?? requestContext?.tenantId;
+    // Use operation target tenant (set by SolutionAuthGuard), not caller identity tenant
+    const solutionId: string | undefined = request.solutionId ?? requestContext?.solutionId;
 
     // READ operations (GET)
     if (method === 'GET' && skillId) {
-      return this.checkReadPermission(skillId, tenantId, requestContext);
+      return this.checkReadPermission(skillId, solutionId, requestContext);
     }
 
     // WRITE operations (POST, PUT, PATCH, DELETE)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return this.checkWritePermission(method, skillId, tenantId, requestContext);
+      return this.checkWritePermission(method, skillId, solutionId, requestContext);
     }
 
     // LIST operations (GET without ID) — allow for OptionalAuth routes
-    // even if anonymous (tenantId still required via TenantGuard)
+    // even if anonymous (solutionId still required via SolutionAuthGuard)
     return true;
   }
 
@@ -65,20 +65,20 @@ export class SkillPermissionGuard implements CanActivate {
    */
   private async checkReadPermission(
     skillId: string,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
-    if (!tenantId) {
-      throw new ForbiddenException('Tenant context required');
+    if (!solutionId) {
+      throw new ForbiddenException('Solution context required');
     }
 
-    const skill = await this.skillsService.findOne(tenantId, skillId);
+    const skill = await this.skillsService.findOne(solutionId, skillId);
 
     if (!skill) {
       throw new ForbiddenException('Skill not found');
     }
 
-    // Tenant-scoped skills are readable by all (including anonymous)
+    // Solution-scoped skills are readable by all (including anonymous)
     if (skill.scope === 'tenant') {
       return true;
     }
@@ -111,13 +111,13 @@ export class SkillPermissionGuard implements CanActivate {
   private async checkWritePermission(
     method: string,
     skillId: string | undefined,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
     // Admin-scoped API keys bypass role-based permission checks
     if (context?.apiKeyScopes?.includes('admin')) {
-      if (!tenantId) {
-        throw new ForbiddenException('Tenant context required');
+      if (!solutionId) {
+        throw new ForbiddenException('Solution context required');
       }
       return true;
     }
@@ -127,7 +127,7 @@ export class SkillPermissionGuard implements CanActivate {
       throw new ForbiddenException('Authentication required for this operation');
     }
 
-    // Tenant-level API keys with skills:write scope (for system/automation)
+    // Solution-level API keys with skills:write scope (for system/automation)
     // These are API keys without userId, representing the tenant itself
     if (context.apiKeyScopes?.includes('skills:write') && !context.userId) {
       this.logger.log(`Allowing tenant-level write operation via API key with skills:write scope`);
@@ -146,7 +146,7 @@ export class SkillPermissionGuard implements CanActivate {
 
     // UPDATE/DELETE operations require checking existing skill
     if (skillId) {
-      return this.checkModifyPermission(skillId, tenantId, context);
+      return this.checkModifyPermission(skillId, solutionId, context);
     }
 
     return true;
@@ -175,14 +175,14 @@ export class SkillPermissionGuard implements CanActivate {
    */
   private async checkModifyPermission(
     skillId: string,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
     context: RequestContext,
   ): Promise<boolean> {
-    if (!tenantId) {
-      throw new ForbiddenException('Tenant context required');
+    if (!solutionId) {
+      throw new ForbiddenException('Solution context required');
     }
 
-    const skill = await this.skillsService.findOne(tenantId, skillId);
+    const skill = await this.skillsService.findOne(solutionId, skillId);
 
     if (!skill) {
       throw new ForbiddenException('Skill not found');
@@ -205,7 +205,7 @@ export class SkillPermissionGuard implements CanActivate {
       return userTenant.role === 'admin' || userTenant.role === 'developer';
     }
 
-    // Use UserTenantService to check if user can edit this resource
+    // Use UserSolutionService to check if user can edit this resource
     const canEdit = this.userTenantService.canEditResource(
       userTenant,
       skill.createdBy,

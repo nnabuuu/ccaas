@@ -20,7 +20,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { SkillsService } from '../../skills/skills.service';
 import { SkillVersion } from '../../skills/entities/skill-version.entity';
@@ -32,7 +32,7 @@ import { VersionDiff } from '../dto/admin.dto';
 @ApiTags('admin')
 @Controller('api/v1/admin/skills')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminSkillsController {
   constructor(
     private readonly skillsService: SkillsService,
@@ -46,16 +46,16 @@ export class AdminSkillsController {
    */
   @Get()
   async findAll(
-    @Query('tenantId') tenantId?: string,
+    @Query('solutionId') solutionId?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
     @TenantId() defaultTenantId?: string,
   ): Promise<{ skills: any[]; total: number }> {
-    // Admin can query any tenant by passing tenantId parameter
-    const targetTenantId = tenantId || defaultTenantId;
+    // Admin can query any tenant by passing solutionId parameter
+    const targetTenantId = solutionId || defaultTenantId;
 
     if (!targetTenantId) {
-      throw new NotFoundException('Tenant ID is required');
+      throw new NotFoundException('Solution ID is required');
     }
 
     const result = await this.skillsService.findAll(targetTenantId, {
@@ -66,7 +66,7 @@ export class AdminSkillsController {
     return {
       skills: result.items.map(skill => ({
         id: skill.id,
-        tenantId: skill.tenantId,
+        solutionId: skill.solutionId,
         name: skill.name,
         slug: skill.slug,
         description: skill.description,
@@ -90,10 +90,10 @@ export class AdminSkillsController {
   async getVersionHistory(
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
-    @Query('tenantId') tenantId?: string,
+    @Query('solutionId') solutionId?: string,
   ): Promise<SkillVersion[]> {
-    // Admin can query any tenant by passing tenantId parameter
-    const targetTenantId = tenantId || defaultTenantId;
+    // Admin can query any tenant by passing solutionId parameter
+    const targetTenantId = solutionId || defaultTenantId;
 
     const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
     if (!skill) {
@@ -110,11 +110,11 @@ export class AdminSkillsController {
    */
   @Get(':idOrSlug/versions/:version')
   async getVersion(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Param('version') version: string,
   ): Promise<SkillVersion> {
-    const skill = await this.skillsService.findOneWithVersions(tenantId, idOrSlug);
+    const skill = await this.skillsService.findOneWithVersions(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -135,15 +135,15 @@ export class AdminSkillsController {
   @Post(':idOrSlug/rollback/:version')
   @HttpCode(HttpStatus.OK)
   async rollbackToVersion(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Param('version') version: string,
     @Ctx() ctx: RequestContext,
   ): Promise<Skill> {
-    const adminId = ctx.apiKeyId || ctx.tenantId;
+    const adminId = ctx.apiKeyId || ctx.solutionId;
 
     try {
-      const skill = await this.skillsService.rollbackToVersion(tenantId, idOrSlug, version);
+      const skill = await this.skillsService.rollbackToVersion(solutionId, idOrSlug, version);
 
       await this.auditService.logSuccess(
         adminId,
@@ -151,12 +151,12 @@ export class AdminSkillsController {
         'skill',
         skill.id,
         { version, previousVersion: skill.currentVersion },
-        tenantId,
+        solutionId,
       );
 
       return skill;
     } catch (error) {
-      const skill = await this.skillsService.findOne(tenantId, idOrSlug);
+      const skill = await this.skillsService.findOne(solutionId, idOrSlug);
       await this.auditService.logFailure(
         adminId,
         'skill.rollback',
@@ -164,7 +164,7 @@ export class AdminSkillsController {
         skill?.id || idOrSlug,
         error instanceof Error ? error.message : 'Unknown error',
         { version },
-        tenantId,
+        solutionId,
       );
       throw error;
     }
@@ -177,12 +177,12 @@ export class AdminSkillsController {
    */
   @Get(':idOrSlug/diff')
   async getVersionDiff(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Query('v1') version1: string,
     @Query('v2') version2: string,
   ): Promise<VersionDiff> {
-    const skill = await this.skillsService.findOneWithVersions(tenantId, idOrSlug);
+    const skill = await this.skillsService.findOneWithVersions(solutionId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -228,10 +228,10 @@ export class AdminSkillsController {
   async findOne(
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
-    @Query('tenantId') tenantId?: string,
+    @Query('solutionId') solutionId?: string,
   ) {
-    // Admin can query any tenant by passing tenantId parameter
-    const targetTenantId = tenantId || defaultTenantId;
+    // Admin can query any tenant by passing solutionId parameter
+    const targetTenantId = solutionId || defaultTenantId;
 
     const skill = await this.skillsService.findOneWithVersions(targetTenantId, idOrSlug);
     if (!skill) {
@@ -258,13 +258,13 @@ export class AdminSkillsController {
   @Post(':idOrSlug/publish')
   @HttpCode(HttpStatus.OK)
   async publishSkill(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Ctx() ctx: RequestContext,
   ): Promise<Skill> {
-    const adminId = ctx.apiKeyId || ctx.tenantId;
+    const adminId = ctx.apiKeyId || ctx.solutionId;
 
-    const skill = await this.skillsService.publish(tenantId, idOrSlug);
+    const skill = await this.skillsService.publish(solutionId, idOrSlug);
 
     await this.auditService.logSuccess(
       adminId,
@@ -272,7 +272,7 @@ export class AdminSkillsController {
       'skill',
       skill.id,
       { version: skill.currentVersion },
-      tenantId,
+      solutionId,
     );
 
     return skill;
@@ -286,18 +286,18 @@ export class AdminSkillsController {
   @Post(':idOrSlug/archive')
   @HttpCode(HttpStatus.OK)
   async archiveSkill(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Ctx() ctx: RequestContext,
   ): Promise<{ success: boolean }> {
-    const adminId = ctx.apiKeyId || ctx.tenantId;
-    const skill = await this.skillsService.findOne(tenantId, idOrSlug);
+    const adminId = ctx.apiKeyId || ctx.solutionId;
+    const skill = await this.skillsService.findOne(solutionId, idOrSlug);
 
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
 
-    await this.skillsService.archive(tenantId, idOrSlug);
+    await this.skillsService.archive(solutionId, idOrSlug);
 
     await this.auditService.logSuccess(
       adminId,
@@ -305,7 +305,7 @@ export class AdminSkillsController {
       'skill',
       skill.id,
       { name: skill.name },
-      tenantId,
+      solutionId,
     );
 
     return { success: true };
@@ -322,11 +322,11 @@ export class AdminSkillsController {
    */
   @Get(':idOrSlug/files')
   async listFiles(
-    @TenantId() tenantId: string,
+    @TenantId() solutionId: string,
     @Param('idOrSlug') idOrSlug: string,
-    @Query('tenantId') queryTenantId?: string,
+    @Query('solutionId') queryTenantId?: string,
   ) {
-    const targetTenantId = queryTenantId || tenantId;
+    const targetTenantId = queryTenantId || solutionId;
     const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
@@ -344,7 +344,7 @@ export class AdminSkillsController {
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Param('fileId') fileId: string,
-    @Query('tenantId') queryTenantId?: string,
+    @Query('solutionId') queryTenantId?: string,
   ) {
     const targetTenantId = queryTenantId || defaultTenantId;
     const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
@@ -368,7 +368,7 @@ export class AdminSkillsController {
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Body() dto: UpsertSkillFilesDto,
-    @Query('tenantId') queryTenantId?: string,
+    @Query('solutionId') queryTenantId?: string,
   ) {
     const targetTenantId = queryTenantId || defaultTenantId;
     const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
@@ -388,7 +388,7 @@ export class AdminSkillsController {
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Param('relativePath') relativePath: string,
-    @Query('tenantId') queryTenantId?: string,
+    @Query('solutionId') queryTenantId?: string,
   ) {
     const targetTenantId = queryTenantId || defaultTenantId;
     const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);

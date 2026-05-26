@@ -8,13 +8,13 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { SessionsGateway } from '../../sessions/sessions.gateway';
 
 @ApiTags('admin')
 @Controller('api/v1/admin/sdk-connections')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminSdkController {
   constructor(private readonly sessionsGateway: SessionsGateway) {}
 
@@ -29,7 +29,7 @@ export class AdminSdkController {
 
     // Builder keys: filter to own tenant only
     if (!isAdminScope(ctx)) {
-      connections = connections.filter((c) => c.tenantId === ctx.tenantId);
+      connections = connections.filter((c) => c.solutionId === ctx.solutionId);
     }
 
     return {

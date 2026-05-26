@@ -15,13 +15,13 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import { AdminPlaygroundDraftsController } from './admin-playground-drafts.controller';
 import { PlaygroundDraft } from '../entities/playground-draft.entity';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import type { RequestContext } from '../../auth/types';
 
 function makeCtx(overrides: Partial<RequestContext> = {}): RequestContext {
   return {
-    tenantId: 'tenant-a',
+    solutionId: 'tenant-a',
     apiKeyScopes: ['admin'],
     requestId: 'req-1',
     timestamp: new Date(),
@@ -47,11 +47,11 @@ describe('AdminPlaygroundDraftsController', () => {
             delete: jest.fn(),
           },
         },
-        // The controller is decorated with @UseGuards(AdminTenantAccessGuard),
-        // which depends on UserTenantService. Stub it so the testing module
+        // The controller is decorated with @UseGuards(AdminSolutionAccessGuard),
+        // which depends on UserSolutionService. Stub it so the testing module
         // can resolve DI — the guard logic itself isn't under test here.
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: { findUserInTenant: jest.fn() },
         },
         {

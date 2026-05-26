@@ -29,7 +29,7 @@ export const WORKSPACE_PROVIDER = 'WORKSPACE_PROVIDER';
 export interface CreateOpts {
   sessionId: string;
   /** Stored on the handle; downstream code uses it for tenant-aware fs ops. */
-  tenantId?: string;
+  solutionId?: string;
 }
 
 export interface WorkspaceHandle {

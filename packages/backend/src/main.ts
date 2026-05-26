@@ -40,7 +40,7 @@ async function bootstrap() {
     origin: isProduction ? allowedOrigins.split(',') : true, // Production: whitelist, Dev: all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tenant-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Solution-Id'],
   });
 
   // Global validation pipe
@@ -72,7 +72,7 @@ async function bootstrap() {
       'X-API-Key: ccaas_xxxxxxxxxxxxxxxx\n' +
       '```\n\n' +
       '## 核心概念\n\n' +
-      '- **Tenant（租户）**: 多租户隔离的基本单位\n' +
+      '- **Solution（租户）**: 多租户隔离的基本单位\n' +
       '- **Session（会话）**: 与 AgentEngine 的交互会话\n' +
       '- **Message（消息）**: 用户和 Agent 之间的对话消息\n' +
       '- **Skill（技能）**: 自定义的 Agent 能力扩展\n' +
@@ -125,7 +125,7 @@ async function bootstrap() {
       'X-API-Key: ccaas_xxxxxxxxxxxxxxxx\n' +
       '```\n\n' +
       '## Core Concepts\n\n' +
-      '- **Tenant**: Basic unit for multi-tenant isolation\n' +
+      '- **Solution**: Basic unit for multi-tenant isolation\n' +
       '- **Session**: Interactive session with AgentEngine\n' +
       '- **Message**: Conversation messages between user and agent\n' +
       '- **Skill**: Custom agent capability extensions\n' +
@@ -150,7 +150,7 @@ async function bootstrap() {
     .addTag('skills', 'Skill Management - Skill CRUD, version control')
     .addTag('mcp', 'MCP Servers - MCP server configuration and management')
     .addTag('auth', 'Authentication - API Key and user management')
-    .addTag('tenants', 'Tenant Management - Multi-tenant configuration')
+    .addTag('tenants', 'Solution Management - Multi-tenant configuration')
     .addTag('scheduler', '⚠️ [Alpha] Scheduled Tasks - Execute agent tasks on schedule (under development, API may change)')
     .addTag('jobs', '⚠️ [Alpha] Background Jobs - Async job management (under development, API may change)')
     .addTag('builder', 'Builder API - Manage own tenants and API keys')
@@ -174,8 +174,8 @@ async function bootstrap() {
   logger.log(`Swagger 文档（中文）: http://localhost:${port}/api/docs`);
   logger.log(`Swagger Docs (EN): http://localhost:${port}/api/docs/en`);
 
-  // Note: Solution auto-discovery is triggered via SolutionsModule.onApplicationBootstrap()
-  // See packages/backend/src/solutions/solutions.module.ts
+  // Note: Solution auto-discovery is triggered via SolutionLoaderModule.onApplicationBootstrap()
+  // See packages/backend/src/solutions/solution-loader.module.ts
 }
 
 bootstrap();

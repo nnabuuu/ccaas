@@ -1,10 +1,10 @@
 /**
  * SessionMetadataWorkspaceResolver spec.
  *
- * Covers: returns true when a binding exists for (projectId, tenantId)
+ * Covers: returns true when a binding exists for (projectId, solutionId)
  * with the canonical JSON-quoted value the SessionMetadataService
  * writes; matches the raw-string legacy format; returns false when no
- * row matches; returns false when projectId or tenantId is empty;
+ * row matches; returns false when projectId or solutionId is empty;
  * returns false when binding exists but for a DIFFERENT tenant (the
  * multi-tenant correctness check — caller can't piggyback on another
  * tenant's binding).
@@ -62,7 +62,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
     await repo.save(
       repo.create({
         sessionId: 'sess-1',
-        tenantId: TENANT_A,
+        solutionId: TENANT_A,
         key: 'projectId',
         value: JSON.stringify('proj-1'),
       }),
@@ -76,7 +76,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
     await repo.save(
       repo.create({
         sessionId: 'sess-2',
-        tenantId: TENANT_A,
+        solutionId: TENANT_A,
         key: 'projectId',
         value: 'proj-2',
       }),
@@ -92,7 +92,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
     await repo.save(
       repo.create({
         sessionId: 'sess-other',
-        tenantId: TENANT_B,
+        solutionId: TENANT_B,
         key: 'projectId',
         value: JSON.stringify('proj-shared'),
       }),
@@ -110,7 +110,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
     await repo.save(
       repo.create({
         sessionId: 'sess-1',
-        tenantId: TENANT_A,
+        solutionId: TENANT_A,
         key: 'projectId',
         value: JSON.stringify('proj-multi'),
       }),
@@ -118,7 +118,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
     await repo.save(
       repo.create({
         sessionId: 'sess-2',
-        tenantId: TENANT_A,
+        solutionId: TENANT_A,
         key: 'projectId',
         value: JSON.stringify('proj-multi'),
       }),

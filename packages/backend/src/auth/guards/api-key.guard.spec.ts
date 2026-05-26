@@ -12,7 +12,7 @@ describe('ApiKeyGuard', () => {
 
   // Helpers
   function createMockContext(headers: Record<string, string> = {}): ExecutionContext {
-    const request = { headers, context: undefined, tenantId: undefined, tenant: undefined };
+    const request = { headers, context: undefined, solutionId: undefined, tenant: undefined };
     return {
       switchToHttp: () => ({ getRequest: () => request }),
       getHandler: () => jest.fn(),
@@ -62,7 +62,7 @@ describe('ApiKeyGuard', () => {
 
     it('should attach anonymous context when no API key and anonymous allowed', async () => {
       const anonymousCtx = {
-        tenantId: 'default-tenant',
+        solutionId: 'default-tenant',
         tenant: { id: 'default-tenant', name: 'Default' },
         requestId: 'req-1',
         timestamp: new Date(),
@@ -77,12 +77,12 @@ describe('ApiKeyGuard', () => {
       expect(apiKeyService.createContext).toHaveBeenCalledWith(undefined);
       const req = getRequest(ctx);
       expect(req.context).toBe(anonymousCtx);
-      expect(req.tenantId).toBe('default-tenant');
+      expect(req.solutionId).toBe('default-tenant');
     });
 
     it('should validate and attach context when valid API key provided', async () => {
       const authCtx = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         tenant: { id: 'tenant-1' },
         apiKeyId: 'key-1',
         apiKeyScopes: ['chat'],
@@ -141,7 +141,7 @@ describe('ApiKeyGuard', () => {
 
     it('should attach context when valid API key provided', async () => {
       const authCtx = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         tenant: { id: 'tenant-1' },
         apiKeyId: 'key-1',
         requestId: 'req-3',
@@ -182,7 +182,7 @@ describe('ApiKeyGuard', () => {
     beforeEach(() => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
       apiKeyService.createContext.mockResolvedValue({
-        tenantId: 't', tenant: { id: 't' }, requestId: 'r', timestamp: new Date(), isAnonymous: false,
+        solutionId: 't', tenant: { id: 't' }, requestId: 'r', timestamp: new Date(), isAnonymous: false,
       } as any);
     });
 

@@ -135,7 +135,7 @@ describe('QueueService', () => {
         jobEntityId: 'job-1',
         type: 'test',
         prompt: 'test prompt',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       };
 
       await service.enqueue(payload);
@@ -150,7 +150,7 @@ describe('QueueService', () => {
         jobEntityId: 'job-1',
         type: 'test',
         prompt: 'test',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
       };
 
       await service.enqueue(payload, { numRetries: 5 });

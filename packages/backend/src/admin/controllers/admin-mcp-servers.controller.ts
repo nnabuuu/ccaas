@@ -24,11 +24,11 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
 import type { CreateMcpServerDto as ServiceCreateDto } from '../../mcp/mcp-pool.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { AuditService } from '../services/audit.service';
 import { EventMapperService } from '../../sessions/event-mapper.service';
 import { CreateMcpServerDto, UpdateMcpServerDto } from '../../mcp/dto/mcp-server.dto';
@@ -37,22 +37,22 @@ import { McpServer } from '../../mcp/entities/mcp-server.entity';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Body DTO for admin create — extends CreateMcpServerDto with required tenantId
+ * Body DTO for admin create — extends CreateMcpServerDto with required solutionId
  */
 class AdminCreateMcpServerBody extends CreateMcpServerDto {
   @IsString()
   @IsNotEmpty()
-  tenantId!: string;
+  solutionId!: string;
 }
 
 @ApiTags('admin')
 @Controller('api/v1/admin/mcp-servers')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminMcpServersController {
   constructor(
     private readonly mcpPool: McpPoolService,
-    private readonly tenants: TenantsService,
+    private readonly tenants: SolutionsService,
     private readonly audit: AuditService,
     private readonly eventMapper: EventMapperService,
   ) {}
@@ -61,28 +61,28 @@ export class AdminMcpServersController {
    * GET /api/v1/admin/mcp-servers
    *
    * List ALL MCP servers for a tenant (including disabled) with pagination.
-   * tenantId is a required query parameter.
+   * solutionId is a required query parameter.
    */
   @Get()
   async findAll(
-    @Query('tenantId') tenantId: string,
+    @Query('solutionId') solutionId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
   ): Promise<{ items: McpServer[]; total: number; page: number; limit: number }> {
-    if (!tenantId) {
-      throw new BadRequestException('tenantId query parameter is required');
+    if (!solutionId) {
+      throw new BadRequestException('solutionId query parameter is required');
     }
 
-    const tenant = await this.tenants.findOne(tenantId);
+    const tenant = await this.tenants.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
     // Use DB-backed method to include disabled/errored servers
-    const allServers = await this.mcpPool.findAllByTenantId(tenantId);
+    const allServers = await this.mcpPool.findAllByTenantId(solutionId);
     const startIndex = (pageNum - 1) * limitNum;
     const items = allServers.slice(startIndex, startIndex + limitNum);
 
@@ -93,7 +93,7 @@ export class AdminMcpServersController {
    * POST /api/v1/admin/mcp-servers
    *
    * Create a new MCP server for a tenant.
-   * tenantId must be included in the request body.
+   * solutionId must be included in the request body.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -103,21 +103,21 @@ export class AdminMcpServersController {
   ): Promise<McpServer> {
     const adminId = ctx?.apiKeyId || 'system';
 
-    const tenant = await this.tenants.findOne(dto.tenantId);
+    const tenant = await this.tenants.findOne(dto.solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${dto.tenantId}`);
+      throw new NotFoundException(`Solution not found: ${dto.solutionId}`);
     }
 
-    const { tenantId, ...createDto } = dto;
-    const server = await this.mcpPool.create(tenantId, createDto as ServiceCreateDto);
+    const { solutionId, ...createDto } = dto;
+    const server = await this.mcpPool.create(solutionId, createDto as ServiceCreateDto);
 
     await this.audit.logSuccess(
       adminId,
       'mcp.create',
       'mcp-server',
       server.id,
-      { name: server.name, tenantId },
-      tenantId,
+      { name: server.name, solutionId },
+      solutionId,
     );
 
     return server;
@@ -144,7 +144,7 @@ export class AdminMcpServersController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && server.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && server.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this MCP server');
     }
 
@@ -175,18 +175,18 @@ export class AdminMcpServersController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && existing.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this MCP server');
     }
 
-    const updated = await this.mcpPool.update(existing.tenantId, id, dto);
+    const updated = await this.mcpPool.update(existing.solutionId, id, dto);
 
     // Sync toolEventTriggers into EventMapperService memory registry immediately.
     // Uses active-only findByTenantId — disabled servers' triggers should not fire.
     if (dto.config) {
-      const activeServers = await this.mcpPool.findByTenantId(existing.tenantId);
+      const activeServers = await this.mcpPool.findByTenantId(existing.solutionId);
       const triggers = activeServers.flatMap(s => s.config?.toolEventTriggers ?? []);
-      this.eventMapper.registerTenantToolTriggers(existing.tenantId, triggers);
+      this.eventMapper.registerTenantToolTriggers(existing.solutionId, triggers);
     }
 
     await this.audit.logSuccess(
@@ -194,8 +194,8 @@ export class AdminMcpServersController {
       'mcp.update',
       'mcp-server',
       id,
-      { name: updated.name, tenantId: existing.tenantId },
-      existing.tenantId,
+      { name: updated.name, solutionId: existing.solutionId },
+      existing.solutionId,
     );
 
     return updated;
@@ -224,14 +224,14 @@ export class AdminMcpServersController {
     }
 
     // Builder keys: verify tenant ownership
-    if (!isAdminScope(ctx) && server.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && server.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this MCP server');
     }
 
-    const { tenantId, name } = server;
+    const { solutionId, name } = server;
 
     try {
-      await this.mcpPool.delete(tenantId, id);
+      await this.mcpPool.delete(solutionId, id);
     } catch (err) {
       await this.audit.logFailure(
         adminId,
@@ -239,24 +239,24 @@ export class AdminMcpServersController {
         'mcp-server',
         id,
         err instanceof Error ? err.message : 'Unknown error',
-        { name, tenantId },
-        tenantId,
+        { name, solutionId },
+        solutionId,
       );
       throw err;
     }
 
     // Remove deleted server's triggers from the in-memory registry
-    const remainingServers = await this.mcpPool.findByTenantId(tenantId);
+    const remainingServers = await this.mcpPool.findByTenantId(solutionId);
     const triggers = remainingServers.flatMap(s => s.config?.toolEventTriggers ?? []);
-    this.eventMapper.registerTenantToolTriggers(tenantId, triggers);
+    this.eventMapper.registerTenantToolTriggers(solutionId, triggers);
 
     await this.audit.logSuccess(
       adminId,
       'mcp.delete',
       'mcp-server',
       id,
-      { name, tenantId },
-      tenantId,
+      { name, solutionId },
+      solutionId,
     );
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Tenant Entity
+ * Solution Entity
  *
  * TypeORM entity for tenants.
  */
@@ -41,8 +41,8 @@ export const PLAN_DEFAULT_TOKEN_QUOTA: Record<TenantPlan, number> = {
   enterprise:     -1,        // unlimited (custom contract)
 };
 
-@Entity('tenants')
-export class Tenant {
+@Entity('solutions')
+export class Solution {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -65,7 +65,7 @@ export class Tenant {
     /**
      * agent-runtime sync layer — REST base URL ccaas calls back to for
      * artifact load/save. Set via solution.json `artifactUrl` (imported
-     * by SolutionLoaderService) or by hand via `PUT /tenants/:id`.
+     * by SolutionLoaderService) or by hand via `PUT /solutions/:id`.
      * See `ProjectArtifactSourceRegistry` for the read path.
      */
     artifactUrl?: string;

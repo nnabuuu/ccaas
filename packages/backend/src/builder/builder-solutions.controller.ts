@@ -1,8 +1,8 @@
 /**
- * Builder Tenants Controller
+ * Builder Solutions Controller
  *
  * Allows builder-scoped API keys to create and manage their own tenants.
- * All operations are scoped to tenants linked to the builder's user via UserTenant.
+ * All operations are scoped to tenants linked to the builder's user via UserSolution.
  */
 
 import {
@@ -17,29 +17,29 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../auth/decorators';
 import { RequestContext } from '../auth/types';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 import { AuditService } from '../admin/services/audit.service';
-import { CreateTenantDto, UpdateTenantDto } from '../tenants/dto/tenant.dto';
-import type { Tenant } from '../tenants/entities/tenant.entity';
+import { CreateTenantDto, UpdateTenantDto } from '../solutions/dto/solution.dto';
+import type { Solution } from '../solutions/entities/solution.entity';
 import { requireBuilderUserId, verifyBuilderTenantOwnership } from './builder.helpers';
 
 @ApiTags('builder')
-@Controller('api/v1/builder/tenants')
+@Controller('api/v1/builder/solutions')
 @Auth('builder')
-export class BuilderTenantsController {
-  private readonly logger = new Logger(BuilderTenantsController.name);
+export class BuilderSolutionsController {
+  private readonly logger = new Logger(BuilderSolutionsController.name);
 
   constructor(
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
     private readonly auditService: AuditService,
   ) {}
 
   /**
-   * POST /api/v1/builder/tenants
+   * POST /api/v1/builder/solutions
    *
-   * Create a tenant and auto-link the builder as admin via UserTenant.
+   * Create a tenant and auto-link the builder as admin via UserSolution.
    */
   @Post()
   async create(
@@ -53,7 +53,7 @@ export class BuilderTenantsController {
     // Auto-link builder user as admin of the new tenant
     await this.userTenantService.create({
       userId,
-      tenantId: result.tenant.id,
+      solutionId: result.tenant.id,
       role: 'admin',
     });
 
@@ -66,7 +66,7 @@ export class BuilderTenantsController {
       action: 'tenant.create',
       targetType: 'tenant',
       targetId: result.tenant.id,
-      tenantId: result.tenant.id,
+      solutionId: result.tenant.id,
       metadata: {
         name: dto.name,
         slug: result.tenant.slug,
@@ -78,16 +78,16 @@ export class BuilderTenantsController {
   }
 
   /**
-   * GET /api/v1/builder/tenants
+   * GET /api/v1/builder/solutions
    *
-   * List tenants owned by the builder (filtered by UserTenant).
+   * List tenants owned by the builder (filtered by UserSolution).
    */
   @Get()
-  async findAll(@Ctx() ctx: RequestContext): Promise<Tenant[]> {
+  async findAll(@Ctx() ctx: RequestContext): Promise<Solution[]> {
     const userId = requireBuilderUserId(ctx);
 
     const userTenants = await this.userTenantService.findByUser(userId);
-    const tenants: Tenant[] = [];
+    const tenants: Solution[] = [];
 
     for (const ut of userTenants) {
       if (ut.tenant && ut.tenant.status === 'active') {
@@ -99,7 +99,7 @@ export class BuilderTenantsController {
   }
 
   /**
-   * GET /api/v1/builder/tenants/:id
+   * GET /api/v1/builder/solutions/:id
    *
    * Get a tenant owned by the builder.
    */
@@ -107,13 +107,13 @@ export class BuilderTenantsController {
   async findOne(
     @Param('id') id: string,
     @Ctx() ctx: RequestContext,
-  ): Promise<Tenant> {
+  ): Promise<Solution> {
     const userId = requireBuilderUserId(ctx);
     return verifyBuilderTenantOwnership(userId, id, this.tenantsService, this.userTenantService);
   }
 
   /**
-   * PUT /api/v1/builder/tenants/:id
+   * PUT /api/v1/builder/solutions/:id
    *
    * Update a tenant owned by the builder.
    */
@@ -122,7 +122,7 @@ export class BuilderTenantsController {
     @Param('id') id: string,
     @Body() dto: UpdateTenantDto,
     @Ctx() ctx: RequestContext,
-  ): Promise<Tenant> {
+  ): Promise<Solution> {
     const userId = requireBuilderUserId(ctx);
     await verifyBuilderTenantOwnership(userId, id, this.tenantsService, this.userTenantService);
 
@@ -133,7 +133,7 @@ export class BuilderTenantsController {
       action: 'tenant.update',
       targetType: 'tenant',
       targetId: id,
-      tenantId: id,
+      solutionId: id,
       metadata: {
         builderUserId: userId,
         changes: dto,

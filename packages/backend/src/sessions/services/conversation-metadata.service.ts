@@ -32,16 +32,16 @@ export class ConversationMetadataService {
    * Returns defaults if session not found or DB fails.
    *
    * @param sessionId - Session ID to look up
-   * @param tenantId - Tenant ID for isolation (optional for backward compatibility)
+   * @param solutionId - Solution ID for isolation (optional for backward compatibility)
    */
   async getConversationMetadata(
     sessionId: string,
-    tenantId?: string,
+    solutionId?: string,
   ): Promise<ConversationMetadata> {
     try {
       const where: Record<string, unknown> = { sessionId };
-      if (tenantId) {
-        where.tenantId = tenantId;
+      if (solutionId) {
+        where.solutionId = solutionId;
       }
 
       const session = await this.sessionRepository.findOne({ where });

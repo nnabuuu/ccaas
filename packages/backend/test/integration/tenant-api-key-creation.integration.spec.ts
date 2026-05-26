@@ -1,5 +1,5 @@
 /**
- * Tenant + API Key Creation Integration Tests
+ * Solution + API Key Creation Integration Tests
  *
  * End-to-end tests for tenant creation with auto-create API key feature and authentication.
  */
@@ -13,11 +13,11 @@ import { TenantsModule } from '../../src/tenants/tenants.module';
 import { AuthModule } from '../../src/auth/auth.module';
 import { TenantsService } from '../../src/tenants/tenants.service';
 import { ApiKeyService } from '../../src/auth/api-key.service';
-import { Tenant } from '../../src/tenants/entities/tenant.entity';
+import { Solution } from '../../src/solutions/entities/solution.entity';
 import { createTestDatabaseModule } from '../setup/test-database';
 import { ValidationPipe } from '@nestjs/common';
 
-describe('Tenant + API Key Creation (Integration)', () => {
+describe('Solution + API Key Creation (Integration)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let tenantsService: TenantsService;
@@ -56,13 +56,13 @@ describe('Tenant + API Key Creation (Integration)', () => {
     apiKeyService = module.get(ApiKeyService);
 
     // Create default tenant for testing
-    const defaultTenant = await dataSource.getRepository(Tenant).findOne({
+    const defaultTenant = await dataSource.getRepository(Solution).findOne({
       where: { slug: 'test-default' },
     });
 
     if (!defaultTenant) {
       const tenant = await tenantsService.create({
-        name: 'Test Default Tenant',
+        name: 'Test Default Solution',
         slug: 'test-default',
       });
 
@@ -108,7 +108,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
       await request(app.getHttpServer())
         .post('/api/v1/tenants')
         .send({
-          name: 'Unauthorized Tenant',
+          name: 'Unauthorized Solution',
           slug: 'unauthorized',
         })
         .expect(401);
@@ -116,7 +116,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
 
     it('should reject non-admin tenant creation (403)', async () => {
       // Create non-admin key
-      const defaultTenant = await dataSource.getRepository(Tenant).findOne({
+      const defaultTenant = await dataSource.getRepository(Solution).findOne({
         where: { slug: 'test-default' },
       });
 
@@ -129,7 +129,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', regularKey)
         .send({
-          name: 'Forbidden Tenant',
+          name: 'Forbidden Solution',
           slug: 'forbidden',
         })
         .expect(403);
@@ -140,7 +140,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', adminApiKey)
         .send({
-          name: 'Admin Created Tenant',
+          name: 'Admin Created Solution',
           slug: 'admin-created',
         })
         .expect(201);
@@ -156,7 +156,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', adminApiKey)
         .send({
-          name: 'Legacy Tenant',
+          name: 'Legacy Solution',
           slug: 'legacy-tenant',
         })
         .expect(201);
@@ -173,7 +173,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', adminApiKey)
         .send({
-          name: 'Explicit No Key Tenant',
+          name: 'Explicit No Key Solution',
           slug: 'explicit-no-key',
           autoCreateApiKey: false,
         })
@@ -191,7 +191,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', adminApiKey)
         .send({
-          name: 'Integration Test Tenant',
+          name: 'Integration Test Solution',
           slug: 'integration-test',
           autoCreateApiKey: true,
         })
@@ -200,12 +200,12 @@ describe('Tenant + API Key Creation (Integration)', () => {
       // Verify tenant
       expect(response.body.tenant).toBeDefined();
       expect(response.body.tenant.slug).toBe('integration-test');
-      expect(response.body.tenant.name).toBe('Integration Test Tenant');
+      expect(response.body.tenant.name).toBe('Integration Test Solution');
 
       // Verify API key metadata
       expect(response.body.apiKey).toBeDefined();
       expect(response.body.apiKey.keyPrefix).toMatch(/^sk-integrat-/);
-      expect(response.body.apiKey.name).toBe('Default API Key for Integration Test Tenant');
+      expect(response.body.apiKey.name).toBe('Default API Key for Integration Test Solution');
       expect(response.body.apiKey.scopes).toEqual(['skills:read', 'skills:execute', 'chat']);
       expect(response.body.apiKey.rateLimitRpm).toBe(60);
       expect(response.body.apiKey.rateLimitRpd).toBe(10000);
@@ -253,11 +253,11 @@ describe('Tenant + API Key Creation (Integration)', () => {
         })
         .expect(201);
 
-      const tenantId = response.body.tenant.id;
+      const solutionId = response.body.tenant.id;
       const apiKeyId = response.body.apiKey.id;
 
       // Query database directly
-      const keys = await apiKeyService.findByTenantId(tenantId);
+      const keys = await apiKeyService.findByTenantId(solutionId);
       expect(keys.length).toBeGreaterThan(0);
 
       const createdKey = keys.find(k => k.id === apiKeyId);
@@ -271,18 +271,18 @@ describe('Tenant + API Key Creation (Integration)', () => {
         .post('/api/v1/tenants')
         .set('X-API-Key', adminApiKey)
         .send({
-          name: 'Tenant Binding Test',
+          name: 'Solution Binding Test',
           slug: 'tenant-binding-test',
           autoCreateApiKey: true,
         })
         .expect(201);
 
-      const tenantId = response.body.tenant.id;
+      const solutionId = response.body.tenant.id;
       const rawKey = response.body.rawKey;
 
       // Verify key is bound to correct tenant
       const context = await apiKeyService.createContext(rawKey);
-      expect(context.tenantId).toBe(tenantId);
+      expect(context.solutionId).toBe(solutionId);
       expect(context.tenant?.slug).toBe('tenant-binding-test');
     });
   });
@@ -342,7 +342,7 @@ describe('Tenant + API Key Creation (Integration)', () => {
 
     it('should protect GET /api/v1/tenants/:id', async () => {
       const tenant = await tenantsService.create({
-        name: 'Protected Tenant',
+        name: 'Protected Solution',
         slug: 'protected-tenant',
       });
 

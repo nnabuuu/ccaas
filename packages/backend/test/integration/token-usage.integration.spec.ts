@@ -76,7 +76,7 @@ describe('Token Usage Integration Tests', () => {
       const usage = await tokenUsageService.recordUsage({
         messageId,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -89,7 +89,7 @@ describe('Token Usage Integration Tests', () => {
       });
 
       expect(usage).toBeDefined();
-      expect(usage.tenantId).toBe(testTenantId);
+      expect(usage.solutionId).toBe(testTenantId);
       expect(usage.inputTokens).toBe(1000);
       expect(usage.outputTokens).toBe(500);
       expect(usage.cachedInputTokens).toBe(200);
@@ -108,7 +108,7 @@ describe('Token Usage Integration Tests', () => {
       const sonnetUsage = await tokenUsageService.recordUsage({
         messageId,
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -118,7 +118,7 @@ describe('Token Usage Integration Tests', () => {
       const opusUsage = await tokenUsageService.recordUsage({
         messageId: 'msg-456',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-opus-4-5-20251101',
         inputTokens: 1000,
         outputTokens: 500,
@@ -134,14 +134,14 @@ describe('Token Usage Integration Tests', () => {
       const usage = await tokenUsageService.recordUsage({
         messageId: 'msg-no-tenant',
         sessionId,
-        tenantId: null,
+        solutionId: null,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 100,
         outputTokens: 50,
       });
 
       expect(usage).toBeDefined();
-      expect(usage.tenantId).toBeNull();
+      expect(usage.solutionId).toBeNull();
     });
   });
 
@@ -154,7 +154,7 @@ describe('Token Usage Integration Tests', () => {
         await tokenUsageService.recordUsage({
           messageId: `msg-${i}`,
           sessionId,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           model: 'claude-sonnet-4-20250514',
           inputTokens: 100 * (i + 1),
           outputTokens: 50 * (i + 1),
@@ -181,7 +181,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-1',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -190,7 +190,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-2',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1500,
         outputTokens: 750,
@@ -199,7 +199,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-3',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-opus-4-5-20251101',
         inputTokens: 500,
         outputTokens: 250,
@@ -214,7 +214,7 @@ describe('Token Usage Integration Tests', () => {
     });
   });
 
-  describe('Tenant Usage Analytics', () => {
+  describe('Solution Usage Analytics', () => {
     it('should aggregate usage by model for a tenant', async () => {
       const sessionId = `session-${Date.now()}`;
 
@@ -222,7 +222,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-1',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -231,7 +231,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-2',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-haiku-3.5',
         inputTokens: 2000,
         outputTokens: 1000,
@@ -257,7 +257,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-1',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -287,7 +287,7 @@ describe('Token Usage Integration Tests', () => {
     });
   });
 
-  describe('Multi-Tenant Isolation', () => {
+  describe('Multi-Solution Isolation', () => {
     it('should isolate usage by tenant', async () => {
       const tenant1 = 'tenant-1';
       const tenant2 = 'tenant-2';
@@ -296,7 +296,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-t1',
         sessionId: 'session-t1',
-        tenantId: tenant1,
+        solutionId: tenant1,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 1000,
         outputTokens: 500,
@@ -306,7 +306,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-t2',
         sessionId: 'session-t2',
-        tenantId: tenant2,
+        solutionId: tenant2,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 2000,
         outputTokens: 1000,
@@ -329,7 +329,7 @@ describe('Token Usage Integration Tests', () => {
         await tokenUsageService.recordUsage({
           messageId: `msg-${i}`,
           sessionId: `session-${i % 10}`,
-          tenantId: i % 2 === 0 ? testTenantId : 'other-tenant',
+          solutionId: i % 2 === 0 ? testTenantId : 'other-tenant',
           model: 'claude-sonnet-4-20250514',
           inputTokens: 100,
           outputTokens: 50,
@@ -354,7 +354,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-1',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 50000,
         outputTokens: 5000,
@@ -368,7 +368,7 @@ describe('Token Usage Integration Tests', () => {
       await tokenUsageService.recordUsage({
         messageId: 'msg-2',
         sessionId,
-        tenantId: testTenantId,
+        solutionId: testTenantId,
         model: 'claude-sonnet-4-20250514',
         inputTokens: 100000,
         outputTokens: 10000,
@@ -395,7 +395,7 @@ describe('Token Usage Integration Tests', () => {
         await tokenUsageService.recordUsage({
           messageId: `msg-${i}`,
           sessionId,
-          tenantId: testTenantId,
+          solutionId: testTenantId,
           model: 'claude-sonnet-4-20250514',
           inputTokens: 100,
           outputTokens: 50,

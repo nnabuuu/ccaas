@@ -1,7 +1,7 @@
 /**
  * Thinking Tracker Hook Tests
  *
- * Tests for tenantId propagation in thinking block tracking.
+ * Tests for solutionId propagation in thinking block tracking.
  */
 
 import { createThinkingTracker, ThinkingEvent, ThinkingTrackerDeps } from './thinking-tracker.hook';
@@ -35,7 +35,7 @@ describe('ThinkingTrackerHook', () => {
       buffer: '',
       workspaceDir: '/tmp/session-123',
       currentAssistantMessageId: 'msg-123',
-      tenantId: 'tenant-xyz',
+      solutionId: 'tenant-xyz',
     };
 
     mockGetSession = jest.fn().mockReturnValue(mockSession);
@@ -49,7 +49,7 @@ describe('ThinkingTrackerHook', () => {
   });
 
   describe('onThinkingEvent - start', () => {
-    it('should pass tenantId from session to startThinking', async () => {
+    it('should pass solutionId from session to startThinking', async () => {
       const event: ThinkingEvent = {
         type: 'start',
         thinkingId: 'think-123',
@@ -61,14 +61,14 @@ describe('ThinkingTrackerHook', () => {
       expect(mockThinkingBlocksService.startThinking).toHaveBeenCalledWith({
         messageId: 'msg-123',
         sessionId: 'session-123',
-        tenantId: 'tenant-xyz',
+        solutionId: 'tenant-xyz',
         thinkingId: 'think-123',
         content: 'Initial thinking...',
       });
     });
 
-    it('should pass null tenantId when session has no tenantId', async () => {
-      mockSession.tenantId = undefined;
+    it('should pass null solutionId when session has no solutionId', async () => {
+      mockSession.solutionId = undefined;
 
       const event: ThinkingEvent = {
         type: 'start',
@@ -79,7 +79,7 @@ describe('ThinkingTrackerHook', () => {
 
       expect(mockThinkingBlocksService.startThinking).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: null,
+          solutionId: null,
         }),
       );
     });
@@ -236,9 +236,9 @@ describe('ThinkingTrackerHook', () => {
     });
   });
 
-  describe('tenantId edge cases', () => {
-    it('should handle empty string tenantId', async () => {
-      mockSession.tenantId = '';
+  describe('solutionId edge cases', () => {
+    it('should handle empty string solutionId', async () => {
+      mockSession.solutionId = '';
 
       const event: ThinkingEvent = {
         type: 'start',
@@ -250,12 +250,12 @@ describe('ThinkingTrackerHook', () => {
       // Empty string is falsy, should become null
       expect(mockThinkingBlocksService.startThinking).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: null,
+          solutionId: null,
         }),
       );
     });
 
-    it('should preserve tenantId across multiple events', async () => {
+    it('should preserve solutionId across multiple events', async () => {
       const startEvent: ThinkingEvent = { type: 'start', thinkingId: 'think-123' };
       const deltaEvent: ThinkingEvent = { type: 'delta', thinkingId: 'think-123', content: 'Content' };
       const endEvent: ThinkingEvent = { type: 'end', thinkingId: 'think-123' };
@@ -264,10 +264,10 @@ describe('ThinkingTrackerHook', () => {
       await tracker.onThinkingEvent(deltaEvent, 'session-123');
       await tracker.onThinkingEvent(endEvent, 'session-123');
 
-      // Only startThinking receives tenantId, delta and end use thinkingId lookup
+      // Only startThinking receives solutionId, delta and end use thinkingId lookup
       expect(mockThinkingBlocksService.startThinking).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: 'tenant-xyz',
+          solutionId: 'tenant-xyz',
         }),
       );
     });

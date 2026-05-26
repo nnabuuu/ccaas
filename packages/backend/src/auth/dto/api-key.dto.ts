@@ -115,7 +115,7 @@ export interface CreateApiKeyResponse {
  */
 export interface ApiKeyResponse {
   id: string;
-  tenantId: string;
+  solutionId: string;
   name: string;
   keyPrefix: string;
   scopes: ApiKeyScope[];

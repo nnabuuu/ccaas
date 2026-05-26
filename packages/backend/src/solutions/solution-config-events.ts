@@ -1,10 +1,10 @@
 /**
  * Cross-module event names + payload types for tenant.config mutations.
  *
- * `TENANT_CONFIG_CHANGED` is emitted by `TenantsService.update()` whenever
+ * `SOLUTION_CONFIG_CHANGED` is emitted by `SolutionsService.update()` whenever
  * an update payload carried a `config` field (no fire for name/plan/etc).
  * The `ProjectArtifactSourceRegistry` subscribes to invalidate its cached
- * `slug → ProjectArtifactSource` entry — so a `PUT /tenants/:id` that
+ * `slug → ProjectArtifactSource` entry — so a `PUT /solutions/:id` that
  * changes `config.artifactUrl` takes effect on the next sync turn without
  * a backend restart.
  *
@@ -12,9 +12,9 @@
  * event name can't desync them.
  */
 
-export const TENANT_CONFIG_CHANGED = 'tenant.config.changed';
+export const SOLUTION_CONFIG_CHANGED = 'tenant.config.changed';
 
-export interface TenantConfigChangedEvent {
-  tenantId: string;
+export interface SolutionConfigChangedEvent {
+  solutionId: string;
   slug: string;
 }

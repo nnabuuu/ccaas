@@ -18,7 +18,7 @@ describe('SchedulerService', () => {
 
   const mockTask: Partial<ScheduledTask> = {
     id: 'task-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     name: 'Test Task',
     description: 'A test task',
     message: 'Hello Claude',
@@ -51,7 +51,7 @@ describe('SchedulerService', () => {
         Promise.resolve({
           id: opts?.where?.id || 'exec-1',
           taskId: 'task-1',
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
           sessionId: 'scheduled_task-1_test',
           status: 'running',
           startedAt: new Date(),
@@ -108,7 +108,7 @@ describe('SchedulerService', () => {
   describe('create', () => {
     it('should create a scheduled task and register cron', async () => {
       const dto = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         name: 'Daily Summary',
         message: 'Summarize websites',
         scheduleType: 'cron' as const,
@@ -120,7 +120,7 @@ describe('SchedulerService', () => {
       const result = await service.create(dto);
 
       expect(taskRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         name: 'Daily Summary',
         scheduleType: 'cron',
         scheduleValue: '0 4 * * *',
@@ -135,7 +135,7 @@ describe('SchedulerService', () => {
 
     it('should create an interval task', async () => {
       const dto = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         name: 'Periodic Check',
         message: 'Check status',
         scheduleType: 'interval' as const,
@@ -158,11 +158,11 @@ describe('SchedulerService', () => {
       const tasks = [mockTask as ScheduledTask];
       taskRepo.findAndCount.mockResolvedValue([tasks, 1]);
 
-      const result = await service.findAll({ tenantId: 'tenant-1', page: 1, limit: 20 });
+      const result = await service.findAll({ solutionId: 'tenant-1', page: 1, limit: 20 });
 
       expect(result).toEqual({ data: tasks, total: 1 });
       expect(taskRepo.findAndCount).toHaveBeenCalledWith(expect.objectContaining({
-        where: { tenantId: 'tenant-1' },
+        where: { solutionId: 'tenant-1' },
         take: 20,
         skip: 0,
       }));
@@ -249,7 +249,7 @@ describe('SchedulerService', () => {
 
       expect(executionRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task-1',
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         status: 'running',
       }));
       expect(executionRepo.findOneOrFail).toHaveBeenCalled();

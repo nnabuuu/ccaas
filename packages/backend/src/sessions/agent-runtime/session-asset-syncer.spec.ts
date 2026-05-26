@@ -32,7 +32,7 @@ import {
 import { SessionAssetSyncer, ARTIFACTS_DIR, COALESCE_WINDOW_MS } from './session-asset-syncer.service';
 import { SessionService } from '../session.service';
 import { SessionMetadataService } from '../services/session-metadata.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import type { FsDiffEntry } from '../workspace/types';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -64,13 +64,13 @@ class FakeSource implements ProjectArtifactSource {
 function makeMockSession(opts: {
   sessionId: string;
   workspaceDir: string;
-  tenantId?: string;
+  solutionId?: string;
   diffEntries?: FsDiffEntry[];
 }) {
   return {
     sessionId: opts.sessionId,
     workspaceDir: opts.workspaceDir,
-    tenantId: opts.tenantId,
+    solutionId: opts.solutionId,
     workspaceHandle: {
       sessionId: opts.sessionId,
       path: opts.workspaceDir,
@@ -108,7 +108,7 @@ describe('SessionAssetSyncer', () => {
     snapshots = new InMemorySnapshotStore();
     sessionSvc = {
       getSession: jest.fn(() =>
-        makeMockSession({ sessionId: SID, workspaceDir, tenantId: TID })),
+        makeMockSession({ sessionId: SID, workspaceDir, solutionId: TID })),
     };
     metaSvc = {
       get: jest.fn(async (sid: string, tid: string, key: string) => {
@@ -142,7 +142,7 @@ describe('SessionAssetSyncer', () => {
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
         { provide: SessionMetadataService, useValue: metaSvc },
-        { provide: TenantsService, useValue: tenantsSvc },
+        { provide: SolutionsService, useValue: tenantsSvc },
       ],
     }).compile();
     syncer = moduleRef.get(SessionAssetSyncer);
@@ -186,7 +186,7 @@ describe('SessionAssetSyncer', () => {
     const agentFile = path.join(workspaceDir, ARTIFACTS_DIR, 'notes.md');
     await fs.writeFile(agentFile, 'agent-jot');
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
       diffEntries: [{ op: 'added', type: 'file', path: '/artifacts/notes.md' }],
     }));
     source.rows = []; // DB doesn't have it
@@ -223,7 +223,7 @@ describe('SessionAssetSyncer', () => {
     await fs.writeFile(agentFile, '{"title":"agent-edited"}');
     // Crucially: no diffEntries → workspaceHandle.diff is undefined.
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
     }));
 
     await syncer.sync(SID);
@@ -241,7 +241,7 @@ describe('SessionAssetSyncer', () => {
     await fs.mkdir(path.dirname(agentFile), { recursive: true });
     await fs.writeFile(agentFile, '# Agent-created plan');
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
     }));
 
     await syncer.sync(SID);
@@ -265,7 +265,7 @@ describe('SessionAssetSyncer', () => {
     // Workspace artifacts dir exists but todo.md is NOT in it.
     await fs.mkdir(path.join(workspaceDir, ARTIFACTS_DIR), { recursive: true });
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
     }));
 
     await syncer.sync(SID);
@@ -288,7 +288,7 @@ describe('SessionAssetSyncer', () => {
     await fs.mkdir(path.dirname(f), { recursive: true });
     await fs.writeFile(f, content);
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
     }));
 
     await syncer.sync(SID);
@@ -309,7 +309,7 @@ describe('SessionAssetSyncer', () => {
     // FS has the agent's edit
     await fs.writeFile(path.join(workspaceDir, ARTIFACTS_DIR, 'lesson.md'), 'agent-edit');
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
       diffEntries: [{ op: 'modified', type: 'file', path: '/artifacts/lesson.md' }],
     }));
 
@@ -336,7 +336,7 @@ describe('SessionAssetSyncer', () => {
 
   it('agent delete propagates to DB via deleteArtifact', async () => {
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
       diffEntries: [{ op: 'removed', type: 'file', path: '/artifacts/lesson.md' }],
     }));
     source.rows = [{ path: 'lesson.md', content: 'v1', type: 'md' }];
@@ -372,13 +372,13 @@ describe('SessionAssetSyncer', () => {
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
         { provide: SessionMetadataService, useValue: metaSvc },
-        { provide: TenantsService, useValue: { findOne: jest.fn(async () => null) } },
+        { provide: SolutionsService, useValue: { findOne: jest.fn(async () => null) } },
       ],
     }).compile();
     const localSyncer = moduleRef.get(SessionAssetSyncer);
 
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
       diffEntries: [{ op: 'removed', type: 'file', path: '/artifacts/lesson.md' }],
     }));
 
@@ -397,7 +397,7 @@ describe('SessionAssetSyncer', () => {
     const agentFile = path.join(workspaceDir, ARTIFACTS_DIR, 'LESSON.MD');
     await fs.writeFile(agentFile, 'agent-version');
     sessionSvc.getSession.mockReturnValue(makeMockSession({
-      sessionId: SID, workspaceDir, tenantId: TID,
+      sessionId: SID, workspaceDir, solutionId: TID,
       diffEntries: [{ op: 'added', type: 'file', path: '/artifacts/LESSON.MD' }],
     }));
     source.rows = [];
@@ -468,7 +468,7 @@ describe('SessionAssetSyncer', () => {
 
       await syncer.onSessionBound({
         sessionId: SID,
-        tenantId: TID,
+        solutionId: TID,
         projectId: PROJ,
         workspaceSource: { sourceIdentity: PROJ },
       });
@@ -496,7 +496,7 @@ describe('SessionAssetSyncer', () => {
       });
       await expect(syncer.onSessionBound({
         sessionId: SID,
-        tenantId: TID,
+        solutionId: TID,
         projectId: PROJ,
         workspaceSource: { sourceIdentity: PROJ },
       })).resolves.toBeUndefined();
@@ -633,7 +633,7 @@ describe('SessionAssetSyncer', () => {
           { provide: CHANGE_STREAM, useValue: changes },
           { provide: SessionService, useValue: sessionSvc },
           { provide: SessionMetadataService, useValue: metaSvc },
-          { provide: TenantsService, useValue: tenantsSvc },
+          { provide: SolutionsService, useValue: tenantsSvc },
         ],
       }).compile();
       binarySyncer = moduleRef.get(SessionAssetSyncer);
@@ -698,7 +698,7 @@ describe('SessionAssetSyncer', () => {
         makeMockSession({
           sessionId: SID,
           workspaceDir,
-          tenantId: TID,
+          solutionId: TID,
           diffEntries: [
             { type: 'file', op: 'added', path: '/artifacts-binary/icon.png' } as any,
           ],

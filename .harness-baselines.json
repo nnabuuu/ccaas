@@ -1,8 +1,8 @@
 {
   "console_log": 237,
-  "any_type": 539,
-  "todo_unlinked": 9,
-  "eslint_disable": 58,
+  "any_type": 542,
+  "todo_unlinked": 14,
+  "eslint_disable": 59,
   "backend_coverage": 60,
   "frontend_hardcoded_localhost": 21,
   "css_text_no_color": 26

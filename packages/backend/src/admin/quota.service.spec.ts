@@ -12,11 +12,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { QuotaService } from './quota.service';
-import { TenantQuota } from './entities/tenant-quota.entity';
+import { SolutionQuota } from './entities/solution-quota.entity';
 
 describe('QuotaService', () => {
   let service: QuotaService;
-  let quotaRepository: jest.Mocked<Repository<TenantQuota>>;
+  let quotaRepository: jest.Mocked<Repository<SolutionQuota>>;
 
   const mockQueryBuilder = {
     update: jest.fn().mockReturnThis(),
@@ -30,7 +30,7 @@ describe('QuotaService', () => {
       providers: [
         QuotaService,
         {
-          provide: getRepositoryToken(TenantQuota),
+          provide: getRepositoryToken(SolutionQuota),
           useValue: {
             findOne: jest.fn(),
             find: jest.fn(),
@@ -43,7 +43,7 @@ describe('QuotaService', () => {
     }).compile();
 
     service = module.get<QuotaService>(QuotaService);
-    quotaRepository = module.get(getRepositoryToken(TenantQuota));
+    quotaRepository = module.get(getRepositoryToken(SolutionQuota));
   });
 
   afterEach(() => {
@@ -56,15 +56,15 @@ describe('QuotaService', () => {
 
   describe('getOrCreateQuota', () => {
     it('should return existing quota if found and not expired', async () => {
-      const existingQuota: Partial<TenantQuota> = {
+      const existingQuota: Partial<SolutionQuota> = {
         id: 'q1',
-        tenantId: 't1',
+        solutionId: 't1',
         period: 'monthly',
         maxTokens: 200_000,
         currentTokens: 50_000,
         periodEnd: new Date(Date.now() + 86400000), // future
       };
-      quotaRepository.findOne.mockResolvedValue(existingQuota as TenantQuota);
+      quotaRepository.findOne.mockResolvedValue(existingQuota as SolutionQuota);
 
       const result = await service.getOrCreateQuota('t1', 'free');
 
@@ -74,20 +74,20 @@ describe('QuotaService', () => {
 
     it('should create default quota when none exists', async () => {
       quotaRepository.findOne.mockResolvedValue(null);
-      const newQuota: Partial<TenantQuota> = {
+      const newQuota: Partial<SolutionQuota> = {
         id: 'q-new',
-        tenantId: 't1',
+        solutionId: 't1',
         maxTokens: 200_000,
         currentTokens: 0,
       };
-      quotaRepository.create.mockReturnValue(newQuota as TenantQuota);
-      quotaRepository.save.mockResolvedValue(newQuota as TenantQuota);
+      quotaRepository.create.mockReturnValue(newQuota as SolutionQuota);
+      quotaRepository.save.mockResolvedValue(newQuota as SolutionQuota);
 
       const result = await service.getOrCreateQuota('t1', 'free');
 
       expect(quotaRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: 't1',
+          solutionId: 't1',
           period: 'monthly',
           maxTokens: 200_000,
           currentTokens: 0,
@@ -98,14 +98,14 @@ describe('QuotaService', () => {
 
     it('should create unlimited quota for starter plan', async () => {
       quotaRepository.findOne.mockResolvedValue(null);
-      const newQuota: Partial<TenantQuota> = {
+      const newQuota: Partial<SolutionQuota> = {
         id: 'q-new',
-        tenantId: 't1',
+        solutionId: 't1',
         maxTokens: -1,
         currentTokens: 0,
       };
-      quotaRepository.create.mockReturnValue(newQuota as TenantQuota);
-      quotaRepository.save.mockResolvedValue(newQuota as TenantQuota);
+      quotaRepository.create.mockReturnValue(newQuota as SolutionQuota);
+      quotaRepository.save.mockResolvedValue(newQuota as SolutionQuota);
 
       await service.getOrCreateQuota('t1', 'starter');
 
@@ -117,9 +117,9 @@ describe('QuotaService', () => {
     });
 
     it('should reset quota when period has expired', async () => {
-      const expiredQuota: Partial<TenantQuota> = {
+      const expiredQuota: Partial<SolutionQuota> = {
         id: 'q1',
-        tenantId: 't1',
+        solutionId: 't1',
         period: 'monthly',
         maxTokens: 200_000,
         currentTokens: 150_000,
@@ -127,8 +127,8 @@ describe('QuotaService', () => {
         currentApiCalls: 100,
         periodEnd: new Date(Date.now() - 86400000), // past
       };
-      quotaRepository.findOne.mockResolvedValue(expiredQuota as TenantQuota);
-      quotaRepository.save.mockImplementation(async (q) => q as TenantQuota);
+      quotaRepository.findOne.mockResolvedValue(expiredQuota as SolutionQuota);
+      quotaRepository.save.mockImplementation(async (q) => q as SolutionQuota);
 
       const result = await service.getOrCreateQuota('t1', 'free');
 
@@ -144,14 +144,14 @@ describe('QuotaService', () => {
 
   describe('checkQuota', () => {
     it('should allow unlimited plan (maxTokens === -1)', async () => {
-      const quota: Partial<TenantQuota> = {
+      const quota: Partial<SolutionQuota> = {
         id: 'q1',
-        tenantId: 't1',
+        solutionId: 't1',
         maxTokens: -1,
         currentTokens: 999_999,
         periodEnd: new Date(Date.now() + 86400000),
       };
-      quotaRepository.findOne.mockResolvedValue(quota as TenantQuota);
+      quotaRepository.findOne.mockResolvedValue(quota as SolutionQuota);
 
       const result = await service.checkQuota('t1', 'starter');
 
@@ -161,14 +161,14 @@ describe('QuotaService', () => {
     });
 
     it('should allow when under quota', async () => {
-      const quota: Partial<TenantQuota> = {
+      const quota: Partial<SolutionQuota> = {
         id: 'q1',
-        tenantId: 't1',
+        solutionId: 't1',
         maxTokens: 200_000,
         currentTokens: 100_000,
         periodEnd: new Date(Date.now() + 86400000),
       };
-      quotaRepository.findOne.mockResolvedValue(quota as TenantQuota);
+      quotaRepository.findOne.mockResolvedValue(quota as SolutionQuota);
 
       const result = await service.checkQuota('t1', 'free');
 
@@ -179,14 +179,14 @@ describe('QuotaService', () => {
     });
 
     it('should deny when at or over quota', async () => {
-      const quota: Partial<TenantQuota> = {
+      const quota: Partial<SolutionQuota> = {
         id: 'q1',
-        tenantId: 't1',
+        solutionId: 't1',
         maxTokens: 200_000,
         currentTokens: 200_456,
         periodEnd: new Date(Date.now() + 86400000),
       };
-      quotaRepository.findOne.mockResolvedValue(quota as TenantQuota);
+      quotaRepository.findOne.mockResolvedValue(quota as SolutionQuota);
 
       const result = await service.checkQuota('t1', 'free');
 
@@ -208,7 +208,7 @@ describe('QuotaService', () => {
         maxTokens: 200_000,
         currentTokens: 50_000,
         alertThreshold: 80,
-      } as TenantQuota);
+      } as SolutionQuota);
 
       await service.incrementTokenUsage('t1', 2500);
 
@@ -217,8 +217,8 @@ describe('QuotaService', () => {
         currentTokens: expect.any(Function),
       });
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'tenantId = :tenantId AND period = :period',
-        { tenantId: 't1', period: 'monthly' },
+        'solutionId = :solutionId AND period = :period',
+        { solutionId: 't1', period: 'monthly' },
       );
     });
 
@@ -241,7 +241,7 @@ describe('QuotaService', () => {
       const expired = [
         {
           id: 'q1',
-          tenantId: 't1',
+          solutionId: 't1',
           currentTokens: 150_000,
           currentSessions: 10,
           currentApiCalls: 50,
@@ -249,16 +249,16 @@ describe('QuotaService', () => {
         },
         {
           id: 'q2',
-          tenantId: 't2',
+          solutionId: 't2',
           currentTokens: 100_000,
           currentSessions: 5,
           currentApiCalls: 20,
           periodEnd: new Date(Date.now() - 86400000),
         },
-      ] as TenantQuota[];
+      ] as SolutionQuota[];
 
       quotaRepository.find.mockResolvedValue(expired);
-      quotaRepository.save.mockImplementation(async (q) => q as TenantQuota);
+      quotaRepository.save.mockImplementation(async (q) => q as SolutionQuota);
 
       const count = await service.resetExpiredQuotas();
 

@@ -47,13 +47,13 @@ export class CreateCompletionDto {
   message: string;
 
   @ApiProperty({
-    description: '租户 ID（必需，用于加载技能配置）/ Tenant ID (required for skill loading)',
+    description: '租户 ID（必需，用于加载技能配置）/ Solution ID (required for skill loading)',
     example: 'tenant-123',
     required: false,
   })
   @IsOptional()
   @IsString()
-  tenantId?: string;
+  solutionId?: string;
 
   @ApiProperty({
     description: '启用的技能 slug 列表（仅加载指定技能）/ Enabled skill slugs',

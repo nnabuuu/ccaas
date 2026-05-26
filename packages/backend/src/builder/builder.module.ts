@@ -6,12 +6,12 @@
  */
 
 import { Module } from '@nestjs/common';
-import { BuilderTenantsController } from './builder-tenants.controller';
+import { BuilderSolutionsController } from './builder-solutions.controller';
 import { BuilderApiKeysController } from './builder-api-keys.controller';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [AdminModule],
-  controllers: [BuilderTenantsController, BuilderApiKeysController],
+  controllers: [BuilderSolutionsController, BuilderApiKeysController],
 })
 export class BuilderModule {}

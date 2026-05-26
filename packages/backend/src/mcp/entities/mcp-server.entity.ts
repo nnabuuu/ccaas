@@ -14,7 +14,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Solution } from '../../solutions/entities/solution.entity';
 import type {
   McpServerType,
   McpServerStatus,
@@ -24,18 +24,18 @@ import type {
 } from '../types';
 
 @Entity('mcp_servers')
-@Index('IDX_mcp_servers_tenant_slug', ['tenantId', 'slug'], { unique: true })
-@Index('IDX_mcp_servers_tenant_status', ['tenantId', 'status'])
+@Index('IDX_mcp_servers_tenant_slug', ['solutionId', 'slug'], { unique: true })
+@Index('IDX_mcp_servers_tenant_status', ['solutionId', 'status'])
 export class McpServer {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column()
-  tenantId!: string;
+  solutionId!: string;
 
-  @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'tenantId' })
-  tenant?: Tenant;
+  @ManyToOne(() => Solution, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'solutionId' })
+  tenant?: Solution;
 
   @Column()
   name!: string;

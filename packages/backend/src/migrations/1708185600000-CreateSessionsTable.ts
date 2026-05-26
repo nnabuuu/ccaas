@@ -21,7 +21,7 @@ export class CreateSessionsTable1708185600000 implements MigrationInterface {
             isNullable: false,
           },
           {
-            name: 'tenantId',
+            name: 'solutionId',
             type: 'varchar',
             length: '255',
             isNullable: true,
@@ -90,7 +90,7 @@ export class CreateSessionsTable1708185600000 implements MigrationInterface {
       'sessions',
       new TableIndex({
         name: 'idx_sessions_tenant_created',
-        columnNames: ['tenantId', 'createdAt'],
+        columnNames: ['solutionId', 'createdAt'],
       }),
     );
 

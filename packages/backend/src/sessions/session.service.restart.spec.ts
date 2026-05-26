@@ -258,7 +258,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const userId = 'user-123';
 
       const session = await service.getOrCreateSession(sessionId, 'client-details', mockSocket, userId);
-      session.tenantId = 'tenant-123';
+      session.solutionId = 'tenant-123';
       service.trackSyncedSkills(sessionId, ['skill-1', 'skill-2']);
 
       const details = service.getSessionDetails(sessionId);
@@ -266,7 +266,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       expect(details).toBeDefined();
       expect(details?.sessionId).toBe(sessionId);
       expect(details?.userId).toBe(userId);
-      expect(details?.tenantId).toBe('tenant-123');
+      expect(details?.solutionId).toBe('tenant-123');
       expect(details?.syncedSkillCount).toBe(2);
       expect(details?.needsRestart).toBe(false);
       expect(details?.status).toBe('idle');

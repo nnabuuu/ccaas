@@ -276,7 +276,7 @@ export class MessagesController {
     context: {
       id: string;
       sessionId: string;
-      tenantId: string | null;
+      solutionId: string | null;
       systemPromptHash: string | null;
       skillConfigHashes: Array<{ slug: string; hash: string }> | null;
       mcpToolsList: string[] | null;
@@ -795,7 +795,7 @@ Use the \`include\` query parameter to select specific sections.
     return {
       id: message.id,
       sessionId: message.sessionId,
-      tenantId: message.tenantId,
+      solutionId: message.solutionId,
       role: message.role,
       content: message.content,
       metadata: message.metadata,

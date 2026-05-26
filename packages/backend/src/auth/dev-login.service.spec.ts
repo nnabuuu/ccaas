@@ -5,8 +5,8 @@ import { UnauthorizedException } from '@nestjs/common';
 import { DevLoginService } from './dev-login.service';
 import { User } from '../users/entities/user.entity';
 import { ApiKeyService } from './api-key.service';
-import { TenantsService } from '../tenants/tenants.service';
-import { UserTenantService } from '../users/user-tenant.service';
+import { SolutionsService } from '../solutions/solutions.service';
+import { UserSolutionService } from '../users/user-solution.service';
 
 describe('DevLoginService', () => {
   let service: DevLoginService;
@@ -54,8 +54,8 @@ describe('DevLoginService', () => {
         DevLoginService,
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: ApiKeyService, useValue: apiKeyService },
-        { provide: TenantsService, useValue: tenantsService },
-        { provide: UserTenantService, useValue: userTenantService },
+        { provide: SolutionsService, useValue: tenantsService },
+        { provide: UserSolutionService, useValue: userTenantService },
         {
           provide: ConfigService,
           useValue: {

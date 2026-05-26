@@ -16,7 +16,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { SessionAssetMaterializer } from './session-asset-materializer.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 
 describe('SessionAssetMaterializer', () => {
   let solutionRoot: string;
@@ -53,7 +53,7 @@ describe('SessionAssetMaterializer', () => {
           },
         },
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: { findOne: jest.fn().mockResolvedValue(tenant) },
         },
       ],
@@ -142,7 +142,7 @@ describe('SessionAssetMaterializer', () => {
     expect(await svc.materialize(sessionDir, 'tid-1')).toBeNull();
   });
 
-  it('no-op when tenantId is undefined', async () => {
+  it('no-op when solutionId is undefined', async () => {
     const svc = await build(
       { 'demo-sandbox': solutionRoot },
       { id: 'tid-1', slug: 'demo-sandbox' },

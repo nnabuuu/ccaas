@@ -36,7 +36,7 @@ export class MessageQueueService {
    *
    * @param sessionId - Session identifier (FIFO key)
    * @param clientId - Client identifier
-   * @param tenantId - Tenant identifier (nullable)
+   * @param solutionId - Solution identifier (nullable)
    * @param payload - Message payload
    * @param priority - Priority (default: 0, higher = process first)
    * @returns Created queue item
@@ -44,14 +44,14 @@ export class MessageQueueService {
   async enqueue(
     sessionId: string,
     clientId: string,
-    tenantId: string | null,
+    solutionId: string | null,
     payload: MessageQueuePayload,
     priority: number = 0,
   ): Promise<MessageQueue> {
     const queueItem = this.queueRepository.create({
       sessionId,
       clientId,
-      tenantId,
+      solutionId,
       payload,
       status: 'pending',
       priority,
@@ -417,17 +417,17 @@ export class MessageQueueService {
   /**
    * Get queue statistics for monitoring
    *
-   * @param tenantId - Optional tenant filter
+   * @param solutionId - Optional tenant filter
    * @returns Queue statistics
    */
-  async getQueueStats(tenantId?: string): Promise<{
+  async getQueueStats(solutionId?: string): Promise<{
     pending: number;
     processing: number;
     completed: number;
     failed: number;
     cancelled: number;
   }> {
-    const where = tenantId ? { tenantId } : {};
+    const where = solutionId ? { solutionId } : {};
 
     const [pending, processing, completed, failed, cancelled] = await Promise.all([
       this.queueRepository.count({ where: { ...where, status: 'pending' } }),

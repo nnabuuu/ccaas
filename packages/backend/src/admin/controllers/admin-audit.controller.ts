@@ -8,7 +8,7 @@ import { Controller, Get, Param, Query, NotFoundException, ForbiddenException, U
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { AuditService, PaginatedAuditLogs } from '../services/audit.service';
 import { AdminAuditLog } from '../entities/admin-audit-log.entity';
 import { AuditLogQueryDto } from '../dto/admin.dto';
@@ -16,7 +16,7 @@ import { AuditLogQueryDto } from '../dto/admin.dto';
 @ApiTags('admin')
 @Controller('api/v1/admin/audit')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminAuditController {
   constructor(private readonly auditService: AuditService) {}
 
@@ -30,7 +30,7 @@ export class AdminAuditController {
     @Query() query: AuditLogQueryDto,
     @Ctx() ctx: RequestContext,
   ): Promise<PaginatedAuditLogs> {
-    if (!isAdminScope(ctx)) query.tenantId = ctx.tenantId;
+    if (!isAdminScope(ctx)) query.solutionId = ctx.solutionId;
     return this.auditService.query(query);
   }
 
@@ -49,7 +49,7 @@ export class AdminAuditController {
       throw new NotFoundException(`Audit log not found: ${id}`);
     }
     // Builder keys: verify tenant ownership on fetched resource
-    if (!isAdminScope(ctx) && log.tenantId && log.tenantId !== ctx.tenantId) {
+    if (!isAdminScope(ctx) && log.solutionId && log.solutionId !== ctx.solutionId) {
       throw new ForbiddenException('Access denied to this audit log entry');
     }
     return log;
@@ -73,7 +73,7 @@ export class AdminAuditController {
     );
     // Builder keys: filter to own tenant only
     if (ctx && !isAdminScope(ctx)) {
-      return logs.filter((l) => !l.tenantId || l.tenantId === ctx.tenantId);
+      return logs.filter((l) => !l.solutionId || l.solutionId === ctx.solutionId);
     }
     return logs;
   }
@@ -96,7 +96,7 @@ export class AdminAuditController {
     );
     // Builder keys: filter to own tenant only
     if (ctx && !isAdminScope(ctx)) {
-      return logs.filter((l) => !l.tenantId || l.tenantId === ctx.tenantId);
+      return logs.filter((l) => !l.solutionId || l.solutionId === ctx.solutionId);
     }
     return logs;
   }
@@ -114,7 +114,7 @@ export class AdminAuditController {
     const logs = await this.auditService.getRecent(limit ? parseInt(limit, 10) : 20);
     // Builder keys: filter to own tenant only
     if (ctx && !isAdminScope(ctx)) {
-      return logs.filter((l) => !l.tenantId || l.tenantId === ctx.tenantId);
+      return logs.filter((l) => !l.solutionId || l.solutionId === ctx.solutionId);
     }
     return logs;
   }

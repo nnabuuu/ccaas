@@ -17,24 +17,24 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { SolutionLoaderService } from '../../solutions/solution-loader.service';
 import { ImportSolutionDto } from '../dto/import-solution.dto';
 import { RequestContext } from '../../auth/types';
-import { TenantsService } from '../../tenants/tenants.service';
-import { UserTenantService } from '../../users/user-tenant.service';
+import { SolutionsService } from '../../solutions/solutions.service';
+import { UserSolutionService } from '../../users/user-solution.service';
 
 @Controller('api/v1/admin/solutions')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 @ApiTags('admin')
-export class AdminSolutionsController {
-  private readonly logger = new Logger(AdminSolutionsController.name);
+export class AdminSolutionImportController {
+  private readonly logger = new Logger(AdminSolutionImportController.name);
 
   constructor(
     private readonly loader: SolutionLoaderService,
-    private readonly tenantsService: TenantsService,
-    private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: SolutionsService,
+    private readonly userTenantService: UserSolutionService,
   ) {}
 
   /**
@@ -60,7 +60,7 @@ export class AdminSolutionsController {
 
   /**
    * Verify that a builder key has access to the tenant identified by slug.
-   * The builder must have a userId and an active UserTenant record for the target tenant.
+   * The builder must have a userId and an active UserSolution record for the target tenant.
    */
   private async verifyBuilderTenantAccess(ctx: RequestContext, tenantSlug: string): Promise<void> {
     if (!ctx.userId) {
@@ -73,7 +73,7 @@ export class AdminSolutionsController {
 
     const tenant = await this.tenantsService.findOne(tenantSlug);
     if (!tenant) {
-      // Tenant doesn't exist yet — will be created by the loader.
+      // Solution doesn't exist yet — will be created by the loader.
       // For builders, only allow creating tenants they're already linked to (via onboarding).
       // If slug matches the builder's own tenant, allow it.
       if (ctx.tenant?.slug === tenantSlug) {

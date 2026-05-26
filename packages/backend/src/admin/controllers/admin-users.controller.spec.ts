@@ -11,8 +11,8 @@ import {
 import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminUsersController } from './admin-users.controller';
 import { UsersService } from '../../users/users.service';
-import { UserTenantService } from '../../users/user-tenant.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { UserSolutionService } from '../../users/user-solution.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
 import type { RequestContext, ApiKeyScope } from '../../auth/types';
@@ -20,8 +20,8 @@ import type { RequestContext, ApiKeyScope } from '../../auth/types';
 describe('AdminUsersController', () => {
   let controller: AdminUsersController;
   let usersService: jest.Mocked<UsersService>;
-  let userTenantService: jest.Mocked<UserTenantService>;
-  let tenantsService: jest.Mocked<TenantsService>;
+  let userTenantService: jest.Mocked<UserSolutionService>;
+  let tenantsService: jest.Mocked<SolutionsService>;
   let apiKeyService: jest.Mocked<ApiKeyService>;
   let auditService: jest.Mocked<AuditService>;
 
@@ -36,7 +36,7 @@ describe('AdminUsersController', () => {
   const mockTenant = {
     id: TENANT_ID,
     slug: 'default',
-    name: 'Default Tenant',
+    name: 'Default Solution',
     status: 'active',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -55,7 +55,7 @@ describe('AdminUsersController', () => {
   const mockUserTenant = {
     id: UT_ID,
     userId: USER_ID,
-    tenantId: TENANT_ID,
+    solutionId: TENANT_ID,
     role: 'viewer' as const,
     canCreateSkills: false,
     isActive: true,
@@ -80,7 +80,7 @@ describe('AdminUsersController', () => {
   };
 
   const adminCtx: RequestContext = {
-    tenantId: TENANT_ID,
+    solutionId: TENANT_ID,
     tenant: mockTenant as any,
     apiKeyId: ADMIN_KEY_ID,
     apiKeyScopes: ['admin'] as ApiKeyScope[],
@@ -90,7 +90,7 @@ describe('AdminUsersController', () => {
   };
 
   const builderCtx: RequestContext = {
-    tenantId: TENANT_ID,
+    solutionId: TENANT_ID,
     tenant: mockTenant as any,
     apiKeyId: BUILDER_KEY_ID,
     apiKeyScopes: ['builder'] as ApiKeyScope[],
@@ -114,7 +114,7 @@ describe('AdminUsersController', () => {
           },
         },
         {
-          provide: UserTenantService,
+          provide: UserSolutionService,
           useValue: {
             create: jest.fn(),
             findByTenant: jest.fn(),
@@ -125,7 +125,7 @@ describe('AdminUsersController', () => {
           },
         },
         {
-          provide: TenantsService,
+          provide: SolutionsService,
           useValue: {
             findOne: jest.fn(),
           },
@@ -148,8 +148,8 @@ describe('AdminUsersController', () => {
 
     controller = module.get(AdminUsersController);
     usersService = module.get(UsersService);
-    userTenantService = module.get(UserTenantService);
-    tenantsService = module.get(TenantsService);
+    userTenantService = module.get(UserSolutionService);
+    tenantsService = module.get(SolutionsService);
     apiKeyService = module.get(ApiKeyService);
     auditService = module.get(AuditService);
   });
@@ -169,7 +169,7 @@ describe('AdminUsersController', () => {
       expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, { skip: 0, take: 50, filter: {} });
     });
 
-    it('should throw if tenantId missing (admin scope)', async () => {
+    it('should throw if solutionId missing (admin scope)', async () => {
       await expect(
         controller.findAll('', '1', '50', undefined, undefined, undefined, adminCtx),
       ).rejects.toThrow(BadRequestException);
@@ -190,7 +190,7 @@ describe('AdminUsersController', () => {
 
       await controller.findAll(OTHER_TENANT_ID, '1', '50', undefined, undefined, undefined, builderCtx);
 
-      // Should have called findByTenant with builder's own tenantId, not OTHER_TENANT_ID
+      // Should have called findByTenant with builder's own solutionId, not OTHER_TENANT_ID
       expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, { skip: 0, take: 50, filter: {} });
     });
 
@@ -263,7 +263,7 @@ describe('AdminUsersController', () => {
         {
           email: 'test@example.com',
           name: 'Test User',
-          tenantId: TENANT_ID,
+          solutionId: TENANT_ID,
         },
         adminCtx,
       );
@@ -277,7 +277,7 @@ describe('AdminUsersController', () => {
       });
       expect(userTenantService.create).toHaveBeenCalledWith({
         userId: USER_ID,
-        tenantId: TENANT_ID,
+        solutionId: TENANT_ID,
         role: 'viewer',
       });
       expect(apiKeyService.create).toHaveBeenCalledWith(TENANT_ID, {
@@ -298,7 +298,7 @@ describe('AdminUsersController', () => {
         {
           email: 'dev@example.com',
           name: 'Dev User',
-          tenantId: TENANT_ID,
+          solutionId: TENANT_ID,
           role: 'developer',
         },
         adminCtx,
@@ -320,7 +320,7 @@ describe('AdminUsersController', () => {
           {
             email: 'test@example.com',
             name: 'Test User',
-            tenantId: TENANT_ID,
+            solutionId: TENANT_ID,
           },
           adminCtx,
         ),
@@ -335,14 +335,14 @@ describe('AdminUsersController', () => {
           {
             email: 'test@example.com',
             name: 'Test User',
-            tenantId: 'nonexistent',
+            solutionId: 'nonexistent',
           },
           adminCtx,
         ),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should force builder tenantId to own tenant', async () => {
+    it('should force builder solutionId to own tenant', async () => {
       tenantsService.findOne.mockResolvedValue(mockTenant as any);
       usersService.create.mockResolvedValue(mockUser as any);
       userTenantService.create.mockResolvedValue(mockUserTenant as any);
@@ -352,12 +352,12 @@ describe('AdminUsersController', () => {
         {
           email: 'new@example.com',
           name: 'New User',
-          tenantId: OTHER_TENANT_ID,
+          solutionId: OTHER_TENANT_ID,
         },
         builderCtx,
       );
 
-      // Builder's tenantId should be forced
+      // Builder's solutionId should be forced
       expect(tenantsService.findOne).toHaveBeenCalledWith(TENANT_ID);
     });
   });
@@ -386,7 +386,7 @@ describe('AdminUsersController', () => {
     it('should deny builder access to other tenant user', async () => {
       const otherTenantUser = {
         ...mockUser,
-        tenants: [{ ...mockUserTenant, tenantId: OTHER_TENANT_ID, isActive: true }],
+        tenants: [{ ...mockUserTenant, solutionId: OTHER_TENANT_ID, isActive: true }],
       };
       usersService.findOne.mockResolvedValue(otherTenantUser as any);
 
@@ -424,7 +424,7 @@ describe('AdminUsersController', () => {
     it('should deny builder access to other tenant user', async () => {
       const otherTenantUser = {
         ...mockUser,
-        tenants: [{ ...mockUserTenant, tenantId: OTHER_TENANT_ID, isActive: true }],
+        tenants: [{ ...mockUserTenant, solutionId: OTHER_TENANT_ID, isActive: true }],
       };
       usersService.findOne.mockResolvedValue(otherTenantUser as any);
 
@@ -468,7 +468,7 @@ describe('AdminUsersController', () => {
     it('should deny builder access to other tenant user', async () => {
       const otherTenantUser = {
         ...mockUser,
-        tenants: [{ ...mockUserTenant, tenantId: OTHER_TENANT_ID, isActive: true }],
+        tenants: [{ ...mockUserTenant, solutionId: OTHER_TENANT_ID, isActive: true }],
       };
       usersService.findOne.mockResolvedValue(otherTenantUser as any);
 
@@ -517,7 +517,7 @@ describe('AdminUsersController', () => {
     it('should deny builder access to other tenant user', async () => {
       const otherUser = {
         ...mockUser,
-        tenants: [{ ...mockUserTenant, tenantId: OTHER_TENANT_ID, isActive: true }],
+        tenants: [{ ...mockUserTenant, solutionId: OTHER_TENANT_ID, isActive: true }],
       };
       usersService.findOne.mockResolvedValue(otherUser as any);
 

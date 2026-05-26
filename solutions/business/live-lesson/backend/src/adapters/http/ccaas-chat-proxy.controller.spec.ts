@@ -3,7 +3,7 @@
  *
  * Mocks global fetch + the express Response. Coverage:
  *   - GET messages history: passthrough + 404 → empty
- *   - POST bind-project: tenantId injected from auth/me, upstream 4xx → 502
+ *   - POST bind-project: solutionId injected from auth/me, upstream 4xx → 502
  *   - POST messages SSE: upstream chunks piped, client abort tears down,
  *     upstream !ok → SSE 'error' event written
  *   - resolveTenantId caching: second proxy call doesn't re-fetch /auth/me
@@ -155,20 +155,20 @@ describe('CcaasChatProxyController', () => {
   // β-1 wire change: the browser still sends `{ projectId }` (live-lesson's
   // domain word), but the proxy now calls ccaas's canonical
   // `attach-workspace-source` route with the translated body
-  // `{ sourceUrl, sourceIdentity, tenantId }`. The legacy upstream route
+  // `{ sourceUrl, sourceIdentity, solutionId }`. The legacy upstream route
   // `bind-project` is still available as an alias on ccaas but we
   // deliberately don't use it — solutions migrate first, the alias is for
   // anyone we haven't migrated yet.
 
   describe('bindProject', () => {
-    it('translates {projectId} → {sourceUrl, sourceIdentity, tenantId} and POSTs to attach-workspace-source', async () => {
+    it('translates {projectId} → {sourceUrl, sourceIdentity, solutionId} and POSTs to attach-workspace-source', async () => {
       // 1st fetch: auth/me. 2nd: attach-workspace-source.
       const calls: Array<{ url: string; body?: any }> = [];
       mockFetch(async (url, init) => {
         const body = init?.body ? JSON.parse(init.body as string) : undefined;
         calls.push({ url, body });
         if (url.endsWith('/api/v1/auth/me')) {
-          return jsonResponse({ tenantId: 't-uuid-7' });
+          return jsonResponse({ solutionId: 't-uuid-7' });
         }
         return jsonResponse(
           {
@@ -191,8 +191,8 @@ describe('CcaasChatProxyController', () => {
         sourceIdentity: 'proj-9',
         // sourceUrl derived from env (default localhost:3007 in tests).
         sourceUrl: expect.stringContaining('/api/projects'),
-        // tenantId resolved server-side from CcaasUpstream.resolveTenantId.
-        tenantId: 't-uuid-7',
+        // solutionId resolved server-side from CcaasUpstream.resolveTenantId.
+        solutionId: 't-uuid-7',
       });
       expect(out).toMatchObject({ success: true });
     });
@@ -200,7 +200,7 @@ describe('CcaasChatProxyController', () => {
     it('uses LIVE_LESSON_PUBLIC_URL when set, falling back to BACKEND_URL, then localhost', async () => {
       const seen: string[] = [];
       mockFetch(async (url, init) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         const body = init?.body ? JSON.parse(init.body as string) : undefined;
         if (body?.sourceUrl) seen.push(body.sourceUrl);
         return jsonResponse({ success: true }, 200);
@@ -249,7 +249,7 @@ describe('CcaasChatProxyController', () => {
 
     it('passes through upstream 404 as NotFoundException (browser can choose to recreate the session)', async () => {
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return new Response('session not found', { status: 404 });
       });
 
@@ -264,7 +264,7 @@ describe('CcaasChatProxyController', () => {
       // browser-actionable case ("start a new conversation") — collapsing
       // it to 502 would lose that signal, so we surface it verbatim.
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return new Response('session already bound to project p-other', { status: 409 });
       });
 
@@ -276,11 +276,11 @@ describe('CcaasChatProxyController', () => {
     it('passes through upstream 403 as ForbiddenException (tenant mismatch — surfaces env misconfig honestly)', async () => {
       // 403 from ccaas means the bearer token resolves to a different
       // tenant than the one in the request body. Under the proxy this
-      // is impossible by construction (we inject the resolved tenantId
+      // is impossible by construction (we inject the resolved solutionId
       // ourselves), but if a misconfig ever produces it, we want the
       // operator to see "tenant mismatch" not "ccaas upstream 403".
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return new Response('cross-tenant access denied', { status: 403 });
       });
 
@@ -291,7 +291,7 @@ describe('CcaasChatProxyController', () => {
 
     it('falls back to 502 BadGateway for other 4xx (e.g. unexpected 422) and any 5xx', async () => {
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return new Response('upstream is feeling unwell', { status: 503 });
       });
 
@@ -306,7 +306,7 @@ describe('CcaasChatProxyController', () => {
   describe('sendMessage (SSE)', () => {
     it('pipes upstream SSE chunks verbatim to the browser', async () => {
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return sseResponse([
           'data: {"event":"text_delta","delta":"hi"}\n\n',
           'data: {"event":"done"}\n\n',
@@ -326,7 +326,7 @@ describe('CcaasChatProxyController', () => {
 
     it('writes a proper SseEnvelope error when upstream returns !ok (so useAgentChat parser surfaces it)', async () => {
       mockFetch(async (url) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 't' });
         return new Response('unauthorized', { status: 401 });
       });
 
@@ -358,7 +358,7 @@ describe('CcaasChatProxyController', () => {
       mockFetch(async (url) => {
         if (url.endsWith('/api/v1/auth/me')) {
           meDone = true;
-          return jsonResponse({ tenantId: 't' });
+          return jsonResponse({ solutionId: 't' });
         }
         if (!meDone) return jsonResponse({});
         throw new TypeError('fetch failed: ECONNREFUSED');
@@ -377,10 +377,10 @@ describe('CcaasChatProxyController', () => {
       expect(f.isEnded()).toBe(true);
     });
 
-    it('injects tenantId into the upstream request body', async () => {
+    it('injects solutionId into the upstream request body', async () => {
       let upstreamBody: any;
       mockFetch(async (url, init) => {
-        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 'tnt-X' });
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ solutionId: 'tnt-X' });
         upstreamBody = JSON.parse(init?.body as string);
         return sseResponse(['data: {}\n\n']);
       });
@@ -392,14 +392,14 @@ describe('CcaasChatProxyController', () => {
         f.res,
       );
 
-      expect(upstreamBody.tenantId).toBe('tnt-X');
+      expect(upstreamBody.solutionId).toBe('tnt-X');
       expect(upstreamBody.projectId).toBe('p');
       expect(upstreamBody.message).toBe('m');
       expect(upstreamBody.enabledSkills).toEqual(['s']);
       expect(upstreamBody.templateName).toBe('edit-lesson');
     });
 
-    it('throws 503 when tenantId resolution fails (BEFORE writing headers)', async () => {
+    it('throws 503 when solutionId resolution fails (BEFORE writing headers)', async () => {
       mockFetch(async (url) => {
         if (url.endsWith('/api/v1/auth/me')) return new Response('forbidden', { status: 403 });
         // Should never reach here.
@@ -428,7 +428,7 @@ describe('CcaasChatProxyController', () => {
       mockFetch(async (url) => {
         if (url.endsWith('/api/v1/auth/me')) {
           meCallCount++;
-          return jsonResponse({ tenantId: 't1' });
+          return jsonResponse({ solutionId: 't1' });
         }
         if (url.endsWith('/attach-workspace-source')) {
           return jsonResponse({ success: true });

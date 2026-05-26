@@ -45,7 +45,7 @@ export interface ManagedSession {
   // Message persistence context (set when processing a chat message)
   currentUserMessageId?: string;
   currentAssistantMessageId?: string;
-  tenantId?: string;
+  solutionId?: string;
 
   // Turn tracking (for per-turn analytics)
   currentTurnId?: string;

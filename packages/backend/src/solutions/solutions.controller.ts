@@ -1,5 +1,5 @@
 /**
- * Tenants Controller
+ * Solutions Controller
  *
  * REST API for tenant management. All endpoints require admin authentication.
  */
@@ -15,14 +15,14 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
-import { TenantsService } from './tenants.service';
-import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
+import { SolutionsService } from './solutions.service';
+import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/solution.dto';
 
-@ApiTags('tenants')
-@Controller('api/v1/tenants')
+@ApiTags('solutions')
+@Controller('api/v1/solutions')
 @Auth('admin')
-export class TenantsController {
-  constructor(private readonly tenantsService: TenantsService) {}
+export class SolutionsController {
+  constructor(private readonly tenantsService: SolutionsService) {}
 
   /**
    * List all tenants
@@ -49,7 +49,7 @@ export class TenantsController {
   async findOne(@Param('id') id: string) {
     const tenant = await this.tenantsService.findOne(id);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${id}`);
+      throw new NotFoundException(`Solution not found: ${id}`);
     }
     return tenant;
   }

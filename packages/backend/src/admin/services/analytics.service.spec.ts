@@ -13,7 +13,7 @@ import { Message } from '../../messages/entities/message.entity';
 import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { ApiKey } from '../../auth/entities/api-key.entity';
 import { Skill } from '../../skills/entities/skill.entity';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Solution } from '../../solutions/entities/solution.entity';
 
 describe('AnalyticsService', () => {
   let service: AnalyticsService;
@@ -22,7 +22,7 @@ describe('AnalyticsService', () => {
   let apiErrorRepository: jest.Mocked<Repository<ApiErrorEvent>>;
   let apiKeyRepository: jest.Mocked<Repository<ApiKey>>;
   let skillRepository: jest.Mocked<Repository<Skill>>;
-  let tenantRepository: jest.Mocked<Repository<Tenant>>;
+  let tenantRepository: jest.Mocked<Repository<Solution>>;
 
   // Mock query builder
   const createMockQueryBuilder = () => {
@@ -76,7 +76,7 @@ describe('AnalyticsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Tenant),
+          provide: getRepositoryToken(Solution),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
           },
@@ -90,11 +90,11 @@ describe('AnalyticsService', () => {
     apiErrorRepository = module.get(getRepositoryToken(ApiErrorEvent));
     apiKeyRepository = module.get(getRepositoryToken(ApiKey));
     skillRepository = module.get(getRepositoryToken(Skill));
-    tenantRepository = module.get(getRepositoryToken(Tenant));
+    tenantRepository = module.get(getRepositoryToken(Solution));
   });
 
   describe('getTokenUsage', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockQb = createMockQueryBuilder();
       tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
@@ -107,20 +107,20 @@ describe('AnalyticsService', () => {
       expect(mockQb.andWhere).not.toHaveBeenCalled();
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockQb = createMockQueryBuilder();
       tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const tenantId = 'tenant-123';
-      await service.getTokenUsage({ days: 7, tenantId });
+      const solutionId = 'tenant-123';
+      await service.getTokenUsage({ days: 7, solutionId });
 
       expect(mockQb.where).toHaveBeenCalledWith(
         'usage.createdAt BETWEEN :start AND :end',
         expect.any(Object),
       );
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'usage.tenantId = :tenantId',
-        { tenantId },
+        'usage.solutionId = :solutionId',
+        { solutionId },
       );
     });
 
@@ -179,7 +179,7 @@ describe('AnalyticsService', () => {
   });
 
   describe('getCostBreakdown', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockTokenQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
@@ -188,47 +188,47 @@ describe('AnalyticsService', () => {
 
       await service.getCostBreakdown({ days: 30 });
 
-      // Token usage query should not have tenantId filter
+      // Token usage query should not have solutionId filter
       expect(mockTokenQb.andWhere).not.toHaveBeenCalledWith(
-        'usage.tenantId = :tenantId',
+        'usage.solutionId = :solutionId',
         expect.any(Object),
       );
-      // Message query should not have tenantId filter
+      // Message query should not have solutionId filter
       expect(mockMessageQb.andWhere).not.toHaveBeenCalledWith(
-        'message.tenantId = :tenantId',
+        'message.solutionId = :solutionId',
         expect.any(Object),
       );
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockTokenQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
       tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockTokenQb);
       messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
-      const tenantId = 'tenant-456';
-      await service.getCostBreakdown({ days: 30, tenantId });
+      const solutionId = 'tenant-456';
+      await service.getCostBreakdown({ days: 30, solutionId });
 
       expect(mockTokenQb.andWhere).toHaveBeenCalledWith(
-        'usage.tenantId = :tenantId',
-        { tenantId },
+        'usage.solutionId = :solutionId',
+        { solutionId },
       );
       expect(mockMessageQb.andWhere).toHaveBeenCalledWith(
-        'message.tenantId = :tenantId',
-        { tenantId },
+        'message.solutionId = :solutionId',
+        { solutionId },
       );
     });
 
     it('should calculate cost breakdown by tenant', async () => {
       const mockUsageByTenant = [
-        { tenantId: 'tenant-1', inputTokens: '1000000', outputTokens: '500000', cachedTokens: '100000' },
-        { tenantId: 'tenant-2', inputTokens: '2000000', outputTokens: '1000000', cachedTokens: '200000' },
+        { solutionId: 'tenant-1', inputTokens: '1000000', outputTokens: '500000', cachedTokens: '100000' },
+        { solutionId: 'tenant-2', inputTokens: '2000000', outputTokens: '1000000', cachedTokens: '200000' },
       ];
 
       const mockTenants = [
-        { id: 'tenant-1', name: 'Tenant One' },
-        { id: 'tenant-2', name: 'Tenant Two' },
+        { id: 'tenant-1', name: 'Solution One' },
+        { id: 'tenant-2', name: 'Solution Two' },
       ];
 
       const mockTokenQb = createMockQueryBuilder();
@@ -244,16 +244,16 @@ describe('AnalyticsService', () => {
       const result = await service.getCostBreakdown({ days: 30 });
 
       expect(result.byTenant).toHaveLength(2);
-      expect(result.byTenant[0].tenantId).toBe('tenant-1');
-      expect(result.byTenant[0].tenantName).toBe('Tenant One');
+      expect(result.byTenant[0].solutionId).toBe('tenant-1');
+      expect(result.byTenant[0].tenantName).toBe('Solution One');
       expect(result.byTenant[0].inputTokens).toBe(1000000);
-      expect(result.byTenant[1].tenantId).toBe('tenant-2');
-      expect(result.byTenant[1].tenantName).toBe('Tenant Two');
+      expect(result.byTenant[1].solutionId).toBe('tenant-2');
+      expect(result.byTenant[1].tenantName).toBe('Solution Two');
     });
 
     it('should handle unknown tenant gracefully', async () => {
       const mockUsageByTenant = [
-        { tenantId: 'unknown-tenant', inputTokens: '1000', outputTokens: '500', cachedTokens: '100' },
+        { solutionId: 'unknown-tenant', inputTokens: '1000', outputTokens: '500', cachedTokens: '100' },
       ];
 
       const mockTokenQb = createMockQueryBuilder();
@@ -273,7 +273,7 @@ describe('AnalyticsService', () => {
   });
 
   describe('getMessagesCount24h', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockQb = createMockQueryBuilder();
       messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
@@ -286,20 +286,20 @@ describe('AnalyticsService', () => {
       expect(mockQb.andWhere).not.toHaveBeenCalled();
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockQb = createMockQueryBuilder();
       messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const tenantId = 'tenant-789';
-      await service.getMessagesCount24h(tenantId);
+      const solutionId = 'tenant-789';
+      await service.getMessagesCount24h(solutionId);
 
       expect(mockQb.where).toHaveBeenCalledWith(
         'message.createdAt >= :oneDayAgo',
         expect.any(Object),
       );
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'message.tenantId = :tenantId',
-        { tenantId },
+        'message.solutionId = :solutionId',
+        { solutionId },
       );
     });
 
@@ -315,7 +315,7 @@ describe('AnalyticsService', () => {
   });
 
   describe('getTotalTokens24h', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getRawOne.mockResolvedValue({ input: '0', output: '0' });
       tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
@@ -329,21 +329,21 @@ describe('AnalyticsService', () => {
       expect(mockQb.andWhere).not.toHaveBeenCalled();
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getRawOne.mockResolvedValue({ input: '0', output: '0' });
       tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const tenantId = 'tenant-abc';
-      await service.getTotalTokens24h(tenantId);
+      const solutionId = 'tenant-abc';
+      await service.getTotalTokens24h(solutionId);
 
       expect(mockQb.where).toHaveBeenCalledWith(
         'usage.createdAt >= :oneDayAgo',
         expect.any(Object),
       );
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'usage.tenantId = :tenantId',
-        { tenantId },
+        'usage.solutionId = :solutionId',
+        { solutionId },
       );
     });
 
@@ -373,7 +373,7 @@ describe('AnalyticsService', () => {
   });
 
   describe('getApiKeyUsage', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getMany.mockResolvedValue([]);
       apiKeyRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
@@ -383,17 +383,17 @@ describe('AnalyticsService', () => {
       expect(mockQb.where).not.toHaveBeenCalled();
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockQb = createMockQueryBuilder();
       mockQb.getMany.mockResolvedValue([]);
       apiKeyRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const tenantId = 'tenant-xyz';
-      await service.getApiKeyUsage(tenantId);
+      const solutionId = 'tenant-xyz';
+      await service.getApiKeyUsage(solutionId);
 
       expect(mockQb.where).toHaveBeenCalledWith(
-        'key.tenantId = :tenantId',
-        { tenantId },
+        'key.solutionId = :solutionId',
+        { solutionId },
       );
     });
 
@@ -403,7 +403,7 @@ describe('AnalyticsService', () => {
           id: 'key-1',
           keyPrefix: 'sk_1234',
           name: 'Test Key',
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
           usageCount: 100,
           lastUsedAt: new Date(),
         },

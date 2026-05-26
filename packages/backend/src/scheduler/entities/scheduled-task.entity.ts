@@ -17,7 +17,7 @@ export class ScheduledTask {
   id: string;
 
   @Column()
-  tenantId: string;
+  solutionId: string;
 
   @Column()
   name: string;

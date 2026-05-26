@@ -20,10 +20,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { SessionManagerService } from '../services/session-manager.service';
-import { isAdminScope } from '../guards/admin-tenant-access.guard';
+import { isAdminScope } from '../guards/admin-solution-access.guard';
 import {
   SessionQueryDto,
   SessionListItem,
@@ -40,7 +40,7 @@ import { PaginatedSessions } from '../services/session-manager.service';
 @ApiTags('admin')
 @Controller('api/v1/admin/sessions')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminSessionsController {
   constructor(private readonly sessionManagerService: SessionManagerService) {}
 
@@ -56,7 +56,7 @@ export class AdminSessionsController {
   ): Promise<PaginatedSessions> {
     // Builder keys: force tenant isolation on list endpoints
     if (!isAdminScope(ctx)) {
-      query.tenantId = ctx.tenantId;
+      query.solutionId = ctx.solutionId;
     }
     return this.sessionManagerService.getSessions(query);
   }
@@ -71,7 +71,7 @@ export class AdminSessionsController {
     const all = await this.sessionManagerService.getActiveSessions();
     // Builder keys: filter to own tenant only
     if (!isAdminScope(ctx)) {
-      return all.filter((s) => s.tenantId === ctx.tenantId);
+      return all.filter((s) => s.solutionId === ctx.solutionId);
     }
     return all;
   }
@@ -88,7 +88,7 @@ export class AdminSessionsController {
   ): Promise<SessionDetail> {
     const session = await this.sessionManagerService.getSessionDetail(
       sessionId,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
     );
     if (!session) {
@@ -112,7 +112,7 @@ export class AdminSessionsController {
       sessionId,
       query.limit,
       query.offset,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
       query.turnNumber,
     );
@@ -130,7 +130,7 @@ export class AdminSessionsController {
   ): Promise<TurnSummary[]> {
     return this.sessionManagerService.getSessionTurns(
       sessionId,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
     );
   }
@@ -147,7 +147,7 @@ export class AdminSessionsController {
   ): Promise<TokenBreakdown> {
     const breakdown = await this.sessionManagerService.getTokenBreakdown(
       sessionId,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
     );
     // Session exists but has no recorded token usage — return zeros rather than 404.
@@ -175,7 +175,7 @@ export class AdminSessionsController {
     @Ctx() ctx: RequestContext,
   ): Promise<WorkspaceTreeResponse> {
     // Verify session belongs to caller's tenant before exposing workspace
-    await this.sessionManagerService.getSessionDetail(sessionId, ctx.tenantId, ctx.apiKeyScopes);
+    await this.sessionManagerService.getSessionDetail(sessionId, ctx.solutionId, ctx.apiKeyScopes);
     return this.sessionManagerService.getWorkspaceTree(sessionId);
   }
 
@@ -195,7 +195,7 @@ export class AdminSessionsController {
       throw new BadRequestException('path query parameter is required');
     }
     // Verify session belongs to caller's tenant before exposing file content
-    await this.sessionManagerService.getSessionDetail(sessionId, ctx.tenantId, ctx.apiKeyScopes);
+    await this.sessionManagerService.getSessionDetail(sessionId, ctx.solutionId, ctx.apiKeyScopes);
     return this.sessionManagerService.getWorkspaceFileContent(sessionId, filePath);
   }
 
@@ -211,11 +211,11 @@ export class AdminSessionsController {
     @Param('sessionId') sessionId: string,
     @Ctx() ctx: RequestContext,
   ): Promise<{ success: boolean; message: string }> {
-    const adminId = ctx.apiKeyId || ctx.tenantId;
+    const adminId = ctx.apiKeyId || ctx.solutionId;
     const success = await this.sessionManagerService.killSession(
       sessionId,
       adminId,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
     );
 
@@ -266,11 +266,11 @@ export class AdminSessionsController {
       error?: string;
     }>;
   }> {
-    const adminId = ctx.apiKeyId || ctx.tenantId;
+    const adminId = ctx.apiKeyId || ctx.solutionId;
     return this.sessionManagerService.bulkKillSessions(
       dto.sessionIds,
       adminId,
-      ctx.tenantId,
+      ctx.solutionId,
       ctx.apiKeyScopes,
     );
   }

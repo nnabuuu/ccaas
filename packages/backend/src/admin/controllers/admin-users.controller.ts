@@ -24,18 +24,18 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard, isAdminScope } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
 import { UsersService } from '../../users/users.service';
-import { UserTenantService } from '../../users/user-tenant.service';
-import { TenantsService } from '../../tenants/tenants.service';
+import { UserSolutionService } from '../../users/user-solution.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
-import { CreateTenantUserDto } from '../dto/create-tenant-user.dto';
+import { CreateTenantUserDto } from '../dto/create-solution-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
-import type { UserRole } from '../../users/entities/user-tenant.entity';
-import type { UserTenantFilter } from '../../users/user-tenant.service';
+import type { UserRole } from '../../users/entities/user-solution.entity';
+import type { UserTenantFilter } from '../../users/user-solution.service';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -43,14 +43,14 @@ const UUID_REGEX =
 @ApiTags('admin')
 @Controller('api/v1/admin/users')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminUsersController {
   private readonly logger = new Logger(AdminUsersController.name);
 
   constructor(
     private readonly usersService: UsersService,
-    private readonly userTenantService: UserTenantService,
-    private readonly tenantsService: TenantsService,
+    private readonly userTenantService: UserSolutionService,
+    private readonly tenantsService: SolutionsService,
     private readonly apiKeyService: ApiKeyService,
     private readonly auditService: AuditService,
   ) {}
@@ -63,7 +63,7 @@ export class AdminUsersController {
    */
   @Get()
   async findAll(
-    @Query('tenantId') tenantId: string,
+    @Query('solutionId') solutionId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
     @Query('search') search: string | undefined,
@@ -71,19 +71,19 @@ export class AdminUsersController {
     @Query('status') status: string | undefined,
     @Ctx() ctx: RequestContext,
   ) {
-    // Builder scope isolation: force tenantId to own tenant
+    // Builder scope isolation: force solutionId to own tenant
     if (!isAdminScope(ctx)) {
-      tenantId = ctx.tenantId;
+      solutionId = ctx.solutionId;
     }
 
-    if (!tenantId) {
-      throw new BadRequestException('tenantId query parameter is required');
+    if (!solutionId) {
+      throw new BadRequestException('solutionId query parameter is required');
     }
 
     // Validate tenant exists
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     // Parse pagination
@@ -103,8 +103,8 @@ export class AdminUsersController {
     // Get total count and paginated results from DB
     const skip = (pageNum - 1) * limitNum;
     const [total, userTenants] = await Promise.all([
-      this.userTenantService.countByTenant(tenantId, filter),
-      this.userTenantService.findByTenant(tenantId, { skip, take: limitNum, filter }),
+      this.userTenantService.countByTenant(solutionId, filter),
+      this.userTenantService.findByTenant(solutionId, { skip, take: limitNum, filter }),
     ]);
 
     const items = userTenants.map((ut) => ({
@@ -146,13 +146,13 @@ export class AdminUsersController {
   ) {
     // Builder scope isolation
     if (!isAdminScope(ctx)) {
-      dto.tenantId = ctx.tenantId;
+      dto.solutionId = ctx.solutionId;
     }
 
     // Validate tenant exists
-    const tenant = await this.tenantsService.findOne(dto.tenantId);
+    const tenant = await this.tenantsService.findOne(dto.solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${dto.tenantId}`);
+      throw new NotFoundException(`Solution not found: ${dto.solutionId}`);
     }
 
     const role = dto.role || 'viewer';
@@ -166,7 +166,7 @@ export class AdminUsersController {
     // 2. Link user to tenant
     const userTenant = await this.userTenantService.create({
       userId: user.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       role,
     });
 
@@ -183,7 +183,7 @@ export class AdminUsersController {
       action: 'user.create',
       targetType: 'user',
       targetId: user.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         email: dto.email,
         name: dto.name,
@@ -193,7 +193,7 @@ export class AdminUsersController {
     });
 
     this.logger.log(
-      `Tenant user created: ${dto.email} → tenant ${tenant.slug} (role: ${role})`,
+      `Solution user created: ${dto.email} → tenant ${tenant.slug} (role: ${role})`,
     );
 
     return {
@@ -238,7 +238,7 @@ export class AdminUsersController {
     // Builder scope: verify user belongs to builder's tenant
     if (!isAdminScope(ctx)) {
       const belongsToTenant = user.tenants?.some(
-        (ut) => ut.tenantId === ctx.tenantId && ut.isActive,
+        (ut) => ut.solutionId === ctx.solutionId && ut.isActive,
       );
       if (!belongsToTenant) {
         throw new ForbiddenException('Access denied to this user');
@@ -254,7 +254,7 @@ export class AdminUsersController {
       updatedAt: user.updatedAt,
       tenants: user.tenants?.map((ut) => ({
         id: ut.id,
-        tenantId: ut.tenantId,
+        solutionId: ut.solutionId,
         tenantName: ut.tenant?.name,
         role: ut.role,
         canCreateSkills: ut.canCreateSkills,
@@ -284,7 +284,7 @@ export class AdminUsersController {
 
     if (!isAdminScope(ctx)) {
       const belongsToTenant = existing.tenants?.some(
-        (ut) => ut.tenantId === ctx.tenantId && ut.isActive,
+        (ut) => ut.solutionId === ctx.solutionId && ut.isActive,
       );
       if (!belongsToTenant) {
         throw new ForbiddenException('Access denied to this user');
@@ -293,8 +293,8 @@ export class AdminUsersController {
 
     const updated = await this.usersService.update(id, dto);
 
-    // Derive tenantId from user's tenant association (not the admin key's tenant)
-    const userTenantId = existing.tenants?.find((ut) => ut.isActive)?.tenantId || ctx.tenantId;
+    // Derive solutionId from user's tenant association (not the admin key's tenant)
+    const userTenantId = existing.tenants?.find((ut) => ut.isActive)?.solutionId || ctx.solutionId;
 
     // Audit log
     await this.auditService.log({
@@ -302,7 +302,7 @@ export class AdminUsersController {
       action: 'user.update',
       targetType: 'user',
       targetId: id,
-      tenantId: userTenantId,
+      solutionId: userTenantId,
       metadata: {
         previousValue: { name: existing.name, status: existing.status },
         newValue: { name: updated.name, status: updated.status },
@@ -338,7 +338,7 @@ export class AdminUsersController {
 
     if (!isAdminScope(ctx)) {
       const belongsToTenant = existing.tenants?.some(
-        (ut) => ut.tenantId === ctx.tenantId && ut.isActive,
+        (ut) => ut.solutionId === ctx.solutionId && ut.isActive,
       );
       if (!belongsToTenant) {
         throw new ForbiddenException('Access denied to this user');
@@ -347,8 +347,8 @@ export class AdminUsersController {
 
     // Find the user-tenant association for the relevant tenant
     const targetTenantId = isAdminScope(ctx)
-      ? existing.tenants?.find((ut) => ut.isActive)?.tenantId || ctx.tenantId
-      : ctx.tenantId;
+      ? existing.tenants?.find((ut) => ut.isActive)?.solutionId || ctx.solutionId
+      : ctx.solutionId;
 
     const userTenant = await this.userTenantService.findUserInTenant(id, targetTenantId);
     if (!userTenant) {
@@ -369,7 +369,7 @@ export class AdminUsersController {
       action: 'user.role_update',
       targetType: 'user',
       targetId: id,
-      tenantId: targetTenantId,
+      solutionId: targetTenantId,
       metadata: {
         previousValue: { role: previousRole, canCreateSkills: previousCanCreate },
         newValue: { role: updated.role, canCreateSkills: updated.canCreateSkills },
@@ -403,15 +403,15 @@ export class AdminUsersController {
 
     if (!isAdminScope(ctx)) {
       const belongsToTenant = existing.tenants?.some(
-        (ut) => ut.tenantId === ctx.tenantId && ut.isActive,
+        (ut) => ut.solutionId === ctx.solutionId && ut.isActive,
       );
       if (!belongsToTenant) {
         throw new ForbiddenException('Access denied to this user');
       }
     }
 
-    // Derive tenantId from user's tenant association (not the admin key's tenant)
-    const userTenantId = existing.tenants?.find((ut) => ut.isActive)?.tenantId || ctx.tenantId;
+    // Derive solutionId from user's tenant association (not the admin key's tenant)
+    const userTenantId = existing.tenants?.find((ut) => ut.isActive)?.solutionId || ctx.solutionId;
 
     // Audit log BEFORE deletion
     await this.auditService.log({
@@ -419,7 +419,7 @@ export class AdminUsersController {
       action: 'user.delete',
       targetType: 'user',
       targetId: id,
-      tenantId: userTenantId,
+      solutionId: userTenantId,
       metadata: {
         email: existing.email,
         name: existing.name,

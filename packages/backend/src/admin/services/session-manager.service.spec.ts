@@ -58,7 +58,7 @@ describe('SessionManagerService', () => {
   // Create a mock ManagedSession
   const createMockManagedSession = (
     sessionId: string,
-    tenantId: string | undefined,
+    solutionId: string | undefined,
     status: string = 'idle',
     overrides: Partial<ManagedSession> = {},
   ): ManagedSession => ({
@@ -73,20 +73,20 @@ describe('SessionManagerService', () => {
     messageCount: 5,
     buffer: '',
     workspaceDir: `/tmp/${sessionId}`,
-    tenantId,
+    solutionId,
     ...overrides,
   });
 
   // Create a mock Session entity (database record)
   const createMockSessionEntity = (
     sessionId: string,
-    tenantId: string | null = null,
+    solutionId: string | null = null,
     status: string = 'idle',
     overrides: Partial<Session> = {},
   ): Session => ({
     id: `uuid-${sessionId}`,
     sessionId,
-    tenantId,
+    solutionId,
     userId: null,
     clientId: `client-${sessionId}`,
     status: status as any,
@@ -341,7 +341,7 @@ describe('SessionManagerService', () => {
       expect(result.data).toHaveLength(1);
       const item = result.data[0];
       expect(item.sessionId).toBe('s1');
-      expect(item.tenantId).toBe('tenant-a');
+      expect(item.solutionId).toBe('tenant-a');
       expect(item.clientId).toBe('client-s1');
       expect(item.status).toBe('processing');
       expect(item.messageCount).toBe(10);
@@ -389,18 +389,18 @@ describe('SessionManagerService', () => {
   // ===========================================================================
 
   describe('getSessions - filtering', () => {
-    it('should filter by tenantId', async () => {
+    it('should filter by solutionId', async () => {
       const mockQb = createMockQueryBuilder({
         getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([]),
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await service.getSessions({ tenantId: 'tenant-a' });
+      await service.getSessions({ solutionId: 'tenant-a' });
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        'session.tenantId = :tenantId',
-        { tenantId: 'tenant-a' },
+        'session.solutionId = :solutionId',
+        { solutionId: 'tenant-a' },
       );
     });
 
@@ -449,14 +449,14 @@ describe('SessionManagerService', () => {
       );
     });
 
-    it('should combine tenantId and status filters', async () => {
+    it('should combine solutionId and status filters', async () => {
       const mockQb = createMockQueryBuilder({
         getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([]),
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await service.getSessions({ tenantId: 'tenant-a', status: 'idle' });
+      await service.getSessions({ solutionId: 'tenant-a', status: 'idle' });
 
       expect(mockQb.andWhere).toHaveBeenCalledTimes(2);
     });
@@ -509,7 +509,7 @@ describe('SessionManagerService', () => {
       expect(result.pageSize).toBe(50);
     });
 
-    it('should apply tenantId filter in memory fallback', async () => {
+    it('should apply solutionId filter in memory fallback', async () => {
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(
         createMockQueryBuilder({
           getCount: jest.fn().mockRejectedValue(new Error('DB error')),
@@ -526,10 +526,10 @@ describe('SessionManagerService', () => {
         createMockQueryBuilder({ getRawMany: jest.fn().mockResolvedValue([]) }),
       );
 
-      const result = await service.getSessions({ tenantId: 'tenant-a' });
+      const result = await service.getSessions({ solutionId: 'tenant-a' });
 
       expect(result.data).toHaveLength(2);
-      expect(result.data.every(s => s.tenantId === 'tenant-a')).toBe(true);
+      expect(result.data.every(s => s.solutionId === 'tenant-a')).toBe(true);
       expect(result.total).toBe(2);
     });
 
@@ -645,7 +645,7 @@ describe('SessionManagerService', () => {
       expect(sessionRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           sessionId: 's1',
-          tenantId: 'tenant-a',
+          solutionId: 'tenant-a',
           clientId: 'client-s1',
           status: 'idle',
           messageCount: 5,
@@ -718,7 +718,7 @@ describe('SessionManagerService', () => {
   // ===========================================================================
 
   describe('getRecentSessions', () => {
-    it('should return all sessions when tenantId is not provided', async () => {
+    it('should return all sessions when solutionId is not provided', async () => {
       const mockSessions = [
         createMockManagedSession('session-1', 'tenant-a'),
         createMockManagedSession('session-2', 'tenant-b'),
@@ -733,7 +733,7 @@ describe('SessionManagerService', () => {
       expect(result.map(s => s.sessionId)).toEqual(['session-1', 'session-2', 'session-3']);
     });
 
-    it('should filter sessions by tenantId when provided', async () => {
+    it('should filter sessions by solutionId when provided', async () => {
       const mockSessions = [
         createMockManagedSession('session-1', 'tenant-a'),
         createMockManagedSession('session-2', 'tenant-b'),
@@ -746,7 +746,7 @@ describe('SessionManagerService', () => {
       const result = await service.getRecentSessions(10, 'tenant-a');
 
       expect(result).toHaveLength(2);
-      expect(result.every(s => s.tenantId === 'tenant-a')).toBe(true);
+      expect(result.every(s => s.solutionId === 'tenant-a')).toBe(true);
       expect(result.map(s => s.sessionId)).toEqual(['session-1', 'session-3']);
     });
 
@@ -783,7 +783,7 @@ describe('SessionManagerService', () => {
       expect(result[2].sessionId).toBe('session-1');
     });
 
-    it('should return empty array when no sessions match tenantId', async () => {
+    it('should return empty array when no sessions match solutionId', async () => {
       const mockSessions = [
         createMockManagedSession('session-1', 'tenant-a'),
         createMockManagedSession('session-2', 'tenant-b'),
@@ -796,7 +796,7 @@ describe('SessionManagerService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should return sessions without tenantId when filtering for undefined', async () => {
+    it('should return sessions without solutionId when filtering for undefined', async () => {
       const mockSessions = [
         createMockManagedSession('session-1', 'tenant-a'),
         createMockManagedSession('session-2', undefined),
@@ -805,7 +805,7 @@ describe('SessionManagerService', () => {
 
       sessionService.getAllSessions = jest.fn().mockReturnValue(mockSessions);
 
-      // When no tenantId filter, should return all
+      // When no solutionId filter, should return all
       const result = await service.getRecentSessions(10);
 
       expect(result).toHaveLength(3);
@@ -817,7 +817,7 @@ describe('SessionManagerService', () => {
   // ===========================================================================
 
   describe('getErrorRate24h', () => {
-    it('should not filter by tenantId when not provided', async () => {
+    it('should not filter by solutionId when not provided', async () => {
       const mockErrorQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
@@ -833,7 +833,7 @@ describe('SessionManagerService', () => {
       expect(mockMessageQb.andWhere).not.toHaveBeenCalled();
     });
 
-    it('should filter by tenantId when provided', async () => {
+    it('should filter by solutionId when provided', async () => {
       const mockErrorQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
@@ -843,16 +843,16 @@ describe('SessionManagerService', () => {
       apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
       messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
-      const tenantId = 'tenant-123';
-      await service.getErrorRate24h(tenantId);
+      const solutionId = 'tenant-123';
+      await service.getErrorRate24h(solutionId);
 
       expect(mockErrorQb.andWhere).toHaveBeenCalledWith(
-        'error.tenantId = :tenantId',
-        { tenantId },
+        'error.solutionId = :solutionId',
+        { solutionId },
       );
       expect(mockMessageQb.andWhere).toHaveBeenCalledWith(
-        'message.tenantId = :tenantId',
-        { tenantId },
+        'message.solutionId = :solutionId',
+        { solutionId },
       );
     });
 

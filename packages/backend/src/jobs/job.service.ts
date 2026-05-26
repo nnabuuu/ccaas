@@ -65,7 +65,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
         const result = await this.headlessExecution.executeJob(
           {
             sessionId: bgSessionId,
-            tenantId: job.data.tenantId,
+            solutionId: job.data.solutionId,
             prompt: job.data.prompt,
             mcpServers: job.data.mcpServers,
             enabledSkills: job.data.enabledSkills,
@@ -157,7 +157,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
    */
   async create(dto: CreateJobDto): Promise<JobEntity> {
     const entity = this.jobRepo.create({
-      tenantId: dto.tenantId,
+      solutionId: dto.solutionId,
       type: dto.type,
       name: dto.name,
       prompt: dto.prompt || '',
@@ -181,7 +181,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
         jobEntityId: saved.id,
         type: dto.type,
         prompt: dto.prompt,
-        tenantId: dto.tenantId,
+        solutionId: dto.solutionId,
         mcpServers: dto.mcpServers,
         enabledSkills: dto.enabledSkills,
       };
@@ -238,7 +238,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
       jobEntityId: entity.id,
       type: entity.type,
       prompt: entity.prompt,
-      tenantId: entity.tenantId,
+      solutionId: entity.solutionId,
       mcpServers: entity.mcpServers,
       enabledSkills: entity.enabledSkills,
       resumeSessionId: entity.bgSessionId,
@@ -275,7 +275,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
    * List jobs with optional filters.
    */
   async findAll(filters?: {
-    tenantId?: string;
+    solutionId?: string;
     sessionId?: string;
     status?: string;
     page?: number;
@@ -283,8 +283,8 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
   }) {
     const qb = this.jobRepo.createQueryBuilder('job');
 
-    if (filters?.tenantId) {
-      qb.andWhere('job.tenantId = :tenantId', { tenantId: filters.tenantId });
+    if (filters?.solutionId) {
+      qb.andWhere('job.solutionId = :solutionId', { solutionId: filters.solutionId });
     }
     if (filters?.sessionId) {
       qb.andWhere('job.sessionId = :sessionId', { sessionId: filters.sessionId });
@@ -422,7 +422,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
     // Socket.IO push (if available)
     if (this.ioServer) {
       // Emit to tenant-specific room
-      this.ioServer.to(`jobs:${entity.tenantId}`).emit('job_update', event);
+      this.ioServer.to(`jobs:${entity.solutionId}`).emit('job_update', event);
 
       // Also emit to session room if available
       if (entity.sessionId) {

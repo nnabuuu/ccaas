@@ -106,7 +106,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
         id: 'skill-123',
         name: 'Customer Support',
         slug: 'customer-support',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '1.2.0',
         updatedAt: new Date(),
         versions: [{ id: 'version-1' }],
@@ -156,7 +156,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
         id: 'skill-123',
         name: 'Popular Skill',
         slug: 'popular-skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '2.0.0',
         updatedAt: new Date(),
         versions: [{ id: 'version-1' }],
@@ -188,7 +188,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
       const mockSkill = {
         id: 'skill-123',
         name: 'Skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '1.0.0',
         updatedAt: new Date(),
         versions: [],
@@ -211,7 +211,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
       const mockSkill = {
         id: 'skill-123',
         name: 'Skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '1.0.0',
         updatedAt: new Date(),
         versions: [],
@@ -237,7 +237,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
       const mockSkill = {
         id: 'skill-123',
         name: 'Skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '1.0.0',
         updatedAt: new Date(),
         versions: [],
@@ -263,7 +263,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
       const mockSkill = {
         id: 'skill-123',
         name: 'Unused Skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         currentVersion: '1.0.0',
         updatedAt: new Date(),
         versions: [],
@@ -293,7 +293,7 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
         id: 'skill-123',
         name: 'Draft Skill',
         slug: 'draft-skill',
-        tenantId: 'tenant-123',
+        solutionId: 'tenant-123',
         status: 'draft',
         currentVersion: null,
         versions: [

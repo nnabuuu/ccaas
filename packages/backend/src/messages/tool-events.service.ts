@@ -12,7 +12,7 @@ import { ToolEvent, ToolEventPhase, ToolDecisionLogic } from './entities/tool-ev
 export interface CreateToolEventDto {
   messageId: string;
   sessionId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   toolUseId: string;
   toolName: string;
   phase: ToolEventPhase;
@@ -55,7 +55,7 @@ export class ToolEventsService {
     const toolEvent = this.toolEventRepository.create({
       messageId: dto.messageId,
       sessionId: dto.sessionId,
-      tenantId: dto.tenantId ?? undefined,
+      solutionId: dto.solutionId ?? undefined,
       toolUseId: dto.toolUseId,
       toolName: dto.toolName,
       phase: dto.phase,
@@ -86,7 +86,7 @@ export class ToolEventsService {
   async recordStart(params: {
     messageId: string;
     sessionId: string;
-    tenantId?: string | null;
+    solutionId?: string | null;
     toolUseId: string;
     toolName: string;
     toolInput?: Record<string, unknown>;
@@ -96,7 +96,7 @@ export class ToolEventsService {
     return this.create({
       messageId: params.messageId,
       sessionId: params.sessionId,
-      tenantId: params.tenantId,
+      solutionId: params.solutionId,
       toolUseId: params.toolUseId,
       toolName: params.toolName,
       phase: 'start',
@@ -112,7 +112,7 @@ export class ToolEventsService {
   async recordEnd(params: {
     messageId: string;
     sessionId: string;
-    tenantId?: string | null;
+    solutionId?: string | null;
     toolUseId: string;
     toolName: string;
     toolInput?: Record<string, unknown>;
@@ -130,7 +130,7 @@ export class ToolEventsService {
     return this.create({
       messageId: params.messageId,
       sessionId: params.sessionId,
-      tenantId: params.tenantId,
+      solutionId: params.solutionId,
       toolUseId: params.toolUseId,
       toolName: params.toolName,
       phase: 'end',

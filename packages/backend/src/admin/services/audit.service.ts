@@ -20,7 +20,7 @@ export interface LogAuditParams {
   action: AdminAction;
   targetType: TargetType;
   targetId: string;
-  tenantId?: string | null;
+  solutionId?: string | null;
   metadata?: AuditMetadata;
   success?: boolean;
   errorMessage?: string;
@@ -51,7 +51,7 @@ export class AuditService {
       action: params.action,
       targetType: params.targetType,
       targetId: params.targetId,
-      tenantId: params.tenantId || null,
+      solutionId: params.solutionId || null,
       metadata: params.metadata || null,
       success: params.success ?? true,
       errorMessage: params.errorMessage || null,
@@ -73,14 +73,14 @@ export class AuditService {
     targetType: TargetType,
     targetId: string,
     metadata?: AuditMetadata,
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<AdminAuditLog> {
     return this.log({
       adminId,
       action,
       targetType,
       targetId,
-      tenantId,
+      solutionId,
       metadata,
       success: true,
     });
@@ -96,14 +96,14 @@ export class AuditService {
     targetId: string,
     errorMessage: string,
     metadata?: AuditMetadata,
-    tenantId?: string | null,
+    solutionId?: string | null,
   ): Promise<AdminAuditLog> {
     return this.log({
       adminId,
       action,
       targetType,
       targetId,
-      tenantId,
+      solutionId,
       metadata,
       success: false,
       errorMessage,
@@ -134,8 +134,8 @@ export class AuditService {
       qb.andWhere('log.targetId = :targetId', { targetId: dto.targetId });
     }
 
-    if (dto.tenantId) {
-      qb.andWhere('log.tenantId = :tenantId', { tenantId: dto.tenantId });
+    if (dto.solutionId) {
+      qb.andWhere('log.solutionId = :solutionId', { solutionId: dto.solutionId });
     }
 
     if (dto.success !== undefined) {

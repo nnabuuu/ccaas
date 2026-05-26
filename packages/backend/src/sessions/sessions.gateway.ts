@@ -26,7 +26,7 @@ import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
-import { TenantsService } from '../tenants/tenants.service';
+import { SolutionsService } from '../solutions/solutions.service';
 import { MessagesService } from '../messages/messages.service';
 import { ToolEventsService } from '../messages/tool-events.service';
 import { ThinkingBlocksService } from '../messages/thinking-blocks.service';
@@ -67,7 +67,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     socketId: string;
     sdkType: string;
     sdkVersion: string;
-    tenantId: string;
+    solutionId: string;
     solutionName: string;
     connectedAt: Date;
   }>();
@@ -85,7 +85,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     private readonly completionOrchestrationService: CompletionOrchestrationService,
     private readonly messageQueueService: MessageQueueService,
     private readonly skillSyncService: SkillSyncService,
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly messagesService: MessagesService,
     private readonly toolEventsService: ToolEventsService,
     private readonly thinkingBlocksService: ThinkingBlocksService,
@@ -155,7 +155,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
    * Week 5: WebSocket event enhancement
    */
   private handleSkillUpdatedEvent(event: any) {
-    const { skill, affectedSessions, impact, tenantId } = event;
+    const { skill, affectedSessions, impact, solutionId } = event;
 
     this.logger.log(
       `Skill updated: ${skill.name} (${skill.id}) - ${affectedSessions.length} affected sessions (${impact} impact)`,
@@ -164,7 +164,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     // Forward event to tenant room via Socket.io
     // Skip if server is not initialized (e.g., in script/CLI context)
     if (this.server) {
-      this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
+      this.server.to(`tenant:${solutionId}`).emit('skill_updated', {
         type: 'skill_updated',
         skill,
         affectedSessions,
@@ -193,15 +193,15 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
    * Marks affected sessions for restart and notifies connected clients
    */
   private handleSkillChange(
-    tenantId: string,
+    solutionId: string,
     skillId: string,
     skillSlug: string,
     action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
   ): void {
-    this.logger.log(`Skill change: ${action} ${skillSlug} for tenant ${tenantId}`);
+    this.logger.log(`Skill change: ${action} ${skillSlug} for tenant ${solutionId}`);
 
     // Week 3: Mark only sessions that use this skill (precise restart)
-    const affectedSessionIds = this.sessionService.markSessionsForRestart(tenantId, skillId);
+    const affectedSessionIds = this.sessionService.markSessionsForRestart(solutionId, skillId);
 
     if (affectedSessionIds.length === 0) {
       this.logger.debug('No active sessions affected by skill change');
@@ -247,7 +247,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     const query = client.handshake?.query || {};
     const sdkType = (query.sdkType as string) || 'unknown';
     const sdkVersion = (query.sdkVersion as string) || 'unknown';
-    const tenantId = (query.tenantId as string) || '';
+    const solutionId = (query.solutionId as string) || '';
     const solutionName = (query.solutionName as string) || '';
 
     const connectionInfo = {
@@ -255,7 +255,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       socketId: client.id,
       sdkType,
       sdkVersion,
-      tenantId,
+      solutionId,
       solutionName,
       connectedAt: new Date(),
     };
@@ -263,7 +263,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     // Notify admin namespace
     this.server.emit('admin:sdk_connected', connectionInfo);
-    this.logger.log(`SDK connected: ${sdkType}@${sdkVersion} tenant=${tenantId} solution=${solutionName}`);
+    this.logger.log(`SDK connected: ${sdkType}@${sdkVersion} tenant=${solutionId} solution=${solutionName}`);
 
     // Send client ID to frontend
     client.emit('client_id', { clientId });
@@ -306,19 +306,19 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
   ) {
     const clientId = client.data.clientId;
     const sessionId = data.sessionId || `session_${Date.now()}_${uuidv4().slice(0, 8)}`;
-    const tenantId = data.tenantId;
+    const solutionId = data.solutionId;
 
     this.logger.log(`Received chat message: ${data.message?.slice(0, 50)}...`);
 
-    // Require tenantId for skill sync to work
-    if (!tenantId) {
-      this.logger.error('tenantId is required for chat - skills cannot be loaded without a tenant');
+    // Require solutionId for skill sync to work
+    if (!solutionId) {
+      this.logger.error('solutionId is required for chat - skills cannot be loaded without a tenant');
       client.emit('agent_status', {
         type: 'agent_status',
         status: 'error',
         sessionId,
         timestamp: new Date().toISOString(),
-        error: 'tenantId is required. Skills cannot be loaded without a tenant.',
+        error: 'solutionId is required. Skills cannot be loaded without a tenant.',
       });
       return;
     }
@@ -340,7 +340,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
         const queueItem = await this.messageQueueService.enqueue(
           sessionId,
           clientId,
-          tenantId,
+          solutionId,
           {
             message: data.message,
             context: data.context,
@@ -366,7 +366,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
         await this.completionOrchestrationService.orchestrateMessage({
           session,
           clientId,
-          tenantId,
+          solutionId,
           message: data.message,
           context: data.context,
           enabledSkills: data.enabledSkills,
@@ -460,7 +460,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       // Enrich with DB conversation metadata (title, isPinned)
       const metadata = await this.conversationMetadataService.getConversationMetadata(
         data.sessionId,
-        session.tenantId,
+        session.solutionId,
       );
 
       client.emit('session_restored', {

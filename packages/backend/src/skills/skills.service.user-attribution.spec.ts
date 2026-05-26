@@ -21,7 +21,7 @@ describe('SkillsService - User Attribution', () => {
   let versionRepository: jest.Mocked<Repository<SkillVersion>>;
   let txManager: Record<string, jest.Mock>;
 
-  const tenantId = 'tenant-123';
+  const solutionId = 'tenant-123';
   const userId = 'user-123';
 
   beforeEach(async () => {
@@ -118,7 +118,7 @@ describe('SkillsService - User Attribution', () => {
 
       const mockSkill = {
         id: 'skill-123',
-        tenantId,
+        solutionId,
         ...createDto,
         createdBy: userId,
       };
@@ -131,10 +131,10 @@ describe('SkillsService - User Attribution', () => {
         Promise.resolve({ id: 'version-1', ...data }),
       );
 
-      const result = await service.create(tenantId, createDto, userId);
+      const result = await service.create(solutionId, createDto, userId);
 
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
-        tenantId,
+        solutionId,
         createdBy: userId,
         scope: 'tenant',
       }));
@@ -151,7 +151,7 @@ describe('SkillsService - User Attribution', () => {
 
       const mockSkill = {
         id: 'skill-123',
-        tenantId,
+        solutionId,
         ...createDto,
         createdBy: null,
         scope: 'tenant',
@@ -163,7 +163,7 @@ describe('SkillsService - User Attribution', () => {
         Promise.resolve({ id: 'version-1', ...data }),
       );
 
-      const result = await service.create(tenantId, createDto);
+      const result = await service.create(solutionId, createDto);
 
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         createdBy: null,
@@ -181,7 +181,7 @@ describe('SkillsService - User Attribution', () => {
 
       const mockSkill = {
         id: 'skill-123',
-        tenantId,
+        solutionId,
         ...createDto,
         createdBy: userId,
         scope: 'tenant',
@@ -193,7 +193,7 @@ describe('SkillsService - User Attribution', () => {
         Promise.resolve({ id: 'version-1', ...data }),
       );
 
-      const result = await service.create(tenantId, createDto, userId);
+      const result = await service.create(solutionId, createDto, userId);
 
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         scope: 'tenant',
@@ -212,7 +212,7 @@ describe('SkillsService - User Attribution', () => {
 
       const mockSkill = {
         id: 'skill-456',
-        tenantId,
+        solutionId,
         ...createDto,
         createdBy: userId,
       };
@@ -223,7 +223,7 @@ describe('SkillsService - User Attribution', () => {
         Promise.resolve({ id: 'version-1', ...data }),
       );
 
-      const result = await service.create(tenantId, createDto, userId);
+      const result = await service.create(solutionId, createDto, userId);
 
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         scope: 'personal',
@@ -242,9 +242,9 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', tenantId },
-            { id: '2', scope: 'tenant', tenantId },
-            { id: '3', scope: 'personal', createdBy: userId, tenantId },
+            { id: '1', scope: 'tenant', solutionId },
+            { id: '2', scope: 'tenant', solutionId },
+            { id: '3', scope: 'personal', createdBy: userId, solutionId },
           ],
           3,
         ]),
@@ -252,7 +252,7 @@ describe('SkillsService - User Attribution', () => {
 
       skillRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
 
-      const result = await service.findAll(tenantId, {}, userId);
+      const result = await service.findAll(solutionId, {}, userId);
 
       // Check that personal skill filter was applied
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
@@ -271,8 +271,8 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', tenantId },
-            { id: '2', scope: 'tenant', tenantId },
+            { id: '1', scope: 'tenant', solutionId },
+            { id: '2', scope: 'tenant', solutionId },
           ],
           2,
         ]),
@@ -280,7 +280,7 @@ describe('SkillsService - User Attribution', () => {
 
       skillRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
 
-      const result = await service.findAll(tenantId, {}, userId);
+      const result = await service.findAll(solutionId, {}, userId);
 
       expect(result.items).toHaveLength(2);
       expect(result.items.every((s: Skill) => s.scope === 'tenant')).toBe(true);
@@ -295,8 +295,8 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', tenantId },
-            { id: '2', scope: 'tenant', tenantId },
+            { id: '1', scope: 'tenant', solutionId },
+            { id: '2', scope: 'tenant', solutionId },
           ],
           2,
         ]),
@@ -304,7 +304,7 @@ describe('SkillsService - User Attribution', () => {
 
       skillRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
 
-      const result = await service.findAll(tenantId, {});
+      const result = await service.findAll(solutionId, {});
 
       // Should filter to only tenant scope
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
@@ -323,14 +323,14 @@ describe('SkillsService - User Attribution', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
-          [{ id: '1', scope: 'tenant', createdBy: otherUserId, tenantId }],
+          [{ id: '1', scope: 'tenant', createdBy: otherUserId, solutionId }],
           1,
         ]),
       };
 
       skillRepository.createQueryBuilder.mockReturnValue(queryBuilder as any);
 
-      const result = await service.findAll(tenantId, { createdBy: otherUserId }, userId);
+      const result = await service.findAll(solutionId, { createdBy: otherUserId }, userId);
 
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
         'skill.createdBy = :createdBy',
@@ -347,7 +347,7 @@ describe('SkillsService - User Attribution', () => {
 
       const existingSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         createdBy: originalCreatedBy,
         name: 'Original Name',
         content: 'Original content',
@@ -367,7 +367,7 @@ describe('SkillsService - User Attribution', () => {
         updatedAt: new Date(), // Week 5: Required for event emission
       } as any);
 
-      const result = await service.update(tenantId, skillId, updateDto);
+      const result = await service.update(solutionId, skillId, updateDto);
 
       expect(result.createdBy).toBe(originalCreatedBy);
       expect(skillRepository.save).toHaveBeenCalledWith(
@@ -384,7 +384,7 @@ describe('SkillsService - User Attribution', () => {
 
       const existingSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         createdBy: originalCreatedBy,
         name: 'Original Name',
         content: 'Original content',
@@ -404,7 +404,7 @@ describe('SkillsService - User Attribution', () => {
         updatedAt: new Date(), // Week 5: Required for event emission
       } as any);
 
-      const result = await service.update(tenantId, skillId, maliciousUpdateDto);
+      const result = await service.update(solutionId, skillId, maliciousUpdateDto);
 
       // createdBy should NOT change
       expect(result.createdBy).toBe(originalCreatedBy);
@@ -416,7 +416,7 @@ describe('SkillsService - User Attribution', () => {
 
       const existingSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         createdBy: userId,
         scope: 'personal',
         name: 'Test Skill',
@@ -435,7 +435,7 @@ describe('SkillsService - User Attribution', () => {
         updatedAt: new Date(), // Week 5: Required for event emission
       } as any);
 
-      const result = await service.update(tenantId, skillId, updateDto);
+      const result = await service.update(solutionId, skillId, updateDto);
 
       expect(result.scope).toBe('tenant');
     });
@@ -446,7 +446,7 @@ describe('SkillsService - User Attribution', () => {
       const skillId = 'skill-123';
       const mockSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         createdBy: userId,
         creator: {
           id: userId,
@@ -457,7 +457,7 @@ describe('SkillsService - User Attribution', () => {
 
       skillRepository.findOne.mockResolvedValue(mockSkill as any);
 
-      const result = await service.findOne(tenantId, skillId);
+      const result = await service.findOne(solutionId, skillId);
 
       expect(result).toBeDefined();
       expect(result?.createdBy).toBe(userId);
@@ -469,14 +469,14 @@ describe('SkillsService - User Attribution', () => {
       const skillId = 'legacy-skill';
       const mockSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         createdBy: null,
         creator: null,
       };
 
       skillRepository.findOne.mockResolvedValue(mockSkill as any);
 
-      const result = await service.findOne(tenantId, skillId);
+      const result = await service.findOne(solutionId, skillId);
 
       expect(result).toBeDefined();
       expect(result?.createdBy).toBeNull();

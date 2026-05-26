@@ -26,7 +26,7 @@
  * `ArtifactSnapshot` shape is intentionally a plain JSON object.
  *
  * Configuration: set `tenant.config.artifactUrl` (via `solution.json`
- * auto-discovery or `PUT /tenants/:id`). The `ProjectArtifactSourceRegistry`
+ * auto-discovery or `PUT /solutions/:id`). The `ProjectArtifactSourceRegistry`
  * lazily constructs a `RestWorkspaceArtifactSource(url)` per tenant on
  * first use and caches it, invalidating on `tenant.config.changed` events.
  *

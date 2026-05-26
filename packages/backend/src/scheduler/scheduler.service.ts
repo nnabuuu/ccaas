@@ -77,7 +77,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
 
   async create(dto: CreateScheduledTaskDto): Promise<ScheduledTask> {
     const task = this.taskRepo.create({
-      tenantId: dto.tenantId,
+      solutionId: dto.solutionId,
       name: dto.name,
       description: dto.description,
       message: dto.message,
@@ -100,13 +100,13 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async findAll(query: {
-    tenantId?: string;
+    solutionId?: string;
     status?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: ScheduledTask[]; total: number }> {
     const where: Record<string, unknown> = {};
-    if (query.tenantId) where.tenantId = query.tenantId;
+    if (query.solutionId) where.solutionId = query.solutionId;
     if (query.status) where.status = query.status;
 
     const page = query.page || 1;
@@ -358,7 +358,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     await this.executionRepo.insert({
       id: execId,
       taskId: task.id,
-      tenantId: task.tenantId,
+      solutionId: task.solutionId,
       sessionId,
       status: 'running',
       startedAt: new Date(),
@@ -377,7 +377,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     task.lastRunAt = now;
 
     // Emit start event
-    this.emitToRoom(task.tenantId, 'scheduled_task_started', {
+    this.emitToRoom(task.solutionId, 'scheduled_task_started', {
       taskId: task.id,
       executionId: savedExec.id,
       sessionId,
@@ -407,13 +407,13 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
         // Create user message record for persistence
         await this.messagesService.create({
           sessionId: execution.sessionId,
-          tenantId: task.tenantId,
+          solutionId: task.solutionId,
           role: 'user',
           content: task.message,
         });
 
         const onEvent = (event: any) => {
-          this.emitToRoom(task.tenantId, event.type, event);
+          this.emitToRoom(task.solutionId, event.type, event);
         };
 
         const result = await this.headlessExecution.execute(task, execution, onEvent);
@@ -421,7 +421,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
         // Persist assistant message
         await this.messagesService.create({
           sessionId: execution.sessionId,
-          tenantId: task.tenantId,
+          solutionId: task.solutionId,
           role: 'assistant',
           content: result.resultText,
         });
@@ -459,7 +459,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
         if (errorMessage) execution.errorMessage = errorMessage;
 
         // Emit completion event
-        this.emitToRoom(task.tenantId, 'scheduled_task_complete', {
+        this.emitToRoom(task.solutionId, 'scheduled_task_complete', {
           taskId: task.id,
           executionId: execution.id,
           status,
@@ -506,7 +506,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     execution.durationMs = failDurationMs;
     execution.errorMessage = failErrorMessage;
 
-    this.emitToRoom(task.tenantId, 'scheduled_task_complete', {
+    this.emitToRoom(task.solutionId, 'scheduled_task_complete', {
       taskId: task.id,
       executionId: execution.id,
       status: 'failed',
@@ -587,9 +587,9 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private emitToRoom(tenantId: string, event: string, data: unknown): void {
+  private emitToRoom(solutionId: string, event: string, data: unknown): void {
     if (!this.ioServer) return;
-    this.ioServer.to(`scheduler:${tenantId}`).emit(event, data);
+    this.ioServer.to(`scheduler:${solutionId}`).emit(event, data);
   }
 
   private delay(ms: number): Promise<void> {

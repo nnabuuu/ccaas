@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { UserTenant } from './user-tenant.entity';
+import { UserSolution } from './user-solution.entity';
 
 export type UserStatus = 'active' | 'suspended' | 'deleted';
 
@@ -30,8 +30,8 @@ export class User {
   @Column({ type: 'varchar', default: 'active' })
   status: UserStatus;
 
-  @OneToMany(() => UserTenant, (userTenant) => userTenant.user)
-  tenants: UserTenant[];
+  @OneToMany(() => UserSolution, (userTenant) => userTenant.user)
+  tenants: UserSolution[];
 
   @CreateDateColumn()
   createdAt: Date;

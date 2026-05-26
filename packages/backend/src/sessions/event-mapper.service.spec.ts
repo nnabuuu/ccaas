@@ -922,7 +922,7 @@ describe('EventMapperService', () => {
         stop_reason: 'end_turn',
       };
 
-      const makeSession = (opts: { messageId?: string; tenantId?: string } = {}) => ({
+      const makeSession = (opts: { messageId?: string; solutionId?: string } = {}) => ({
         sessionId: testSessionId,
         clientId: 'test-client',
         cliProcess: null,
@@ -935,14 +935,14 @@ describe('EventMapperService', () => {
         buffer: '',
         workspaceDir: '/tmp/test',
         currentAssistantMessageId: opts.messageId,
-        tenantId: opts.tenantId,
+        solutionId: opts.solutionId,
       });
 
       // flush microtask queue (recordUsage is fire-and-forget)
       const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
       it('should call recordUsage for finish-step with usage and session context', async () => {
-        service.registerSessionGetter(() => makeSession({ messageId: 'msg-001', tenantId: 'tenant-1' }));
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-001', solutionId: 'tenant-1' }));
 
         service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId);
         await flush();
@@ -952,7 +952,7 @@ describe('EventMapperService', () => {
           expect.objectContaining({
             messageId: 'msg-001',
             sessionId: testSessionId,
-            tenantId: 'tenant-1',
+            solutionId: 'tenant-1',
             model: 'claude-sonnet-4-6',
             inputTokens: 100,
             outputTokens: 50,
@@ -965,7 +965,7 @@ describe('EventMapperService', () => {
       });
 
       it('should call recordUsage for message_delta with usage and session context', async () => {
-        service.registerSessionGetter(() => makeSession({ messageId: 'msg-002', tenantId: 'tenant-1' }));
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-002', solutionId: 'tenant-1' }));
 
         service.mapToSessionEvents(messageDeltaWithUsage as any, testSessionId, testClientId);
         await flush();
@@ -1101,7 +1101,7 @@ describe('EventMapperService', () => {
       // -----------------------------------------------------------------------
 
       it('should call recordUsage for assistant event with message.usage (stream-json)', async () => {
-        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-001', tenantId: 'tenant-1' }));
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-001', solutionId: 'tenant-1' }));
 
         const assistantWithUsage = {
           type: 'assistant',
@@ -1130,7 +1130,7 @@ describe('EventMapperService', () => {
           expect.objectContaining({
             messageId: 'msg-ast-001',
             sessionId: testSessionId,
-            tenantId: 'tenant-1',
+            solutionId: 'tenant-1',
             model: 'claude-sonnet-4-20250514',
             inputTokens: 500,
             outputTokens: 150,
@@ -1202,7 +1202,7 @@ describe('EventMapperService', () => {
       // -----------------------------------------------------------------------
 
       it('should call recordUsage for result event with usage (stream-json)', async () => {
-        service.registerSessionGetter(() => makeSession({ messageId: 'msg-res-001', tenantId: 'tenant-2' }));
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-res-001', solutionId: 'tenant-2' }));
 
         const resultWithUsage = {
           type: 'result',
@@ -1227,7 +1227,7 @@ describe('EventMapperService', () => {
           expect.objectContaining({
             messageId: 'msg-res-001',
             sessionId: testSessionId,
-            tenantId: 'tenant-2',
+            solutionId: 'tenant-2',
             model: 'claude-sonnet-4-20250514',
             inputTokens: 600,
             outputTokens: 200,
@@ -1276,11 +1276,11 @@ describe('EventMapperService', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Tenant tool event triggers
+  // Solution tool event triggers
   // ---------------------------------------------------------------------------
 
   describe('tenant toolEventTriggers', () => {
-    const tenantId = 'tenant-live-lesson';
+    const solutionId = 'tenant-live-lesson';
 
     /** Build a CLI tool result event for any mcp tool name */
     const buildMcpToolResult = (toolUseId: string, jsonContent: object) => ({
@@ -1321,13 +1321,13 @@ describe('EventMapperService', () => {
     beforeEach(() => {
       service.registerSessionGetter((id) =>
         id === testSessionId
-          ? ({ sessionId: id, clientId: testClientId, tenantId, cliProcess: null, stdin: null, socket: null } as any)
+          ? ({ sessionId: id, clientId: testClientId, solutionId, cliProcess: null, stdin: null, socket: null } as any)
           : undefined,
       );
     });
 
     it('emits output_update when tool name matches a registered trigger', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
 
@@ -1343,7 +1343,7 @@ describe('EventMapperService', () => {
     });
 
     it('does not emit output_update when tool name does not match', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
 
@@ -1363,13 +1363,13 @@ describe('EventMapperService', () => {
       expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
     });
 
-    it('does not emit output_update when session has no tenantId', () => {
+    it('does not emit output_update when session has no solutionId', () => {
       service.registerSessionGetter((id) =>
         id === testSessionId
           ? ({ sessionId: id, clientId: testClientId, cliProcess: null, stdin: null, socket: null } as any)
           : undefined,
       );
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
 
@@ -1382,7 +1382,7 @@ describe('EventMapperService', () => {
 
     it('does not crash when sessionGetter returns undefined', () => {
       service.registerSessionGetter((_id) => undefined);
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
 
@@ -1392,7 +1392,7 @@ describe('EventMapperService', () => {
     });
 
     it('emits output_update for write_output when trigger is registered', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'write_output', eventType: 'output_update' },
       ]);
 
@@ -1404,7 +1404,7 @@ describe('EventMapperService', () => {
     });
 
     it('includes progress field when present in parsedResult', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
 
@@ -1416,7 +1416,7 @@ describe('EventMapperService', () => {
     });
 
     it('wraps raw tool result with trigger.field when configured', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'parse_quiz_content', eventType: 'output_update', field: 'parsedContent' },
       ]);
 
@@ -1435,7 +1435,7 @@ describe('EventMapperService', () => {
     });
 
     it('does not wrap when result already has a field property (write_output)', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'write_output', eventType: 'output_update', field: 'fallback' },
       ]);
 
@@ -1453,7 +1453,7 @@ describe('EventMapperService', () => {
     });
 
     it('clearAllTenantToolTriggers removes all registered triggers', () => {
-      service.registerTenantToolTriggers(tenantId, [
+      service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },
       ]);
       service.clearAllTenantToolTriggers();

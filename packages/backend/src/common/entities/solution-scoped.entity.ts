@@ -1,5 +1,5 @@
 /**
- * Tenant Scoped Entity Base Class
+ * Solution Scoped Entity Base Class
  *
  * Provides common columns for multi-tenant entities.
  * All event entities that need tenant isolation should extend this class.
@@ -21,8 +21,8 @@ import { Column, Index, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm
  * Provides:
  * - Primary key (UUID)
  * - Session ID with index
- * - Tenant ID with index (nullable for single-tenant mode)
- * - Composite index for (tenantId, createdAt) for analytics queries
+ * - Solution ID with index (nullable for single-tenant mode)
+ * - Composite index for (solutionId, createdAt) for analytics queries
  * - Created timestamp
  */
 export abstract class TenantScopedEntity {
@@ -37,12 +37,12 @@ export abstract class TenantScopedEntity {
   sessionId!: string;
 
   /**
-   * Tenant ID for multi-tenancy support
+   * Solution ID for multi-tenancy support
    * Nullable for backwards compatibility with single-tenant deployments
    */
   @Column({ type: 'varchar', nullable: true })
   @Index()
-  tenantId?: string;
+  solutionId?: string;
 
   /**
    * Timestamp when the record was created

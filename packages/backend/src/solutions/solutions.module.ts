@@ -1,27 +1,23 @@
 /**
  * Solutions Module
  *
- * Provides SolutionLoaderService for body-based solution import.
- * No auto-discovery at startup — solutions are imported via POST /import.
+ * Handles multi-tenancy with guards and services.
  */
 
-import { Module } from '@nestjs/common';
-import { SolutionLoaderService } from './solution-loader.service';
-import { SkillsModule } from '../skills/skills.module';
-import { SessionsModule } from '../sessions/sessions.module';
-import { BundleModule } from '../bundles/bundle.module';
+import { Module, Global } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { SolutionsController } from './solutions.controller';
+import { SolutionsService } from './solutions.service';
+import { SolutionAuthGuard } from './solution-auth.guard';
+import { Solution } from './entities/solution.entity';
 
+@Global()
 @Module({
   imports: [
-    // SkillsModule provides SkillsService (not @Global, requires explicit import)
-    // TenantsModule and McpModule are @Global — auto-available
-    SkillsModule,
-    // SessionsModule provides EventMapperService for tool event trigger registration
-    SessionsModule,
-    // BundleModule provides BundleService for resolving bundle triggers
-    BundleModule,
+    TypeOrmModule.forFeature([Solution]),
   ],
-  providers: [SolutionLoaderService],
-  exports: [SolutionLoaderService],
+  controllers: [SolutionsController],
+  providers: [SolutionsService, SolutionAuthGuard],
+  exports: [SolutionsService, SolutionAuthGuard],
 })
 export class SolutionsModule {}

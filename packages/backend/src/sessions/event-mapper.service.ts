@@ -71,7 +71,7 @@ export class EventMapperService {
   // Callbacks for background task registration
   private backgroundTaskCallbacks: Array<(sessionId: string, tracker: SubAgentTracker) => void> = [];
 
-  // Tenant-configured tool event triggers (populated at startup by SolutionLoaderService)
+  // Solution-configured tool event triggers (populated at startup by SolutionLoaderService)
   private tenantToolTriggers = new Map<string, ToolEventTrigger[]>();
 
   // Bundle-sourced tool event triggers (separate from solution triggers to avoid
@@ -159,9 +159,9 @@ export class EventMapperService {
    * Called by SolutionLoaderService after loading each solution.
    * Replaces any existing triggers for the tenant.
    */
-  registerTenantToolTriggers(tenantId: string, triggers: ToolEventTrigger[]): void {
-    this.tenantToolTriggers.set(tenantId, triggers);
-    this.logger.debug(`Registered ${triggers.length} tool event trigger(s) for tenant ${tenantId}`);
+  registerTenantToolTriggers(solutionId: string, triggers: ToolEventTrigger[]): void {
+    this.tenantToolTriggers.set(solutionId, triggers);
+    this.logger.debug(`Registered ${triggers.length} tool event trigger(s) for tenant ${solutionId}`);
   }
 
   /**
@@ -170,9 +170,9 @@ export class EventMapperService {
    * at runtime (via admin PATCH) can cleanly replace bundle triggers
    * without affecting solution-specific triggers.
    */
-  registerBundleTriggers(tenantId: string, triggers: ToolEventTrigger[]): void {
-    this.bundleTriggers.set(tenantId, triggers);
-    this.logger.debug(`Registered ${triggers.length} bundle trigger(s) for tenant ${tenantId}`);
+  registerBundleTriggers(solutionId: string, triggers: ToolEventTrigger[]): void {
+    this.bundleTriggers.set(solutionId, triggers);
+    this.logger.debug(`Registered ${triggers.length} bundle trigger(s) for tenant ${solutionId}`);
   }
 
   /**
@@ -188,9 +188,9 @@ export class EventMapperService {
    * Get all tool triggers for a tenant (solution + bundle combined).
    * Used by SessionManagerService to derive output_update events in the admin timeline.
    */
-  getTenantToolTriggers(tenantId: string): ToolEventTrigger[] {
-    const solution = this.tenantToolTriggers.get(tenantId) ?? [];
-    const bundle = this.bundleTriggers.get(tenantId) ?? [];
+  getTenantToolTriggers(solutionId: string): ToolEventTrigger[] {
+    const solution = this.tenantToolTriggers.get(solutionId) ?? [];
+    const bundle = this.bundleTriggers.get(solutionId) ?? [];
     return [...solution, ...bundle];
   }
 
@@ -236,7 +236,7 @@ export class EventMapperService {
       this.tokenUsageService.recordUsage({
         messageId: session.currentAssistantMessageId,
         sessionId,
-        tenantId: session.tenantId ?? null,
+        solutionId: session.solutionId ?? null,
         model,
         inputTokens: usage.input_tokens || 0,
         outputTokens: usage.output_tokens || 0,
@@ -699,7 +699,7 @@ export class EventMapperService {
         // in workspace but never sync to the solution DB until
         // `/invalidate` is hit manually.
         //
-        // tenantId is intentionally omitted here — the syncer looks
+        // solutionId is intentionally omitted here — the syncer looks
         // it up from the live SessionService entry, which has the
         // canonical value (the event-mapper doesn't have it readily
         // available at this layer).
@@ -1071,7 +1071,7 @@ export class EventMapperService {
           this.tokenUsageService.recordUsage({
             messageId: session.currentAssistantMessageId,
             sessionId,
-            tenantId: session.tenantId ?? null,
+            solutionId: session.solutionId ?? null,
             model,
             inputTokens: usage.input_tokens || 0,
             outputTokens: usage.output_tokens || 0,
@@ -1418,8 +1418,8 @@ export class EventMapperService {
     // This covers both bundle triggers (write_output, attach_file) and
     // solution-specific triggers (from solution.json mcpServers).
     const session = this.sessionGetter?.(sessionId);
-    if (session?.tenantId) {
-      const triggers = this.getTenantToolTriggers(session.tenantId);
+    if (session?.solutionId) {
+      const triggers = this.getTenantToolTriggers(session.solutionId);
       for (const trigger of triggers) {
         if (trigger.toolName !== normalizedName) continue;
         if (trigger.eventType === 'output_update') {

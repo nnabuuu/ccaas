@@ -1,7 +1,7 @@
 /**
  * Multi-Tenancy Entity Tests
  *
- * Tests to verify that entities have proper tenantId property.
+ * Tests to verify that entities have proper solutionId property.
  */
 
 import { TokenUsageEvent } from './token-usage-event.entity';
@@ -13,111 +13,111 @@ import { UserContextEvent } from './user-context-event.entity';
 
 describe('Multi-Tenancy Entity Configuration', () => {
   describe('TokenUsageEvent', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const event = new TokenUsageEvent();
-      event.tenantId = 'tenant-123';
-      expect(event.tenantId).toBe('tenant-123');
+      event.solutionId = 'tenant-123';
+      expect(event.solutionId).toBe('tenant-123');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const event = new TokenUsageEvent();
-      expect(event.tenantId).toBeUndefined();
+      expect(event.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const event = new TokenUsageEvent();
-      // Should not throw when accessing undefined tenantId
-      expect(() => event.tenantId).not.toThrow();
+      // Should not throw when accessing undefined solutionId
+      expect(() => event.solutionId).not.toThrow();
     });
   });
 
   describe('ThinkingBlock', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const block = new ThinkingBlock();
-      block.tenantId = 'tenant-456';
-      expect(block.tenantId).toBe('tenant-456');
+      block.solutionId = 'tenant-456';
+      expect(block.solutionId).toBe('tenant-456');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const block = new ThinkingBlock();
-      expect(block.tenantId).toBeUndefined();
+      expect(block.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const block = new ThinkingBlock();
-      expect(() => block.tenantId).not.toThrow();
+      expect(() => block.solutionId).not.toThrow();
     });
   });
 
   describe('ToolEvent', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const event = new ToolEvent();
-      event.tenantId = 'tenant-789';
-      expect(event.tenantId).toBe('tenant-789');
+      event.solutionId = 'tenant-789';
+      expect(event.solutionId).toBe('tenant-789');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const event = new ToolEvent();
-      expect(event.tenantId).toBeUndefined();
+      expect(event.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const event = new ToolEvent();
-      expect(() => event.tenantId).not.toThrow();
+      expect(() => event.solutionId).not.toThrow();
     });
   });
 
   describe('ProcessLifecycleEvent', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const event = new ProcessLifecycleEvent();
-      event.tenantId = 'tenant-abc';
-      expect(event.tenantId).toBe('tenant-abc');
+      event.solutionId = 'tenant-abc';
+      expect(event.solutionId).toBe('tenant-abc');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const event = new ProcessLifecycleEvent();
-      expect(event.tenantId).toBeUndefined();
+      expect(event.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const event = new ProcessLifecycleEvent();
-      expect(() => event.tenantId).not.toThrow();
+      expect(() => event.solutionId).not.toThrow();
     });
   });
 
   describe('ApiErrorEvent', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const event = new ApiErrorEvent();
-      event.tenantId = 'tenant-def';
-      expect(event.tenantId).toBe('tenant-def');
+      event.solutionId = 'tenant-def';
+      expect(event.solutionId).toBe('tenant-def');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const event = new ApiErrorEvent();
-      expect(event.tenantId).toBeUndefined();
+      expect(event.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const event = new ApiErrorEvent();
-      expect(() => event.tenantId).not.toThrow();
+      expect(() => event.solutionId).not.toThrow();
     });
   });
 
   describe('UserContextEvent', () => {
-    it('should allow setting tenantId', () => {
+    it('should allow setting solutionId', () => {
       const event = new UserContextEvent();
-      event.tenantId = 'tenant-ghi';
-      expect(event.tenantId).toBe('tenant-ghi');
+      event.solutionId = 'tenant-ghi';
+      expect(event.solutionId).toBe('tenant-ghi');
     });
 
-    it('should allow undefined tenantId', () => {
+    it('should allow undefined solutionId', () => {
       const event = new UserContextEvent();
-      expect(event.tenantId).toBeUndefined();
+      expect(event.solutionId).toBeUndefined();
     });
 
-    it('should have tenantId as optional property', () => {
+    it('should have solutionId as optional property', () => {
       const event = new UserContextEvent();
-      expect(() => event.tenantId).not.toThrow();
+      expect(() => event.solutionId).not.toThrow();
     });
   });
 
@@ -133,21 +133,21 @@ describe('Multi-Tenancy Entity Configuration', () => {
 
     entities.forEach(({ name, instance }) => {
       describe(`${name}`, () => {
-        it('should accept UUID format tenantId', () => {
+        it('should accept UUID format solutionId', () => {
           const uuid = '123e4567-e89b-12d3-a456-426614174000';
-          (instance as any).tenantId = uuid;
-          expect((instance as any).tenantId).toBe(uuid);
+          (instance as any).solutionId = uuid;
+          expect((instance as any).solutionId).toBe(uuid);
         });
 
-        it('should accept slug format tenantId', () => {
+        it('should accept slug format solutionId', () => {
           const slug = 'my-company-tenant';
-          (instance as any).tenantId = slug;
-          expect((instance as any).tenantId).toBe(slug);
+          (instance as any).solutionId = slug;
+          expect((instance as any).solutionId).toBe(slug);
         });
 
         it('should accept null-like empty string', () => {
-          (instance as any).tenantId = '';
-          expect((instance as any).tenantId).toBe('');
+          (instance as any).solutionId = '';
+          expect((instance as any).solutionId).toBe('');
         });
       });
     });

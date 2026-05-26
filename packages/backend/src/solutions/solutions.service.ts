@@ -1,5 +1,5 @@
 /**
- * Tenants Service
+ * Solutions Service
  *
  * Business logic for tenant management.
  */
@@ -19,28 +19,28 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
 import {
-  TENANT_CONFIG_CHANGED,
-  type TenantConfigChangedEvent,
-} from './tenant-config-events';
+  SOLUTION_CONFIG_CHANGED,
+  type SolutionConfigChangedEvent,
+} from './solution-config-events';
 import {
-  Tenant,
+  Solution,
   TenantPlan,
   PLAN_MAX_SESSION_TTL_MS,
   PLAN_DEFAULT_SESSION_TTL_MS,
-} from './entities/tenant.entity';
-import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
+} from './entities/solution.entity';
+import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/solution.dto';
 import { ApiKeyService } from '../auth/api-key.service';
 import { DEFAULT_SCOPES } from '../auth/types';
 import { QuotaService } from '../admin/quota.service';
 
 @Injectable()
-export class TenantsService implements OnModuleInit {
-  private readonly logger = new Logger(TenantsService.name);
+export class SolutionsService implements OnModuleInit {
+  private readonly logger = new Logger(SolutionsService.name);
   private readonly defaultTenantId: string;
 
   constructor(
-    @InjectRepository(Tenant)
-    private readonly tenantRepository: Repository<Tenant>,
+    @InjectRepository(Solution)
+    private readonly tenantRepository: Repository<Solution>,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => ApiKeyService))
     private readonly apiKeyService: ApiKeyService,
@@ -61,7 +61,7 @@ export class TenantsService implements OnModuleInit {
 
     if (!defaultTenant) {
       const result = await this.create({
-        name: 'Default Tenant',
+        name: 'Default Solution',
         slug: this.defaultTenantId,
         description: 'Default tenant for development',
       });
@@ -80,7 +80,7 @@ export class TenantsService implements OnModuleInit {
       where: { slug },
     });
     if (existing) {
-      throw new AlreadyExistsException(`Tenant with slug '${slug}' already exists`);
+      throw new AlreadyExistsException(`Solution with slug '${slug}' already exists`);
     }
 
     const plan = dto.plan ?? 'free';
@@ -105,11 +105,11 @@ export class TenantsService implements OnModuleInit {
     // `getForTenantSlug(slug)` returned null and cached null). Without
     // this, a brand-new tenant's first sync would stay null-cached
     // until backend restart.
-    const event: TenantConfigChangedEvent = {
-      tenantId: saved.id,
+    const event: SolutionConfigChangedEvent = {
+      solutionId: saved.id,
       slug: saved.slug,
     };
-    this.eventEmitter.emit(TENANT_CONFIG_CHANGED, event);
+    this.eventEmitter.emit(SOLUTION_CONFIG_CHANGED, event);
 
     // Auto-create monthly quota based on plan
     await this.quotaService.createDefaultQuota(saved.id, saved.plan).catch((err) =>
@@ -144,7 +144,7 @@ export class TenantsService implements OnModuleInit {
   /**
    * Find all tenants
    */
-  async findAll(): Promise<Tenant[]> {
+  async findAll(): Promise<Solution[]> {
     return this.tenantRepository.find({
       where: { status: 'active' },
       order: { createdAt: 'DESC' },
@@ -154,7 +154,7 @@ export class TenantsService implements OnModuleInit {
   /**
    * Find a tenant by ID or slug
    */
-  async findOne(idOrSlug: string): Promise<Tenant | null> {
+  async findOne(idOrSlug: string): Promise<Solution | null> {
     let tenant = await this.tenantRepository.findOne({
       where: { id: idOrSlug },
     });
@@ -172,10 +172,10 @@ export class TenantsService implements OnModuleInit {
   /**
    * Update a tenant
    */
-  async update(idOrSlug: string, dto: UpdateTenantDto): Promise<Tenant> {
+  async update(idOrSlug: string, dto: UpdateTenantDto): Promise<Solution> {
     const tenant = await this.findOne(idOrSlug);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${idOrSlug}`);
+      throw new NotFoundException(`Solution not found: ${idOrSlug}`);
     }
 
     if (dto.name !== undefined) tenant.name = dto.name;
@@ -197,11 +197,11 @@ export class TenantsService implements OnModuleInit {
     // Emit only when config was part of the update — other fields
     // (name/plan/etc) don't affect agent-runtime registry routing.
     if (dto.config !== undefined) {
-      const event: TenantConfigChangedEvent = {
-        tenantId: saved.id,
+      const event: SolutionConfigChangedEvent = {
+        solutionId: saved.id,
         slug: saved.slug,
       };
-      this.eventEmitter.emit(TENANT_CONFIG_CHANGED, event);
+      this.eventEmitter.emit(SOLUTION_CONFIG_CHANGED, event);
     }
 
     return saved;
@@ -214,12 +214,12 @@ export class TenantsService implements OnModuleInit {
    * Returns the number of templates synced.
    */
   async syncSessionTemplates(
-    tenantId: string,
+    solutionId: string,
     templates: Record<string, Record<string, unknown>>,
   ): Promise<number> {
-    const tenant = await this.findOne(tenantId);
+    const tenant = await this.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
     const existing = (tenant.config?.sessionTemplates ?? {}) as Record<string, Record<string, unknown>>;
     const merged: Record<string, Record<string, unknown>> = { ...existing };
@@ -237,7 +237,7 @@ export class TenantsService implements OnModuleInit {
       ...tenant,
       config: { ...tenant.config, sessionTemplates: merged },
     });
-    this.logger.log(`Synced ${Object.keys(templates).length} session templates for tenant ${tenantId}`);
+    this.logger.log(`Synced ${Object.keys(templates).length} session templates for tenant ${solutionId}`);
     return Object.keys(templates).length;
   }
 

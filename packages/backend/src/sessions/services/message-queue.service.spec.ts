@@ -39,7 +39,7 @@ describe('MessageQueueService', () => {
     it('should create and save a queue item with correct fields', async () => {
       const sessionId = 'session-1';
       const clientId = 'client-1';
-      const tenantId = 'tenant-1';
+      const solutionId = 'tenant-1';
       const payload: MessageQueuePayload = {
         message: 'Test message',
         context: { userId: 'user-1' },
@@ -49,7 +49,7 @@ describe('MessageQueueService', () => {
         id: 'queue-1',
         sessionId,
         clientId,
-        tenantId,
+        solutionId,
         payload,
         status: 'pending',
         priority: 0,
@@ -60,12 +60,12 @@ describe('MessageQueueService', () => {
       repository.create.mockReturnValue(mockQueueItem);
       repository.save.mockResolvedValue(mockQueueItem);
 
-      const result = await service.enqueue(sessionId, clientId, tenantId, payload);
+      const result = await service.enqueue(sessionId, clientId, solutionId, payload);
 
       expect(repository.create).toHaveBeenCalledWith({
         sessionId,
         clientId,
-        tenantId,
+        solutionId,
         payload,
         status: 'pending',
         priority: 0,

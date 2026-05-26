@@ -17,9 +17,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
-import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
+import { AdminSolutionAccessGuard } from '../guards/admin-solution-access.guard';
 import { RequestContext } from '../../auth/types';
-import { TenantsService } from '../../tenants/tenants.service';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { BundleService } from '../../bundles/bundle.service';
 import { AuditService } from '../services/audit.service';
 import { EventMapperService } from '../../sessions/event-mapper.service';
@@ -27,10 +27,10 @@ import { EventMapperService } from '../../sessions/event-mapper.service';
 @ApiTags('admin')
 @Controller('api/v1/admin')
 @AuthAdminOrBuilder()
-@UseGuards(AdminTenantAccessGuard)
+@UseGuards(AdminSolutionAccessGuard)
 export class AdminBundlesController {
   constructor(
-    private readonly tenantsService: TenantsService,
+    private readonly tenantsService: SolutionsService,
     private readonly bundleService: BundleService,
     private readonly auditService: AuditService,
     private readonly eventMapper: EventMapperService,
@@ -49,15 +49,15 @@ export class AdminBundlesController {
   }
 
   /**
-   * GET /api/v1/admin/tenants/:tenantId/bundles
+   * GET /api/v1/admin/solutions/:solutionId/bundles
    *
    * Get enabled bundles for a tenant.
    */
-  @Get('tenants/:tenantId/bundles')
-  async getTenantBundles(@Param('tenantId') tenantId: string) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+  @Get('tenants/:solutionId/bundles')
+  async getTenantBundles(@Param('solutionId') solutionId: string) {
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     const enabledBundles = tenant.config?.enabledBundles ?? [];
@@ -73,20 +73,20 @@ export class AdminBundlesController {
   }
 
   /**
-   * PATCH /api/v1/admin/tenants/:tenantId/bundles
+   * PATCH /api/v1/admin/solutions/:solutionId/bundles
    *
    * Update enabled bundles for a tenant.
    * Body: { enabledBundles: string[] }
    */
-  @Patch('tenants/:tenantId/bundles')
+  @Patch('tenants/:solutionId/bundles')
   async updateTenantBundles(
-    @Param('tenantId') tenantId: string,
+    @Param('solutionId') solutionId: string,
     @Body() body: { enabledBundles: string[] },
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
+    const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+      throw new NotFoundException(`Solution not found: ${solutionId}`);
     }
 
     if (!Array.isArray(body.enabledBundles)) {
@@ -125,7 +125,7 @@ export class AdminBundlesController {
       action: 'tenant.update',
       targetType: 'tenant',
       targetId: tenant.id,
-      tenantId: tenant.id,
+      solutionId: tenant.id,
       metadata: {
         previousValue: { enabledBundles: previousBundles },
         newValue: { enabledBundles: body.enabledBundles },

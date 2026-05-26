@@ -28,7 +28,7 @@ describe('JobService', () => {
 
   const mockJob: Partial<JobEntity> = {
     id: 'job-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     sessionId: 'session-1',
     messageId: 'msg-1',
     type: 'notebooklm_podcast',
@@ -104,7 +104,7 @@ describe('JobService', () => {
 
   describe('create', () => {
     const dto: CreateJobDto = {
-      tenantId: 'tenant-1',
+      solutionId: 'tenant-1',
       type: 'notebooklm_podcast',
       name: 'Generate Podcast',
       prompt: 'Create a podcast about AI',
@@ -119,7 +119,7 @@ describe('JobService', () => {
 
       expect(jobRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
           type: 'notebooklm_podcast',
           status: 'pending',
           attempts: 0,
@@ -131,7 +131,7 @@ describe('JobService', () => {
           jobEntityId: expect.any(String),
           type: 'notebooklm_podcast',
           prompt: 'Create a podcast about AI',
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
         }),
         { numRetries: 2 },
       );
@@ -140,7 +140,7 @@ describe('JobService', () => {
 
     it('defaults maxAttempts=3, timeoutMs=600000', async () => {
       const minimalDto: CreateJobDto = {
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         type: 'test',
         name: 'Test',
         prompt: 'test prompt',
@@ -271,10 +271,10 @@ describe('JobService', () => {
       });
     });
 
-    it('filters by tenantId, sessionId, status', async () => {
-      await service.findAll({ tenantId: 'tenant-1', sessionId: 'session-1', status: 'pending' });
+    it('filters by solutionId, sessionId, status', async () => {
+      await service.findAll({ solutionId: 'tenant-1', sessionId: 'session-1', status: 'pending' });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('job.tenantId = :tenantId', { tenantId: 'tenant-1' });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('job.solutionId = :solutionId', { solutionId: 'tenant-1' });
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('job.sessionId = :sessionId', { sessionId: 'session-1' });
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('job.status = :status', { status: 'pending' });
     });
@@ -355,7 +355,7 @@ describe('JobService', () => {
         const mockDequeuedJob = {
           data: {
             jobEntityId: 'job-1',
-            tenantId: 'tenant-1',
+            solutionId: 'tenant-1',
             prompt: 'Create a podcast',
             mcpServers: { notebooklm: {} },
             enabledSkills: ['notebooklm'],
@@ -366,7 +366,7 @@ describe('JobService', () => {
 
         expect(headlessExecution.executeJob).toHaveBeenCalledWith(
           expect.objectContaining({
-            tenantId: 'tenant-1',
+            solutionId: 'tenant-1',
             prompt: 'Create a podcast',
             mcpServers: { notebooklm: {} },
             enabledSkills: ['notebooklm'],
@@ -463,7 +463,7 @@ describe('JobService', () => {
       (service as any).ioServer = { to: mockTo };
 
       await service.create({
-        tenantId: 'tenant-1',
+        solutionId: 'tenant-1',
         type: 'test',
         name: 'Test',
         prompt: 'test',
@@ -486,7 +486,7 @@ describe('JobService', () => {
 
       await expect(
         service.create({
-          tenantId: 'tenant-1',
+          solutionId: 'tenant-1',
           type: 'test',
           name: 'Test',
           prompt: 'test',

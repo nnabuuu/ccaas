@@ -25,7 +25,7 @@ describe('SkillsService - File Management', () => {
   let txManager: Record<string, jest.Mock>;
 
   const skillId = 'skill-123';
-  const tenantId = 'tenant-123';
+  const solutionId = 'tenant-123';
 
   beforeEach(async () => {
     txManager = {
@@ -401,7 +401,7 @@ describe('SkillsService - File Management', () => {
     it('should restore files from version snapshot on rollback', async () => {
       const mockSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         name: 'Test Skill',
         slug: 'test-skill',
         content: 'current content',
@@ -428,7 +428,7 @@ describe('SkillsService - File Management', () => {
       versionRepo.findOne.mockResolvedValue(mockVersion);
       txManager.find.mockResolvedValue(versionFiles); // version files to restore
 
-      await service.rollbackToVersion(tenantId, skillId, '1.0.0');
+      await service.rollbackToVersion(solutionId, skillId, '1.0.0');
 
       // Should delete current files
       expect(txManager.delete).toHaveBeenCalledWith(SkillFile, { skillId });
@@ -446,7 +446,7 @@ describe('SkillsService - File Management', () => {
     it('should handle rollback when version has no files', async () => {
       const mockSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         name: 'Test',
         slug: 'test',
         content: 'current',
@@ -468,7 +468,7 @@ describe('SkillsService - File Management', () => {
       versionRepo.findOne.mockResolvedValue(mockVersion);
       txManager.find.mockResolvedValue([]); // no version files
 
-      await service.rollbackToVersion(tenantId, skillId, '1.0.0');
+      await service.rollbackToVersion(solutionId, skillId, '1.0.0');
 
       // Should still delete current files
       expect(txManager.delete).toHaveBeenCalledWith(SkillFile, { skillId });
@@ -507,7 +507,7 @@ describe('SkillsService - File Management', () => {
         return Promise.resolve({ id: 'tx-row-1', ...data });
       });
 
-      await service.create(tenantId, createDto);
+      await service.create(solutionId, createDto);
 
       // skill_files rows go through the transaction manager.
       const fileSaves = txManager.save.mock.calls.filter(
@@ -522,7 +522,7 @@ describe('SkillsService - File Management', () => {
     it('should upsert files when provided in update DTO', async () => {
       const existingSkill = {
         id: skillId,
-        tenantId,
+        solutionId,
         name: 'Existing',
         content: 'old',
         config: {},
@@ -538,7 +538,7 @@ describe('SkillsService - File Management', () => {
       skillRepo.findOne.mockResolvedValue(existingSkill);
       skillRepo.save.mockResolvedValue({ ...existingSkill, ...updateDto, updatedAt: new Date() });
 
-      await service.update(tenantId, skillId, updateDto);
+      await service.update(solutionId, skillId, updateDto);
 
       // upsertFiles should be called
       expect(skillFileRepo.find).toHaveBeenCalledWith({ where: { skillId } });
