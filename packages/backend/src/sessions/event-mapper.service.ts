@@ -8,6 +8,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type {
   CLIEvent,
   SessionEvent,
@@ -107,6 +108,7 @@ export class EventMapperService {
     private readonly subAgentTracker: SubAgentTrackerService,
     private readonly toolAnalysis: ToolAnalysisService,
     private readonly tokenUsageService: TokenUsageService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.debug = this.configService.get('debug', false);
   }
@@ -686,6 +688,25 @@ export class EventMapperService {
           context: {
             activeSubAgents: this.getActiveSubAgents(sessionId),
           },
+        });
+
+        // Also fire the platform-wide `session.turn.complete` event so
+        // the agent-runtime sync layer pushes any agent file edits
+        // back to the solution backend. Without this emit here the
+        // syncer's `@OnEvent` listener only runs on process EXIT —
+        // which never happens with `--input-format stream-json` where
+        // the CLI persists across turns. Symptom: agent edits land
+        // in workspace but never sync to the solution DB until
+        // `/invalidate` is hit manually.
+        //
+        // tenantId is intentionally omitted here — the syncer looks
+        // it up from the live SessionService entry, which has the
+        // canonical value (the event-mapper doesn't have it readily
+        // available at this layer).
+        this.eventEmitter.emit('session.turn.complete', {
+          sessionId,
+          status: 'complete',
+          exitCode: null, // CLI persists across turns; no process exit
         });
         break;
       }

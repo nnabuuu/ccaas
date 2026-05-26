@@ -255,7 +255,7 @@ export class SessionAssetSyncer {
 
     const [dbNow, fsDelta] = await Promise.all([
       source.loadArtifacts(projectId),
-      this.buildFsDelta(sessionId, artifactsDir),
+      this.buildFsDelta(sessionId, artifactsDir, textPrevSnapshot),
     ]);
 
     const plan = new SyncEngine().plan({
@@ -686,20 +686,32 @@ export class SessionAssetSyncer {
    * the mount for `modified`/`added` entries (the diff endpoint
    * reports paths only).
    *
-   * Returns an empty delta when the provider doesn't support diff()
-   * (LocalProvider) — sync becomes one-way DB→fs in that case, which
-   * is degraded but useful.
+   * When the provider doesn't support diff() (LocalProvider in
+   * particular), falls back to a manual walk of `artifactsDir`,
+   * hashing each file and comparing to the previous snapshot. This
+   * keeps the agent→DB sync direction working under
+   * `WORKSPACE_PROVIDER=local` — without the fallback, every sync
+   * would be a no-op because no diff source exists.
    */
   private async buildFsDelta(
     sessionId: string,
     artifactsDir: string,
+    previousSnapshot: ReadonlyArray<SnapshotEntry>,
   ): Promise<FsDelta> {
     const session = this.sessions.getSession(sessionId);
-    if (!session?.workspaceHandle?.diff) {
-      return { modified: [], deleted: [] };
+    if (session?.workspaceHandle?.diff) {
+      return this.buildFsDeltaFromDiff(session.workspaceHandle.diff, artifactsDir);
     }
+    // Local provider has no native diff — walk + hash against snapshot.
+    return this.buildFsDeltaFromWalk(artifactsDir, previousSnapshot);
+  }
 
-    const allEntries: FsDiffEntry[] = await session.workspaceHandle.diff();
+  /** Native-diff path (agentfs). The provider tells us exactly what changed. */
+  private async buildFsDeltaFromDiff(
+    diff: () => Promise<FsDiffEntry[]>,
+    artifactsDir: string,
+  ): Promise<FsDelta> {
+    const allEntries: FsDiffEntry[] = await diff();
     const modified: Array<{ path: string; content: string; type: string }> = [];
     const deleted: string[] = [];
 
@@ -733,6 +745,85 @@ export class SessionAssetSyncer {
         this.logger.warn(
           `failed to read agent-modified file ${absPath}: ${err instanceof Error ? err.message : String(err)}`,
         );
+      }
+    }
+
+    return { modified, deleted };
+  }
+
+  /**
+   * Walk-based diff for LocalProvider (or any provider without diff()).
+   * Recursively walks `artifactsDir`, hashes every file, and emits
+   * FsDelta entries by comparing against the previous snapshot:
+   *
+   *   - file on disk, not in snapshot                   → 'added'
+   *   - file on disk, snapshot hash mismatches          → 'modified'
+   *   - file in snapshot, not on disk                   → 'removed'
+   *   - file on disk, snapshot hash matches             → unchanged
+   *
+   * Paths in the returned delta are relative to `artifactsDir` (no
+   * `artifacts/` prefix), matching the native-diff path and the
+   * snapshot's own key convention.
+   */
+  private async buildFsDeltaFromWalk(
+    artifactsDir: string,
+    previousSnapshot: ReadonlyArray<SnapshotEntry>,
+  ): Promise<FsDelta> {
+    const snapshotByPath = new Map<string, SnapshotEntry>();
+    for (const entry of previousSnapshot) {
+      snapshotByPath.set(entry.path, entry);
+    }
+
+    const modified: Array<{ path: string; content: string; type: string }> = [];
+    const seenOnDisk = new Set<string>();
+
+    // Recursive walk under artifactsDir. Missing dir = nothing to diff
+    // (bootstrap hasn't run yet, or the session was just created).
+    const walk = async (absDir: string): Promise<void> => {
+      let entries: import('node:fs').Dirent[];
+      try {
+        entries = await fs.readdir(absDir, { withFileTypes: true });
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === 'ENOENT' || code === 'ENOTDIR') return;
+        throw err;
+      }
+      for (const ent of entries) {
+        const absPath = path.join(absDir, ent.name);
+        if (ent.isDirectory()) {
+          await walk(absPath);
+          continue;
+        }
+        if (!ent.isFile()) continue;
+        const artifactPath = path.relative(artifactsDir, absPath);
+        seenOnDisk.add(artifactPath);
+        let content: string;
+        try {
+          content = await fs.readFile(absPath, 'utf8');
+        } catch (err) {
+          this.logger.warn(
+            `walk: failed to read ${absPath}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+          continue;
+        }
+        const hash = sha256Hasher(content);
+        const prior = snapshotByPath.get(artifactPath);
+        if (!prior || prior.contentHash !== hash) {
+          modified.push({
+            path: artifactPath,
+            content,
+            type: this.guessType(artifactPath),
+          });
+        }
+      }
+    };
+    await walk(artifactsDir);
+
+    // Anything in snapshot but not on disk = agent deleted it.
+    const deleted: string[] = [];
+    for (const snap of previousSnapshot) {
+      if (!seenOnDisk.has(snap.path)) {
+        deleted.push(snap.path);
       }
     }
 

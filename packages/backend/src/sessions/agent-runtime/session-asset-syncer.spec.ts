@@ -200,6 +200,103 @@ describe('SessionAssetSyncer', () => {
     });
   });
 
+  // ── walk-based fallback (workspace handle without native diff) ───────
+  // These tests cover the LocalProvider case where `workspaceHandle.diff`
+  // is undefined. Without the fallback, every sync would be a no-op
+  // because there's no diff source → agent edits would never sync back
+  // to the solution DB. The fallback walks artifactsDir and computes
+  // the delta against the previous snapshot.
+
+  it('walk fallback: agent-modified file propagates to DB when handle has no diff()', async () => {
+    // Pre-existing snapshot reflects what was there before the agent ran.
+    await snapshots.put({
+      sessionId: SID, path: 'manifest.json',
+      contentHash: sha256('{"title":"old"}'),
+      type: 'json',
+      updatedAt: '2026-05-25T00:00:00Z',
+    });
+    // DB also has the old content.
+    source.rows = [{ path: 'manifest.json', content: '{"title":"old"}', type: 'json' }];
+    // Agent edited the file in the workspace (newer content on disk).
+    const agentFile = path.join(workspaceDir, ARTIFACTS_DIR, 'manifest.json');
+    await fs.mkdir(path.dirname(agentFile), { recursive: true });
+    await fs.writeFile(agentFile, '{"title":"agent-edited"}');
+    // Crucially: no diffEntries → workspaceHandle.diff is undefined.
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+    }));
+
+    await syncer.sync(SID);
+
+    expect(source.saved).toHaveLength(1);
+    expect(source.saved[0]).toEqual({
+      projectId: PROJ,
+      artifact: { path: 'manifest.json', content: '{"title":"agent-edited"}', type: 'json' },
+    });
+  });
+
+  it('walk fallback: agent-added file (not in snapshot) propagates to DB', async () => {
+    // No snapshot, no DB rows.
+    const agentFile = path.join(workspaceDir, ARTIFACTS_DIR, 'plan', 'lesson.md');
+    await fs.mkdir(path.dirname(agentFile), { recursive: true });
+    await fs.writeFile(agentFile, '# Agent-created plan');
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+    }));
+
+    await syncer.sync(SID);
+
+    expect(source.saved).toHaveLength(1);
+    expect(source.saved[0]).toEqual({
+      projectId: PROJ,
+      artifact: { path: 'plan/lesson.md', content: '# Agent-created plan', type: 'md' },
+    });
+  });
+
+  it('walk fallback: agent-deleted file (in snapshot, missing on disk) propagates as delete', async () => {
+    // Snapshot records a file the agent later removed.
+    await snapshots.put({
+      sessionId: SID, path: 'todo.md',
+      contentHash: sha256('something'),
+      type: 'md',
+      updatedAt: '2026-05-25T00:00:00Z',
+    });
+    source.rows = [{ path: 'todo.md', content: 'something', type: 'md' }];
+    // Workspace artifacts dir exists but todo.md is NOT in it.
+    await fs.mkdir(path.join(workspaceDir, ARTIFACTS_DIR), { recursive: true });
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+    }));
+
+    await syncer.sync(SID);
+
+    expect(source.deleted).toEqual([
+      { projectId: PROJ, path: 'todo.md' },
+    ]);
+  });
+
+  it('walk fallback: no diff and no changes → no-op (no saveArtifact)', async () => {
+    // Snapshot + DB + FS all agree.
+    const content = '{"k":"v"}';
+    await snapshots.put({
+      sessionId: SID, path: 'cfg.json',
+      contentHash: sha256(content), type: 'json',
+      updatedAt: '2026-05-25T00:00:00Z',
+    });
+    source.rows = [{ path: 'cfg.json', content, type: 'json' }];
+    const f = path.join(workspaceDir, ARTIFACTS_DIR, 'cfg.json');
+    await fs.mkdir(path.dirname(f), { recursive: true });
+    await fs.writeFile(f, content);
+    sessionSvc.getSession.mockReturnValue(makeMockSession({
+      sessionId: SID, workspaceDir, tenantId: TID,
+    }));
+
+    await syncer.sync(SID);
+
+    expect(source.saved).toEqual([]);
+    expect(source.deleted).toEqual([]);
+  });
+
   it('both sides changed → agent wins, DB receives agent content', async () => {
     // Pre-existing snapshot reflecting an initial state
     await snapshots.put({

@@ -7,6 +7,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EventMapperService } from './event-mapper.service';
 import { ToolCallTrackerService } from './services/tool-call-tracker.service';
 import { SubAgentTrackerService } from './services/subagent-tracker.service';
@@ -50,6 +51,12 @@ describe('EventMapperService', () => {
         {
           provide: TokenUsageService,
           useValue: mockTokenUsageService,
+        },
+        // EventEmitter2 stub — the new turn-complete emit needs it.
+        // Tests don't assert on emissions; we just need DI to resolve.
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();
