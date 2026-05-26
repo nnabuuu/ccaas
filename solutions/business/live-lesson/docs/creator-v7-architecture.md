@@ -1,9 +1,8 @@
 # Creator v7 架构设计 — 把 agent-runtime 接到课程作者面
 
-> **Status**: 设计稿（Phase B output）
+> **Status**: 设计稿（Phase B output）+ **大部分已落地**，见 §11 "实施进度快照"
 > **Audience**: 接手实施的工程师；技术 review；销售/产品基本理解架构
 > **Companion**: [`solutions/business/live-lesson-creator/docs/poc-result.md`](../../live-lesson-creator/docs/poc-result.md) 是这个设计的可行性证据
-> **Phase A PoC commit**: WIP — see status section
 
 ---
 
@@ -356,16 +355,18 @@ v7 UI 允许同一老师开 N 个 conversation。每个 conversation = 一个 se
 - 成本控制：默认开 `bundles: shared-context` 让 conversation 之间共享 prompt 缓存
 - 鼓励老师用 "compose 一个 prompt 跑批量改" 而不是来回点击
 
-### 7.3 公网部署的 auth gap（高风险，必修）
+### 7.3 公网部署的 auth gap（部分已修；剩多租户隔离）
 
-ccaas 的 admin 端点 + skill 写都要 admin scope。今天 PoC 用 `AUTH_ALLOW_ANONYMOUS=true` 但 anonymous 不带 admin scope。
+**已修（commits `56173292` / `b594a191` / `37d50e82`）**：浏览器不再持有任何 ccaas key。所有 ccaas 调用走 live-lesson 后端代理（`CcaasProxyController` + `CcaasChatProxyController`），后端用 env `CCAAS_API_KEY` 作为唯一 token，server-to-server。`scrubToken` 在 log + error 消息层防 key 泄漏到任何 user-visible 字符串。
 
-部署 creator-v7 前必须：
-1. 给每个老师发 API key（admin or `creator` scope）
-2. UI 收到 token 后用 `Authorization: Bearer` header 调
-3. 多租户隔离（一个老师看不到另一个的 project）
+**仍要做（生产部署前）**：
 
-详见 `packages/backend/docs/AUTHENTICATION_AND_AUTHORIZATION.md`。这件事 v1 demo 阶段可以靠 dev API key + 单租户绕过；生产前必修。
+1. **solution 自己的端用户 auth** — live-lesson 后端今天的 `ProjectController` / `CcaasProxyController` 都是 `@Public()`（无 guard）。把 cookie session / JWT / OIDC 等 solution-level 端用户认证加上后，proxy controllers 应该也加 guard。
+2. **多老师隔离** — 一个老师不能看另一个的 project。`CourseProject` 实体需要 `ownerId` / `tenantId` 列 + 所有 endpoint 加 user-scope 过滤。
+
+ccaas 那边的 admin/skill auth 已经不是 creator-v7 的关注点：因为浏览器不直接调 ccaas，ccaas 那边只看到 live-lesson 后端的一个 tenant key，端用户身份在 live-lesson 后端的 guard 层。
+
+详见 [[ccaas-proxy-pattern memory note]] 和 `packages/backend/docs/AUTHENTICATION_AND_AUTHORIZATION.md`。
 
 ---
 
@@ -445,6 +446,38 @@ A: 三个理由：
 ### Q3: SyncEngine 的 "agent wins" 策略会不会冲掉老师手改？
 
 A: 会，但只在**真的双写同一个 path** 时。详见 §6 矛盾分析。v1 推荐方案：UI 把 "我正在编辑" 状态暴露出来；老师手改时不要同时让 agent 工作（产品级互斥），技术上不靠后端强制。
+
+---
+
+## 11.5 实施进度快照（2026-05-26 起持续更新）
+
+设计稿落地了大半。下面按本文章节交叉索引哪些 commit 完成了哪部分，方便后来者跳过已 ship 的工作直奔未做的部分。
+
+| 章节 | 已 ship | 关键 commit | 测试 |
+|---|---|---|---|
+| §3 粘合点：`tenant.config.artifactUrl` 自动 wire | ✅ | (pre-existing) | `solution-loader.service.spec.ts` |
+| §3 粘合点：REST artifact 三件套 | ✅ | (pre-existing) | `project.service.spec.ts` |
+| §3 粘合点：SyncEngine turn boundary | ✅ G4 修了竞态 | `00cf76b9` G4 + `ad97344b` 后续 + `3b547a9a` coalesce | `session-asset-syncer.spec.ts` (25) + `message-worker.spec.ts` G4 7 cases |
+| §4 左侧 AI panel：聊天 + 多会话 + bind | ✅ | `d022f18a` AiPanel 写真 + 后续多次迭代 | `e2e/specs/16-creator-v7-agent-runtime.spec.ts` |
+| §5 `manifest-editor` skill：完整 progressive disclosure | ✅ | `1d4080f7` 初版 + `e274f691` scaffold 含示例 step | `solution-loader.service.skill-walk.spec.ts` |
+| §5 校验闭环（Agent 自调 + chat UI 卡片）| ✅ | `00cf76b9` 包含 G4 + validation card 全套 | `project.service.spec.ts` validate cases + `ChatBubble` ValidationCard 分支 |
+| §6 change stream + invalidate | ✅ | (pre-existing + proxy migration) | `ccaas-proxy.controller.spec.ts` |
+| §7.3 ccaas key 泄漏到浏览器 | ✅ **已修** | `37d50e82` 把 creator 迁到 proxy + `4b642b32` post-review | `ccaas-chat-proxy.controller.spec.ts` (12) + `ccaas-upstream.service.spec.ts` (16) |
+| §7.3 多老师隔离 + solution 端用户 auth | ❌ 未做 | — | — |
+| §10 Stage 2: v7 替换现有 `/creator` | ❌ 未做（UI 完整迁移）| — | — |
+
+### 新增的、本文设计稿没预见的两个组件
+
+1. **`CcaasChatProxyController`** —— 把 chat / session / bind 三个 ccaas 路由全部代理到 `same-origin /api/sessions/...`。浏览器不持任何 ccaas key。配合 `CcaasUpstream` shared service (env 解析 + `resolveTenantId` 单飞缓存 + `scrubToken` 双形态)，是当前实现的核心。位置：`solutions/business/live-lesson/backend/src/adapters/http/`。
+
+2. **G4 修复（bind-before-spawn）** —— `MessageWorker` 在 `SendMessageDto.projectId` 出现时同步 `await bindToProject + syncer.sync` BEFORE 引擎 spawn，确保 agent 第一轮就能看到 workspace 里的 `artifacts/`。文档当时没意识到这条 race；实现时被发现 + 修复。位置：`packages/backend/src/sessions/services/message-worker.service.ts:170+`。
+
+### 一并修的小坑
+
+- scaffold 现在包含 1 个 publish-valid 的 quiz 示例 step（`project.service.ts:35`），agent 有现成模式可改 + project 创建后直接可发布。`e274f691`。
+- SKILL.md 路径从 `project/...` 改回 `artifacts/...` 跟实际 workspace 落盘对齐。
+- `useTenantId` hook 整个删除（浏览器不再需要 tenantId）。
+- `PasteKeyBanner` UI 删除（不再需要老师粘 key）。
 
 ---
 

@@ -266,18 +266,34 @@ cd frontend && npm run build
 - Solution Backend: 3007 (lesson API + classroom API + project artifacts API)
 - CCAAS Backend: 3001 (required)
 
-## Creator app env (Phase 2a)
+## Creator app env
 
-The course-editor creator app at `creator/` consumes the ccaas
-agent-runtime SSE feed (`GET /api/v1/projects/:projectId/changes`) to
-surface agent-side edits in real time. Two env vars in `creator/.env`:
+The course-editor creator app at `creator/` consumes the ccaas agent-runtime via **same-origin proxy** through the live-lesson backend — the browser never holds a ccaas key. One env var:
 
 | Var | Default | Purpose |
 |---|---|---|
 | `BACKEND_URL` | `http://localhost:3007` | Vite proxy target for `/api/*` → live-lesson backend |
-| `VITE_CCAAS_URL` | `http://localhost:3001` | Direct URL for the SSE feed (bypasses proxy because it lives on ccaas, not live-lesson backend). Used by `useProjectChanges` hook. |
 
-See `creator/.env.example` for the template.
+No `VITE_*` browser-exposed env vars. The ccaas key + URL live on the **backend** side (see `backend/.env`):
+
+| Var | Required | Purpose |
+|---|---|---|
+| `CCAAS_API_KEY` | yes | Tenant API key — backend uses it as Bearer / `?token=` on every upstream ccaas call. The browser must never see this. |
+| `CCAAS_URL` | no (`http://localhost:3001`) | Upstream ccaas base URL. |
+
+See `creator/.env.example` + backend `.env.example` for templates.
+
+### ccaas proxy controllers (browser → live-lesson → ccaas)
+
+`backend/src/adapters/http/`:
+
+| Controller | Routes | Notes |
+|---|---|---|
+| `CcaasProxyController` | `GET /api/projects/:id/changes` (SSE), `POST /api/projects/:id/invalidate` | The original proxy. SSE uses `?token=` query string (EventSource can't set headers). |
+| `CcaasChatProxyController` | `GET /api/sessions/:sid/messages` (history), `POST /api/sessions/:sid/messages` (chat SSE, raw Express because `@Sse()` is GET-only), `POST /api/sessions/:sid/bind-project` | Added for the v7 chat UI. Uses `Authorization: Bearer`. Injects `tenantId` server-side via `CcaasUpstream.resolveTenantId()` so the browser body carries only the user's intent. |
+| `CcaasUpstream` (service) | shared helper | `resolveCcaas()` + `resolveTenantId()` (lazy single-flight cache) + `scrubToken()` (redacts both `?token=` and `Bearer` forms before any log/error message). |
+
+Memory pointer: `~/.claude/projects/.../memory/ccaas-proxy-pattern.md` captures the platform-wide rule + the "parallel-work flag" caveat that originally caused this leak.
 
 ## API Proxy Architecture
 
