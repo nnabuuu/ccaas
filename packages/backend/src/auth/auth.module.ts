@@ -15,6 +15,7 @@ import { UsersModule } from '../users/users.module';
 import { User } from '../users/entities/user.entity';
 import { DevLoginService } from './dev-login.service';
 import { DevLoginController } from './dev-login.controller';
+import { MeController } from './me.controller';
 
 const enableDevLogin = process.env.NODE_ENV !== 'production'
   && process.env.NODE_ENV !== 'staging';
@@ -26,7 +27,10 @@ const enableDevLogin = process.env.NODE_ENV !== 'production'
     TenantsModule,
     forwardRef(() => UsersModule),
   ],
-  controllers: [...(enableDevLogin ? [DevLoginController] : [])],
+  controllers: [
+    MeController,
+    ...(enableDevLogin ? [DevLoginController] : []),
+  ],
   providers: [
     ApiKeyService,
     ApiKeyGuard,

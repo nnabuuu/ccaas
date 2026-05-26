@@ -1,45 +1,399 @@
-import { MessageSquare } from 'lucide-react'
-import type { Project } from '../../types'
+/**
+ * AiPanel — left sidebar that drives an agent-runtime chat session
+ * scoped to the current project.
+ *
+ * Visual contract: `design/surfaces/creator-v7-ai-left.jsx`
+ * Behaviour contract: see comments + `kind-exploring-mango.md`.
+ *
+ * Three-section layout (header / scrolling messages / sticky input)
+ * uses inline styles + CSS vars to stay 1:1 with the design jsx. The
+ * surrounding ProjectEditorPage mounts this in a flex container at
+ * left=340px width.
+ */
+
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import type { Project } from '../../types';
+import { useTenantId } from '../../hooks/useTenantId';
+import { useConversations } from '../../hooks/useConversations';
+import { useAgentChat } from '../../hooks/useAgentChat';
+import { getApiKey } from '../../api/ccaas';
+import ChatBubble, { ThinkingDots } from './ChatBubble';
+import ConversationDropdown from './ConversationDropdown';
 
 interface AiPanelProps {
-  project: Project
+  project: Project;
 }
 
 export default function AiPanel({ project }: AiPanelProps) {
+  const tenant = useTenantId();
+  const conv = useConversations(project.id);
+
+  // Empty-key banner condition: only show after the /me probe settled
+  // so we don't flash it on first render.
+  const noKey = !tenant.isLoading && !getApiKey();
+
+  const chat = useAgentChat({
+    sessionId: conv.active?.sessionId ?? '',
+    tenantId: tenant.tenantId,
+    projectId: project.id,
+  });
+
+  // Auto-scroll messages container to bottom on new message or delta.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [chat.messages]);
+
+  // Auto-rename runs inside `submit()` below, NOT as an effect.
+  // Effect-based rename had a stale-closure race: switching
+  // conversations briefly captures the OLD conversation's messages
+  // before the new history loads, which then renames the freshly
+  // created "新会话" to the previous chat's text. Doing it in submit
+  // means we only rename when WE just sent the message.
+
+  // ── Input handling ────────────────────────────────────────────────
+  const [draft, setDraft] = useState('');
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow textarea, capped at 96px. Re-measure on every keystroke.
+  useEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 96) + 'px';
+  }, [draft]);
+
+  const submit = () => {
+    const text = draft.trim();
+    if (!text || chat.isThinking) return;
+    setDraft('');
+
+    // Rename "新会话" to the first user message we send into it. Doing
+    // this here (not in a useEffect on chat.messages) avoids the
+    // race where switching conversations captures the previous
+    // conversation's messages before the new history fetches.
+    if (conv.active && conv.active.title === '新会话') {
+      const snippet = text.replace(/\s+/g, ' ').slice(0, 24);
+      conv.rename(conv.active.id, snippet || '会话');
+    }
+
+    void chat.send(text);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  // ── Render ───────────────────────────────────────────────────────
+  const lastMsg = chat.messages[chat.messages.length - 1];
+  const lastIsAgentBubble = lastMsg?.role === 'agent';
+
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-          <MessageSquare size={16} className="text-teal-500" />
-          AI Assistant
-        </div>
+    <div
+      style={{
+        width: 340,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        borderRight: '1px solid var(--border)',
+        background: 'var(--surface)',
+        fontFamily: 'inherit',
+      }}
+    >
+      <ConversationDropdown
+        conversations={conv.conversations}
+        activeId={conv.activeId}
+        onSwitch={conv.switchTo}
+        onCreate={conv.create}
+        onDelete={conv.remove}
+      />
+
+      {/* Project banner (small subtitle so the user knows which project the chat scopes to) */}
+      <div
+        style={{
+          padding: '6px 14px',
+          background: 'var(--surface2)',
+          borderBottom: '1px solid var(--border)',
+          fontSize: 10,
+          color: 'var(--t3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+        }}
+      >
+        <span>项目</span>
+        <span style={{ color: 'var(--t2)' }}>·</span>
+        <span style={{ color: 'var(--t2)', fontWeight: 500 }}>{project.title}</span>
       </div>
 
-      {/* Project info */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <div className="text-xs text-gray-500 mb-1">项目</div>
-        <div className="text-sm font-medium text-gray-900">{project.title}</div>
-        {project.description && (
-          <div className="text-xs text-gray-500 mt-1">{project.description}</div>
+      {/* Messages */}
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '14px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        {noKey && <PasteKeyBanner />}
+        {!noKey && chat.messages.length === 0 && !chat.isLoadingHistory && <EmptyState />}
+        {chat.isLoadingHistory && <LoadingHistory />}
+
+        {chat.messages.map((m) =>
+          m.role === 'user' ? (
+            <ChatBubble key={m.id} role="user" text={m.text} />
+          ) : (
+            <ChatBubble
+              key={m.id}
+              role="agent"
+              text={m.text}
+              toolEvents={m.toolEvents}
+              // Show thinking dots only on the in-flight agent bubble
+              // (last message, while we're still streaming).
+              showThinking={chat.isThinking && m.id === lastMsg?.id}
+            />
+          ),
+        )}
+
+        {/* If thinking but no agent bubble exists yet (shouldn't happen
+            because send() inserts one synchronously — but defensive),
+            render a standalone thinking pill. */}
+        {chat.isThinking && !lastIsAgentBubble && (
+          <div
+            style={{
+              alignSelf: 'flex-start',
+              padding: '8px 12px',
+              borderRadius: '12px 12px 12px 2px',
+              background: 'var(--purple-bg)',
+              color: 'var(--purple)',
+              fontSize: 11,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <ThinkingDots />
+            <span>思考中</span>
+          </div>
+        )}
+
+        {chat.error && (
+          <div
+            style={{
+              alignSelf: 'flex-start',
+              maxWidth: '88%',
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: '#fef2f2',
+              color: '#991b1b',
+              fontSize: 11,
+              border: '1px solid #fecaca',
+            }}
+          >
+            {chat.error}
+          </div>
         )}
       </div>
 
-      {/* Chat area placeholder */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center">
-          <MessageSquare size={32} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-sm text-gray-400">AI chat coming soon</p>
-          <p className="text-xs text-gray-300 mt-1">Describe your lesson plan here</p>
+      {/* Input */}
+      <div
+        style={{
+          padding: '10px 18px 14px',
+          borderTop: '1px solid var(--border)',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-end',
+            background: 'var(--bg)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: '4px 4px 4px 14px',
+          }}
+        >
+          <textarea
+            ref={taRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+            disabled={noKey || !tenant.tenantId}
+            placeholder={
+              noKey
+                ? '请先在控制台设置 API key…'
+                : tenant.isLoading
+                  ? '加载中…'
+                  : '描述你想让 AI 帮你做什么…'
+            }
+            rows={1}
+            style={{
+              flex: 1,
+              padding: '7px 0',
+              fontSize: 12,
+              fontFamily: 'inherit',
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              color: 'var(--t1)',
+              resize: 'none',
+              lineHeight: 1.5,
+              maxHeight: 96,
+              overflowY: 'auto',
+            }}
+          />
+          <button
+            onClick={submit}
+            disabled={!draft.trim() || chat.isThinking || noKey || !tenant.tenantId}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: 'none',
+              flexShrink: 0,
+              background:
+                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
+                  ? 'var(--purple)'
+                  : 'var(--surface2)',
+              color:
+                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
+                  ? '#fff'
+                  : 'var(--t3)',
+              cursor:
+                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
+                  ? 'pointer'
+                  : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              transition: 'all .15s',
+              fontFamily: 'inherit',
+            }}
+          >
+            ↑
+          </button>
         </div>
-      </div>
-
-      {/* Input placeholder */}
-      <div className="p-3 border-t border-gray-200">
-        <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-400">
-          Ask AI to help design your lesson...
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            marginTop: 5,
+            fontSize: 9,
+            color: 'var(--t3)',
+          }}
+        >
+          <span>Enter 发送</span>
+          <span>·</span>
+          <span>Shift+Enter 换行</span>
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+// ── Small empty/loading/error sub-components ─────────────────────────
+
+function EmptyState() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 8px',
+        color: 'var(--t3)',
+        fontSize: 12,
+        textAlign: 'center',
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: 'var(--purple-bg)',
+          color: 'var(--purple)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 16,
+        }}
+      >
+        ✦
+      </div>
+      <div style={{ fontWeight: 500, color: 'var(--t2)' }}>开始一段对话</div>
+      <div style={{ fontSize: 10, lineHeight: 1.6 }}>
+        告诉 AI 你想要的教学计划<br />
+        或让它帮你修改现有的 manifest
+      </div>
+    </div>
+  );
+}
+
+function LoadingHistory() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--t3)',
+        fontSize: 11,
+      }}
+    >
+      加载历史消息…
+    </div>
+  );
+}
+
+function PasteKeyBanner() {
+  return (
+    <div
+      style={{
+        padding: 12,
+        borderRadius: 8,
+        background: '#fffbeb',
+        border: '1px solid #fde68a',
+        color: '#92400e',
+        fontSize: 11,
+        lineHeight: 1.6,
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>需要 API key</div>
+      <div>
+        请在浏览器控制台运行：
+        <pre
+          style={{
+            marginTop: 6,
+            padding: 6,
+            borderRadius: 4,
+            background: '#fef3c7',
+            fontSize: 10,
+            overflowX: 'auto',
+            fontFamily: 'monospace',
+          }}
+        >
+          {`localStorage.setItem('ccaas:apiKey', '<your-key>')`}
+        </pre>
+        然后刷新页面。
+      </div>
+    </div>
+  );
 }

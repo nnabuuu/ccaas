@@ -1,0 +1,387 @@
+/**
+ * useAgentChat — drives the AiPanel chat experience.
+ *
+ * Responsibilities:
+ *   - load message history from `GET /api/v1/sessions/:sid/messages` on
+ *     session change
+ *   - `send(text)` POSTs to `/api/v1/sessions/:sid/messages` and streams
+ *     the SSE response into the local messages array
+ *   - after first turn completes, fire-and-forget bind-project so the
+ *     project's change stream picks up agent-side edits (existing
+ *     `useProjectChanges` hook in the editor surfaces those)
+ *
+ * SSE parsing: uses native `fetch` + `ReadableStream` (works in modern
+ * Chrome/Firefox/Edge; Safari 17+). Old browsers fall through to an
+ * error state — see "Risk #1" in the plan file.
+ *
+ * The hook is **session-scoped**: switching to a different `sessionId`
+ * resets messages and triggers a fresh history fetch. Concurrent sends
+ * on the same session are not supported — the second `send()` no-ops
+ * while `isThinking` is true.
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { bindSessionToProject, ccaasBaseUrl, getApiKey } from '../api/ccaas';
+
+// ── Types ────────────────────────────────────────────────────────────
+
+export interface ToolEvent {
+  toolName: string;
+  toolId: string;
+  phase: 'start' | 'end' | string;
+  /** Free-form description for UI ("Editing execution/manifest.json", etc.) */
+  summary?: string;
+  at: string;
+}
+
+export type ChatMessage =
+  | { id: string; role: 'user'; text: string; at: string }
+  | { id: string; role: 'agent'; text: string; at: string; toolEvents: ToolEvent[] };
+
+interface UseAgentChatOpts {
+  sessionId: string;
+  /** ccaas tenantId (from `useTenantId`). Required to send. */
+  tenantId: string | null;
+  /** Project to bind on first turn — enables agent-edit notifications. */
+  projectId: string;
+  /** Skill slugs to enable for this session. Defaults to ['manifest-editor']. */
+  enabledSkills?: string[];
+  /** Session template name (used on the first message). */
+  templateName?: string;
+}
+
+interface UseAgentChatState {
+  messages: ChatMessage[];
+  isThinking: boolean;
+  error: string | null;
+  /** Whether the history fetch is still in flight (first mount only). */
+  isLoadingHistory: boolean;
+  /** Send a user message. No-ops if already streaming or sessionId is empty. */
+  send(text: string): Promise<void>;
+}
+
+// ── Inline SSE envelope shape (subset we actually consume) ───────────
+// Mirrors `packages/backend/src/sessions/services/stream-registry.service.ts`
+// We keep the local definition narrow so the chat hook doesn't drag in
+// the whole backend protocol module — only the fields we render.
+
+interface SseEnvelope {
+  seq: number;
+  sessionId: string;
+  timestamp: string;
+  event: SseEvent;
+}
+
+type SseEvent =
+  | { type: 'text_delta'; delta: string; sessionId: string; timestamp: string }
+  | {
+      type: 'agent_status';
+      status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'complete' | 'error';
+      sessionId: string;
+      timestamp: string;
+      error?: string;
+    }
+  | {
+      type: 'tool_activity';
+      payload: {
+        toolName: string;
+        toolId: string;
+        phase: 'start' | 'end' | string;
+        // assorted other fields we don't use here
+        [k: string]: unknown;
+      };
+      sessionId: string;
+      timestamp: string;
+    }
+  | {
+      type: 'error';
+      code?: string;
+      message: string;
+      recoverable?: boolean;
+      sessionId: string;
+      timestamp: string;
+    }
+  | { type: 'done'; sessionId: string; timestamp: string }
+  | { type: string; [k: string]: unknown }; // catch-all for events we ignore
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function uid(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+interface HistoryMessage {
+  id: string;
+  role: 'user' | 'assistant' | string;
+  content: string;
+  createdAt: string;
+  toolEvents?: Array<{ toolName: string; toolId: string; phase?: string; createdAt?: string }>;
+}
+
+function toChatMessage(m: HistoryMessage): ChatMessage | null {
+  if (m.role === 'user') {
+    return { id: m.id, role: 'user', text: m.content, at: m.createdAt };
+  }
+  if (m.role === 'assistant') {
+    const toolEvents: ToolEvent[] = (m.toolEvents ?? []).map((t) => ({
+      toolName: t.toolName,
+      toolId: t.toolId,
+      phase: (t.phase ?? 'end') as ToolEvent['phase'],
+      at: t.createdAt ?? m.createdAt,
+    }));
+    return { id: m.id, role: 'agent', text: m.content, at: m.createdAt, toolEvents };
+  }
+  // skip system messages, etc.
+  return null;
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────
+
+export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isThinking, setIsThinking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  // We use a ref for "has bound" so the bind-project effect doesn't
+  // re-trigger when messages array changes; it's load-bearing for the
+  // useProjectChanges hook (we only need to bind ONCE per session).
+  const hasBoundRef = useRef(false);
+
+  const { sessionId, tenantId, projectId, enabledSkills, templateName } = opts;
+
+  // ── History load on session change ────────────────────────────────
+  useEffect(() => {
+    if (!sessionId) {
+      setMessages([]);
+      setIsLoadingHistory(false);
+      return;
+    }
+    let alive = true;
+    setIsLoadingHistory(true);
+    setMessages([]);
+    setError(null);
+    hasBoundRef.current = false;
+
+    const key = getApiKey();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (key) headers['Authorization'] = `Bearer ${key}`;
+
+    fetch(`${ccaasBaseUrl()}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages?limit=200`, {
+      headers,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          // 404 = session never existed (fresh conversation) — treat as
+          // empty history, not an error.
+          if (res.status === 404) return { messages: [] as HistoryMessage[] };
+          throw new Error(`history fetch ${res.status}`);
+        }
+        return res.json() as Promise<{ messages: HistoryMessage[] }>;
+      })
+      .then((body) => {
+        if (!alive) return;
+        const next = body.messages.map(toChatMessage).filter((m): m is ChatMessage => m !== null);
+        setMessages(next);
+        // If history is non-empty the session was already bound on a
+        // prior visit — skip re-binding to avoid the 409 conflict path.
+        if (next.length > 0) hasBoundRef.current = true;
+        setIsLoadingHistory(false);
+      })
+      .catch((err: unknown) => {
+        if (!alive) return;
+        setError(err instanceof Error ? err.message : String(err));
+        setIsLoadingHistory(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [sessionId]);
+
+  // ── Send + stream ─────────────────────────────────────────────────
+  const send = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      if (!sessionId) {
+        setError('No active conversation');
+        return;
+      }
+      if (!tenantId) {
+        setError('Missing tenantId — set ccaas:apiKey in localStorage and refresh');
+        return;
+      }
+      if (isThinking) return; // single-flight per session
+
+      const userMsg: ChatMessage = {
+        id: uid(),
+        role: 'user',
+        text: trimmed,
+        at: new Date().toISOString(),
+      };
+      const agentBubbleId = uid();
+      const agentMsg: ChatMessage = {
+        id: agentBubbleId,
+        role: 'agent',
+        text: '',
+        at: new Date().toISOString(),
+        toolEvents: [],
+      };
+
+      setMessages((prev) => [...prev, userMsg, agentMsg]);
+      setIsThinking(true);
+      setError(null);
+
+      const key = getApiKey();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (key) headers['Authorization'] = `Bearer ${key}`;
+
+      let networkError: Error | null = null;
+      try {
+        const res = await fetch(
+          `${ccaasBaseUrl()}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              message: trimmed,
+              tenantId,
+              enabledSkills: enabledSkills ?? ['manifest-editor'],
+              templateName: templateName ?? 'edit-lesson',
+            }),
+          },
+        );
+
+        if (!res.ok || !res.body) {
+          throw new Error(`POST messages failed: ${res.status}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        let aborted = false;
+
+        // SSE frames are blank-line-separated; within a frame we only
+        // care about `data: <json>` lines.
+        while (!aborted) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+
+          let frameEnd = buf.indexOf('\n\n');
+          while (frameEnd !== -1) {
+            const frame = buf.slice(0, frameEnd);
+            buf = buf.slice(frameEnd + 2);
+            const dataLine = frame.split('\n').find((l) => l.startsWith('data:'));
+            if (dataLine) {
+              const json = dataLine.slice(5).trim();
+              if (json) {
+                try {
+                  const env = JSON.parse(json) as SseEnvelope;
+                  applyEvent(env, agentBubbleId);
+                  if (env.event.type === 'done') {
+                    aborted = true;
+                    break;
+                  }
+                  if (env.event.type === 'agent_status') {
+                    const status = (env.event as { status: string }).status;
+                    if (status === 'complete' || status === 'error') {
+                      // Don't break here — `done` still fires after.
+                    }
+                  }
+                } catch {
+                  // Bad frame — skip silently. Logging would spam.
+                }
+              }
+            }
+            frameEnd = buf.indexOf('\n\n');
+          }
+        }
+      } catch (err) {
+        networkError = err instanceof Error ? err : new Error(String(err));
+        setError(networkError.message);
+      } finally {
+        setIsThinking(false);
+      }
+
+      // Bind-project: fire-and-forget, only after a successful turn.
+      // Skipping on errors prevents binding to a session that LLM
+      // never wrote to (no agent edits would arrive anyway).
+      if (!networkError && !hasBoundRef.current) {
+        hasBoundRef.current = true;
+        bindSessionToProject({ sessionId, projectId, tenantId })
+          .catch((err) => {
+            // Don't surface to the user — bind is opportunistic. Log
+            // for the dev who's debugging missing change banners.
+            // eslint-disable-next-line no-console
+            console.warn('[useAgentChat] bind-project failed:', err);
+            // Reset so a manual retry could work later.
+            hasBoundRef.current = false;
+          });
+      }
+    },
+    [sessionId, tenantId, projectId, enabledSkills, templateName, isThinking],
+  );
+
+  // Apply one SSE event to the in-flight agent bubble. Pulled out of
+  // `send()` so the inner loop stays readable.
+  function applyEvent(env: SseEnvelope, agentBubbleId: string): void {
+    const e = env.event;
+    switch (e.type) {
+      case 'text_delta': {
+        const delta = (e as { delta: string }).delta;
+        if (!delta) return;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === agentBubbleId && m.role === 'agent'
+              ? { ...m, text: m.text + delta }
+              : m,
+          ),
+        );
+        return;
+      }
+      case 'tool_activity': {
+        const p = (e as { payload: { toolName: string; toolId: string; phase: string } }).payload;
+        if (!p) return;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === agentBubbleId && m.role === 'agent'
+              ? {
+                  ...m,
+                  toolEvents: [
+                    ...m.toolEvents,
+                    {
+                      toolName: p.toolName,
+                      toolId: p.toolId,
+                      phase: p.phase,
+                      at: env.timestamp,
+                    },
+                  ],
+                }
+              : m,
+          ),
+        );
+        return;
+      }
+      case 'error': {
+        const msg = (e as { message: string }).message;
+        setError(msg || 'Agent error');
+        return;
+      }
+      case 'agent_status': {
+        const status = (e as { status: string }).status;
+        if (status === 'error') {
+          const errMsg = (e as { error?: string }).error;
+          if (errMsg) setError(errMsg);
+        }
+        return;
+      }
+      // 'done', 'agent_thinking', 'output_update', 'token_usage', etc. — ignored for MVP.
+      default:
+        return;
+    }
+  }
+
+  return { messages, isThinking, error, isLoadingHistory, send };
+}

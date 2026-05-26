@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens (creator-v7 palette) ─────────────────────────────
+ * Mirrors `design/surfaces/creator-v7-ai-left.jsx` so the AiPanel
+ * can use the same `var(--...)` references the design jsx uses,
+ * keeping the port 1:1 with the mockup. Tailwind utilities still
+ * work alongside — these vars are additive.
+ */
+:root {
+  --purple:      #7c3aed;  /* primary AI accent */
+  --purple-bg:   #f5f3ff;  /* agent bubble background */
+  --t1:          #111827;  /* primary text */
+  --t2:          #4b5563;  /* secondary text */
+  --t3:          #9ca3af;  /* muted / helper text */
+  --bg:          #ffffff;  /* input background */
+  --surface:     #ffffff;  /* card surface */
+  --surface2:    #f3f4f6;  /* disabled / hover */
+  --border:      #e5e7eb;  /* dividers */
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -28,4 +46,11 @@ body {
 }
 .animate-slide-in {
   animation: slide-in 0.2s ease-out;
+}
+
+/* AiPanel "thinking" 3-dot bounce. Each dot offsets its delay so the
+ * three together read as a wave. Matches creator-v7-ai-left.jsx:175. */
+@keyframes aiDot {
+  0%, 60%, 100% { transform: translateY(0);    opacity: .4; }
+  30%           { transform: translateY(-3px); opacity:  1; }
 }
