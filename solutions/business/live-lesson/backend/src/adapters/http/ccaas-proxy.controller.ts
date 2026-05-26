@@ -1,0 +1,254 @@
+/**
+ * CcaasProxyController — thin proxy from the browser to ccaas's
+ * agent-runtime endpoints.
+ *
+ * **Why this exists** (per the platform design):
+ *   - ccaas knows tenants, not end users. Each solution backend is one
+ *     ccaas tenant and holds the one ccaas API key for its tenant.
+ *   - End users belong to the solution, not to ccaas. They authenticate
+ *     to the solution backend (using whatever the solution's own auth
+ *     is) and the solution backend mediates every ccaas call.
+ *   - The browser must never see the ccaas key.
+ *
+ * Prior to this controller, the creator app's `useProjectChanges` hook
+ * opened `EventSource('http://ccaas:3001/projects/:id/changes?token=...')`
+ * direct from the browser with the ccaas key pasted into localStorage.
+ * Wrong shape — it leaked the solution's master key onto every operator's
+ * machine and broke the "browser belongs to the solution" boundary.
+ *
+ * This controller replaces that path. The browser hits a relative
+ * `/api/projects/:id/changes` (or `/invalidate`); we open an upstream
+ * connection to ccaas with the env-var key and pipe events back.
+ *
+ * **Auth model today**: live-lesson's existing controllers are anonymous
+ * (no @UseGuards on classroom / project / lesson). That's the solution's
+ * current auth posture. Tighter auth (cookie session, JWT) is a
+ * solution-author concern, not this controller's. When live-lesson adds
+ * an auth guard, slap it on here too.
+ *
+ * **Env**:
+ *   - `CCAAS_URL`         — base URL for ccaas (default `http://localhost:3001`)
+ *   - `CCAAS_API_KEY`     — the solution's ccaas tenant API key (required;
+ *                           controller throws 503 if unset so the operator
+ *                           notices on the first request rather than later)
+ */
+
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Logger,
+  Param,
+  Post,
+  ServiceUnavailableException,
+  Sse,
+  type MessageEvent,
+} from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Observable } from 'rxjs';
+
+const DEFAULT_CCAAS_URL = 'http://localhost:3001';
+
+@ApiTags('ccaas-proxy')
+@Controller('projects/:projectId')
+export class CcaasProxyController {
+  private readonly logger = new Logger(CcaasProxyController.name);
+
+  /**
+   * Live SSE feed of agent-runtime ChangeEvents for `projectId`, proxied
+   * from ccaas. The upstream connection uses the solution's CCAAS_API_KEY
+   * env var as the `?token=` auth (Phase 2b-2). Client disconnect aborts
+   * the upstream connection via AbortController.
+   */
+  @Get('changes')
+  @Sse('changes')
+  @ApiOperation({
+    summary: 'Proxy ccaas SSE change feed (browser never holds the ccaas key)',
+  })
+  @ApiParam({ name: 'projectId', type: String })
+  changes$(@Param('projectId') projectId: string): Observable<MessageEvent> {
+    const { url, key } = this.resolveCcaas();
+    const upstreamUrl =
+      `${url}/projects/${encodeURIComponent(projectId)}/changes?token=${encodeURIComponent(key)}`;
+
+    return new Observable<MessageEvent>((subscriber) => {
+      const controller = new AbortController();
+      let cancelled = false;
+
+      void (async () => {
+        let res: Response;
+        try {
+          res = await fetch(upstreamUrl, {
+            method: 'GET',
+            headers: { Accept: 'text/event-stream' },
+            signal: controller.signal,
+          });
+        } catch (err) {
+          if (cancelled) return; // expected — caller closed the stream
+          subscriber.error(this.wrapUpstreamError('connect', err));
+          return;
+        }
+        if (!res.ok) {
+          // ccaas returned 401/403/404; surface a single error event so
+          // the browser sees it as an Observable error (NestJS @Sse will
+          // close the connection on Observable error).
+          subscriber.error(
+            new Error(
+              `ccaas upstream ${res.status} for project ${projectId}: ${await this.readErrorBody(res)}`,
+            ),
+          );
+          return;
+        }
+        if (!res.body) {
+          subscriber.error(new Error('ccaas upstream has no body'));
+          return;
+        }
+        try {
+          await this.pumpSse(res.body, subscriber, () => cancelled);
+        } catch (err) {
+          if (!cancelled) subscriber.error(this.wrapUpstreamError('stream', err));
+        } finally {
+          if (!cancelled) subscriber.complete();
+        }
+      })();
+
+      // Teardown: client disconnected (browser closed the EventSource).
+      // Abort the upstream so we don't leak the inbound connection.
+      return () => {
+        cancelled = true;
+        controller.abort();
+      };
+    });
+  }
+
+  /**
+   * Request an early sync flush from ccaas. Useful when the GUI just
+   * persisted a change and wants the agent to see it before the next
+   * turn boundary. Fire-and-forget on the client side; we await the
+   * upstream POST so the response code reflects success or failure.
+   */
+  @Post('invalidate')
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Proxy ccaas invalidate (early-sync hint) for the project',
+  })
+  @ApiParam({ name: 'projectId', type: String })
+  async invalidate(
+    @Param('projectId') projectId: string,
+  ): Promise<{ accepted: boolean }> {
+    const { url, key } = this.resolveCcaas();
+    const upstreamUrl =
+      `${url}/projects/${encodeURIComponent(projectId)}/invalidate?token=${encodeURIComponent(key)}`;
+    let res: Response;
+    try {
+      res = await fetch(upstreamUrl, { method: 'POST' });
+    } catch (err) {
+      throw this.wrapUpstreamError('connect', err);
+    }
+    if (!res.ok) {
+      this.logger.warn(
+        `ccaas invalidate upstream ${res.status} for project ${projectId}`,
+      );
+      // The browser doesn't need to know upstream failed for an
+      // "optional optimization" call. Return 202 with accepted: false.
+      return { accepted: false };
+    }
+    return { accepted: true };
+  }
+
+  /**
+   * Resolve env + assert the ccaas key is configured. We fail loud here
+   * (503) rather than letting the upstream call reject with an opaque
+   * "Invalid or expired token" — the operator gets a clear "set
+   * CCAAS_API_KEY in your env" pointer on the first request instead
+   * of a confusing 401 from the wrong layer.
+   */
+  private resolveCcaas(): { url: string; key: string } {
+    const key = process.env.CCAAS_API_KEY;
+    if (!key) {
+      throw new ServiceUnavailableException(
+        'CCAAS_API_KEY env var is not set on the live-lesson backend; ' +
+        'ccaas proxy endpoints cannot serve until it is configured.',
+      );
+    }
+    const url = (process.env.CCAAS_URL ?? DEFAULT_CCAAS_URL).replace(/\/+$/, '');
+    return { url, key };
+  }
+
+  /**
+   * Drain an SSE response body and forward each event block to the
+   * subscriber as a NestJS `MessageEvent`. Stops early if `isCancelled()`
+   * returns true (set by the teardown function on client disconnect).
+   *
+   * SSE framing: events are separated by blank lines. Each block has
+   * lines like `id: 1`, `event: <name>`, `data: <payload>`. We only
+   * forward `data` (NestJS rebuilds the framing on the outbound side).
+   * Multi-line `data:` are concatenated with `\n` per the spec.
+   */
+  private async pumpSse(
+    body: ReadableStream<Uint8Array>,
+    subscriber: { next(v: MessageEvent): void },
+    isCancelled: () => boolean,
+  ): Promise<void> {
+    const reader = body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    try {
+      while (true) {
+        if (isCancelled()) return;
+        const { value, done } = await reader.read();
+        if (done) return;
+        buffer += decoder.decode(value, { stream: true });
+        // Process whole event blocks; a block ends at a blank line
+        // (\n\n in the buffer). Leftover partial block stays in buffer.
+        let idx: number;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+          const block = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const dataLines: string[] = [];
+          for (const line of block.split('\n')) {
+            // Skip comment lines (start with `:`) and any non-data fields
+            // — the framing is reconstructed by NestJS @Sse on outbound,
+            // but we keep `id` if present so re-subscribe semantics carry.
+            if (line.startsWith('data:')) {
+              dataLines.push(line.slice(5).replace(/^ /, ''));
+            }
+          }
+          if (dataLines.length > 0) {
+            const data = dataLines.join('\n');
+            // Try to parse as JSON; ccaas always emits JSON, but if
+            // upstream ever sends a raw string we forward it verbatim.
+            let parsed: unknown = data;
+            try {
+              parsed = JSON.parse(data);
+            } catch {
+              /* keep raw */
+            }
+            subscriber.next({ data: parsed as Record<string, unknown> });
+          }
+        }
+      }
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  private async readErrorBody(res: Response): Promise<string> {
+    try {
+      const text = await res.text();
+      // Cap to avoid logging multi-MB error pages.
+      return text.length > 512 ? `${text.slice(0, 512)}…` : text;
+    } catch {
+      return '<no body>';
+    }
+  }
+
+  private wrapUpstreamError(phase: 'connect' | 'stream', err: unknown): Error {
+    const msg = err instanceof Error ? err.message : String(err);
+    return new Error(`ccaas upstream ${phase} failed: ${msg}`);
+  }
+}

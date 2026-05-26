@@ -5,12 +5,17 @@ import { ProjectFile } from '../adapters/persistence/entities/project-file.entit
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
+import { CcaasProxyController } from '../adapters/http/ccaas-proxy.controller';
 import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/lesson.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([CourseProject, ProjectFile, Lesson])],
-  controllers: [ProjectController],
+  // CcaasProxyController shares the `projects/:projectId` prefix with
+  // ProjectController. They add disjoint routes — proxy adds `changes`
+  // (SSE) + `invalidate`; project controller owns CRUD + files +
+  // artifacts — so the shared prefix is safe.
+  controllers: [ProjectController, CcaasProxyController],
   providers: [
     ProjectService,
     // Port → adapter wiring missed when ProjectService was migrated to the
