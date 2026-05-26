@@ -6,6 +6,7 @@ import { CourseProject } from '../adapters/persistence/entities/course-project.e
 import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
+import { ManifestSchema } from '../schemas';
 
 // ── Mock repository factory ──
 
@@ -63,6 +64,36 @@ describe('ProjectService', () => {
       expect(savedFiles).toHaveLength(2);
       expect(savedFiles[0].path).toBe('plan/lesson-plan.md');
       expect(savedFiles[1].path).toBe('execution/manifest.json');
+    });
+
+    it('scaffolded manifest passes ManifestSchema validation', async () => {
+      // Defends against regressions where someone tweaks the example
+      // step in a way that no longer passes the publish-time Zod
+      // validator. If this breaks, fresh projects can't be published
+      // until the agent re-edits — confusing first-run experience.
+      projectRepo.save.mockResolvedValueOnce({ id: 'p1', title: 'Sample', description: '' });
+
+      await service.create({ title: 'Sample' });
+
+      const savedFiles = fileRepo.save.mock.calls[0][0];
+      const manifestFile = savedFiles.find((f: { path: string }) => f.path === 'execution/manifest.json');
+      expect(manifestFile).toBeDefined();
+      const parsed = JSON.parse(manifestFile.content);
+      const result = ManifestSchema.safeParse(parsed);
+      if (!result.success) {
+        // Surface the Zod issues so a failure diagnoses itself.
+        throw new Error(
+          'scaffold manifest failed ManifestSchema validation:\n' +
+            result.error.issues
+              .map((i) => `  ${i.path.join('.')}: ${i.message}`)
+              .join('\n'),
+        );
+      }
+      expect(parsed.id).toBe('p1');
+      expect(parsed.readingSteps).toHaveLength(1);
+      // Example step should be flagged as replaceable so the agent
+      // and teacher both know it's template-only.
+      expect(parsed.readingSteps[0].label).toMatch(/TODO/i);
     });
   });
 

@@ -42,13 +42,49 @@ export class ProjectService {
       this.fileRepo.create({
         projectId: saved.id,
         path: 'execution/manifest.json',
+        // Scaffold with ONE quiz example so the agent has a concrete
+        // pattern to extend rather than authoring an 11-type-aware
+        // answerKey from zero. The placeholder text + 'TODO: replace
+        // or delete' note signals to both the agent and the teacher
+        // that the example is template-only.
         content: JSON.stringify({
           id: saved.id,
           title: dto.title,
           subject: '',
           gradeLevel: '',
           lessonType: 'interactive',
-          readingSteps: [],
+          readingSteps: [
+            // Single quiz example — schema-valid so a fresh project is
+            // already publishable + classroom-ready. Agent uses this as
+            // a concrete pattern to extend instead of authoring an
+            // 11-type-aware answerKey from zero. The 'TODO' label
+            // signals to both agent and teacher that it's template-only.
+            //
+            // Required fields per ManifestSchema:
+            //   ReadingStep: id, idx (others optional)
+            //   QuizAnswerItem: questionIdx, questionText, options (>=2), correct
+            //
+            // Convention (per demo lessons): questionIdx is ZERO-INDEXED
+            // (matches how QuizGrader indexes studentAnswers[a.questionIdx]).
+            // correct is also zero-indexed into options[].
+            {
+              id: 'step-1',
+              idx: 1,
+              label: 'TODO: replace or delete this example step',
+              type: 'task',
+              answerKey: {
+                type: 'quiz',
+                answers: [
+                  {
+                    questionIdx: 0,
+                    questionText: 'Example question — change me',
+                    options: ['Option A', 'Option B', 'Option C'],
+                    correct: 0,
+                  },
+                ],
+              },
+            },
+          ],
         }, null, 2),
         fileType: 'json',
       }),
