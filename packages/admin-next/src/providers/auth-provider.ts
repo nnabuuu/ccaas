@@ -1,8 +1,7 @@
 import type { AuthProvider } from '@refinedev/core'
+import { ADMIN_API_KEY_STORAGE as API_KEY_STORAGE } from '@kedge-agentic/common'
 import { apiClient } from '@/lib/api-client'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-
-const API_KEY_STORAGE = 'admin_api_key'
 
 export const authProvider: AuthProvider = {
   login: async ({ apiKey }: { apiKey: string }) => {

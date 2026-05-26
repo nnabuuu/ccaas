@@ -11,3 +11,6 @@ export * from './types';
 
 // Re-export Zod schemas for runtime validation
 export * from './schemas';
+
+// Cross-package constants (admin-app conventions, etc.)
+export * from './constants';

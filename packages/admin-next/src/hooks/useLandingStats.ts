@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ADMIN_API_KEY_STORAGE } from '@kedge-agentic/common'
 import { apiClient } from '@/lib/api-client'
 
 interface LandingStats {
@@ -12,7 +13,7 @@ export function useLandingStats() {
   const [stats, setStats] = useState<LandingStats | null>(null)
 
   useEffect(() => {
-    const apiKey = localStorage.getItem('admin_api_key')
+    const apiKey = localStorage.getItem(ADMIN_API_KEY_STORAGE)
     if (!apiKey) return
 
     apiClient

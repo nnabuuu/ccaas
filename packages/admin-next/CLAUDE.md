@@ -58,10 +58,12 @@ src/
 
 ## Authentication
 
-- API key stored in localStorage (`admin_api_key`)
+- API key stored in localStorage under `ADMIN_API_KEY_STORAGE` (the constant is `'admin_api_key'`; imported from `@kedge-agentic/common`)
 - Validated against `/admin/dashboard/summary`
 - Two scopes: **admin** (full access) and **builder** (limited to tenants + api-keys)
 - Builder users route to `/builder/tenants` endpoint
+
+**Admin-only convention.** This localStorage key is specific to the admin app. Solution clients (creator apps, student frontends) MUST NOT use it — end users belong to the solution, not to ccaas, so their browser never holds a ccaas key. Solution backends hold one `CCAAS_API_KEY` per tenant in a server-side env var and proxy ccaas calls on the browser's behalf.
 
 ## Refine Providers
 
