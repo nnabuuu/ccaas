@@ -428,16 +428,36 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 后端 `/projects/:projectId/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
 
-参考实现：`solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` —— 一个 React hook，内部用 `EventSource` 订阅，过滤掉 heartbeat / subscribed / 自己的 gui 写入，把剩下的 agent 事件返回给 UI：
+**关键设计原则**：浏览器**永远不持有 ccaas key**。原因是 ccaas 只认 tenant，而每个 solution 后端就是一个 tenant —— ccaas key 是 solution 后端的，不是终端用户的。终端用户走 solution 自己的鉴权（cookie / session / JWT / 任何 solution 自己的方案），solution 后端代理所有 ccaas 调用。
+
+具体到 SSE：
+
+```
+[browser]
+  → GET /api/projects/:id/changes              # 相对路径，走 solution 后端
+[solution backend (live-lesson :3007)]
+  → 验证终端用户身份（solution 自己的逻辑）
+  → 验证该用户能访问这个 project
+  → opens upstream EventSource:
+      GET ${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}
+[ccaas (:3001)]
+  → ProjectAccessGuard 验证 token + tenant 拥有 project
+  → SSE stream
+```
+
+solution 后端的代理实现见 `solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts`。env 变量：
+- `CCAAS_URL`（默认 `http://localhost:3001`）—— ccaas 的 base URL
+- `CCAAS_API_KEY`（必填）—— solution tenant 的 ccaas API key
+
+参考浏览器侧实现：`solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` —— React hook，内部用 `EventSource` 订阅相对路径，过滤掉 heartbeat / subscribed / 自己的 gui 写入，把剩下的 agent 事件返回给 UI：
 
 ```tsx
 import { useProjectChanges } from './hooks/useProjectChanges';
 
 function ProjectEditorPage({ projectId }) {
-  // Phase 2b-2: 第二个参数是 ccaas API key（query-param token）。
-  // 通常从 localStorage 读：localStorage.getItem('ccaas:apiKey')。
-  const apiKey = localStorage.getItem('ccaas:apiKey');
-  const { events, isConnected, error } = useProjectChanges(projectId, apiKey);
+  // 浏览器侧零 ccaas key。hook 内部 fetch 的是 `/api/projects/:id/changes`，
+  // 由 solution 后端代理到 ccaas。
+  const { events, isConnected, error } = useProjectChanges(projectId);
   // events 里只剩下 source==='agent' 的 changes；包括 actor==='conflict-agent-wins'
   return <ProjectChangeNotice events={events} ... />;
 }
@@ -445,7 +465,7 @@ function ProjectEditorPage({ projectId }) {
 
 `ProjectChangeNotice` 组件按 actor / kind 着色（红 = conflict-agent-wins，黄 = updated，橙 = deleted）+ 提供 [Reload]/[Dismiss] 按钮。Reload 不会自动跑 —— user 必须显式点，避免覆盖 user 未保存的改动。
 
-URL 路由：creator app 通过 `import.meta.env.VITE_CCAAS_URL`（默认 `http://localhost:3001`）直连 ccaas，不走 Vite proxy（proxy 只代理 `/api/*` 到 solution backend :3007）。
+URL 路由：creator app 用相对路径 `/api/projects/...`，Vite proxy 把 `/api/*` 转给 solution backend :3007；solution backend 再代理到 ccaas :3001。生产环境用 nginx / Caddy 等反向代理实现同样的路由。
 
 ## 旧的 `sync/`（Phase 0 接口骨架，仍然存在）
 

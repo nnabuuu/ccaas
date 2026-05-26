@@ -427,16 +427,36 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 The backend `/projects/:projectId/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
 
-Reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` — a React hook that uses `EventSource` to subscribe, filters out heartbeat / subscribed / own-gui writes, and returns agent-side events to the UI:
+**Critical design rule**: the browser **never holds a ccaas key.** ccaas knows tenants, not end users — each solution backend is one tenant and holds the one ccaas key. End users belong to the solution, not to ccaas. They authenticate to the solution backend (using whatever the solution's own auth is — cookie session, JWT, anything) and the solution backend mediates every ccaas call.
+
+Concretely for SSE:
+
+```
+[browser]
+  → GET /api/projects/:id/changes              # relative path; hits solution backend
+[solution backend (live-lesson :3007)]
+  → verifies the browser user (solution's own auth)
+  → verifies the user can access this project
+  → opens upstream EventSource:
+      GET ${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}
+[ccaas (:3001)]
+  → ProjectAccessGuard verifies token + tenant owns the project
+  → SSE stream
+```
+
+The solution-side proxy implementation lives at `solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts`. Env vars:
+- `CCAAS_URL` (default `http://localhost:3001`) — the base URL for ccaas
+- `CCAAS_API_KEY` (required) — the solution tenant's ccaas API key
+
+Browser-side reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` — a React hook that uses `EventSource` to subscribe to the relative path, filters out heartbeat / subscribed / own-gui writes, and returns agent-side events to the UI:
 
 ```tsx
 import { useProjectChanges } from './hooks/useProjectChanges';
 
 function ProjectEditorPage({ projectId }) {
-  // Phase 2b-2: the second arg is the ccaas API key (the SSE endpoint's
-  // ?token=… auth). Read it from localStorage in dev:
-  const apiKey = localStorage.getItem('ccaas:apiKey');
-  const { events, isConnected, error } = useProjectChanges(projectId, apiKey);
+  // Zero ccaas key on the browser. The hook fetches
+  // /api/projects/:id/changes, proxied by the solution backend.
+  const { events, isConnected, error } = useProjectChanges(projectId);
   // `events` contains only source==='agent' changes, including
   // actor==='conflict-agent-wins' (when an agent edit overrode a GUI edit).
   return <ProjectChangeNotice events={events} ... />;
@@ -445,7 +465,7 @@ function ProjectEditorPage({ projectId }) {
 
 `ProjectChangeNotice` color-codes by actor / kind (red = conflict-agent-wins, yellow = updated, orange = deleted) and offers [Reload]/[Dismiss] buttons. Reload never runs automatically — the user must click it explicitly to avoid losing unsaved edits.
 
-URL routing: the creator app reads `import.meta.env.VITE_CCAAS_URL` (default `http://localhost:3001`) to talk to ccaas directly. The Vite `/api/*` proxy only routes to the solution backend on :3007.
+URL routing: the creator app uses relative `/api/projects/...` paths. In dev, the Vite `/api/*` proxy routes to the solution backend on :3007; the solution backend then proxies to ccaas on :3001. In production, a reverse proxy (nginx / Caddy / etc.) does the same routing.
 
 ## Legacy `sync/` (Phase 0 interface skeleton, still present)
 
