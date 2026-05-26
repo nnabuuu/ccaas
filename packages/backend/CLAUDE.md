@@ -53,6 +53,7 @@ The sessions module contains the new runtime layer. See **[gitbook → Runtime �
 | Base materializer | (extracted) `@kedge-agentic/agent-runtime` package (workspace sub-module) | DB skills → disk projection for agentfs `--base` overlay |
 | TypeORM adapter | `src/sessions/workspace/typeorm-skill-content-source.ts` | implements `ContentSource` over our Skill/SkillFile/McpServer entities |
 | Per-session asset seed | `src/sessions/services/session-asset-materializer.service.ts` | copies `SOLUTION_DIRS[slug]/{entities,resources}/` into each session's workspace root |
+| Binary artifact mount (Phase 2b-4) | `<workspace>/artifacts-binary/` (sibling of `<workspace>/artifacts/` for text) | bytes from solutions that implement `BinaryArtifactSource`; deliberately **not visible to agent `Read` / `cat`** so a JPEG can't be streamed into context |
 | Bash sandbox | `src/sessions/sandbox/sandbox.service.ts` + `just-bash-mcp/server.mjs` | injects `__ccaas_bash` MCP server, denies native Bash, steers via system prompt |
 | Runtime fs API | `src/sessions/session-fs.controller.ts` + `services/session-fs.service.ts` | REST: `/sessions/:id/fs/{diff,timeline,snapshot,rollback}` (agentfs only) |
 | Runtime meta API | `src/sessions/session-metadata.controller.ts` + `services/session-metadata.service.ts` + `entities/session-metadata.entity.ts` | REST: `/sessions/:id/meta[/:key]` CRUD (provider-agnostic) |
@@ -95,6 +96,25 @@ npm run start:prod             # Run compiled version
 npm run typecheck              # Type check only
 npm run skill:import -- <name> # Register solution skills
 ```
+
+### End-to-end agent-runtime smoke
+
+`solutions/business/live-lesson-creator/scripts/poc-smoke.sh` is the canonical end-to-end test for the agent-runtime sync layer (`bind-project` → bootstrap → SSE change events). Needs both backends running:
+
+```bash
+# terminal 1: ccaas (load all solutions from SOLUTIONS_DIR)
+SOLUTIONS_DIR=$(pwd)/solutions/business AUTH_ALLOW_ANONYMOUS=true \
+  WORKSPACE_PROVIDER=local node packages/backend/dist/src/main.js
+
+# terminal 2: live-lesson backend on :3007
+cd solutions/business/live-lesson/backend && node dist/main.js
+
+# terminal 3: the smoke
+bash solutions/business/live-lesson-creator/scripts/poc-smoke.sh
+# expects exit 0 + "✓ end-to-end PoC passed: N change events delivered" (N ≥ 2)
+```
+
+The script auto-mints a tenant-scoped API key (`scripts/create-dev-api-key.ts <slug> --raw-only`) for the Phase 2b-2 `?token=…` SSE auth. Set `CCAAS_API_KEY=<key>` to use a pre-existing key instead.
 
 ## Important Notes
 

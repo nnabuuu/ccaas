@@ -12,8 +12,8 @@
 | **`solution.json` auto-import (skills from `skills/*` glob)** | **OK — added in follow-up** |
 | live-lesson `GET /api/projects/:id/artifacts` | OK |
 | live-lesson `PUT /api/projects/:id/artifacts` | OK — content round-trips through `project_files.content` |
-| ccaas `GET /projects/:id/changes` SSE subscriber stream | OK — sends `subscribed` event on open |
-| ccaas `POST /projects/:id/invalidate` (trigger early sync) | OK — returns `{accepted: N}` (`N=0` when no session bound) |
+| ccaas `GET /projects/:id/changes` SSE subscriber stream | OK — `?token=<apiKey>` required (Phase 2b-2); sends `subscribed` event on open |
+| ccaas `POST /projects/:id/invalidate` (trigger early sync) | OK — `?token=<apiKey>` required; returns `{accepted: N}` (`N=0` when no session bound) |
 | **ccaas `POST /sessions/:id/bind-project` endpoint** | **OK — added in follow-up** |
 | **Bootstrap sync delivers SSE `updated` events on bind** | **OK — verified end-to-end in `scripts/poc-smoke.sh`** |
 | Agent session reads + edits manifest via Claude CLI | Not yet — needs an actual Claude CLI subscription / API key (real LLM call) |
@@ -31,6 +31,35 @@ All three blockers from the first PoC pass are now fixed:
 3. **`SessionMetadata` entity registration**: was missing from `TypeOrmModule.forRoot()` entities list in `app.module.ts` (declared in `SessionsModule` `forFeature` but not at the root) — caused `EntityMetadataNotFoundError` on the first `bindToProject` call. Added to the root entity list.
 
 Plus the operational helper `scripts/poc-smoke.sh` does the full sequence end-to-end + asserts the SSE events arrived. Run it any time to re-verify after a refactor.
+
+## Phase 2b-2 update (2026-05-26): SSE auth + corrected URL
+
+Phase 2b-2 added query-param token auth to the agent-runtime SSE feed. Two concrete changes:
+
+1. **`?token=<apiKey>` is now required** on both `/projects/:id/changes` (SSE) and `/projects/:id/invalidate`. Missing/invalid token → 401; token's tenant must match the project's owning tenant → else 403. `EventSource` can't set HTTP headers, hence the query-param convention.
+
+2. **The SSE/invalidate endpoints live at the bare namespace** (`/projects/:id/changes`), NOT under `/api/v1/` like the sessions controller. The route is `@Controller('projects/:projectId')` at `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts`. Earlier creator code that hit `/api/v1/projects/...` was broken; fixed in `solutions/business/live-lesson/creator/src/api/projects.ts` (`getChangesStreamUrl`).
+
+**How the project → tenant resolution works (deviation from original 2b-2 plan)**: instead of a per-solution `LiveLessonProjectTenantResolver` + `CourseProject.tenantId` migration, ccaas ships `SessionMetadataProjectTenantResolver` that reads the `(tenantId, projectId)` link already persisted by `bind-project` into `session_metadata`. Pros: zero per-solution work, one indexed SQLite lookup. Trade-off: projects with no session ever bound resolve to null → 403 (caller must bind a session before subscribing). Header doc lives in `packages/backend/src/sessions/agent-runtime/session-metadata-project-tenant-resolver.ts`.
+
+**Smoke flow updated** (more than the auth change — required by the timing of SSE auth):
+
+The original smoke opened SSE BEFORE bind-project. That worked because there was no auth. With 2b-2's auth, the SSE handshake requires the `(tenantId, projectId)` row in `session_metadata` to exist already — which only happens after `bind-project`. So the ordering had to flip. The current flow:
+
+1. Create project on live-lesson; mint API key for tenant.
+2. POST first message → auto-creates session (~7s, LLM-bound).
+3. POST `/sessions/:id/bind-project` → writes metadata row + fires async bootstrap sync (whose events fire before any SSE is connected — these are intentionally "missed").
+4. Sleep briefly (metadata-commit + bootstrap settle).
+5. Open SSE with `?token=…` → auth passes (metadata row exists) → `subscribed` event.
+6. PUT new manifest content to live-lesson (simulating a GUI edit on the project).
+7. POST `/projects/:id/invalidate?token=…` → ccaas re-syncs, diff finds the edit, publishes `updated` event.
+8. Assert ≥1 `updated` event landed on SSE.
+
+This proves the actual interesting end-to-end path (GUI edit → ccaas re-sync → SSE delivers change to subscriber) rather than the original "bootstrap fires events the subscriber happened to be listening to." Auth-aware and more representative of how a creator UI would consume changes.
+
+The mint path shells out to `packages/backend/scripts/create-dev-api-key.ts <tenant-slug> --raw-only`. The smoke and the running ccaas backend must use the same SQLite file; both default to `packages/backend/.agent-workspace/data.db` (npm-workspace CWD convention). Set `CCAAS_DB_PATH=<absolute-path>` if your backend was started from a different CWD.
+
+**Caveat (Phase 3 hardening)**: query-param tokens leak to access logs. Acceptable in single-tenant dev / prod-with-trusted-network. For true multi-tenant prod, a short-lived exchange token (e.g. `POST /sessions/exchange`) is the right hardening — out of scope here.
 
 ## Original glue items (now historical — kept for context)
 

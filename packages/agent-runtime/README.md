@@ -21,7 +21,10 @@ on NestJS, TypeORM, or Express — just `node:fs` / `node:crypto` /
 | **1** | **pull-based bidirectional sync — `ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`. Backend ships `SessionAssetSyncer` orchestrator hooked at agent turn boundaries.** | ✅ **shipped (this version)** |
 | **1.5** | tenant-keyed routing (later recanted into Phase 1.6 — see below) | ⚠️ superseded |
 | **1.6** | **`solution.json` + auto-discovery: solutions declare `artifactUrl` in their config file; `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and writes through to `tenant.config.artifactUrl`. Registry caches per slug + invalidates via `tenant.config.changed` event. Runtime updates via `PUT /tenants/:id` take effect on next sync without restart.** | ✅ **shipped** |
-| 2 | Redis-backed `ChangeStream` (cross-process fanout); `BinaryArtifactSource`; `MarkdownArtifactEditor`; Zod schema adapter | ⏳ next |
+| **2b-1** | **Path normalization round-trip — `SaveArtifactResult.canonicalPath` so solutions can return their normalized path; snapshot + change events use the canonical form to avoid silent delete-then-recreate when the solution path-normalizes server-side.** | ✅ **shipped** |
+| **2b-2** | **SSE auth (ccaas-side wiring): `?token=<apiKey>` on `/projects/:id/changes` + `/invalidate`; `ProjectTenantResolver` port (default `DenyAll`); ccaas ships `SessionMetadataProjectTenantResolver` using the bind-project `session_metadata` row for project→tenant resolution.** | ✅ **shipped** |
+| **2b-4** | **`BinaryArtifactSource` port + sync engine binary actions (`SyncEngine.planBinary`) + REST adapter (`RestBinaryArtifactSource`, octet-stream streaming, size-cap enforced pre-buffer) + syncer materialization into `artifacts-binary/` (sibling of `artifacts/`, isolated from agent `Read`).** | ✅ **shipped** |
+| 2 (rest) | Redis-backed `ChangeStream` (cross-process fanout); `MarkdownArtifactEditor`; Zod schema adapter | ⏳ next |
 | 3 | live-lesson full migration onto the new abstractions | ⏳ last |
 
 ## Import paths

@@ -328,9 +328,87 @@ curl -X PUT $CCAAS/api/v1/tenants/$ID \
 ### REST endpoints（GUI 用的）
 
 ```
-GET   /api/v1/projects/:projectId/changes    # SSE — 监听 ChangeEvent
-POST  /api/v1/projects/:projectId/invalidate # 提前请求一次 sync（可选优化）
+GET   /projects/:projectId/changes    # SSE — 监听 ChangeEvent
+POST  /projects/:projectId/invalidate # 提前请求一次 sync（可选优化）
 ```
+
+注意：这两个 endpoint **挂在 bare namespace**（不在 `/api/v1/` 下面）—— 跟 `sessions` controller 不同。代码见 `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts:@Controller('projects/:projectId')`。
+
+### 认证（Phase 2b-2）
+
+两个 endpoint 都需要 `?token=<apiKey>` query param：
+
+```
+GET   /projects/:projectId/changes?token=ccaas_xxxx
+POST  /projects/:projectId/invalidate?token=ccaas_xxxx
+```
+
+为什么是 query param 而不是 `Authorization` header？因为浏览器的 `EventSource` 不支持自定义 header —— 这是 W3C 规范限制，不是 ccaas 实现的选择。
+
+校验链：
+
+1. `ApiKeyService.validateKey(token)` 解出 caller 的 tenant
+2. `ProjectTenantResolver.resolveTenant(projectId)` 查出 project 归属的 tenant
+3. 两者必须一致，否则 403；resolver 返回 null（project 未知 / 无 resolver 注册）也是 403；token 缺失或无效是 401
+
+**`ProjectTenantResolver` port**：solution 可以注册自己的 resolver（比如查自己的 project 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
+
+**ccaas 默认 resolver（`SessionMetadataProjectTenantResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `bind-project` 流程已经写到 `session_metadata` 表里的 `(tenantId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。
+
+- ✅ pro：solution 端不需要加 `tenantId` column / 不需要写新 endpoint / 不需要跨进程回调
+- ⚠️ trade-off：**从未被 bind-project 过的 project 解析为 null → 403**。caller 必须先 bind 一个 session，才能订阅 SSE。这跟 bind-project 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
+
+要换 resolver 的话，在 SessionsModule 里覆盖 `PROJECT_TENANT_RESOLVER` token 即可。
+
+**安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-tenant dev / prod-with-trusted-network 是可接受的；真正的 multi-tenant 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
+
+### 二进制 artifact（Phase 2b-4）
+
+文本 artifact 走 `ProjectArtifactSource`（content 是 `string`）；图片 / 音频 / PDF 走单独的 `BinaryArtifactSource`（content 是 `Buffer | Uint8Array`）。**两个 port 是独立的** —— 仅文本的 solution 不需要实现 binary port，反之亦然。
+
+为什么独立？
+
+- content 类型不同（string vs Buffer）—— 混在一个 port 里会让每个 consumer 的类型故事都变复杂
+- REST 传输不同 —— 文本是 `application/json`（content inline），binary 是 `application/octet-stream`（streaming via `node:stream/pipeline`，never buffered）
+- 文件系统挂载点不同 —— 文本在 `<workspace>/artifacts/`，binary 在 `<workspace>/artifacts-binary/`。**这个分离是关键 security 边界**：agent 的 `Read` / `cat` 工具只能扫文本目录，永远不会把一张 JPEG slurp 进 context
+
+ccaas 端注册：solution 在 `tenant.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `tenant.config.changed` 失效。可选 `tenant.config.binaryMaxBytes` 设置 per-tenant 大小上限。
+
+Solution 端实现的 REST endpoints：
+
+```
+GET    {base}/projects/:projectId/binary-artifacts
+     # 200: [{ path, type, sizeBytes, contentHash?, attributes? }]
+     # 注意：只返回 metadata，不返回 bytes —— full read 每轮太贵
+     # 如果带 contentHash，runtime 用它直接对比 snapshot；否则
+     # runtime 会调下面那个 endpoint fetch+hash 一次
+
+GET    {base}/projects/:projectId/binary-artifacts?path=<encoded>
+     # 200 application/octet-stream + Content-Length + X-Artifact-Type
+     # 流式下载；ccaas 端用 stream.pipeline 消费，超过 maxBytes 会
+     # 在 drain 之前 abort
+
+PUT    {base}/projects/:projectId/binary-artifacts?path=<encoded>&type=<encoded>
+     # body: application/octet-stream
+     # 200（idempotent）；可选返回 JSON {path} 做 path canonicalization
+     # 跟文本一样（Phase 2b-1）
+
+DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
+     # 200（idempotent；404 视作已删除）
+```
+
+**Sync 行为**：
+
+- 同样的 conflict matrix：agent 写 → save_db_binary；GUI 写 → write_fs_binary_from_listing（fetch on demand）；双写 → agent 赢 + `conflict_agent_wins_binary` event
+- 同一份 `SnapshotStore`，binary 条目带 `artifacts-binary/` 前缀以避免和文本 path collision
+- 同一个 `ChangeStream`，binary event 带 `actor: 'binary'`（或 `actor: 'binary-conflict-agent-wins'`），path 是 binary mount-relative（不带前缀），让 GUI 可以路由到 binary fetch endpoint
+- 同一个 `projectId` mutex —— text 和 binary half 串行执行，避免 race
+
+**未做（Phase 2c 或更晚）**：
+
+- 任何 in-tree solution 都还没实现 binary REST endpoints。Runtime 这一侧完整且 unit-tested，但 end-to-end 跑通要等真有 binary use case 出现
+- Agent 工具的 explicit deny rule（比如显式禁止 `Read` 访问 `artifacts-binary/*`）。今天靠目录分离 + 命名约定就够；显式 deny 是 hardening item
+- 流式上传（PUT 现在用 Blob 包 Buffer）—— 真要传 >100MB 的话再换 stream wrapper
 
 ### Solution 集成两行
 
@@ -348,7 +426,7 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 ### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
 
-后端 `/api/v1/projects/:projectId/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
+后端 `/projects/:projectId/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
 
 参考实现：`solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` —— 一个 React hook，内部用 `EventSource` 订阅，过滤掉 heartbeat / subscribed / 自己的 gui 写入，把剩下的 agent 事件返回给 UI：
 
@@ -356,7 +434,10 @@ sessionsClient.bindToProject(sessionId, projectId);
 import { useProjectChanges } from './hooks/useProjectChanges';
 
 function ProjectEditorPage({ projectId }) {
-  const { events, isConnected, error } = useProjectChanges(projectId);
+  // Phase 2b-2: 第二个参数是 ccaas API key（query-param token）。
+  // 通常从 localStorage 读：localStorage.getItem('ccaas:apiKey')。
+  const apiKey = localStorage.getItem('ccaas:apiKey');
+  const { events, isConnected, error } = useProjectChanges(projectId, apiKey);
   // events 里只剩下 source==='agent' 的 changes；包括 actor==='conflict-agent-wins'
   return <ProjectChangeNotice events={events} ... />;
 }
