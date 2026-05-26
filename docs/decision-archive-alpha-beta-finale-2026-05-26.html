@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>α+β 收尾 · 决定档案 · ccaas · 2026-05-26</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.process{background:var(--surface2);color:var(--t2)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">α+β 收尾 · pre-prod 全改 · 2026-05-26</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">4f3f0dc7..7e085129</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">"什么时候停止 rename" 是这次的核心问题</span>
+    </div>
+    <h1>把"<em>不该改什么</em>"<br>跟"该改什么"一样想清楚。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      α+β 的前几轮把 ccaas-core 从 <em>tenant 词汇</em> 迁到了 <em>solution 词汇</em>，把 <em>project leak</em> 从 ccaas 内部清出去。
+      但为了"安全迁移"保留了 22 处 alias / load-bearing 字符串 —— DB enum 值、deprecated route、npm 包接口字段、event 字符串等等。
+      用户在 2026-05-26 一句话定调:<strong>"其实可以全改，还没有正式上线，以前的数据不要了"</strong>。
+    </p>
+    <p>
+      这把状况从"<em>保守迁移</em>"翻转成"<em>一次性清干净</em>"。但翻转之后真正的工作不是"sed 替换"，而是
+      <strong>反复回答"这一处到底该不该改"</strong> —— 磁盘路径要不要改、wire 格式要不要改、env 变量要不要改、
+      历史文档要不要改。每一处的答案不一样。这份报告记的就是这些判断的<em>理由</em>，
+      不是改了哪些文件(git 已经知道)。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按对话出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 该不该把之前为兼容性保留的 22 处 alias 全删?</h3>
+        </div>
+        <span class="d-scope process">Process · Scope</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">前几轮 α+β refactor 为了 "可能要做数据迁移" 留了 22 处 alias / load-bearing 字符串。我准备进入 "compat window 结束、跑迁移、再删 alias" 这个常规节奏。用户直接打断: "其实可以全改，<strong>还没有正式上线，以前的数据不要了</strong>"。</span>
+        <span class="lbl">约束</span>
+        <span class="val">每一处保留都有 <em>原因</em>: DB <code>SkillScope</code> 是持久化的 enum 值;<code>POST /bind-project</code> 是 solution 已经在用的 route;agent-runtime npm 包接口是<strong>外部</strong>消费者的契约。改这些有真实代价 —— 如果有用户。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保留 22 处。继续走 "ship → compat window → migration → 删 alias" 节奏。安全、慢、多 commit。</span>
+          <span class="opt-verdict">❌ 拒 —— 安全是为不存在的用户买保险。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">一次删干净。22 处 alias + load-bearing 字符串同步改。一个大 commit。</span>
+          <span class="opt-verdict">✓ 选 —— pre-prod 把所有"为兼容"的代价归零。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          "保留 alias 一个 release 让用户迁移" 这套节奏的<strong>前提</strong>是 <em>有用户</em>。
+          没用户的话，alias 不是 "缓冲"，是 <em>永久的双重维护负担</em>:
+          每次写新代码都要想 "用新名还是兼容旧名"，每个新人都要被解释 "为什么这个有两个名字"。
+        </p>
+        <p>
+          用户那一句话不是 "可以激进点"，是 <strong>"前提条件 (pre-prod, no data) 已经满足，
+          所以保留的代价从 0 变成净负"</strong>。这种翻转不需要新分析 —— 之前没改是因为代价 > 收益，
+          现在代价归零了，结果就反过来了。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          代码读起来一致，新人不用学双重词汇表。<code>npm test</code> 跑通即说明 rename 完整。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          任何持有 pre-rename 数据 / 客户端的人无法 talk to 新 ccaas。<em>不能再回到 "全改"</em> 之前的状态了。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">plan</span><code>~/.claude/plans/kind-exploring-mango.md "Final phase"</code>
+        <span class="lbl">commit</span><code>de2621b1</code>
+      </div>
+    </div>
+
+    <!-- D-02 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> "全改" 在哪儿停下?</h3>
+        </div>
+        <span class="d-scope design">Design · Boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-01 给了 "可以全改" 的授权后,出现一个新问题: <em>哪些是真的能改的,哪些是<strong>形式上看似</strong> 但其实改不动的</em>?</span>
+        <span class="lbl">约束</span>
+        <span class="val">磁盘路径 <code>tenants/{slug}/skills/</code> 是 agentfs daemon 跟 ccaas 之间的契约。<code>solution.json</code> 里 <code>"tenant": { name, slug }</code> 是每个 solution 实际 ship 的 wire 格式。<code>CCAAS_API_KEY</code> 是 ops 在 .env 里设的变量名。ADR / CHANGES 是历史记录。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">字面意义的"全改" —— 磁盘路径、wire 格式、env 变量、ADR 一起改。</span>
+          <span class="opt-verdict">❌ 拒 —— 这些每个都有<strong>不同</strong>的"留下来"理由。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">代码层面全改;每一个保留都附 <em>明确理由</em> 写在 deferred list 里。</span>
+          <span class="opt-verdict">✓ 选 —— 区分 "懒得改" 和 "有理由不改"。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          "全改" 的意思不是 <em>所有 'tenant' 字符串都变 'solution'</em>，而是
+          <strong>所有 code-level 内部依赖都改</strong>。代码内部叫什么是项目自己说了算的事;
+          但跨进程契约(磁盘路径)、wire 格式(solution.json)、operator-facing 常量(env)、
+          历史档案(ADR)这四类属于<em>跟其他系统 / 其他时间点</em> 共享的命名 —— 改这些需要协调，
+          而协调 ROI 是 case-by-case 的。
+        </p>
+        <p>
+          这次的判断不是 "改不改"，是 <strong>"哪些边界改一处会牵连到边界外"</strong>。
+          磁盘路径牵连 agentfs daemon;wire 格式牵连每个 ship 出去的 solution.json;
+          env 变量牵连每份部署文档;ADR 牵连历史叙述。这四类都 <em>暂不改</em>，每条都有
+          revisit trigger，没有变成隐式技术债。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          代码内部词汇统一为 solution / workspace。Code review 检查 rename 完整性有明确 ground truth。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          代码 <code>solutionId</code> 跟磁盘路径 <code>tenants/</code> 这种不一致永久存在，直到 deferred 项 trigger。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">summary</span><code>docs/refactor-summary-2026-05-27.html §04</code>
+        <span class="lbl">commit</span><code>de2621b1</code>
+      </div>
+    </div>
+
+    <!-- D-03 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Solution proxy 的 domain 翻译应该放在哪一层?</h3>
+        </div>
+        <span class="d-scope design">Design · Boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">ccaas-core 把 <code>projectId</code> 字段一律改成 <code>sourceIdentity</code>(generic、domain-agnostic)。但 live-lesson <strong>真的有</strong> projects —— browser UI 里那一栏文案是"项目"。如果 browser 也跟着改成 "sourceIdentity"，UI 语义就丢了。</span>
+        <span class="lbl">约束</span>
+        <span class="val">ccaas-core 跟 live-lesson 都是 in-tree、可以一起 ship。但 ccaas-core 应该<em>不知道 "project" 是什么</em>(domain-agnostic 是平台的核心承诺)，live-lesson 的 UI 必须知道(它就是 project editor)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">cascade rename: browser 也用 <code>sourceIdentity</code>。Backend 不做翻译。</span>
+          <span class="opt-verdict">❌ 拒 —— UI 失去 domain 词汇,文案被技术词汇污染。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">live-lesson proxy controller 保留 <code>{projectId}</code> 作为浏览器面;翻译成 <code>{sourceIdentity}</code> 后再 forward 到 ccaas。</span>
+          <span class="opt-verdict">✓ 选 —— 翻译放在 solution backend (boundary),domain 词汇留给 UI。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <em>Solution backend 本来就是 domain ↔ platform 的边界</em> —— 它是这条边界<strong>唯一同时知道两边词汇的层</strong>。
+          翻译放在这一层是<em>定义</em>，不是 ad-hoc 选择。Browser 只跟 solution 说话(用 domain 词)，
+          ccaas 只跟 solution 说话(用 platform 词)。中间这一层是天然的翻译器。
+        </p>
+        <p>
+          反过来如果让 browser 直接用 ccaas 词汇，等于 <strong>让 UI 替平台说话</strong>:
+          以后 ccaas 平台词汇变了(比如 sourceIdentity 改成别的)，每个 solution 的 UI 都要跟着改。
+          翻译层抽离掉这个耦合 —— ccaas 词汇变了，只有 solution backend 的翻译器要改。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每个新 solution 的 proxy controller 都要做这个翻译(每条 send-message 请求 + 每条 attach-workspace-source 请求)。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来需要 browser 直连 ccaas (零 backend)，翻译层无处安放。但 D-04 这条已经在用户的 "API key 不能进浏览器" 原则下封死了。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>solutions/business/live-lesson/backend/src/adapters/http/ccaas-chat-proxy.controller.ts</code>
+        <span class="lbl">commit</span><code>7e085129</code>
+      </div>
+    </div>
+
+    <!-- D-04 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 拆 PR 还是一个大 commit?</h3>
+        </div>
+        <span class="d-scope process">Process · PR Shape</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Plan 文件原本把 final phase 拆成 β-1 (route + DTO) → β-2 (service internals) → β-3 (SSE controller + URL)。Sub-PR 化是给 reviewer 友好的常规节奏。</span>
+        <span class="lbl">约束</span>
+        <span class="val">A-D 几个阶段的改动是 <em>compile-time interdependent</em> —— interface 名改了的话所有 import 都要跟着改;DB enum 值改了的话所有读写都要跟着改。半改 = 编译不过。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">β-1 → β-2 → β-3 拆成 3 个 PR,每个 ~2-5 天,reviewer 友好。</span>
+          <span class="opt-verdict">❌ 拒 —— 每个 PR 单独 standalone 编译都不过,拆完更难 review。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">一个 atomic commit (~87 文件)。Holistic review 在最后做。</span>
+          <span class="opt-verdict">✓ 选 —— 半改不编译,拆 PR 是 fake split。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          "拆 PR 给 reviewer 友好" 这条建议<strong>预设了 PR 可以独立编译</strong>。
+          当代码改动是 type-level interdependent (interface rename + 所有 caller 必须同步改) 的时候，
+          所谓的 "拆" 只能拆成<em>故意半残的中间状态</em>，每个 PR 都跑不起来。这种拆法
+          <strong>对 reviewer 不友好，对 git bisect 有毒</strong>。
+        </p>
+        <p>
+          plan 文件的 β-1/β-2/β-3 拆法<em>本来是为 compat-window 设计的</em> —— 那个场景下每个 PR 加新名 + 保留旧名,
+          可以独立编译。一旦 D-01 把 compat 干掉了，拆法的<em>前提就消失了</em>。所以拆 PR 不是
+          "保守做法"，是"应用错了的做法"。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Review 一次性看全图;rename 完整性的 ground truth 是 <code>tsc --noEmit + jest</code> 都过。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          单 commit 87 文件 git bisect 时不能再细分;但 rename 类 commit 本身基本没有 bisectable 故障模式。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">commit</span><code>de2621b1 (87 files, +2273/-1064)</code>
+      </div>
+    </div>
+
+    <!-- D-05 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Code review 发现 must-fix 该当场修还是 follow-up?</h3>
+        </div>
+        <span class="d-scope process">Process · Review Gate</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">大 commit staged 之后用户问 "code review done?"。我跑 reviewer agent，找到 3 个 must-fix: <code>skill.dto.ts</code> 的 <code>@IsEnum(['tenant','personal'])</code> 漏改(任何带 <code>scope:'solution'</code> 的 POST 会被 validator 拒绝)、<code>RestProjectArtifactSource</code> re-export 没删、admin guard 还在读 <code>x-tenant-id</code> header。</span>
+        <span class="lbl">约束</span>
+        <span class="val">这 3 个 bug 全是 <em>tsc 过、jest 1555 都过</em> 的情况下还存在的 —— test 覆盖盲区。其中 1 个会在 runtime 直接 break (DTO 拒绝所有合法请求)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">先 push 主 commit,follow-up commit 修。快、main 进度看着好看。</span>
+          <span class="opt-verdict">❌ 拒 —— main 上 broken 几小时,任何 pull 的人会撞到。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">当场修,加测试,跑 jest,合到同一个 commit。</span>
+          <span class="opt-verdict">✓ 选 —— review gate 的作用就是 "在落 main 之前"。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Code review 找到的 must-fix 跟 "review 之后想到一个 follow-up improvement" 不是一个范畴的事。
+          前者是 <strong>"这个 commit 在它当前状态下不应该 ship"</strong> —— DTO 拒绝所有合法 POST 是
+          <em>runtime 直接坏</em>。把这个 push 出去等于<strong>故意往 main 放一个 known bad commit</strong>。
+        </p>
+        <p>
+          Follow-up 的合理性建立在 "新的需求 / 新的发现" 上。Review 找到的 must-fix 是
+          <em>review 阶段就该被 block 的 bug</em>。两个 commit 跟一个 commit 在 main history 上的差别很小，
+          但 "好的 main commit" vs "broken main + fix commit" 在<strong>语义上</strong>差很多 —— 后者表示
+          "我们 ship 了 broken 代码 + 然后修了"，前者表示 "ship 之前 review 过"。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Pre-commit review gate 是真正的 gate (能让 commit 不发生)，不是 informational。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Commit 的"时间-完整性"延后了几十分钟，但这正是 review 该花的时间。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>skill.dto.ts · rest-workspace-artifact-source.ts · admin-solution-access.guard.ts</code>
+        <span class="lbl">commit</span><code>de2621b1 (修在同一个 commit)</code>
+      </div>
+    </div>
+
+    <!-- D-06 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> SDK 的 <code>tenantId</code> 是这次一起改，还是 scope-out?</h3>
+        </div>
+        <span class="d-scope design">Design · Surface</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Code review 第二轮指出: ccaas-core <code>X-Solution-Id</code> header + <code>solutionId</code> 字段都改完了，但 <code>react-sdk</code> / <code>vue-sdk</code> 公共 API 还是 <code>tenantId</code> + <code>X-Tenant-Id</code>。这俩包<em>是 ccaas 平台的 public 表面</em>。</span>
+        <span class="lbl">约束</span>
+        <span class="val">SDK rename 不是 ccaas-core 内部改动，而是<strong>每个 SDK 消费者(live-lesson frontend / chat-interface / lesson-plan-designer / ...)的 props / 类型签名都要跟着改</strong>。blast radius 比 D-01 大。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">SDK 这次不动。Backend 是 solution 词汇,SDK 仍是 tenant 词汇 —— 跨包词汇错位。</span>
+          <span class="opt-verdict">❌ 拒 —— 永久性的双词汇债，每个新 SDK 用户要被解释一次。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">SDK + 所有 in-tree 消费者一起改 (~16 SDK 文件 + 3 consumer 文件)。一个 commit 内。</span>
+          <span class="opt-verdict">✓ 选 —— blast 可控,跟 D-01 同理(pre-prod, 没出 ship 的消费者)。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          D-01 的 "全改" 决定不局限在 ccaas-core 一个 package。<strong>整个平台对外暴露的词汇</strong>
+          需要一致 —— 否则 SDK 文档跟 backend 文档会用不同的词，每个用户都要在 mental model 里维护翻译表。
+          这种 <em>cross-package 词汇债</em> 不会自己消失，只会越来越贵。
+        </p>
+        <p>
+          SDK 的 blast radius (~3 个 in-tree consumer) 是<strong>这次特别便宜</strong>的窗口 ——
+          consumer 是 in-tree、能一起 ship。一旦有第一个 out-of-tree 消费者(未来某个 solution 用 SDK 但
+          repo 在别处)，rename 就会变成 breaking change，要走 deprecation。所以
+          <em>"现在改"</em> 是 "便宜窗口里改" 的最后机会。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          SDK + backend + UI 词汇统一。<code>X-Solution-Id</code> 是<em>整个平台</em>认的 header。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          任何<em>当前不在 repo 里</em>的 SDK 消费者(假设的)会被这次 breaking change 影响。但这个 set 当前是空。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/react-sdk/src/ · packages/vue-sdk/src/ · live-lesson/frontend/useLiveLesson.ts</code>
+        <span class="lbl">commit</span><code>7e085129</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">5 项 · 每条带 revisit trigger</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>BaseMaterializer 磁盘路径 <code>tenants/{slug}/skills/</code></h4>
+        <p><span class="lbl">现状</span>变量名是 <code>solutionId</code>，磁盘上的目录路径仍然写 <code>tenants/{slug}/skills/</code>。inconsistency 永久存在。</p>
+        <p><span class="lbl">推迟理由</span>这条路径是 agentfs daemon 跟 ccaas overlay base 的契约。改名意味着 daemon side 的 base-overlay 配置要同步改，还要清掉所有现存的 <code>_agentfs_base</code> dirs。这次改动收益(命名一致)对比代价(跨 daemon 协调 + 清盘)严重不成比例。</p>
+        <p><span class="lbl">重新审视的触发</span>下一次 agentfs daemon 因其他原因要做 base-overlay schema 变更的时候，顺手一起改。或者出现因为路径不一致导致的实际 bug。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4><code>solution.json</code> wire schema 字段 <code>"tenant": { name, slug }</code></h4>
+        <p><span class="lbl">现状</span>每个 ship 的 solution(live-lesson、demo-sandbox、lesson-plan-designer 等)的 <code>solution.json</code> 里有 <code>"tenant": { "name": "...", "slug": "..." }</code>。schema 名跟 entity 名不再对应。</p>
+        <p><span class="lbl">推迟理由</span>这是 <em>solution 实际 ship 的 wire 格式</em>，改字段名意味着每个 solution 仓库都要改 <code>solution.json</code> 文件。这跟 ccaas-core 的代码 rename 不是一回事 —— wire 格式属于 ccaas 跟 solution 之间的契约。</p>
+        <p><span class="lbl">重新审视的触发</span>下一次 solution.json schema 出 major version (v4)的时候，作为 schema 升级的一部分一起改。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4><code>WorkspaceArtifactSource.loadArtifacts(projectId: string)</code> 参数名</h4>
+        <p><span class="lbl">现状</span>interface 名是 <code>WorkspaceArtifactSource</code>，但内部的<em>参数名</em>还叫 <code>projectId</code>。每个方法签名是 <code>loadArtifacts(projectId: string)</code> / <code>saveArtifact(projectId, ...)</code>。</p>
+        <p><span class="lbl">推迟理由</span>判断: 参数名是 <em>local nomenclature</em>，跟 type-level rename 不是一个范畴的事。改参数名不影响调用方(参数按位置传递)，只是局部可读性。这次 scope 已经够大，不强求把参数名也扫一遍。</p>
+        <p><span class="lbl">重新审视的触发</span>下一次为别的原因动 <code>WorkspaceArtifactSource</code> interface 时(比如加新方法 / 改返回值)，顺手把参数名也改成 <code>identity</code>。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4><code>CCAAS_API_KEY</code> env var 名</h4>
+        <p><span class="lbl">现状</span>env 变量名仍然是 <code>CCAAS_API_KEY</code>。operator 在每份 <code>.env</code> / <code>docker-compose.yml</code> / K8s ConfigMap 都按这个名字配置的。</p>
+        <p><span class="lbl">推迟理由</span>operator-facing constant。改这个名字意味着每份部署文档、每个生产部署的 secret 都要改。"全改" 不包含这种 ops-facing surface ——  代码 rename 跟 ops 流程是两条边界。</p>
+        <p><span class="lbl">重新审视的触发</span>下一次 ccaas 的环境变量做 namespacing(比如 <code>CCAAS_*</code> 全改成 <code>KEDGE_*</code>) 的时候一起改。或者出现真实 operator 困惑。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-05</div>
+      <div class="dq-body">
+        <h4>ADR-0003 / ADR-0011 / <code>CHANGES_2026-05.md</code> 历史记录</h4>
+        <p><span class="lbl">现状</span>这些文档里还会出现 "Tenant entity" / "bind-project route" 这些已删除的概念。</p>
+        <p><span class="lbl">推迟理由</span>这是<em>历史记录</em>，不是 reference 文档。它记的是 "在那个时间点 ccaas 长什么样、为什么做某个决定"。把它们 rewrite 等于<strong>篡改历史</strong> —— 未来读者会失去"why" 的上下文。</p>
+        <p><span class="lbl">重新审视的触发</span>永远不动。如果有新的 ADR 引用旧名字，那条新 ADR 用 "formerly known as X" 这种 callout 即可。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>磁盘路径 <code>tenants/</code> 跟代码 <code>solutionId</code> 的不一致什么时候会真的造成问题?</h4>
+        <p><span class="lbl">问题</span>DEF-01 推迟了磁盘路径 rename。理论上 inconsistency 是无限期持有的 —— 但什么场景下它会从 "新人困惑 30 秒" 升级成 "真的 bug 来源"? 没有 confident answer。</p>
+        <p><span class="lbl">为什么 open</span>取决于未来 agentfs 的演化方向: 如果 agentfs 加 schema versioning / multi-version 支持，路径就成了 schema 的一部分;如果 agentfs 一直只是 simple overlay，路径名永远只是 cosmetic。这条不知道。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>npm 包接口里的 <code>projectId</code> 参数名是 tech debt 还是合理的 local 命名?</h4>
+        <p><span class="lbl">问题</span>DEF-03 把参数名留着了。判断的前提是 "参数名是 local nomenclature"，但这条判断<em>是不是普适的</em>? Interface 是 <code>WorkspaceArtifactSource</code>，方法是 <code>loadArtifacts(projectId)</code> —— 读起来不和谐。</p>
+        <p><span class="lbl">为什么 open</span>有 IDE 智能提示的情况下参数名在调用点是<em>可见的</em>（不是真 "local"）。但改了之后是否真的提升 readability 还是只是<em>风格 nitpick</em>，没有数据。等下次有新人 onboard 看到这里有不有 confusion 才能判断。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>如果未来有 out-of-tree SDK consumer 出现，这次 no-deprecation rename 会不会变成包袱?</h4>
+        <p><span class="lbl">问题</span>D-06 的判断假设 "SDK 消费者全部 in-tree"。如果未来某个 solution / 第三方 app 用了 <code>react-sdk</code> 但 repo 在别处，他们 upgrade 的时候会撞到 breaking change 而<em>没有 deprecation 周期</em>。</p>
+        <p><span class="lbl">为什么 open</span>不知道第一个 out-of-tree 用户什么时候出现、什么频率。如果是几个月内出现的话，我们应该建立 SDK changelog + deprecation policy;如果是几年才出现，到时候 SDK 已经迭代很多版，这次 rename 不会是单独事件。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 提交 + 文件 + 测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作,做参考</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">132</span><span class="cs-stat-l">Files Changed</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">2,675</span><span class="cs-stat-l">Lines + (Inserts)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1,494</span><span class="cs-stat-l">Lines − (Deletes)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">3,073</span><span class="cs-stat-l">Tests Pass · 0 New Fail</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">de2621b1</span><span class="tag refactor">refactor</span><span class="msg">drop α+β compat aliases and rename load-bearing strings (87 files)</span></div>
+        <div class="cs-row"><span class="hash">7e085129</span><span class="tag refactor">refactor</span><span class="msg">finish renames flagged in prior code review (45 files; SDK + SendMessageDto + docs)</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin-top:14px;line-height:1.5">
+        Test totals: 1555 (ccaas-core) + 1506 (live-lesson backend) + 68 (agent-runtime) + 15 (observer-engine) +
+        369/370 (react-sdk; 1 pre-existing baseline failure) + 212 (vue-sdk) + 207 (live-lesson adapters).
+        TS compile clean on ccaas-core, react-sdk, vue-sdk, live-lesson creator.
+        Pre-existing TS errors in vue-sdk <code>useEntityBridge.spec.ts</code> + live-lesson frontend
+        <code>PluginPreviewPage.tsx</code> / <code>TaskDemoSessionProvider.tsx</code> 已通过 <code>git stash</code> 验证与本次改动无关。
+      </p>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-26 · ccaas Decision Archive · template at <code>docs/feature-report-template.html</code>
+  </footer>
+
+</div>
+
+</body>
+</html>
