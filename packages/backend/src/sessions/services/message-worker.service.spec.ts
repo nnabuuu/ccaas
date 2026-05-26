@@ -4,6 +4,7 @@ import { MessageQueueService } from './message-queue.service';
 import { CompletionOrchestrationService } from './completion-orchestration.service';
 import { AttachmentService } from './attachment.service';
 import { SessionService } from '../session.service';
+import { SessionAssetSyncer } from '../agent-runtime/session-asset-syncer.service';
 import { StreamRegistryService } from './stream-registry.service';
 import { MessageQueue } from '../entities/message-queue.entity';
 import { makeSseClientId } from '../session-utils';
@@ -98,6 +99,7 @@ describe('MessageWorkerService — processMessage', () => {
         { provide: AttachmentService, useValue: attachmentService },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
+        { provide: SessionAssetSyncer, useValue: { sync: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -467,6 +469,7 @@ describe('MessageWorkerService — pollAndProcess', () => {
         { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
+        { provide: SessionAssetSyncer, useValue: { sync: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -613,6 +616,7 @@ describe('MessageWorkerService — lifecycle', () => {
         { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
+        { provide: SessionAssetSyncer, useValue: { sync: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -661,6 +665,7 @@ describe('MessageWorkerService — getStatus', () => {
         { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: {} },
         { provide: StreamRegistryService, useValue: {} },
+        { provide: SessionAssetSyncer, useValue: { sync: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

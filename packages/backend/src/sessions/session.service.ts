@@ -336,6 +336,21 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * Cheap read of "is this session bound to a project, and if so which?"
+   * Used by MessageWorker to decide whether the incoming message's
+   * projectId requires a fresh bind+bootstrap before spawning the
+   * engine, or whether the session is already correctly bound and the
+   * pre-spawn await can be skipped.
+   *
+   * O(1) lookup against the same in-memory map populated by
+   * `bindToProject`. Returns `undefined` if the session has never been
+   * bound (typical on first message of a new conversation).
+   */
+  getBoundProjectId(sessionId: string): string | undefined {
+    return this.projectBindings.get(sessionId);
+  }
+
+  /**
    * Reverse lookup for the agent-runtime invalidate endpoint:
    * which active sessions are bound to `projectId`. Walks the
    * in-memory bindings map; only returns sessions that are still

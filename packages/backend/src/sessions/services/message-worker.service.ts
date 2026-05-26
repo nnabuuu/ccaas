@@ -4,6 +4,7 @@ import { CompletionOrchestrationService } from './completion-orchestration.servi
 import { AttachmentService } from './attachment.service';
 import { SessionService } from '../session.service';
 import { StreamRegistryService } from './stream-registry.service';
+import { SessionAssetSyncer } from '../agent-runtime/session-asset-syncer.service';
 import { makeSseClientId } from '../session-utils';
 import { MessageQueue } from '../entities/message-queue.entity';
 
@@ -49,6 +50,9 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     private readonly attachmentService: AttachmentService,
     private readonly sessionService: SessionService,
     private readonly streamRegistry: StreamRegistryService,
+    // G4 fix: needed to await bootstrap sync BEFORE spawning the engine
+    // so the agent's first turn sees a populated artifacts/ directory.
+    private readonly assetSyncer: SessionAssetSyncer,
   ) {}
 
   /**
@@ -166,6 +170,35 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       const clientId = makeSseClientId(sessionId);
       const userId = queueItem.payload.userId;
       const session = await this.sessionService.getOrCreateSession(sessionId, clientId, null, userId, queueItem.tenantId ?? undefined);
+
+      // G4 fix — synchronous bind + bootstrap before spawning the engine.
+      //
+      // Without this, the SendMessageDto's optional projectId would
+      // only land in session_metadata via the async @OnEvent('session.bound')
+      // handler, and the orchestration call below would spawn the agent
+      // BEFORE SessionAssetSyncer copied artifacts/ into the workspace.
+      // Agent's first turn would `ls artifacts/` and see nothing — the
+      // user would have to send a warm-up message to bind the project.
+      //
+      // We await the syncer directly (not via the event bus) so the
+      // ordering is deterministic: when orchestrateMessage runs, the
+      // workspace already has the project's artifacts/.
+      //
+      // Idempotency: if the session is already bound to the same project
+      // (subsequent messages in the same conversation), skip entirely —
+      // bind/sync are cheap but not free.
+      const incomingProjectId = queueItem.payload.projectId;
+      if (incomingProjectId) {
+        const currentBinding = this.sessionService.getBoundProjectId(sessionId);
+        if (currentBinding !== incomingProjectId) {
+          await this.sessionService.bindToProject(
+            sessionId,
+            queueItem.tenantId || '',
+            incomingProjectId,
+          );
+          await this.assetSyncer.sync(sessionId);
+        }
+      }
 
       // Resolve attachments from queue payload
       const attachmentInputs = queueItem.payload.attachments ?? queueItem.payload.attachmentPaths?.map(s => JSON.parse(s));

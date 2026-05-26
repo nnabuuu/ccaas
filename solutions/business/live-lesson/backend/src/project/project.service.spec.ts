@@ -236,6 +236,67 @@ describe('ProjectService', () => {
     });
   });
 
+  // ── validateManifestContent (stateless pre-flight; used by agent self-check) ──
+
+  describe('validateManifestContent', () => {
+    const validManifest = {
+      id: 'p1',
+      title: 'Lesson',
+      subject: 'Math',
+      gradeLevel: '7',
+      lessonType: 'interactive',
+      readingSteps: [
+        {
+          id: 's1',
+          idx: 1,
+          type: 'task',
+          answerKey: {
+            type: 'quiz',
+            answers: [
+              { questionIdx: 0, questionText: 'Q?', options: ['A', 'B'], correct: 0 },
+            ],
+          },
+        },
+      ],
+    };
+
+    it('returns valid:true + stepCount for a schema-conforming manifest', () => {
+      const result = service.validateManifestContent(JSON.stringify(validManifest));
+      expect(result.valid).toBe(true);
+      expect(result.stepCount).toBe(1);
+      expect(result.issues).toBeUndefined();
+    });
+
+    it('returns valid:false with parse error for invalid JSON', () => {
+      const result = service.validateManifestContent('{not json');
+      expect(result.valid).toBe(false);
+      expect(result.issues).toHaveLength(1);
+      expect(result.issues![0].path).toBe('$');
+      expect(result.issues![0].message).toMatch(/invalid JSON/);
+    });
+
+    it('returns valid:false with each Zod issue mapped to path + message', () => {
+      const broken = { ...validManifest, readingSteps: [] }; // .min(1) violated
+      const result = service.validateManifestContent(JSON.stringify(broken));
+      expect(result.valid).toBe(false);
+      expect(result.issues!.length).toBeGreaterThan(0);
+      // Path uses dot-joined form per the service contract.
+      expect(result.issues![0].path).toContain('readingSteps');
+    });
+
+    it('catches a typo in answerKey.type with a discriminator-union error', () => {
+      // Common agent mistake: 'qiuz' instead of 'quiz'. This is the
+      // exact failure mode the self-check is designed to flag before
+      // publish. If this assertion breaks, the agent loses fast feedback.
+      const typo: any = JSON.parse(JSON.stringify(validManifest));
+      typo.readingSteps[0].answerKey.type = 'qiuz';
+      const result = service.validateManifestContent(JSON.stringify(typo));
+      expect(result.valid).toBe(false);
+      const blob = result.issues!.map((i) => `${i.path}: ${i.message}`).join('\n');
+      expect(blob).toMatch(/readingSteps.*answerKey/);
+    });
+  });
+
   // ── publish ──
 
   describe('publish', () => {

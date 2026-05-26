@@ -39,6 +39,29 @@ The live-lesson backend re-validates every PUT against the production `ManifestS
 
 If unsure, write a short validation snippet using `node -e "..."` to round-trip the JSON through `JSON.parse` and check structure before committing the write.
 
+## Self-check via the live backend's validator
+
+After **every** edit to `artifacts/execution/manifest.json`, run:
+
+```bash
+bash skills/manifest-editor/scripts/validate-manifest.sh
+```
+
+This calls the live-lesson backend's `POST /api/v1/projects/validate-manifest` endpoint — the **same `ManifestSchema`** the publish flow uses. So a green result here guarantees publish will accept; a red one means publish would 400.
+
+The output is one line of JSON, parse with `jq`:
+
+```json
+{ "valid": true,  "stepCount": 5 }
+{ "valid": false, "issues": [{ "path": "readingSteps.2.answerKey.answers.0.correct", "message": "..." }, ...] }
+```
+
+**If `valid: false`**: don't claim "done". Each issue carries the exact JSON path (`readingSteps.N.answerKey...`) and the Zod message — re-edit the file to fix those specific paths, then re-run the script. Iterate until `valid: true`.
+
+**Why this exists**: the teacher's "发布" button validates with the same schema. Catching the issue here, in your turn, with structured feedback you can act on, is **much** faster than failing publish and bouncing the error back through the teacher.
+
+The script is **low-cost**: no LLM call, no DB write, just one HTTP round-trip + Zod. Call it as often as you need. The creator UI also renders the result as a dedicated card in the chat, so the teacher can see at a glance whether your last edit is publish-ready.
+
 ## How publish + classroom hangs off your work
 
 What you edit in `artifacts/execution/manifest.json` becomes a runnable lesson via two teacher-driven steps in the creator UI:

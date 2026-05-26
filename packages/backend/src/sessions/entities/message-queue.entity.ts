@@ -27,6 +27,15 @@ export interface MessageQueuePayload {
   subscriberId?: string;
   /** User ID for session ownership */
   userId?: string;
+  /**
+   * Project ID to bind the session to before spawning the engine. When
+   * present, the worker awaits SessionService.bindToProject +
+   * SessionAssetSyncer.sync BEFORE orchestrating the message, so the
+   * agent sees a populated artifacts/ directory on its very first turn.
+   * Without this, bind happens out-of-band via the @OnEvent listener
+   * and races the engine spawn.
+   */
+  projectId?: string;
 }
 
 /**

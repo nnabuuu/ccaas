@@ -20,8 +20,8 @@
  * while `isThinking` is true.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { bindSessionToProject, ccaasBaseUrl, getApiKey } from '../api/ccaas';
+import { useCallback, useEffect, useState } from 'react';
+import { ccaasBaseUrl, getApiKey } from '../api/ccaas';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -31,6 +31,14 @@ export interface ToolEvent {
   phase: 'start' | 'end' | string;
   /** Free-form description for UI ("Editing execution/manifest.json", etc.) */
   summary?: string;
+  /** Tool call input (e.g. `{ command: "bash ..." }` for Bash tool). Used by
+   *  ChatBubble to detect special tool calls like validation. */
+  toolInput?: unknown;
+  /** Tool call output (e.g. command stdout). Used by ChatBubble to render
+   *  structured results (validation JSON, etc.) as dedicated cards. */
+  toolOutput?: unknown;
+  /** Phase=end only: whether the tool returned a non-error result. */
+  success?: boolean;
   at: string;
 }
 
@@ -143,10 +151,10 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  // We use a ref for "has bound" so the bind-project effect doesn't
-  // re-trigger when messages array changes; it's load-bearing for the
-  // useProjectChanges hook (we only need to bind ONCE per session).
-  const hasBoundRef = useRef(false);
+  // (G4 fix: previously held a `hasBoundRef` to skip duplicate
+  // frontend-side bind-project calls. Bind is now backend-side in
+  // MessageWorker, which itself dedupes via getBoundProjectId; no
+  // frontend tracking needed.)
 
   const { sessionId, tenantId, projectId, enabledSkills, templateName } = opts;
 
@@ -161,7 +169,6 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
     setIsLoadingHistory(true);
     setMessages([]);
     setError(null);
-    hasBoundRef.current = false;
 
     const key = getApiKey();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -183,9 +190,6 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         if (!alive) return;
         const next = body.messages.map(toChatMessage).filter((m): m is ChatMessage => m !== null);
         setMessages(next);
-        // If history is non-empty the session was already bound on a
-        // prior visit — skip re-binding to avoid the 409 conflict path.
-        if (next.length > 0) hasBoundRef.current = true;
         setIsLoadingHistory(false);
       })
       .catch((err: unknown) => {
@@ -247,6 +251,13 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
             body: JSON.stringify({
               message: trimmed,
               tenantId,
+              // Every send carries projectId. The ccaas backend's
+              // MessageWorker bind-and-bootstraps BEFORE spawning the
+              // engine when present, so the agent's first turn sees a
+              // populated artifacts/ directory instead of an empty
+              // workspace. Subsequent sends are idempotent (worker
+              // checks `getBoundProjectId` and skips if unchanged).
+              projectId,
               enabledSkills: enabledSkills ?? ['manifest-editor'],
               templateName: templateName ?? 'edit-lesson',
             }),
@@ -305,21 +316,15 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         setIsThinking(false);
       }
 
-      // Bind-project: fire-and-forget, only after a successful turn.
-      // Skipping on errors prevents binding to a session that LLM
-      // never wrote to (no agent edits would arrive anyway).
-      if (!networkError && !hasBoundRef.current) {
-        hasBoundRef.current = true;
-        bindSessionToProject({ sessionId, projectId, tenantId })
-          .catch((err) => {
-            // Don't surface to the user — bind is opportunistic. Log
-            // for the dev who's debugging missing change banners.
-            // eslint-disable-next-line no-console
-            console.warn('[useAgentChat] bind-project failed:', err);
-            // Reset so a manual retry could work later.
-            hasBoundRef.current = false;
-          });
-      }
+      // Bind happens BACKEND-side now: the ccaas MessageWorker awaits
+      // bindToProject + SessionAssetSyncer.sync BEFORE spawning the
+      // engine when the message payload carries `projectId`. The body
+      // above includes it on every send. So nothing more to do here —
+      // bind is deterministic + complete by the time the first SSE
+      // event arrives. (G4 fix; before this commit there was a
+      // fire-and-forget bindSessionToProject call here that raced the
+      // engine spawn and left the first turn looking at an empty
+      // workspace.)
     },
     [sessionId, tenantId, projectId, enabledSkills, templateName, isThinking],
   );
@@ -342,25 +347,40 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         return;
       }
       case 'tool_activity': {
-        const p = (e as { payload: { toolName: string; toolId: string; phase: string } }).payload;
+        const p = (e as {
+          payload: {
+            toolName: string;
+            toolId: string;
+            phase: string;
+            toolInput?: unknown;
+            toolOutput?: unknown;
+            success?: boolean;
+          };
+        }).payload;
         if (!p) return;
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === agentBubbleId && m.role === 'agent'
-              ? {
-                  ...m,
-                  toolEvents: [
-                    ...m.toolEvents,
-                    {
-                      toolName: p.toolName,
-                      toolId: p.toolId,
-                      phase: p.phase,
-                      at: env.timestamp,
-                    },
-                  ],
-                }
-              : m,
-          ),
+          prev.map((m) => {
+            if (m.id !== agentBubbleId || m.role !== 'agent') return m;
+            // For Bash tools we get one `start` event (with input) and
+            // later one `end` event (with output). Coalesce by toolId
+            // so each tool call shows up as ONE row that grows from
+            // "调用..." to "完成 + result". Without this the UI would
+            // double-list bash calls.
+            const idx = m.toolEvents.findIndex((t) => t.toolId === p.toolId);
+            const next: ToolEvent = {
+              toolName: p.toolName,
+              toolId: p.toolId,
+              phase: p.phase,
+              toolInput: p.toolInput ?? (idx >= 0 ? m.toolEvents[idx].toolInput : undefined),
+              toolOutput: p.toolOutput ?? (idx >= 0 ? m.toolEvents[idx].toolOutput : undefined),
+              success: p.success ?? (idx >= 0 ? m.toolEvents[idx].success : undefined),
+              at: env.timestamp,
+            };
+            const merged = idx >= 0
+              ? [...m.toolEvents.slice(0, idx), next, ...m.toolEvents.slice(idx + 1)]
+              : [...m.toolEvents, next];
+            return { ...m, toolEvents: merged };
+          }),
         );
         return;
       }

@@ -1,8 +1,9 @@
 import {
   Controller, Get, Post, Put, Delete,
   Param, Query, Body, BadRequestException,
+  HttpCode,
 } from '@nestjs/common';
-import { ApiTags, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiQuery, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
 import { CreateProjectDto, CreateFileDto, UpdateFileDto } from './project.dto';
 
@@ -16,6 +17,38 @@ export class ProjectController {
   @Post()
   create(@Body() dto: CreateProjectDto) {
     return this.service.create(dto);
+  }
+
+  /**
+   * Standalone manifest validator. Cheap (no DB writes, no LLM, just
+   * ManifestSchema.safeParse) — designed for the manifest-editor agent
+   * to self-check after every edit, BEFORE the teacher hits publish.
+   * Same schema the publish flow uses, so a green response here
+   * guarantees publish will accept.
+   *
+   * Path is plural ("validate-manifest") + sibling of /publish to
+   * signal it's a project-wide concern, not bound to a specific
+   * project id (there's no DB touch — just schema check).
+   */
+  @Post('validate-manifest')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Validate a manifest body against ManifestSchema (no DB writes).',
+    description:
+      'Stateless pre-flight: takes a manifest JSON string in the body, ' +
+      'returns { valid, stepCount?, issues? }. The agent calls this ' +
+      'via scripts/validate-manifest.sh after every edit so it can ' +
+      'self-correct without round-tripping through publish.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Validation result (200 even on invalid — check `valid` field).',
+  })
+  validateManifest(@Body() body: { content?: string }) {
+    if (typeof body?.content !== 'string') {
+      throw new BadRequestException('content (string) required in body');
+    }
+    return this.service.validateManifestContent(body.content);
   }
 
   @Get()

@@ -240,6 +240,58 @@ export class ProjectService {
     await this.fileRepo.remove(file);
   }
 
+  // ── Validation (stateless pre-flight) ──
+
+  /**
+   * Run ManifestSchema validation on a manifest JSON string. No DB
+   * touch, no projectId required — pure schema check.
+   *
+   * Returns the same shape on both success and failure so the agent's
+   * shell wrapper script can pipe it to jq without branching on HTTP
+   * status. The endpoint always returns HTTP 200; check `valid`.
+   *
+   * Used by the manifest-editor skill's `scripts/validate-manifest.sh`
+   * after every edit. Reuses the SAME `ManifestSchema` the publish
+   * flow runs — guarantees alignment between "self-check passed" and
+   * "publish will accept".
+   */
+  validateManifestContent(content: string): {
+    valid: boolean;
+    stepCount?: number;
+    issues?: Array<{ path: string; message: string }>;
+  } {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      return {
+        valid: false,
+        issues: [
+          {
+            path: '$',
+            message: `invalid JSON: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        ],
+      };
+    }
+    const result = ManifestSchema.safeParse(parsed);
+    if (result.success) {
+      return {
+        valid: true,
+        stepCount: result.data.readingSteps?.length ?? 0,
+      };
+    }
+    return {
+      valid: false,
+      issues: result.error.issues.map((i) => ({
+        // '$' is the JSON-Path convention for root; keeps issues with
+        // empty path readable instead of an empty string.
+        path: i.path.length ? i.path.join('.') : '$',
+        message: i.message,
+      })),
+    };
+  }
+
   // ── Publish ──
 
   async publish(projectId: string): Promise<{ lessonId: string }> {
