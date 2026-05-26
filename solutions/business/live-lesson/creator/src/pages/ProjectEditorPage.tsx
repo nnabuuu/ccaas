@@ -35,7 +35,26 @@ export default function ProjectEditorPage() {
   // edits so the operator knows when the agent has touched the same
   // project. Dismissed notices are tracked locally; `reloadKey` bumps
   // force the active tab to re-fetch from disk.
-  const { events, isConnected, error: sseError } = useProjectChanges(id ?? null)
+  //
+  // Phase 2b-2: ccaas SSE endpoint requires `?token=<apiKey>`. Read the
+  // operator's ccaas API key from localStorage (matches the classroom
+  // frontend's pattern). For a dev workflow without auth UX yet, the
+  // key is provisioned via `scripts/create-dev-api-key.ts` and the
+  // operator pastes it into the console:
+  //   localStorage.setItem('ccaas:apiKey', '<key>')
+  // If the key is missing, the hook reports `error` and skips opening
+  // the EventSource (avoids a 401 retry storm).
+  const ccaasApiKey = useMemo(() => {
+    try {
+      return localStorage.getItem('ccaas:apiKey')
+    } catch {
+      return null
+    }
+  }, [])
+  const { events, isConnected, error: sseError } = useProjectChanges(
+    id ?? null,
+    ccaasApiKey,
+  )
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [reloadKey, setReloadKey] = useState(0)
   // Reset the dismissed set whenever the operator opens a different project

@@ -82,8 +82,16 @@ export async function publishProject(projectId: string): Promise<{ lessonId: str
  * frontend's `useLiveLesson.ts` SDK pattern). Defaults to
  * `http://localhost:3001` for dev convenience when the env var is
  * unset.
+ *
+ * **Phase 2b-2**: the endpoint now requires `?token=<apiKey>`. Caller
+ * must pass a ccaas API key; without one the URL still builds (token
+ * omitted) but the server will respond 401. `EventSource` can't set
+ * `Authorization` headers, hence the query-param convention.
  */
-export function getChangesStreamUrl(projectId: string): string {
+export function getChangesStreamUrl(
+  projectId: string,
+  apiKey?: string | null,
+): string {
   const envUrl = import.meta.env.VITE_CCAAS_URL as string | undefined;
   if (!envUrl && import.meta.env.PROD) {
     // eslint-disable-next-line no-console
@@ -95,5 +103,10 @@ export function getChangesStreamUrl(projectId: string): string {
     );
   }
   const base = (envUrl ?? 'http://localhost:3001').replace(/\/+$/, '');
-  return `${base}/api/v1/projects/${encodeURIComponent(projectId)}/changes`;
+  // ccaas mounts project-routes at the bare namespace (no /api/v1 prefix)
+  // — see `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts`.
+  const path = `${base}/projects/${encodeURIComponent(projectId)}/changes`;
+  return apiKey
+    ? `${path}?token=${encodeURIComponent(apiKey)}`
+    : path;
 }

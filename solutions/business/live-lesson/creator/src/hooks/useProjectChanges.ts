@@ -18,13 +18,12 @@
  * server comes back, the browser auto-reconnects and `isConnected`
  * flips true via the next welcome event.
  *
- * **Auth status (Phase 2a)**: the ccaas SSE endpoint at
- * `/api/v1/projects/:projectId/changes` is currently unauthenticated.
- * `EventSource` cannot set HTTP headers, so when auth lands on that
- * endpoint (tracked in `docs/AGENT_RUNTIME_DESIGN.md` § Phase 2 security),
- * this hook will need to either (a) accept a query-param token, or
- * (b) switch to a fetch-based SSE reader (rewrite — EventSource just
- * doesn't support `Authorization` headers).
+ * **Auth (Phase 2b-2)**: the ccaas SSE endpoint requires
+ * `?token=<apiKey>`. The hook accepts a second `apiKey` arg — if
+ * absent or empty, the hook flips straight to disconnected (no
+ * connection attempt, since the server would 401). Callers typically
+ * read the key from `localStorage` (same pattern as classroom
+ * `useLiveLesson.ts`).
  *
  * Events array is capped at MAX_EVENTS (50) — older events drop off
  * the tail. The UI typically only renders the most recent few.
@@ -62,7 +61,10 @@ export interface UseProjectChangesResult {
 
 const MAX_EVENTS = 50;
 
-export function useProjectChanges(projectId: string | null): UseProjectChangesResult {
+export function useProjectChanges(
+  projectId: string | null,
+  apiKey?: string | null,
+): UseProjectChangesResult {
   const [events, setEvents] = useState<ChangeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,12 +81,19 @@ export function useProjectChanges(projectId: string | null): UseProjectChangesRe
       setIsConnected(false);
       return;
     }
+    if (!apiKey) {
+      // Without a key the server would 401 every reconnect attempt; skip
+      // opening the EventSource entirely and surface a friendly error.
+      setIsConnected(false);
+      setError('Missing ccaas API key; SSE change feed disabled');
+      return;
+    }
     // Reset on projectId change so the consumer doesn't see stale
     // events from the previous project.
     setEvents([]);
     setError(null);
 
-    const url = getChangesStreamUrl(projectId);
+    const url = getChangesStreamUrl(projectId, apiKey);
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (msg: MessageEvent<string>) => {
@@ -127,7 +136,7 @@ export function useProjectChanges(projectId: string | null): UseProjectChangesRe
       eventSource.close();
       setIsConnected(false);
     };
-  }, [projectId]);
+  }, [projectId, apiKey]);
 
   return { events, isConnected, error, clear };
 }
