@@ -41,19 +41,19 @@ import {
   Logger,
   Param,
   Post,
-  ServiceUnavailableException,
   Sse,
   type MessageEvent,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
-
-const DEFAULT_CCAAS_URL = 'http://localhost:3001';
+import { CcaasUpstream, scrubToken } from './ccaas-upstream.service';
 
 @ApiTags('ccaas-proxy')
 @Controller('projects/:projectId')
 export class CcaasProxyController {
   private readonly logger = new Logger(CcaasProxyController.name);
+
+  constructor(private readonly upstream: CcaasUpstream) {}
 
   /**
    * Live SSE feed of agent-runtime ChangeEvents for `projectId`, proxied
@@ -68,7 +68,7 @@ export class CcaasProxyController {
   })
   @ApiParam({ name: 'projectId', type: String })
   changes$(@Param('projectId') projectId: string): Observable<MessageEvent> {
-    const { url, key } = this.resolveCcaas();
+    const { url, key } = this.upstream.resolveCcaas();
     const upstreamUrl =
       `${url}/projects/${encodeURIComponent(projectId)}/changes?token=${encodeURIComponent(key)}`;
 
@@ -86,7 +86,7 @@ export class CcaasProxyController {
           });
         } catch (err) {
           if (cancelled) return; // expected — caller closed the stream
-          subscriber.error(this.wrapUpstreamError('connect', err));
+          subscriber.error(this.upstream.wrapUpstreamError('connect', err));
           return;
         }
         if (!res.ok) {
@@ -97,7 +97,7 @@ export class CcaasProxyController {
           // embedding — see `scrubToken` for the rationale.
           subscriber.error(
             new Error(
-              `ccaas upstream ${res.status} for project ${projectId}: ${scrubToken(await this.readErrorBody(res))}`,
+              `ccaas upstream ${res.status} for project ${projectId}: ${scrubToken(await this.upstream.readErrorBody(res))}`,
             ),
           );
           return;
@@ -122,7 +122,7 @@ export class CcaasProxyController {
         try {
           await this.pumpSse(res.body, subscriber, () => cancelled);
         } catch (err) {
-          if (!cancelled) subscriber.error(this.wrapUpstreamError('stream', err));
+          if (!cancelled) subscriber.error(this.upstream.wrapUpstreamError('stream', err));
         } finally {
           if (!cancelled) subscriber.complete();
         }
@@ -152,14 +152,14 @@ export class CcaasProxyController {
   async invalidate(
     @Param('projectId') projectId: string,
   ): Promise<{ accepted: boolean }> {
-    const { url, key } = this.resolveCcaas();
+    const { url, key } = this.upstream.resolveCcaas();
     const upstreamUrl =
       `${url}/projects/${encodeURIComponent(projectId)}/invalidate?token=${encodeURIComponent(key)}`;
     let res: Response;
     try {
       res = await fetch(upstreamUrl, { method: 'POST' });
     } catch (err) {
-      throw this.wrapUpstreamError('connect', err);
+      throw this.upstream.wrapUpstreamError('connect', err);
     }
     if (!res.ok) {
       // Auth failures (401/403) are operator-actionable — wrong or
@@ -183,25 +183,6 @@ export class CcaasProxyController {
       return { accepted: false };
     }
     return { accepted: true };
-  }
-
-  /**
-   * Resolve env + assert the ccaas key is configured. We fail loud here
-   * (503) rather than letting the upstream call reject with an opaque
-   * "Invalid or expired token" — the operator gets a clear "set
-   * CCAAS_API_KEY in your env" pointer on the first request instead
-   * of a confusing 401 from the wrong layer.
-   */
-  private resolveCcaas(): { url: string; key: string } {
-    const key = process.env.CCAAS_API_KEY;
-    if (!key) {
-      throw new ServiceUnavailableException(
-        'CCAAS_API_KEY env var is not set on the live-lesson backend; ' +
-        'ccaas proxy endpoints cannot serve until it is configured.',
-      );
-    }
-    const url = (process.env.CCAAS_URL ?? DEFAULT_CCAAS_URL).replace(/\/+$/, '');
-    return { url, key };
   }
 
   /**
@@ -277,44 +258,4 @@ export class CcaasProxyController {
     }
   }
 
-  private async readErrorBody(res: Response): Promise<string> {
-    try {
-      const text = await res.text();
-      // Cap to avoid logging multi-MB error pages.
-      return text.length > 512 ? `${text.slice(0, 512)}…` : text;
-    } catch {
-      return '<no body>';
-    }
-  }
-
-  private wrapUpstreamError(phase: 'connect' | 'stream', err: unknown): Error {
-    const msg = err instanceof Error ? err.message : String(err);
-    // Some Node versions include the offending URL in fetch error
-    // messages (e.g. TypeError: fetch failed... cause: Error at URL ...).
-    // Scrub before re-wrapping so the master token never bleeds into
-    // the thrown Error's message.
-    return new Error(`ccaas upstream ${phase} failed: ${scrubToken(msg)}`);
-  }
-}
-
-/**
- * Strip `token=<value>` from any string before it might land in a log,
- * a thrown Error message, or an HTTP response body.
- *
- * The upstream URL we open against ccaas looks like
- * `${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}` — the
- * master tenant key is literally in the URL. We never log the URL
- * ourselves, but two paths could indirectly leak it:
- *   - the upstream's error body (e.g. a misconfigured intermediary's
- *     "Cannot GET <full-url>" page that echoes `req.url`)
- *   - Node's own fetch-failure messages on some runtimes
- * Apply scrubbing wherever those land in user-visible strings.
- *
- * Matches `token=` followed by any non-whitespace / non-separator chars.
- * Conservative — if the surrounding text already escaped or encoded
- * the token, the regex won't match and we leave it alone (the encoding
- * is itself protection).
- */
-function scrubToken(s: string): string {
-  return s.replace(/(token=)[^&\s"'<>]+/gi, '$1***');
 }

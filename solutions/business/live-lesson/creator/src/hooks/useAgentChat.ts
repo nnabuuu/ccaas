@@ -21,7 +21,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ccaasBaseUrl, getApiKey } from '../api/ccaas';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -48,8 +47,6 @@ export type ChatMessage =
 
 interface UseAgentChatOpts {
   sessionId: string;
-  /** ccaas tenantId (from `useTenantId`). Required to send. */
-  tenantId: string | null;
   /** Project to bind on first turn — enables agent-edit notifications. */
   projectId: string;
   /** Skill slugs to enable for this session. Defaults to ['manifest-editor']. */
@@ -156,7 +153,7 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
   // MessageWorker, which itself dedupes via getBoundProjectId; no
   // frontend tracking needed.)
 
-  const { sessionId, tenantId, projectId, enabledSkills, templateName } = opts;
+  const { sessionId, projectId, enabledSkills, templateName } = opts;
 
   // ── History load on session change ────────────────────────────────
   useEffect(() => {
@@ -170,12 +167,11 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
     setMessages([]);
     setError(null);
 
-    const key = getApiKey();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (key) headers['Authorization'] = `Bearer ${key}`;
-
-    fetch(`${ccaasBaseUrl()}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages?limit=200`, {
-      headers,
+    // Same-origin via Vite proxy → live-lesson backend
+    // (CcaasChatProxyController) which injects auth server-side. Browser
+    // never holds the ccaas key.
+    fetch(`/api/sessions/${encodeURIComponent(sessionId)}/messages?limit=200`, {
+      headers: { 'Content-Type': 'application/json' },
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -212,10 +208,6 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         setError('No active conversation');
         return;
       }
-      if (!tenantId) {
-        setError('Missing tenantId — set ccaas:apiKey in localStorage and refresh');
-        return;
-      }
       if (isThinking) return; // single-flight per session
 
       const userMsg: ChatMessage = {
@@ -237,26 +229,20 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
       setIsThinking(true);
       setError(null);
 
-      const key = getApiKey();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (key) headers['Authorization'] = `Bearer ${key}`;
-
       let networkError: Error | null = null;
       try {
+        // Same-origin via Vite proxy → live-lesson backend's
+        // CcaasChatProxyController. The proxy adds Authorization +
+        // tenantId server-side; browser body carries only the user's
+        // intent. projectId still flows through so the ccaas worker
+        // can bind-before-spawn (G4 fix) before the first turn.
         const res = await fetch(
-          `${ccaasBaseUrl()}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages`,
+          `/api/sessions/${encodeURIComponent(sessionId)}/messages`,
           {
             method: 'POST',
-            headers,
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               message: trimmed,
-              tenantId,
-              // Every send carries projectId. The ccaas backend's
-              // MessageWorker bind-and-bootstraps BEFORE spawning the
-              // engine when present, so the agent's first turn sees a
-              // populated artifacts/ directory instead of an empty
-              // workspace. Subsequent sends are idempotent (worker
-              // checks `getBoundProjectId` and skips if unchanged).
               projectId,
               enabledSkills: enabledSkills ?? ['manifest-editor'],
               templateName: templateName ?? 'edit-lesson',
@@ -316,17 +302,13 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         setIsThinking(false);
       }
 
-      // Bind happens BACKEND-side now: the ccaas MessageWorker awaits
-      // bindToProject + SessionAssetSyncer.sync BEFORE spawning the
-      // engine when the message payload carries `projectId`. The body
-      // above includes it on every send. So nothing more to do here —
-      // bind is deterministic + complete by the time the first SSE
-      // event arrives. (G4 fix; before this commit there was a
-      // fire-and-forget bindSessionToProject call here that raced the
-      // engine spawn and left the first turn looking at an empty
-      // workspace.)
+      // No bind work here: ccaas's MessageWorker (the G4 fix) awaits
+      // bindToProject + bootstrap sync server-side before spawning the
+      // engine, gated on payload.projectId — which the body above
+      // includes on every send. Bind is deterministic and complete by
+      // the time the first SSE event arrives.
     },
-    [sessionId, tenantId, projectId, enabledSkills, templateName, isThinking],
+    [sessionId, projectId, enabledSkills, templateName, isThinking],
   );
 
   // Apply one SSE event to the in-flight agent bubble. Pulled out of

@@ -13,10 +13,8 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { Project } from '../../types';
-import { useTenantId } from '../../hooks/useTenantId';
 import { useConversations } from '../../hooks/useConversations';
 import { useAgentChat } from '../../hooks/useAgentChat';
-import { getApiKey } from '../../api/ccaas';
 import ChatBubble, { ThinkingDots } from './ChatBubble';
 import ConversationDropdown from './ConversationDropdown';
 
@@ -25,16 +23,13 @@ interface AiPanelProps {
 }
 
 export default function AiPanel({ project }: AiPanelProps) {
-  const tenant = useTenantId();
   const conv = useConversations(project.id);
 
-  // Empty-key banner condition: only show after the /me probe settled
-  // so we don't flash it on first render.
-  const noKey = !tenant.isLoading && !getApiKey();
-
+  // No tenantId / API-key state in the browser. live-lesson's
+  // CcaasChatProxyController holds the env CCAAS_API_KEY and resolves
+  // tenantId server-side; same-origin /api/sessions/... calls just work.
   const chat = useAgentChat({
     sessionId: conv.active?.sessionId ?? '',
-    tenantId: tenant.tenantId,
     projectId: project.id,
   });
 
@@ -146,8 +141,7 @@ export default function AiPanel({ project }: AiPanelProps) {
           gap: 12,
         }}
       >
-        {noKey && <PasteKeyBanner />}
-        {!noKey && chat.messages.length === 0 && !chat.isLoadingHistory && <EmptyState />}
+        {chat.messages.length === 0 && !chat.isLoadingHistory && <EmptyState />}
         {chat.isLoadingHistory && <LoadingHistory />}
 
         {chat.messages.map((m) =>
@@ -230,14 +224,7 @@ export default function AiPanel({ project }: AiPanelProps) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            disabled={noKey || !tenant.tenantId}
-            placeholder={
-              noKey
-                ? '请先在控制台设置 API key…'
-                : tenant.isLoading
-                  ? '加载中…'
-                  : '描述你想让 AI 帮你做什么…'
-            }
+            placeholder="描述你想让 AI 帮你做什么…"
             rows={1}
             style={{
               flex: 1,
@@ -256,7 +243,7 @@ export default function AiPanel({ project }: AiPanelProps) {
           />
           <button
             onClick={submit}
-            disabled={!draft.trim() || chat.isThinking || noKey || !tenant.tenantId}
+            disabled={!draft.trim() || chat.isThinking}
             style={{
               width: 32,
               height: 32,
@@ -264,17 +251,9 @@ export default function AiPanel({ project }: AiPanelProps) {
               border: 'none',
               flexShrink: 0,
               background:
-                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
-                  ? 'var(--purple)'
-                  : 'var(--surface2)',
-              color:
-                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
-                  ? '#fff'
-                  : 'var(--t3)',
-              cursor:
-                draft.trim() && !chat.isThinking && !noKey && tenant.tenantId
-                  ? 'pointer'
-                  : 'default',
+                draft.trim() && !chat.isThinking ? 'var(--purple)' : 'var(--surface2)',
+              color: draft.trim() && !chat.isThinking ? '#fff' : 'var(--t3)',
+              cursor: draft.trim() && !chat.isThinking ? 'pointer' : 'default',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -359,41 +338,6 @@ function LoadingHistory() {
       }}
     >
       加载历史消息…
-    </div>
-  );
-}
-
-function PasteKeyBanner() {
-  return (
-    <div
-      style={{
-        padding: 12,
-        borderRadius: 8,
-        background: '#fffbeb',
-        border: '1px solid #fde68a',
-        color: '#92400e',
-        fontSize: 11,
-        lineHeight: 1.6,
-      }}
-    >
-      <div style={{ fontWeight: 600, marginBottom: 6 }}>需要 API key</div>
-      <div>
-        请在浏览器控制台运行：
-        <pre
-          style={{
-            marginTop: 6,
-            padding: 6,
-            borderRadius: 4,
-            background: '#fef3c7',
-            fontSize: 10,
-            overflowX: 'auto',
-            fontFamily: 'monospace',
-          }}
-        >
-          {`localStorage.setItem('ccaas:apiKey', '<your-key>')`}
-        </pre>
-        然后刷新页面。
-      </div>
     </div>
   );
 }

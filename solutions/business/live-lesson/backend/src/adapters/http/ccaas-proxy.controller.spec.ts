@@ -21,6 +21,7 @@ import { take, toArray } from 'rxjs/operators';
 import { BadGatewayException, ServiceUnavailableException } from '@nestjs/common';
 
 import { CcaasProxyController } from './ccaas-proxy.controller';
+import { CcaasUpstream } from './ccaas-upstream.service';
 
 const ORIG_ENV = process.env;
 
@@ -58,7 +59,9 @@ describe('CcaasProxyController', () => {
 
   beforeEach(() => {
     setEnv({ CCAAS_URL: 'http://ccaas.local', CCAAS_API_KEY: 'sk-test' });
-    controller = new CcaasProxyController();
+    // CcaasUpstream is a tiny env+fetch helper — instantiate directly
+    // (no DB / no remote deps) instead of mocking.
+    controller = new CcaasProxyController(new CcaasUpstream());
   });
 
   afterEach(() => {
