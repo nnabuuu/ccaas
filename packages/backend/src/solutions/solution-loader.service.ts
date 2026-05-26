@@ -86,7 +86,7 @@ export interface ImportSolutionConfig {
    * agent-runtime sync layer — REST base URL ccaas calls back to for
    * artifact load/save. Persisted to `tenant.config.artifactUrl`
    * via `tenants.update()`; read at sync time by
-   * `ProjectArtifactSourceRegistry`. Optional — solutions without
+   * `WorkspaceArtifactSourceRegistry`. Optional — solutions without
    * bidirectional artifact sync omit it.
    */
   artifactUrl?: string;
@@ -499,7 +499,7 @@ export class SolutionLoaderService implements OnModuleInit {
       name: fmResult.data.name,
       description: fmResult.data.description,
       content: parsed.content, // SKILL.md body (markdown, no frontmatter)
-      scope: 'tenant',
+      scope: 'solution',
       type: 'skill',
       files,
     });

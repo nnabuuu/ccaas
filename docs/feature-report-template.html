@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Feature Report Template · ccaas · Decision Archive</title>
+<!--
+═════════════════════════════════════════════════════════════════════════
+Feature-report template (2026-05-27 redesign · v2)
+
+PURPOSE (重要,会写到 memory):
+  这份报告的目标是 **decision archaeology** —— 把对话里讨论出的决定、背景、
+  权衡过的选项、为什么这么选,固化下来,这样六个月后回看不需要翻 chat log。
+
+  **不是** "这次发布做了什么"(file diff / git log 已经能回答)。
+  **是** "这次发布想清楚了什么"。
+
+METHODOLOGY:
+  ADR (Architecture Decision Record, Michael Nygard) per decision,
+  加两个补丁:
+    - Deferred = 显式没做的决定(对话残留的另一面)
+    - Open Questions = 真正没答案的问题(留给未来自己)
+  Change surface demote 到 footer。
+
+LAYOUT (top → bottom):
+  · Header strip       — brand + scope + status pill
+  · Context (1-2 段)    — 为什么有这次 feature;诱发它的对话或事件
+  · Decisions (主体)    — N 个 D-XX 卡片,每个一个决定
+  · Deferred           — 显式 punt 的决定 + 推迟理由
+  · Open Questions     — 真正的未知,留给未来
+  · <details> Change Surface — commits, files, test counts(收起)
+  · Footer
+
+每个 Decision card 的内部结构:
+  - D-XX 编号 + 一行题目(题目是"问题",不是"答案")
+  - Trigger + Constraint(诱因 + 难点)
+  - Options weighed(小表格,被选的高亮)
+  - Why this option(WHY 段 —— 这是对话残留的核心)
+  - Locked in / Locked out(consequences)
+  - Artifact(file path / commit ref,可选)
+
+CONTENT BELOW 是 Phase 2b 的具体应用 —— 把那次对话里 6 个决定 +
+4 个 deferred + 3 个 open question 整理成这份格式。可以直接换成
+其他 feature 的内容。
+═════════════════════════════════════════════════════════════════════════
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ============ HERO (compact, 2-line title; lets body breathe) ============ */
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+/* ============ CONTEXT (framing prose) ============ */
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ DECISION CARD (the core) ============ */
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+
+/* Trigger + Constraint — the 2-line framing of WHY this decision exists.
+   Compact strip; the meat is in Options + Why-this. */
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+/* Options weighed — small table. The chosen row is visually distinct
+   (background tint + arrow on left). */
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+/* The WHY block — the actual reason in prose. This is what disappears
+   from chat history and is the report's reason for existing.
+   Treated visually as the most important block: serif, larger size,
+   dark accent border. */
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+/* Locked in / locked out — what this decision commits us to, what it
+   costs. Two-column row. */
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+/* Optional artifact pointer — file/commit ref. Tiny, last thing in the
+   card. Footnote-ish. */
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+/* ============ DEFERRED + OPEN (smaller cards, less visual weight) ============ */
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+/* ============ CHANGE SURFACE (footnote-level, collapsed) ============ */
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">Phase 2b · agent-runtime 双向同步 · 2026-05-26</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">523710cc..b54eff81</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">这次对话留下来的决定</span>
+    </div>
+    <h1>把"<em>为什么这么设计</em>"<br>从对话窗口里救出来。</h1>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- CONTEXT · 1-2 段诱因 + framing。后续每个 decision 都假设读者读过。 -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="context">
+    <p>
+      Phase 1 已经 ship 了 ccaas agent-runtime 的基础双向同步,但留了三个口子:
+      <strong>(M1) 路径规范化往返</strong>、<strong>(SSE 无 auth)</strong>、<strong>(无 binary 支持)</strong>。
+      Phase 2b 一次性闭环 + 加端到端验证(<code>poc-smoke.sh</code>)。
+    </p>
+    <p>
+      期间触发了 <em>6 个非显然的设计决定</em> + <em>2 个高严重性的 code-review 修复</em> +
+      <em>1 个用户驱动的架构纠正</em>(<code>localStorage('ccaas:apiKey')</code> → backend proxy)。
+      下面每一项都展开为一个决定单元 —— <strong>为什么这么选,选了什么</strong> 比 <strong>具体改了什么文件</strong> 重要,
+      所以 file diff / commit list 收在底部的 collapsible 里。
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- DECISIONS · 主体                                                   -->
+  <!--                                                                    -->
+  <!-- 每个 d-card:                                                       -->
+  <!--   D-XX + question-title + scope pill                              -->
+  <!--   Trigger + Constraint(诱因 + 难点)                              -->
+  <!--   Options weighed(小表格,被选高亮 ▸ + 绿色)                     -->
+  <!--   Why(serif prose 突出;对话残留核心)                            -->
+  <!--   Locked in / Locked out                                          -->
+  <!--   Artifact ref(file path / commit hash,footer-style)             -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按对话出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> SSE 怎么做 auth?</h3>
+        </div>
+        <span class="d-scope backend">Backend · SSE</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">实现完 SSE auth 写完单元测试都过,wire test 一跑发现浏览器收到 <code>HTTP 200</code> + 流静默关闭,根本看不到 401/403。</span>
+        <span class="lbl">约束</span>
+        <span class="val">NestJS 的 <code>@Sse()</code> 装饰器在订阅 Observable 之前就提交了 HTTP response status + <code>Content-Type: text/event-stream</code>。Observable 内部 <code>error()</code> 时已经晚了。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">在 Observable 内部用 <code>from(authPromise).pipe(switchMap(...))</code> 包一层,auth fail 就 <code>subscriber.error()</code>。</span>
+          <span class="opt-verdict">❌ 拒 —— @Sse 已经提交 200,error 只是静默关流。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">把 auth 提到 NestJS Guard,在 <code>canActivate</code> 阶段跑。Guard 抛 <code>UnauthorizedException</code> / <code>ForbiddenException</code>。</span>
+          <span class="opt-verdict">✓ 选 —— Guard 在 handler 之前跑,状态码能正确送到浏览器。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          NestJS 的请求生命周期是 <strong>Guard → Pipe → Handler → Interceptor → Response</strong>。
+          一旦 handler 返回 Observable 给 <code>@Sse</code>,response 头部就已经在 wire 上了 ——
+          这时候 Observable 内部的 error 只能体现为 <em>"stream 中断"</em>,无法回写 status code。
+        </p>
+        <p>
+          Guard 是 NestJS <strong>唯一一个 pre-handler 的边界</strong>,在 response 头部确定之前能 throw HTTP exception。
+          对所有未来的 SSE endpoint 都适用 —— Guard 化是 SSE auth 的<em>唯一正确解</em>。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 ccaas SSE 路由都用 <code>@UseGuards()</code> 模式。Guard 类是 Reusable 边界。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          per-event auth(每条 message 重新鉴权)做不到。如果未来需要 token rotation mid-stream 要换设计。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/sessions/agent-runtime/project-access.guard.ts</code>
+        <span class="lbl">commit</span><code>63c7b072</code>
+      </div>
+    </div>
+
+    <!-- D-02 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Tenant resolver port 的 API 形状?</h3>
+        </div>
+        <span class="d-scope design">Design · Port</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">原本写成 <code>resolveTenant(projectId): tenantId | null</code>,code reviewer 指出这个签名让 multi-tenant 场景下有隐患 —— 如果一个 projectId 被多个 tenant 都 bind 过(理论可能),"who owns this project" 没有唯一答案。</span>
+        <span class="lbl">约束</span>
+        <span class="val">project 在 ccaas-core 是不透明字符串,ccaas 不知道 project 是怎么分配 tenant 的 —— 必须由 solution 端回答。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>API shape</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc"><code>resolveTenant(projectId): Promise&lt;string | null&gt;</code> —— "who owns this project"</span>
+          <span class="opt-verdict">❌ 拒 —— 隐式假设 project ↔ tenant 是 1:1,实现层可能选错 tenant。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><code>verifyProjectAccess(projectId, callerTenantId): Promise&lt;boolean&gt;</code> —— "does this tenant own this project"</span>
+          <span class="opt-verdict">✓ 选 —— 把 caller 的身份注入,问题变成可判定的 pair-check。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Option A 的形状让 <em>resolver 的实现</em> 决定"哪个 tenant 拥有这个 project",
+          这是个<strong>开放性问题</strong> —— 实现可以做任意映射。结果是 ccaas-core 失去对 tenant 边界的控制。
+        </p>
+        <p>
+          Option B 把问题转成 <em>布尔判定</em>:caller 声称自己是 tenant X,resolver 只回答 yes/no。
+          ccaas-core 仍然<strong>持有 tenant 边界的语义</strong>(从 API key 解析出 tenant),resolver 只回答 "这个 tenant 能不能访问这个 project"。
+          API 的"问题域"更小,实现的自由度更窄,安全边界更清晰。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每次 verify 都需要 caller 已经被 ccaas 解析出 tenantId(API key 校验通过)。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          无法用此 port 列举 "tenant X 拥有哪些 projects" —— 那是另一个 query,需要另一个 port 或反向接口。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/agent-runtime/src/artifact/project-tenant-resolver.ts</code>
+        <span class="lbl">commit</span><code>63c7b072</code>
+      </div>
+    </div>
+
+    <!-- D-03 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> ccaas 怎么知道一个 project 属于哪个 tenant?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Resolution</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-02 的 port 形状定了,但 ccaas-default 怎么实现?最初方案让每个 solution 写自己的 resolver(查它的 project 表)。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Solution 是跨进程的;ccaas → solution callback 要走 HTTP,加延迟、加失败模式;每个 solution 要 schema migration 加 tenantId 列;接入门槛高。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">每个 solution 实现 resolver(查自己的 <code>CourseProject.tenantId</code> 列),ccaas 通过 HTTP 调它。</span>
+          <span class="opt-verdict">❌ 拒 —— 每个 solution 加 column + 加 endpoint + 跨进程 latency。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">ccaas 默认 resolver 直接查自己的 <code>session_metadata</code> 表,该表已经被 <code>bind-project</code> 流程写入 (tenantId, projectId) 行。</span>
+          <span class="opt-verdict">✓ 选 —— 零 solution 改动,单次索引化 SQLite lookup。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <code>bind-project</code> 流程在 ccaas 这边已经把 <em>(sessionId, tenantId, projectId)</em> 三元组写到了
+          <code>session_metadata</code> 表 —— 这是 ccaas <strong>本来就知道</strong> 的事实,
+          不需要再问 solution 一遍。
+        </p>
+        <p>
+          Option A 是"找 source of truth 的源头去问",Option B 是"复用既有 cache"。
+          权衡的关键: <em>bind-project 必然先发生</em>(用户必须先 bind 才能开始 sync),
+          所以这条信息在我们需要时一定已经存在。代价: 没 bind 过的 project resolve 不到 → 403,
+          但这正是 <strong>"用户没 bind 就不该有访问"</strong> 的语义。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Solution 端只要走 <code>bind-project</code>,就自动获得 SSE 鉴权能力,零代码。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想要 "未 bind 也能预览" 这类流程的话需要换 resolver(可以通过覆盖 <code>PROJECT_TENANT_RESOLVER</code> token 实现)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/sessions/agent-runtime/session-metadata-project-tenant-resolver.ts</code>
+      </div>
+    </div>
+
+    <!-- D-04 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 浏览器要不要持有 ccaas API key?</h3>
+        </div>
+        <span class="d-scope security">Security · Boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">写 Phase 2b 文档时我建议 creator app 用 <code>localStorage.setItem('ccaas:apiKey', ...)</code> 让运营粘贴 key。<strong>用户直接打回</strong>: "按我的设计,solution 才是 ccaas 的 tenant,end user 属于 solution,浏览器不该见 ccaas key"。</span>
+        <span class="lbl">约束</span>
+        <span class="val">浏览器要订阅 SSE,而 ccaas SSE 需要 auth。如果浏览器不持有 ccaas key,必须有人代理这次调用。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">localStorage 持有 ccaas key,浏览器直接打 <code>${VITE_CCAAS_URL}/projects/.../changes?token=...</code></span>
+          <span class="opt-verdict">❌ 拒 —— 违反 "ccaas knows tenants, not end users" 边界。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Solution backend (live-lesson) 持有 env <code>CCAAS_API_KEY</code>,新加 proxy controller,浏览器只打同源 <code>/api/projects/.../changes</code></span>
+          <span class="opt-verdict">✓ 选 —— 浏览器零 ccaas 状态;solution backend 一个 key。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <strong>边界问题不是技术问题,是<em>角色定义</em>问题</strong>。
+          ccaas 这个平台的"用户"是 solution,不是 end user。Solution 自己有它的鉴权体系(cookie / JWT / 任何形式),
+          end user 通过 solution 的体系登录;<em>solution backend 是 ccaas 的客户</em>。
+        </p>
+        <p>
+          一旦把这条线画清楚,Option A 就是<strong>把 ccaas 的 master credential 暴露给 solution 的 end user</strong>,
+          这是 <em>credential confusion</em> —— end user 拿到的是 solution 给他的 session,不该有 ccaas 的 API key。
+          Option B 通过 proxy 让 solution backend 重新成为 ccaas 的唯一调用方,边界还原。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Solution backend 必须为每条需要的 ccaas 调用提供 proxy endpoint。增加了 boilerplate。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          浏览器无法直接 debug ccaas API,必须通过 solution 那一层。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts</code>
+        <span class="lbl">commit</span><code>56173292</code>
+      </div>
+    </div>
+
+    <!-- D-05 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Binary 支持做完整 vertical 还是 MVP?</h3>
+        </div>
+        <span class="d-scope design">Design · Scope</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Phase 2b-4 启动时问过 "MVP(只做 port + engine)还是 Full(再加 REST adapter + syncer)?"。当前没有任何 in-tree consumer 需要 binary。</span>
+        <span class="lbl">约束</span>
+        <span class="val">MVP ~1 天,Full ~3-4 天。但 API shape 一旦定下来,以后的 binary consumer 会按这个形状写代码 —— shape 设计错了要返工。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Scope</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">MVP — 只做 port 和 SyncEngine.planBinary;REST + syncer 等真出现 consumer 再做</span>
+          <span class="opt-verdict">❌ 拒 —— shape 没被"完整 vertical 跑通"验证过,容易设计错。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Full — port + engine + REST adapter + syncer + 端到端单元测试</span>
+          <span class="opt-verdict">✓ 选 —— 把 shape 在完整 vertical 中跑通一遍,后续接入零返工。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          API 的<strong>设计正确性</strong>只有在 <em>完整的调用链跑通</em> 之后才能验证。
+          只做 port + engine 的话,REST 传输层(streaming、Content-Length、size cap)的边界条件没被试过,
+          后续接入第一个 binary consumer 时大概率发现需要返工 API。
+        </p>
+        <p>
+          多花 2-3 天换 "未来的 binary 用户不用改 ccaas",是合算的 —— 因为<em>修改一个已发布的 port 形状</em>
+          的代价比一开始就把它做对要大几倍(下游消费者要跟着改)。这是 <strong>"在没人用之前先把 shape 做对"</strong> 的投资。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          整个 binary vertical 在 ccaas 端已存在并被测试覆盖。未来的 binary solution 实现 REST 即可接入。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          ~2-3 天的 ccaas-side 工作量提前花了。如果 binary 这个方向最终没用,这部分代码是 dead weight。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/agent-runtime/src/artifact/binary-artifact-source.ts</code>
+        <span class="lbl">commit</span><code>924191f3</code>
+      </div>
+    </div>
+
+    <!-- D-06 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Invalidate proxy 上游 4xx 时怎么处理?</h3>
+        </div>
+        <span class="d-scope backend">Backend · Error</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Code reviewer 提出:invalidate 上游 401/403 时,如果一律 swallow 成 <code>{accepted: false}</code> 给浏览器,运营永远不会发现 <code>CCAAS_API_KEY</code> 配错了。</span>
+        <span class="lbl">约束</span>
+        <span class="val">invalidate 在设计上是 "optional optimization" —— 即使失败,下一轮 turn 也会自动 sync,不算 critical path。但 401/403 是 operator-actionable 的配置错误,跟 5xx (upstream busy) 不同。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">所有上游 4xx + 5xx 一律返回 <code>{accepted: false}</code>,只 warn log</span>
+          <span class="opt-verdict">❌ 拒 —— auth 配错静默永久 degraded。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">401/403 抛 <code>BadGatewayException(502)</code> + error log;5xx/404 保留 <code>{accepted: false}</code> + warn log</span>
+          <span class="opt-verdict">✓ 选 —— 分类处理:auth 失败 fail-loud,其他保留 best-effort。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <em>"Optional optimization"</em> 的语义是说<strong>调用失败不影响功能</strong>,
+          不是<em>调用失败的原因不重要</em>。401/403 是<strong>配置错</strong>,
+          这种错沉默下去会变成 "agent 永远不实时 sync,但 SSE 又看起来正常",运营调试这个 bug 要小时级。
+        </p>
+        <p>
+          反观 5xx (upstream busy)、404 (project not yet bound) —— 这些是<em>瞬时</em>或<em>预期的</em>状态,
+          下一轮 turn 会自动恢复,值得保留 best-effort 行为。
+          所以 <strong>4xx 的二分(auth-class vs not)</strong> 比 4xx vs 5xx 的二分更准确地反映了问题域。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Operator 配错 <code>CCAAS_API_KEY</code> 在第一次 invalidate 调用就会看到 502 + 日志。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          GUI 调用 invalidate 时需要处理 502(虽然实践中一旦配对就稳定)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts:166-186</code>
+        <span class="lbl">commit</span><code>b54eff81</code>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- DEFERRED · 显式没做的决定                                          -->
+  <!-- 这一区的存在意义: "我们当时考虑过,但选择不做" 也是对话残留 ——      -->
+  <!-- 六个月后回来如果有人问 "怎么没做 X",这里给答案。                  -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">4 项 · 触发条件下重新审视</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>Browser-side auth gate on ccaas proxy controller</h4>
+        <p><span class="lbl">现状</span>live-lesson 所有 controller 当前都是 anonymous(<code>classroom</code> / <code>lesson</code> / <code>project</code> / <code>discuss</code>)。Proxy 跟随这个 pattern。</p>
+        <p><span class="lbl">推迟理由</span>matches surrounding code 的 auth 现状;增加 guard 是 cross-cutting 的 live-lesson 工作,跟本次 feature 的 scope 分开。</p>
+        <p><span class="lbl">重新审视的触发</span>把 live-lesson 部署到非 VPN 公网之前必须做。tracked in <code>backlog.md</code> 第一项。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4><code>CcaasUpstream.resolveTenantId</code> TTL + 401-retry</h4>
+        <p><span class="lbl">现状</span>tenantId 解析后 cache forever;rotation 要 process restart。</p>
+        <p><span class="lbl">推迟理由</span>当前 ops 流程就是 env-driven rotation(改 .env + restart),没有 live rotation 需求;TTL + retry 的复杂度只在 live rotation 真出现时才有 ROI。</p>
+        <p><span class="lbl">重新审视的触发</span>ops 流程改成 live key rotation(K8s secrets reload / vault rotation)的时候。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>Solution 端 binary artifact REST endpoint 实现</h4>
+        <p><span class="lbl">现状</span>ccaas 端 binary vertical 完整 + unit-tested;没有 in-tree solution 真的 serve 二进制内容。</p>
+        <p><span class="lbl">推迟理由</span>当前没有 use case;live-lesson 是 text-only(JSON manifest + Markdown lesson plan)。提前 wire up 一个不存在的 consumer 没意义。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个需要 binary(图片 / 音频 / PDF)的 solution 出现 —— 然后照 ccaas REST 契约实现 4 个 endpoint 即可。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>Op-based sync / <code>MarkdownArtifactEditor</code></h4>
+        <p><span class="lbl">现状</span>当前所有 artifact 走 whole-content sync,JSON 用 <code>JsonEditProvider</code> 做精细编辑。</p>
+        <p><span class="lbl">推迟理由</span>没有真实 consumer;<code>JsonEditProvider</code> 已经够 cover JSON artifacts 的精细操作。Markdown 端目前没有 op-based 编辑需求。</p>
+        <p><span class="lbl">重新审视的触发</span>有 solution 需要 markdown 精细编辑(如 collaborative editor 类) —— 那时候再设计 op shape。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- OPEN QUESTIONS · 真正没答案的                                      -->
+  <!-- 跟 Deferred 不一样:Deferred 是"考虑过,选择不做";Open 是          -->
+  <!-- "我们没有 confident answer"。留给未来自己继续想。                -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>什么时候 introduce 短期 exchange token?</h4>
+        <p><span class="lbl">问题</span>SSE 用 <code>?token=master-key</code> 是因为 EventSource 不能 set headers。<em>Master key 写在 URL</em> 这件事在 access log / proxy log 里会留痕;真正的 multi-tenant 公网部署应该改成短期 scoped token 交换(<code>POST /sessions/exchange</code>)。</p>
+        <p><span class="lbl">为什么 open</span>当前 ccaas 是 single-replica + 内网部署;log leak 风险低。但什么阈值后必须做交换?没明确标准。可能的触发: 第一次部署到公网域名 / 出现 audit 合规要求 / 出现第一个非内部 solution。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>Live key rotation 怎么做?</h4>
+        <p><span class="lbl">问题</span>当前 rotation = restart。但生产环境如果想做 zero-downtime rotation(K8s rolling update + vault secret reload),tenantId cache 怎么 invalidate?401 上游响应怎么触发重新 resolve?</p>
+        <p><span class="lbl">为什么 open</span>不知道未来的 ops shape。可能就是 K8s rolling restart(不需要 live)。也可能是 vault webhook → cache invalidate。设计取决于 ops 流程。Tracked in <code>backlog.md</code> 但没设计。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>多 instance ccaas 的故事是什么?</h4>
+        <p><span class="lbl">问题</span>ccaas 当前是 single-replica(SQLite + agentfs FUSE 都假设单进程)。如果要 scale 出去,SyncEngine 的 per-projectId mutex、<code>session_metadata</code> 的 SQLite、agentfs 的 FUSE mount 都需要换。</p>
+        <p><span class="lbl">为什么 open</span>没有 capacity pressure 驱动 multi-instance;单实例可以扛到什么规模也没测。设计层面 mutex 可以换 Postgres advisory lock,SQLite 换 PG,但 agentfs FUSE 这一块是真正的 single-host constraint。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- CHANGE SURFACE · 收在 collapsible 里                              -->
+  <!-- 这是 git 的工作 —— 这份报告记的是 "想清楚了什么",不是 "改了什么"。 -->
+  <!-- 但有时候要查 "这个决定对应的代码在哪",所以保留入口。              -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 提交 + 文件 + 测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作,做参考</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">7</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1,564</span><span class="cs-stat-l">Tests Pass · 0 Fail</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">+8%</span><span class="cs-stat-l">Coverage Δ</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1</span><span class="cs-stat-l">Breaking Change</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">Low</span><span class="cs-stat-l">Risk</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">523710cc</span><span class="tag fix">fix</span><span class="msg">agent-runtime 2b-1 — saveArtifact returns canonical path</span></div>
+        <div class="cs-row"><span class="hash">924191f3</span><span class="tag feat">feat</span><span class="msg">BinaryArtifactSource port + SyncEngine.planBinary (2b-4)</span></div>
+        <div class="cs-row"><span class="hash">63c7b072</span><span class="tag feat">feat</span><span class="msg">SSE auth guard + binary artifact registry (2b-2 + 2b-4)</span></div>
+        <div class="cs-row"><span class="hash">3d572c63</span><span class="tag feat">feat</span><span class="msg">creator SSE hook accepts ccaas api key (2b-2)</span></div>
+        <div class="cs-row"><span class="hash">fde74eff</span><span class="tag fix">fix</span><span class="msg">poc-smoke reordered for SSE auth + dev key path (2b-3)</span></div>
+        <div class="cs-row"><span class="hash">eb4eda16</span><span class="tag docs">docs</span><span class="msg">gitbook + READMEs + poc-result for 2b-2 + 2b-4</span></div>
+        <div class="cs-row"><span class="hash">b54eff81</span><span class="tag fix">fix</span><span class="msg">ccaas proxy hardening — scrub token + fail loud + ct sniff</span></div>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-27 · ccaas Decision Archive · template at <code>docs/feature-report-template.html</code>
+  </footer>
+
+</div>
+
+</body>
+</html>

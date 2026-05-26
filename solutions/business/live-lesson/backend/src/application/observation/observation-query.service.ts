@@ -360,7 +360,7 @@ function toObservation(record: ObservationRecordView): Observation {
     id: record.id,
     sessionId: record.sessionId,
     entityId: record.entityId,
-    tenantId: record.tenantId,
+    solutionId: record.solutionId,
     type: record.type,
     data: record.data,
     triggerEventId: record.triggerEventId,

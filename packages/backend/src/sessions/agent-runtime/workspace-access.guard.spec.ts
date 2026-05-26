@@ -45,7 +45,7 @@ describe('WorkspaceAccessGuard', () => {
   const IDENTITY = 'proj-1';
 
   let apiKeys: { validateKey: jest.Mock };
-  let tenantResolver: { verifyProjectAccess: jest.Mock };
+  let tenantResolver: { verifyWorkspaceAccess: jest.Mock };
   let guard: WorkspaceAccessGuard;
 
   beforeEach(() => {
@@ -60,10 +60,10 @@ describe('WorkspaceAccessGuard', () => {
     tenantResolver = {
       // Default: caller tenant always matches. Individual tests override
       // to assert the deny paths. Note: method name stays
-      // `verifyProjectAccess` because that's what the agent-runtime
-      // package's `ProjectTenantResolver` interface defines (renaming
+      // `verifyWorkspaceAccess` because that's what the agent-runtime
+      // package's `WorkspaceAccessResolver` interface defines (renaming
       // the package's interface is out of β-3 scope).
-      verifyProjectAccess: jest
+      verifyWorkspaceAccess: jest
         .fn()
         .mockImplementation(async (_id: string, callerTenantId: string) =>
           callerTenantId === TENANT,
@@ -91,15 +91,15 @@ describe('WorkspaceAccessGuard', () => {
   });
 
   it('throws 403 when the resolver verifies false (unknown workspace or wrong tenant)', async () => {
-    tenantResolver.verifyProjectAccess.mockResolvedValueOnce(false);
+    tenantResolver.verifyWorkspaceAccess.mockResolvedValueOnce(false);
     await expect(
       guard.canActivate(ctx({ identity: IDENTITY, token: VALID_TOKEN })),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('passes the caller tenant id through to verifyProjectAccess', async () => {
+  it('passes the caller tenant id through to verifyWorkspaceAccess', async () => {
     await guard.canActivate(ctx({ identity: IDENTITY, token: VALID_TOKEN }));
-    expect(tenantResolver.verifyProjectAccess).toHaveBeenCalledWith(
+    expect(tenantResolver.verifyWorkspaceAccess).toHaveBeenCalledWith(
       IDENTITY,
       TENANT,
     );

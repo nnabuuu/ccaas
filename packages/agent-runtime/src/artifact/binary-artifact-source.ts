@@ -1,10 +1,10 @@
 /**
  * `BinaryArtifactSource` — the binary counterpart to
- * `ProjectArtifactSource`. Solutions implement it when they need to
+ * `WorkspaceArtifactSource`. Solutions implement it when they need to
  * sync byte-content artifacts (images, audio, PDFs) alongside their
  * text artifacts.
  *
- * Why a separate port from `ProjectArtifactSource`?
+ * Why a separate port from `WorkspaceArtifactSource`?
  *   - content type is `Buffer | Uint8Array`, not `string`. Co-mingling
  *     would complicate every consumer's type story even when they only
  *     handle text.
@@ -94,7 +94,7 @@ export interface BinaryArtifactSource {
    * compares the returned hashes (or fetches+hashes on demand) against
    * the snapshot to plan sync actions.
    *
-   * Called at the same cadence as `ProjectArtifactSource.loadArtifacts`
+   * Called at the same cadence as `WorkspaceArtifactSource.loadArtifacts`
    * (session start, agent turn boundary, explicit invalidate).
    */
   listBinaryArtifacts(
@@ -124,7 +124,7 @@ export interface BinaryArtifactSource {
 
   /**
    * Optional: persist a deletion. Same opt-in semantics as
-   * `ProjectArtifactSource.deleteArtifact` — omitting it means the
+   * `WorkspaceArtifactSource.deleteArtifact` — omitting it means the
    * runtime treats agent deletes as no-ops (and restores the file
    * on the next sync to avoid a delete loop).
    */

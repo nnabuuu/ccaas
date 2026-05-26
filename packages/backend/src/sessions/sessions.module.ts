@@ -48,14 +48,14 @@ import { SandboxService } from './sandbox/sandbox.service';
 import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
 import { WorkspaceChangesController } from './agent-runtime/workspace-changes.controller';
 import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
-import { ProjectArtifactSourceRegistry } from './agent-runtime/project-artifact-source-registry';
-import { ProjectBinaryArtifactSourceRegistry } from './agent-runtime/project-binary-artifact-source-registry';
+import { WorkspaceArtifactSourceRegistry } from './agent-runtime/workspace-artifact-source-registry';
+import { WorkspaceBinaryArtifactSourceRegistry } from './agent-runtime/workspace-binary-artifact-source-registry';
 import { SessionMetadataWorkspaceResolver } from './agent-runtime/session-metadata-workspace-resolver';
 import { WorkspaceAccessGuard } from './agent-runtime/workspace-access.guard';
 import {
-  PROJECT_ARTIFACT_SOURCE_REGISTRY,
-  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
-  PROJECT_TENANT_RESOLVER,
+  WORKSPACE_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_ACCESS_RESOLVER,
 } from './agent-runtime/tokens';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
@@ -81,7 +81,7 @@ import { BundleModule } from '../bundles/bundle.module';
     BundleModule,
     // Agent-runtime sync layer: source URL lives on `tenant.config.artifactUrl`
     // (set via solution.json auto-discovery or `PUT /solutions/:id`).
-    // `ProjectArtifactSourceRegistry` (provided below) reads it lazily +
+    // `WorkspaceArtifactSourceRegistry` (provided below) reads it lazily +
     // invalidates on `tenant.config.changed` events.
     AgentRuntimeModule.forRoot(),
   ],
@@ -118,18 +118,18 @@ import { BundleModule } from '../bundles/bundle.module';
     // it depends on SolutionsService — which is reachable from SessionsModule
     // via the SolutionsModule import above, but pulling SolutionsModule into
     // AgentRuntimeModule creates DI grief (SolutionAuthGuard → UserSolutionService).
-    ProjectArtifactSourceRegistry,
+    WorkspaceArtifactSourceRegistry,
     {
-      provide: PROJECT_ARTIFACT_SOURCE_REGISTRY,
-      useExisting: ProjectArtifactSourceRegistry,
+      provide: WORKSPACE_ARTIFACT_SOURCE_REGISTRY,
+      useExisting: WorkspaceArtifactSourceRegistry,
     },
     // Phase 2b-4: binary artifact registry. Same pattern as the text
     // one — solutions opt in via `tenant.config.binaryArtifactUrl`;
     // tenants without it skip the binary half of sync entirely.
-    ProjectBinaryArtifactSourceRegistry,
+    WorkspaceBinaryArtifactSourceRegistry,
     {
-      provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
-      useExisting: ProjectBinaryArtifactSourceRegistry,
+      provide: WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY,
+      useExisting: WorkspaceBinaryArtifactSourceRegistry,
     },
     // Phase 2b-2: WorkspaceChangesController auth uses this resolver to map
     // workspace identity → solutionId. Overrides the AgentRuntimeModule's
@@ -139,7 +139,7 @@ import { BundleModule } from '../bundles/bundle.module';
     // the same entity twice and leaks the SessionsModule-owned table.
     SessionMetadataWorkspaceResolver,
     {
-      provide: PROJECT_TENANT_RESOLVER,
+      provide: WORKSPACE_ACCESS_RESOLVER,
       useExisting: SessionMetadataWorkspaceResolver,
     },
     // Guard for /workspaces/:id/* (and /projects/:id/* alias) endpoints
@@ -149,6 +149,6 @@ import { BundleModule } from '../bundles/bundle.module';
     // details.
     WorkspaceAccessGuard,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, PROJECT_ARTIFACT_SOURCE_REGISTRY],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, WORKSPACE_ARTIFACT_SOURCE_REGISTRY],
 })
 export class SessionsModule {}

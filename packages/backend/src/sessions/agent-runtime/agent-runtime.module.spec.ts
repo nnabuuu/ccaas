@@ -5,10 +5,10 @@
  * artifact-callback URL now lives on `tenant.config.artifactUrl`,
  * registered via solution.json + auto-discovery (or via REST). These
  * tests are correspondingly simpler:
- *   - PROJECT_ARTIFACT_SOURCE token resolves (back-compat — bound to
+ *   - WORKSPACE_ARTIFACT_SOURCE token resolves (back-compat — bound to
  *     options.artifactSource or NoopArtifactSource)
- *   - PROJECT_ARTIFACT_SOURCE_REGISTRY resolves to a
- *     ProjectArtifactSourceRegistry instance
+ *   - WORKSPACE_ARTIFACT_SOURCE_REGISTRY resolves to a
+ *     WorkspaceArtifactSourceRegistry instance
  *   - CHANGE_STREAM is an InMemoryChangeStream singleton
  *
  * Registry behavior itself (tenant.config lookup, cache, event
@@ -24,18 +24,18 @@ import {
   type ArtifactSnapshot,
   type ChangeStream,
   InMemoryChangeStream,
-  type ProjectArtifactSource,
+  type WorkspaceArtifactSource,
 } from '@kedge-agentic/agent-runtime';
 
 import {
   AgentRuntimeModule,
   CHANGE_STREAM,
-  PROJECT_ARTIFACT_SOURCE,
+  WORKSPACE_ARTIFACT_SOURCE,
 } from './agent-runtime.module';
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
 
 @Injectable()
-class FakeArtifactSource implements ProjectArtifactSource {
+class FakeArtifactSource implements WorkspaceArtifactSource {
   async loadArtifacts(): Promise<ReadonlyArray<ArtifactSnapshot>> {
     return [{ path: 'fixture.md', content: '# hi', type: 'md' }];
   }
@@ -64,15 +64,15 @@ describe('AgentRuntimeModule', () => {
     repoMock.delete.mockClear();
   });
 
-  it('resolves the solution-provided artifact source via PROJECT_ARTIFACT_SOURCE', async () => {
+  it('resolves the solution-provided artifact source via WORKSPACE_ARTIFACT_SOURCE', async () => {
     const moduleRef = await compileWith({ artifactSource: FakeArtifactSource });
-    const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
+    const source = moduleRef.get<WorkspaceArtifactSource>(WORKSPACE_ARTIFACT_SOURCE);
     expect(source).toBeInstanceOf(FakeArtifactSource);
   });
 
   it('falls back to a no-op source when no artifact source is provided', async () => {
     const moduleRef = await compileWith();
-    const source = moduleRef.get<ProjectArtifactSource>(PROJECT_ARTIFACT_SOURCE);
+    const source = moduleRef.get<WorkspaceArtifactSource>(WORKSPACE_ARTIFACT_SOURCE);
     const out = await source.loadArtifacts('p1');
     expect(out).toEqual([]);
     await expect(source.saveArtifact('p1', { path: 'x', content: 'y', type: 'md' }))
@@ -86,7 +86,7 @@ describe('AgentRuntimeModule', () => {
     expect(moduleRef.get<ChangeStream>(CHANGE_STREAM)).toBe(stream);
   });
 
-  // Note: PROJECT_ARTIFACT_SOURCE_REGISTRY binding lives in SessionsModule
+  // Note: WORKSPACE_ARTIFACT_SOURCE_REGISTRY binding lives in SessionsModule
   // (not AgentRuntimeModule) because the registry depends on SolutionsService.
   // Tests for the registry itself: see project-artifact-source-registry.spec.ts.
 });

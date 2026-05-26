@@ -50,7 +50,7 @@ export class StudentSubmissionService {
       type: 'student_join',
       sessionId: session.id,
       entityId: saved.id,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: { studentName: saved.name },
     }).catch(err => this.logger.error(`Observer dispatch student_join failed: ${err}`));
 
@@ -370,7 +370,7 @@ export class StudentSubmissionService {
       type: 'exercise_result',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: { step, score: score?.total ?? null },
     }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
 
@@ -382,7 +382,7 @@ export class StudentSubmissionService {
             type: 'step_complete',
             sessionId: session.id,
             entityId: studentId,
-            tenantId: session.lessonId,
+            solutionId: session.lessonId,
             payload: { step, taskNum, nextTask: s.currentTask },
           });
         }
@@ -394,7 +394,7 @@ export class StudentSubmissionService {
       type: 'chat_turn',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
     }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
   }

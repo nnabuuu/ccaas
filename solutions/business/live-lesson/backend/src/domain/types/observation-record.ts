@@ -10,7 +10,7 @@ export interface ObservationRecordView {
   id: string;
   sessionId: string;
   entityId: string;
-  tenantId: string;
+  solutionId: string;
   type: string;
   data: Record<string, unknown>;
   triggerEventId: string;

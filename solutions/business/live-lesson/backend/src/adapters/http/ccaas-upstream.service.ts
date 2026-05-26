@@ -69,8 +69,8 @@ export class CcaasUpstream {
    * Resolve the ccaas solutionId for the env-held API key. ccaas exposes
    * `GET /api/v1/auth/me` which returns `{ solutionId, ... }` given an
    * Authorization header. We call that once on the first request that
-   * needs it (typically the first POST /sessions/:sid/bind-project or
-   * /messages) and cache forever.
+   * needs it (typically the first POST /sessions/:sid/messages or
+   * /attach-workspace-source) and cache forever.
    *
    * Why cache forever: the env key identifies the tenant; the env can't
    * change without a process restart; therefore the solutionId can't

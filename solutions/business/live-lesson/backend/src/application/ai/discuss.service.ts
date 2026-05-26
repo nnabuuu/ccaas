@@ -185,7 +185,7 @@ export class DiscussService {
           type: 'discuss_complete',
           sessionId: session.id,
           entityId: studentId,
-          tenantId: session.lessonId,
+          solutionId: session.lessonId,
           payload: { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
         }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
       }
@@ -194,7 +194,7 @@ export class DiscussService {
         type: 'chat_turn',
         sessionId: session.id,
         entityId: studentId,
-        tenantId: session.lessonId,
+        solutionId: session.lessonId,
         payload: { student: lastStudentMsg, ai: reply, taskNum, round },
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
@@ -285,7 +285,7 @@ export class DiscussService {
       type: 'discuss_complete',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: {
         taskNum,
         completionType,

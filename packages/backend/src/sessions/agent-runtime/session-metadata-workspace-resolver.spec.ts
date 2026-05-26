@@ -45,16 +45,16 @@ describe('SessionMetadataWorkspaceResolver', () => {
   });
 
   it('returns false for empty projectId', async () => {
-    expect(await resolver.verifyProjectAccess('', TENANT_A)).toBe(false);
+    expect(await resolver.verifyWorkspaceAccess('', TENANT_A)).toBe(false);
   });
 
   it('returns false for empty callerTenantId', async () => {
-    expect(await resolver.verifyProjectAccess('proj-1', '')).toBe(false);
+    expect(await resolver.verifyWorkspaceAccess('proj-1', '')).toBe(false);
   });
 
   it('returns false when no binding exists', async () => {
     expect(
-      await resolver.verifyProjectAccess('proj-unknown', TENANT_A),
+      await resolver.verifyWorkspaceAccess('proj-unknown', TENANT_A),
     ).toBe(false);
   });
 
@@ -63,12 +63,12 @@ describe('SessionMetadataWorkspaceResolver', () => {
       repo.create({
         sessionId: 'sess-1',
         solutionId: TENANT_A,
-        key: 'projectId',
+        key: 'sourceIdentity',
         value: JSON.stringify('proj-1'),
       }),
     );
     expect(
-      await resolver.verifyProjectAccess('proj-1', TENANT_A),
+      await resolver.verifyWorkspaceAccess('proj-1', TENANT_A),
     ).toBe(true);
   });
 
@@ -77,12 +77,12 @@ describe('SessionMetadataWorkspaceResolver', () => {
       repo.create({
         sessionId: 'sess-2',
         solutionId: TENANT_A,
-        key: 'projectId',
+        key: 'sourceIdentity',
         value: 'proj-2',
       }),
     );
     expect(
-      await resolver.verifyProjectAccess('proj-2', TENANT_A),
+      await resolver.verifyWorkspaceAccess('proj-2', TENANT_A),
     ).toBe(true);
   });
 
@@ -93,16 +93,16 @@ describe('SessionMetadataWorkspaceResolver', () => {
       repo.create({
         sessionId: 'sess-other',
         solutionId: TENANT_B,
-        key: 'projectId',
+        key: 'sourceIdentity',
         value: JSON.stringify('proj-shared'),
       }),
     );
     expect(
-      await resolver.verifyProjectAccess('proj-shared', TENANT_A),
+      await resolver.verifyWorkspaceAccess('proj-shared', TENANT_A),
     ).toBe(false);
     // Sanity: tenant B itself can access.
     expect(
-      await resolver.verifyProjectAccess('proj-shared', TENANT_B),
+      await resolver.verifyWorkspaceAccess('proj-shared', TENANT_B),
     ).toBe(true);
   });
 
@@ -111,7 +111,7 @@ describe('SessionMetadataWorkspaceResolver', () => {
       repo.create({
         sessionId: 'sess-1',
         solutionId: TENANT_A,
-        key: 'projectId',
+        key: 'sourceIdentity',
         value: JSON.stringify('proj-multi'),
       }),
     );
@@ -119,12 +119,12 @@ describe('SessionMetadataWorkspaceResolver', () => {
       repo.create({
         sessionId: 'sess-2',
         solutionId: TENANT_A,
-        key: 'projectId',
+        key: 'sourceIdentity',
         value: JSON.stringify('proj-multi'),
       }),
     );
     expect(
-      await resolver.verifyProjectAccess('proj-multi', TENANT_A),
+      await resolver.verifyWorkspaceAccess('proj-multi', TENANT_A),
     ).toBe(true);
   });
 });

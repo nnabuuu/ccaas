@@ -111,8 +111,8 @@ export class AdminSolutionAccessGuard implements CanActivate {
     if (request.body?.solutionId) return request.body.solutionId;
 
     // 4. Header
-    const headerTenantId = request.headers?.['x-tenant-id'];
-    if (headerTenantId) return headerTenantId;
+    const headerSolutionId = request.headers?.['x-solution-id'];
+    if (headerSolutionId) return headerSolutionId;
 
     return undefined;
   }

@@ -75,7 +75,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'other-user',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -99,7 +99,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'other-user',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -173,7 +173,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'other-user',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -272,7 +272,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'other-user',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
         userTenantService.canEditResource.mockReturnValue(true);
 
@@ -302,7 +302,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'user-123',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
         userTenantService.canEditResource.mockReturnValue(true);
 
@@ -327,7 +327,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: 'other-user',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
         userTenantService.canEditResource.mockReturnValue(false);
 
@@ -403,7 +403,7 @@ describe('SkillPermissionGuard', () => {
         reflector.getAllAndOverride.mockReturnValue(false);
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -446,7 +446,7 @@ describe('SkillPermissionGuard', () => {
         reflector.getAllAndOverride.mockReturnValue(false);
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -471,7 +471,7 @@ describe('SkillPermissionGuard', () => {
         reflector.getAllAndOverride.mockReturnValue(false);
         skillsService.findOne.mockResolvedValue({
           id: 'skill-456',
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);
@@ -534,7 +534,7 @@ describe('SkillPermissionGuard', () => {
         skillsService.findOne.mockResolvedValue({
           id: 'skill-123',
           createdBy: null, // Legacy skill
-          scope: 'tenant',
+          scope: 'solution',
         } as any);
 
         const context = createMockContext(request);

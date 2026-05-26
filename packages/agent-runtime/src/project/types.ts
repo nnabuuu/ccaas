@@ -16,7 +16,7 @@
 
 export interface Project {
   readonly id: string;
-  readonly tenantId: string;
+  readonly solutionId: string;
   readonly title: string;
   readonly description?: string;
   readonly status: 'draft' | 'active' | 'archived';
@@ -34,7 +34,7 @@ export interface ProjectListOptions {
 
 export interface ProjectStore {
   load(projectId: string): Promise<Project | null>;
-  list(tenantId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
+  list(solutionId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
   save(project: Project): Promise<void>;
   delete(projectId: string): Promise<void>;
 }

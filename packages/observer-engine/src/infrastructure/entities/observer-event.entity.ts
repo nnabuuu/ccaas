@@ -3,7 +3,7 @@ import { Entity, PrimaryColumn, Column, Index } from 'typeorm';
 @Entity('observer_events')
 @Index('IDX_observer_events_session_timestamp', ['sessionId', 'timestamp'])
 @Index('IDX_observer_events_entity_session', ['entityId', 'sessionId'])
-@Index('IDX_observer_events_tenant_session', ['tenantId', 'sessionId'])
+@Index('IDX_observer_events_tenant_session', ['solutionId', 'sessionId'])
 export class ObserverEventRecord {
   @PrimaryColumn({ type: 'varchar' })
   id!: string;
@@ -18,7 +18,7 @@ export class ObserverEventRecord {
   entityId!: string;
 
   @Column({ type: 'varchar' })
-  tenantId!: string;
+  solutionId!: string;
 
   @Column({ type: 'bigint' })
   timestamp!: number;

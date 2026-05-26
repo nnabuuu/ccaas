@@ -10,10 +10,10 @@ export { JsonEditProvider } from './json-edit-provider.js';
 export type { JsonEditProviderOptions } from './json-edit-provider.js';
 export type {
   ArtifactSnapshot,
-  ProjectArtifactSource,
+  WorkspaceArtifactSource,
   SaveArtifactResult,
-} from './project-artifact-source.js';
-export type { ProjectTenantResolver } from './project-tenant-resolver.js';
+} from './workspace-artifact-source.js';
+export type { WorkspaceAccessResolver } from './workspace-access-resolver.js';
 export type {
   BinaryArtifactSnapshot,
   BinaryArtifactListing,

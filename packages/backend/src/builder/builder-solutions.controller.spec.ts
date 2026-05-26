@@ -70,7 +70,7 @@ describe('BuilderSolutionsController', () => {
     });
     expect(auditService.log).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: 'tenant.create',
+        action: 'solution.create',
         targetId: 'new-tenant',
       }),
     );
@@ -129,7 +129,7 @@ describe('BuilderSolutionsController', () => {
     const result = await controller.update('t1', { name: 'Updated' } as any, builderCtx);
     expect(result.name).toBe('Updated');
     expect(auditService.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'tenant.update' }),
+      expect.objectContaining({ action: 'solution.update' }),
     );
   });
 

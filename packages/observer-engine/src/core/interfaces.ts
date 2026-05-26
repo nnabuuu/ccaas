@@ -5,7 +5,7 @@ export interface ObserverEvent {
   type: string;
   sessionId: string;
   entityId: string;
-  tenantId: string;
+  solutionId: string;
   timestamp: number;
   payload: Record<string, unknown>;
   metadata?: EventMetadata;
@@ -23,7 +23,7 @@ export interface Observation {
   id: string;
   sessionId: string;
   entityId: string;
-  tenantId: string;
+  solutionId: string;
   type: string;
   data: Record<string, unknown>;
   triggerEventId: string;
@@ -38,7 +38,7 @@ export type ObservationOp =
       op: 'append';
       observation: Omit<
         Observation,
-        'id' | 'sessionId' | 'tenantId' | 'createdAt' | 'updatedAt'
+        'id' | 'sessionId' | 'solutionId' | 'createdAt' | 'updatedAt'
       >;
     }
   | {

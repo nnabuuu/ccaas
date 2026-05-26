@@ -53,12 +53,7 @@ describe('TypeOrmSkillContentSource', () => {
       });
       const out = await svc.listActiveSkills();
       expect(out).toEqual([{
-        // Port-boundary translation: ccaas-core stores solutionId, but
-        // the agent-runtime SkillContent port uses `tenantId` as its
-        // field name (the npm package wasn't touched by α). The
-        // TypeOrm content source maps internal solutionId → port
-        // tenantId; this assertion pins that contract.
-        id: 's-1', tenantId: 't-1', slug: 'hello',
+        id: 's-1', solutionId: 't-1', slug: 'hello',
         name: 'Hello', description: 'a skill', content: '# H\n',
         files: [
           { relativePath: 'tools/x.md', content: 'xx' },
@@ -111,8 +106,7 @@ describe('TypeOrmSkillContentSource', () => {
       });
       const out = await svc.listActiveMcpServers();
       expect(out).toEqual([{
-        // Same port-boundary translation as listActiveSkills above.
-        tenantId: 't-1', slug: 'srv',
+        solutionId: 't-1', slug: 'srv',
         name: 'My', type: 'stdio',
         config: { command: 'node', args: ['x.js'] },
       }]);

@@ -7,7 +7,7 @@ function makeEvent(overrides: Partial<ObserverEvent> = {}): ObserverEvent {
     type: 'test',
     sessionId: 'sess-1',
     entityId: 'ent-1',
-    tenantId: 'ten-1',
+    solutionId: 'ten-1',
     timestamp: Date.now(),
     payload: { foo: 'bar' },
     ...overrides,
@@ -59,7 +59,7 @@ describe('SystemEventHandler', () => {
         type: 'student_observation_changed',
         sessionId: 'sess-1',
         entityId: 'ent-1',
-        tenantId: 'ten-1',
+        solutionId: 'ten-1',
         payload: { trigger: 'discuss_complete' },
       });
     });

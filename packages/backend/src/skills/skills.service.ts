@@ -82,7 +82,7 @@ export class SkillsService {
       const skill = manager.create(Skill, {
         solutionId,
         createdBy: userId || null,
-        scope: dto.scope || 'tenant',
+        scope: dto.scope || "solution",
         name: dto.name,
         slug,
         description: dto.description,
@@ -205,12 +205,12 @@ export class SkillsService {
     // Personal skills filtering: only show user's own personal skills
     if (userId) {
       qb.andWhere(
-        '(skill.scope = :tenantScope OR (skill.scope = :personalScope AND skill.createdBy = :userId))',
-        { tenantScope: 'tenant', personalScope: 'personal', userId },
+        '(skill.scope = :solutionScope OR (skill.scope = :personalScope AND skill.createdBy = :userId))',
+        { solutionScope: 'solution', personalScope: 'personal', userId },
       );
     } else {
-      // Anonymous users can only see tenant-scoped skills
-      qb.andWhere('skill.scope = :tenantScope', { tenantScope: 'tenant' });
+      // Anonymous users can only see solution-scoped skills
+      qb.andWhere('skill.scope = :solutionScope', { solutionScope: 'solution' });
     }
 
     // Filter by creator if specified

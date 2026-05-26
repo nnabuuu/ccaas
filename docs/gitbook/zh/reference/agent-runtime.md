@@ -356,12 +356,12 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 2. `ProjectTenantResolver.resolveTenant(projectId)` 查出 project 归属的 solution
 3. 两者必须一致，否则 403；resolver 返回 null（project 未知 / 无 resolver 注册）也是 403；token 缺失或无效是 401
 
-**`ProjectTenantResolver` port**：solution 可以注册自己的 resolver（比如查自己的 project 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
+**`WorkspaceAccessResolver` port**：solution 可以注册自己的 resolver（比如查自己的 workspace 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
 
-**ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source`（以及它的 `bind-project` 别名）流程已经写到 `session_metadata` 表里的 `(solutionId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。`session_metadata` 里的 row name `projectId` 是 β-2 之前数据的 compat 命名；存的是新的 `sourceIdentity` 值。
+**ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source` 流程已经写到 `session_metadata` 表里的 `(solutionId, sourceIdentity)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。
 
 - ✅ pro：solution 端不需要加 `solutionId` column / 不需要写新 endpoint / 不需要跨进程回调
-- ⚠️ trade-off：**从未被 bind-project 过的 project 解析为 null → 403**。caller 必须先 bind 一个 session，才能订阅 SSE。这跟 bind-project 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
+- ⚠️ trade-off：**从未被 attach 过的 workspace 解析为 null → 403**。caller 必须先 attach 一个 session，才能订阅 SSE。这跟 attach 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
 
 要换 resolver 的话，在 SessionsModule 里覆盖 `PROJECT_TENANT_RESOLVER` token 即可。
 
@@ -417,8 +417,6 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 
 ### Solution 集成两行
 
-> **β-1 重命名（2026-05-26）**：新规范叫 `attach-workspace-source`，body 用通用字段 `{ sourceUrl, sourceIdentity, solutionId }`（不再有 `projectId` —— ccaas 不再假装知道 "project" 是什么）。旧的 `bind-project` 路由保留为 alias 一个 release，内部走同一份逻辑。新 solution 直接用新路由；旧 solution 在迁移窗口内不用动。
-
 ```ts
 // solution backend：在创建 workspace-attached agent session 后立刻调
 await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
@@ -426,21 +424,16 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`,
   body: JSON.stringify({
     sourceUrl: 'http://your-solution/api/projects',  // ccaas 回调的 base URL
     sourceIdentity: projectId,                        // 对 ccaas 不透明的 ID
-    solutionId,                                         // β 阶段过渡：sessionService 还需要
+    solutionId,
   }),
-});
-
-// 或继续用旧路由（compat 窗口内）：
-await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId, solutionId }),
 });
 ```
 
-后端 `SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。废弃别名 `bindToProject(sessionId, solutionId, projectId)` 内部 delegate 到这里，传入 `{ sourceIdentity: projectId }`。
+后端 `SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。
 
 ### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
 
-后端 `/workspaces/:identity/changes` SSE 会把所有 ChangeEvent 发出来（旧别名 `/projects/:identity/changes` 也通）。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
+后端 `/workspaces/:identity/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
 
 **关键设计原则**：浏览器**永远不持有 ccaas key**。原因是 ccaas 只认 solution，而每个 solution 后端就是一个 solution —— ccaas key 是 solution 后端的，不是终端用户的。终端用户走 solution 自己的鉴权（cookie / session / JWT / 任何 solution 自己的方案），solution 后端代理所有 ccaas 调用。
 

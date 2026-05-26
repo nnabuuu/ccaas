@@ -46,12 +46,7 @@ export class TypeOrmSkillContentSource implements ContentSource {
     });
     return rows.map((s) => ({
       id: s.id,
-      // Port-boundary translation: agent-runtime's SkillContent
-      // interface uses `tenantId` as the field name (ccaas's α didn't
-      // touch the npm package). ccaas-core internally stores
-      // solutionId — translate at the boundary so the port stays
-      // stable for solutions that implement it.
-      tenantId: s.solutionId,
+      solutionId: s.solutionId,
       slug: s.slug,
       name: s.name,
       description: s.description ?? undefined,
@@ -67,8 +62,7 @@ export class TypeOrmSkillContentSource implements ContentSource {
     const ACTIVE: McpServerStatus = 'active';
     const rows = await this.mcpServers.find({ where: { status: ACTIVE } });
     return rows.map((m) => ({
-      // Same port-boundary translation as listActiveSkills above.
-      tenantId: m.solutionId,
+      solutionId: m.solutionId,
       slug: m.slug,
       name: m.name,
       type: m.type,

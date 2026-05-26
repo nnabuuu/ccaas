@@ -18,15 +18,15 @@ import * as path from 'node:path';
 import {
   InMemoryChangeStream,
   InMemorySnapshotStore,
-  type ProjectArtifactSource,
+  type WorkspaceArtifactSource,
   type ArtifactSnapshot,
   type ChangeEvent,
 } from '@kedge-agentic/agent-runtime';
 
 import {
   CHANGE_STREAM,
-  PROJECT_ARTIFACT_SOURCE_REGISTRY,
-  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './agent-runtime.module';
 import { SessionAssetSyncer, ARTIFACTS_DIR, COALESCE_WINDOW_MS } from './session-asset-syncer.service';
@@ -37,7 +37,7 @@ import type { FsDiffEntry } from '../workspace/types';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
-class FakeSource implements ProjectArtifactSource {
+class FakeSource implements WorkspaceArtifactSource {
   rows: ArtifactSnapshot[] = [];
   saved: Array<{ projectId: string; artifact: ArtifactSnapshot }> = [];
   deleted: Array<{ projectId: string; path: string }> = [];
@@ -112,7 +112,7 @@ describe('SessionAssetSyncer', () => {
     };
     metaSvc = {
       get: jest.fn(async (sid: string, tid: string, key: string) => {
-        if (sid !== SID || tid !== TID || key !== 'projectId') {
+        if (sid !== SID || tid !== TID || key !== 'sourceIdentity') {
           throw new NotFoundException();
         }
         return { key, value: PROJ, updatedAt: '2026-05-25T00:00:00Z' };
@@ -136,8 +136,8 @@ describe('SessionAssetSyncer', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         SessionAssetSyncer,
-        { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: registry },
-        { provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
+        { provide: WORKSPACE_ARTIFACT_SOURCE_REGISTRY, useValue: registry },
+        { provide: WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
@@ -349,7 +349,7 @@ describe('SessionAssetSyncer', () => {
 
   it('agent delete restores file from DB when source lacks deleteArtifact', async () => {
     // Override the source to NOT implement deleteArtifact.
-    const noDeleteSource: ProjectArtifactSource = {
+    const noDeleteSource: WorkspaceArtifactSource = {
       loadArtifacts: async () => [{ path: 'lesson.md', content: 'v1', type: 'md' }],
       saveArtifact: jest.fn(async () => undefined),
       // deleteArtifact intentionally omitted
@@ -362,10 +362,10 @@ describe('SessionAssetSyncer', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         SessionAssetSyncer,
-        { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: localRegistry },
+        { provide: WORKSPACE_ARTIFACT_SOURCE_REGISTRY, useValue: localRegistry },
         // Phase 2b-4: binary registry not exercised here; null = skip.
         {
-          provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+          provide: WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY,
           useValue: { getForTenantSlug: jest.fn(async () => null) },
         },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
@@ -469,7 +469,6 @@ describe('SessionAssetSyncer', () => {
       await syncer.onSessionBound({
         sessionId: SID,
         solutionId: TID,
-        projectId: PROJ,
         workspaceSource: { sourceIdentity: PROJ },
       });
 
@@ -497,7 +496,6 @@ describe('SessionAssetSyncer', () => {
       await expect(syncer.onSessionBound({
         sessionId: SID,
         solutionId: TID,
-        projectId: PROJ,
         workspaceSource: { sourceIdentity: PROJ },
       })).resolves.toBeUndefined();
     });
@@ -509,7 +507,7 @@ describe('SessionAssetSyncer', () => {
 
   describe('coalesce — back-to-back sync() calls within the window', () => {
     it('skips the second loadArtifacts when called twice within COALESCE_WINDOW_MS', async () => {
-      // The G4 case: bindToProject fires session.bound → onSessionBound
+      // The G4 case: attachWorkspaceSource fires session.bound → onSessionBound
       // kicks off sync; worker then awaits its own explicit sync. Both
       // observe the same DB state — the second pass would just load
       // + diff + plan 0 actions, wasting a round trip. With coalesce,
@@ -627,8 +625,8 @@ describe('SessionAssetSyncer', () => {
       const moduleRef = await Test.createTestingModule({
         providers: [
           SessionAssetSyncer,
-          { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: textRegistry },
-          { provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
+          { provide: WORKSPACE_ARTIFACT_SOURCE_REGISTRY, useValue: textRegistry },
+          { provide: WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
           { provide: SNAPSHOT_STORE, useValue: snapshots },
           { provide: CHANGE_STREAM, useValue: changes },
           { provide: SessionService, useValue: sessionSvc },

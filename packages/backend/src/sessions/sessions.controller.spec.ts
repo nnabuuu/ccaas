@@ -631,18 +631,14 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
   });
 });
 
-// ── attach-workspace-source (new) + bind-project (compat alias) ───────────────
+// ── attach-workspace-source route ──────────────────────────────────────────
 //
-// β-2 of the α+β refactor (~/.claude/plans/kind-exploring-mango.md):
-// the new route calls the canonical service method
-// `attachWorkspaceSource(sessionId, solutionId, source)`; the legacy
-// `bind-project` route still calls `bindToProject(sessionId, solutionId,
-// projectId)` which is now a deprecated delegating alias at the
-// service layer. These tests pin the wire contract for both routes;
-// the service-level alias equivalence is verified in
-// `session.service.attach-workspace-source.spec.ts`.
+// Tests that the canonical attach route threads the full WorkspaceSource
+// descriptor through to SessionService.attachWorkspaceSource (Map +
+// session_metadata + session.bound event are exercised in the service
+// spec; this file pins the wire-level contract only).
 
-describe('SessionsController — attach-workspace-source + bind-project alias', () => {
+describe('SessionsController — attach-workspace-source', () => {
   let controller: SessionsController;
   let sessionService: any;
 
@@ -651,11 +647,6 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
   beforeEach(async () => {
     sessionService = {
       attachWorkspaceSource: jest.fn().mockResolvedValue(undefined),
-      // Legacy alias still mocked because the old bind-project route
-      // calls it directly (the controller doesn't go through the
-      // alias chain inside the service — the route handler calls
-      // bindToProject; SessionService.bindToProject then delegates).
-      bindToProject: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -708,9 +699,6 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
           sourceUrl: 'http://localhost:3007/api/projects',
         },
       );
-      // Old method is NOT called for the new route — verifies the
-      // controller migrated cleanly (no double-call regression).
-      expect(sessionService.bindToProject).not.toHaveBeenCalled();
     });
 
     it('threads sourceSchemaHash into the descriptor when provided', async () => {
@@ -747,8 +735,7 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
         },
       });
       // No `projectId` in the response — the new route does NOT echo
-      // the old field. Solutions that still need projectId in the
-      // response should keep calling the deprecated bind-project route.
+      // the old field.
       expect(out).not.toHaveProperty('projectId');
     });
 
@@ -781,29 +768,4 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
     });
   });
 
-  describe('POST /sessions/:sid/bind-project (compat alias)', () => {
-    it('still calls the legacy bindToProject service method (no migration to the new method yet)', async () => {
-      const out = await controller.bindToProject(SESSION_ID, {
-        projectId: 'proj-legacy',
-        solutionId: 'tenant-1',
-      });
-
-      // The old route is supposed to keep calling the deprecated
-      // alias method specifically — the alias's job is to delegate to
-      // attachWorkspaceSource internally. Calling attachWorkspaceSource
-      // directly here would defeat the point of having the alias
-      // exercise the delegation path in production.
-      expect(sessionService.bindToProject).toHaveBeenCalledWith(
-        SESSION_ID,
-        'tenant-1',
-        'proj-legacy',
-      );
-      expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
-      expect(out).toEqual({
-        success: true,
-        sessionId: SESSION_ID,
-        projectId: 'proj-legacy',
-      });
-    });
-  });
 });

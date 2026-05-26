@@ -63,8 +63,8 @@ export class BuilderSolutionsController {
 
     await this.auditService.log({
       adminId: ctx.apiKeyId || userId,
-      action: 'tenant.create',
-      targetType: 'tenant',
+      action: 'solution.create',
+      targetType: 'solution',
       targetId: result.tenant.id,
       solutionId: result.tenant.id,
       metadata: {
@@ -130,8 +130,8 @@ export class BuilderSolutionsController {
 
     await this.auditService.log({
       adminId: ctx.apiKeyId || userId,
-      action: 'tenant.update',
-      targetType: 'tenant',
+      action: 'solution.update',
+      targetType: 'solution',
       targetId: id,
       solutionId: id,
       metadata: {

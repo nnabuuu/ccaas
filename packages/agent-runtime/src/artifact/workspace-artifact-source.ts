@@ -1,5 +1,5 @@
 /**
- * `ProjectArtifactSource` — the **one** interface a solution implements
+ * `WorkspaceArtifactSource` — the **one** interface a solution implements
  * to enable bidirectional sync between its DB and the agent's
  * per-session workspace.
  *
@@ -15,7 +15,7 @@
  */
 
 /**
- * One artifact as returned by a `ProjectArtifactSource`. Lean shape:
+ * One artifact as returned by a `WorkspaceArtifactSource`. Lean shape:
  * just enough for the syncer to write a file and detect change. No
  * `id` / `updatedAt` — `(projectId, path)` is the natural key, and
  * the snapshot store tracks change via content hash.
@@ -61,7 +61,7 @@ export interface SaveArtifactResult {
  * The port solutions implement. Two required methods cover the full
  * bidirectional sync; `deleteArtifact` is opt-in.
  */
-export interface ProjectArtifactSource {
+export interface WorkspaceArtifactSource {
   /**
    * Return the current canonical state of all artifacts for a project.
    * Called at:

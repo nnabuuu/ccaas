@@ -91,16 +91,10 @@ export class SessionService implements OnModuleDestroy {
   private clientSessions = new Map<string, Set<string>>();
   /**
    * agent-runtime sync layer: sessionId → attached WorkspaceSource.
-   * Populated by `attachWorkspaceSource` (and its legacy alias
-   * `bindToProject`); cleared when the session is removed from
-   * `sessions`. Provides O(n) reverse lookup for
+   * Populated by `attachWorkspaceSource`; cleared when the session is
+   * removed from `sessions`. Provides O(n) reverse lookup for
    * `findSessionsByWorkspaceSource`, which the invalidate REST
    * endpoint and any cross-session sync orchestration use.
-   *
-   * Pre-β-2 this was `projectBindings: Map<string, string>` holding
-   * just the projectId. β-2 widens it to the full descriptor so β-3
-   * can wire the syncer to read `sourceUrl` per-session without
-   * touching the bindings logic.
    */
   private workspaceSourceBindings = new Map<string, WorkspaceSource>();
   /**
@@ -304,20 +298,13 @@ export class SessionService implements OnModuleDestroy {
 
   /**
    * Attach a session to a workspace source for the agent-runtime sync
-   * layer. Writes `session_metadata['projectId']` (kept for compat with
+   * layer. Writes `session_metadata['sourceIdentity']` (kept for compat with
    * the existing `SessionMetadataWorkspaceResolver`) plus the new
    * `workspaceSourceUrl` / `workspaceSourceSchemaHash` keys when those
    * fields are present, and emits `session.bound` so the
    * SessionAssetSyncer bootstraps the workspace `artifacts/` dir from
    * the solution's `ProjectArtifactSource.loadArtifacts()` before the
    * first agent turn.
-   *
-   * Canonical name as of β-2. The pre-β-2 method `bindToProject` is
-   * preserved as a deprecated alias that delegates here with a
-   * minimal `{sourceIdentity}` descriptor (sourceUrl undefined). Both
-   * paths share the same idempotency + cross-tenant + 409-rebind
-   * semantics — the rename is a wire/vocabulary change, not a
-   * behavior change.
    *
    * Idempotent: calling twice with the same `sourceIdentity` is a
    * no-op write (metadata upserts) + a re-bootstrap (also no-op when
@@ -374,12 +361,10 @@ export class SessionService implements OnModuleDestroy {
     // (β-3's SessionMetadataWorkspaceResolver still reads it). New
     // keys `workspaceSourceUrl` / `workspaceSourceSchemaHash` only
     // written when the caller supplied them — pre-β-1 callers landing
-    // through the legacy alias don't have these fields and shouldn't
-    // see ghost rows.
     await this.sessionMetadataService.put(
       sessionId,
       solutionId,
-      'projectId',
+      'sourceIdentity',
       source.sourceIdentity,
     );
     if (source.sourceUrl) {
@@ -399,13 +384,9 @@ export class SessionService implements OnModuleDestroy {
       );
     }
     this.workspaceSourceBindings.set(sessionId, { ...source });
-    // Event payload carries both shapes for the compat window:
-    // - `projectId` for existing listeners (SessionAssetSyncer.onSessionBound)
-    // - `workspaceSource` for β-3 listeners that want the full descriptor
     this.eventEmitter.emit('session.bound', {
       sessionId,
       solutionId,
-      projectId: source.sourceIdentity,
       workspaceSource: { ...source },
     });
   }
@@ -442,52 +423,6 @@ export class SessionService implements OnModuleDestroy {
       }
     }
     return out;
-  }
-
-  /**
-   * @deprecated since β-2 (2026-05-26) — use
-   * `attachWorkspaceSource(sessionId, solutionId, { sourceIdentity })`.
-   * Kept as a delegating alias for the duration of the β
-   * backwards-compat window so the legacy `bind-project` route + any
-   * straggler SDK callers keep working. Will be removed in the
-   * cleanup release after both β and α windows close.
-   */
-  async bindToProject(
-    sessionId: string,
-    solutionId: string,
-    projectId: string,
-  ): Promise<void> {
-    // Validate projectId here so the alias preserves the old error
-    // message verbatim — `attachWorkspaceSource` says "sourceIdentity
-    // required" which would surprise anyone reading bindToProject's
-    // existing 400 behavior. Defence in depth: attachWorkspaceSource
-    // re-validates the same condition.
-    if (!projectId) {
-      throw new BadRequestException('projectId required');
-    }
-    return this.attachWorkspaceSource(sessionId, solutionId, {
-      sourceIdentity: projectId,
-    });
-  }
-
-  /**
-   * @deprecated since β-2 (2026-05-26) — use
-   * `getAttachedWorkspaceSource(sessionId)?.sourceIdentity`. Kept as
-   * a delegating alias for the β compat window; legacy callers in
-   * MessageWorker etc. flip over PR-by-PR.
-   */
-  getBoundProjectId(sessionId: string): string | undefined {
-    return this.workspaceSourceBindings.get(sessionId)?.sourceIdentity;
-  }
-
-  /**
-   * @deprecated since β-2 (2026-05-26) — use
-   * `findSessionsByWorkspaceSource(sourceIdentity)`. Kept as a
-   * delegating alias for the β compat window; the agent-runtime
-   * invalidate controller flips over in β-3.
-   */
-  findSessionsByProjectId(projectId: string): string[] {
-    return this.findSessionsByWorkspaceSource(projectId);
   }
 
   /**

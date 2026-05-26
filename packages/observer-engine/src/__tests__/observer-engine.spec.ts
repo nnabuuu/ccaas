@@ -57,7 +57,7 @@ describe('ObserverEngine', () => {
       type: 'test_event',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: { foo: 'bar' },
     });
 
@@ -75,7 +75,7 @@ describe('ObserverEngine', () => {
       type: 'x',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -101,7 +101,7 @@ describe('ObserverEngine', () => {
       type: 'chat_turn',
       sessionId: 's1',
       entityId: 'student-1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: { message: 'hello' },
     });
 
@@ -110,7 +110,7 @@ describe('ObserverEngine', () => {
     expect(obs.type).toBe('misconception');
     expect(obs.entityId).toBe('student-1');
     expect(obs.sessionId).toBe('s1');
-    expect(obs.tenantId).toBe('t1');
+    expect(obs.solutionId).toBe('t1');
     expect(obs.data).toEqual({ topic: 'fractions' });
   });
 
@@ -129,7 +129,7 @@ describe('ObserverEngine', () => {
       type: 'resolve',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -151,7 +151,7 @@ describe('ObserverEngine', () => {
           type: 'step_2',
           sessionId: event.sessionId,
           entityId: event.entityId,
-          tenantId: event.tenantId,
+          solutionId: event.solutionId,
           payload: { from: 'step_1' },
         },
       ],
@@ -162,7 +162,7 @@ describe('ObserverEngine', () => {
       type: 'step_1',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -192,7 +192,7 @@ describe('ObserverEngine', () => {
           type: 'loop',
           sessionId: event.sessionId,
           entityId: event.entityId,
-          tenantId: event.tenantId,
+          solutionId: event.solutionId,
           payload: {},
         },
       ],
@@ -202,7 +202,7 @@ describe('ObserverEngine', () => {
       type: 'loop',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -244,7 +244,7 @@ describe('ObserverEngine', () => {
       type: 'multi',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -273,7 +273,7 @@ describe('ObserverEngine', () => {
       type: 'ordered',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -295,7 +295,7 @@ describe('ObserverEngine', () => {
       type: 'ctx_test',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -321,7 +321,7 @@ describe('ObserverEngine', () => {
       type: 'alert',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -348,7 +348,7 @@ describe('ObserverEngine', () => {
       type: 'analyze',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -360,7 +360,7 @@ describe('ObserverEngine', () => {
       type: 'unknown_event',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -380,7 +380,7 @@ describe('ObserverEngine', () => {
       type: 'test',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 
@@ -400,7 +400,7 @@ describe('ObserverEngine', () => {
       type: 'check',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
   });
@@ -417,7 +417,7 @@ describe('ObserverEngine', () => {
             type: 'b',
             sessionId: event.sessionId,
             entityId: event.entityId,
-            tenantId: event.tenantId,
+            solutionId: event.solutionId,
             payload: {},
           },
         ],
@@ -433,7 +433,7 @@ describe('ObserverEngine', () => {
       type: 'a',
       sessionId: 's1',
       entityId: 'e1',
-      tenantId: 't1',
+      solutionId: 't1',
       payload: {},
     });
 

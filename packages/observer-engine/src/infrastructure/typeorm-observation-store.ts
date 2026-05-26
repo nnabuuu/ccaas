@@ -10,7 +10,7 @@ export class TypeormObservationStore implements ObservationStore {
     record.id = obs.id;
     record.sessionId = obs.sessionId;
     record.entityId = obs.entityId;
-    record.tenantId = obs.tenantId;
+    record.solutionId = obs.solutionId;
     record.type = obs.type;
     record.data = obs.data;
     record.triggerEventId = obs.triggerEventId;
@@ -56,7 +56,7 @@ function toObservation(record: ObservationRecord): Observation {
     id: record.id,
     sessionId: record.sessionId,
     entityId: record.entityId,
-    tenantId: record.tenantId,
+    solutionId: record.solutionId,
     type: record.type,
     data: record.data,
     triggerEventId: record.triggerEventId,

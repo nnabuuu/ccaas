@@ -113,7 +113,7 @@ describe('SkillsService - User Attribution', () => {
         slug: 'test-skill',
         type: 'skill' as const,
         content: 'Test content',
-        scope: 'tenant' as const,
+        scope: 'solution' as const,
       };
 
       const mockSkill = {
@@ -136,7 +136,7 @@ describe('SkillsService - User Attribution', () => {
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
         solutionId,
         createdBy: userId,
-        scope: 'tenant',
+        scope: 'solution',
       }));
       expect(result.createdBy).toBe(userId);
     });
@@ -154,7 +154,7 @@ describe('SkillsService - User Attribution', () => {
         solutionId,
         ...createDto,
         createdBy: null,
-        scope: 'tenant',
+        scope: 'solution',
       };
 
       // create() now transactional — mock txManager only.
@@ -184,7 +184,7 @@ describe('SkillsService - User Attribution', () => {
         solutionId,
         ...createDto,
         createdBy: userId,
-        scope: 'tenant',
+        scope: 'solution',
       };
 
       // create() now transactional — mock txManager only.
@@ -196,9 +196,9 @@ describe('SkillsService - User Attribution', () => {
       const result = await service.create(solutionId, createDto, userId);
 
       expect(txManager.create).toHaveBeenCalledWith(Skill, expect.objectContaining({
-        scope: 'tenant',
+        scope: 'solution',
       }));
-      expect(result.scope).toBe('tenant');
+      expect(result.scope).toBe('solution');
     });
 
     it('should allow personal scope when specified', async () => {
@@ -242,8 +242,8 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', solutionId },
-            { id: '2', scope: 'tenant', solutionId },
+            { id: '1', scope: 'solution', solutionId },
+            { id: '2', scope: 'solution', solutionId },
             { id: '3', scope: 'personal', createdBy: userId, solutionId },
           ],
           3,
@@ -256,8 +256,8 @@ describe('SkillsService - User Attribution', () => {
 
       // Check that personal skill filter was applied
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-        '(skill.scope = :tenantScope OR (skill.scope = :personalScope AND skill.createdBy = :userId))',
-        { tenantScope: 'tenant', personalScope: 'personal', userId },
+        '(skill.scope = :solutionScope OR (skill.scope = :personalScope AND skill.createdBy = :userId))',
+        { solutionScope: 'solution', personalScope: 'personal', userId },
       );
       expect(result.items).toHaveLength(3);
     });
@@ -271,8 +271,8 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', solutionId },
-            { id: '2', scope: 'tenant', solutionId },
+            { id: '1', scope: 'solution', solutionId },
+            { id: '2', scope: 'solution', solutionId },
           ],
           2,
         ]),
@@ -283,7 +283,7 @@ describe('SkillsService - User Attribution', () => {
       const result = await service.findAll(solutionId, {}, userId);
 
       expect(result.items).toHaveLength(2);
-      expect(result.items.every((s: Skill) => s.scope === 'tenant')).toBe(true);
+      expect(result.items.every((s: Skill) => s.scope === 'solution')).toBe(true);
     });
 
     it('should only show tenant-scoped skills for anonymous users', async () => {
@@ -295,8 +295,8 @@ describe('SkillsService - User Attribution', () => {
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
           [
-            { id: '1', scope: 'tenant', solutionId },
-            { id: '2', scope: 'tenant', solutionId },
+            { id: '1', scope: 'solution', solutionId },
+            { id: '2', scope: 'solution', solutionId },
           ],
           2,
         ]),
@@ -308,8 +308,8 @@ describe('SkillsService - User Attribution', () => {
 
       // Should filter to only tenant scope
       expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-        'skill.scope = :tenantScope',
-        { tenantScope: 'tenant' },
+        'skill.scope = :solutionScope',
+        { solutionScope: 'solution' },
       );
       expect(result.items).toHaveLength(2);
     });
@@ -323,7 +323,7 @@ describe('SkillsService - User Attribution', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([
-          [{ id: '1', scope: 'tenant', createdBy: otherUserId, solutionId }],
+          [{ id: '1', scope: 'solution', createdBy: otherUserId, solutionId }],
           1,
         ]),
       };
@@ -425,19 +425,19 @@ describe('SkillsService - User Attribution', () => {
       };
 
       const updateDto = {
-        scope: 'tenant' as const,
+        scope: 'solution' as const,
       };
 
       skillRepository.findOne.mockResolvedValue(existingSkill as any);
       skillRepository.save.mockResolvedValue({
         ...existingSkill,
-        scope: 'tenant',
+        scope: 'solution',
         updatedAt: new Date(), // Week 5: Required for event emission
       } as any);
 
       const result = await service.update(solutionId, skillId, updateDto);
 
-      expect(result.scope).toBe('tenant');
+      expect(result.scope).toBe('solution');
     });
   });
 

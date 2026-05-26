@@ -31,7 +31,7 @@ export interface SkillContent {
    * materializer.
    */
   readonly id: string;
-  readonly tenantId: string;
+  readonly solutionId: string;
   readonly slug: string;
   readonly name: string;
   readonly description?: string;
@@ -42,7 +42,7 @@ export interface SkillContent {
 }
 
 export interface McpServerContent {
-  readonly tenantId: string;
+  readonly solutionId: string;
   readonly slug: string;
   readonly name: string;
   /** MCP transport / server type (`stdio`, `sse`, etc.) — opaque to materializer. */

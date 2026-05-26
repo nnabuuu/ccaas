@@ -78,7 +78,7 @@ export class CreateSkillDto {
   triggers?: TriggerDto[];
 
   @IsOptional()
-  @IsEnum(['tenant', 'personal'])
+  @IsEnum(['solution', 'personal'])
   scope?: SkillScope;
 
   @IsOptional()
@@ -124,7 +124,7 @@ export class UpdateSkillDto {
   createVersion?: boolean;
 
   @IsOptional()
-  @IsEnum(['tenant', 'personal'])
+  @IsEnum(['solution', 'personal'])
   scope?: SkillScope;
 
   @IsOptional()
@@ -176,7 +176,7 @@ export class ListSkillsDto {
   createdBy?: string;
 
   @IsOptional()
-  @IsEnum(['tenant', 'personal'])
+  @IsEnum(['solution', 'personal'])
   scope?: SkillScope;
 }
 

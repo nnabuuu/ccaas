@@ -116,47 +116,6 @@ describe('SolutionAuthGuard', () => {
 
   // ── Header / query resolution ─────────────────────────────────────────
 
-  it('also accepts the legacy X-Tenant-Id header (α compat alias)', async () => {
-    // α renamed the canonical header to X-Solution-Id but kept
-    // X-Tenant-Id readable for one release so external admin tooling
-    // and CI scripts don't break overnight. Pin this so an inadvertent
-    // cleanup that drops the alias before the window closes shows up
-    // here.
-    const tenant = { id: 'tenant-legacy-header', status: 'active' };
-    tenantsService.findOne.mockResolvedValue(tenant as any);
-
-    const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-legacy-header' },
-    };
-    const ctx = createMockContext(request);
-    const result = await guard.canActivate(ctx);
-
-    expect(result).toBe(true);
-    expect(request.solutionId).toBe('tenant-legacy-header');
-    expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-legacy-header');
-  });
-
-  it('prefers X-Solution-Id over the legacy X-Tenant-Id when both are present', async () => {
-    const tenant = { id: 'tenant-canonical', status: 'active' };
-    tenantsService.findOne.mockResolvedValue(tenant as any);
-
-    const request: Record<string, any> = {
-      headers: {
-        'x-solution-id': 'tenant-canonical',
-        'x-tenant-id': 'tenant-from-legacy',
-      },
-    };
-    const ctx = createMockContext(request);
-    const result = await guard.canActivate(ctx);
-
-    expect(result).toBe(true);
-    expect(request.solutionId).toBe('tenant-canonical');
-    // Legacy header value MUST NOT win when canonical is present —
-    // otherwise an attacker spoofing the legacy header could override
-    // a legitimate canonical caller.
-    expect(tenantsService.findOne).not.toHaveBeenCalledWith('tenant-from-legacy');
-  });
-
   it('should resolve tenant from X-Solution-Id header', async () => {
     const tenant = { id: 'tenant-abc', status: 'active' };
     tenantsService.findOne.mockResolvedValue(tenant as any);

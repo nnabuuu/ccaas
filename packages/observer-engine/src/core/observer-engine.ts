@@ -159,7 +159,7 @@ export class ObserverEngine {
         const obs: Observation = {
           id: randomUUID(),
           sessionId: event.sessionId,
-          tenantId: event.tenantId,
+          solutionId: event.solutionId,
           ...op.observation,
           createdAt: Date.now(),
           updatedAt: Date.now(),

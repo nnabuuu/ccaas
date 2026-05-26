@@ -49,7 +49,6 @@ import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { ControlResponseDto } from './dto/control-response.dto';
-import { BindProjectDto } from './dto/bind-project.dto';
 import { AttachWorkspaceSourceDto } from './dto/attach-workspace-source.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
@@ -657,22 +656,16 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    * triggers `SessionAssetSyncer.onSessionBound` which bootstraps the
    * workspace from the solution-exposed REST endpoint at `sourceUrl`.
    *
-   * **New canonical name** for what used to be `bind-project`. ccaas-core
-   * is no longer in the business of knowing what a "project" is — the
-   * solution passes an opaque `sourceIdentity` + the URL to pull/push
-   * artifacts against, and ccaas stores them as-is. See β-1 of the
-   * α+β refactor (`~/.claude/plans/kind-exploring-mango.md`).
+   * ccaas-core does not know what a "project" is — the solution passes
+   * an opaque `sourceIdentity` + the URL to pull/push artifacts
+   * against, and ccaas stores them as-is. See the α+β refactor plan
+   * (`~/.claude/plans/kind-exploring-mango.md`) for the rename history.
    *
    * Idempotent on same sourceIdentity; reattaching to a different
-   * identity returns 409 (use a fresh session). Cross-tenant attaches
+   * identity returns 409 (use a fresh session). Cross-solution attaches
    * are rejected with 403 — the body's solutionId must match the
-   * session's owning tenant (enforced in
+   * session's owning solution (enforced in
    * `SessionService.attachWorkspaceSource`).
-   *
-   * Compat: `POST /sessions/:sessionId/bind-project` below is kept as
-   * an alias for one release. Both routes wire into the same service
-   * call. Solutions should migrate to this route at their convenience
-   * during the compat window.
    *
    * TODO(auth): @OptionalAuth + AUTH_ALLOW_ANONYMOUS=true is dev-only.
    * Production should require @Auth('sessions:write') or equivalent.
@@ -687,9 +680,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
       'Tells agent-runtime where to load/save this session\'s editable ' +
       'artifacts. The solution supplies an opaque `sourceIdentity` plus ' +
       'a base URL ccaas calls for artifact CRUD. Idempotent on same ' +
-      'identity; 409 on reattach to a different identity. Replaces the ' +
-      'old `bind-project` route (still available as an alias for one ' +
-      'release).',
+      'identity; 409 on reattach to a different identity.',
   })
   @ApiParam({ name: 'sessionId', description: 'Session ID' })
   @ApiResponse({
@@ -729,51 +720,6 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
         ...(body.sourceSchemaHash ? { sourceSchemaHash: body.sourceSchemaHash } : {}),
       },
     };
-  }
-
-  /**
-   * @deprecated Use `POST /sessions/:sessionId/attach-workspace-source`
-   * instead. This route is preserved as an alias for one release while
-   * solutions migrate.
-   *
-   * Bind a session to a project so the agent-runtime sync layer knows
-   * which artifacts to load/save. Fires `session.bound` → triggers
-   * `SessionAssetSyncer.onSessionBound` which bootstraps the workspace
-   * from `RestWorkspaceArtifactSource.loadArtifacts(projectId)`.
-   *
-   * Idempotent on same projectId; rebinding to a different project
-   * returns 409 (use a fresh session). Cross-tenant binds are rejected
-   * with 403 — the body's solutionId must match the session's owning
-   * tenant (enforced in SessionService.bindToProject).
-   *
-   * TODO(auth): @OptionalAuth + AUTH_ALLOW_ANONYMOUS=true is dev-only.
-   * Production should require @Auth('sessions:write') or equivalent.
-   *
-   * POST /api/v1/sessions/:sessionId/bind-project
-   */
-  @Post(':sessionId/bind-project')
-  @OptionalAuth()
-  @ApiOperation({
-    summary: '[Deprecated] Bind Session to Project — use attach-workspace-source',
-    description:
-      'Alias kept for one release. Prefer ' +
-      '`POST /sessions/:sessionId/attach-workspace-source`, which uses ' +
-      'opaque `sourceUrl` + `sourceIdentity` instead of leaking the ' +
-      '`project` concept into ccaas-core. Both routes hit the same ' +
-      'underlying service call; behavior is identical.',
-  })
-  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
-  @ApiResponse({ status: 200, description: '绑定成功 / Bound' })
-  @ApiResponse({ status: 400, description: 'projectId / solutionId missing' })
-  @ApiResponse({ status: 403, description: 'tenant mismatch — body solutionId differs from session owner' })
-  @ApiResponse({ status: 404, description: '会话不存在 / Session not found' })
-  @ApiResponse({ status: 409, description: 'session already bound to a different projectId' })
-  async bindToProject(
-    @Param('sessionId') sessionId: string,
-    @Body() body: BindProjectDto,
-  ): Promise<{ success: true; sessionId: string; projectId: string }> {
-    await this.sessionService.bindToProject(sessionId, body.solutionId, body.projectId);
-    return { success: true, sessionId, projectId: body.projectId };
   }
 
 

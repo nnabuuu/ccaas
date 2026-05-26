@@ -24,11 +24,11 @@
  *        (workspace unknown to ccaas OR no resolver registered)
  *   403: token's tenant ≠ workspace's resolved tenant
  *
- * Note: the agent-runtime npm package's `ProjectTenantResolver`
+ * Note: the agent-runtime npm package's `WorkspaceAccessResolver`
  * interface still has the legacy name (renaming the package's exported
  * type is a bigger move than β-3's scope). Inside ccaas-core this
  * guard speaks "workspace" / "identity"; the resolver port it calls is
- * still `ProjectTenantResolver.verifyProjectAccess`. We treat that as
+ * still `WorkspaceAccessResolver.verifyWorkspaceAccess`. We treat that as
  * the same semantic check — only the vocabulary on the controller +
  * guard surface changed.
  */
@@ -43,17 +43,17 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 
-import type { ProjectTenantResolver } from '@kedge-agentic/agent-runtime';
+import type { WorkspaceAccessResolver } from '@kedge-agentic/agent-runtime';
 
 import { ApiKeyService } from '../../auth/api-key.service';
-import { PROJECT_TENANT_RESOLVER } from './tokens';
+import { WORKSPACE_ACCESS_RESOLVER } from './tokens';
 
 @Injectable()
 export class WorkspaceAccessGuard implements CanActivate {
   constructor(
     private readonly apiKeys: ApiKeyService,
-    @Inject(PROJECT_TENANT_RESOLVER)
-    private readonly tenantResolver: ProjectTenantResolver,
+    @Inject(WORKSPACE_ACCESS_RESOLVER)
+    private readonly tenantResolver: WorkspaceAccessResolver,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -93,7 +93,7 @@ export class WorkspaceAccessGuard implements CanActivate {
     // answer covers both "workspace unknown to ccaas" and "this caller
     // doesn't own it" — we don't disambiguate to the client because
     // doing so leaks identity-existence to unauthorized callers.
-    const ok = await this.tenantResolver.verifyProjectAccess(
+    const ok = await this.tenantResolver.verifyWorkspaceAccess(
       identity,
       callerTenantId,
     );

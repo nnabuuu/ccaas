@@ -11,7 +11,7 @@ export class TypeormEventStore implements EventStore {
     record.type = event.type;
     record.sessionId = event.sessionId;
     record.entityId = event.entityId;
-    record.tenantId = event.tenantId;
+    record.solutionId = event.solutionId;
     record.timestamp = event.timestamp;
     record.payload = event.payload;
     record.metadata = event.metadata ? { ...event.metadata } : null;
@@ -43,7 +43,7 @@ function toEvent(record: ObserverEventRecord): ObserverEvent {
     type: record.type,
     sessionId: record.sessionId,
     entityId: record.entityId,
-    tenantId: record.tenantId,
+    solutionId: record.solutionId,
     timestamp: Number(record.timestamp),
     payload: record.payload,
     metadata: record.metadata as ObserverEvent['metadata'],

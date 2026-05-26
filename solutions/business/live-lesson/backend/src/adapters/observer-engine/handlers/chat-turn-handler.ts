@@ -148,7 +148,7 @@ Rules:
           type: 'student_observation_changed',
           sessionId: event.sessionId,
           entityId: event.entityId,
-          tenantId: event.tenantId,
+          solutionId: event.solutionId,
           payload: { trigger: 'chat_turn' },
         },
       ],

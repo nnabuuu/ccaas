@@ -27,6 +27,7 @@
 
 import { test, expect } from '@playwright/test';
 import {
+  BACKEND_URL,
   CCAAS_URL,
   CREATOR_URL,
   CREATOR_TENANT_SLUG,
@@ -91,15 +92,19 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
     const msg = await postFirstMessage({ sessionId, solutionId });
     expect(msg.status).toBe(201);
 
-    // 3. bind — writes session_metadata(projectId → solutionId). Retries
+    // 3. attach — writes session_metadata(sourceIdentity → solutionId). Retries
     //    on 404 because the worker may not have inserted the session
     //    into the in-memory map before fetch's headers came back.
     const bind = await bindProjectAfterCreate(
       sessionId,
-      { projectId: project.id, solutionId },
+      { sourceIdentity: project.id, sourceUrl: `${BACKEND_URL}/api/projects`, solutionId },
     );
     expect(bind.status).toBe(201);
-    expect(bind.data).toMatchObject({ success: true, sessionId, projectId: project.id });
+    expect(bind.data).toMatchObject({
+      success: true,
+      sessionId,
+      workspaceSource: { sourceIdentity: project.id },
+    });
 
     // 4. Let the bootstrap sync settle so the next /invalidate sees the
     //    post-bootstrap snapshot as baseline. Matches the bash smoke's
@@ -168,38 +173,42 @@ test.describe('16 — creator-v7 ↔ agent-runtime', () => {
     expect([401, 403]).toContain(res.status);
   });
 
-  test('bind-project DTO validation: missing projectId returns 400', async () => {
+  test('attach-workspace-source DTO validation: missing sourceIdentity returns 400', async () => {
     const sessionId = newSessionId();
-    const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+    const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ solutionId }),
+      body: JSON.stringify({ sourceUrl: `${BACKEND_URL}/api/projects`, solutionId }),
     });
     expect(res.status).toBe(400);
     const body = await res.json() as { message?: string | string[] };
     // class-validator's BadRequestException emits a `message` field
     // listing each constraint that failed; we don't pin the exact
-    // string but we do want to see "projectId" surfaced.
+    // string but we do want to see "sourceIdentity" surfaced.
     const blob = Array.isArray(body.message) ? body.message.join(' ') : (body.message ?? '');
-    expect(blob.toLowerCase()).toContain('projectid');
+    expect(blob.toLowerCase()).toContain('sourceidentity');
   });
 
-  test('bind-project DTO validation: missing solutionId returns 400', async () => {
+  test('attach-workspace-source DTO validation: missing solutionId returns 400', async () => {
     const sessionId = newSessionId();
-    const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+    const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ projectId: 'whatever' }),
+      body: JSON.stringify({ sourceIdentity: 'whatever', sourceUrl: `${BACKEND_URL}/api/projects` }),
     });
     expect(res.status).toBe(400);
     const body = await res.json() as { message?: string | string[] };
     const blob = Array.isArray(body.message) ? body.message.join(' ') : (body.message ?? '');
-    expect(blob.toLowerCase()).toContain('tenantid');
+    expect(blob.toLowerCase()).toContain('solutionid');
   });
 
-  test('bind-project on unknown session returns 404', async () => {
+  test('attach-workspace-source on unknown session returns 404', async () => {
     const ghostId = newSessionId();
-    const bind = await bindProject(ghostId, { projectId: 'irrelevant', solutionId });
+    const bind = await bindProject(ghostId, {
+      sourceIdentity: 'irrelevant',
+      sourceUrl: `${BACKEND_URL}/api/projects`,
+      solutionId,
+    });
     expect(bind.status).toBe(404);
   });
 

@@ -25,12 +25,8 @@ export type AdminAction =
   | 'apikey.revoke'
   | 'apikey.update'
   | 'apikey.delete'
-  // `tenant.*` action names are @load-bearing — they're persisted in
-  // the audit log table. α renamed the entity to Solution but the
-  // historical action strings stay because changing them would break
-  // log queries filtering by action. Treat as opaque audit identifiers.
-  | 'tenant.create'
-  | 'tenant.update'
+  | 'solution.create'
+  | 'solution.update'
   | 'alert.create'
   | 'alert.update'
   | 'alert.delete'
@@ -47,19 +43,11 @@ export type AdminAction =
   | 'user.role_update'
   | 'user.delete';
 
-/**
- * @load-bearing values — the string `'tenant'` is persisted in the
- * `admin_audit_log.targetType` column. α (2026-05-26) renamed the
- * Tenant entity to Solution but this enum value stays because audit
- * queries filter by exact string match. Treat as opaque audit
- * identifier; do NOT rename to `'solution'` without a coordinated
- * data migration that rewrites historical rows.
- */
 export type TargetType =
   | 'skill'
   | 'session'
   | 'apikey'
-  | 'tenant'
+  | 'solution'
   | 'alert'
   | 'mcp-server'
   | 'user';

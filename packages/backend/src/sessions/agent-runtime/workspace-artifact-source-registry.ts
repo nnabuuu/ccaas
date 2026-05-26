@@ -1,10 +1,10 @@
 /**
- * ProjectArtifactSourceRegistry — tenant.config-backed lookup of
- * `ProjectArtifactSource` instances.
+ * WorkspaceArtifactSourceRegistry — tenant.config-backed lookup of
+ * `WorkspaceArtifactSource` instances.
  *
  * Where the URL lives: `tenant.config.artifactUrl` (set via `solution.json`
  * import on boot, or via `PUT /solutions/:id` at runtime). The registry
- * caches `slug → ProjectArtifactSource | null` in-memory; null is a
+ * caches `slug → WorkspaceArtifactSource | null` in-memory; null is a
  * deliberate cached value meaning "this tenant has no artifactUrl yet"
  * so we don't re-query the DB every turn for unconfigured tenants.
  *
@@ -13,7 +13,7 @@
  * next sync after a config change reconstructs the source from the
  * fresh `tenant.config.artifactUrl` value.
  *
- * The runtime's `ProjectArtifactSource` interface stays single-tenant
+ * The runtime's `WorkspaceArtifactSource` interface stays single-tenant
  * pure (no tenant param); routing happens at the orchestrator level
  * (`SessionAssetSyncer` resolves `session.solutionId → tenant.slug`
  * via `SolutionsService`, then calls `getForTenantSlug(slug)`).
@@ -22,7 +22,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 
-import type { ProjectArtifactSource } from '@kedge-agentic/agent-runtime';
+import type { WorkspaceArtifactSource } from '@kedge-agentic/agent-runtime';
 
 import { SolutionsService } from '../../solutions/solutions.service';
 import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
@@ -32,14 +32,14 @@ import {
 } from '../../solutions/solution-config-events';
 
 @Injectable()
-export class ProjectArtifactSourceRegistry implements OnModuleInit {
-  private readonly logger = new Logger(ProjectArtifactSourceRegistry.name);
+export class WorkspaceArtifactSourceRegistry implements OnModuleInit {
+  private readonly logger = new Logger(WorkspaceArtifactSourceRegistry.name);
   /**
    * `null` is a sentinel meaning "looked up; tenant has no artifactUrl
    * configured." Cached to avoid re-hitting SolutionsService every turn
    * for unconfigured tenants.
    */
-  private readonly cache = new Map<string, ProjectArtifactSource | null>();
+  private readonly cache = new Map<string, WorkspaceArtifactSource | null>();
 
   constructor(private readonly tenants: SolutionsService) {}
 
@@ -50,7 +50,7 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
   }
 
   /**
-   * Resolve the `ProjectArtifactSource` for a tenant slug.
+   * Resolve the `WorkspaceArtifactSource` for a tenant slug.
    *
    * Behavior:
    *   - cache hit: returns the cached instance (or null sentinel)
@@ -65,7 +65,7 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
    */
   async getForTenantSlug(
     slug: string | null | undefined,
-  ): Promise<ProjectArtifactSource | null> {
+  ): Promise<WorkspaceArtifactSource | null> {
     if (!slug) return null;
     if (this.cache.has(slug)) {
       return this.cache.get(slug) ?? null;

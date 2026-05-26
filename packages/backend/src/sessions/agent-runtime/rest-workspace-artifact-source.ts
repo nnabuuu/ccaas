@@ -1,16 +1,14 @@
 /**
- * RestWorkspaceArtifactSource — HTTP-backed `ProjectArtifactSource` impl
+ * RestWorkspaceArtifactSource — HTTP-backed `WorkspaceArtifactSource` impl
  * for solutions that run in a separate process from ccaas (the common
- * case: live-lesson on :3007, ccaas on :3001). Renamed from
- * `RestProjectArtifactSource` in β-3 — the deprecated class name is
- * still re-exported at the bottom of this file for one release.
+ * case: live-lesson on :3007, ccaas on :3001).
  *
  * Solutions expose three endpoints under a configurable base URL. The
  * URL **template** still uses `/projects/:id/artifacts` because that's
  * what solutions implement today — ccaas-core stops calling its own
  * abstraction "project" but the wire contract solutions promise is
  * still expressed in solution-domain vocabulary. A future phase may
- * make the URL template configurable per-tenant.
+ * make the URL template configurable per-solution.
  *
  *   GET    {base}/projects/:identity/artifacts
  *     → 200: [{ path, content, type, attributes? }]
@@ -26,7 +24,7 @@
  * `ArtifactSnapshot` shape is intentionally a plain JSON object.
  *
  * Configuration: set `tenant.config.artifactUrl` (via `solution.json`
- * auto-discovery or `PUT /solutions/:id`). The `ProjectArtifactSourceRegistry`
+ * auto-discovery or `PUT /solutions/:id`). The `WorkspaceArtifactSourceRegistry`
  * lazily constructs a `RestWorkspaceArtifactSource(url)` per tenant on
  * first use and caches it, invalidating on `tenant.config.changed` events.
  *
@@ -39,12 +37,12 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import type {
   ArtifactSnapshot,
-  ProjectArtifactSource,
+  WorkspaceArtifactSource,
   SaveArtifactResult,
 } from '@kedge-agentic/agent-runtime';
 
 @Injectable()
-export class RestWorkspaceArtifactSource implements ProjectArtifactSource {
+export class RestWorkspaceArtifactSource implements WorkspaceArtifactSource {
   private readonly logger = new Logger(RestWorkspaceArtifactSource.name);
   private readonly baseUrl: string;
 
@@ -153,12 +151,3 @@ export class RestWorkspaceArtifactSource implements ProjectArtifactSource {
     }
   }
 }
-
-/**
- * @deprecated since β-3 (2026-05-26) — use `RestWorkspaceArtifactSource`.
- * Kept as a re-export so any out-of-tree consumer importing the old
- * name from this file (file path itself moved via `git mv`) gets a
- * clear deprecation notice instead of a silent ImportError.
- */
-export { RestWorkspaceArtifactSource as RestProjectArtifactSource };
-

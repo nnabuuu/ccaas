@@ -22,7 +22,7 @@
  * path" (deleted) edge cases.
  */
 
-import type { ArtifactSnapshot } from '../artifact/project-artifact-source.js';
+import type { ArtifactSnapshot } from '../artifact/workspace-artifact-source.js';
 import type {
   BinaryArtifactListing,
   BinaryArtifactSnapshot,
@@ -80,7 +80,7 @@ export interface SyncEngineInput {
   readonly now: string;
   readonly hasher: ContentHasher;
   /**
-   * Whether the orchestrator's `ProjectArtifactSource` supports
+   * Whether the orchestrator's `WorkspaceArtifactSource` supports
    * `deleteArtifact`. Defaults to `true`. When `false`, the engine
    * substitutes `write_fs` (restore-from-DB) for `delete_db` actions
    * so an agent-side delete is reverted on the next sync rather than

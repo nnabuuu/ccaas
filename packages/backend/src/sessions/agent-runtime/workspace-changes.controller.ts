@@ -2,16 +2,8 @@
  * Workspace-scoped sync REST endpoints — the GUI's window into the
  * agent-runtime sync layer.
  *
- *   GET   /workspaces/:identity/changes?token=K     (SSE, canonical)
- *   POST  /workspaces/:identity/invalidate?token=K  (canonical)
- *
- *   GET   /projects/:identity/changes?token=K       (SSE, deprecated alias)
- *   POST  /projects/:identity/invalidate?token=K    (deprecated alias)
- *
- * Both URL surfaces hit the same handlers — the alias paths are kept
- * for one release while solutions migrate. Each handler accepts an
- * array of paths on its route decorator (NestJS pattern); the path
- * the request actually came in on is irrelevant to the handler.
+ *   GET   /workspaces/:identity/changes?token=K     (SSE)
+ *   POST  /workspaces/:identity/invalidate?token=K
  *
  * ccaas does not set a global API prefix; sessions endpoints use
  * `@Controller('api/v1/sessions')` but these agent-runtime routes
@@ -24,9 +16,9 @@
  * default "wait for the next agent turn boundary" cadence.
  *
  * **Auth (Phase 2b-2)**: both endpoints are gated by `WorkspaceAccessGuard`
- * which validates `?token=<apiKey>` and checks the token's tenant
- * matches the workspace's owning tenant (via the resolver behind
- * `PROJECT_TENANT_RESOLVER`). The guard runs in `canActivate` BEFORE
+ * which validates `?token=<apiKey>` and checks the token's solution
+ * matches the workspace's owning solution (via the resolver behind
+ * `WORKSPACE_ACCESS_RESOLVER`). The guard runs in `canActivate` BEFORE
  * the handler — necessary for SSE, where the @Sse handler would
  * otherwise commit HTTP 200 before an in-handler auth check could
  * reject. See `workspace-access.guard.ts` for why this can't be done
@@ -34,19 +26,13 @@
  *
  * Reject paths (handled by the Guard, surfaced as proper HTTP statuses):
  *   401: missing/invalid/expired token
- *   403: token's tenant doesn't match the workspace's tenant, OR
+ *   403: token's solution doesn't match the workspace's solution, OR
  *        no resolver registered (default denies)
  *
- * Query-param tokens leak to access logs. Acceptable for single-tenant
- * dev / prod-with-trusted-network. For true multi-tenant prod, a
+ * Query-param tokens leak to access logs. Acceptable for single-solution
+ * dev / prod-with-trusted-network. For true multi-solution prod, a
  * short-lived exchange token (`POST /sessions/exchange`) is a Phase 3
  * hardening — not in scope here.
- *
- * β-3 of the α+β refactor (2026-05-26) renamed the controller class
- * + URL surface from `projects/:projectId` to `workspaces/:identity`.
- * `/projects/:identity/*` stays as an alias path on the same handlers
- * so legacy callers (live-lesson's pre-β-3 proxy, manual ops scripts,
- * the e2e helper) keep working without code changes.
  */
 
 import {
@@ -87,12 +73,9 @@ export class WorkspaceChangesController {
    *
    * `@Public()` skips the global ApiKey decorator-based auth (which is
    * header-based and wouldn't fit EventSource anyway); `WorkspaceAccessGuard`
-   * does the query-param token check + tenant match instead.
-   *
-   * Path array: handles both the canonical `workspaces/:identity/changes`
-   * and the deprecated alias `projects/:identity/changes`.
+   * does the query-param token check + solution match instead.
    */
-  @Get(['workspaces/:identity/changes', 'projects/:identity/changes'])
+  @Get('workspaces/:identity/changes')
   @Public()
   @UseGuards(WorkspaceAccessGuard)
   @ApiOperation({
@@ -146,12 +129,8 @@ export class WorkspaceChangesController {
    *
    * Fire-and-forget — returns immediately; the syncer runs
    * asynchronously per-session.
-   *
-   * Path array: handles both the canonical
-   * `workspaces/:identity/invalidate` and the deprecated alias
-   * `projects/:identity/invalidate`.
    */
-  @Post(['workspaces/:identity/invalidate', 'projects/:identity/invalidate'])
+  @Post('workspaces/:identity/invalidate')
   @Public()
   @UseGuards(WorkspaceAccessGuard)
   @HttpCode(202)

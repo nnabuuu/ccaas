@@ -3,9 +3,9 @@
  *
  * Covers the agent-runtime endpoints that creator-v7 will eventually
  * drive from the UI:
- *   - POST /api/v1/sessions/:id/messages       (first-turn; spawns engine)
- *   - POST /api/v1/sessions/:id/bind-project   (binds session → project)
- *   - GET  /projects/:id/changes               (SSE change stream)
+ *   - POST /api/v1/sessions/:id/messages                  (first-turn; spawns engine)
+ *   - POST /api/v1/sessions/:id/attach-workspace-source   (attaches session → workspace)
+ *   - GET  /workspaces/:id/changes                        (SSE change stream)
  *
  * Cross-references:
  *   - poc-smoke.sh  — the wire-level smoke this mirrors
@@ -60,8 +60,17 @@ export function getCreatorTenantId(slug = CREATOR_TENANT_SLUG): string {
 
 // ── HTTP helpers ─────────────────────────────────────────────────────
 
-export interface BindBody { projectId: string; solutionId: string }
-export interface BindResponse { success: true; sessionId: string; projectId: string }
+export interface BindBody {
+  sourceIdentity: string;
+  sourceUrl: string;
+  sourceSchemaHash?: string;
+  solutionId: string;
+}
+export interface BindResponse {
+  success: true;
+  sessionId: string;
+  workspaceSource: { sourceUrl: string; sourceIdentity: string; sourceSchemaHash?: string };
+}
 
 /** Generate a UUID for a fresh session id. Crypto-random; safe in tests. */
 export function newSessionId(): string {
@@ -99,18 +108,13 @@ export async function postFirstMessage(opts: {
 }
 
 /**
- * POST /api/v1/sessions/:sid/bind-project.
- *
- * TODO(β-2): swap to `attach-workspace-source` once β-2 lands. Today
- * this helper deliberately exercises the legacy alias route so that
- * the deprecation grace period is actually covered by an e2e — flipping
- * this to the new route too early would leave the alias path untested.
+ * POST /api/v1/sessions/:sid/attach-workspace-source.
  */
 export async function bindProject(
   sessionId: string,
   body: BindBody,
 ): Promise<{ status: number; data: BindResponse | { message: string } }> {
-  const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+  const res = await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

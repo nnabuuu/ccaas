@@ -6,9 +6,9 @@
  * right after a turn cleanly exits with status='complete'). On each
  * fire:
  *   1. Look up the bound `projectId` for this session via
- *      `session_metadata['projectId']`. No binding → no-op.
+ *      `session_metadata['sourceIdentity']`. No binding → no-op.
  *   2. Read the DB-side canonical state via the solution-provided
- *      `ProjectArtifactSource.loadArtifacts(projectId)`.
+ *      `WorkspaceArtifactSource.loadArtifacts(projectId)`.
  *   3. Read the agent-side delta via the WorkspaceProvider's
  *      `diff()` (agentfs-only; LocalProvider has no per-session
  *      delta concept — for local sessions we treat fs-side as empty).
@@ -59,7 +59,7 @@ import type {
   ChangeStream,
   ContentHasher,
   FsDelta,
-  ProjectArtifactSource,
+  WorkspaceArtifactSource,
   SnapshotEntry,
   SnapshotStore,
   SyncAction,
@@ -73,12 +73,12 @@ import type { FsDiffEntry } from '../workspace/types';
 
 import {
   CHANGE_STREAM,
-  PROJECT_ARTIFACT_SOURCE_REGISTRY,
-  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_ARTIFACT_SOURCE_REGISTRY,
+  WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './tokens';
-import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
-import { ProjectBinaryArtifactSourceRegistry } from './project-binary-artifact-source-registry';
+import { WorkspaceArtifactSourceRegistry } from './workspace-artifact-source-registry';
+import { WorkspaceBinaryArtifactSourceRegistry } from './workspace-binary-artifact-source-registry';
 
 /** Workspace-relative directory holding live text artifact projections. */
 export const ARTIFACTS_DIR = 'artifacts';
@@ -106,27 +106,15 @@ export interface SessionTurnCompleteEvent {
 
 /**
  * Payload of the `session.bound` event emitted by
- * `SessionService.attachWorkspaceSource` (and its β-2 alias
- * `bindToProject`).
+ * `SessionService.attachWorkspaceSource`.
  *
- * Both `projectId` and `workspaceSource.sourceIdentity` carry the
- * same value during the β compat window. Existing listeners
- * (`SessionAssetSyncer.onSessionBound`) read `projectId`; β-3
- * listeners that need the URL or schema-hash read `workspaceSource`.
- * Once β-2 + β-3 are fully landed and α has renamed `tenant` →
- * `solution`, `projectId` is removed from this payload.
+ * Carries the full WorkspaceSource descriptor (identity + optional
+ * URL + optional schema hash) so listeners can read `sourceUrl`
+ * directly off the event without reaching back into session_metadata.
  */
 export interface SessionBoundEvent {
   sessionId: string;
   solutionId: string;
-  /** @deprecated since β-2 — use `workspaceSource.sourceIdentity`. */
-  projectId: string;
-  /**
-   * Added in β-2. Carries the full descriptor (identity + optional
-   * URL + optional schema hash) so β-3's syncer rewrite can read
-   * `sourceUrl` directly off the event without reaching back into
-   * session_metadata.
-   */
   workspaceSource: {
     sourceIdentity: string;
     sourceUrl?: string;
@@ -166,10 +154,10 @@ export class SessionAssetSyncer {
   private readonly tenantSlugCache = new Map<string, string | null>();
 
   constructor(
-    @Inject(PROJECT_ARTIFACT_SOURCE_REGISTRY)
-    private readonly sourceRegistry: ProjectArtifactSourceRegistry,
-    @Inject(PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY)
-    private readonly binarySourceRegistry: ProjectBinaryArtifactSourceRegistry,
+    @Inject(WORKSPACE_ARTIFACT_SOURCE_REGISTRY)
+    private readonly sourceRegistry: WorkspaceArtifactSourceRegistry,
+    @Inject(WORKSPACE_BINARY_ARTIFACT_SOURCE_REGISTRY)
+    private readonly binarySourceRegistry: WorkspaceBinaryArtifactSourceRegistry,
     @Inject(SNAPSHOT_STORE) private readonly snapshots: SnapshotStore,
     @Inject(CHANGE_STREAM) private readonly changes: ChangeStream,
     private readonly sessions: SessionService,
@@ -207,7 +195,7 @@ export class SessionAssetSyncer {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `bootstrap sync failed for session=${payload.sessionId} project=${payload.projectId}: ${msg}`,
+        `bootstrap sync failed for session=${payload.sessionId} sourceIdentity=${payload.workspaceSource.sourceIdentity}: ${msg}`,
         err instanceof Error ? err.stack : undefined,
       );
     }
@@ -221,7 +209,7 @@ export class SessionAssetSyncer {
       return;
     }
 
-    const projectId = await this.lookupProjectId(sessionId, session.solutionId);
+    const projectId = await this.lookupSourceIdentity(sessionId, session.solutionId);
     if (!projectId) {
       this.logger.debug(`sync: session ${sessionId} has no projectId binding, skipping`);
       return;
@@ -290,7 +278,7 @@ export class SessionAssetSyncer {
     sessionId: string,
     projectId: string,
     workspaceDir: string,
-    source: ProjectArtifactSource,
+    source: WorkspaceArtifactSource,
   ): Promise<void> {
     const artifactsDir = path.join(workspaceDir, ARTIFACTS_DIR);
     const artifactsBinaryDir = path.join(workspaceDir, ARTIFACTS_BINARY_DIR);
@@ -394,7 +382,7 @@ export class SessionAssetSyncer {
         this.logger.warn(
           `sync: solution rewrote path ${rewrite.sentPath} → ${rewrite.canonicalPath}; ` +
             `using canonical for snapshot (avoid by not normalizing paths server-side, ` +
-            `see ProjectArtifactSource.saveArtifact JSDoc)`,
+            `see WorkspaceArtifactSource.saveArtifact JSDoc)`,
         );
         pathRewrites.set(rewrite.sentPath, rewrite.canonicalPath);
       }
@@ -458,7 +446,7 @@ export class SessionAssetSyncer {
     action: SyncAction,
     projectId: string,
     artifactsDir: string,
-    source: ProjectArtifactSource,
+    source: WorkspaceArtifactSource,
   ): Promise<{ sentPath: string; canonicalPath: string } | undefined> {
     const filePath = (rel: string) => path.join(artifactsDir, rel);
     switch (action.kind) {
@@ -729,16 +717,16 @@ export class SessionAssetSyncer {
   }
 
   /**
-   * Resolve the bound projectId for a session via session_metadata.
-   * Returns null if no binding exists yet (treated as "not project-scoped").
+   * Resolve the attached sourceIdentity for a session via session_metadata.
+   * Returns null if no attachment exists yet (treated as "no workspace source attached").
    */
-  private async lookupProjectId(
+  private async lookupSourceIdentity(
     sessionId: string,
     solutionId: string | undefined,
   ): Promise<string | null> {
     if (!solutionId) return null;
     try {
-      const row = await this.metadata.get(sessionId, solutionId, 'projectId');
+      const row = await this.metadata.get(sessionId, solutionId, 'sourceIdentity');
       // SessionMetadataService.toRow already JSON.parses value — receive `unknown`.
       const value = row.value;
       return typeof value === 'string' && value.length > 0 ? value : null;

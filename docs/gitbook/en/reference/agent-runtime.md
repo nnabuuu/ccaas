@@ -426,21 +426,16 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`,
   body: JSON.stringify({
     sourceUrl: 'http://your-solution/api/projects',  // base URL ccaas calls back
     sourceIdentity: projectId,                        // opaque ID, ccaas does not parse
-    solutionId,                                         // transitional during β
+    solutionId,
   }),
-});
-
-// Or keep using the legacy alias during the compat window:
-await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId, solutionId }),
 });
 ```
 
-`SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. The deprecated alias `bindToProject(sessionId, solutionId, projectId)` delegates here with `{ sourceIdentity: projectId }`.
+`SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state.
 
 ### GUI side: consume the SSE so users see agent edits (Phase 2a)
 
-The backend `/workspaces/:identity/changes` SSE emits every ChangeEvent (legacy alias `/projects/:identity/changes` also works). A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
+The backend `/workspaces/:identity/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
 
 **Critical design rule**: the browser **never holds a ccaas key.** ccaas knows solutions, not end users — each solution backend is one solution and holds the one ccaas key. End users belong to the solution, not to ccaas. They authenticate to the solution backend (using whatever the solution's own auth is — cookie session, JWT, anything) and the solution backend mediates every ccaas call.
 

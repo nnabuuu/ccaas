@@ -79,7 +79,7 @@ export class SkillPermissionGuard implements CanActivate {
     }
 
     // Solution-scoped skills are readable by all (including anonymous)
-    if (skill.scope === 'tenant') {
+    if (skill.scope === 'solution') {
       return true;
     }
 

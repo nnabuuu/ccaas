@@ -138,8 +138,8 @@ export class AdminSolutionsController {
 
     await this.auditService.log({
       adminId: ctx?.apiKeyId || 'system',
-      action: 'tenant.update',
-      targetType: 'tenant',
+      action: 'solution.update',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: {
@@ -262,8 +262,8 @@ export class AdminSolutionsController {
     // Audit log
     await this.auditService.log({
       adminId: ctx?.apiKeyId || 'system',
-      action: 'tenant.update',
-      targetType: 'tenant',
+      action: 'solution.update',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: {
@@ -384,8 +384,8 @@ export class AdminSolutionsController {
     // Audit log
     await this.auditService.log({
       adminId: ctx?.apiKeyId || 'system',
-      action: 'tenant.update',
-      targetType: 'tenant',
+      action: 'solution.update',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: {

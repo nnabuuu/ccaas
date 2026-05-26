@@ -185,7 +185,7 @@ export class AdminSessionTemplatesController {
     await this.tryLogAudit({
       adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.create',
-      targetType: 'tenant',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: { templateName: dto.name, template: dto.template },
@@ -222,7 +222,7 @@ export class AdminSessionTemplatesController {
     await this.tryLogAudit({
       adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.update',
-      targetType: 'tenant',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: { templateName: name, previousValue: previousTemplate, newValue: dto.template },
@@ -262,7 +262,7 @@ export class AdminSessionTemplatesController {
     await this.tryLogAudit({
       adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.delete',
-      targetType: 'tenant',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: { templateName: name, deletedTemplate },
@@ -322,7 +322,7 @@ export class AdminSessionTemplatesController {
     await this.tryLogAudit({
       adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.sync',
-      targetType: 'tenant',
+      targetType: 'solution',
       targetId: tenant.id,
       solutionId: tenant.id,
       metadata: { templateNames: Object.keys(dto.templates), count: synced },

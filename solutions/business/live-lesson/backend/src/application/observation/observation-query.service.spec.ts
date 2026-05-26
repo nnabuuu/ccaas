@@ -20,7 +20,7 @@ function makeRecord(overrides: Partial<ObservationRecord> & { type: string; enti
   return {
     id: `obs-${++idSeq}`,
     sessionId: SESSION,
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     data: {},
     triggerEventId: 'evt-0',
     createdAtEpoch: ts,

@@ -1,10 +1,10 @@
 /**
- * ProjectBinaryArtifactSourceRegistry — tenant.config-backed lookup
+ * WorkspaceBinaryArtifactSourceRegistry — tenant.config-backed lookup
  * for `BinaryArtifactSource` instances. Parallel to the text registry,
  * keyed on `tenant.config.binaryArtifactUrl` (separate field from
  * `artifactUrl`; solutions opt in to binaries independently).
  *
- * Same cache semantics as `ProjectArtifactSourceRegistry`:
+ * Same cache semantics as `WorkspaceArtifactSourceRegistry`:
  *   - `null` sentinel for "looked up; no binaryArtifactUrl set" so we
  *     don't re-query the DB every turn for tenants that are text-only.
  *   - Cache invalidation via `SOLUTION_CONFIG_CHANGED` event.
@@ -31,8 +31,8 @@ import {
 } from '../../solutions/solution-config-events';
 
 @Injectable()
-export class ProjectBinaryArtifactSourceRegistry implements OnModuleInit {
-  private readonly logger = new Logger(ProjectBinaryArtifactSourceRegistry.name);
+export class WorkspaceBinaryArtifactSourceRegistry implements OnModuleInit {
+  private readonly logger = new Logger(WorkspaceBinaryArtifactSourceRegistry.name);
   private readonly cache = new Map<string, BinaryArtifactSource | null>();
 
   constructor(private readonly tenants: SolutionsService) {}

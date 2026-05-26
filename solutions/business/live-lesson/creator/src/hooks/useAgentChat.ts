@@ -6,8 +6,9 @@
  *     session change
  *   - `send(text)` POSTs to `/api/v1/sessions/:sid/messages` and streams
  *     the SSE response into the local messages array
- *   - after first turn completes, fire-and-forget bind-project so the
- *     project's change stream picks up agent-side edits (existing
+ *   - on first turn, the live-lesson backend's chat proxy
+ *     attaches the workspace source server-side so the project's
+ *     change stream picks up agent-side edits (existing
  *     `useProjectChanges` hook in the editor surfaces those)
  *
  * SSE parsing: uses native `fetch` + `ReadableStream` (works in modern
@@ -148,10 +149,8 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
-  // (G4 fix: previously held a `hasBoundRef` to skip duplicate
-  // frontend-side bind-project calls. Bind is now backend-side in
-  // MessageWorker, which itself dedupes via getBoundProjectId; no
-  // frontend tracking needed.)
+  // (G4 fix: workspace attach is backend-side in MessageWorker, which
+  // dedupes via getAttachedWorkspaceSource; no frontend tracking needed.)
 
   const { sessionId, projectId, enabledSkills, templateName } = opts;
 
@@ -302,11 +301,11 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
         setIsThinking(false);
       }
 
-      // No bind work here: ccaas's MessageWorker (the G4 fix) awaits
-      // bindToProject + bootstrap sync server-side before spawning the
-      // engine, gated on payload.projectId — which the body above
-      // includes on every send. Bind is deterministic and complete by
-      // the time the first SSE event arrives.
+      // No attach work here: ccaas's MessageWorker awaits
+      // attachWorkspaceSource + bootstrap sync server-side before
+      // spawning the engine, gated on payload.projectId — which the
+      // body above includes on every send. Attach is deterministic and
+      // complete by the time the first SSE event arrives.
     },
     [sessionId, projectId, enabledSkills, templateName, isThinking],
   );

@@ -1,5 +1,5 @@
 /**
- * `ProjectTenantResolver` — the port solutions implement so the
+ * `WorkspaceAccessResolver` — the port solutions implement so the
  * agent-runtime sync layer can enforce per-project tenant isolation
  * on the SSE feed (and the invalidate endpoint).
  *
@@ -11,7 +11,7 @@
  * Resolution flow (Phase 2b-2):
  *   1. SSE subscriber hits `GET /projects/:id/changes?token=K`
  *   2. ccaas validates the token via `ApiKeyService.validateKey(K)` → tenant T
- *   3. ccaas calls `verifyProjectAccess(projectId, T)` → true / false
+ *   3. ccaas calls `verifyWorkspaceAccess(projectId, T)` → true / false
  *   4. If false → 403 Forbidden; if true → stream the changes
  *
  * Default impl (when no solution registers one): returns false for every
@@ -29,7 +29,7 @@
  * legitimate later tenant for the same projectId).
  */
 
-export interface ProjectTenantResolver {
+export interface WorkspaceAccessResolver {
   /**
    * Returns true iff `callerTenantId` is permitted to act on
    * `projectId`. Returns false when the project doesn't exist, when no
@@ -39,7 +39,7 @@ export interface ProjectTenantResolver {
    * Performance: called once per SSE connection + once per invalidate
    * request. Cache aggressively if your project table is hot.
    */
-  verifyProjectAccess(
+  verifyWorkspaceAccess(
     projectId: string,
     callerTenantId: string,
   ): Promise<boolean>;

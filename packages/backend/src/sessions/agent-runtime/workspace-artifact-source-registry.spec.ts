@@ -1,5 +1,5 @@
 /**
- * ProjectArtifactSourceRegistry unit tests — tenant.config-backed lookup.
+ * WorkspaceArtifactSourceRegistry unit tests — tenant.config-backed lookup.
  *
  * Mocks SolutionsService and exercises:
  *   - cache hit returns instance, doesn't re-query
@@ -10,7 +10,7 @@
  *   - tenant.config.changed event evicts the cached entry
  */
 
-import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
+import { WorkspaceArtifactSourceRegistry } from './workspace-artifact-source-registry';
 import { SOLUTION_CONFIG_CHANGED } from '../../solutions/solution-config-events';
 import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 
@@ -21,13 +21,13 @@ const tenant = (slug: string, artifactUrl?: string) => ({
   config: artifactUrl !== undefined ? { artifactUrl } : {},
 });
 
-describe('ProjectArtifactSourceRegistry', () => {
+describe('WorkspaceArtifactSourceRegistry', () => {
   let tenants: { findOne: jest.Mock };
-  let registry: ProjectArtifactSourceRegistry;
+  let registry: WorkspaceArtifactSourceRegistry;
 
   beforeEach(() => {
     tenants = { findOne: jest.fn() };
-    registry = new ProjectArtifactSourceRegistry(tenants as any);
+    registry = new WorkspaceArtifactSourceRegistry(tenants as any);
   });
 
   it('cache miss + tenant has artifactUrl → constructs RestWorkspaceArtifactSource', async () => {

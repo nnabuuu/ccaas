@@ -66,7 +66,7 @@ export class Solution {
      * agent-runtime sync layer — REST base URL ccaas calls back to for
      * artifact load/save. Set via solution.json `artifactUrl` (imported
      * by SolutionLoaderService) or by hand via `PUT /solutions/:id`.
-     * See `ProjectArtifactSourceRegistry` for the read path.
+     * See `WorkspaceArtifactSourceRegistry` for the read path.
      */
     artifactUrl?: string;
     features?: {

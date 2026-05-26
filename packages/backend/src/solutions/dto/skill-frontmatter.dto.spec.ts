@@ -54,7 +54,7 @@ describe('SkillFrontmatterSchema', () => {
       name: 'three-column-analysis',
       slug: 'three-column-analysis',
       description: '三栏布局题目分析',
-      scope: 'tenant',
+      scope: 'solution',
       triggers: [{ type: 'keyword', value: '分析', priority: 10 }],
       allowedTools: ['parse_quiz_content'],
     });

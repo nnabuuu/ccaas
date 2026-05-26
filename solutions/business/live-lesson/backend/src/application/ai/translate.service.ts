@@ -134,7 +134,7 @@ export class TranslateService {
       type: 'translate_request',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: {
         step,
         sourceContext,
@@ -221,7 +221,7 @@ export class TranslateService {
       type: 'translate_chat_turn',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: { step, threadId, sourceContext, questionLength: question.length },
     }).catch(e => this.logger.warn(`Observer dispatch translate_chat_turn failed: ${e}`));
 

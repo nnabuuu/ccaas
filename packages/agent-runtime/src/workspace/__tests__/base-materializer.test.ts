@@ -48,7 +48,7 @@ describe('BaseMaterializer', () => {
   it('writes SKILL.md + .skill.json per skill', async () => {
     const src = new InMemoryContentSource([
       {
-        id: 's1', tenantId: 't1', slug: 'hello',
+        id: 's1', solutionId: 't1', slug: 'hello',
         name: 'Hello', description: 'desc',
         content: '# Hello\n',
         files: [],
@@ -68,7 +68,7 @@ describe('BaseMaterializer', () => {
   it('writes skill files at their relative paths under the skill dir', async () => {
     const src = new InMemoryContentSource([
       {
-        id: 's1', tenantId: 't1', slug: 'hello',
+        id: 's1', solutionId: 't1', slug: 'hello',
         name: '', content: '',
         files: [
           { relativePath: 'examples/a.md', content: 'aaa' },
@@ -88,7 +88,7 @@ describe('BaseMaterializer', () => {
     const src = new InMemoryContentSource(
       [],
       [{
-        tenantId: 't1', slug: 'srv',
+        solutionId: 't1', slug: 'srv',
         name: 'My MCP', type: 'stdio',
         config: { command: 'node', args: ['x.js'] },
       }],
@@ -108,7 +108,7 @@ describe('BaseMaterializer', () => {
 
   it('is idempotent — second run does NOT touch unchanged files (mtime preserved)', async () => {
     const src = new InMemoryContentSource([
-      { id: 's1', tenantId: 't1', slug: 'hello', name: 'H', content: 'x', files: [] },
+      { id: 's1', solutionId: 't1', slug: 'hello', name: 'H', content: 'x', files: [] },
     ]);
     const bm = new BaseMaterializer(src, baseDir);
     await bm.materialize();
@@ -123,7 +123,7 @@ describe('BaseMaterializer', () => {
     let body = 'v1';
     const src: ContentSource = {
       listActiveSkills: async () => [
-        { id: 's1', tenantId: 't1', slug: 'hello', name: 'H', content: body, files: [] },
+        { id: 's1', solutionId: 't1', slug: 'hello', name: 'H', content: body, files: [] },
       ],
       listActiveMcpServers: async () => [],
     };
@@ -150,7 +150,7 @@ describe('BaseMaterializer', () => {
   it('honors the injected logger (captures the materialized line)', async () => {
     const logger = captureLogger();
     const src = new InMemoryContentSource([
-      { id: 's1', tenantId: 't1', slug: 'h', name: '', content: '', files: [] },
+      { id: 's1', solutionId: 't1', slug: 'h', name: '', content: '', files: [] },
     ]);
     await new BaseMaterializer(src, baseDir, logger).materialize();
     const summary = logger.entries.find((e) => e.startsWith('LOG materialized'));
@@ -168,7 +168,7 @@ describe('BaseMaterializer', () => {
   describe('skill file relativePath safety', () => {
     function withTraversal(relativePath: string) {
       return new InMemoryContentSource([
-        { id: 's1', tenantId: 't1', slug: 'hello', name: '', content: '',
+        { id: 's1', solutionId: 't1', slug: 'hello', name: '', content: '',
           files: [
             { relativePath: 'safe.md', content: 'safe' },
             { relativePath, content: 'pwned' },

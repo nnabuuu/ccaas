@@ -32,7 +32,7 @@ export const SkillDefinitionSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   description: z.string().optional(),
   skillFile: z.string().optional(),
-  scope: z.enum(['tenant', 'personal']).default('tenant'),
+  scope: z.enum(['solution', 'personal']).default('solution'),
   instructions: z.string().optional(),
   relatedSkills: z.array(z.string()).optional(),
   chainedSkills: z.record(ChainedSkillSchema).optional(),
@@ -179,7 +179,7 @@ const V1SkillSingleSchema = z.object({
   slug: z.string().optional(),
   description: z.string().optional(),
   skillFile: z.string().optional(),
-  scope: z.enum(['tenant', 'personal']).optional(),
+  scope: z.enum(['solution', 'personal']).optional(),
   instructions: z.string().optional(),
   triggers: z.array(z.unknown()).optional(),
   allowedTools: z.array(z.string()).optional(),
@@ -370,7 +370,7 @@ export const SolutionConfigV3Schema = z.object({
    * artifact sync (`GET/PUT/DELETE {url}/projects/:id/artifacts...`).
    *
    * When set, `SolutionLoaderService.import()` persists it to
-   * `tenant.config.artifactUrl`; `ProjectArtifactSourceRegistry` reads
+   * `tenant.config.artifactUrl`; `WorkspaceArtifactSourceRegistry` reads
    * it at session-sync time and routes per session's tenant.slug.
    *
    * Mutable at runtime via `PUT /solutions/:id { config: { artifactUrl } }`

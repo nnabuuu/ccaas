@@ -84,7 +84,7 @@ export class AiAskService {
         type: 'continue_chat_turn',
         sessionId: session.id,
         entityId: studentId,
-        tenantId: session.lessonId,
+        solutionId: session.lessonId,
         payload: { step, messageCount: messages.length },
       }).catch(err => this.logger.error(`Observer dispatch continue_chat_turn failed: ${err}`));
     }
@@ -93,7 +93,7 @@ export class AiAskService {
       type: 'chat_turn',
       sessionId: session.id,
       entityId: studentId,
-      tenantId: session.lessonId,
+      solutionId: session.lessonId,
       payload: { student: question, ai: parsed.answer, step },
     }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 

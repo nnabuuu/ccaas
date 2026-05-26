@@ -35,7 +35,7 @@ const validV2Config = {
           slug: 'three-column-analysis',
           description: 'Analyze quiz with three-column layout',
           skillFile: 'skills/three-column-analysis/SKILL.md',
-          scope: 'tenant' as const,
+          scope: 'solution' as const,
           triggers: [
             { type: 'keyword' as const, value: '分析这道题', priority: 10 },
             { type: 'keyword' as const, value: '解题思路', priority: 9 },
@@ -90,7 +90,7 @@ const validV1Config = {
       slug: 'lesson-plan-designer',
       description: 'AI备课助手',
       skillFile: 'skills/lesson-plan-designer/SKILL.md',
-      scope: 'tenant' as const,
+      scope: 'solution' as const,
       triggers: [
         { type: 'keyword' as const, value: '备课', priority: 10 },
       ],
@@ -262,7 +262,7 @@ describe('SkillDefinitionSchema', () => {
       slug: 'three-column-analysis',
       description: 'Analyze quiz with three-column layout',
       skillFile: 'skills/three-column-analysis/SKILL.md',
-      scope: 'tenant',
+      scope: 'solution',
       triggers: [
         { type: 'keyword', value: '分析', priority: 10 },
       ],
@@ -286,7 +286,7 @@ describe('SkillDefinitionSchema', () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.scope).toBe('tenant');
+      expect(result.data.scope).toBe('solution');
     }
   });
 
@@ -769,7 +769,7 @@ describe('Real-world v1 solution configs', () => {
           slug: 'three-column-analysis',
           description: 'Three-column analysis',
           skillFile: 'skills/three-column-analysis/SKILL.md',
-          scope: 'tenant',
+          scope: 'solution',
           triggers: [
             { type: 'keyword', value: '分析这道题', priority: 10 },
           ],
@@ -812,7 +812,7 @@ describe('Real-world v1 solution configs', () => {
           slug: 'lesson-plan-designer',
           description: 'AI备课助手',
           skillFile: 'skills/lesson-plan-designer/SKILL.md',
-          scope: 'tenant',
+          scope: 'solution',
           triggers: [
             { type: 'keyword', value: '备课', priority: 10 },
           ],

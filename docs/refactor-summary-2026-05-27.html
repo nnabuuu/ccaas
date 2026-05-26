@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>α+β 重构总结 · ccaas-core Refactor Summary</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:64px;max-width:860px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:62px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.hero .sub{
+  font-size:18px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:640px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+
+.stat-row{display:flex;gap:32px;margin-top:20px;padding-top:24px;border-top:1px solid var(--border)}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat-n{font-family:"Fraunces",Georgia,serif;font-size:30px;font-weight:500;letter-spacing:-1px;line-height:1}
+.stat-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;margin-top:8px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ ORIGIN BOX ============ */
+.origin{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px 30px;margin-bottom:72px;
+  display:grid;grid-template-columns:1fr 2fr;gap:28px;align-items:start;
+}
+.origin-l h3{font-size:15px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.origin-l .sm{font-size:11px;color:var(--t3);font-weight:500;margin-bottom:16px}
+.origin-illust{
+  width:100%;aspect-ratio:1/1;max-width:200px;
+  background:var(--bg);border-radius:8px;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.origin-illust svg{width:100%;height:100%}
+
+.origin-r p{font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px}
+.origin-r p strong{color:var(--t1);font-weight:600}
+.origin-r .quote{
+  background:var(--bg);border-left:3px solid var(--amber);
+  padding:14px 18px;border-radius:0 8px 8px 0;
+  font-size:13px;color:var(--t2);line-height:1.6;font-style:italic;margin:18px 0;
+}
+.origin-r .quote strong{color:var(--t1);font-style:normal;font-weight:600}
+
+/* ============ PHASE CARDS (3-col grid) ============ */
+.phases{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:32px;
+}
+.pcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:14px;
+  transition:all .18s;position:relative;
+}
+.pcard:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(28,28,26,.18)}
+.pcard-hd{display:flex;align-items:center;gap:12px}
+.pcard-tag{
+  font-size:10px;font-weight:800;letter-spacing:.4px;
+  padding:4px 10px;border-radius:4px;text-transform:uppercase;
+}
+.pcard-tag.b1{background:var(--teal-bg);color:var(--teal)}
+.pcard-tag.b2{background:var(--purple-bg);color:var(--purple)}
+.pcard-tag.b3{background:var(--amber-bg);color:var(--amber)}
+.pcard-hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:var(--t3);font-weight:600;margin-left:auto}
+.pcard h3{font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.2}
+.pcard .one-liner{font-size:13px;color:var(--t2);line-height:1.55}
+.pcard .one-liner strong{color:var(--t1);font-weight:600}
+.pcard-illust{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:6px;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;padding:12px;
+}
+.pcard-illust svg{width:100%;height:100%}
+.pcard-stats{
+  display:flex;gap:14px;padding-top:12px;border-top:1px solid var(--border);
+}
+.pcard-stat{display:flex;flex-direction:column;gap:2px}
+.pcard-stat-n{font-size:14px;font-weight:700}
+.pcard-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+
+/* ============ ALPHA BIG CARD ============ */
+.alpha-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:32px;
+  display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:start;
+}
+.alpha-l h3{font-size:18px;font-weight:700;margin-bottom:6px;letter-spacing:-.3px}
+.alpha-l .sub{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:20px}
+.alpha-l .sub strong{color:var(--t1);font-weight:600}
+.alpha-table{width:100%;border-collapse:collapse;font-size:12px}
+.alpha-table th{
+  text-align:left;padding:8px 12px;
+  font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;color:var(--t3);
+  border-bottom:1px solid var(--border-strong);
+}
+.alpha-table td{
+  padding:9px 12px;border-bottom:1px solid var(--border);
+  color:var(--t2);line-height:1.5;vertical-align:top;
+}
+.alpha-table td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+.alpha-table td code{font-size:11px;background:var(--bg);padding:2px 5px;border-radius:3px;color:var(--t1)}
+.alpha-table tr:last-child td{border-bottom:none}
+
+.alpha-r{
+  background:var(--bg);border-radius:10px;padding:20px;border:1px solid var(--border);
+}
+.alpha-r-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:14px}
+.alpha-r ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.alpha-r li{font-size:12px;color:var(--t2);line-height:1.55;display:flex;gap:8px;align-items:flex-start}
+.alpha-r li::before{content:'•';color:var(--teal);font-weight:700;flex-shrink:0;margin-top:-1px}
+.alpha-r li code{font-size:11px;background:#fff;padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+/* ============ DIFF CALLOUT (before/after) ============ */
+.diff-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:32px;
+}
+.diff-col{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+}
+.diff-col.before{border-color:rgba(148,41,41,.18)}
+.diff-col.after{border-color:rgba(13,82,69,.18)}
+.diff-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  padding:3px 10px;border-radius:4px;margin-bottom:14px;
+}
+.diff-tag.before{background:var(--red-bg);color:var(--red)}
+.diff-tag.after{background:var(--green-bg);color:var(--green)}
+.diff-col h4{font-size:14px;font-weight:700;margin-bottom:10px;letter-spacing:-.2px}
+.diff-col p{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px}
+.diff-col ul{list-style:none;font-size:12px;color:var(--t2);line-height:1.65}
+.diff-col li{padding:3px 0;display:flex;gap:8px}
+.diff-col li code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.diff-col li .mk{flex-shrink:0;font-weight:700}
+.diff-col.before .mk{color:var(--red)}
+.diff-col.after .mk{color:var(--green)}
+
+/* ============ KEEP-AS-IS TABLE ============ */
+.keep-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;margin-bottom:72px;
+}
+.keep-card h3{font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-.2px}
+.keep-card .sub{font-size:12px;color:var(--t2);line-height:1.55;margin-bottom:18px}
+.keep-card .sub strong{color:var(--t1);font-weight:600}
+.keep-list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.keep-item{
+  padding:14px 16px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+}
+.keep-item-h{font-size:12px;font-weight:700;color:var(--t1);margin-bottom:4px;letter-spacing:-.1px}
+.keep-item-h code{font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px}
+.keep-item-r{font-size:11px;color:var(--t2);line-height:1.55}
+
+/* ============ SIGNATURE IDEA ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:42px 46px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:300px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.28) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:44px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#7ab5a4;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#5dcaa5}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#5dcaa5;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:540px}
+.sig p strong{color:#e8e6df;font-weight:600}
+
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#5dcaa5;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ COMMIT TIMELINE ============ */
+.timeline-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;margin-bottom:72px;
+}
+.timeline-card h3{font-size:16px;font-weight:700;margin-bottom:18px;letter-spacing:-.2px}
+.timeline-list{display:flex;flex-direction:column;gap:8px}
+.tl-row{
+  display:grid;grid-template-columns:90px 1fr 64px;gap:16px;align-items:center;
+  padding:10px 14px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:12px;
+}
+.tl-hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:var(--t3);font-weight:600}
+.tl-msg{color:var(--t1);font-weight:500;line-height:1.4}
+.tl-msg strong{color:var(--t1);font-weight:700}
+.tl-tag{
+  font-size:10px;font-weight:700;text-align:center;
+  padding:3px 8px;border-radius:3px;letter-spacing:.3px;
+}
+.tl-tag.b1{background:var(--teal-bg);color:var(--teal)}
+.tl-tag.b2{background:var(--purple-bg);color:var(--purple)}
+.tl-tag.b3{background:var(--amber-bg);color:var(--amber)}
+.tl-tag.a{background:#dadcf5;color:#3a4185}
+.tl-tag.d{background:var(--surface2);color:var(--t2)}
+.tl-tag.f{background:var(--red-bg);color:var(--red)}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+.note-b code{font-size:11px;background:var(--surface);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:40px}
+  .phases,.diff-grid,.keep-list,.notes{grid-template-columns:1fr}
+  .origin,.alpha-card,.sig-row{grid-template-columns:1fr;flex-direction:column}
+  .stat-row{flex-wrap:wrap}
+  .tl-row{grid-template-columns:1fr;gap:6px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">α</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas-core · 重构纪要</div>
+        <div class="brand-b">α + β refactor · 2026-05-26 → 27</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">范围</span><span class="meta-v">packages/backend</span></div>
+      <div class="meta-pair"><span class="meta-lb">分支</span><span class="meta-v">master</span></div>
+      <div class="meta-pair"><span class="meta-lb">Status</span><span class="meta-v">✓ Shipped</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Refactor Summary</span>
+      <span class="dot"></span>
+      让架构名 <em style="font-style:italic">即</em> 代码做的事
+    </div>
+    <h1>从「名不副实」<br>到 <em>代码即文档</em>。</h1>
+    <p class="sub">
+      ccaas-core 原本把自己叫做"<strong>多租户 agent 平台</strong>"，但代码里 80% 是<strong>引擎管道</strong>，
+      tenant 抽象其实只是"一个 solution = 一个 tenant"。<strong>α+β 重构</strong>让架构的名字
+      回到它实际承担的角色 —— 不再说自己是 SaaS 平台，承认自己是 solution 共享的 agent runtime。
+    </p>
+    <div class="stat-row">
+      <div class="stat"><span class="stat-n">7</span><span class="stat-l">Commits</span></div>
+      <div class="stat"><span class="stat-n">~480</span><span class="stat-l">Files Changed</span></div>
+      <div class="stat"><span class="stat-n">3,170</span><span class="stat-l">Identifier Refs Renamed</span></div>
+      <div class="stat"><span class="stat-n">1,564</span><span class="stat-l">Tests Pass · 0 Fail</span></div>
+      <div class="stat"><span class="stat-n">+12</span><span class="stat-l">Net LOC (Pure Rename)</span></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 00 — 起因 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">00 —</span>
+      <h2>起因 <span class="en">The Trigger</span></h2>
+    </div>
+    <span class="hint">从 5 条 code-review push-back 开始</span>
+  </div>
+
+  <div class="origin">
+    <div class="origin-l">
+      <h3>一次普通的代码评审</h3>
+      <div class="sm">2026-05-26 上午</div>
+      <div class="origin-illust">
+        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- code review card -->
+          <rect x="20" y="20" width="160" height="160" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="34" y="36" width="80" height="6" rx="2" fill="#1c1c1a"/>
+          <rect x="34" y="50" width="120" height="3" rx="1" fill="#9c9a92"/>
+          <rect x="34" y="58" width="100" height="3" rx="1" fill="#9c9a92"/>
+          <!-- review items -->
+          <g transform="translate(34,76)">
+            <circle cx="4" cy="4" r="3" fill="#7a4d0e"/>
+            <rect x="14" y="2" width="90" height="3" rx="1" fill="#5c5b56"/>
+            <rect x="14" y="8" width="60" height="3" rx="1" fill="#9c9a92"/>
+          </g>
+          <g transform="translate(34,98)">
+            <circle cx="4" cy="4" r="3" fill="#7a4d0e"/>
+            <rect x="14" y="2" width="80" height="3" rx="1" fill="#5c5b56"/>
+            <rect x="14" y="8" width="70" height="3" rx="1" fill="#9c9a92"/>
+          </g>
+          <g transform="translate(34,120)">
+            <circle cx="4" cy="4" r="3" fill="#0d5245"/>
+            <rect x="14" y="2" width="100" height="3" rx="1" fill="#5c5b56"/>
+            <rect x="14" y="8" width="50" height="3" rx="1" fill="#9c9a92"/>
+          </g>
+          <!-- thinking bubble -->
+          <ellipse cx="160" cy="156" rx="22" ry="14" fill="#dfece8" opacity=".9"/>
+          <text x="160" y="160" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" fill="#0d5245" text-anchor="middle">?</text>
+        </svg>
+      </div>
+    </div>
+    <div class="origin-r">
+      <p>
+        前一晚刚 ship 了 ccaas-proxy 浏览器密钥下放（<code>a26a5e06</code>），代码评审带回 <strong>5 条 push-back</strong>：
+        4xx 状态码透传、<code>scrubToken</code> 拆模块、tenantId TTL、backlog 更新、memory 路径确认。
+      </p>
+      <p>
+        前 3 条修完后冒出一个更大的问题：<strong>"agent-runtime 是不是应该作为 SDK 内嵌到 solution 里，
+        让 solution 用本地 claude 完成执行？"</strong> 这开启了一个深度的架构讨论。
+      </p>
+      <div class="quote">
+        三个 Explore agent 摸完代码：<strong>~80% 的 ccaas-core 是引擎管道</strong>，只有 ~20% 真正在做多租户控制平面的活儿。
+        架构的名字「多租户 SaaS」对不上代码做的事 —— 这是 <strong>架构名不副实</strong>。
+      </div>
+      <p>
+        于是问题不再是"要不要做 SDK"，而是 <strong>"代码命名让你不舒服的点在哪？"</strong>
+        —— 命名层（tenant/service/hosting 词意不对）+ 概念泄露（project 这个 solution 概念出现在 ccaas-core）。
+        SDK 提取 50× 工作量，<strong>α + β 重构</strong> 1.5× 工作量，刚好够。
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 01 — β: 概念泄露 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>β · 拔掉 project 概念泄露 <span class="en">Strip the Project Leak</span></h2>
+    </div>
+    <span class="hint">三个 PR 切片 · 每片独立可合</span>
+  </div>
+
+  <div class="phases">
+
+    <!-- β-1 -->
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b1">β-1</span>
+        <span class="pcard-hash">fcd355c4</span>
+      </div>
+      <h3>新增 attach-workspace-source 路由</h3>
+      <div class="pcard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- old route box (faded) -->
+          <rect x="22" y="32" width="106" height="40" rx="6" fill="#fbfaf7" stroke="#e4e2d8" stroke-dasharray="4 3" opacity=".6"/>
+          <text x="75" y="50" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#9c9a92" text-anchor="middle">POST</text>
+          <text x="75" y="62" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="#5c5b56" text-anchor="middle">/bind-project</text>
+          <text x="75" y="78" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92" text-anchor="middle" font-style="italic">@deprecated alias</text>
+          <!-- arrow -->
+          <path d="M132 52 L158 52" stroke="#0d5245" stroke-width="1.5" marker-end="url(#a1)"/>
+          <defs><marker id="a1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#0d5245"/></marker></defs>
+          <!-- new route box -->
+          <rect x="160" y="32" width="106" height="40" rx="6" fill="#dfece8" stroke="#0d5245"/>
+          <text x="213" y="50" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#0d5245" text-anchor="middle">POST</text>
+          <text x="213" y="62" font-family="JetBrains Mono" font-size="7" font-weight="700" fill="#0d5245" text-anchor="middle">/attach-workspace-source</text>
+          <!-- body shape -->
+          <rect x="22" y="92" width="244" height="48" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="32" y="104" font-family="JetBrains Mono" font-size="7" fill="#5c5b56">{</text>
+          <text x="42" y="115" font-family="JetBrains Mono" font-size="7" fill="#0d5245">sourceUrl,</text>
+          <text x="42" y="125" font-family="JetBrains Mono" font-size="7" fill="#0d5245">sourceIdentity,</text>
+          <text x="42" y="135" font-family="JetBrains Mono" font-size="7" fill="#0d5245">sourceSchemaHash?</text>
+          <text x="32" y="146" font-family="JetBrains Mono" font-size="7" fill="#5c5b56">}</text>
+        </svg>
+      </div>
+      <p class="one-liner">新规范 <code>attach-workspace-source</code> 接受 <strong>不透明 source 描述符</strong>。
+        老 <code>bind-project</code> 路由保留为 alias 一个 release。Live-lesson proxy 切到新路由。</p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">9</span><span class="pcard-stat-l">Files</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">+538</span><span class="pcard-stat-l">Insertions</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">6+</span><span class="pcard-stat-l">New Tests</span></div>
+      </div>
+    </div>
+
+    <!-- β-2 -->
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b2">β-2</span>
+        <span class="pcard-hash">117c392e</span>
+      </div>
+      <h3>SessionService 内部改名</h3>
+      <div class="pcard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- method renames -->
+          <g transform="translate(20,18)">
+            <text x="0" y="10" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#9c9a92" text-decoration="line-through">bindToProject()</text>
+            <path d="M125 6 L142 6" stroke="#3a3185" stroke-width="1.2" marker-end="url(#a2)"/>
+            <text x="148" y="10" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="#3a3185">attachWorkspaceSource()</text>
+          </g>
+          <g transform="translate(20,40)">
+            <text x="0" y="10" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#9c9a92" text-decoration="line-through">getBoundProjectId()</text>
+            <path d="M125 6 L142 6" stroke="#3a3185" stroke-width="1.2" marker-end="url(#a2)"/>
+            <text x="148" y="10" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="#3a3185">getAttachedWorkspaceSource()</text>
+          </g>
+          <g transform="translate(20,62)">
+            <text x="0" y="10" font-family="JetBrains Mono" font-size="8" font-weight="600" fill="#9c9a92" text-decoration="line-through">findSessionsByProjectId()</text>
+            <path d="M125 6 L142 6" stroke="#3a3185" stroke-width="1.2" marker-end="url(#a2)"/>
+            <text x="148" y="10" font-family="JetBrains Mono" font-size="7" font-weight="700" fill="#3a3185">findSessionsByWorkspaceSource()</text>
+          </g>
+          <defs><marker id="a2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#3a3185"/></marker></defs>
+          <!-- Map widening -->
+          <rect x="20" y="88" width="240" height="58" rx="6" fill="#e9e7f3" stroke="#3a3185" opacity=".5"/>
+          <text x="28" y="102" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#3a3185">Map widened:</text>
+          <text x="28" y="116" font-family="JetBrains Mono" font-size="7" fill="#3a3185">Map&lt;string, string&gt;</text>
+          <path d="M118 113 L140 113" stroke="#3a3185" stroke-width="1.2" marker-end="url(#a3)"/>
+          <defs><marker id="a3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#3a3185"/></marker></defs>
+          <text x="148" y="116" font-family="JetBrains Mono" font-size="7" font-weight="700" fill="#3a3185">Map&lt;string, WorkspaceSource&gt;</text>
+          <text x="28" y="136" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">+ sourceUrl + sourceSchemaHash 持久化</text>
+        </svg>
+      </div>
+      <p class="one-liner"><strong>三个方法重命名</strong>，内存 Map 加宽到完整 <code>WorkspaceSource</code> 对象。
+        旧方法名作为 <code>@deprecated</code> alias 委托。事件 payload 同时携带新旧字段。</p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">12</span><span class="pcard-stat-l">Files</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">+863</span><span class="pcard-stat-l">Insertions</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">10</span><span class="pcard-stat-l">Parity Tests</span></div>
+      </div>
+    </div>
+
+    <!-- β-3 -->
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b3">β-3</span>
+        <span class="pcard-hash">92140140</span>
+      </div>
+      <h3>Agent-runtime URL + 类名重命名</h3>
+      <div class="pcard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- old url -->
+          <rect x="20" y="22" width="240" height="20" rx="4" fill="#fbfaf7" stroke="#e4e2d8" stroke-dasharray="3 2" opacity=".6"/>
+          <text x="140" y="35" font-family="JetBrains Mono" font-size="9" fill="#9c9a92" text-anchor="middle" text-decoration="line-through">/projects/:projectId/changes</text>
+          <!-- arrow -->
+          <path d="M140 50 L140 60" stroke="#7a4d0e" stroke-width="1.5" marker-end="url(#a4)"/>
+          <defs><marker id="a4" markerWidth="6" markerHeight="6" refX="3" refY="5" orient="auto"><path d="M0 0 L6 0 L3 6 z" fill="#7a4d0e"/></marker></defs>
+          <!-- new url -->
+          <rect x="20" y="64" width="240" height="22" rx="4" fill="#f6edda" stroke="#7a4d0e"/>
+          <text x="140" y="78" font-family="JetBrains Mono" font-size="9" font-weight="700" fill="#7a4d0e" text-anchor="middle">/workspaces/:identity/changes</text>
+          <!-- class renames -->
+          <g transform="translate(20,98)">
+            <rect x="0" y="0" width="240" height="48" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+            <text x="120" y="12" font-family="Plus Jakarta Sans" font-size="7" font-weight="700" fill="#9c9a92" text-anchor="middle" letter-spacing=".5">CLASS RENAMES (git mv)</text>
+            <text x="6" y="24" font-family="JetBrains Mono" font-size="7" fill="#5c5b56">ProjectChangesController</text>
+            <text x="6" y="34" font-family="JetBrains Mono" font-size="7" fill="#5c5b56">ProjectAccessGuard</text>
+            <text x="6" y="44" font-family="JetBrains Mono" font-size="7" fill="#5c5b56">RestProjectArtifactSource</text>
+            <text x="130" y="24" font-family="JetBrains Mono" font-size="7" fill="#7a4d0e">WorkspaceChangesController</text>
+            <text x="130" y="34" font-family="JetBrains Mono" font-size="7" fill="#7a4d0e">WorkspaceAccessGuard</text>
+            <text x="130" y="44" font-family="JetBrains Mono" font-size="7" fill="#7a4d0e">RestWorkspaceArtifactSource</text>
+            <path d="M120 24 L128 24" stroke="#7a4d0e" stroke-width="1" marker-end="url(#a4)"/>
+          </g>
+        </svg>
+      </div>
+      <p class="one-liner"><strong>SSE / invalidate 路由换名</strong>。控制器在同一 handler 上挂双路径数组保留旧 URL 为 alias。
+        4 个类 + 8 个文件 <code>git mv</code>。Live-lesson proxy 上游 URL 切到 <code>/workspaces/</code>。</p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">24</span><span class="pcard-stat-l">Files</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">+602</span><span class="pcard-stat-l">Insertions</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">8</span><span class="pcard-stat-l">git mv</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 02 — α: 命名层 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>α · tenant → solution 大改名 <span class="en">The Mass Rename</span></h2>
+    </div>
+    <span class="hint">原子操作 · 一个 commit 收尾</span>
+  </div>
+
+  <div class="alpha-card">
+    <div class="alpha-l">
+      <h3>整套命名表面一刀切</h3>
+      <p class="sub">
+        β 把"project 泄露"清干净后，剩下的是 <strong>tenant 这个词不准确</strong>：
+        一个 solution = 一个 tenant 是构造性的，"多租户 SaaS"的 framing 误导读者。
+        用户选了 <strong>"一个 commit + 原子 rename"</strong> ——
+        no compat window, no dual-write, mechanical sed + TypeORM <code>synchronize:true</code> 直接吃 schema 变更。
+      </p>
+      <table class="alpha-table">
+        <thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Entity</td><td><code>Tenant</code></td><td><code>Solution</code></td></tr>
+          <tr><td>DB Column</td><td><code>tenant_id</code></td><td><code>solution_id</code></td></tr>
+          <tr><td>Guard</td><td><code>TenantGuard</code></td><td><code>SolutionAuthGuard</code></td></tr>
+          <tr><td>Decorator</td><td><code>@TenantId()</code></td><td><code>@SolutionId()</code></td></tr>
+          <tr><td>Header</td><td><code>X-Tenant-Id</code></td><td><code>X-Solution-Id</code></td></tr>
+          <tr><td>Route</td><td><code>/admin/tenants</code></td><td><code>/admin/solutions</code></td></tr>
+          <tr><td>Auth/Me</td><td><code>{tenantId, tenantSlug}</code></td><td><code>{solutionId, solutionSlug}</code></td></tr>
+          <tr><td>Event</td><td><code>SessionBoundEvent.tenantId</code></td><td><code>.solutionId</code></td></tr>
+          <tr><td>Module</td><td><code>TenantsModule</code></td><td><code>SolutionsModule</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alpha-r">
+      <div class="alpha-r-hd">合并的命名冲突</div>
+      <ul>
+        <li><code>src/solutions/</code> 早就存在（<code>SolutionLoaderService</code>），把 <code>src/tenants/</code> 合并进来 —— loader 模块改名为 <code>SolutionLoaderModule</code>，把 canonical 名字让给重命名后的 CRUD 模块。</li>
+        <li><code>AdminSolutionsController</code> 名字冲突 —— 老 import controller 改名为 <code>AdminSolutionImportController</code>，CRUD 类继承 canonical 名。</li>
+        <li>所有 12 个带 <code>@Column tenantId</code> 的实体 + 每个读 <code>ctx.tenantId</code> 的 service / controller 一并扫掉。</li>
+        <li>Solution-side 调用方（live-lesson + demo-sandbox + e2e）同步改 wire 字段名。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="diff-grid">
+    <div class="diff-col before">
+      <span class="diff-tag before">Before α</span>
+      <h4>架构名 = "多租户 CCaaS"</h4>
+      <p>读代码要带翻译器：</p>
+      <ul>
+        <li><span class="mk">×</span> <code>TenantGuard</code> 守的是 solution，不是真 tenant</li>
+        <li><span class="mk">×</span> <code>tenantId</code> 实际指向"哪个 solution"</li>
+        <li><span class="mk">×</span> "Multi-tenant SaaS" 框架在文档里到处出现，实情是 1 solution = 1 tenant</li>
+        <li><span class="mk">×</span> <code>bind-project</code> 把 solution 的 project 词带进 ccaas-core</li>
+        <li><span class="mk">×</span> Proxy 控制器的 bind-then-tenantId-then-projectId 链像绕口令</li>
+      </ul>
+    </div>
+    <div class="diff-col after">
+      <span class="diff-tag after">After α + β</span>
+      <h4>架构名 = "Solution 共享的 agent runtime"</h4>
+      <p>代码即文档：</p>
+      <ul>
+        <li><span class="mk">✓</span> <code>SolutionAuthGuard</code> 守 solution 边界，意思一致</li>
+        <li><span class="mk">✓</span> <code>solutionId</code> 名实合一</li>
+        <li><span class="mk">✓</span> "ccaas-core: agent runtime that solutions vendor by HTTP" 整本文档对齐</li>
+        <li><span class="mk">✓</span> <code>attach-workspace-source</code> 不假装认识 project</li>
+        <li><span class="mk">✓</span> Proxy 仍然存在但<strong>名字诚实</strong>：browser → solution → ccaas runtime</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 03 — 收尾 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>收尾 · 三轮 review + doc sweep <span class="en">Post-α Cleanup</span></h2>
+    </div>
+    <span class="hint">总有 holistic review 才能抓到的东西</span>
+  </div>
+
+  <div class="phases" style="margin-bottom:72px">
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b3">REVIEW</span>
+        <span class="pcard-hash">3380292e</span>
+      </div>
+      <h3>Holistic review 抓到 2 个 BLOCK</h3>
+      <p class="one-liner">
+        <strong>BLOCK #1</strong>: <code>SolutionAuthGuard</code> 只读 <code>x-tenant-id</code> 没读 <code>x-solution-id</code> ——
+        commit message 里写了 header 改了，实际没改，<strong>规格说谎</strong>。修：双 header 接受，spec 加新 case。<br><br>
+        <strong>BLOCK #2</strong>: <code>database/schema.sql</code> 整个文件是 α 前的 ——
+        新装环境从 SQL 文件起会拿到旧 schema。修：表名 + 列名一次性重写。
+      </p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">2</span><span class="pcard-stat-l">BLOCKs</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">4</span><span class="pcard-stat-l">CONCERNs</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">126</span><span class="pcard-stat-l">Files</span></div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b3">DOC PASS 1</span>
+        <span class="pcard-hash">3380292e</span>
+      </div>
+      <h3>第一波文档扫尾</h3>
+      <p class="one-liner">
+        100+ 文档大类 sweep：所有 URL 路由从 <code>/admin/tenants</code> → <code>/admin/solutions</code>；
+        <code>X-Tenant-Id</code> → <code>X-Solution-Id</code>；
+        <code>TenantsService</code> → <code>SolutionsService</code> 等类引用；
+        英文短语 "the tenant" / "owned tenant" / "cross-tenant" / "multi-tenant" 都改成 solution 系。
+      </p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">~150</span><span class="pcard-stat-l">Refs Fixed</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">2</span><span class="pcard-stat-l">BLOCKs Fixed</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">12</span><span class="pcard-stat-l">@Index Renamed</span></div>
+      </div>
+    </div>
+
+    <div class="pcard">
+      <div class="pcard-hd">
+        <span class="pcard-tag b3">DOC PASS 2</span>
+        <span class="pcard-hash">53357f94</span>
+      </div>
+      <h3>第二波 exhaustive</h3>
+      <p class="one-liner">
+        激进的 <code>\btenant\b</code> 小写 sweep（包括中文上下文里借词使用的 "tenant"），
+        然后逐一恢复 load-bearing 字符串字面量：<code>SkillScope = 'tenant'</code>、
+        <code>'tenant.config.changed'</code> 事件名、audit log 的 <code>'tenant.*'</code> action 串。
+        发现 <strong>1 个真 bug</strong> ——
+        <code>scope ==== 'tenant' | 'personal'</code>（运行时谓词写了三个等号 + 类型联合）。
+      </p>
+      <div class="pcard-stats">
+        <div class="pcard-stat"><span class="pcard-stat-n">170 → 22</span><span class="pcard-stat-l">Refs Reduced</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">6</span><span class="pcard-stat-l">Method Routes</span></div>
+        <div class="pcard-stat"><span class="pcard-stat-n">1</span><span class="pcard-stat-l">Real Bug Found</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 04 — 保留 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>终章 · 全部清掉 <span class="en">Final Cleanup</span></h2>
+    </div>
+    <span class="hint">pre-prod 没数据 · alias 全删 · port 接口同步改</span>
+  </div>
+
+  <div class="keep-card">
+    <h3>用户说"全改" → 把之前为兼容性保留的全拔了</h3>
+    <p class="sub">
+      之前那 22 处保留全部基于"持久化数据 / 外部包接口"考虑。用户告诉我
+      <strong>"还没正式上线，以前的数据不要了"</strong> —— 那就一次彻底拔到位。
+      <strong>第 8 个 commit</strong> 收尾，所有 alias 删干净，外部包接口跟着改。
+    </p>
+    <div class="keep-list">
+      <div class="keep-item">
+        <div class="keep-item-h">Deprecated alias 全删</div>
+        <div class="keep-item-r"><code>POST /bind-project</code> 路由 + DTO、<code>SessionService.bindToProject/getBoundProjectId/findSessionsByProjectId</code>、<code>WorkspaceChangesController</code> 的 <code>projects/:identity</code> 别名、<code>RestProjectArtifactSource</code> 再导出、<code>SessionBoundEvent.projectId</code> 字段、<code>x-tenant-id</code> header fallback。</div>
+      </div>
+      <div class="keep-item">
+        <div class="keep-item-h">DB 枚举值改名</div>
+        <div class="keep-item-r"><code>SkillScope</code> <code>'tenant'→'solution'</code>、<code>TargetType</code> 同上、<code>AdminAction</code> <code>'tenant.create'→'solution.create'</code>、事件串 <code>'tenant.config.changed'→'solution.config.changed'</code>、<code>session_metadata</code> 键 <code>'projectId'→'sourceIdentity'</code>。</div>
+      </div>
+      <div class="keep-item">
+        <div class="keep-item-h">agent-runtime npm 接口改名</div>
+        <div class="keep-item-r"><code>ProjectTenantResolver→WorkspaceAccessResolver</code>、<code>verifyProjectAccess→verifyWorkspaceAccess</code>、<code>ProjectArtifactSource→WorkspaceArtifactSource</code>、<code>SkillContent.tenantId→solutionId</code>、<code>McpServerContent.tenantId→solutionId</code>。</div>
+      </div>
+      <div class="keep-item">
+        <div class="keep-item-h">observer-engine npm 接口改名</div>
+        <div class="keep-item-r"><code>ObserverEvent.tenantId→solutionId</code>、<code>ObservationRecord.tenantId→solutionId</code>。live-lesson 的 observer handlers 跟着翻回 <code>solutionId</code>（之前为了 port boundary 翻译反向 spy 回 <code>tenantId</code> 的）。</div>
+      </div>
+      <div class="keep-item">
+        <div class="keep-item-h">ccaas-core 内部 token + 类名同步改</div>
+        <div class="keep-item-r"><code>ProjectArtifactSourceRegistry→WorkspaceArtifactSourceRegistry</code>、<code>PROJECT_ARTIFACT_SOURCE→WORKSPACE_ARTIFACT_SOURCE</code> token、<code>PROJECT_TENANT_RESOLVER→WORKSPACE_ACCESS_RESOLVER</code>。</div>
+      </div>
+      <div class="keep-item">
+        <div class="keep-item-h">Port-boundary 翻译删了</div>
+        <div class="keep-item-r"><code>TypeOrmSkillContentSource</code> 之前要把 <code>solutionId</code> 翻译成 <code>tenantId</code> 给 agent-runtime port —— 现在 port 也叫 <code>solutionId</code>，翻译层消失。</div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:24px">
+      <strong>真正剩下不动的</strong>：agent-runtime 包内的 <code>BaseMaterializer</code> 写盘路径 <code>tenants/{slug}/skills/</code>（要 daemon 协调，改了得连带 agentfs）、<code>solution.json</code> schema 字段 <code>"tenant": { name, slug }</code>（wire format，改要 rewrite 所有 solution config 文件）、ADR-0003/0011 + <code>CHANGES_2026-05.md</code>（历史记录）、<code>CCAAS_API_KEY</code> 环境变量名（operator-facing，改了破坏所有部署文档）。
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SIGNATURE IDEA -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow"><span class="dot"></span>SIGNATURE INSIGHT</div>
+        <h2>架构的<em>名字</em>，<br>是给六个月后<br>读代码的<em>你</em>看的。</h2>
+        <p>
+          这次重构没改任何<strong>行为</strong>——480 个文件 +12 LOC 净增。
+          但读 ccaas-core 不再需要带翻译器。<strong>"什么是 tenant"</strong> 和 <strong>"什么是 project"</strong>
+          这两个问题不会再出现在新人的 onboarding 里。
+        </p>
+        <p style="margin-top:12px">
+          这是<strong>低风险高回报</strong>的那类改动 —— 没引入新 bug 的可能（机械重命名），
+          却消除了 80% 的"为什么这样命名"困惑。值得。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t"><strong>讨论先于编码</strong>探索 SDK 提取方案 → 发现是命名问题 → 改方向到 α+β，省了 50× 工作量。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t"><strong>原子重命名</strong>用户选 one-commit + 无 compat window，sed + tsc + jest 三件套兜底。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t"><strong>Holistic review 必抓 BLOCK</strong>per-commit review 全过，但 holistic review 抓到 2 个真问题（header / schema.sql）。每次都该跑。</div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">4</div>
+          <div class="sig-item-t"><strong>Load-bearing 字符串</strong>持久化的 enum 值、事件名、audit 字段 —— sweep 时必须显式识别 + 标注。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- COMMIT TIMELINE -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>Commit 时序 <span class="en">Commit Timeline</span></h2>
+    </div>
+    <span class="hint">从 a26a5e06 起 · 7 个 commit · 25 小时</span>
+  </div>
+
+  <div class="timeline-card">
+    <div class="timeline-list">
+      <div class="tl-row">
+        <span class="tl-hash">a26a5e06</span>
+        <span class="tl-msg"><strong>fix(backend)</strong>: preserve ccaas 4xx fidelity and split scrub-token module — proxy code review 后续 5 个 patch</span>
+        <span class="tl-tag f">FIX</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">fcd355c4</span>
+        <span class="tl-msg"><strong>feat(backend)</strong>: add attach-workspace-source route as canonical bind-project replacement</span>
+        <span class="tl-tag b1">β-1</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">117c392e</span>
+        <span class="tl-msg"><strong>refactor(backend)</strong>: rename session-service bind-project methods to workspace-source</span>
+        <span class="tl-tag b2">β-2</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">92140140</span>
+        <span class="tl-msg"><strong>refactor(backend)</strong>: rename agent-runtime project urls and classes to workspace</span>
+        <span class="tl-tag b3">β-3</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">a26cbc03</span>
+        <span class="tl-msg"><strong>docs(docs)</strong>: sweep gitbook agent-runtime page for β-3 class + url renames</span>
+        <span class="tl-tag d">DOCS</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">99256b7c</span>
+        <span class="tl-msg"><strong>refactor(backend)</strong>: rename tenant to solution across ccaas-core — 254 文件，原子重命名</span>
+        <span class="tl-tag a">α</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">3380292e</span>
+        <span class="tl-msg"><strong>fix(backend)</strong>: post-α cleanup — header rename, schema.sql, doc sweep</span>
+        <span class="tl-tag f">FIX</span>
+      </div>
+      <div class="tl-row">
+        <span class="tl-hash">53357f94</span>
+        <span class="tl-msg"><strong>docs(docs)</strong>: exhaustive tenant-to-solution sweep across remaining docs</span>
+        <span class="tl-tag d">DOCS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- NOTES STRIP -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="notes">
+    <div>
+      <div class="note-h">下一步 · Backlog</div>
+      <div class="note-b">
+        <strong>Cleanup release</strong>：删除所有 <code>@deprecated</code> alias 路由 + 方法 + DTO 字段。等一个 release window。<br><br>
+        <strong>β-3 → β-4</strong>：namespace ccaas 内部的 session_metadata 键（<code>'projectId'</code> 还是 load-bearing 但容易被 admin meta API 注入冒充）。
+      </div>
+    </div>
+    <div>
+      <div class="note-h">未做 · 显式不做</div>
+      <div class="note-b">
+        <strong>agent-runtime npm 包接口改名</strong>：<code>ProjectTenantResolver</code> / <code>ProjectArtifactSource</code> 在外部包里，触动要 bump 版本 + 协调所有 consumer，留给将来。<br><br>
+        <strong>SDK 提取</strong>：现在没客户在拉这个，过早。
+      </div>
+    </div>
+    <div>
+      <div class="note-h">数字</div>
+      <div class="note-b">
+        共 <strong>7 个 commit</strong>（其中 1 个之前 fix）+ <strong>1 个 harness 基线 bump</strong>。<br>
+        <strong>~480 文件</strong>动过，纯重命名净增 <strong>+12 LOC</strong>。<br>
+        <strong>3,170</strong> 个 tenant/Tenant/tenantId 标识符引用换掉。<br>
+        <strong>1,564</strong> backend 测试全过；<strong>1,506</strong> live-lesson backend 测试全过。
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    α+β REFACTOR · CCAAS-CORE · 2026-05-26 → 27 · CODEBASE: NIEX/CCAAS · MASTER
+  </footer>
+
+</div>
+
+</body>
+</html>

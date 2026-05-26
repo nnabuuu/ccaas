@@ -206,7 +206,7 @@ describe('AdminSolutionAccessGuard', () => {
         solutionId: 'tenant-1',
         userId: 'user-1',
       },
-      headers: { 'x-tenant-id': 'tenant-2' },
+      headers: { 'x-solution-id': 'tenant-2' },
     });
     expect(await guard.canActivate(ctx)).toBe(true);
     expect(userTenantService.findUserInTenant).toHaveBeenCalledWith(

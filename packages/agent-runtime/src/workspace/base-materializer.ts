@@ -13,7 +13,7 @@
  * Output layout:
  *   ${baseDir}/
  *   └── tenants/
- *       └── {tenantId}/
+ *       └── {solutionId}/
  *           ├── skills/
  *           │   └── {slug}/
  *           │       ├── SKILL.md       ← skill.content
@@ -83,7 +83,7 @@ export class BaseMaterializer {
     let skillsWritten = 0;
     let skillFilesWritten = 0;
     for (const s of activeSkills) {
-      const skillDir = path.join(this.baseDir, 'tenants', s.tenantId, 'skills', s.slug);
+      const skillDir = path.join(this.baseDir, 'tenants', s.solutionId, 'skills', s.slug);
       this.writeIfChanged(path.join(skillDir, 'SKILL.md'), s.content);
       this.writeIfChanged(
         path.join(skillDir, '.skill.json'),
@@ -100,7 +100,7 @@ export class BaseMaterializer {
           // halt materialization of every other skill in the source.
           const msg = err instanceof Error ? err.message : String(err);
           this.logger.warn(
-            `skill ${s.tenantId}/${s.slug}: ignoring file ${JSON.stringify(f.relativePath)} — ${msg}`,
+            `skill ${s.solutionId}/${s.slug}: ignoring file ${JSON.stringify(f.relativePath)} — ${msg}`,
           );
           continue;
         }
@@ -113,7 +113,7 @@ export class BaseMaterializer {
     let mcpServersWritten = 0;
     for (const m of activeMcps) {
       this.writeIfChanged(
-        path.join(this.baseDir, 'tenants', m.tenantId, 'mcp-servers', m.slug, 'config.json'),
+        path.join(this.baseDir, 'tenants', m.solutionId, 'mcp-servers', m.slug, 'config.json'),
         JSON.stringify({ name: m.name, type: m.type, config: m.config }, null, 2),
       );
       mcpServersWritten++;

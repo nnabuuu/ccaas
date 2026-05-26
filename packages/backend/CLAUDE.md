@@ -23,7 +23,7 @@ src/
 ├── skills/            # Skill CRUD, versioning, routing
 ├── mcp/               # MCP server pool, REST adapter
 ├── scheduler/         # Cron/interval/once task execution
-├── solutions/         # Solution CRUD (entity formerly known as Tenant; renamed in α)
+├── solutions/         # Solution CRUD
 ├── messages/          # Message persistence
 ├── files/             # File management
 ├── hooks/             # Tool hooks
@@ -85,7 +85,7 @@ Operator quickstart: **[gitbook → 本地自托管](../../docs/gitbook/zh/getti
 
 ## Database Schema
 
-TypeORM + SQLite (upgradeable to PostgreSQL): `solutions` (formerly `tenants`), `users`, `user_solutions`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`. Note: α renamed the entity but the env var name `CCAAS_API_KEY` and a few legacy fields (e.g. `SkillContent.tenantId` in the agent-runtime npm port — translated at the `TypeOrmSkillContentSource` boundary) stay as-is intentionally.
+TypeORM + SQLite (upgradeable to PostgreSQL): `solutions`, `users`, `user_solutions`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`. The env var name `CCAAS_API_KEY` and `solution.json` schema field `tenant: { name, slug }` are kept as-is intentionally (operator-facing constants + wire format that solutions ship).
 
 ## Development Commands
 
@@ -99,7 +99,7 @@ npm run skill:import -- <name> # Register solution skills
 
 ### End-to-end agent-runtime smoke
 
-`solutions/business/live-lesson-creator/scripts/poc-smoke.sh` is the canonical end-to-end test for the agent-runtime sync layer (`bind-project` → bootstrap → SSE change events). Needs both backends running:
+`solutions/business/live-lesson-creator/scripts/poc-smoke.sh` is the canonical end-to-end test for the agent-runtime sync layer (`attach-workspace-source` → bootstrap → SSE change events). Needs both backends running:
 
 ```bash
 # terminal 1: ccaas (load all solutions from SOLUTIONS_DIR)
