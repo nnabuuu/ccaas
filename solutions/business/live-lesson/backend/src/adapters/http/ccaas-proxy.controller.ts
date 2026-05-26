@@ -34,6 +34,7 @@
  */
 
 import {
+  BadGatewayException,
   Controller,
   Get,
   HttpCode,
@@ -91,10 +92,25 @@ export class CcaasProxyController {
         if (!res.ok) {
           // ccaas returned 401/403/404; surface a single error event so
           // the browser sees it as an Observable error (NestJS @Sse will
-          // close the connection on Observable error).
+          // close the connection on Observable error). Scrub any
+          // accidentally-echoed token from the upstream body before
+          // embedding — see `scrubToken` for the rationale.
           subscriber.error(
             new Error(
-              `ccaas upstream ${res.status} for project ${projectId}: ${await this.readErrorBody(res)}`,
+              `ccaas upstream ${res.status} for project ${projectId}: ${scrubToken(await this.readErrorBody(res))}`,
+            ),
+          );
+          return;
+        }
+        // Defense-in-depth: refuse to consume non-SSE upstreams. A CDN
+        // intercept, captive portal, or misconfigured reverse proxy might
+        // return 200 OK with HTML; pumping that as SSE would hang the
+        // subscriber forever (no \n\n delimiter, no error).
+        const upstreamCt = res.headers.get('content-type') ?? '';
+        if (!upstreamCt.includes('text/event-stream')) {
+          subscriber.error(
+            new Error(
+              `ccaas upstream returned non-SSE content-type for project ${projectId}: ${upstreamCt}`,
             ),
           );
           return;
@@ -146,11 +162,24 @@ export class CcaasProxyController {
       throw this.wrapUpstreamError('connect', err);
     }
     if (!res.ok) {
+      // Auth failures (401/403) are operator-actionable — wrong or
+      // expired CCAAS_API_KEY env. Failing silently here would leave
+      // SSE technically working (browser sees calm 202s forever) while
+      // the agent never re-syncs in response to GUI edits. Promote to
+      // 502 so the misconfig surfaces. Other upstream failures (5xx,
+      // 404, etc.) ARE "optional optimization" — log + return calmly.
+      if (res.status === 401 || res.status === 403) {
+        this.logger.error(
+          `ccaas invalidate upstream ${res.status} for project ${projectId}: ` +
+          `CCAAS_API_KEY is likely invalid or expired`,
+        );
+        throw new BadGatewayException(
+          `ccaas auth failed (${res.status}); check CCAAS_API_KEY env var`,
+        );
+      }
       this.logger.warn(
         `ccaas invalidate upstream ${res.status} for project ${projectId}`,
       );
-      // The browser doesn't need to know upstream failed for an
-      // "optional optimization" call. Return 202 with accepted: false.
       return { accepted: false };
     }
     return { accepted: true };
@@ -184,6 +213,12 @@ export class CcaasProxyController {
    * lines like `id: 1`, `event: <name>`, `data: <payload>`. We only
    * forward `data` (NestJS rebuilds the framing on the outbound side).
    * Multi-line `data:` are concatenated with `\n` per the spec.
+   *
+   * Line-ending handling: the SSE spec allows `\r\n`, `\r`, or `\n` as
+   * event-block terminators. ccaas's `@Sse` decorator emits `\n` only,
+   * but intermediate proxies (HTTP/2 implementations, IIS, some CDNs)
+   * may normalize line endings either way. We normalize all variants to
+   * `\n` on each chunk before scanning for the `\n\n` block separator.
    */
   private async pumpSse(
     body: ReadableStream<Uint8Array>,
@@ -198,7 +233,12 @@ export class CcaasProxyController {
         if (isCancelled()) return;
         const { value, done } = await reader.read();
         if (done) return;
-        buffer += decoder.decode(value, { stream: true });
+        // Append + normalize CRLF / lone CR to LF so the \n\n scan finds
+        // event boundaries regardless of upstream line-ending convention.
+        buffer += decoder
+          .decode(value, { stream: true })
+          .replace(/\r\n/g, '\n')
+          .replace(/\r/g, '\n');
         // Process whole event blocks; a block ends at a blank line
         // (\n\n in the buffer). Leftover partial block stays in buffer.
         let idx: number;
@@ -249,6 +289,32 @@ export class CcaasProxyController {
 
   private wrapUpstreamError(phase: 'connect' | 'stream', err: unknown): Error {
     const msg = err instanceof Error ? err.message : String(err);
-    return new Error(`ccaas upstream ${phase} failed: ${msg}`);
+    // Some Node versions include the offending URL in fetch error
+    // messages (e.g. TypeError: fetch failed... cause: Error at URL ...).
+    // Scrub before re-wrapping so the master token never bleeds into
+    // the thrown Error's message.
+    return new Error(`ccaas upstream ${phase} failed: ${scrubToken(msg)}`);
   }
+}
+
+/**
+ * Strip `token=<value>` from any string before it might land in a log,
+ * a thrown Error message, or an HTTP response body.
+ *
+ * The upstream URL we open against ccaas looks like
+ * `${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}` — the
+ * master tenant key is literally in the URL. We never log the URL
+ * ourselves, but two paths could indirectly leak it:
+ *   - the upstream's error body (e.g. a misconfigured intermediary's
+ *     "Cannot GET <full-url>" page that echoes `req.url`)
+ *   - Node's own fetch-failure messages on some runtimes
+ * Apply scrubbing wherever those land in user-visible strings.
+ *
+ * Matches `token=` followed by any non-whitespace / non-separator chars.
+ * Conservative — if the surrounding text already escaped or encoded
+ * the token, the regex won't match and we leave it alone (the encoding
+ * is itself protection).
+ */
+function scrubToken(s: string): string {
+  return s.replace(/(token=)[^&\s"'<>]+/gi, '$1***');
 }

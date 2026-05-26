@@ -18,7 +18,7 @@
 
 import { firstValueFrom } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
-import { ServiceUnavailableException } from '@nestjs/common';
+import { BadGatewayException, ServiceUnavailableException } from '@nestjs/common';
 
 import { CcaasProxyController } from './ccaas-proxy.controller';
 
@@ -149,6 +149,49 @@ describe('CcaasProxyController', () => {
       ).rejects.toThrow(/upstream 403/);
     });
 
+    it('scrubs any token=… echoed in the upstream error body before throwing', async () => {
+      // A misconfigured intermediary (nginx default 404, Express
+      // notFound, etc.) might echo `req.url` into the response body,
+      // which would otherwise leak the master CCAAS_API_KEY into the
+      // thrown Error message → exception filter logs → key in stderr.
+      mockFetch(
+        () =>
+          new Response(
+            'Cannot GET /projects/p1/changes?token=sk-leaked-master-key',
+            { status: 404 },
+          ),
+      );
+      await expect(
+        firstValueFrom(controller.changes$('p1').pipe(take(1))),
+      ).rejects.toThrow(/token=\*\*\*/);
+      await expect(
+        firstValueFrom(controller.changes$('p1').pipe(take(1))),
+      ).rejects.not.toThrow(/sk-leaked-master-key/);
+    });
+
+    it('errors when upstream returns 200 but non-SSE content-type (CDN intercept / HTML)', async () => {
+      mockFetch(
+        () =>
+          new Response('<html><body>captive portal</body></html>', {
+            status: 200,
+            headers: { 'Content-Type': 'text/html' },
+          }),
+      );
+      await expect(
+        firstValueFrom(controller.changes$('p1').pipe(take(1))),
+      ).rejects.toThrow(/non-SSE content-type.*text\/html/);
+    });
+
+    it('handles SSE frames terminated with CRLF (proxies that normalize line endings)', async () => {
+      mockFetch(() =>
+        sseResponse([
+          'id: 1\r\ndata: {"kind":"subscribed","projectId":"p1"}\r\n\r\n',
+        ]),
+      );
+      const first = await firstValueFrom(controller.changes$('p1').pipe(take(1)));
+      expect((first.data as any).kind).toBe('subscribed');
+    });
+
     it('errors the Observable when upstream connect throws (network error)', async () => {
       mockFetch(() => {
         throw new Error('ECONNREFUSED');
@@ -191,10 +234,34 @@ describe('CcaasProxyController', () => {
       expect(out).toEqual({ accepted: true });
     });
 
-    it('returns { accepted: false } (no throw) on upstream 4xx (optional optimization)', async () => {
-      mockFetch(() => new Response('forbidden', { status: 403 }));
+    it('returns { accepted: false } (no throw) on upstream 5xx — optional-optimization swallow', async () => {
+      mockFetch(() => new Response('upstream busy', { status: 503 }));
       const out = await controller.invalidate('p1');
       expect(out).toEqual({ accepted: false });
+    });
+
+    it('returns { accepted: false } on upstream 404 — project not yet bound is also benign', async () => {
+      mockFetch(() => new Response('not found', { status: 404 }));
+      const out = await controller.invalidate('p1');
+      expect(out).toEqual({ accepted: false });
+    });
+
+    it('throws 502 BadGateway on upstream 401 — auth misconfig is operator-actionable', async () => {
+      // Wrong CCAAS_API_KEY would otherwise silently degrade: SSE keeps
+      // working (cached / re-authed) but invalidate never re-syncs, and
+      // the browser just sees calm 202s forever. Promote to 502 so the
+      // misconfig surfaces.
+      mockFetch(() => new Response('unauthorized', { status: 401 }));
+      await expect(controller.invalidate('p1')).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+    });
+
+    it('throws 502 BadGateway on upstream 403 (same operator-actionable category)', async () => {
+      mockFetch(() => new Response('forbidden', { status: 403 }));
+      await expect(controller.invalidate('p1')).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
     });
 
     it('throws on upstream connect error so the caller can decide retry policy', async () => {
