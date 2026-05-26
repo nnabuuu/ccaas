@@ -9,7 +9,7 @@ By the end of this section, you will have:
 - Persistent conversations stored in the CCAAS backend database
 - Automatic message history loading on page refresh
 - A "New Conversation" button for starting fresh
-- Tenant-scoped isolation so conversations do not leak between Solutions
+- Solution-scoped isolation so conversations do not leak between Solutions
 
 ## Understanding the Persistence Model
 
@@ -19,9 +19,9 @@ CCAAS uses a **frontend-driven persistence model**. The key insight is that only
 Page Load
   |
   v
-useAgentConnection({ tenantId })
+useAgentConnection({ solutionId })
   |
-  +--> Check localStorage for ccaas_session_{tenantId}
+  +--> Check localStorage for ccaas_session_{solutionId}
   |      |
   |      +--> Found: Use saved conversationId
   |      +--> Not found: Generate conv_{uuid}, save to localStorage
@@ -29,7 +29,7 @@ useAgentConnection({ tenantId })
   +--> Connect via SSE with conversationId
   |
   v
-useAgentChat({ connection, tenantId })
+useAgentChat({ connection, solutionId })
   |
   +--> GET /api/v1/sessions/{conversationId}/messages?limit=100
   |
@@ -50,9 +50,9 @@ These two concepts are distinct:
 
 A single conversation can span multiple runtime sessions. When a runtime session expires due to inactivity, the next message in the same conversation creates a new runtime session, but the conversation and its message history persist.
 
-### Tenant Isolation
+### Solution Isolation
 
-Each `tenantId` gets its own localStorage key:
+Each `solutionId` gets its own localStorage key:
 
 ```
 localStorage:
@@ -60,11 +60,11 @@ localStorage:
   ccaas_session_lesson-plan-designer   -> conv_e5f6g7h8...
 ```
 
-Two Solutions running on the same origin with different `tenantId` values do not share conversations.
+Two Solutions running on the same origin with different `solutionId` values do not share conversations.
 
 ## Step 1: Enable Persistence in useAgentConnection
 
-Open your main session hook (or the component where you initialize the connection) and replace `sessionPrefix` with `tenantId`:
+Open your main session hook (or the component where you initialize the connection) and replace `sessionPrefix` with `solutionId`:
 
 ```typescript
 // src/hooks/useLessonPlanSession.ts
@@ -77,30 +77,30 @@ import {
 const SOCKET_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 export function useLessonPlanSession() {
-  // Enable persistence by providing tenantId
+  // Enable persistence by providing solutionId
   const connection = useAgentConnection({
     serverUrl: SOCKET_URL,
-    tenantId: 'lesson-plan-designer',  // ← This enables persistence
+    solutionId: 'lesson-plan-designer',  // ← This enables persistence
     autoConnect: true,
   })
 
   const chat = useAgentChat({
     connection,
-    tenantId: 'lesson-plan-designer',
+    solutionId: 'lesson-plan-designer',
   })
 
   return { connection, chat }
 }
 ```
 
-When `tenantId` is provided:
+When `solutionId` is provided:
 1. The SDK generates a `conv_{uuid}` session ID (instead of a random prefix-based ID)
 2. The session ID is saved to `localStorage` under the key `ccaas_session_lesson-plan-designer`
 3. On the next page load, the SDK reads this key and reconnects with the same `conversationId`
 4. `useAgentChat` automatically fetches message history from the backend
 
 {% hint style="info" %}
-If you omit `tenantId` and use `sessionPrefix` instead, conversations are ephemeral -- they are lost on page refresh. This is fine for prototyping but not for production.
+If you omit `solutionId` and use `sessionPrefix` instead, conversations are ephemeral -- they are lost on page refresh. This is fine for prototyping but not for production.
 {% endhint %}
 
 ## Step 2: Handle the Loading State
@@ -188,7 +188,7 @@ If your Solution should always start with a fresh conversation (for example, a o
 ```typescript
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'lesson-plan-wizard',
+  solutionId: 'lesson-plan-wizard',
   forceNewConversation: true,  // Always start fresh
 })
 ```
@@ -267,11 +267,11 @@ Before moving to the next section, verify:
 - [ ] The `isLoadingHistory` flag is `true` during message loading and `false` after
 - [ ] Clicking "New Conversation" clears the chat and starts fresh
 - [ ] The new conversation gets a different `conv_{uuid}` (check localStorage)
-- [ ] Two Solutions with different `tenantId` values do not share conversations
+- [ ] Two Solutions with different `solutionId` values do not share conversations
 
 ## Common Mistakes
 
-### 1. Using sessionPrefix instead of tenantId
+### 1. Using sessionPrefix instead of solutionId
 
 ```typescript
 // Wrong: no persistence
@@ -283,7 +283,7 @@ const connection = useAgentConnection({
 // Correct: persistence enabled
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
 })
 ```
 
@@ -295,15 +295,15 @@ If you do not handle the loading state, users see an empty chat panel for a brie
 
 `clearMessages()` only clears the UI. The next page refresh will reload the same conversation. Use `clearConversation()` when you want to start a genuinely new conversation.
 
-### 4. Same tenantId across different Solutions
+### 4. Same solutionId across different Solutions
 
-If two Solutions use `tenantId: 'default'`, they will share the same conversation. Always use a unique, descriptive `tenantId` for each Solution.
+If two Solutions use `solutionId: 'default'`, they will share the same conversation. Always use a unique, descriptive `solutionId` for each Solution.
 
 ## Summary
 
 In this section you added:
 
-- Conversation persistence using `tenantId` in `useAgentConnection`
+- Conversation persistence using `solutionId` in `useAgentConnection`
 - Automatic message history loading via `useAgentChat`
 - A loading state with `isLoadingHistory`
 - A "New Conversation" button using `clearConversation()`

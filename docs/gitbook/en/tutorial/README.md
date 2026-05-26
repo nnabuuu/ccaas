@@ -88,7 +88,7 @@ Finally, we prepare the solution for real-world use.
 
 ### Phase 5 (Advanced, Optional): Sandboxing (Chapter 8)
 
-If your solution needs multi-tenant isolation, safe try-and-discard workflows, or auditability of AI file operations, add the stage-1 sandbox on top of your already-deployed solution.
+If your solution needs multi-solution isolation, safe try-and-discard workflows, or auditability of AI file operations, add the stage-1 sandbox on top of your already-deployed solution.
 
 | Chapter | What You Learn | Key Deliverable |
 |---------|---------------|-----------------|

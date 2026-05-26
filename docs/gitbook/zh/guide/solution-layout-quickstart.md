@@ -75,7 +75,7 @@ function App() {
 
   // 现有的 connection 和 chat hooks
   const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   // ...
 }
@@ -161,7 +161,7 @@ function App() {
     serverUrl: 'http://localhost:3001',
     sessionPrefix: 'demo'
   })
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   return (
     <div className="flex h-screen">
@@ -227,7 +227,7 @@ function App() {
     serverUrl: 'http://localhost:3001',
     sessionPrefix: 'demo'
   })
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   return (
     <div className="flex h-screen">
@@ -314,7 +314,7 @@ function App() {
     serverUrl: 'http://localhost:3001',
     sessionPrefix: 'demo'
   })
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   return (
     <div className="flex h-screen">
@@ -431,7 +431,7 @@ function App() {
     sessionPrefix: 'my-solution'
   })
 
-  const chat = useAgentChat({ connection, tenantId: TENANT_ID })
+  const chat = useAgentChat({ connection, solutionId: TENANT_ID })
   const status = useAgentStatus({ connection })
 
   // 您的 Solution 特定状态

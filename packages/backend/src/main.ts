@@ -97,10 +97,10 @@ async function bootstrap() {
     .addTag('skills', '技能管理 - Skill CRUD、版本控制')
     .addTag('mcp', 'MCP 服务器 - MCP 服务器配置与管理')
     .addTag('auth', '认证授权 - API Key 与用户管理')
-    .addTag('tenants', '租户管理 - 多租户配置')
+    .addTag('solutions', 'Solution 管理 - 多 Solution 配置（旧称：tenants/租户）')
     .addTag('scheduler', '⚠️ [Alpha] 定时任务 - 定时执行 Agent 任务（功能尚在开发中，API 可能变更）')
     .addTag('jobs', '⚠️ [Alpha] 后台任务 - 异步任务管理（功能尚在开发中，API 可能变更）')
-    .addTag('builder', 'Builder 开发者 - 自有租户与 API Key 管理')
+    .addTag('builder', 'Builder 开发者 - 自有 Solution 与 API Key 管理')
     .addTag('admin', '管理接口 - 系统管理功能')
     .build();
 
@@ -125,7 +125,7 @@ async function bootstrap() {
       'X-API-Key: ccaas_xxxxxxxxxxxxxxxx\n' +
       '```\n\n' +
       '## Core Concepts\n\n' +
-      '- **Solution**: Basic unit for multi-tenant isolation\n' +
+      '- **Solution**: Basic unit of isolation in ccaas-core (formerly known as "tenant"; renamed in α 2026-05)\n' +
       '- **Session**: Interactive session with AgentEngine\n' +
       '- **Message**: Conversation messages between user and agent\n' +
       '- **Skill**: Custom agent capability extensions\n' +
@@ -150,10 +150,10 @@ async function bootstrap() {
     .addTag('skills', 'Skill Management - Skill CRUD, version control')
     .addTag('mcp', 'MCP Servers - MCP server configuration and management')
     .addTag('auth', 'Authentication - API Key and user management')
-    .addTag('tenants', 'Solution Management - Multi-tenant configuration')
+    .addTag('solutions', 'Solution Management - Multi-solution configuration (formerly known as "tenants")')
     .addTag('scheduler', '⚠️ [Alpha] Scheduled Tasks - Execute agent tasks on schedule (under development, API may change)')
     .addTag('jobs', '⚠️ [Alpha] Background Jobs - Async job management (under development, API may change)')
-    .addTag('builder', 'Builder API - Manage own tenants and API keys')
+    .addTag('builder', 'Builder API - Manage own solutions and API keys')
     .addTag('admin', 'Admin APIs - System administration')
     .build();
 

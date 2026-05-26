@@ -239,7 +239,7 @@ async function generateAndSelectDraft(sessionId: string, prompt: string) {
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': KEY,
-    'x-tenant-id': 'lesson-plan-designer',
+    'x-solution-id': 'lesson-plan-designer',
   };
   const drafts: Array<{ label: string; content: string }> = [];
 
@@ -282,7 +282,7 @@ Don't write them to `entities/` (that's for the agent). Use metadata KV:
 ```bash
 # Solution backend records user choice
 curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/wizard.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: lesson-plan-designer" \
+  -H "x-api-key: $KEY" -H "x-solution-id: lesson-plan-designer" \
   -H 'Content-Type: application/json' \
   -d '{"value":{"current":3,"total":7,"selectedTemplate":"inquiry-based"}}'
 
@@ -313,7 +313,7 @@ WORKSPACE_PROVIDER=agentfs ... npm run start:prod -w @kedge-agentic/backend
 ```bash
 # Create a session
 curl -X POST http://localhost:3001/api/v1/sessions/test-1/messages \
-  -H 'x-api-key: ...' -H 'x-tenant-id: lesson-plan-designer' \
+  -H 'x-api-key: ...' -H 'x-solution-id: lesson-plan-designer' \
   -H 'Content-Type: application/json' \
   -d '{"templateName":"lesson-design","message":"first run ls entities/"}'
 
@@ -337,7 +337,7 @@ tail -f /tmp/<WORKSPACE_DIR>/_sandbox_logs/bash-mcp.log
 ```bash
 # When the session is in idle status
 curl -X POST http://localhost:3001/api/v1/sessions/test-1/fs/snapshot \
-  -H 'x-api-key: ...' -H 'x-tenant-id: lesson-plan-designer' \
+  -H 'x-api-key: ...' -H 'x-solution-id: lesson-plan-designer' \
   -H 'Content-Type: application/json' -d '{"label":"checkpoint-1"}'
 # → 200 { "label": "checkpoint-1", "takenAt": "..." }
 
@@ -351,7 +351,7 @@ curl -X POST http://localhost:3001/api/v1/sessions/test-1/fs/rollback \
 1. **fs/diff doesn't work after session closes** — sessions are removed from the in-memory Map after close, so the endpoint returns 404. Query while the session is alive.
 2. **Snapshot mid-turn returns 409** — **by design**. Wrap turn boundaries, not mid-stream. Cycling the mount yanks the agent's file handles → EIO.
 3. **`agentfs` binary not on PATH** — set `WORKSPACE_AGENTFS_BIN` to absolute path.
-4. **SOLUTION_DIRS uses wrong slug** — use `tenant.slug` (the one in your solution.json), not the tenantId UUID.
+4. **SOLUTION_DIRS uses wrong slug** — use `solution.slug` (the one in your solution.json), not the solutionId UUID.
 5. **`entities/` exceeds 10MB cap** — see log `Skipping ... cap reached`. Slim down, or move to object storage + MCP tool.
 6. **Agent uses native `Bash` instead of the MCP bash** — claude CLI too old (need ≥ 2.1.x) or the `--disallowed-tools` flag wasn't injected. Check the spawn command log.
 7. **`.claude/` system files appear in fs/diff output** — expected (skill-sync wrote those during session startup). Not a bug.

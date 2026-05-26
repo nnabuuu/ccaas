@@ -15,7 +15,7 @@ Session Templates are reusable configurations stored per-tenant that define:
 
 **Benefits:**
 - ✅ Centralized configuration — update agent behavior without code deploys
-- ✅ Multi-tenant support — each tenant has independent template sets
+- ✅ Multi-tenant support — each solution has independent template sets
 - ✅ Role-based agent personalities (teacher, student, admin, etc.)
 - ✅ A/B testing different prompts
 - ✅ Full audit trail for compliance
@@ -130,7 +130,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 export function TeacherView() {
   const chat = useAgentChat({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'your-tenant-id',
+    solutionId: 'your-tenant-id',
     sessionTemplate: 'teacher-assistant', // ← Use your template name
   })
 
@@ -308,7 +308,7 @@ All endpoints require an API key with `admin` scope.
 ### List Templates
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/session-templates
+GET /api/v1/admin/solutions/:solutionId/session-templates
 Authorization: Bearer <admin-api-key>
 ```
 
@@ -330,7 +330,7 @@ Authorization: Bearer <admin-api-key>
 ### Get Single Template
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/session-templates/:name
+GET /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 ```
 
@@ -348,7 +348,7 @@ Authorization: Bearer <admin-api-key>
 ### Create Template
 
 ```http
-POST /api/v1/admin/tenants/:tenantId/session-templates
+POST /api/v1/admin/solutions/:solutionId/session-templates
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -365,12 +365,12 @@ Content-Type: application/json
 
 **Error responses:**
 - `409 Conflict` — Template name already exists
-- `400 Bad Request` — Tenant has reached the 50-template limit
+- `400 Bad Request` — Solution has reached the 50-template limit
 
 ### Update Template
 
 ```http
-PUT /api/v1/admin/tenants/:tenantId/session-templates/:name
+PUT /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -386,18 +386,18 @@ Content-Type: application/json
 ### Delete Template
 
 ```http
-DELETE /api/v1/admin/tenants/:tenantId/session-templates/:name
+DELETE /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 ```
 
-> **Note:** If the deleted template was set as the tenant's `defaultSessionTemplate`, that reference is automatically cleared.
+> **Note:** If the deleted template was set as the solution's `defaultSessionTemplate`, that reference is automatically cleared.
 
 ### Preview Template Resolution
 
 Useful for testing how a template merges with explicit frontend parameters before deploying:
 
 ```http
-POST /api/v1/admin/tenants/:tenantId/session-templates/:name/preview
+POST /api/v1/admin/solutions/:solutionId/session-templates/:name/preview
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -477,7 +477,7 @@ const templateMap: Record<string, string> = {
 }
 
 const chat = useAgentChat({
-  tenantId: user.tenantId,
+  solutionId: user.solutionId,
   sessionTemplate: templateMap[user.role],
 })
 ```
@@ -490,13 +490,13 @@ const template = user.id % 2 === 0 ? 'variant-a' : 'variant-b'
 const chat = useAgentChat({ sessionTemplate: template })
 ```
 
-### Multi-Tenant SaaS
+### Multi-Solution SaaS
 
 ```typescript
 // Each tenant manages their own templates through the Admin UI.
 // Frontend just references the template name:
 const chat = useAgentChat({
-  tenantId: user.tenantId,
+  solutionId: user.solutionId,
   sessionTemplate: 'default-assistant',
 })
 ```
@@ -544,13 +544,13 @@ View audit logs: **Admin Dashboard → Audit Log**
 ### Template not appearing in frontend
 
 **Check:**
-1. `tenantId` in frontend matches the tenant that owns the template
+1. `solutionId` in frontend matches the solution that owns the template
 2. Template name is spelled exactly (case-sensitive)
 3. Template exists — verify via API:
 
 ```bash
 curl -H "Authorization: Bearer <key>" \
-  http://localhost:3001/api/v1/admin/tenants/<tenantId>/session-templates
+  http://localhost:3001/api/v1/admin/solutions/<solutionId>/session-templates
 ```
 
 ### Template creation returns 409
@@ -561,7 +561,7 @@ curl -H "Authorization: Bearer <key>" \
 
 ### Template creation returns 400 (limit reached)
 
-**Error**: `Tenant has reached the maximum of 50 session templates`
+**Error**: `Solution has reached the maximum of 50 session templates`
 
 **Solution**: Delete unused templates or consolidate configurations.
 

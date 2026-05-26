@@ -123,7 +123,7 @@
 |------|------|------|------|
 | `clientId` | string | 是 | 客户端标识 |
 | `message` | string | 是 | 用户消息 |
-| `tenantId` | string | 条件必填 | 租户 ID。使用绑定租户的 API Key（admin/builder）时可省略，系统会自动从 Key 上下文解析。 |
+| `solutionId` | string | 条件必填 | 租户 ID。使用绑定租户的 API Key（admin/builder）时可省略，系统会自动从 Key 上下文解析。 |
 | `enabledSkills` | string[] | 否 | 启用的 Skill slug 列表 |
 | `attachments` | object[] | 否 | 附件列表 |
 
@@ -168,7 +168,7 @@
 {
   "id": "session-uuid",
   "status": "idle",
-  "tenantId": "tenant-uuid",
+  "solutionId": "solution-uuid",
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-01T00:00:00Z"
 }
@@ -181,7 +181,7 @@
 **请求体**：
 
 ```json
-{ "tenantId": "tenant-uuid" }
+{ "solutionId": "solution-uuid" }
 ```
 
 ### PUT /sessions/:sessionId/context
@@ -305,7 +305,7 @@
     {
       "id": "msg-uuid",
       "sessionId": "session-uuid",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "role": "user",
       "content": "你好",
       "metadata": {},
@@ -418,7 +418,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 | 端点 | 说明 |
 |------|------|
-| `GET /messages` | 按条件查询消息（支持 `sessionId`、`tenantId`、`limit`、`offset`） |
+| `GET /messages` | 按条件查询消息（支持 `sessionId`、`solutionId`、`limit`、`offset`） |
 | `GET /messages/:messageId/tool-events` | 获取消息的工具调用事件 |
 | `GET /sessions/:sessionId/tool-stats` | 获取工具调用统计（总数、成功/失败、平均耗时） |
 | `GET /sessions/:sessionId/context` | 获取会话上下文（系统 Prompt、Skill 配置、MCP 工具列表等） |
@@ -459,7 +459,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
   "conversations": [
     {
       "sessionId": "conv_abc123",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "title": "会话标题",
       "templateName": "farmer-advisor",
       "messageCount": 8,
@@ -544,7 +544,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 获取 Skill 列表。
 
-**查询参数**：`tenantId`, `status`, `type`
+**查询参数**：`solutionId`, `status`, `type`
 
 ### POST /skills
 
@@ -561,7 +561,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
   "content": "Skill 内容...",
   "triggers": [{ "type": "keyword", "value": "关键词" }],
   "allowedTools": ["write_output"],
-  "tenantId": "tenant-uuid"
+  "solutionId": "solution-uuid"
 }
 ```
 
@@ -628,7 +628,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
   "slug": "my-tools",
   "url": "http://localhost:3004",
   "description": "工具服务描述",
-  "tenantId": "tenant-uuid"
+  "solutionId": "solution-uuid"
 }
 ```
 
@@ -656,15 +656,15 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 ## 租户管理
 
-### GET /tenants
+### GET /solutions
 
 获取租户列表（需 `admin` scope）。
 
-### POST /tenants
+### POST /solutions
 
 创建租户。
 
-### GET /tenants/:id
+### GET /solutions/:id
 
 获取租户详情。
 
@@ -672,7 +672,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `builder` 权限范围。Builder 只能操作自己创建的租户，不能创建 `admin` 或 `builder` 级别的 API Key。
 
-### POST /builder/tenants
+### POST /builder/solutions
 
 创建租户并自动将当前 Builder 关联为该租户的管理员。
 
@@ -683,19 +683,19 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 | `name` | string | 是 | 租户名称 |
 | `slug` | string | 否 | 租户标识（自动生成） |
 
-**响应**：返回创建的租户对象。Builder 用户自动通过 UserTenant 关联为该租户的 `admin` 角色。
+**响应**：返回创建的租户对象。Builder 用户自动通过 UserSolution 关联为该租户的 `admin` 角色。
 
-### GET /builder/tenants
+### GET /builder/solutions
 
-获取当前 Builder 拥有的租户列表（通过 UserTenant 过滤）。
+获取当前 Builder 拥有的租户列表（通过 UserSolution 过滤）。
 
 **响应**：仅返回状态为 `active` 的租户数组。
 
-### GET /builder/tenants/:id
+### GET /builder/solutions/:id
 
 获取 Builder 拥有的单个租户详情。如果租户不属于当前 Builder，返回 403。
 
-### PUT /builder/tenants/:id
+### PUT /builder/solutions/:id
 
 更新 Builder 拥有的租户信息。
 
@@ -705,7 +705,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 |------|------|------|------|
 | `name` | string | 否 | 更新名称 |
 
-### POST /builder/tenants/:tenantId/api-keys
+### POST /builder/solutions/:solutionId/api-keys
 
 为 Builder 拥有的租户创建 API Key。不允许创建 `admin` 或 `builder` 级别的 Key。
 
@@ -729,7 +729,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 }
 ```
 
-### GET /builder/tenants/:tenantId/api-keys
+### GET /builder/solutions/:solutionId/api-keys
 
 获取 Builder 拥有的租户的 API Key 列表。
 
@@ -860,25 +860,25 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `userId` | string | 是 | 用户 UUID |
-| `tenantId` | string | 是 | 租户 UUID |
+| `solutionId` | string | 是 | 租户 UUID |
 | `role` | string | 是 | `admin`、`developer` 或 `viewer` |
 | `canCreateSkills` | boolean | 否 | 覆盖 Skill 创建权限（未设置时根据角色自动推导） |
 
 **canCreateSkills 自动推导**：`admin` 和 `developer` → `true`，`viewer` → `false`。
 
-**响应**：创建的 `UserTenant` 对象。用户-租户关联已存在时返回 `409`。
+**响应**：创建的 `UserSolution` 对象。用户-租户关联已存在时返回 `409`。
 
-### GET /users/tenants/by-tenant/:tenantId
+### GET /users/solutions/by-solution/:solutionId
 
 获取租户下的所有用户。
 
-**响应**：`UserTenant` 对象数组（包含用户详情）。
+**响应**：`UserSolution` 对象数组（包含用户详情）。
 
 ### GET /users/tenants/by-user/:userId
 
 获取用户所属的所有租户。
 
-**响应**：`UserTenant` 对象数组（包含租户详情）。
+**响应**：`UserSolution` 对象数组（包含租户详情）。
 
 ### PATCH /users/tenants/:id
 
@@ -892,7 +892,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 | `canCreateSkills` | boolean | 否 | 更新 Skill 创建权限 |
 | `isActive` | boolean | 否 | 启用或停用 |
 
-**响应**：更新后的 `UserTenant` 对象。
+**响应**：更新后的 `UserSolution` 对象。
 
 ### DELETE /users/tenants/:id
 
@@ -912,7 +912,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `tenantId` | string | 是 | 租户 ID（用于过滤） |
+| `solutionId` | string | 是 | 租户 ID（用于过滤） |
 | `page` | number | 否 | 页码（默认：1） |
 | `limit` | number | 否 | 每页条数（默认：50，最大：100） |
 
@@ -925,7 +925,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
       "id": "key-uuid",
       "keyPrefix": "ccaas_live_abc123",
       "name": "生产环境 API Key",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "scopes": ["chat", "skills:read", "skills:write"],
       "status": "active",
       "rateLimitRpm": 60,
@@ -951,7 +951,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `tenantId` | string | 是 | 租户 ID |
+| `solutionId` | string | 是 | 租户 ID |
 | `name` | string | 是 | 可读的名称 |
 | `scopes` | string[] | 否 | 权限范围（默认：`["chat"]`） |
 | `rateLimitRpm` | number | 否 | 每分钟请求数（默认：60） |
@@ -978,7 +978,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
     "id": "key-uuid",
     "keyPrefix": "ccaas_live_abc123",
     "name": "生产环境 API Key",
-    "tenantId": "tenant-uuid",
+    "solutionId": "solution-uuid",
     "scopes": ["chat", "skills:read"],
     "status": "active",
     "createdAt": "2025-01-15T12:00:00Z"
@@ -1001,7 +1001,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
   "id": "key-uuid",
   "keyPrefix": "ccaas_live_abc123",
   "name": "生产环境 API Key",
-  "tenantId": "tenant-uuid",
+  "solutionId": "solution-uuid",
   "scopes": ["chat", "skills:read"],
   "status": "active",
   "rateLimitRpm": 60,
@@ -1087,7 +1087,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `tenantId` | string | 否 | 按租户过滤 |
+| `solutionId` | string | 否 | 按租户过滤 |
 | `status` | string | 否 | 按状态过滤（`idle`、`processing`、`error`、`closed`） |
 | `startDate` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
 | `endDate` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
@@ -1101,7 +1101,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
   "data": [
     {
       "sessionId": "session-uuid",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "clientId": "client-uuid",
       "status": "idle",
       "messageCount": 12,
@@ -1299,7 +1299,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `tenantId` | string | 是 | 租户 ID |
+| `solutionId` | string | 是 | 租户 ID |
 | `name` | string | 是 | 任务名称 |
 | `description` | string | 否 | 任务描述 |
 | `message` | string | 是 | 发送给 Claude 的 Prompt |
@@ -1327,7 +1327,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 获取定时任务列表。
 
-**查询参数**：`tenantId`, `status`, `page`, `limit`
+**查询参数**：`solutionId`, `status`, `page`, `limit`
 
 **响应**：
 

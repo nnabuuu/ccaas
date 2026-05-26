@@ -483,7 +483,7 @@ The setup scripts will use `CCAAS_BOOTSTRAP_KEY` instead of the hardcoded develo
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_KEY" \
-  http://<backend-host>:3001/api/v1/admin/api-keys?tenantId=default
+  http://<backend-host>:3001/api/v1/admin/api-keys?solutionId=default
 ```
 
 {% hint style="info" %}
@@ -504,7 +504,7 @@ curl -H "Authorization: Bearer $ADMIN_KEY" \
 # Create a scoped key for your Solution frontend
 POST /api/v1/admin/api-keys
 {
-  "tenantId": "lesson-plan-designer",
+  "solutionId": "lesson-plan-designer",
   "name": "Lesson Plan Designer Frontend",
   "scopes": ["chat", "skills:read", "skills:execute"]
 }
@@ -568,7 +568,7 @@ Use this checklist before every production deployment:
 [] Skills injected: ./inject-skills.sh
 [] MCP server health checks pass
 [] Frontend connects to correct backend URLs
-[] Conversation persistence configured (tenantId set)
+[] Conversation persistence configured (solutionId set)
 ```
 
 ### Post-Deployment

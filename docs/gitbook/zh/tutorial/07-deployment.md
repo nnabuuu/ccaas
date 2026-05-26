@@ -483,7 +483,7 @@ cd solutions/business/lesson-plan-designer && bash setup.sh
 
 ```bash
 curl -H "Authorization: Bearer $ADMIN_KEY" \
-  http://<后端主机>:3001/api/v1/admin/api-keys?tenantId=default
+  http://<后端主机>:3001/api/v1/admin/api-keys?solutionId=default
 ```
 
 {% hint style="info" %}
@@ -504,7 +504,7 @@ curl -H "Authorization: Bearer $ADMIN_KEY" \
 # 为 Solution 前端创建 scoped key
 POST /api/v1/admin/api-keys
 {
-  "tenantId": "lesson-plan-designer",
+  "solutionId": "lesson-plan-designer",
   "name": "Lesson Plan Designer Frontend",
   "scopes": ["chat", "skills:read", "skills:execute"]
 }
@@ -568,7 +568,7 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 [] Skills 已注入：./inject-skills.sh
 [] MCP 服务器健康检查通过
 [] 前端连接到正确的后端 URL
-[] 会话持久化已配置（tenantId 已设置）
+[] 会话持久化已配置（solutionId 已设置）
 ```
 
 ### 部署后

@@ -92,12 +92,12 @@ import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
-  const { tenantId = 'lesson-plan-designer', autoConnect = true } = options
+  const { solutionId = 'lesson-plan-designer', autoConnect = true } = options
 
   // ===== 1. SDK Connection =====
   const connection = useAgentConnection({
     serverUrl: SERVER_URL,
-    tenantId,
+    solutionId,
     autoConnect,
   })
 
@@ -118,7 +118,7 @@ export function useLessonPlanSession(options = {}) {
   // ===== 5. SDK Chat =====
   const chat = useAgentChat({
     connection,
-    tenantId,
+    solutionId,
     sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
     context,
     onOutputUpdate: (update) => {
@@ -209,7 +209,7 @@ export function useLessonPlanSession(options = {}) {
 
 **Absolute Server URL.** The connection must use `http://localhost:3001`, not a relative path. SSE connections do not go through Vite's proxy system.
 
-**tenantId enables conversation persistence.** When `tenantId` is provided, the SDK persists the `sessionId` in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same session is recovered and message history is loaded automatically.
+**solutionId enables conversation persistence.** When `solutionId` is provided, the SDK persists the `sessionId` in `localStorage` under `ccaas_session_{solutionId}`. On page refresh, the same session is recovered and message history is loaded automatically.
 
 **onOutputUpdate bridges SDK to Solution sync.** The `useAgentChat` hook parses `output_update` SSE events and calls your callback with `{ field, value, preview }`. Your session hook forwards these to the sync hook, which queues them as pending updates.
 
@@ -447,11 +447,11 @@ The `AgentActivityLine` component renders SubAgents in a compact expandable view
 
 ## Step 6: Conversation Persistence
 
-Conversation persistence is built into the SDK hooks. When `tenantId` is provided to `useAgentConnection`, the session automatically persists across page refreshes.
+Conversation persistence is built into the SDK hooks. When `solutionId` is provided to `useAgentConnection`, the session automatically persists across page refreshes.
 
 **How it works:**
 
-1. `useAgentConnection` generates a `conv_{uuid}` session ID and stores it in `localStorage` under `ccaas_session_{tenantId}`
+1. `useAgentConnection` generates a `conv_{uuid}` session ID and stores it in `localStorage` under `ccaas_session_{solutionId}`
 2. On reconnection, the same session ID is used to re-establish the SSE connection
 3. `useAgentChat` automatically fetches message history via `GET /api/v1/sessions/{sessionId}/messages`
 4. While history is loading, `chat.isLoadingHistory` is `true` -- show a loading indicator

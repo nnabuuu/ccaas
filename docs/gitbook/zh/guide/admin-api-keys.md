@@ -17,18 +17,18 @@ API 密钥是访问 CCaaS 平台的主要身份验证机制。每个密钥：
 |------|-------|--------|------|
 | Admin | `admin` | 平台引导 | 完整平台管理 |
 | Builder | `builder` | Admin（通过 Builder Users API） | 自助管理租户和密钥 |
-| Tenant | `chat`, `skills:*` 等 | Admin 或 Builder | SDK/前端集成 |
+| Solution | `chat`, `skills:*` 等 | Admin 或 Builder | SDK/前端集成 |
 
 ### 密钥层级关系
 
 ```
 Admin → 创建 Builder key（需绑定 userId）
-Builder → 创建 Tenant key（无 userId，不可包含 admin/builder scope）
-Tenant key → 供终端用户应用使用
+Builder → 创建 Solution key（无 userId，不可包含 admin/builder scope）
+Solution key → 供终端用户应用使用
 ```
 
 Builder key 需要绑定 `userId` 才能正常使用。
-Builder 创建的 Tenant key 故意不含 `userId`，因此无法调用 Builder API。
+Builder 创建的 Solution key 故意不含 `userId`，因此无法调用 Builder API。
 
 ## 管理控制台
 
@@ -42,7 +42,7 @@ Builder 创建的 Tenant key 故意不含 `userId`，因此无法调用 Builder 
 
 API 密钥列表显示：
 - **密钥前缀**：密钥的前 20 个字符（例如 `ccaas_live_abc123`）
-- **类型**：Admin、Builder 或 Tenant 徽章（根据 scope 推断）
+- **类型**：Admin、Builder 或 Solution 徽章（根据 scope 推断）
 - **名称**：可读的标识符
 - **权限范围**：权限徽章（显示前 3 个，溢出显示 +N）
 - **状态**：活动或已吊销
@@ -151,7 +151,7 @@ cd solutions/business/my-solution && bash setup.sh
 
 ```bash
 curl -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
-  https://your-domain.com/api/v1/admin/api-keys?tenantId=default
+  https://your-domain.com/api/v1/admin/api-keys?solutionId=default
 ```
 
 ### 通过 API 创建密钥
@@ -161,7 +161,7 @@ curl -X POST https://your-domain.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tenantId": "default",
+    "solutionId": "default",
     "name": "生产环境 API Key",
     "scopes": ["chat", "skills:read", "skills:write"],
     "rateLimitRpm": 100,
@@ -188,7 +188,7 @@ curl -X POST https://your-domain.com/api/v1/admin/api-keys \
 ### 列出密钥
 
 ```bash
-curl "https://your-domain.com/api/v1/admin/api-keys?tenantId=default&page=1&limit=20" \
+curl "https://your-domain.com/api/v1/admin/api-keys?solutionId=default&page=1&limit=20" \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY"
 ```
 
@@ -257,7 +257,7 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 | `admin` | 完整管理权限（包含所有范围） |
 
 {% hint style="info" %}
-**Admin 权限特权**：具有 `admin` 范围的 API Key 会绕过技能级别的权限检查（如 `allowedTools` 限制）。Admin Key 还支持自动解析 `tenantId` — 通过 API Key 发送消息时，可以省略请求体中的 `tenantId`，系统会自动从 API Key 的租户上下文中解析。
+**Admin 权限特权**：具有 `admin` 范围的 API Key 会绕过技能级别的权限检查（如 `allowedTools` 限制）。Admin Key 还支持自动解析 `solutionId` — 通过 API Key 发送消息时，可以省略请求体中的 `solutionId`，系统会自动从 API Key 的租户上下文中解析。
 {% endhint %}
 
 ### 权限范围组合
@@ -444,7 +444,7 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 curl -X POST https://dev.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "tenantId": "dev-tenant",
+    "solutionId": "dev-tenant",
     "name": "开发环境",
     "scopes": ["chat", "skills:read"]
   }'
@@ -464,7 +464,7 @@ curl -H "Authorization: Bearer $CCAAS_API_KEY" \
 curl -X POST https://api.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "tenantId": "production",
+    "solutionId": "production",
     "name": "生产环境前端",
     "scopes": ["chat", "skills:read", "skills:write"],
     "rateLimitRpm": 200,

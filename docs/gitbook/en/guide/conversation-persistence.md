@@ -10,9 +10,9 @@ CCAAS uses a frontend-driven persistence model where the `conversationId` is sto
 Page Load
   |
   v
-useAgentConnection({ tenantId })
+useAgentConnection({ solutionId })
   |
-  +--> Check localStorage for ccaas_session_{tenantId}
+  +--> Check localStorage for ccaas_session_{solutionId}
   |      |
   |      +--> Found: Use saved conversationId
   |      +--> Not found: Generate conv_{uuid}, save to localStorage
@@ -20,7 +20,7 @@ useAgentConnection({ tenantId })
   +--> Connect WebSocket with conversationId
   |
   v
-useAgentChat({ connection, tenantId })
+useAgentChat({ connection, solutionId })
   |
   +--> GET /api/v1/sessions/{conversationId}/messages?limit=100
   |
@@ -41,9 +41,9 @@ User sees previous conversation
 
 A single conversation can span multiple runtime sessions. When a runtime session expires due to inactivity, the next message in the same conversation triggers a new runtime session, but the conversation (and its message history) persists.
 
-### Tenant Isolation
+### Solution Isolation
 
-Each `tenantId` gets its own localStorage key and conversation scope:
+Each `solutionId` gets its own localStorage key and conversation scope:
 
 ```
 localStorage:
@@ -57,7 +57,7 @@ Different Solutions running on the same origin do not share conversations.
 
 ### Step 1: Enable Persistence
 
-Replace `sessionPrefix` with `tenantId` in `useAgentConnection`:
+Replace `sessionPrefix` with `solutionId` in `useAgentConnection`:
 
 ```typescript
 // Before (ephemeral sessions)
@@ -69,7 +69,7 @@ const connection = useAgentConnection({
 // After (persistent conversations)
 const connection = useAgentConnection({
   serverUrl: BACKEND_URL,
-  tenantId: 'my-app',
+  solutionId: 'my-app',
 })
 ```
 
@@ -78,7 +78,7 @@ const connection = useAgentConnection({
 `useAgentChat` returns `isLoadingHistory` while fetching message history:
 
 ```typescript
-const chat = useAgentChat({ connection, tenantId: 'my-app' })
+const chat = useAgentChat({ connection, solutionId: 'my-app' })
 
 if (chat.isLoadingHistory) {
   return <LoadingSpinner text="Loading conversation..." />
@@ -107,7 +107,7 @@ If your Solution should always start fresh (e.g., a one-time wizard):
 ```typescript
 const connection = useAgentConnection({
   serverUrl: BACKEND_URL,
-  tenantId: 'my-wizard',
+  solutionId: 'my-wizard',
   forceNewConversation: true,
 })
 ```
@@ -134,7 +134,7 @@ Returns session metadata including `messageCount`, `totalTokens`, `estimatedCost
 
 ## localStorage Format
 
-**Key**: `ccaas_session_{tenantId}`
+**Key**: `ccaas_session_{solutionId}`
 **Value**: `conv_{uuid}` (plain string, not JSON)
 
 The SDK uses safe localStorage wrappers that gracefully handle:
@@ -154,7 +154,7 @@ const connection = useAgentConnection({
   sessionPrefix: 'my-app',
 })
 
-const chat = useAgentChat({ connection, tenantId: 'my-app' })
+const chat = useAgentChat({ connection, solutionId: 'my-app' })
 
 // Manual restart
 const restart = () => {
@@ -167,10 +167,10 @@ const restart = () => {
 ```typescript
 const connection = useAgentConnection({
   serverUrl: BACKEND_URL,
-  tenantId: 'my-app',  // Changed from sessionPrefix
+  solutionId: 'my-app',  // Changed from sessionPrefix
 })
 
-const chat = useAgentChat({ connection, tenantId: 'my-app' })
+const chat = useAgentChat({ connection, solutionId: 'my-app' })
 
 // Proper new conversation (clears storage + reconnects)
 const newConversation = () => {
@@ -179,7 +179,7 @@ const newConversation = () => {
 ```
 
 **Key differences**:
-- `sessionPrefix` replaced by `tenantId` (opt-in persistence)
+- `sessionPrefix` replaced by `solutionId` (opt-in persistence)
 - `clearMessages()` still exists for clearing UI only (keeps same conversation)
 - `clearConversation()` is the new method for starting a fresh conversation
 - `isLoadingHistory` is a new state for showing loading indicators
@@ -201,8 +201,8 @@ See [REST API — Conversation Management](../api/rest.md#conversation-managemen
 
 ### Messages don't persist after refresh
 
-1. Verify `tenantId` is provided to `useAgentConnection` (not `sessionPrefix`)
-2. Check localStorage in browser DevTools: look for `ccaas_session_{tenantId}`
+1. Verify `solutionId` is provided to `useAgentConnection` (not `sessionPrefix`)
+2. Check localStorage in browser DevTools: look for `ccaas_session_{solutionId}`
 3. Verify the backend returns messages from `GET /api/v1/sessions/{id}/messages`
 
 ### Loading takes too long
@@ -211,7 +211,7 @@ The message history endpoint has a default limit of 100 messages. For long conve
 
 ### Conversations leak between Solutions
 
-Ensure each Solution uses a unique `tenantId`. Two Solutions with the same `tenantId` on the same origin will share a conversation.
+Ensure each Solution uses a unique `solutionId`. Two Solutions with the same `solutionId` on the same origin will share a conversation.
 
 ### localStorage not available
 

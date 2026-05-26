@@ -33,7 +33,7 @@
 通过管理员 API 为指定租户设置自定义 TTL：
 
 ```http
-PUT /api/v1/tenants/:id
+PUT /api/v1/solutions/:id
 Content-Type: application/json
 Authorization: Bearer <admin-api-key>
 
@@ -88,7 +88,7 @@ Authorization: Bearer <admin-api-key>
 
 1. 在管理后台将租户套餐从 `free` 升级至 `starter` 或更高。
 2. 升级后，`sessionTtlMs` 将自动重新计算为新套餐的默认值（或您之前设置的值，以较小者为准）。
-3. 通过 `PUT /api/v1/tenants/:id` 更新 `sessionTtlMs` 至期望值（不超过套餐上限）。
+3. 通过 `PUT /api/v1/solutions/:id` 更新 `sessionTtlMs` 至期望值（不超过套餐上限）。
 
 ---
 

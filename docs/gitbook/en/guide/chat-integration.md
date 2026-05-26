@@ -143,7 +143,7 @@ Use `useMessageSplitter` when one message needs to feed multiple UI zones. If yo
 While the agent is responding, `useAgentChat` provides `currentStreamContent` — a string with the partial text received so far.
 
 ```tsx
-const chat = useAgentChat({ connection, tenantId: 'default' })
+const chat = useAgentChat({ connection, solutionId: 'default' })
 
 // chat.currentStreamContent: string — empty when not streaming
 // chat.messages: Message[] — only contains completed messages
@@ -200,7 +200,7 @@ function CustomChatUI() {
     sessionPrefix: 'my-solution'
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
   const status = useAgentStatus({ connection })
 
   const [input, setInput] = useState('')

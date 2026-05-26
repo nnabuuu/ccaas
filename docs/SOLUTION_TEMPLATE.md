@@ -124,7 +124,7 @@ function App() {
   // Chat functionality
   const chat = useAgentChat({
     connection,
-    tenantId: TENANT_ID,
+    solutionId: TENANT_ID,
   })
 
   // Status tracking (tools, thinking, todos, subagents)
@@ -195,7 +195,7 @@ export function useMySession() {
   // Chat with output update handler (SSE-based, managed by SDK)
   const chat = useAgentChat({
     connection,
-    tenantId: TENANT_ID,
+    solutionId: TENANT_ID,
     onOutputUpdate: (update) => {
       // The SDK normalizes raw events into a flat OutputUpdate
       const { field, value, preview } = update

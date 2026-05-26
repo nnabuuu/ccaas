@@ -343,7 +343,7 @@ ObservationDefSchema = z.object({
 | MCP tool call 检测 + SSE | 8 个具体工具实现（611 行教学语义） |
 | Observer Engine 引擎 | 6 个事件处理器 + 声明式 observe 配置 |
 | SSE sequence replay | Manifest Schema + Answer Key（11 题型 416 行 Zod） |
-| API Key / multi-tenant | Grading Service（11 graders） |
+| API Key / multi-solution | Grading Service（11 graders） |
 | entity-document Block↔MD | AI Prompt Builder（705 行 6 层上下文栈） |
 
 ---

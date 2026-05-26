@@ -122,7 +122,7 @@ Send a message (full version with Skill routing support).
 |-------|------|----------|-------------|
 | `clientId` | string | Yes | Client identifier |
 | `message` | string | Yes | User message |
-| `tenantId` | string | Conditional | Tenant ID. Required unless the API key has a bound tenant (admin/builder keys auto-resolve tenantId from key context). |
+| `solutionId` | string | Conditional | Solution ID. Required unless the API key has a bound solution (admin/builder keys auto-resolve solutionId from key context). |
 | `enabledSkills` | string[] | No | List of enabled Skill slugs |
 | `attachments` | object[] | No | Attachment list |
 
@@ -167,7 +167,7 @@ Get session status.
 {
   "id": "session-uuid",
   "status": "idle",
-  "tenantId": "tenant-uuid",
+  "solutionId": "solution-uuid",
   "createdAt": "2025-01-01T00:00:00Z",
   "updatedAt": "2025-01-01T00:00:00Z"
 }
@@ -180,7 +180,7 @@ Restart a session (reloads Skills).
 **Request Body**:
 
 ```json
-{ "tenantId": "tenant-uuid" }
+{ "solutionId": "solution-uuid" }
 ```
 
 ### PUT /sessions/:sessionId/context
@@ -303,7 +303,7 @@ Get all messages for a session.
     {
       "id": "msg-uuid",
       "sessionId": "session-uuid",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "role": "user",
       "content": "Hello",
       "metadata": {},
@@ -404,7 +404,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 >
 > The same session data is also accessible through the Admin dashboard with a graphical interface:
 >
-> 1. **Session list**: Navigate to the "Sessions" page. Filter by tenant, status, or time range.
+> 1. **Session list**: Navigate to the "Sessions" page. Filter by solution, status, or time range.
 > 2. **Session detail**: Click a session row to open its detail page.
 > 3. **Timeline tab**: View all events (messages, tool calls, thinking blocks, process events, API errors, output updates). Supports filtering by Turn.
 > 4. **Turns tab**: View turn-by-turn summaries. Click a turn to jump to the corresponding Timeline events.
@@ -457,7 +457,7 @@ List conversations with pagination and optional filters.
   "conversations": [
     {
       "sessionId": "conv_abc123",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "title": "Conversation Title",
       "templateName": "farmer-advisor",
       "messageCount": 8,
@@ -542,7 +542,7 @@ Get all turns (user-assistant exchanges) for a conversation, including token usa
 
 Get the Skill list.
 
-**Query Parameters**: `tenantId`, `status`, `type`
+**Query Parameters**: `solutionId`, `status`, `type`
 
 ### POST /skills
 
@@ -559,7 +559,7 @@ Create a Skill.
   "content": "Skill content...",
   "triggers": [{ "type": "keyword", "value": "keyword" }],
   "allowedTools": ["write_output"],
-  "tenantId": "tenant-uuid"
+  "solutionId": "solution-uuid"
 }
 ```
 
@@ -626,7 +626,7 @@ Register an MCP Server.
   "slug": "my-tools",
   "url": "http://localhost:3004",
   "description": "Tool service description",
-  "tenantId": "tenant-uuid"
+  "solutionId": "solution-uuid"
 }
 ```
 
@@ -652,50 +652,50 @@ Get the list of files associated with a session.
 
 Download a session file.
 
-## Tenant Management
+## Solution Management
 
-### GET /tenants
+### GET /solutions
 
-Get the tenant list (requires `admin` scope).
+Get the solution list (requires `admin` scope).
 
-### POST /tenants
+### POST /solutions
 
-Create a tenant.
+Create a solution.
 
-### GET /tenants/:id
+### GET /solutions/:id
 
-Get tenant details.
+Get solution details.
 
 ## Builder API
 
 API for builder-scoped developers to manage their own tenants and API keys. All endpoints require `builder` scope. Builders can only operate on tenants they own and cannot create `admin` or `builder` scoped API keys.
 
-### POST /builder/tenants
+### POST /builder/solutions
 
-Create a tenant and auto-link the current builder as its admin via UserTenant.
+Create a solution and auto-link the current builder as its admin via UserSolution.
 
 **Request Body**:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Tenant name |
-| `slug` | string | No | Tenant identifier (auto-generated) |
+| `name` | string | Yes | Solution name |
+| `slug` | string | No | Solution identifier (auto-generated) |
 
-**Response**: The created tenant object. The builder user is automatically linked as `admin` role via UserTenant.
+**Response**: The created tenant object. The builder user is automatically linked as `admin` role via UserSolution.
 
-### GET /builder/tenants
+### GET /builder/solutions
 
-List tenants owned by the current builder (filtered via UserTenant).
+List tenants owned by the current builder (filtered via UserSolution).
 
 **Response**: Array of tenants with `active` status only.
 
-### GET /builder/tenants/:id
+### GET /builder/solutions/:id
 
-Get details of a builder-owned tenant. Returns 403 if the tenant is not owned by the current builder.
+Get details of a builder-owned solution. Returns 403 if the solution is not owned by the current builder.
 
-### PUT /builder/tenants/:id
+### PUT /builder/solutions/:id
 
-Update a builder-owned tenant.
+Update a builder-owned solution.
 
 **Request Body**:
 
@@ -703,9 +703,9 @@ Update a builder-owned tenant.
 |-------|------|----------|-------------|
 | `name` | string | No | Update name |
 
-### POST /builder/tenants/:tenantId/api-keys
+### POST /builder/solutions/:solutionId/api-keys
 
-Create an API key for a builder-owned tenant. Cannot create keys with `admin` or `builder` scopes.
+Create an API key for a builder-owned solution. Cannot create keys with `admin` or `builder` scopes.
 
 **Request Body**:
 
@@ -727,21 +727,21 @@ Create an API key for a builder-owned tenant. Cannot create keys with `admin` or
 }
 ```
 
-### GET /builder/tenants/:tenantId/api-keys
+### GET /builder/solutions/:solutionId/api-keys
 
-List API keys for a builder-owned tenant.
+List API keys for a builder-owned solution.
 
 ### PUT /builder/api-keys/:id
 
-Update an API key (verifies tenant ownership). Cannot add `admin` or `builder` scopes.
+Update an API key (verifies solution ownership). Cannot add `admin` or `builder` scopes.
 
 ### POST /builder/api-keys/:id/revoke
 
-Revoke an API key (verifies tenant ownership). Returns 400 if already revoked.
+Revoke an API key (verifies solution ownership). Returns 400 if already revoked.
 
 ### DELETE /builder/api-keys/:id
 
-Delete an API key (verifies tenant ownership).
+Delete an API key (verifies solution ownership).
 
 **Response**:
 
@@ -843,44 +843,44 @@ Soft delete a user (sets status to `deleted`).
 
 **Response**: `204 No Content`
 
-## User-Tenant Association
+## User-Solution Association
 
-Endpoints for managing user-tenant relationships. Each user can have one role per tenant. All endpoints require `admin` scope.
+Endpoints for managing user-solution relationships. Each user can have one role per solution. All endpoints require `admin` scope.
 
 **Authentication**: Requires API Key (`admin` scope)
 
 ### POST /users/tenants
 
-Add a user to a tenant with a specific role.
+Add a user to a solution with a specific role.
 
 **Request Body**:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `userId` | string | Yes | User UUID |
-| `tenantId` | string | Yes | Tenant UUID |
+| `solutionId` | string | Yes | Solution UUID |
 | `role` | string | Yes | `admin`, `developer`, or `viewer` |
 | `canCreateSkills` | boolean | No | Override skill creation permission (auto-derived from role if omitted) |
 
 **canCreateSkills auto-derivation**: `admin` and `developer` -> `true`, `viewer` -> `false`.
 
-**Response**: Created `UserTenant` object. Returns `409` if the user-tenant association already exists.
+**Response**: Created `UserSolution` object. Returns `409` if the user-solution association already exists.
 
-### GET /users/tenants/by-tenant/:tenantId
+### GET /users/solutions/by-solution/:solutionId
 
-List all users in a tenant.
+List all users in a solution.
 
-**Response**: Array of `UserTenant` objects (with user details).
+**Response**: Array of `UserSolution` objects (with user details).
 
 ### GET /users/tenants/by-user/:userId
 
 List all tenants a user belongs to.
 
-**Response**: Array of `UserTenant` objects (with tenant details).
+**Response**: Array of `UserSolution` objects (with solution details).
 
 ### PATCH /users/tenants/:id
 
-Update a user-tenant association.
+Update a user-solution association.
 
 **Request Body**:
 
@@ -890,11 +890,11 @@ Update a user-tenant association.
 | `canCreateSkills` | boolean | No | Update skill creation permission |
 | `isActive` | boolean | No | Activate or deactivate |
 
-**Response**: Updated `UserTenant` object.
+**Response**: Updated `UserSolution` object.
 
 ### DELETE /users/tenants/:id
 
-Soft remove a user from a tenant (sets `isActive` to `false`).
+Soft remove a user from a solution (sets `isActive` to `false`).
 
 **Response**: `204 No Content`
 
@@ -904,13 +904,13 @@ Admin API for managing API keys across tenants. All endpoints require `admin` sc
 
 ### GET /admin/api-keys
 
-List API keys for a specific tenant with pagination support.
+List API keys for a specific solution with pagination support.
 
 **Query Parameters**:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tenantId` | string | Yes | Tenant ID to filter keys |
+| `solutionId` | string | Yes | Solution ID to filter keys |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 50, max: 100) |
 
@@ -923,7 +923,7 @@ List API keys for a specific tenant with pagination support.
       "id": "key-uuid",
       "keyPrefix": "ccaas_live_abc123",
       "name": "Production API Key",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "scopes": ["chat", "skills:read", "skills:write"],
       "status": "active",
       "rateLimitRpm": 60,
@@ -949,7 +949,7 @@ Create a new API key. The raw key is returned only once and cannot be retrieved 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tenantId` | string | Yes | Tenant ID for the key |
+| `solutionId` | string | Yes | Solution ID for the key |
 | `name` | string | Yes | Human-readable name |
 | `scopes` | string[] | No | Permission scopes (default: `["chat"]`) |
 | `rateLimitRpm` | number | No | Requests per minute (default: 60) |
@@ -976,7 +976,7 @@ Create a new API key. The raw key is returned only once and cannot be retrieved 
     "id": "key-uuid",
     "keyPrefix": "ccaas_live_abc123",
     "name": "Production API Key",
-    "tenantId": "tenant-uuid",
+    "solutionId": "solution-uuid",
     "scopes": ["chat", "skills:read"],
     "status": "active",
     "createdAt": "2025-01-15T12:00:00Z"
@@ -999,7 +999,7 @@ Get details of a specific API key.
   "id": "key-uuid",
   "keyPrefix": "ccaas_live_abc123",
   "name": "Production API Key",
-  "tenantId": "tenant-uuid",
+  "solutionId": "solution-uuid",
   "scopes": ["chat", "skills:read"],
   "status": "active",
   "rateLimitRpm": 60,
@@ -1085,7 +1085,7 @@ List sessions with filtering and pagination.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tenantId` | string | No | Filter by tenant |
+| `solutionId` | string | No | Filter by solution |
 | `status` | string | No | Filter by status (`idle`, `processing`, `error`, `closed`) |
 | `startDate` | string | No | Filter by creation date (ISO 8601) |
 | `endDate` | string | No | Filter by creation date (ISO 8601) |
@@ -1099,7 +1099,7 @@ List sessions with filtering and pagination.
   "data": [
     {
       "sessionId": "session-uuid",
-      "tenantId": "tenant-uuid",
+      "solutionId": "solution-uuid",
       "clientId": "client-uuid",
       "status": "idle",
       "messageCount": 12,
@@ -1297,7 +1297,7 @@ Create a scheduled task.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `tenantId` | string | Yes | Tenant ID |
+| `solutionId` | string | Yes | Solution ID |
 | `name` | string | Yes | Task name |
 | `description` | string | No | Task description |
 | `message` | string | Yes | Prompt message sent to Claude |
@@ -1325,7 +1325,7 @@ Create a scheduled task.
 
 List scheduled tasks.
 
-**Query Parameters**: `tenantId`, `status`, `page`, `limit`
+**Query Parameters**: `solutionId`, `status`, `page`, `limit`
 
 **Response**:
 

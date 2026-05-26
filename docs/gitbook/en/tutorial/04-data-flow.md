@@ -54,7 +54,7 @@ The `useAgentConnection` hook connects to the CCAAS backend and manages session 
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS backend directly
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   autoConnect: true,
 })
 ```
@@ -63,7 +63,7 @@ On connect, the hook:
 
 1. Creates an SSE connection to the CCAAS backend
 2. Establishes a push channel via `GET /api/v1/sessions/:sessionId/events`
-3. Persists the sessionId in localStorage under `ccaas_session_${tenantId}`
+3. Persists the sessionId in localStorage under `ccaas_session_${solutionId}`
 
 ### Step 2: Frontend sends a message via REST
 
@@ -74,7 +74,7 @@ The `useAgentChat` hook sends messages through a REST endpoint that returns an S
 
 const chatPayload = {
   message: content,
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
   context: context,  // Page context from usePageContext
 }
@@ -140,7 +140,7 @@ export function useLessonPlanSession(options) {
   // 1. Connection management
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'lesson-plan-designer',
+    solutionId: 'lesson-plan-designer',
     autoConnect: true,
   })
 
@@ -150,7 +150,7 @@ export function useLessonPlanSession(options) {
   // 3. Chat messaging
   const chat = useAgentChat({
     connection,
-    tenantId: 'lesson-plan-designer',
+    solutionId: 'lesson-plan-designer',
     sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
     enabledSkills,
     context,
@@ -185,7 +185,7 @@ Manages the SSE connection lifecycle and session identity.
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
 | `serverUrl` | `string` | `'/'` | CCAAS backend URL |
-| `tenantId` | `string` | -- | Tenant ID for localStorage persistence |
+| `solutionId` | `string` | -- | Solution ID for localStorage persistence |
 | `autoConnect` | `boolean` | `true` | Connect on mount |
 | `forceNewConversation` | `boolean` | `false` | Clear saved session and start fresh |
 
@@ -202,7 +202,7 @@ Manages the SSE connection lifecycle and session identity.
 | `disconnect()` | function | Manual disconnect |
 | `startNewConversation()` | function | Clear session, generate new ID, reconnect |
 
-**Session persistence:** When `tenantId` is provided, the sessionId is stored in localStorage under `ccaas_session_${tenantId}`. On page refresh, the hook recovers the saved sessionId, allowing message history to be loaded automatically.
+**Session persistence:** When `solutionId` is provided, the sessionId is stored in localStorage under `ccaas_session_${solutionId}`. On page refresh, the hook recovers the saved sessionId, allowing message history to be loaded automatically.
 
 ### Hook 2: useAgentChat
 
@@ -213,7 +213,7 @@ Manages message state, REST-based sending, and SSE event processing.
 | Option | Type | Purpose |
 |--------|------|---------|
 | `connection` | `UseAgentConnectionReturn` | From `useAgentConnection` |
-| `tenantId` | `string` | Tenant identifier |
+| `solutionId` | `string` | Solution identifier |
 | `sessionTemplate` | `string` | Session template name — MCP servers, skills, and prompts are resolved server-side |
 | `enabledSkills` | `string[]` | Override which skills to enable (replaces template value) |
 | `context` | `PageContext \| null` | Page context from `usePageContext` |
@@ -494,9 +494,9 @@ Sessions are the unit of AI interaction in CCAAS. The React SDK provides automat
 
 ### How Session Persistence Works
 
-When `tenantId` is provided to `useAgentConnection`:
+When `solutionId` is provided to `useAgentConnection`:
 
-1. The sessionId is persisted in localStorage under `ccaas_session_${tenantId}`
+1. The sessionId is persisted in localStorage under `ccaas_session_${solutionId}`
 2. On page refresh, the saved sessionId is recovered
 3. `useAgentChat` auto-loads message history via `GET /api/v1/sessions/:sessionId/messages`
 4. The conversation continues where it left off
@@ -505,7 +505,7 @@ When `tenantId` is provided to `useAgentConnection`:
 // This is all handled automatically by the SDK:
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'lesson-plan-designer',  // <-- enables persistence
+  solutionId: 'lesson-plan-designer',  // <-- enables persistence
 })
 
 // On page refresh: sessionId is recovered from localStorage
@@ -548,7 +548,7 @@ Identify:
 ### Exercise 4.2: Hook Composition
 
 Using the five SDK hooks, design the session hook for a hypothetical "Quiz Builder" Solution. Determine:
-- What `tenantId` would you use?
+- What `solutionId` would you use?
 - What fields would `usePageContext` send?
 - How would you handle `onOutputUpdate` for quiz questions vs. quiz metadata?
 
@@ -568,7 +568,7 @@ Write out the expected timeline of SSE events, including:
 3. **Five SDK hooks cover the complete data flow** -- `useAgentConnection` (connection), `useAgentChat` (messaging), `useAgentStatus` (status), `usePageContext` (form state), `useFiles` (file management)
 4. **`usePageContext` is key for AI awareness** -- it sends the current form state with every message so the AI Agent knows what is already filled in
 5. **Solutions use dual data channels** -- CCAAS for AI interactions, Solution backend for domain CRUD
-6. **Session persistence is automatic** -- providing `tenantId` enables localStorage-based session recovery with message history loading
+6. **Session persistence is automatic** -- providing `solutionId` enables localStorage-based session recovery with message history loading
 
 ## What's Next
 

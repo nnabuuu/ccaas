@@ -21,7 +21,7 @@ The core question: **does your agent's output need to be reviewed or applied by 
 If your agent generates a lesson plan that populates a form the teacher can edit, use `write_output`. If your agent just explains a concept, return text in the chat.
 
 {% hint style="info" %}
-The `write_output` → `output_update` event mapping is powered by the `structured-output` Bundle. Ensure the Tenant has this Bundle enabled. See [Bundles (Capability Packages)](bundles.md) for details.
+The `write_output` → `output_update` event mapping is powered by the `structured-output` Bundle. Ensure the Solution has this Bundle enabled. See [Bundles (Capability Packages)](bundles.md) for details.
 {% endhint %}
 
 ## Core Mechanism
@@ -251,7 +251,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (update) => {
     // The SDK normalizes raw events into a flat OutputUpdate
     const { field, value, preview } = update
@@ -272,7 +272,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (raw) => {
     const parsed = parseOutputUpdateEvent(raw)
     if (parsed) {

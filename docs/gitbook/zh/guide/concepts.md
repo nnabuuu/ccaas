@@ -19,16 +19,16 @@
 
 会话（对话）通过以下方式持久化：
 
-- **浏览器**：localStorage 在 `ccaas_session_{tenantId}` 键下存储 sessionId
+- **浏览器**：localStorage 在 `ccaas_session_{solutionId}` 键下存储 sessionId
 - **后端**：数据库存储所有消息、回合和元数据
 
 当用户刷新页面时：
 
-1. SDK 检查 localStorage 中的 `ccaas_session_{tenantId}`
+1. SDK 检查 localStorage 中的 `ccaas_session_{solutionId}`
 2. 如果找到，从 `/api/v1/sessions/{sessionId}/messages` 获取消息历史
 3. 对话无缝继续
 
-**sessionId 格式**：使用 `tenantId` 启用持久化时，sessionId 遵循 `conv_{uuid}` 格式。例如：`conv_a1b2c3d4-e5f6-7890-abcd-ef1234567890`。
+**sessionId 格式**：使用 `solutionId` 启用持久化时，sessionId 遵循 `conv_{uuid}` 格式。例如：`conv_a1b2c3d4-e5f6-7890-abcd-ef1234567890`。
 
 ## 消息和回合
 
@@ -105,7 +105,7 @@ const turn: Turn = {
 const context: ConversationContext = {
   id: "ctx_123",
   sessionId: "conv_abc",
-  tenantId: "my-app",
+  solutionId: "my-app",
   systemPromptHash: "sha256:abc123...",
   skillConfigHashes: [
     { slug: "code-reviewer", hash: "sha256:def456..." }

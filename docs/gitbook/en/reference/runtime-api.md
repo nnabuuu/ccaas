@@ -4,12 +4,12 @@
 
 ## Auth + path prefix
 
-All endpoints live under `/api/v1/sessions/:id/`, gated by `Auth('admin')` + `TenantGuard` (stage-1 simplification):
+All endpoints live under `/api/v1/sessions/:id/`, gated by `Auth('admin')` + `SolutionAuthGuard` (stage-1 simplification):
 
 - header: `x-api-key: <admin-key>`
-- header: `x-tenant-id: <slug-or-uuid>` (admin keys can cross-tenant; mismatch → 403)
+- header: `x-solution-id: <slug-or-uuid>` (admin keys can cross-solution; mismatch → 403)
 
-Stage-2 will introduce finer `sessions:fs` / `sessions:meta` scopes; today's admin scope is cross-tenant by design.
+Stage-2 will introduce finer `sessions:fs` / `sessions:meta` scopes; today's admin scope is cross-solution by design.
 
 ## Session must be active
 
@@ -39,7 +39,7 @@ List the files the agent changed in the sandbox relative to the base.
 **Curl**:
 ```bash
 curl -s "http://localhost:3001/api/v1/sessions/demo-1/fs/diff" \
-  -H 'x-api-key: sk-...' -H 'x-tenant-id: demo-sandbox' \
+  -H 'x-api-key: sk-...' -H 'x-solution-id: demo-sandbox' \
   | python3 -m json.tool
 ```
 
@@ -149,7 +149,7 @@ All 4xx/5xx responses use this shape (NestJS global exception filter):
 KEY=sk-...
 TENANT=demo-sandbox
 SID=demo-1
-HDR=(-H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" -H 'Content-Type: application/json')
+HDR=(-H "x-api-key: $KEY" -H "x-solution-id: $TENANT" -H 'Content-Type: application/json')
 
 # 1. Session hasn't changed anything in base yet
 curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/diff" "${HDR[@]}"

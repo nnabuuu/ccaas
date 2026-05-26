@@ -19,16 +19,16 @@ The platform uses "Session" as the technical entity name because it represents a
 
 Sessions (conversations) are persisted using:
 
-- **Browser**: localStorage stores sessionId under `ccaas_session_{tenantId}`
+- **Browser**: localStorage stores sessionId under `ccaas_session_{solutionId}`
 - **Backend**: Database stores all messages, turns, and metadata
 
 When user refreshes the page:
 
-1. SDK checks localStorage for `ccaas_session_{tenantId}`
+1. SDK checks localStorage for `ccaas_session_{solutionId}`
 2. If found, fetches message history from `/api/v1/sessions/{sessionId}/messages`
 3. Conversation continues seamlessly
 
-**sessionId Format**: When using `tenantId` for persistence, sessionId follows the format `conv_{uuid}`. For example: `conv_a1b2c3d4-e5f6-7890-abcd-ef1234567890`.
+**sessionId Format**: When using `solutionId` for persistence, sessionId follows the format `conv_{uuid}`. For example: `conv_a1b2c3d4-e5f6-7890-abcd-ef1234567890`.
 
 ## Messages and Turns
 
@@ -105,7 +105,7 @@ Captured metadata:
 const context: ConversationContext = {
   id: "ctx_123",
   sessionId: "conv_abc",
-  tenantId: "my-app",
+  solutionId: "my-app",
   systemPromptHash: "sha256:abc123...",
   skillConfigHashes: [
     { slug: "code-reviewer", hash: "sha256:def456..." }

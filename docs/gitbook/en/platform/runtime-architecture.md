@@ -69,10 +69,10 @@ Key steps (in code order):
 1. SessionService.getOrCreateSession()
    ├─ pendingCreates Map dedup (concurrent same-id safe)
    └─ _createNewSession()
-       ├─ WorkspaceProvider.create({ sessionId, tenantId })
+       ├─ WorkspaceProvider.create({ sessionId, solutionId })
        │    → returns WorkspaceHandle { path, snapshot, rollback, diff, timeline }
        │    → path = agent's cwd
-       ├─ SessionAssetMaterializer.materialize(handle.path, tenantId)
+       ├─ SessionAssetMaterializer.materialize(handle.path, solutionId)
        │    → copies the solution's entities/ + resources/ to the workspace root
        ├─ persist ManagedSession to in-memory Map + DB
        └─ then spawn claude (in CliProcessService.ensureCLIProcess())
@@ -280,7 +280,7 @@ Two different materializers, two different jobs:
 
 ### 4.1 `BaseMaterializer` (@kedge-agentic/agent-runtime/workspace)
 
-Runs **at backend startup**, once. Projects DB skills + MCP servers to `${baseDir}/tenants/<tenantId>/{skills,mcp-servers}/`. This baseDir is the agentfs `--base` argument, overlaid into every session mount.
+Runs **at backend startup**, once. Projects DB skills + MCP servers to `${baseDir}/tenants/<solutionId>/{skills,mcp-servers}/`. This baseDir is the agentfs `--base` argument, overlaid into every session mount.
 
 The `workspace/` sub-module of `@kedge-agentic/agent-runtime` is the Phase A extracted pure version, zero framework deps. `ContentSource` is the port (backend provides a TypeORM adapter). See `reference/agent-runtime.md`.
 
@@ -288,7 +288,7 @@ Code: `packages/agent-runtime/src/workspace/base-materializer.ts` (pure) + `pack
 
 ### 4.2 `SessionAssetMaterializer` (backend)
 
-Runs **at every session create**. Copies `entities/` and `resources/` from the current tenant's solution dir to `handle.path` root. In other words, the agent starts off able to `ls entities/` and see seed data.
+Runs **at every session create**. Copies `entities/` and `resources/` from the current solution's solution dir to `handle.path` root. In other words, the agent starts off able to `ls entities/` and see seed data.
 
 The source path comes from the `SOLUTION_DIRS=<slug>:<absPath>,<slug2>:<absPath2>` env var.
 
@@ -314,7 +314,7 @@ File: `packages/backend/src/sessions/services/session-asset-materializer.service
 ┌─────────────────────────┐                  │           ┌─────────────────────────────────┐
 │ BaseMaterializer        │                  │           │ SessionAssetMaterializer        │
 │ .materialize()           │                  │           │ .materialize(handle.path,       │
-│                          │                  │           │              tenantId)          │
+│                          │                  │           │              solutionId)          │
 │ DB (Skills, McpServer) ─▶│                  │           │                                  │
 │ ${baseDir}/              │                  │           │ disk solutionDirs[slug]/   ─▶   │
 │   tenants/{X}/           │                  │           │ <sessionDir>/                    │
@@ -366,7 +366,7 @@ Full spec + curl examples: `reference/runtime-api.md`.
 
 `solutions/business/<slug>/` is an independent NestJS process (its own port). On startup:
 
-1. **Bootstrap**: reads its `solution.json`, POSTs to `/api/v1/admin/solutions/import` to register the tenant + sessionTemplates in the ccaas DB
+1. **Bootstrap**: reads its `solution.json`, POSTs to `/api/v1/admin/solutions/import` to register the solution + sessionTemplates in the ccaas DB
 2. **Skill registration**: for each `skills/<slug>/SKILL.md` (+ subfiles `tools/`, `examples/`), POSTs to `/api/v1/skills` + PUT files + publish
 3. **Hot reload** (optional): chokidar watches `skills/`, debounces 500ms, re-runs the skill registration step
 4. **Domain API** (optional): exposes its own REST endpoint (e.g. demo-sandbox's DocumentEditProvider)

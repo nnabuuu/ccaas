@@ -30,7 +30,7 @@ ccaas/
 | `@kedge-agentic/chat-interface` | React, Tailwind, Vite | Extensible chat UI component library |
 | `@kedge-agentic/entity-document` | TypeScript, Vitest | Block ↔ Markdown bidirectional transform, pluggable TransformRegistry |
 | `@kedge-agentic/context-layer` | TypeScript, NestJS (optional) | Entity context routing, DocumentEditProvider base class |
-| `@kedge-agentic/agent-runtime` | TypeScript (framework-free) | Phase 1.6: workspace (`BaseMaterializer`) + artifact (`JsonEditProvider` + `ProjectArtifactSource`) + sync (`SyncEngine` + `InMemoryChangeStream` + `SnapshotStore`). Bidirectional agent ↔ solution-DB sync via `solution.config.artifactUrl` (ccaas-core's Solution entity was formerly `Tenant`; agent-runtime npm port still uses legacy `tenantId` field name). Renamed from `agentfs-runtime` in May 2026. |
+| `@kedge-agentic/agent-runtime` | TypeScript (framework-free) | Phase 1.6: workspace (`BaseMaterializer`) + artifact (`JsonEditProvider` + `ProjectArtifactSource`) + sync (`SyncEngine` + `InMemoryChangeStream` + `SnapshotStore`). Bidirectional agent ↔ solution-DB sync via `solution.config.artifactUrl` (ccaas-core's Solution entity was formerly `Tenant`; agent-runtime npm port still uses the legacy `tenantId` field name). Renamed from `agentfs-runtime` in May 2026. |
 | `@kedge-agentic/common` | TypeScript, Zod | Shared types and protocols |
 
 ## Build

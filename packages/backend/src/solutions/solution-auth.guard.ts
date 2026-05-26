@@ -36,8 +36,12 @@ export class SolutionAuthGuard implements CanActivate {
     // Modern API keys are handled by ApiKeyGuard
     // SolutionAuthGuard only validates tenant context, not authentication
 
-    // Try X-Solution-Id header, then API key's bound tenant
+    // Try X-Solution-Id header (canonical, post-α), with legacy
+    // X-Tenant-Id accepted for one release so external admin tooling
+    // and integration scripts keep working during the migration
+    // window. Either header value lands in the same Solution lookup.
     const solutionId =
+      request.headers['x-solution-id'] ||
       request.headers['x-tenant-id'] ||
       request.query?.solutionId ||
       request.context?.solutionId;

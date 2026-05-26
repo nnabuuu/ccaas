@@ -92,12 +92,12 @@ import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
-  const { tenantId = 'lesson-plan-designer', autoConnect = true } = options
+  const { solutionId = 'lesson-plan-designer', autoConnect = true } = options
 
   // ===== 1. SDK 连接 =====
   const connection = useAgentConnection({
     serverUrl: SERVER_URL,
-    tenantId,
+    solutionId,
     autoConnect,
   })
 
@@ -118,7 +118,7 @@ export function useLessonPlanSession(options = {}) {
   // ===== 5. SDK 聊天 =====
   const chat = useAgentChat({
     connection,
-    tenantId,
+    solutionId,
     sessionTemplate: 'lesson-plan-designer',  // 服务端解析 MCP 服务器、技能等配置
     context,
     onOutputUpdate: (update) => {
@@ -209,7 +209,7 @@ export function useLessonPlanSession(options = {}) {
 
 **绝对 Server URL。** 连接必须使用 `http://localhost:3001`，不能使用相对路径。SSE 连接不会经过 Vite 的代理系统。
 
-**tenantId 启用会话持久化。** 当提供 `tenantId` 时，SDK 会将 `sessionId` 持久化到 `localStorage` 的 `ccaas_session_{tenantId}` 键下。页面刷新后，会恢复相同的会话并自动加载消息历史。
+**solutionId 启用会话持久化。** 当提供 `solutionId` 时，SDK 会将 `sessionId` 持久化到 `localStorage` 的 `ccaas_session_{solutionId}` 键下。页面刷新后，会恢复相同的会话并自动加载消息历史。
 
 **onOutputUpdate 桥接 SDK 与 Solution 同步。** `useAgentChat` hook 解析 `output_update` SSE 事件，并以 `{ field, value, preview }` 调用你的回调。你的 session hook 将这些转发给同步 hook，后者将它们排队为待处理更新。
 
@@ -447,11 +447,11 @@ interface ActiveSubAgent {
 
 ## 第六步：会话持久化
 
-会话持久化内置在 SDK hooks 中。当向 `useAgentConnection` 提供 `tenantId` 时，会话会自动跨页面刷新持久化。
+会话持久化内置在 SDK hooks 中。当向 `useAgentConnection` 提供 `solutionId` 时，会话会自动跨页面刷新持久化。
 
 **工作原理：**
 
-1. `useAgentConnection` 生成 `conv_{uuid}` 会话 ID 并存储在 `localStorage` 的 `ccaas_session_{tenantId}` 键下
+1. `useAgentConnection` 生成 `conv_{uuid}` 会话 ID 并存储在 `localStorage` 的 `ccaas_session_{solutionId}` 键下
 2. 重新连接时，使用相同的会话 ID 重新建立 SSE 连接
 3. `useAgentChat` 自动通过 `GET /api/v1/sessions/{sessionId}/messages` 获取消息历史
 4. 加载历史时，`chat.isLoadingHistory` 为 `true` -- 显示加载指示器

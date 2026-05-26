@@ -22,7 +22,7 @@ Complete reference for the solution.json configuration file in KedgeAgentic plat
 ## Overview
 
 The `solution.json` file defines your solution's configuration, including:
-- **Tenant Information** - Name, slug, description
+- **Solution Information** - Name, slug, description
 - **Skills** - AI capabilities (via folder paths or wildcards)
 - **MCP Servers** - Tool services for AI agents
 
@@ -81,7 +81,7 @@ Always use `"3.0"` for new solutions.
 
 Controls how Bundles are configured for this solution.
 
-- **`simple`** (default): All built-in Bundles are automatically enabled at the tenant level. No need to declare `bundles` in session templates.
+- **`simple`** (default): All built-in Bundles are automatically enabled at the solution level. No need to declare `bundles` in session templates.
 - **`advanced`**: Only Bundles explicitly declared in `sessionTemplates.bundles` are enabled. This is the previous behavior.
 
 ```json
@@ -273,7 +273,7 @@ When the AI Agent calls a listed tool and receives a result, the platform immedi
 **Type:** `Record<string, SessionTemplateConfig>`
 **Required:** No
 
-Preset AI behavior configurations for different usage scenarios. Automatically upserted to `tenant.config` when the solution loads.
+Preset AI behavior configurations for different usage scenarios. Automatically upserted to `solution.config` when the solution loads.
 
 ```json
 {
@@ -303,7 +303,7 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 | `mcpServers` | object (optional) | MCP server configurations (same format as top-level `mcpServers`) |
 | `model` | string (optional) | Model override (e.g. `claude-opus-4-6`) |
 | `skillPromptMode` | `"protocol"` \| `"inline"` (optional) | How SKILL.md content is delivered to the agent: `protocol` = agent reads at runtime (default); `inline` = embedded in system prompt before start |
-| `bundles` | string[] (optional) | Bundle IDs to activate for this template (must be a subset of Tenant `enabledBundles`) |
+| `bundles` | string[] (optional) | Bundle IDs to activate for this template (must be a subset of Solution `enabledBundles`) |
 
 **`enabledSkills` configuration example:**
 
@@ -327,7 +327,7 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 >
 > For details on Bundle capability packages, see the [Bundles guide](../guide/bundles.md).
 
-> **Deployment verification:** After each complete solution load, the backend automatically writes an ISO timestamp to `tenant.config.solutionAppliedAt`. Use this for CI/CD deployment verification.
+> **Deployment verification:** After each complete solution load, the backend automatically writes an ISO timestamp to `solution.config.solutionAppliedAt`. Use this for CI/CD deployment verification.
 
 ---
 
@@ -604,7 +604,7 @@ CCAAS validates solution.json on load and provides helpful error messages:
 - Use v3.0 schema for new solutions
 - Omit `skills` field (use default auto-discovery)
 - Keep skill metadata in SKILL.md frontmatter only
-- Use descriptive tenant slug (kebab-case)
+- Use descriptive solution slug (kebab-case)
 - Document MCP servers with `description`
 
 ### ❌ DON'T:

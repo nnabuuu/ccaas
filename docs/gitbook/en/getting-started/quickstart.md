@@ -46,7 +46,7 @@ curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
   -H "Authorization: Bearer $CCAAS_API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
-  -d '{"message":"Hello!","tenantId":"demo-02-pure-chat"}'
+  -d '{"message":"Hello!","solutionId":"demo-02-pure-chat"}'
 ```
 
 More demos (02-multi-template through 12-sync-fields) are available in the same repository.
@@ -76,7 +76,7 @@ curl -X POST http://localhost:3001/api/v1/sessions/my-session/completion \
   -d '{
     "clientId": "test-client-001",
     "message": "Hello, please introduce yourself",
-    "tenantId": "default"
+    "solutionId": "default"
   }'
 ```
 
@@ -103,7 +103,7 @@ const response = await fetch(
     body: JSON.stringify({
       clientId: 'test-client-001',
       message: 'Please generate a report for me',
-      tenantId: 'default',
+      solutionId: 'default',
     }),
   }
 )

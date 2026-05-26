@@ -89,7 +89,7 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 - **Concurrency Control** -- Configurable maximum concurrent executions per task
 - **Retry Logic** -- Automatic retries with configurable delay on failure
 - **Execution History** -- Full audit trail of all executions with results, token usage, and duration
-- **Real-Time Notifications** -- SSE events pushed to the `scheduler:{tenantId}` room
+- **Real-Time Notifications** -- SSE events pushed to the `scheduler:{solutionId}` room
 - **Missed Run Detection** -- On server restart, automatically triggers tasks that missed their schedule
 
 ### Use Cases
@@ -112,9 +112,9 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 - **Relation tree** — Auto-inferred from ORM `@ManyToOne` metadata; supports drill-down navigation
 - **Frontend** — `<AtPicker />` component with recents, search, drill-down, breadcrumb, and keyboard navigation
 
-## Multi-Tenant Management
+## Multi-Solution Management
 
-- **Tenant Isolation** -- Each tenant has independent configuration, Skills, and data
+- **Solution Isolation** -- Each tenant has independent configuration, Skills, and data
 - **API Key Authentication** -- Fine-grained permission control based on Scopes
 - **Quota Management** -- Maximum sessions, daily token limits, and available model restrictions
 - **Usage Analytics** -- Token usage statistics, session analytics, and cost tracking

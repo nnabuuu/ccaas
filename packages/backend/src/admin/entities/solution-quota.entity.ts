@@ -22,7 +22,7 @@ export class SolutionQuota {
   id!: string;
 
   @Column({ type: 'varchar', length: 64 })
-  @Index('IDX_tenant_quotas_tenant_id')
+  @Index('IDX_solution_quotas_solution_id')
   solutionId!: string;
 
   @Column({ type: 'varchar', length: 20, default: 'monthly' })

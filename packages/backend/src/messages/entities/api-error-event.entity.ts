@@ -39,7 +39,7 @@ export class ApiErrorEvent {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_api_error_events_tenant_id')
+  @Index('IDX_api_error_events_solution_id')
   solutionId?: string;
 
   /**

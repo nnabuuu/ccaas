@@ -33,7 +33,7 @@ export class Session {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', length: 64, nullable: true })
-  @Index('IDX_sessions_tenant_id')
+  @Index('IDX_sessions_solution_id')
   solutionId!: string | null;
 
   /**

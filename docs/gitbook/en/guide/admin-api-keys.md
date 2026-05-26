@@ -5,7 +5,7 @@ This guide covers how to manage API keys using the admin interface, both through
 ## Overview
 
 API keys are the primary authentication mechanism for accessing the CCaaS platform. Each key:
-- Belongs to a specific tenant
+- Belongs to a specific solution
 - Has configurable permission scopes
 - Can have rate limits (per minute and per day)
 - Can optionally have an expiration date
@@ -17,18 +17,18 @@ API keys are the primary authentication mechanism for accessing the CCaaS platfo
 |------|-------|------------|---------|
 | Admin | `admin` | Platform bootstrap | Full platform management |
 | Builder | `builder` | Admin (via Builder Users API) | Self-serve tenant & key management |
-| Tenant | `chat`, `skills:*`, etc. | Admin or Builder | SDK/frontend integration |
+| Solution | `chat`, `skills:*`, etc. | Admin or Builder | SDK/frontend integration |
 
 ### Key Hierarchy
 
 ```
 Admin → creates Builder keys (with userId binding)
-Builder → creates Tenant keys (no userId, no admin/builder scope)
-Tenant keys → used by end-user applications
+Builder → creates Solution keys (no userId, no admin/builder scope)
+Solution keys → used by end-user applications
 ```
 
 Builder keys require a bound `userId` to function.
-Tenant keys created by builders intentionally have no `userId` — they cannot call Builder APIs.
+Solution keys created by builders intentionally have no `userId` — they cannot call Builder APIs.
 
 ## Admin Dashboard
 
@@ -42,7 +42,7 @@ Tenant keys created by builders intentionally have no `userId` — they cannot c
 
 The API keys list displays:
 - **Key Prefix**: First 20 characters of the key (e.g., `ccaas_live_abc123`)
-- **Type**: Admin, Builder, or Tenant badge (inferred from scopes)
+- **Type**: Admin, Builder, or Solution badge (inferred from scopes)
 - **Name**: Human-readable identifier
 - **Scopes**: Permission badges (shows first 3, then +N for overflow)
 - **Status**: Active or Revoked
@@ -55,7 +55,7 @@ The API keys list displays:
 1. Click **Create API Key** button
 2. Fill in the form:
    - **Name**: Descriptive name (e.g., "Production Frontend")
-   - **Tenant ID**: Select target tenant (default: "default")
+   - **Solution ID**: Select target tenant (default: "default")
 3. Click **Create Key**
 4. **⚠️ IMPORTANT**: The complete key is shown only once
    - Copy the key immediately
@@ -151,7 +151,7 @@ All admin endpoints require an API key with the `admin` scope:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
-  https://your-domain.com/api/v1/admin/api-keys?tenantId=default
+  https://your-domain.com/api/v1/admin/api-keys?solutionId=default
 ```
 
 ### Creating a Key via API
@@ -161,7 +161,7 @@ curl -X POST https://your-domain.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tenantId": "default",
+    "solutionId": "default",
     "name": "Production API Key",
     "scopes": ["chat", "skills:read", "skills:write"],
     "rateLimitRpm": 100,
@@ -188,7 +188,7 @@ curl -X POST https://your-domain.com/api/v1/admin/api-keys \
 ### Listing Keys
 
 ```bash
-curl "https://your-domain.com/api/v1/admin/api-keys?tenantId=default&page=1&limit=20" \
+curl "https://your-domain.com/api/v1/admin/api-keys?solutionId=default&page=1&limit=20" \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY"
 ```
 
@@ -257,7 +257,7 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 | `admin` | Full administrative access (includes all scopes) |
 
 {% hint style="info" %}
-**Admin scope privilege**: API keys with `admin` scope bypass skill-level permission checks (e.g., `allowedTools` restrictions). Admin keys can also auto-resolve `tenantId` — when sending messages via API key, you can omit `tenantId` from the request body and it will be resolved from the API key's tenant context.
+**Admin scope privilege**: API keys with `admin` scope bypass skill-level permission checks (e.g., `allowedTools` restrictions). Admin keys can also auto-resolve `solutionId` — when sending messages via API key, you can omit `solutionId` from the request body and it will be resolved from the API key's solution context.
 {% endhint %}
 
 ### Scope Combinations
@@ -412,7 +412,7 @@ Grant only the minimum scopes required:
 
 **Check**:
 1. ✓ Key has the required scope (e.g., `skills:write` for creating skills)
-2. ✓ Tenant ID matches the key's tenant
+2. ✓ Solution ID matches the key's tenant
 3. ✓ Operation is allowed for the key's scope level
 4. ✓ Builder keys must have a `userId` — update via `PUT /api/v1/admin/api-keys/:id` or recreate via `POST /api/v1/admin/builder-users`
 
@@ -444,7 +444,7 @@ For detailed analytics:
 curl -X POST https://dev.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "tenantId": "dev-tenant",
+    "solutionId": "dev-tenant",
     "name": "Dev Environment",
     "scopes": ["chat", "skills:read"]
   }'
@@ -464,7 +464,7 @@ curl -H "Authorization: Bearer $CCAAS_API_KEY" \
 curl -X POST https://api.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "tenantId": "production",
+    "solutionId": "production",
     "name": "Production Frontend",
     "scopes": ["chat", "skills:read", "skills:write"],
     "rateLimitRpm": 200,

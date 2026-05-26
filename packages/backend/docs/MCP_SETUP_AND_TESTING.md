@@ -64,7 +64,7 @@ This guide covers setting up, testing, and debugging Model Context Protocol (MCP
 ```
 User Message
     ↓
-CCAAS Backend (loads skills with tenantId)
+CCAAS Backend (loads skills with solutionId)
     ↓
 AI Agent (analyzes message, selects skill)
     ↓
@@ -86,7 +86,7 @@ Frontend (displays result via output_update events)
 **User**: "请帮我分析这道题目: 1+1=?"
 
 **Flow**:
-1. CCAAS loads `three-column-analysis` skill (tenantId: quiz-analyzer)
+1. CCAAS loads `three-column-analysis` skill (solutionId: quiz-analyzer)
 2. AI sees `allowedTools: ["parse_quiz_content", "search_knowledge_points", ...]`
 3. AI calls `parse_quiz_content` via MCP
 4. MCP server parses quiz and returns structured data
@@ -541,7 +541,7 @@ echo "$SOLUTION_JSON" | jq -c '.mcpServers | to_entries[]' | while read -r mcp_e
   curl -X POST "$CCAAS_BACKEND_URL/api/v1/mcp-servers" \
     -H "Content-Type: application/json" \
     -H "X-Api-Key: $API_KEY" \
-    -H "X-Tenant-Id: $SOLUTION_NAME" \
+    -H "X-Solution-Id: $SOLUTION_NAME" \
     -d "{
       \"name\": \"$SERVER_NAME\",
       \"command\": $(echo "$SERVER_CONFIG" | jq '.command'),
@@ -595,7 +595,7 @@ export CCAAS_API_KEY=sk-your-bootstrap-key
 ```bash
 # Via API
 curl -H "X-Api-Key: $CCAAS_API_KEY" \
-  "http://localhost:3001/api/v1/mcp-servers?tenantId=your-solution"
+  "http://localhost:3001/api/v1/mcp-servers?solutionId=your-solution"
 
 # Expected: List of registered MCP servers
 ```
@@ -690,7 +690,7 @@ Error: Could not connect to MCP server
 
 1. **Verify MCP Server Registration**:
    ```bash
-   curl "http://localhost:3001/api/v1/mcp-servers?tenantId=your-solution"
+   curl "http://localhost:3001/api/v1/mcp-servers?solutionId=your-solution"
    ```
 
 2. **Check Skill Configuration**:

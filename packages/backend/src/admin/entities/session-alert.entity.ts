@@ -58,7 +58,7 @@ export class SessionAlert {
    * Solution this alert belongs to (null for global alerts)
    */
   @Column({ type: 'varchar', length: 64, nullable: true })
-  @Index('IDX_session_alerts_tenant_id')
+  @Index('IDX_session_alerts_solution_id')
   solutionId!: string | null;
 
   /**

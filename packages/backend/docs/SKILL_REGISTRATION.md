@@ -22,7 +22,7 @@ This document explains how to register solution skills to the CCAAS backend data
 CCAAS solutions define their AI skills in `solution.json` files, but these configurations must be **registered to the CCAAS backend database** before the AI can use them. This document explains the registration process and provides tools to automate it.
 
 **Key Concept**: Skill definitions in `solution.json` are **configuration files**, not runtime registrations. The CCAAS backend needs skills in its database to:
-1. Auto-load skills when a session connects with a `tenantId`
+1. Auto-load skills when a session connects with a `solutionId`
 2. Route user messages to appropriate skills via triggers
 3. Restrict AI to specific tools via `allowedTools`
 4. Track skill versions and updates
@@ -36,7 +36,7 @@ CCAAS solutions define their AI skills in `solution.json` files, but these confi
 Without skill registration, this happens:
 
 ```
-User sends: "请帮我分析这道题目" with tenantId: 'quiz-analyzer'
+User sends: "请帮我分析这道题目" with solutionId: 'quiz-analyzer'
   ↓
 CCAAS backend: skillsService.findPublished('quiz-analyzer') → []
   ↓
@@ -60,7 +60,7 @@ Script reads: solutions/quiz-analyzer/solution.json
   ↓
 Database: 4 skills inserted with status='published', enabled=true
   ↓
-User sends: "请帮我分析这道题目" with tenantId: 'quiz-analyzer'
+User sends: "请帮我分析这道题目" with solutionId: 'quiz-analyzer'
   ↓
 CCAAS backend: skillsService.findPublished('quiz-analyzer') → [4 skills]
   ↓
@@ -145,11 +145,11 @@ npm run skill:import -- lesson-plan-designer
 
 ```bash
 # Via API (requires backend running)
-curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer"
+curl "http://localhost:3001/api/v1/skills?solutionId=quiz-analyzer"
 
 # Via database (direct access)
 sqlite3 .agent-workspace/data.db \
-  "SELECT slug, status, enabled FROM skills WHERE tenantId='227f2b75...'"
+  "SELECT slug, status, enabled FROM skills WHERE solutionId='227f2b75...'"
 ```
 
 **Expected Output:**
@@ -162,7 +162,7 @@ three-column-analysis|published|1
 
 ### 3. Start Using
 
-Skills are now available to AI sessions with `tenantId: 'quiz-analyzer'`.
+Skills are now available to AI sessions with `solutionId: 'quiz-analyzer'`.
 
 ---
 
@@ -184,7 +184,7 @@ npm run skill:import -- <solution-name>
 ### What It Does
 
 1. **Load Configuration**: Reads `solutions/<solution-name>/solution.json`
-2. **Create/Get Tenant**: Ensures tenant exists in database
+2. **Create/Get Solution**: Ensures tenant exists in database
 3. **Register Skills**: For each skill in `solution.json`:
    - Reads skill file content from `skillFile` path (if specified)
    - Appends additional `instructions` (if specified)
@@ -200,7 +200,7 @@ npm run skill:import -- <solution-name>
 📦 Solution: Quiz Analyzer
 📋 Skills to import: 4
 
-✅ Tenant exists: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
+✅ Solution exists: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
 
 📝 Processing: three-column-analysis
    📄 Loaded content from: skills/three-column-analysis/SKILL.md
@@ -234,10 +234,10 @@ npm run skill:import -- <solution-name>
    • Created: 4 skill(s)
    • Updated: 0 skill(s)
    • Total: 4 skill(s)
-   • Tenant: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
+   • Solution: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
 
 🔍 Verification:
-   curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer"
+   curl "http://localhost:3001/api/v1/skills?solutionId=quiz-analyzer"
 ```
 
 ### Error Handling
@@ -331,7 +331,7 @@ The skill's `content` field in the database is populated as follows:
 
 ```bash
 sqlite3 packages/backend/.agent-workspace/data.db \
-  "SELECT slug, status, enabled FROM skills WHERE tenantId='YOUR-TENANT-ID';"
+  "SELECT slug, status, enabled FROM skills WHERE solutionId='YOUR-TENANT-ID';"
 ```
 
 **Expected Output:**
@@ -344,7 +344,7 @@ skill-3|published|1
 ### 2. API Check
 
 ```bash
-curl "http://localhost:3001/api/v1/skills?tenantId=my-solution" | python3 -m json.tool
+curl "http://localhost:3001/api/v1/skills?solutionId=my-solution" | python3 -m json.tool
 ```
 
 **Check for:**
@@ -354,7 +354,7 @@ curl "http://localhost:3001/api/v1/skills?tenantId=my-solution" | python3 -m jso
 
 ### 3. Runtime Check (Backend Logs)
 
-When a session starts with `tenantId`:
+When a session starts with `solutionId`:
 
 ```
 [SkillRouter] Auto-loading skills for tenant: quiz-analyzer
@@ -392,7 +392,7 @@ console.log("Tool call: parse_quiz_content") // ✅ Correct
 cd packages/backend
 npm run skill:import -- quiz-analyzer
 # Verify:
-curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer"
+curl "http://localhost:3001/api/v1/skills?solutionId=quiz-analyzer"
 ```
 
 ### Issue: Import Script Fails with "Solution not found"
@@ -436,7 +436,7 @@ npm run skill:import -- my-solution
 - Database shows skills with `status=published`, `enabled=1`
 - AI still uses global skills
 
-**Root Cause:** Frontend not sending `tenantId` in requests
+**Root Cause:** Frontend not sending `solutionId` in requests
 
 **Solution:**
 
@@ -445,13 +445,13 @@ Check frontend code:
 // ✅ Correct:
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'quiz-analyzer'  // MUST be set
+  solutionId: 'quiz-analyzer'  // MUST be set
 })
 
 // ❌ Wrong:
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001'
-  // Missing tenantId!
+  // Missing solutionId!
 })
 ```
 
@@ -500,7 +500,7 @@ npm run skill:import -- [solution-slug]
 
 **Verification:**
 ```bash
-curl "http://localhost:3001/api/v1/skills?tenantId=[solution-slug]"
+curl "http://localhost:3001/api/v1/skills?solutionId=[solution-slug]"
 ```
 
 **Troubleshooting:**

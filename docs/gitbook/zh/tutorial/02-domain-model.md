@@ -492,12 +492,12 @@ import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
 })
 
 const { messages, sendMessage } = useAgentChat({
   connection,
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   onOutputUpdate: (update) => {
     // SDK 将原始事件标准化为 flat OutputUpdate 对象
     const { field, value } = update;
@@ -548,7 +548,7 @@ const { messages, sendMessage } = useAgentChat({
 | `Skill` | AI 行为定义 | 在 `solution.json` 中定义 |
 | `Message` | 聊天历史 | 只读访问 |
 | `ApiKey` | 认证 | 配置一次 |
-| `Tenant` | 多租户隔离 | 每个 Solution 一个 |
+| `Solution` | 多租户隔离 | 每个 Solution 一个 |
 
 ### 领域实体（由你的 Solution 管理）
 

@@ -4,12 +4,12 @@
 
 ## 鉴权 + 路径前缀
 
-所有 endpoint 都在 `/api/v1/sessions/:id/` 下，都用 `Auth('admin')` + `TenantGuard`（stage-1 简化）：
+所有 endpoint 都在 `/api/v1/sessions/:id/` 下，都用 `Auth('admin')` + `SolutionAuthGuard`（stage-1 简化）：
 
 - header: `x-api-key: <admin-key>`
-- header: `x-tenant-id: <slug-or-uuid>`（admin key 可以跨租户；tenant 不匹配 session 时返回 403）
+- header: `x-solution-id: <slug-or-uuid>`（admin key 可以跨租户；tenant 不匹配 session 时返回 403）
 
-后续 stage-2 会引入更细的 `sessions:fs` / `sessions:meta` scope；当前 admin scope 是 cross-tenant by design。
+后续 stage-2 会引入更细的 `sessions:fs` / `sessions:meta` scope；当前 admin scope 是 cross-solution by design。
 
 ## Session 必须 active
 
@@ -39,7 +39,7 @@ local provider 时全部返回 400，message: `fs.<op> requires WORKSPACE_PROVID
 **Curl**：
 ```bash
 curl -s "http://localhost:3001/api/v1/sessions/demo-1/fs/diff" \
-  -H 'x-api-key: sk-...' -H 'x-tenant-id: demo-sandbox' \
+  -H 'x-api-key: sk-...' -H 'x-solution-id: demo-sandbox' \
   | python3 -m json.tool
 ```
 
@@ -149,7 +149,7 @@ Checkpoint 当前 delta 状态，给定 label。
 KEY=sk-...
 TENANT=demo-sandbox
 SID=demo-1
-HDR=(-H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" -H 'Content-Type: application/json')
+HDR=(-H "x-api-key: $KEY" -H "x-solution-id: $TENANT" -H 'Content-Type: application/json')
 
 # 1. session 当前还没改任何 base 内容
 curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/diff" "${HDR[@]}"

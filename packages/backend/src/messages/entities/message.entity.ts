@@ -33,7 +33,7 @@ export class Message {
   sessionId!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_messages_tenant_id')
+  @Index('IDX_messages_solution_id')
   solutionId!: string | null;
 
   @Column({ type: 'varchar', length: 20 })

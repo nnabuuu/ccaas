@@ -10,9 +10,9 @@
 // ✅ SSE 是默认值 - 这是推荐模式
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001', // 始终使用绝对 URL 指向后端
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
 })
-const chat = useAgentChat({ connection, tenantId: 'my-solution' })
+const chat = useAgentChat({ connection, solutionId: 'my-solution' })
 ```
 
 Chat 消息通过 `POST /api/v1/sessions/:id/messages` 以 `text/event-stream` 流式传输。
@@ -51,7 +51,7 @@ class CreateCompletionDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string
+  solutionId?: string
 }
 ```
 
@@ -127,7 +127,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (raw) => {
     const parsed = parseOutputUpdateEvent(raw)
     if (parsed) {

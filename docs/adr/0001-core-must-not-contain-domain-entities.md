@@ -131,7 +131,7 @@ TypeOrmModule.forRoot({
 - ❌ Requires solution backends (more infrastructure)
 - ❌ Frontend must integrate with multiple backends
 
-**Why Chosen**: Best long-term architecture for a multi-tenant platform
+**Why Chosen**: Best long-term architecture for a multi-solution platform
 
 ---
 

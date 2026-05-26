@@ -51,7 +51,7 @@ GET /api/v1/sessions/:sessionId/files
   {
     "id": "file-uuid-1",
     "sessionId": "session-uuid-1",
-    "tenantId": "tenant-1",
+    "solutionId": "solution-1",
     "messageId": "msg-uuid-1",
     "filename": "report.md",
     "originalPath": "/reports/summary.md",
@@ -699,7 +699,7 @@ Emitted when a file is created.
   "type": "file.created",
   "fileId": "file-uuid-1",
   "sessionId": "session-uuid-1",
-  "tenantId": "tenant-1",
+  "solutionId": "solution-1",
   "filename": "report.md",
   "status": "new",
   "uploadedBy": "agent",

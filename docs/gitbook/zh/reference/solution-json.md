@@ -273,7 +273,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 **类型:** `Record<string, SessionTemplateConfig>`
 **必需:** 否
 
-为不同使用场景预设 AI 行为配置。解决方案加载时自动 upsert 到 `tenant.config`。
+为不同使用场景预设 AI 行为配置。解决方案加载时自动 upsert 到 `solution.config`。
 
 ```json
 {
@@ -303,7 +303,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 | `mcpServers` | object（可选） | MCP 服务器配置（格式同顶层 `mcpServers`） |
 | `model` | string（可选） | 模型覆盖（如 `claude-opus-4-6`） |
 | `skillPromptMode` | `"protocol"` \| `"inline"`（可选） | SKILL.md 内容到达 Agent 的方式：`protocol` = Agent 运行时读取（默认）；`inline` = 启动前嵌入系统提示 |
-| `bundles` | string[]（可选） | 此模板激活的 Bundle ID 列表（必须是 Tenant `enabledBundles` 的子集） |
+| `bundles` | string[]（可选） | 此模板激活的 Bundle ID 列表（必须是 Solution `enabledBundles` 的子集） |
 
 **`enabledSkills` 配置示例：**
 
@@ -327,7 +327,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 >
 > 关于 Bundle 能力包的详细说明，请参阅 [Bundle 能力包指南](../guide/bundles.md)。
 
-> **部署验证:** 每次 solution 完整加载后，backend 自动在 `tenant.config.solutionAppliedAt` 写入 ISO 时间戳，可用于 CI/CD 验证部署状态。
+> **部署验证:** 每次 solution 完整加载后，backend 自动在 `solution.config.solutionAppliedAt` 写入 ISO 时间戳，可用于 CI/CD 验证部署状态。
 
 ---
 
@@ -604,7 +604,7 @@ CCAAS 在加载时验证 solution.json 并提供有用的错误消息:
 - 新解决方案使用 v3.0 schema
 - 省略 `skills` 字段（使用默认自动发现）
 - 仅在 SKILL.md frontmatter 中保留技能元数据
-- 使用描述性的 tenant slug（kebab-case）
+- 使用描述性的 solution slug（kebab-case）
 - 用 `description` 文档化 MCP 服务器
 
 ### ❌ 不应该:

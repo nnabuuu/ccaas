@@ -28,7 +28,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" ...
 curl -H "X-API-Key: YOUR_API_KEY" ...
 
 # 方式 3：请求体字段（仅 POST /messages）
-{"message": "...", "tenantId": "...", "apiKey": "sk-..."}
+{"message": "...", "solutionId": "...", "apiKey": "sk-..."}
 ```
 
 ### API Key Scope

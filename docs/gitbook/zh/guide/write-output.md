@@ -21,7 +21,7 @@
 如果你的 agent 生成教案并填充教师可编辑的表单，使用 `write_output`。如果 agent 只是解释一个概念，在 chat 里返回文本即可。
 
 {% hint style="info" %}
-`write_output` → `output_update` 的事件映射由 `structured-output` Bundle 驱动。确保 Tenant 已启用该 Bundle。详见 [Bundle 能力包](bundles.md)。
+`write_output` → `output_update` 的事件映射由 `structured-output` Bundle 驱动。确保 Solution 已启用该 Bundle。详见 [Bundle 能力包](bundles.md)。
 {% endhint %}
 
 ## 基本机制
@@ -251,7 +251,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (update) => {
     // SDK 将原始事件标准化为 flat OutputUpdate 对象
     const { field, value, preview } = update
@@ -272,7 +272,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (raw) => {
     const parsed = parseOutputUpdateEvent(raw)
     if (parsed) {

@@ -68,10 +68,10 @@ ccaas backend 接收会话请求 → 通过 `WorkspaceProvider` 抽象给每个 
 1. SessionService.getOrCreateSession()
    ├─ pendingCreates Map dedup (并发同 id 安全)
    └─ _createNewSession()
-       ├─ WorkspaceProvider.create({ sessionId, tenantId })
+       ├─ WorkspaceProvider.create({ sessionId, solutionId })
        │    → 返回 WorkspaceHandle { path: '...', snapshot, rollback, diff, timeline }
        │    → path 是 agent 的 cwd
-       ├─ SessionAssetMaterializer.materialize(handle.path, tenantId)
+       ├─ SessionAssetMaterializer.materialize(handle.path, solutionId)
        │    → 把 solution 的 entities/ + resources/ 拷进 workspace 根
        ├─ 持久化 ManagedSession 到内存 Map + DB
        └─ 之后才 spawn claude（在 CliProcessService.ensureCLIProcess()）
@@ -277,7 +277,7 @@ agentfs provider 的关键模型：每个 session 看到的文件系统是 **共
 
 ### 4.1 `BaseMaterializer`（@kedge-agentic/agent-runtime/workspace）
 
-跑在 **后端启动时**，一次。把 DB 里的 skills + MCP servers 投影到 `${baseDir}/tenants/<tenantId>/{skills,mcp-servers}/`。这个 baseDir 是 agentfs 的 `--base` 参数，每个 session mount 的时候 overlay 上去。
+跑在 **后端启动时**，一次。把 DB 里的 skills + MCP servers 投影到 `${baseDir}/tenants/<solutionId>/{skills,mcp-servers}/`。这个 baseDir 是 agentfs 的 `--base` 参数，每个 session mount 的时候 overlay 上去。
 
 `@kedge-agentic/agent-runtime` 包的 `workspace/` 子模块（Phase A 抽取出来的纯净版本，零框架依赖）。`ContentSource` 接口是端口（backend 提供 TypeORM 适配器）。详见 `reference/agent-runtime.md`。
 
@@ -311,7 +311,7 @@ agentfs provider 的关键模型：每个 session 看到的文件系统是 **共
 ┌─────────────────────────┐                   │           ┌─────────────────────────────────┐
 │ BaseMaterializer        │                   │           │ SessionAssetMaterializer        │
 │ .materialize()           │                   │           │ .materialize(handle.path,       │
-│                          │                   │           │              tenantId)          │
+│                          │                   │           │              solutionId)          │
 │ DB (Skills, McpServer) ─▶│                   │           │                                  │
 │ ${baseDir}/              │                   │           │ disk solutionDirs[slug]/   ─▶   │
 │   tenants/{X}/           │                   │           │ <sessionDir>/                    │

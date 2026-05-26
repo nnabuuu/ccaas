@@ -31,7 +31,7 @@ export class ProcessLifecycleEvent {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_process_lifecycle_events_tenant_id')
+  @Index('IDX_process_lifecycle_events_solution_id')
   solutionId?: string;
 
   /**

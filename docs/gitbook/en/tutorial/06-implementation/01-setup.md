@@ -82,7 +82,7 @@ Create `lesson-plan-designer/solution.json`:
 | Field | Purpose |
 |-------|---------|
 | `schemaVersion` | Configuration format version (always `"3.0"`) |
-| `tenant` | Tenant identity — name, slug (unique identifier), and description |
+| `tenant` | Solution identity — name, slug (unique identifier), and description |
 | `mcpServers` | MCP tool services the AI Agent can invoke |
 | `sessionTemplates` | Session presets that define which Skills and bundles are active |
 | `skills` | Skill reference list — each entry is a `{slug, name}` pair |
@@ -519,7 +519,7 @@ main() {
     # Step 4: Setup tenant and API key
     log_step "4" "Setting up tenant and API key"
     eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
-    log_info "Tenant ID: $TENANT_ID"
+    log_info "Solution ID: $TENANT_ID"
 
     BOOTSTRAP_KEY=$(get_or_create_bootstrap_key "$CCAAS_URL")
     eval "$(create_solution_api_key "$CCAAS_URL" "$TENANT_ID" "$BOOTSTRAP_KEY" "$SOLUTION_NAME")"
@@ -582,7 +582,7 @@ chmod +x lesson-plan-designer/setup.sh
 **What the script does:**
 
 1. Sources the shared `solution-lib.sh` library for common operations
-2. Reads `solution.json` for tenant slug and MCP server configuration
+2. Reads `solution.json` for solution slug and MCP server configuration
 3. Verifies the CCAAS backend is reachable (default: `http://localhost:3001`)
 4. Installs npm dependencies for frontend and backend
 5. Builds the MCP server (`npm install && npm run build`)

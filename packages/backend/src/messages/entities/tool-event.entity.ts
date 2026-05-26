@@ -49,7 +49,7 @@ export class ToolEvent {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_tool_events_tenant_id')
+  @Index('IDX_tool_events_solution_id')
   solutionId?: string;
 
   @Column()

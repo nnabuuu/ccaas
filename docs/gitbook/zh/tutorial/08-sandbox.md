@@ -229,7 +229,7 @@ async function generateAndSelectDraft(sessionId: string, prompt: string) {
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': KEY,
-    'x-tenant-id': 'lesson-plan-designer',
+    'x-solution-id': 'lesson-plan-designer',
   };
   const drafts: Array<{ label: string; content: string }> = [];
 
@@ -272,7 +272,7 @@ async function generateAndSelectDraft(sessionId: string, prompt: string) {
 ```bash
 # Solution 后端记录用户选择
 curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/wizard.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: lesson-plan-designer" \
+  -H "x-api-key: $KEY" -H "x-solution-id: lesson-plan-designer" \
   -H 'Content-Type: application/json' \
   -d '{"value":{"current":3,"total":7,"selectedTemplate":"inquiry-based"}}'
 
@@ -303,7 +303,7 @@ WORKSPACE_PROVIDER=agentfs ... npm run start:prod -w @kedge-agentic/backend
 ```bash
 # 创一个 session
 curl -X POST http://localhost:3001/api/v1/sessions/test-1/messages \
-  -H 'x-api-key: ...' -H 'x-tenant-id: lesson-plan-designer' \
+  -H 'x-api-key: ...' -H 'x-solution-id: lesson-plan-designer' \
   -H 'Content-Type: application/json' \
   -d '{"templateName":"lesson-design","message":"先 ls entities/"}'
 
@@ -327,7 +327,7 @@ tail -f /tmp/<WORKSPACE_DIR>/_sandbox_logs/bash-mcp.log
 ```bash
 # 当 session 在 idle 状态
 curl -X POST http://localhost:3001/api/v1/sessions/test-1/fs/snapshot \
-  -H 'x-api-key: ...' -H 'x-tenant-id: lesson-plan-designer' \
+  -H 'x-api-key: ...' -H 'x-solution-id: lesson-plan-designer' \
   -H 'Content-Type: application/json' -d '{"label":"checkpoint-1"}'
 # → 200 { "label": "checkpoint-1", "takenAt": "..." }
 
@@ -341,7 +341,7 @@ curl -X POST http://localhost:3001/api/v1/sessions/test-1/fs/rollback \
 1. **会话关了就拿不到 fs/diff** —— sessions 从内存 Map 删除后 endpoint 返回 404。在 session 还活着的时候查询。
 2. **Snapshot mid-turn 报 409** —— **设计如此**。包 turn 边界，不包 mid-stream。Cycling the mount 会 yank agent 的文件 handle 出 EIO。
 3. **`agentfs` binary 不在 PATH** —— 设 `WORKSPACE_AGENTFS_BIN` 绝对路径。
-4. **SOLUTION_DIRS 写错 slug** —— 用 `tenant.slug`（你 solution.json 里那个），不是 tenantId UUID。
+4. **SOLUTION_DIRS 写错 slug** —— 用 `solution.slug`（你 solution.json 里那个），不是 solutionId UUID。
 5. **`entities/` 超过 10MB 触发 cap** —— 看日志 `Skipping ... cap reached`。要么瘦身，要么改对象存储 + MCP tool。
 6. **agent 用 `Bash` 而不是 MCP bash** —— claude CLI 太老（要 ≥ 2.1.x）或 `--disallowed-tools` flag 没注入。检查 spawn 命令日志。
 7. **`.claude/` 等系统文件出现在 fs/diff 输出里** —— 这是预期的（session 启动时 skill-sync 写了那些文件）。不是 bug。

@@ -29,7 +29,7 @@ export class UserContextEvent {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_user_context_events_tenant_id')
+  @Index('IDX_user_context_events_solution_id')
   solutionId?: string;
 
   /**

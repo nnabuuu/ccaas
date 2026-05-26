@@ -188,7 +188,7 @@ export function useMySession() {
   // 1. Connect directly to CCAAS backend
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',  // CCAAS backend directly
-    tenantId: 'my-solution',
+    solutionId: 'my-solution',
     autoConnect: true,
   })
 
@@ -198,7 +198,7 @@ export function useMySession() {
   // 3. Chat messaging (REST send + SSE receive)
   const chat = useAgentChat({
     connection,
-    tenantId: 'my-solution',
+    solutionId: 'my-solution',
     sessionTemplate: 'my-template',  // MCP servers, skills resolved server-side
     context,
     onOutputUpdate: (update) => {
@@ -226,7 +226,7 @@ A complete user interaction follows this sequence:
 
 1. User enters a message in the frontend
 2. Frontend sends a REST request to CCAAS (`POST /api/v1/sessions/:id/completion`)
-3. CCAAS resolves the tenant, synchronizes Skills, and creates a session
+3. CCAAS resolves the solution, synchronizes Skills, and creates a session
 4. CCAAS launches the AI Agent process
 5. AI Agent reads Skill instructions and page context
 6. AI Agent invokes MCP tools (e.g., write\_output)
@@ -351,7 +351,7 @@ const chat = useAgentChat({
 
 ```typescript
 // The SDK exposes connection errors via the connection object:
-const connection = useAgentConnection({ serverUrl, tenantId })
+const connection = useAgentConnection({ serverUrl, solutionId })
 
 useEffect(() => {
   if (connection.error) {

@@ -21,10 +21,17 @@ import { User } from '../../users/entities/user.entity';
 
 export type SkillType = 'skill' | 'sub-agent';
 export type SkillStatus = 'draft' | 'review' | 'published' | 'deprecated' | 'archived';
+/**
+ * @load-bearing — the string literal `'tenant'` is persisted to the DB
+ * `skills.scope` column. α (2026-05-26) renamed Tenant→Solution everywhere
+ * BUT this enum value stays because changing it requires a data
+ * migration to rewrite existing rows. Treat the string as opaque; do
+ * NOT rename to `'solution'` without a coordinated DDL + data migration.
+ */
 export type SkillScope = 'tenant' | 'personal';
 
 @Entity('skills')
-@Index('idx_skills_tenant_slug', ['solutionId', 'slug'], { unique: true })
+@Index('idx_skills_solution_slug', ['solutionId', 'slug'], { unique: true })
 export class Skill {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -39,6 +46,8 @@ export class Skill {
   @JoinColumn({ name: 'createdBy' })
   creator?: User | null;
 
+  // @load-bearing default: matches the persisted enum value above.
+  // Do not change without a DB migration — see SkillScope JSDoc.
   @Column({ type: 'varchar', default: 'tenant' })
   scope: SkillScope;
 

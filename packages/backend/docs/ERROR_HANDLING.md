@@ -107,7 +107,7 @@ async createTenant(@Body() dto: CreateTenantDto) {
 
   if (existing) {
     throw new AlreadyExistsException(
-      `Tenant with slug '${dto.slug}' already exists`
+      `Solution with slug '${dto.slug}' already exists`
     );
   }
 

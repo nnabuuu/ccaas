@@ -30,7 +30,7 @@ The KedgeAgentic platform and your Solution have clearly separated responsibilit
 |  +---------------+  +---------------+  +---------------------+ |
 |  +---------------+  +---------------+  +---------------------+ |
 |  |  AI Agent      |  |   SSE         |  |   Authentication    | |
-|  |  Lifecycle     |  |   Events      |  |   & Tenants         | |
+|  |  Lifecycle     |  |   Events      |  |   & Solutions         | |
 |  +---------------+  +---------------+  +---------------------+ |
 +-----------------------------------------------------------------+
 

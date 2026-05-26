@@ -141,7 +141,7 @@ if (result.success) {
 ```ts
 interface Project {
   id: string;
-  tenantId: string;
+  solutionId: string;
   title: string;
   description?: string;
   status: 'draft' | 'active' | 'archived';
@@ -152,7 +152,7 @@ interface Project {
 
 interface ProjectStore {
   load(projectId: string): Promise<Project | null>;
-  list(tenantId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
+  list(solutionId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
   save(project: Project): Promise<void>;
   delete(projectId: string): Promise<void>;
 }
@@ -285,7 +285,7 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 视作已删除
 ```
 
-**Solution 注册（v0.3.2 起）**：baseUrl 不再走 env var，而是存在 `tenant.config.artifactUrl` 里 —— 跟 `webhookUrl` / `customSystemPrompt` 一样，是 tenant 配置的一个字段。两种填法：
+**Solution 注册（v0.3.2 起）**：baseUrl 不再走 env var，而是存在 `solution.config.artifactUrl` 里 —— 跟 `webhookUrl` / `customSystemPrompt` 一样，是 tenant 配置的一个字段。两种填法：
 
 ### 方式 A：solution.json + 自动发现（推荐，dev 零密钥）
 
@@ -306,7 +306,7 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
 SOLUTIONS_DIR=./solutions/business
 ```
 
-启动时 `SolutionLoaderService.onModuleInit` 会自动扫描 `SOLUTIONS_DIR/*/solution.json`，调 `tenants.update()` 把 `artifactUrl` 写到 `tenant.config`。零 curl，零 admin key，零 env var for URL。
+启动时 `SolutionLoaderService.onModuleInit` 会自动扫描 `SOLUTIONS_DIR/*/solution.json`，调 `solutions.update()` 把 `artifactUrl` 写到 `solution.config`。零 curl，零 admin key，零 env var for URL。
 
 ### 方式 B：REST 注册（prod / 运行时变更）
 
@@ -314,16 +314,16 @@ SOLUTIONS_DIR=./solutions/business
 # 1. 拿到 admin key（启动时自动打印，或 POST /auth/login）
 # 2. 创建/找到 tenant
 # 3. 把 artifactUrl 写到它的 config
-curl -X PUT $CCAAS/api/v1/tenants/$ID \
+curl -X PUT $CCAAS/api/v1/solutions/$ID \
   -H "x-api-key: $K" \
   -d '{"config":{"artifactUrl":"https://prod.example.com/api"}}'
 ```
 
-`PUT /tenants/:id` 是 partial-merge —— 其他 config key（`webhookUrl` 等）不受影响。
+`PUT /solutions/:id` 是 partial-merge —— 其他 config key（`webhookUrl` 等）不受影响。
 
 ### 运行时更新
 
-`tenants.update()` 在 `config` 改动时会发 `tenant.config.changed` 事件；`ProjectArtifactSourceRegistry` 订阅后清除该 slug 的缓存。下一轮 sync 就会读到新的 `artifactUrl`，**不用重启 backend**。
+`solutions.update()` 在 `config` 改动时会发 `solution.config.changed` 事件；`ProjectArtifactSourceRegistry` 订阅后清除该 slug 的缓存。下一轮 sync 就会读到新的 `artifactUrl`，**不用重启 backend**。
 
 ### REST endpoints（GUI 用的）
 
@@ -358,14 +358,14 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 
 **`ProjectTenantResolver` port**：solution 可以注册自己的 resolver（比如查自己的 project 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
 
-**ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source`（以及它的 `bind-project` 别名）流程已经写到 `session_metadata` 表里的 `(tenantId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。`session_metadata` 里的 row name `projectId` 是 β-2 之前数据的 compat 命名；存的是新的 `sourceIdentity` 值。
+**ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source`（以及它的 `bind-project` 别名）流程已经写到 `session_metadata` 表里的 `(solutionId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。`session_metadata` 里的 row name `projectId` 是 β-2 之前数据的 compat 命名；存的是新的 `sourceIdentity` 值。
 
-- ✅ pro：solution 端不需要加 `tenantId` column / 不需要写新 endpoint / 不需要跨进程回调
+- ✅ pro：solution 端不需要加 `solutionId` column / 不需要写新 endpoint / 不需要跨进程回调
 - ⚠️ trade-off：**从未被 bind-project 过的 project 解析为 null → 403**。caller 必须先 bind 一个 session，才能订阅 SSE。这跟 bind-project 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
 
 要换 resolver 的话，在 SessionsModule 里覆盖 `PROJECT_TENANT_RESOLVER` token 即可。
 
-**安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-tenant dev / prod-with-trusted-network 是可接受的；真正的 multi-tenant 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
+**安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-tenant dev / prod-with-trusted-network 是可接受的；真正的 multi-solution 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
 
 ### 二进制 artifact（Phase 2b-4）
 
@@ -377,7 +377,7 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 - REST 传输不同 —— 文本是 `application/json`（content inline），binary 是 `application/octet-stream`（streaming via `node:stream/pipeline`，never buffered）
 - 文件系统挂载点不同 —— 文本在 `<workspace>/artifacts/`，binary 在 `<workspace>/artifacts-binary/`。**这个分离是关键 security 边界**：agent 的 `Read` / `cat` 工具只能扫文本目录，永远不会把一张 JPEG slurp 进 context
 
-ccaas 端注册：solution 在 `tenant.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `tenant.config.changed` 失效。可选 `tenant.config.binaryMaxBytes` 设置 per-tenant 大小上限。
+ccaas 端注册：solution 在 `solution.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `solution.config.changed` 失效。可选 `solution.config.binaryMaxBytes` 设置 per-tenant 大小上限。
 
 Solution 端实现的 REST endpoints：
 
@@ -417,7 +417,7 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 
 ### Solution 集成两行
 
-> **β-1 重命名（2026-05-26）**：新规范叫 `attach-workspace-source`，body 用通用字段 `{ sourceUrl, sourceIdentity, tenantId }`（不再有 `projectId` —— ccaas 不再假装知道 "project" 是什么）。旧的 `bind-project` 路由保留为 alias 一个 release，内部走同一份逻辑。新 solution 直接用新路由；旧 solution 在迁移窗口内不用动。
+> **β-1 重命名（2026-05-26）**：新规范叫 `attach-workspace-source`，body 用通用字段 `{ sourceUrl, sourceIdentity, solutionId }`（不再有 `projectId` —— ccaas 不再假装知道 "project" 是什么）。旧的 `bind-project` 路由保留为 alias 一个 release，内部走同一份逻辑。新 solution 直接用新路由；旧 solution 在迁移窗口内不用动。
 
 ```ts
 // solution backend：在创建 workspace-attached agent session 后立刻调
@@ -426,17 +426,17 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`,
   body: JSON.stringify({
     sourceUrl: 'http://your-solution/api/projects',  // ccaas 回调的 base URL
     sourceIdentity: projectId,                        // 对 ccaas 不透明的 ID
-    tenantId,                                         // β 阶段过渡：sessionService 还需要
+    solutionId,                                         // β 阶段过渡：sessionService 还需要
   }),
 });
 
 // 或继续用旧路由（compat 窗口内）：
 await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId, tenantId }),
+  method: 'POST', body: JSON.stringify({ projectId, solutionId }),
 });
 ```
 
-后端 `SessionService.attachWorkspaceSource(sessionId, tenantId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。废弃别名 `bindToProject(sessionId, tenantId, projectId)` 内部 delegate 到这里，传入 `{ sourceIdentity: projectId }`。
+后端 `SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。废弃别名 `bindToProject(sessionId, solutionId, projectId)` 内部 delegate 到这里，传入 `{ sourceIdentity: projectId }`。
 
 ### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
 
@@ -507,7 +507,7 @@ Phase 1 的 `InMemoryChangeStream` 实现了上面这个接口。Phase 2 的 Red
 import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
 
 const src = new InMemoryContentSource([
-  { id: 's1', tenantId: 't1', slug: 'hello', name: 'Hello', content: '# H', files: [] },
+  { id: 's1', solutionId: 't1', slug: 'hello', name: 'Hello', content: '# H', files: [] },
 ]);
 const m = new BaseMaterializer(src, '/tmp/test-base');
 await m.materialize();

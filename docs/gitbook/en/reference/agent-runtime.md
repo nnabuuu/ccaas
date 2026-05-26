@@ -141,7 +141,7 @@ if (result.success) {
 ```ts
 interface Project {
   id: string;
-  tenantId: string;
+  solutionId: string;
   title: string;
   description?: string;
   status: 'draft' | 'active' | 'archived';
@@ -152,7 +152,7 @@ interface Project {
 
 interface ProjectStore {
   load(projectId: string): Promise<Project | null>;
-  list(tenantId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
+  list(solutionId: string, opts?: ProjectListOptions): Promise<ReadonlyArray<Project>>;
   save(project: Project): Promise<void>;
   delete(projectId: string): Promise<void>;
 }
@@ -285,7 +285,7 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 treated as already-deleted
 ```
 
-**Solution registration (v0.3.2+)**: the baseUrl is no longer an env var. It's stored on `tenant.config.artifactUrl` — same field family as `webhookUrl` and `customSystemPrompt`. Two ways to set it:
+**Solution registration (v0.3.2+)**: the baseUrl is no longer an env var. It's stored on `solution.config.artifactUrl` — same field family as `webhookUrl` and `customSystemPrompt`. Two ways to set it:
 
 ### Path A: solution.json + auto-discovery (recommended, zero-key in dev)
 
@@ -306,24 +306,24 @@ Backend `.env`:
 SOLUTIONS_DIR=./solutions/business
 ```
 
-At startup, `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and calls `tenants.update()` to write `artifactUrl` into `tenant.config`. Zero curl, zero admin key, zero env var for the URL.
+At startup, `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and calls `solutions.update()` to write `artifactUrl` into `solution.config`. Zero curl, zero admin key, zero env var for the URL.
 
 ### Path B: REST registration (prod / runtime updates)
 
 ```bash
 # 1. Grab the admin key (auto-printed at first boot, or POST /auth/login)
-# 2. Create or find the tenant
+# 2. Create or find the solution
 # 3. Write artifactUrl to its config
-curl -X PUT $CCAAS/api/v1/tenants/$ID \
+curl -X PUT $CCAAS/api/v1/solutions/$ID \
   -H "x-api-key: $K" \
   -d '{"config":{"artifactUrl":"https://prod.example.com/api"}}'
 ```
 
-`PUT /tenants/:id` is a partial merge — other config keys (`webhookUrl` etc.) are preserved.
+`PUT /solutions/:id` is a partial merge — other config keys (`webhookUrl` etc.) are preserved.
 
 ### Runtime updates take effect without a restart
 
-`tenants.update()` emits a `tenant.config.changed` event when the update payload carried a `config` field; `ProjectArtifactSourceRegistry` subscribes and evicts the cached source for that slug. The next sync turn re-reads `tenant.config.artifactUrl` from the fresh DB row — no backend restart.
+`solutions.update()` emits a `solution.config.changed` event when the update payload carried a `config` field; `ProjectArtifactSourceRegistry` subscribes and evicts the cached source for that slug. The next sync turn re-reads `solution.config.artifactUrl` from the fresh DB row — no backend restart.
 
 ### REST endpoints (consumed by GUI)
 
@@ -358,14 +358,14 @@ Verification chain:
 
 **`ProjectTenantResolver` port**: solutions can register their own resolver (e.g. querying their own project table) under the `PROJECT_TENANT_RESOLVER` DI token. If none is registered, agent-runtime falls back to `DenyAllProjectTenantResolver` — every request 403s.
 
-**ccaas default resolver (`SessionMetadataWorkspaceResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(tenantId, projectId)` row that `attach-workspace-source` (and its `bind-project` alias) writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work. The `session_metadata` row name `projectId` is kept for compat with pre-β-2 data; it stores the new `sourceIdentity` value.
+**ccaas default resolver (`SessionMetadataWorkspaceResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(solutionId, projectId)` row that `attach-workspace-source` (and its `bind-project` alias) writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work. The `session_metadata` row name `projectId` is kept for compat with pre-β-2 data; it stores the new `sourceIdentity` value.
 
-- ✅ Pro: solutions don't need a `tenantId` column, a new REST endpoint, or a cross-process callback.
+- ✅ Pro: solutions don't need a `solutionId` column, a new REST endpoint, or a cross-process callback.
 - ⚠️ Trade-off: **workspaces that have never been attached resolve to false → 403.** Callers must attach a session first before subscribing to SSE. This matches `poc-smoke.sh`'s flow and is the canonical pattern.
 
 To override, register your resolver against `PROJECT_TENANT_RESOLVER` in your SessionsModule providers.
 
-**Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-tenant dev and trusted-network prod. For true multi-tenant prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
+**Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-tenant dev and trusted-network prod. For true multi-solution prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
 
 ### Binary artifacts (Phase 2b-4)
 
@@ -377,7 +377,7 @@ Why separate?
 - REST transport differs — text is `application/json` (content inlined); binary is `application/octet-stream` (streaming via `node:stream/pipeline`, never buffered).
 - Filesystem mount differs — text under `<workspace>/artifacts/`, binary under `<workspace>/artifacts-binary/`. **This split is a security boundary**: the agent's `Read` / `cat` tool only walks the text directory, so a JPEG can never be slurped into context.
 
-ccaas-side registration: a solution sets `tenant.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `tenant.config.changed` invalidation. Optional `tenant.config.binaryMaxBytes` pins a per-tenant size cap.
+ccaas-side registration: a solution sets `solution.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `solution.config.changed` invalidation. Optional `solution.config.binaryMaxBytes` pins a per-tenant size cap.
 
 Solution-side REST contract:
 
@@ -417,7 +417,7 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 
 ### Solution integration — 2 lines
 
-> **β-1 rename (2026-05-26)**: the canonical route is now `attach-workspace-source` with the opaque body `{ sourceUrl, sourceIdentity, tenantId }` (no `projectId` — ccaas no longer pretends to know what a "project" is). The old `bind-project` route stays as an alias for one release and hits the same service code. New solutions: use the new route. Existing solutions: migrate at your convenience during the compat window.
+> **β-1 rename (2026-05-26)**: the canonical route is now `attach-workspace-source` with the opaque body `{ sourceUrl, sourceIdentity, solutionId }` (no `projectId` — ccaas no longer pretends to know what a "project" is). The old `bind-project` route stays as an alias for one release and hits the same service code. New solutions: use the new route. Existing solutions: migrate at your convenience during the compat window.
 
 ```ts
 // Solution backend: right after creating a workspace-attached agent session
@@ -426,17 +426,17 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`,
   body: JSON.stringify({
     sourceUrl: 'http://your-solution/api/projects',  // base URL ccaas calls back
     sourceIdentity: projectId,                        // opaque ID, ccaas does not parse
-    tenantId,                                         // transitional during β
+    solutionId,                                         // transitional during β
   }),
 });
 
 // Or keep using the legacy alias during the compat window:
 await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId, tenantId }),
+  method: 'POST', body: JSON.stringify({ projectId, solutionId }),
 });
 ```
 
-`SessionService.attachWorkspaceSource(sessionId, tenantId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. The deprecated alias `bindToProject(sessionId, tenantId, projectId)` delegates here with `{ sourceIdentity: projectId }`.
+`SessionService.attachWorkspaceSource(sessionId, solutionId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. The deprecated alias `bindToProject(sessionId, solutionId, projectId)` delegates here with `{ sourceIdentity: projectId }`.
 
 ### GUI side: consume the SSE so users see agent edits (Phase 2a)
 
@@ -508,7 +508,7 @@ Phase 1's `InMemoryChangeStream` implements the above. Phase 2's Redis-backed va
 import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
 
 const src = new InMemoryContentSource([
-  { id: 's1', tenantId: 't1', slug: 'hello', name: 'Hello', content: '# H', files: [] },
+  { id: 's1', solutionId: 't1', slug: 'hello', name: 'Hello', content: '# H', files: [] },
 ]);
 const m = new BaseMaterializer(src, '/tmp/test-base');
 await m.materialize();

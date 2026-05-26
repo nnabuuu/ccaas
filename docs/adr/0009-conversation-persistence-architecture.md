@@ -26,11 +26,11 @@ The key challenge was that CCAAS already had a `Session` entity tied to the runt
 
 **Key design choices**:
 
-1. **ConversationId format**: `conv_${uuid}` when `tenantId` is provided; falls back to `${sessionPrefix}_${uuid}` for backward compatibility
-2. **Storage**: Tenant-scoped localStorage key `ccaas_session_${tenantId}` persists the conversationId across page refreshes
+1. **ConversationId format**: `conv_${uuid}` when `solutionId` is provided; falls back to `${sessionPrefix}_${uuid}` for backward compatibility
+2. **Storage**: Solution-scoped localStorage key `ccaas_session_${solutionId}` persists the conversationId across page refreshes
 3. **History loading**: `useAgentChat` automatically fetches message history via `GET /api/v1/sessions/:id/messages?limit=100` on connection
 4. **New conversation**: `clearConversation()` clears localStorage, generates a new `conv_${uuid}`, disconnects and reconnects with fresh state
-5. **Backward compatibility**: When no `tenantId` is provided, the SDK behaves exactly as before (no persistence)
+5. **Backward compatibility**: When no `solutionId` is provided, the SDK behaves exactly as before (no persistence)
 
 ---
 
@@ -71,14 +71,14 @@ The key challenge was that CCAAS already had a `Session` entity tied to the runt
 
 ---
 
-### Option C: Reuse Session with Tenant-Scoped Persistence (Chosen)
+### Option C: Reuse Session with Solution-Scoped Persistence (Chosen)
 
-**Description**: Add `tenantId` to `useAgentConnection`, persist sessionId in localStorage, auto-load message history.
+**Description**: Add `solutionId` to `useAgentConnection`, persist sessionId in localStorage, auto-load message history.
 
 **Pros**:
 - Minimal backend changes (add columns to existing Session entity)
 - Frontend-driven - SDK handles persistence transparently
-- Backward compatible - opt-in via `tenantId`
+- Backward compatible - opt-in via `solutionId`
 - Works immediately with existing backend APIs
 
 **Cons**:
@@ -94,8 +94,8 @@ The key challenge was that CCAAS already had a `Session` entity tied to the runt
 ### Positive
 - Users can refresh the page and continue their conversation
 - Message history is automatically loaded on reconnection
-- Solutions opt-in with a single `tenantId` parameter
-- Zero breaking changes for existing solutions that don't use `tenantId`
+- Solutions opt-in with a single `solutionId` parameter
+- Zero breaking changes for existing solutions that don't use `solutionId`
 
 ### Negative
 - Session entity now carries dual semantics (runtime process + conversation)
@@ -123,13 +123,13 @@ const connection = useAgentConnection({
 // After (persistent)
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'my-app',
+  solutionId: 'my-app',
 })
 ```
 
 **New conversation button**:
 ```typescript
-const chat = useAgentChat({ connection, tenantId: 'my-app' })
+const chat = useAgentChat({ connection, solutionId: 'my-app' })
 
 // Start fresh conversation (clears storage, new sessionId, reconnects)
 chat.clearConversation()
@@ -144,7 +144,7 @@ if (chat.isLoadingHistory) {
 ```
 
 **Checklist**:
-- [ ] Replace `sessionPrefix` with `tenantId` in `useAgentConnection`
+- [ ] Replace `sessionPrefix` with `solutionId` in `useAgentConnection`
 - [ ] Add "New Conversation" button calling `chat.clearConversation()`
 - [ ] Show loading state while `chat.isLoadingHistory` is true
 - [ ] Test: refresh page, verify messages persist
@@ -160,7 +160,7 @@ if (chat.isLoadingHistory) {
 - **[中文版 ADR-0009](./zh/0009-conversation-persistence-architecture.md)** - Chinese version of this ADR
 
 ### Implementation
-- `packages/react-sdk/src/hooks/useAgentConnection.ts` - Tenant-scoped localStorage persistence
+- `packages/react-sdk/src/hooks/useAgentConnection.ts` - Solution-scoped localStorage persistence
 - `packages/react-sdk/src/hooks/useAgentChat.ts` - Message history auto-loading, clearConversation
 - `solutions/ccaas-demo/src/hooks/useDemoSession.ts` - Reference integration (ccaas-demo)
 - `solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts` - Reference integration (lesson-plan-designer)

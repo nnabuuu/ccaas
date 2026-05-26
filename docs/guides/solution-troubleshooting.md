@@ -10,7 +10,7 @@ This guide provides solutions to common issues when developing and deploying CCA
 - [Setup Issues](#setup-issues)
 - [Dependency Issues](#dependency-issues)
 - [Port Conflicts](#port-conflicts)
-- [Tenant & API Key Issues](#tenant--api-key-issues)
+- [Solution & API Key Issues](#tenant--api-key-issues)
 - [Service Startup Issues](#service-startup-issues)
 - [Skill & MCP Issues](#skill--mcp-issues)
 - [Database Issues](#database-issues)
@@ -245,7 +245,7 @@ Error: listen EADDRINUSE: address already in use :::3002
    killall node
    ```
 
-## Tenant & API Key Issues
+## Solution & API Key Issues
 
 ### "Cannot connect to CCAAS"
 
@@ -284,11 +284,11 @@ Please start CCAAS backend first
    export NO_PROXY="localhost,127.0.0.1"
    ```
 
-### "Tenant not found"
+### "Solution not found"
 
 **Symptoms**:
 ```bash
-❌ Error: Tenant 'my-solution' not found in database
+❌ Error: Solution 'my-solution' not found in database
 Please create the tenant first.
 ```
 
@@ -302,12 +302,12 @@ Please create the tenant first.
 
 2. **Verify tenant was created**:
    ```bash
-   curl http://localhost:3001/api/v1/tenants/my-solution
+   curl http://localhost:3001/api/v1/solutions/my-solution
    ```
 
 3. **Create manually** (if needed):
    ```bash
-   curl -X POST http://localhost:3001/api/v1/tenants \
+   curl -X POST http://localhost:3001/api/v1/solutions \
      -H "Content-Type: application/json" \
      -d '{
        "slug": "my-solution",
@@ -541,7 +541,7 @@ Response: {"error": "Invalid configuration"}
 4. **Verify registration**:
    ```bash
    curl http://localhost:3001/api/v1/mcp-servers \
-     -H "X-Tenant-Id: my-solution"
+     -H "X-Solution-Id: my-solution"
    ```
 
 ### MCP Tools Not Available
@@ -555,7 +555,7 @@ Response: {"error": "Invalid configuration"}
 1. **Verify MCP server is registered**:
    ```bash
    curl http://localhost:3001/api/v1/mcp-servers/my-server \
-     -H "X-Tenant-Id: my-solution" \
+     -H "X-Solution-Id: my-solution" \
      -H "X-Api-Key: $CCAAS_API_KEY"
    ```
 
@@ -843,7 +843,7 @@ lsof -ti:3002 | xargs kill -9
 curl http://localhost:3001/api/v1/health
 
 # Verify tenant
-curl http://localhost:3001/api/v1/tenants/my-solution
+curl http://localhost:3001/api/v1/solutions/my-solution
 
 # Check database
 sqlite3 data/my-solution.db ".tables"

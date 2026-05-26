@@ -143,7 +143,7 @@ function SplitMessageView({ message }) {
 当 agent 正在回复时，`useAgentChat` 提供 `currentStreamContent`——一个包含目前已接收到的部分文本的字符串。
 
 ```tsx
-const chat = useAgentChat({ connection, tenantId: 'default' })
+const chat = useAgentChat({ connection, solutionId: 'default' })
 
 // chat.currentStreamContent: string — 不在流式传输时为空字符串
 // chat.messages: Message[] — 只包含已完成的消息
@@ -200,7 +200,7 @@ function CustomChatUI() {
     sessionPrefix: 'my-solution'
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
   const status = useAgentStatus({ connection })
 
   const [input, setInput] = useState('')

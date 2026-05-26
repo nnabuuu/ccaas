@@ -129,7 +129,7 @@ async function executeRiskyStep(sessionId: string) {
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'x-tenant-id': tenant,
+    'x-solution-id': tenant,
   };
 
   // 1. checkpoint
@@ -175,7 +175,7 @@ async function executeRiskyStep(sessionId: string) {
 ```bash
 # solution 启动一个 multi-step 工作流时
 curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" \
   -H 'Content-Type: application/json' \
   -d '{"value":{"current":1,"total":7,"experimentVariant":"B"}}'
 
@@ -185,7 +185,7 @@ curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 
 # 前端 / 别的 service poll
 curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT"
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT"
 # → { "key": "workflow.step", "value": {...}, "updatedAt": "..." }
 ```
 
@@ -251,7 +251,7 @@ await sessionsClient.bindToProject(sessionId, projectId);
 
 ### 运行时改 artifactUrl
 
-`PUT /tenants/:id` 的 partial-merge `config` 会自动发 `tenant.config.changed`，registry 失效缓存，下一轮 sync 就走新 URL。不用重启 backend。
+`PUT /solutions/:id` 的 partial-merge `config` 会自动发 `solution.config.changed`，registry 失效缓存，下一轮 sync 就走新 URL。不用重启 backend。
 
 ---
 

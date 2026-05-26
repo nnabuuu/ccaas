@@ -285,13 +285,13 @@ import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // Core CCAAS backend
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   autoConnect: true,
 })
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   sessionTemplate: 'my-template',  // MCP servers, skills resolved server-side
   onOutputUpdate: (update) => {
     // update = { field, value, preview, timestamp }
@@ -337,12 +337,12 @@ import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
 })
 
 const { sendMessage } = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (update) => {
     // Already normalized: { field, value, preview }
     handleUpdate(update.field, update.value, update.preview)

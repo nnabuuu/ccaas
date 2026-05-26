@@ -187,7 +187,7 @@ import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS 后端
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   autoConnect: true,
 })
 

@@ -204,7 +204,7 @@ GET /api/v1/chat/status    # Server statistics (public)
 ```typescript
 import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
-const connection = useAgentConnection({ serverUrl, tenantId })
+const connection = useAgentConnection({ serverUrl, solutionId })
 const { sendMessage, cancelProcessing } = useAgentChat({ connection })
 
 // Automatically uses SessionsController

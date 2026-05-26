@@ -196,7 +196,7 @@ import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS backend (absolute URL required)
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   autoConnect: true,
 })
 
@@ -206,7 +206,7 @@ const connection = useAgentConnection({
 // connection.cancelCompletion(sessionId) - Cancel ongoing request
 ```
 
-When `tenantId` is provided, the session ID is persisted in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same session is recovered automatically.
+When `solutionId` is provided, the session ID is persisted in `localStorage` under `ccaas_session_{solutionId}`. On page refresh, the same session is recovered automatically.
 
 #### 2. useAgentChat
 
@@ -217,7 +217,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId,
+  solutionId,
   sessionTemplate: 'your-template-name',  // resolved server-side from session templates
   context,  // from usePageContext - attached to every message
   onOutputUpdate: (update) => {
@@ -368,7 +368,7 @@ import {
 export function useMySession(options = {}) {
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'my-solution',
+    solutionId: 'my-solution',
     autoConnect: true,
   })
 
@@ -377,7 +377,7 @@ export function useMySession(options = {}) {
 
   const chat = useAgentChat({
     connection,
-    tenantId: 'my-solution',
+    solutionId: 'my-solution',
     context,
     onOutputUpdate: (update) => addPendingUpdate(update.field, update.value),
   })

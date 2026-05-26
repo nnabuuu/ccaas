@@ -185,10 +185,10 @@ function MySolution() {
   // 直连 CCAAS 后端
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'my-solution'
+    solutionId: 'my-solution'
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'my-solution' })
+  const chat = useAgentChat({ connection, solutionId: 'my-solution' })
   const status = useAgentStatus({ connection })
 
   return (
@@ -311,7 +311,7 @@ npm run skill:import -- quiz-analyzer --verbose
 // 前端：聊天通过 React SDK 直连 CCAAS
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS 后端
-  tenantId: 'my-solution'
+  solutionId: 'my-solution'
 })
 
 // 前端：业务数据通过 REST 调用 Solution 后端
@@ -350,7 +350,7 @@ const sync = useOutputSync({
 ```typescript
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'my-solution'
+  solutionId: 'my-solution'
 })
 
 // 连接状态自动管理，包含重连逻辑

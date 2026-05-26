@@ -28,12 +28,12 @@ Each plan has a default TTL and a maximum configurable TTL:
 
 ---
 
-## Configuring Tenant TTL
+## Configuring Solution TTL
 
 Use the admin API to set a custom TTL for a tenant:
 
 ```http
-PUT /api/v1/tenants/:id
+PUT /api/v1/solutions/:id
 Content-Type: application/json
 Authorization: Bearer <admin-api-key>
 
@@ -51,7 +51,7 @@ Authorization: Bearer <admin-api-key>
 
 ## Session Template TTL Override
 
-[Session templates](admin-session-templates.md) support a per-template TTL that overrides the tenant default:
+[Session templates](admin-session-templates.md) support a per-template TTL that overrides the solution default:
 
 ```json
 {
@@ -86,9 +86,9 @@ This is a server-side hard limit and cannot be overridden by tenant configuratio
 
 To unlock longer session timeouts:
 
-1. Upgrade the tenant plan from `free` to `starter` or higher in the admin dashboard.
+1. Upgrade the solution plan from `free` to `starter` or higher in the admin dashboard.
 2. After upgrading, `sessionTtlMs` is automatically recalculated to the new plan's default (or your previously set value, whichever is lower).
-3. Use `PUT /api/v1/tenants/:id` to set `sessionTtlMs` to the desired value (within the plan cap).
+3. Use `PUT /api/v1/solutions/:id` to set `sessionTtlMs` to the desired value (within the plan cap).
 
 ---
 

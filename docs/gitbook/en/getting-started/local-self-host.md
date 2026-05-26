@@ -80,7 +80,7 @@ $ tail $WORKSPACE_DIR/_sandbox_logs/bash-mcp.log
 | `WORKSPACE_AGENTFS_BASE_DIR=/var/...` | `${WORKSPACE_DIR}/_agentfs_base` | where the materialized base overlay lives |
 | `WORKSPACE_AGENTFS_DELTA_STORE=/var/...` | `${WORKSPACE_DIR}/_agentfs_deltas` | where per-session delta DBs live |
 | `SOLUTION_DIRS=slug:abspath,slug2:abspath2` | empty | tells SessionAssetMaterializer which solutions' entities+resources to seed per session |
-| `SOLUTIONS_DIR=./solutions/business` | empty | At boot, `SolutionLoaderService` auto-imports every `<subdir>/solution.json` it finds — tenant + skills + MCP + `tenant.config.artifactUrl`. Phase 1.6+. Leave unset to opt out; use `POST /admin/solutions/import` instead. |
+| `SOLUTIONS_DIR=./solutions/business` | empty | At boot, `SolutionLoaderService` auto-imports every `<subdir>/solution.json` it finds — tenant + skills + MCP + `solution.config.artifactUrl`. Phase 1.6+. Leave unset to opt out; use `POST /admin/solutions/import` instead. |
 
 ## Reserved naming conventions
 
@@ -109,11 +109,11 @@ SID=demo-xxxxxxxx
 
 # What did the agent change in the sandbox?
 curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/diff" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" | python3 -m json.tool
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" | python3 -m json.tool
 
 # Checkpoint + rollback
 curl -X POST "http://localhost:3001/api/v1/sessions/$SID/fs/snapshot" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" \
   -H 'Content-Type: application/json' -d '{"label":"before-risky"}'
 ```
 

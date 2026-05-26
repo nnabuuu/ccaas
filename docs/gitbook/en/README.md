@@ -20,7 +20,7 @@ The platform handles everything else: Agent Engine lifecycle, session persistenc
 - **Describe, don't program** — Express business logic in Skills; the AI handles execution
 - **Persistent context** — Business knowledge accumulates across sessions, not rebuilt each time
 - **Platform-managed infrastructure** — Agent Engines, sessions, and tools are managed by the platform
-- **Production-grade** — Built for real workloads: multi-tenant isolation, audit logging, session recovery
+- **Production-grade** — Built for real workloads: multi-solution isolation, audit logging, session recovery
 
 ## Who Uses KedgeAgentic
 

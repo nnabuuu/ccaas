@@ -54,7 +54,7 @@ CCAAS 使用**直连架构**，你的 Solution 前端通过 SSE（Server-Sent Ev
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // 直连 CCAAS 后端
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   autoConnect: true,
 })
 ```
@@ -63,7 +63,7 @@ const connection = useAgentConnection({
 
 1. 创建 SSE 连接到 CCAAS 后端
 2. 通过 `GET /api/v1/sessions/:sessionId/events` 建立推送通道
-3. 将 sessionId 持久化到 localStorage，键名为 `ccaas_session_${tenantId}`
+3. 将 sessionId 持久化到 localStorage，键名为 `ccaas_session_${solutionId}`
 
 ### 第 2 步：前端通过 REST 发送消息
 
@@ -74,7 +74,7 @@ const connection = useAgentConnection({
 
 const chatPayload = {
   message: content,
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   sessionTemplate: 'lesson-plan-designer',  // 会话模板名称，服务端解析配置
   context: context,  // 来自 usePageContext 的页面上下文
 }
@@ -140,7 +140,7 @@ export function useLessonPlanSession(options) {
   // 1. 连接管理
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'lesson-plan-designer',
+    solutionId: 'lesson-plan-designer',
     autoConnect: true,
   })
 
@@ -150,7 +150,7 @@ export function useLessonPlanSession(options) {
   // 3. 聊天消息
   const chat = useAgentChat({
     connection,
-    tenantId: 'lesson-plan-designer',
+    solutionId: 'lesson-plan-designer',
     sessionTemplate: 'lesson-plan-designer',  // 服务端解析 MCP、技能等配置
     context,
     onOutputUpdate: (update) => {
@@ -184,7 +184,7 @@ export function useLessonPlanSession(options) {
 | 选项 | 类型 | 默认值 | 用途 |
 |------|------|--------|------|
 | `serverUrl` | `string` | `'/'` | CCAAS 后端 URL |
-| `tenantId` | `string` | -- | 租户 ID，用于 localStorage 持久化 |
+| `solutionId` | `string` | -- | 租户 ID，用于 localStorage 持久化 |
 | `autoConnect` | `boolean` | `true` | 挂载时自动连接 |
 | `forceNewConversation` | `boolean` | `false` | 清除保存的会话并重新开始 |
 
@@ -201,7 +201,7 @@ export function useLessonPlanSession(options) {
 | `disconnect()` | function | 手动断开 |
 | `startNewConversation()` | function | 清除会话、生成新 ID、重新连接 |
 
-**会话持久化：** 当提供 `tenantId` 时，sessionId 会存储在 localStorage 中，键名为 `ccaas_session_${tenantId}`。页面刷新后，hook 会恢复保存的 sessionId，从而自动加载消息历史。
+**会话持久化：** 当提供 `solutionId` 时，sessionId 会存储在 localStorage 中，键名为 `ccaas_session_${solutionId}`。页面刷新后，hook 会恢复保存的 sessionId，从而自动加载消息历史。
 
 ### Hook 2: useAgentChat
 
@@ -212,7 +212,7 @@ export function useLessonPlanSession(options) {
 | 选项 | 类型 | 用途 |
 |------|------|------|
 | `connection` | `UseAgentConnectionReturn` | 来自 `useAgentConnection` |
-| `tenantId` | `string` | 租户标识 |
+| `solutionId` | `string` | 租户标识 |
 | `sessionTemplate` | `string` | 会话模板名称，服务端解析 MCP 服务器、技能等配置 |
 | `enabledSkills` | `string[]` | 覆盖模板中的技能列表（可选） |
 | `context` | `PageContext \| null` | 来自 `usePageContext` 的页面上下文 |
@@ -493,9 +493,9 @@ await fetch('http://localhost:3002/api/lesson-plans', {
 
 ### 会话持久化工作原理
 
-当向 `useAgentConnection` 提供 `tenantId` 时：
+当向 `useAgentConnection` 提供 `solutionId` 时：
 
-1. sessionId 持久化到 localStorage，键名为 `ccaas_session_${tenantId}`
+1. sessionId 持久化到 localStorage，键名为 `ccaas_session_${solutionId}`
 2. 页面刷新时，恢复保存的 sessionId
 3. `useAgentChat` 通过 `GET /api/v1/sessions/:sessionId/messages` 自动加载消息历史
 4. 对话从上次中断的地方继续
@@ -504,7 +504,7 @@ await fetch('http://localhost:3002/api/lesson-plans', {
 // 这一切都由 SDK 自动处理：
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'lesson-plan-designer',  // <-- 启用持久化
+  solutionId: 'lesson-plan-designer',  // <-- 启用持久化
 })
 
 // 页面刷新时：从 localStorage 恢复 sessionId
@@ -547,7 +547,7 @@ const createNewPlan = useCallback(async (input) => {
 ### 练习 4.2：Hook 组合
 
 使用五个 SDK hooks，设计一个假设的 "Quiz Builder" Solution 的会话 hook。确定：
-- 你会使用什么 `tenantId`？
+- 你会使用什么 `solutionId`？
 - `usePageContext` 会发送哪些字段？
 - 你如何处理测验题目与测验元数据的 `onOutputUpdate`？
 
@@ -567,7 +567,7 @@ const createNewPlan = useCallback(async (input) => {
 3. **五个 SDK hooks 覆盖完整数据流** -- `useAgentConnection`（连接）、`useAgentChat`（消息）、`useAgentStatus`（状态）、`usePageContext`（表单状态）、`useFiles`（文件管理）
 4. **`usePageContext` 是 AI 感知的关键** -- 它随每条消息发送当前表单状态，让 AI Agent 知道已填写了什么
 5. **Solution 使用双数据通道** -- CCAAS 用于 AI 交互，Solution 后端用于领域 CRUD
-6. **会话持久化是自动的** -- 提供 `tenantId` 即可启用基于 localStorage 的会话恢复和消息历史加载
+6. **会话持久化是自动的** -- 提供 `solutionId` 即可启用基于 localStorage 的会话恢复和消息历史加载
 
 ## 下一步
 

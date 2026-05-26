@@ -141,7 +141,7 @@ server {
 
 ---
 
-## 5. First-Time Setup: Create a Tenant
+## 5. First-Time Setup: Create a Solution
 
 Every solution needs its own tenant and API key.
 
@@ -150,7 +150,7 @@ BACKEND=http://localhost:3001
 ADMIN_KEY=sk-default-<your-key>
 
 # Create a tenant
-curl -s -X POST $BACKEND/api/v1/tenants \
+curl -s -X POST $BACKEND/api/v1/solutions \
   -H "x-api-key: $ADMIN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -164,7 +164,7 @@ curl -s -X POST $BACKEND/api/v1/admin/api-keys \
   -H "x-api-key: $ADMIN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "tenantId": "<tenant-id>",
+    "solutionId": "<tenant-id>",
     "name": "My Solution Key",
     "scopes": ["skills:read", "skills:write", "mcp:read", "mcp:write", "chat"]
   }'
@@ -187,7 +187,7 @@ npm run skill:import -- quiz-analyzer
 npm run skill:import -- live-lesson
 ```
 
-Verify in the Admin UI: **Tenants → [your tenant] → Skills tab**
+Verify in the Admin UI: **Solutions → [your tenant] → Skills tab**
 
 ---
 

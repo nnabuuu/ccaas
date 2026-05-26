@@ -61,7 +61,7 @@ open http://localhost:3010/
 solution backend 应该看到：
 ```
 [DemoEntityProvider]        Loaded 3 entities from .../entities (editable fields: ...)
-[SolutionRegisterService]   Solution registered: tenantId=...
+[SolutionRegisterService]   Solution registered: solutionId=...
 [SolutionRegisterService]   Created skill sandbox-explorer (id=...)
 [SolutionRegisterService]   Upserted 6 file(s) for sandbox-explorer
 [SolutionRegisterService]   Hot-reload watcher active on .../skills

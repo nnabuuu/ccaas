@@ -10,9 +10,9 @@ Since v1.1.0, **SSE is the default transport**. No extra configuration needed:
 // ✅ SSE is the default - this is the recommended pattern
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001', // Always use absolute URL to backend
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
 })
-const chat = useAgentChat({ connection, tenantId: 'my-solution' })
+const chat = useAgentChat({ connection, solutionId: 'my-solution' })
 ```
 
 Chat messages stream via `POST /api/v1/sessions/:id/messages` returning `text/event-stream`.
@@ -51,7 +51,7 @@ class CreateCompletionDto {
 
   @IsOptional()
   @IsString()
-  tenantId?: string
+  solutionId?: string
 }
 ```
 
@@ -127,7 +127,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (raw) => {
     const parsed = parseOutputUpdateEvent(raw)
     if (parsed) {

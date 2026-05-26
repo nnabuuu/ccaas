@@ -264,7 +264,7 @@ await server.connect(transport)
 {% endhint %}
 
 {% hint style="info" %}
-**路径自动补全**：`args` 中的相对路径（如 `mcp-server/dist/index.js`）会在运行时自动加上租户的 MCP server 目录前缀：`tenants/{tenantId}/mcp-servers/{slug}/mcp-server/dist/index.js`。绝对路径、CLI 参数（`-v`）、模板变量（`${CORE_MCP_DIR}/...`）和 URL 不受影响。
+**路径自动补全**：`args` 中的相对路径（如 `mcp-server/dist/index.js`）会在运行时自动加上租户的 MCP server 目录前缀：`tenants/{solutionId}/mcp-servers/{slug}/mcp-server/dist/index.js`。绝对路径、CLI 参数（`-v`）、模板变量（`${CORE_MCP_DIR}/...`）和 URL 不受影响。
 {% endhint %}
 
 {% hint style="info" %}
@@ -617,7 +617,7 @@ Connect URL: http://localhost:6274
   "env": {
     "NODE_ENV": "production"
   },
-  "tenantId": "quiz-analyzer"
+  "solutionId": "quiz-analyzer"
 }
 ```
 
@@ -631,7 +631,7 @@ Connect URL: http://localhost:6274
 | `args` | string[] | 命令参数 |
 | `cwd` | string | 工作目录 (支持 `${SOLUTION_DIR}` 变量) |
 | `env` | object | 环境变量 |
-| `tenantId` | string | 所属租户 ID |
+| `solutionId` | string | 所属租户 ID |
 
 #### Step 2: 注册到数据库
 
@@ -667,7 +667,7 @@ echo "✅ MCP Server registered successfully"
 
 # 验证注册
 echo "Verifying registration..."
-curl -s "${CCAAS_URL}/api/v1/mcp-servers?tenantId=${TENANT_ID}" | jq '.items[] | {name, status}'
+curl -s "${CCAAS_URL}/api/v1/mcp-servers?solutionId=${TENANT_ID}" | jq '.items[] | {name, status}'
 ```
 
 ```bash
@@ -679,10 +679,10 @@ chmod +x register-mcp.sh
 
 ```bash
 # 查看所有 MCP Servers
-curl -s http://localhost:3001/api/v1/mcp-servers | jq '.items[] | {name, status, tenantId}'
+curl -s http://localhost:3001/api/v1/mcp-servers | jq '.items[] | {name, status, solutionId}'
 
 # 查看特定租户的 MCP Servers
-curl -s http://localhost:3001/api/v1/mcp-servers?tenantId=quiz-analyzer | jq '.'
+curl -s http://localhost:3001/api/v1/mcp-servers?solutionId=quiz-analyzer | jq '.'
 
 # 测试 MCP Server 健康检查
 curl http://localhost:3001/api/v1/mcp-servers/{id}/health
@@ -693,7 +693,7 @@ curl http://localhost:3001/api/v1/mcp-servers/{id}/health
 {
   "name": "quiz-analyzer-tools",
   "status": "running",
-  "tenantId": "quiz-analyzer",
+  "solutionId": "quiz-analyzer",
   "tools": [
     "parse_quiz_content",
     "search_knowledge_points",
@@ -707,7 +707,7 @@ curl http://localhost:3001/api/v1/mcp-servers/{id}/health
 ```
 用户发送消息
     ↓
-CCAAS Backend 加载 Skills (tenantId: quiz-analyzer)
+CCAAS Backend 加载 Skills (solutionId: quiz-analyzer)
     ↓
 AI Agent 分析消息，选择 Skill
     ↓
@@ -830,14 +830,14 @@ if (typeof args.query !== 'string') {
 
 **原因**:
 - MCP Server 状态为 `stopped`
-- tenantId 不匹配
+- solutionId 不匹配
 - 工具名称拼写错误
 
 **排查步骤**:
 
 1. **检查 MCP Server 状态**:
    ```bash
-   curl http://localhost:3001/api/v1/mcp-servers?tenantId=quiz-analyzer | jq '.items[] | {name, status}'
+   curl http://localhost:3001/api/v1/mcp-servers?solutionId=quiz-analyzer | jq '.items[] | {name, status}'
    ```
 
    应该显示 `"status": "running"`
@@ -853,7 +853,7 @@ if (typeof args.query !== 'string') {
    ```bash
    # 查看 Skill 的 allowedTools
    sqlite3 packages/backend/.agent-workspace/data.db \
-     "SELECT slug, allowedTools FROM skills WHERE tenantId='quiz-analyzer';"
+     "SELECT slug, allowedTools FROM skills WHERE solutionId='quiz-analyzer';"
    ```
 
 4. **查看日志**:
@@ -1031,7 +1031,7 @@ async function searchDatabase(query: string) {
 - [ ] 无 `console.log` 输出到 stdout (仅 stderr)
 - [ ] 返回值为标准 MCP 格式 (`{ content: [...] }`)
 - [ ] 工具名称与 Skill 的 `allowedTools` 一致
-- [ ] tenantId 配置正确
+- [ ] solutionId 配置正确
 - [ ] 性能测试：大数据量、高并发场景
 - [ ] 日志记录完整（请求、响应、错误）
 - [ ] package.json scripts 包含 `build` 和 `start`

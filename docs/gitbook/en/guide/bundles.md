@@ -82,7 +82,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
-  tenantId: 'my-solution',
+  solutionId: 'my-solution',
   onOutputUpdate: (update) => {
     if (update.field === 'attachment') {
       addAttachment(update.value)

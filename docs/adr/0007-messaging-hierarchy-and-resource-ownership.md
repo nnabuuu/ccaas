@@ -61,7 +61,7 @@ Conversation (= Session)
 
 **属性**:
 - `id` — 唯一标识
-- `tenantId` — 租户隔离
+- `solutionId` — 租户隔离
 - `status` — idle | processing | error | closed | cancelling
 - `messageCount` — 预聚合的消息总数
 - `totalTokens` — 预聚合的 token 总量
@@ -185,7 +185,7 @@ export class OutputUpdate {
   sessionId!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  tenantId!: string | null;
+  solutionId!: string | null;
 
   @Column({ type: 'integer' })
   turnIndex!: number;  // 所属 Turn
@@ -293,7 +293,7 @@ WHERE sessionId = ? AND turnIndex = 3;
 ### 6. 完整资源层级总结
 
 ```
-Tenant
+Solution
 ├── Conversation (= Session)
 │   ├── ConversationContext (1:1, 配置快照)
 │   ├── ProcessLifecycleEvents[] (进程事件)

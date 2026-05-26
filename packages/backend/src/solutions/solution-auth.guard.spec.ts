@@ -99,7 +99,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(headerTenant as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-header' },
+      headers: { 'x-solution-id': 'tenant-header' },
       context: {
         solutionId: 'tenant-from-key',
         apiKeyId: 'key-1',
@@ -116,12 +116,53 @@ describe('SolutionAuthGuard', () => {
 
   // ── Header / query resolution ─────────────────────────────────────────
 
+  it('also accepts the legacy X-Tenant-Id header (α compat alias)', async () => {
+    // α renamed the canonical header to X-Solution-Id but kept
+    // X-Tenant-Id readable for one release so external admin tooling
+    // and CI scripts don't break overnight. Pin this so an inadvertent
+    // cleanup that drops the alias before the window closes shows up
+    // here.
+    const tenant = { id: 'tenant-legacy-header', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(tenant as any);
+
+    const request: Record<string, any> = {
+      headers: { 'x-tenant-id': 'tenant-legacy-header' },
+    };
+    const ctx = createMockContext(request);
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(request.solutionId).toBe('tenant-legacy-header');
+    expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-legacy-header');
+  });
+
+  it('prefers X-Solution-Id over the legacy X-Tenant-Id when both are present', async () => {
+    const tenant = { id: 'tenant-canonical', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(tenant as any);
+
+    const request: Record<string, any> = {
+      headers: {
+        'x-solution-id': 'tenant-canonical',
+        'x-tenant-id': 'tenant-from-legacy',
+      },
+    };
+    const ctx = createMockContext(request);
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(request.solutionId).toBe('tenant-canonical');
+    // Legacy header value MUST NOT win when canonical is present —
+    // otherwise an attacker spoofing the legacy header could override
+    // a legitimate canonical caller.
+    expect(tenantsService.findOne).not.toHaveBeenCalledWith('tenant-from-legacy');
+  });
+
   it('should resolve tenant from X-Solution-Id header', async () => {
     const tenant = { id: 'tenant-abc', status: 'active' };
     tenantsService.findOne.mockResolvedValue(tenant as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-abc' },
+      headers: { 'x-solution-id': 'tenant-abc' },
     };
     const ctx = createMockContext(request);
     const result = await guard.canActivate(ctx);
@@ -153,7 +194,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(null);
 
     const ctx = createMockContext({
-      headers: { 'x-tenant-id': 'no-such-tenant' },
+      headers: { 'x-solution-id': 'no-such-tenant' },
     });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
@@ -167,7 +208,7 @@ describe('SolutionAuthGuard', () => {
     } as any);
 
     const ctx = createMockContext({
-      headers: { 'x-tenant-id': 'tenant-inactive' },
+      headers: { 'x-solution-id': 'tenant-inactive' },
     });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
@@ -181,7 +222,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(targetTenant as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: {
         solutionId: 'tenant-caller',
         apiKeyId: 'key-1',
@@ -201,7 +242,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(targetTenant as any);
 
     const ctx = createMockContext({
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: {
         solutionId: 'tenant-caller',
         apiKeyId: 'key-2',
@@ -220,7 +261,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(tenant as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-same' },
+      headers: { 'x-solution-id': 'tenant-same' },
       context: {
         solutionId: 'tenant-same',
         apiKeyId: 'key-3',
@@ -245,7 +286,7 @@ describe('SolutionAuthGuard', () => {
     } as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: {
         solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
@@ -266,7 +307,7 @@ describe('SolutionAuthGuard', () => {
     userTenantService.findUserInTenant.mockResolvedValue(null);
 
     const ctx = createMockContext({
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: {
         solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
@@ -283,7 +324,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(targetTenant as any);
 
     const ctx = createMockContext({
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: {
         solutionId: 'tenant-caller',
         apiKeyId: 'key-builder',
@@ -302,7 +343,7 @@ describe('SolutionAuthGuard', () => {
     tenantsService.findOne.mockResolvedValue(tenant as any);
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-open' },
+      headers: { 'x-solution-id': 'tenant-open' },
       // no context — ApiKeyGuard was not applied or auth is optional
     };
     const ctx = createMockContext(request);
@@ -323,7 +364,7 @@ describe('SolutionAuthGuard', () => {
     });
 
     const request: Record<string, any> = {
-      headers: { 'x-tenant-id': 'tenant-target' },
+      headers: { 'x-solution-id': 'tenant-target' },
       context: originalContext,
     };
     const ctx = createMockContext(request);

@@ -130,7 +130,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 export function TeacherView() {
   const chat = useAgentChat({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'your-tenant-id',
+    solutionId: 'your-tenant-id',
     sessionTemplate: 'teacher-assistant', // ← 填入模板名称
   })
 
@@ -308,7 +308,7 @@ export function TeacherView() {
 ### 列出模板
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/session-templates
+GET /api/v1/admin/solutions/:solutionId/session-templates
 Authorization: Bearer <admin-api-key>
 ```
 
@@ -330,7 +330,7 @@ Authorization: Bearer <admin-api-key>
 ### 获取单个模板
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/session-templates/:name
+GET /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 ```
 
@@ -348,7 +348,7 @@ Authorization: Bearer <admin-api-key>
 ### 创建模板
 
 ```http
-POST /api/v1/admin/tenants/:tenantId/session-templates
+POST /api/v1/admin/solutions/:solutionId/session-templates
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -370,7 +370,7 @@ Content-Type: application/json
 ### 更新模板
 
 ```http
-PUT /api/v1/admin/tenants/:tenantId/session-templates/:name
+PUT /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -386,7 +386,7 @@ Content-Type: application/json
 ### 删除模板
 
 ```http
-DELETE /api/v1/admin/tenants/:tenantId/session-templates/:name
+DELETE /api/v1/admin/solutions/:solutionId/session-templates/:name
 Authorization: Bearer <admin-api-key>
 ```
 
@@ -397,7 +397,7 @@ Authorization: Bearer <admin-api-key>
 在部署前测试模板与前端显式参数的合并效果：
 
 ```http
-POST /api/v1/admin/tenants/:tenantId/session-templates/:name/preview
+POST /api/v1/admin/solutions/:solutionId/session-templates/:name/preview
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -473,7 +473,7 @@ const templateMap: Record<string, string> = {
 }
 
 const chat = useAgentChat({
-  tenantId: user.tenantId,
+  solutionId: user.solutionId,
   sessionTemplate: templateMap[user.role],
 })
 ```
@@ -492,7 +492,7 @@ const chat = useAgentChat({ sessionTemplate: template })
 // 每个租户通过管理界面管理自己的模板。
 // 前端只需引用模板名称：
 const chat = useAgentChat({
-  tenantId: user.tenantId,
+  solutionId: user.solutionId,
   sessionTemplate: 'default-assistant',
 })
 ```
@@ -540,13 +540,13 @@ const chat = useAgentChat({
 ### 模板在前端未显示
 
 **检查：**
-1. 前端的 `tenantId` 是否与拥有该模板的租户匹配
+1. 前端的 `solutionId` 是否与拥有该模板的租户匹配
 2. 模板名称拼写是否完全正确（区分大小写）
 3. 通过 API 验证模板是否存在：
 
 ```bash
 curl -H "Authorization: Bearer <key>" \
-  http://localhost:3001/api/v1/admin/tenants/<tenantId>/session-templates
+  http://localhost:3001/api/v1/admin/solutions/<solutionId>/session-templates
 ```
 
 ### 模板创建返回 409
@@ -557,7 +557,7 @@ curl -H "Authorization: Bearer <key>" \
 
 ### 模板创建返回 400（已达上限）
 
-**错误**：`Tenant has reached the maximum of 50 session templates`
+**错误**：`Solution has reached the maximum of 50 session templates`
 
 **解决方案**：删除不再使用的模板或合并多个配置。
 

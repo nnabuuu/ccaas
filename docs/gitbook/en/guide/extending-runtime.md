@@ -46,7 +46,7 @@ After startup you should see:
 [SessionAssetMaterializer] Session asset materializer active for 1 tenant(s): <your-slug>
 ```
 
-Every new session under this tenant: `SessionAssetMaterializer` copies these directories into the workspace root. The agent can `ls entities/` right away.
+Every new session under this solution: `SessionAssetMaterializer` copies these directories into the workspace root. The agent can `ls entities/` right away.
 
 **Safety guards** (built-in): 500 files cap, 1MB per file, 10MB total, symbolic-link rejection. See `packages/backend/src/sessions/services/session-asset-materializer.service.ts`.
 
@@ -128,7 +128,7 @@ async function executeRiskyStep(sessionId: string) {
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'x-tenant-id': tenant,
+    'x-solution-id': tenant,
   };
 
   // 1. checkpoint
@@ -174,7 +174,7 @@ Full endpoint spec: `reference/runtime-api.md` § FS endpoints.
 ```bash
 # Solution starting a multi-step workflow
 curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" \
   -H 'Content-Type: application/json' \
   -d '{"value":{"current":1,"total":7,"experimentVariant":"B"}}'
 
@@ -184,7 +184,7 @@ curl -X PUT "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 
 # Frontend / other service polls
 curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT"
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT"
 # → { "key": "workflow.step", "value": {...}, "updatedAt": "..." }
 ```
 
@@ -254,8 +254,8 @@ ChangeEvent so the GUI can warn the user.
 
 ### Runtime URL updates
 
-`PUT /tenants/:id` with `{ config: { artifactUrl } }` triggers a
-`tenant.config.changed` event; the registry evicts its cached entry
+`PUT /solutions/:id` with `{ config: { artifactUrl } }` triggers a
+`solution.config.changed` event; the registry evicts its cached entry
 and the next sync turn uses the new URL. No backend restart.
 
 ---

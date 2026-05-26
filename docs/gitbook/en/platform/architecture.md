@@ -15,7 +15,7 @@ KedgeAgentic uses a layered architecture where each layer has clear responsibili
 │   Routing · Rate Limiting                    │
 ├─────────────────────────────────────────────┤
 │            Orchestration Layer               │
-│   Agent Engine · Skill Router · Tenant       │
+│   Agent Engine · Skill Router · Solution       │
 │   Registry                                   │
 ├─────────────────────────────────────────────┤
 │            Execution Layer                   │
@@ -99,7 +99,7 @@ A complete user interaction follows this data flow:
 User Input
   │
   ▼
-API Gateway ── Authentication ── Tenant Resolution
+API Gateway ── Authentication ── Solution Resolution
   │
   ▼
 Skill Router ── Trigger Matching ── Select Skill

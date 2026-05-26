@@ -8,7 +8,7 @@
 
 - [概述](#概述)
 - [API Key 系统](#api-key-系统)
-  - [Tenant-Level Keys vs User-Level Keys](#tenant-level-keys-vs-user-level-keys)
+  - [Solution-Level Keys vs User-Level Keys](#tenant-level-keys-vs-user-level-keys)
   - [API Key Scopes](#api-key-scopes)
   - [API Key 格式](#api-key-格式)
 - [权限控制架构](#权限控制架构)
@@ -30,18 +30,18 @@
 
 ## 概述
 
-CCAAS 使用 **API Key** 进行身份认证和授权。每个 API Key 都属于一个 **Tenant**（租户），并具有特定的 **Scopes**（权限范围）。
+CCAAS 使用 **API Key** 进行身份认证和授权。每个 API Key 都属于一个 **Solution**（租户），并具有特定的 **Scopes**（权限范围）。
 
 **核心概念：**
-- **Multi-Tenancy**：每个 Solution 都是一个独立的 Tenant
+- **Multi-Tenancy**：每个 Solution 都是一个独立的 Solution
 - **API Key Authentication**：所有请求都通过 API Key 认证
 - **Scope-Based Authorization**：基于 Scope 的细粒度权限控制
-- **Two-Level Keys**：Tenant-Level（租户级）和 User-Level（用户级）
+- **Two-Level Keys**：Solution-Level（租户级）和 User-Level（用户级）
 
 **设计哲学：**
 ```
 前端用户不应知道 Skills、MCP Servers、API Keys 等概念
-CCAAS Backend 根据 tenantId 自动加载所有资源
+CCAAS Backend 根据 solutionId 自动加载所有资源
 Solution 通过 Bootstrap Scripts 完成自动化部署
 ```
 
@@ -49,14 +49,14 @@ Solution 通过 Bootstrap Scripts 完成自动化部署
 
 ## API Key 系统
 
-### Tenant-Level Keys vs User-Level Keys
+### Solution-Level Keys vs User-Level Keys
 
 CCAAS 支持两种类型的 API Key：
 
-#### 1. Tenant-Level Keys（租户级 API Key）
+#### 1. Solution-Level Keys（租户级 API Key）
 
 **特征：**
-- ❌ **没有 `userId`**，代表整个租户（Tenant）
+- ❌ **没有 `userId`**，代表整个租户（Solution）
 - ✅ 用于**系统级操作**和**自动化部署**
 - ✅ 适用于 Bootstrap Scripts、CI/CD、后台任务
 
@@ -70,7 +70,7 @@ CCAAS 支持两种类型的 API Key：
 ```typescript
 // SkillPermissionGuard.ts
 if (context.apiKeyScopes?.includes('skills:write') && !context.userId) {
-  // Tenant-level key with skills:write scope
+  // Solution-level key with skills:write scope
   // Full access to create/update/delete skills
   return true;
 }
@@ -82,7 +82,7 @@ if (context.apiKeyScopes?.includes('skills:write') && !context.userId) {
 curl -X POST http://localhost:3001/api/v1/admin/api-keys \
   -H "Content-Type: application/json" \
   -d '{
-    "tenantId": "xxx",
+    "solutionId": "xxx",
     "name": "bootstrap-key",
     "scopes": ["skills:write", "mcp:write", "admin"]
   }'
@@ -126,8 +126,8 @@ throw new ForbiddenException('You do not have permission');
 
 **创建方式：**
 ```bash
-# 通过 Tenant API（需要 userId）
-curl -X POST http://localhost:3001/api/v1/tenants/{tenantId}/api-keys \
+# 通过 Solution API（需要 userId）
+curl -X POST http://localhost:3001/api/v1/solutions/{solutionId}/api-keys \
   -H "Content-Type: application/json" \
   -H "X-User-Id: user-123" \
   -d '{
@@ -283,12 +283,12 @@ POST /api/v1/auth/login
 | `PATCH /users/:id` | 更新用户（name, status） |
 | `DELETE /users/:id` | 软删除用户（status → deleted） |
 
-### UserTenant CRUD 端点
+### UserSolution CRUD 端点
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| `POST /users/tenants` | 将用户添加到租户（userId, tenantId, role） |
-| `GET /users/tenants/by-tenant/:tenantId` | 列出租户下用户 |
+| `POST /users/tenants` | 将用户添加到租户（userId, solutionId, role） |
+| `GET /users/solutions/by-solution/:solutionId` | 列出租户下用户 |
 | `GET /users/tenants/by-user/:userId` | 列出用户所属租户 |
 | `PATCH /users/tenants/:id` | 更新角色/权限 |
 | `DELETE /users/tenants/:id` | 软移除（isActive → false） |
@@ -312,8 +312,8 @@ if (canCreateSkills === undefined) {
 ### 软删除策略
 
 - **User 软删除**：设置 `User.status = 'deleted'`，用户数据保留
-- **UserTenant 软移除**：设置 `UserTenant.isActive = false`，关联记录保留
-- **级联**：删除用户时，关联的 UserTenant 记录同步设为不活跃，相关 API Key 被吊销
+- **UserSolution 软移除**：设置 `UserSolution.isActive = false`，关联记录保留
+- **级联**：删除用户时，关联的 UserSolution 记录同步设为不活跃，相关 API Key 被吊销
 
 ### 角色层级
 
@@ -342,7 +342,7 @@ Request
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
-│ TenantGuard      │ ← 验证 Tenant，加载 Tenant 信息
+│ SolutionAuthGuard      │ ← 验证 Solution，加载 Solution 信息
 └────────┬─────────┘
          ↓
 ┌──────────────────┐
@@ -375,15 +375,15 @@ Request
    - 设置 `RequestContext`
    - **可选认证回退**：当路由标记 `@OptionalAuth()` 且未提供 Key 时，尝试创建匿名上下文（`AUTH_ALLOW_ANONYMOUS=true`）或设置 null context（`false`），请求不被拒绝；但如果提供了无效/过期 Key，仍然返回 401
 
-2. **TenantGuard**（`@UseGuards(TenantGuard)`）
-   - 从 `X-Tenant-Id` header 或 `context.tenantId` 获取 Tenant ID
-   - 验证 Tenant 存在
-   - 检查 Tenant 状态（active, suspended）
-   - 将 `tenantId` 设置到 `RequestContext`
+2. **SolutionAuthGuard**（`@UseGuards(SolutionAuthGuard)`）
+   - 从 `X-Solution-Id` header 或 `context.solutionId` 获取 Solution ID
+   - 验证 Solution 存在
+   - 检查 Solution 状态（active, suspended）
+   - 将 `solutionId` 设置到 `RequestContext`
 
 3. **SkillPermissionGuard**（`@UseGuards(SkillPermissionGuard)`）
    - 针对 Skill 操作的细粒度权限控制
-   - 区分 Tenant-Level Key 和 User-Level Key
+   - 区分 Solution-Level Key 和 User-Level Key
    - 检查 Skill 作用域（tenant, personal）
    - 验证用户角色和权限
 
@@ -393,9 +393,9 @@ Request
 
 ```typescript
 export interface RequestContext {
-  // Tenant 信息
-  tenantId: string;              // 租户 ID
-  tenant?: Tenant;               // 租户对象（可选）
+  // Solution 信息
+  solutionId: string;              // 租户 ID
+  tenant?: Solution;               // 租户对象（可选）
 
   // API Key 信息
   apiKeyId?: string;             // API Key ID
@@ -404,16 +404,16 @@ export interface RequestContext {
   // User 信息（User-Level Key）
   userId?: string;               // 用户 ID（仅 User-Level Key）
   user?: User;                   // 用户对象（可选）
-  userTenant?: UserTenant;       // 用户在租户内的角色和权限
+  userTenant?: UserSolution;       // 用户在租户内的角色和权限
 
   // 匿名标识
   isAnonymous: boolean;          // 是否匿名请求
 }
 ```
 
-**UserTenant 结构：**
+**UserSolution 结构：**
 ```typescript
-export interface UserTenant {
+export interface UserSolution {
   role: 'admin' | 'developer' | 'viewer';  // 用户角色
   canCreateSkills: boolean;                // 是否可创建 Skills
   canManageMcp: boolean;                   // 是否可管理 MCP
@@ -432,9 +432,9 @@ export interface UserTenant {
      throw ForbiddenException('Authentication required');
    }
 
-2. Tenant-Level Key 检查
+2. Solution-Level Key 检查
    if (context.apiKeyScopes?.includes('skills:write') && !context.userId) {
-     return true; // Tenant-level key, full access
+     return true; // Solution-level key, full access
    }
 
 3. User-Level Key 检查
@@ -460,7 +460,7 @@ export interface UserTenant {
 ```typescript
 // SkillPermissionGuard.checkReadPermission()
 
-1. Tenant-Scoped Skills
+1. Solution-Scoped Skills
    if (skill.scope === 'tenant') {
      return true; // Anyone in tenant can read
    }
@@ -508,7 +508,7 @@ export interface UserTenant {
 
 ### 解决方案：Bootstrap Script
 
-通过 **直接访问数据库** 创建第一个 Tenant-Level API Key：
+通过 **直接访问数据库** 创建第一个 Solution-Level API Key：
 
 **文件：** `solutions/{solution-name}/create-bootstrap-key.sh`
 
@@ -528,7 +528,7 @@ KEY_HASH=$(echo -n "$RAW_KEY" | openssl dgst -sha256 -binary | xxd -p -c 256)
 sqlite3 "$DB_PATH" <<EOF
 INSERT INTO api_keys (
   id,
-  tenantId,
+  solutionId,
   name,
   keyHash,
   keyPrefix,
@@ -566,7 +566,7 @@ echo "API Key: $RAW_KEY"
 
 **关键点：**
 1. ✅ **直接插入数据库**，绕过 API 认证
-2. ✅ **Tenant-Level Key**（无 userId）
+2. ✅ **Solution-Level Key**（无 userId）
 3. ✅ **完整权限**（admin, skills:write, mcp:write）
 4. ✅ **仅显示一次**，安全警告
 
@@ -635,10 +635,10 @@ const session = useAgentChat({
 
 **✅ 正确做法：**
 ```typescript
-// 前端只需提供 tenantId，一切自动加载
+// 前端只需提供 solutionId，一切自动加载
 const session = useAgentChat({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'lesson-plan-designer'  // ✅ 仅此而已
+  solutionId: 'lesson-plan-designer'  // ✅ 仅此而已
 });
 
 // CCAAS Backend 自动：
@@ -707,11 +707,11 @@ solutions/your-solution/
 
 ### 集成步骤
 
-#### Step 1: 创建 Tenant
+#### Step 1: 创建 Solution
 
 **方法 A：通过 API**
 ```bash
-curl -X POST http://localhost:3001/api/v1/tenants \
+curl -X POST http://localhost:3001/api/v1/solutions \
   -H "Content-Type: application/json" \
   -d '{
     "slug": "your-solution",
@@ -722,7 +722,7 @@ curl -X POST http://localhost:3001/api/v1/tenants \
 
 **方法 B：通过 Bootstrap Script**
 ```bash
-# inject-skills.sh 会自动创建 Tenant
+# inject-skills.sh 会自动创建 Solution
 ./inject-skills.sh
 ```
 
@@ -805,7 +805,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk';
 function YourApp() {
   const { connection, chat, status } = useAgentChat({
     serverUrl: 'http://localhost:3001',
-    tenantId: 'your-solution',  // ← 仅需 tenantId
+    solutionId: 'your-solution',  // ← 仅需 solutionId
   });
 
   const handleSendMessage = async (text: string) => {
@@ -831,7 +831,7 @@ import { useAgentConnection, useAgentChat } from '@kedge-agentic/vue-sdk';
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'your-solution',  // ← 仅需 tenantId
+  solutionId: 'your-solution',  // ← 仅需 solutionId
 });
 
 const chat = useAgentChat({ connection });
@@ -893,7 +893,7 @@ const sendMessage = async (text: string) => {
 // 基础 Skills: scope = 'tenant'
 // 用户扩展: scope = 'personal'
 
-// UserTenant.canCreateSkills = true
+// UserSolution.canCreateSkills = true
 ```
 
 **特点：**
@@ -1052,7 +1052,7 @@ X-Api-Key: sk-bootstrap_xxx  (需要 admin scope)
 **Request Body:**
 ```json
 {
-  "tenantId": "your-solution",
+  "solutionId": "your-solution",
   "name": "bootstrap-key",
   "scopes": ["skills:write", "mcp:write", "admin"],
   "rateLimitRpm": 100,
@@ -1084,7 +1084,7 @@ X-Api-Key: sk-bootstrap_xxx  (需要 admin scope)
 
 **Endpoint:**
 ```
-GET /api/v1/admin/api-keys?tenantId={tenantId}&page=1&limit=50
+GET /api/v1/admin/api-keys?solutionId={solutionId}&page=1&limit=50
 ```
 
 **Headers:**
@@ -1098,7 +1098,7 @@ X-Api-Key: sk-bootstrap_xxx  (需要 admin scope)
   "items": [
     {
       "id": "api-key-uuid",
-      "tenantId": "your-solution",
+      "solutionId": "your-solution",
       "name": "bootstrap-key",
       "keyPrefix": "sk-bootstrap_xxx",
       "scopes": ["skills:write", "mcp:write", "admin"],
@@ -1148,7 +1148,7 @@ POST /api/v1/skills
 **Headers:**
 ```
 Content-Type: application/json
-X-Tenant-Id: your-solution
+X-Solution-Id: your-solution
 X-Api-Key: sk-bootstrap_xxx  (需要 skills:write scope)
 ```
 
@@ -1187,7 +1187,7 @@ POST /api/v1/mcp-servers
 **Headers:**
 ```
 Content-Type: application/json
-X-Tenant-Id: your-solution
+X-Solution-Id: your-solution
 X-Api-Key: sk-bootstrap_xxx  (需要 mcp:write scope)
 ```
 
@@ -1226,9 +1226,9 @@ X-Api-Key: sk-bootstrap_xxx  (需要 mcp:write scope)
 
 **核心要点：**
 
-1. **两种 API Key**：Tenant-Level（系统操作）和 User-Level（用户操作）
+1. **两种 API Key**：Solution-Level（系统操作）和 User-Level（用户操作）
 2. **Bootstrap 流程**：通过数据库直接插入创建第一个 API Key
-3. **前端透明**：前端只需 tenantId，无需知道 Skills/MCP
+3. **前端透明**：前端只需 solutionId，无需知道 Skills/MCP
 4. **自动化部署**：通过 Scripts 完成 Skills/MCP 注册
 5. **最小权限**：根据场景设计合适的 Scopes
 
@@ -1244,7 +1244,7 @@ export CCAAS_API_KEY=sk-bootstrap_xxx
 # 3. 前端集成
 const session = useAgentChat({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'your-solution'
+  solutionId: 'your-solution'
 });
 ```
 

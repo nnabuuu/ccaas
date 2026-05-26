@@ -80,7 +80,7 @@ $ tail $WORKSPACE_DIR/_sandbox_logs/bash-mcp.log
 | `WORKSPACE_AGENTFS_BASE_DIR=/var/...` | `${WORKSPACE_DIR}/_agentfs_base` | base overlay 落盘位置 |
 | `WORKSPACE_AGENTFS_DELTA_STORE=/var/...` | `${WORKSPACE_DIR}/_agentfs_deltas` | 每 session 的 delta DB 落盘位置 |
 | `SOLUTION_DIRS=slug:abspath,slug2:abspath2` | 空 | 给 SessionAssetMaterializer 用，决定哪些 solution 的 entities+resources 被 seed 进 session |
-| `SOLUTIONS_DIR=./solutions/business` | 空 | 启动时 SolutionLoaderService 自动 import 该目录下每个子目录的 `solution.json`（包括 tenant、skills、mcp、`tenant.config.artifactUrl`）。Phase 1.6 起。不设则不 auto-import，得手动 `POST /admin/solutions/import`。 |
+| `SOLUTIONS_DIR=./solutions/business` | 空 | 启动时 SolutionLoaderService 自动 import 该目录下每个子目录的 `solution.json`（包括 tenant、skills、mcp、`solution.config.artifactUrl`）。Phase 1.6 起。不设则不 auto-import，得手动 `POST /admin/solutions/import`。 |
 
 ## 保留命名约定
 
@@ -109,11 +109,11 @@ SID=demo-xxxxxxxx
 
 # 看 agent 在 sandbox 里改了什么
 curl -s "http://localhost:3001/api/v1/sessions/$SID/fs/diff" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" | python3 -m json.tool
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" | python3 -m json.tool
 
 # checkpoint + rollback
 curl -X POST "http://localhost:3001/api/v1/sessions/$SID/fs/snapshot" \
-  -H "x-api-key: $KEY" -H "x-tenant-id: $TENANT" \
+  -H "x-api-key: $KEY" -H "x-solution-id: $TENANT" \
   -H 'Content-Type: application/json' -d '{"label":"before-risky"}'
 ```
 

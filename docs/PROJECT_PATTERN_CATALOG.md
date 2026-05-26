@@ -34,7 +34,7 @@ class CourseProject {
 ```
 
 Maps to **`Project`** in `agent-runtime/project/`. Live-lesson lacks
-the `tenantId` field — added in the abstract `Project`. Live-lesson's
+the `solutionId` field — added in the abstract `Project`. Live-lesson's
 `status` union extends the abstract's `'active'` to `'published'`
 (semantic difference: published = visible to students). The
 abstract's `attributes: Record<string, unknown>` would absorb the
@@ -159,8 +159,8 @@ in service code ad-hoc; reviewer can't tell "what schema should
 this match" without grepping callers. The abstract's
 `Artifact.schemaId` (optional) closes the gap.
 
-⚠️ **No `tenantId` on `CourseProject`** — live-lesson assumes
-single-tenant; multi-tenant would need this added. The abstract
+⚠️ **No `solutionId` on `CourseProject`** — live-lesson assumes
+single-tenant; multi-solution would need this added. The abstract
 makes it required from day one.
 
 ⚠️ **No versioning** — re-saving silently clobbers prior content.

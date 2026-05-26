@@ -46,7 +46,7 @@ curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
   -H "Authorization: Bearer $CCAAS_API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
-  -d '{"message":"你好！","tenantId":"demo-02-pure-chat"}'
+  -d '{"message":"你好！","solutionId":"demo-02-pure-chat"}'
 ```
 
 更多 Demo（02-multi-template 到 12-sync-fields）可在同一仓库中获取。
@@ -64,7 +64,7 @@ function App() {
     sessionPrefix: 'my-app'
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
   const status = useAgentStatus({ connection })
 
   return (
@@ -103,7 +103,7 @@ curl -N -X POST http://localhost:3001/api/v1/sessions/my-session/messages \
   -H "Accept: text/event-stream" \
   -d '{
     "message": "你好，请介绍一下你自己",
-    "tenantId": "default"
+    "solutionId": "default"
   }'
 ```
 
@@ -125,7 +125,7 @@ data: {"type":"agent_status","status":"complete","sessionId":"my-session"}
 curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
   -H "Content-Type: application/json" \
   -d '{
-    "tenantId": "default"
+    "solutionId": "default"
   }'
 ```
 

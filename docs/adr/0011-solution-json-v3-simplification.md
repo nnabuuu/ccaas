@@ -481,7 +481,7 @@ describe('v2 to v3 migration', () => {
 **Considered:** Move ALL config to SKILL.md frontmatter.
 
 **Rejected:**
-- Tenant config needs a single source
+- Solution config needs a single source
 - MCP servers are solution-level, not skill-level
 - solution.json provides clear entry point
 

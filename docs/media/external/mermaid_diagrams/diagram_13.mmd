@@ -12,7 +12,7 @@ graph TB
     end
 
     subgraph platform[即见平台 CCAAS]
-        Tenant[Tenant<br/>租户空间]
+        Solution[Solution<br/>租户空间]
         Solution[Solution<br/>解决方案]
         Skills[Skills<br/>AI 技能]
         Agent[Agent Engine<br/>执行引擎]
@@ -39,7 +39,7 @@ graph TB
     MCP2 --> Agent
     MCP3 --> Agent
 
-    Tenant --> Solution
+    Solution --> Solution
     Solution --> Skills
     Skills --> Agent
     Agent --> Session

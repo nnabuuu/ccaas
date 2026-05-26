@@ -27,7 +27,7 @@ type SessionStatus = 'idle' | 'processing' | 'error' | 'completed'
 
 interface Session {
   id: string
-  tenantId: string
+  solutionId: string
   status: SessionStatus
   createdAt: string
   updatedAt: string
@@ -79,7 +79,7 @@ type SkillStatus = 'draft' | 'published' | 'archived'
 
 interface Skill {
   id: string
-  tenantId: string
+  solutionId: string
   name: string
   slug: string
   description: string
@@ -111,10 +111,10 @@ interface SkillVersion {
 }
 ```
 
-### Tenant
+### Solution
 
 ```typescript
-interface Tenant {
+interface Solution {
   id: string
   name: string
   slug: string
@@ -144,15 +144,15 @@ interface User {
 }
 ```
 
-### UserTenant
+### UserSolution
 
 ```typescript
 type UserRole = 'admin' | 'developer' | 'viewer'
 
-interface UserTenant {
+interface UserSolution {
   id: string
   userId: string
-  tenantId: string
+  solutionId: string
   role: UserRole
   canCreateSkills: boolean
   isActive: boolean
@@ -173,7 +173,7 @@ type ApiKeyScope =
 
 interface ApiKey {
   id: string
-  tenantId: string
+  solutionId: string
   userId?: string
   name: string
   prefix: string

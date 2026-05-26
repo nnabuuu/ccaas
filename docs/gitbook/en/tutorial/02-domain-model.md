@@ -492,12 +492,12 @@ import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
 })
 
 const { messages, sendMessage } = useAgentChat({
   connection,
-  tenantId: 'lesson-plan-designer',
+  solutionId: 'lesson-plan-designer',
   onOutputUpdate: (update) => {
     // The SDK normalizes raw events into a flat OutputUpdate
     const { field, value } = update;
@@ -548,7 +548,7 @@ These are infrastructure-level entities that CCAAS manages for you:
 | `Skill` | AI behavior definition | Define in `solution.json` |
 | `Message` | Chat history | Read-only access |
 | `ApiKey` | Authentication | Configure once |
-| `Tenant` | Multi-tenancy isolation | One per Solution |
+| `Solution` | Multi-tenancy isolation | One per Solution |
 
 ### Domain Entities (managed by your Solution)
 

@@ -3,10 +3,10 @@
 -- Phase 1: Core Platform
 
 -- ============================================================================
--- TENANTS
+-- SOLUTIONS
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS tenants (
+CREATE TABLE IF NOT EXISTS solutions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE,
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS tenants (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_tenants_slug ON tenants(slug);
-CREATE INDEX idx_tenants_status ON tenants(status);
+CREATE INDEX idx_solutions_slug ON solutions(slug);
+CREATE INDEX idx_solutions_status ON solutions(status);
 
 -- ============================================================================
 -- API KEYS
@@ -41,7 +41,7 @@ CREATE INDEX idx_tenants_status ON tenants(status);
 
 CREATE TABLE IF NOT EXISTS api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    solution_id UUID NOT NULL REFERENCES solutions(id) ON DELETE CASCADE,
 
     -- Key details
     name VARCHAR(255) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_api_keys_tenant ON api_keys(tenant_id);
+CREATE INDEX idx_api_keys_tenant ON api_keys(solution_id);
 CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
 CREATE INDEX idx_api_keys_status ON api_keys(status);
 
@@ -78,7 +78,7 @@ CREATE INDEX idx_api_keys_status ON api_keys(status);
 
 CREATE TABLE IF NOT EXISTS skills (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    solution_id UUID NOT NULL REFERENCES solutions(id) ON DELETE CASCADE,
 
     -- Identity
     name VARCHAR(255) NOT NULL,
@@ -111,14 +111,14 @@ CREATE TABLE IF NOT EXISTS skills (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     published_at TIMESTAMPTZ,
 
-    -- Unique constraint per tenant
-    UNIQUE(tenant_id, slug)
+    -- Unique constraint per solution
+    UNIQUE(solution_id, slug)
 );
 
-CREATE INDEX idx_skills_tenant ON skills(tenant_id);
+CREATE INDEX idx_skills_tenant ON skills(solution_id);
 CREATE INDEX idx_skills_status ON skills(status);
 CREATE INDEX idx_skills_type ON skills(type);
-CREATE INDEX idx_skills_slug ON skills(tenant_id, slug);
+CREATE INDEX idx_skills_slug ON skills(solution_id, slug);
 
 -- ============================================================================
 -- SKILL VERSIONS
@@ -162,7 +162,7 @@ CREATE INDEX idx_skill_versions_status ON skill_versions(deployment_status);
 
 CREATE TABLE IF NOT EXISTS mcp_servers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    solution_id UUID NOT NULL REFERENCES solutions(id) ON DELETE CASCADE,
 
     -- Identity
     name VARCHAR(255) NOT NULL,
@@ -191,11 +191,11 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Unique per tenant
-    UNIQUE(tenant_id, slug)
+    -- Unique per solution
+    UNIQUE(solution_id, slug)
 );
 
-CREATE INDEX idx_mcp_servers_tenant ON mcp_servers(tenant_id);
+CREATE INDEX idx_mcp_servers_tenant ON mcp_servers(solution_id);
 CREATE INDEX idx_mcp_servers_type ON mcp_servers(type);
 CREATE INDEX idx_mcp_servers_status ON mcp_servers(status);
 
@@ -225,7 +225,7 @@ CREATE INDEX idx_skill_mcp_server ON skill_mcp_servers(mcp_server_id);
 
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    solution_id UUID NOT NULL REFERENCES solutions(id) ON DELETE CASCADE,
     skill_id UUID REFERENCES skills(id) ON DELETE SET NULL,
 
     -- Session identification
@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     closed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_sessions_tenant ON sessions(tenant_id);
+CREATE INDEX idx_sessions_tenant ON sessions(solution_id);
 CREATE INDEX idx_sessions_skill ON sessions(skill_id);
 CREATE INDEX idx_sessions_external ON sessions(external_id);
 CREATE INDEX idx_sessions_status ON sessions(status);
@@ -262,7 +262,7 @@ CREATE INDEX idx_sessions_activity ON sessions(last_activity_at);
 
 CREATE TABLE IF NOT EXISTS usage_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id UUID NOT NULL,
+    solution_id UUID NOT NULL,
 
     -- Event type
     event_type VARCHAR(50) NOT NULL,  -- 'skill_execution', 'tool_call', 'error', etc.
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS usage_events (
 -- CREATE TABLE usage_events_y2025m01 PARTITION OF usage_events
 --     FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
 
-CREATE INDEX idx_usage_tenant_time ON usage_events(tenant_id, created_at);
+CREATE INDEX idx_usage_tenant_time ON usage_events(solution_id, created_at);
 CREATE INDEX idx_usage_type ON usage_events(event_type);
 CREATE INDEX idx_usage_session ON usage_events(session_id);
 CREATE INDEX idx_usage_skill ON usage_events(skill_id);
@@ -378,7 +378,7 @@ $$ LANGUAGE plpgsql;
 
 -- Apply to tables
 CREATE TRIGGER trigger_tenants_updated
-    BEFORE UPDATE ON tenants
+    BEFORE UPDATE ON solutions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER trigger_api_keys_updated
@@ -397,19 +397,19 @@ CREATE TRIGGER trigger_mcp_servers_updated
 -- SEED DATA (Development)
 -- ============================================================================
 
--- Default tenant for development
-INSERT INTO tenants (id, name, slug, description, plan)
+-- Default solution for development
+INSERT INTO solutions (id, name, slug, description, plan)
 VALUES (
     '00000000-0000-0000-0000-000000000001',
     'Development Tenant',
     'dev',
-    'Default tenant for local development',
+    'Default solution for local development',
     'enterprise'
 ) ON CONFLICT (slug) DO NOTHING;
 
 -- Default API key for development (key: sk-dev-0000000000000000)
 -- Hash: SHA-256 of 'sk-dev-0000000000000000'
-INSERT INTO api_keys (id, tenant_id, name, key_hash, key_prefix, scopes)
+INSERT INTO api_keys (id, solution_id, name, key_hash, key_prefix, scopes)
 VALUES (
     '00000000-0000-0000-0000-000000000001',
     '00000000-0000-0000-0000-000000000001',

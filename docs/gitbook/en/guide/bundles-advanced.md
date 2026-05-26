@@ -49,8 +49,8 @@ In advanced mode, Bundles are controlled through two configuration layers:
 
 ```
 ┌──────────────────────────────┐
-│  Tenant Level                 │
-│  config.enabledBundles       │  ← Total set of bundles enabled for this tenant
+│  Solution Level                 │
+│  config.enabledBundles       │  ← Total set of bundles enabled for this solution
 │  ["structured-output",       │
 │   "file-attachments",        │
 │   "shared-context"]          │
@@ -64,12 +64,12 @@ In advanced mode, Bundles are controlled through two configuration layers:
 ```
 
 **Rules:**
-- Session Template `bundles` must be a **subset** of Tenant `enabledBundles`
-- If a Session Template doesn't specify `bundles`, all Tenant `enabledBundles` are used
-- Bundles not in Tenant `enabledBundles` are silently ignored with a warning log
+- Session Template `bundles` must be a **subset** of Solution `enabledBundles`
+- If a Session Template doesn't specify `bundles`, all Solution `enabledBundles` are used
+- Bundles not in Solution `enabledBundles` are silently ignored with a warning log
 
 {% hint style="info" %}
-**How are Tenant `enabledBundles` populated?** In advanced mode, bundles declared in `sessionTemplates.bundles` are automatically synced to the Tenant's `enabledBundles` when the Solution loads. You can also manage them via the Admin API (see below).
+**How are Solution `enabledBundles` populated?** In advanced mode, bundles declared in `sessionTemplates.bundles` are automatically synced to the Solution's `enabledBundles` when the Solution loads. You can also manage them via the Admin API (see below).
 {% endhint %}
 
 ## Simple vs Advanced Comparison
@@ -124,17 +124,17 @@ Authorization: Bearer <admin-api-key>
 }
 ```
 
-### Get Tenant Enabled Bundles
+### Get Solution Enabled Bundles
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/bundles
+GET /api/v1/admin/solutions/:solutionId/bundles
 Authorization: Bearer <admin-api-key>
 ```
 
-### Update Tenant Bundle Configuration
+### Update Solution Bundle Configuration
 
 ```http
-PATCH /api/v1/admin/tenants/:tenantId/bundles
+PATCH /api/v1/admin/solutions/:solutionId/bundles
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -159,29 +159,29 @@ After updating, newly created sessions will use the new configuration. Existing 
 
 - **Over-configure** — If all templates need the same Bundles, use simple mode instead
 - **Re-implement in MCP Server** — Event mappings already handled by Bundles don't need manual `toolEventTriggers`
-- **Ignore the subset rule** — Bundles referenced in a Session Template but not enabled at Tenant level are silently ignored
+- **Ignore the subset rule** — Bundles referenced in a Session Template but not enabled at Solution level are silently ignored
 
 ## Troubleshooting
 
 ### write_output doesn't trigger output_update events
 
-1. Verify the Tenant has `structured-output` Bundle enabled:
+1. Verify the Solution has `structured-output` Bundle enabled:
    ```bash
    curl -H "Authorization: Bearer <key>" \
-     http://localhost:3001/api/v1/admin/tenants/<tenantId>/bundles
+     http://localhost:3001/api/v1/admin/solutions/<solutionId>/bundles
    ```
 2. If using advanced mode with Session Templates, verify the template's `bundles` includes `structured-output`
 3. Verify the `write_output` tool return format is correct in your MCP Server (`data` must be inside `content[].text` JSON)
 
 ### attach_file tool is not available
 
-1. Verify the Tenant has `file-attachments` Bundle enabled
+1. Verify the Solution has `file-attachments` Bundle enabled
 2. Verify the `attach-file-server` build artifacts exist: `packages/mcp/attach-file-server/dist/index.js`
 3. Check that the `CORE_MCP_DIR` environment variable correctly points to the MCP server directory
 
 ### read_context tool is not available
 
-1. Verify the Tenant has `shared-context` Bundle enabled
+1. Verify the Solution has `shared-context` Bundle enabled
 2. Verify the `shared-context-server` build artifacts exist: `packages/mcp/shared-context-server/dist/index.js`
 3. In simple mode, ensure you haven't manually declared a `shared-context-server` in `mcpServers` with a different path
 
@@ -191,7 +191,7 @@ Check the backend logs for warnings like:
 ```
 Bundle "xxx" referenced in template but not enabled at tenant level — skipping
 ```
-This means the Bundle is not enabled at the Tenant level. Enable it via the Admin API's `enabledBundles` endpoint.
+This means the Bundle is not enabled at the Solution level. Enable it via the Admin API's `enabledBundles` endpoint.
 
 ### How to see which Bundles are active for a session
 

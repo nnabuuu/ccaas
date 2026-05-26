@@ -88,7 +88,7 @@ UI 组件 (toggle)
 ```typescript
 // 检查现有 API
 // packages/backend/src/skills/skill-sync.service.ts
-async syncToSession(sessionDir, tenantId, options = {}) {
+async syncToSession(sessionDir, solutionId, options = {}) {
   const { skillSlugs } = options;  // ✅ 已支持过滤！
   if (skillSlugs) {
     skills = skills.filter((s) => skillSlugs.includes(s.slug));
@@ -115,7 +115,7 @@ if (skillSlugs && skillSlugs.length > 0) {
 
 ```typescript
 // ✅ 正确顺序
-const { skills, enabledSkillIds } = useSkills(tenantId)  // 数据提供者
+const { skills, enabledSkillIds } = useSkills(solutionId)  // 数据提供者
 
 const enabledSkills = useMemo(() => {
   return skills.filter(s => enabledSkillIds.has(s.id)).map(s => s.slug)
@@ -167,7 +167,7 @@ Solution Backend (port 300x)     CCAAS Backend (port 3001)
 
 ```typescript
 // 完整集成示例
-const { skills, enabledSkillIds, toggleSkill } = useSkills(tenantId)
+const { skills, enabledSkillIds, toggleSkill } = useSkills(solutionId)
 
 const enabledSkills = useMemo(() =>
   skills.filter(s => enabledSkillIds.has(s.id)).map(s => s.slug),

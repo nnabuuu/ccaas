@@ -61,7 +61,7 @@ On backend startup you should see:
 On solution backend startup you should see:
 ```
 [DemoEntityProvider]        Loaded 3 entities from .../entities (editable fields: ...)
-[SolutionRegisterService]   Solution registered: tenantId=...
+[SolutionRegisterService]   Solution registered: solutionId=...
 [SolutionRegisterService]   Created skill sandbox-explorer (id=...)
 [SolutionRegisterService]   Upserted 6 file(s) for sandbox-explorer
 [SolutionRegisterService]   Hot-reload watcher active on .../skills

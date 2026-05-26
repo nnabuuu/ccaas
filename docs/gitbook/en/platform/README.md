@@ -9,7 +9,7 @@ KedgeAgentic is **not** an AI model or a model wrapper. It is a **Skills + MCP e
 - **Skill Routing** -- Business logic described in Skills is intelligently matched and executed by the right Agent for each request
 - **MCP Tool Orchestration** -- Tools and data sources connected via MCP are available to every Agent session without per-session configuration
 - **Session Management** -- Agent Engine lifecycle, session persistence, and context continuity are handled by the platform
-- **Multi-Tenant Infrastructure** -- Isolated, production-grade execution for every tenant and solution
+- **Multi-Solution Infrastructure** -- Isolated, production-grade execution for every solution and solution
 
 ## Platform Components
 
@@ -30,5 +30,5 @@ KedgeAgentic consists of the following core components:
 2. **Skill Routing** -- Trigger-based intelligent routing with keyword, regex, intent, and context matching
 3. **MCP Integration** -- Standardized tool protocol with REST API adapters and custom tool development
 4. **Real-Time Streaming** -- SSE-based event streams with live display of thinking processes, tool usage, and output generation
-5. **Multi-Tenant Architecture** -- Tenant-level resource isolation and quota management
+5. **Multi-Solution Architecture** -- Solution-level resource isolation and quota management
 6. **Message Persistence** -- Complete conversation history storage with session recovery support

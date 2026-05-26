@@ -34,7 +34,7 @@ Accept: text/event-stream
 ```json
 {
   "message": "User message content",
-  "tenantId": "default",
+  "solutionId": "default",
   "apiKey": "sk-..."
 }
 ```
@@ -42,9 +42,9 @@ Accept: text/event-stream
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `message` | string | ✅ | User message content |
-| `tenantId` | string | ✅ | Tenant ID |
+| `solutionId` | string | ✅ | Solution ID |
 | `apiKey` | string | ❌ | API Key (can also be passed via `Authorization: Bearer` header) |
-| `enabledSkills` | string[] | ❌ | Skill slugs to enable; omit to auto-load all enabled skills for the tenant |
+| `enabledSkills` | string[] | ❌ | Skill slugs to enable; omit to auto-load all enabled skills for the solution |
 | `appendSystemPrompt` | string | ❌ | Additional instructions appended to the system prompt |
 | `templateName` | string | ❌ | Session template to apply (configured in the admin panel) |
 | `context` | object | ❌ | Page context (current route, form data, etc.) |
@@ -75,7 +75,7 @@ The connection closes when the turn ends (no client action needed).
 curl -N -X POST http://localhost:3001/api/v1/sessions/my-session/messages \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
-  -d '{"message": "Please write a report", "tenantId": "default"}'
+  -d '{"message": "Please write a report", "solutionId": "default"}'
 ```
 
 ---
@@ -133,7 +133,7 @@ Content-Type: application/json
 
 ```json
 {
-  "tenantId": "default"
+  "solutionId": "default"
 }
 ```
 
@@ -142,7 +142,7 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
   -H "Content-Type: application/json" \
-  -d '{"tenantId": "default"}'
+  -d '{"solutionId": "default"}'
 ```
 
 ---
@@ -208,14 +208,14 @@ curl -N -X POST http://localhost:3001/api/v1/sessions/job-$(uuidgen)/messages \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Analyze this log file and return a structured report: ...",
-    "tenantId": "default",
+    "solutionId": "default",
     "autoClose": true
   }'
 ```
 
 ```typescript
 // React SDK usage
-const chat = useAgentChat({ connection, tenantId: 'default' })
+const chat = useAgentChat({ connection, solutionId: 'default' })
 
 // Send a one-shot task
 chat.sendMessage('Analyze this data', { autoClose: true })
@@ -452,7 +452,7 @@ async function streamMessages(
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
     },
-    body: JSON.stringify({ message, tenantId: 'default' }),
+    body: JSON.stringify({ message, solutionId: 'default' }),
   })
 
   if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`)
@@ -501,7 +501,7 @@ function MyApp() {
   })
 
   // Automatically manages POST /messages SSE stream
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   // Automatically subscribes to GET /events push channel (SSE mode)
   // Automatically handles subagent_started / subagent_completed events

@@ -9,7 +9,7 @@ A Builder is an external developer who holds a `builder`-scoped API key. Through
 **Core Flow:**
 
 ```
-Get Builder Key → Create Tenant → Register Skill → Create API Key → Chat
+Get Builder Key → Create Solution → Register Skill → Create API Key → Chat
     (Admin)         (Builder)       (Builder)        (Builder)       (End User)
 ```
 
@@ -17,7 +17,7 @@ Get Builder Key → Create Tenant → Register Skill → Create API Key → Chat
 
 | Capability | Builder | Admin |
 |-----------|---------|-------|
-| Create Tenant | Only their own | Manage all |
+| Create Solution | Only their own | Manage all |
 | Manage API Keys | Only for owned tenants | Manage all |
 | Create admin/builder scoped keys | Forbidden | Allowed |
 
@@ -49,7 +49,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk-admin_xxx" \
   -d '{
-    "tenantId": "<platform-tenant-id>",
+    "solutionId": "<platform-tenant-id>",
     "name": "Builder: Acme Corp",
     "scopes": ["builder"],
     "userId": "<builder-user-id>"
@@ -60,14 +60,14 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
 Save the returned `rawKey` — all subsequent steps require it. Builder keys without `userId` are rejected at creation time (400 Bad Request).
 {% endhint %}
 
-## Step 1: Create Tenant
+## Step 1: Create Solution
 
 Each Builder can create multiple tenants, each representing an isolated business space.
 
 ```bash
 BUILDER_KEY="sk-builder_xxx"
 
-curl -X POST http://localhost:3001/api/v1/builder/tenants \
+curl -X POST http://localhost:3001/api/v1/builder/solutions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $BUILDER_KEY" \
   -d '{
@@ -92,7 +92,7 @@ curl -X POST http://localhost:3001/api/v1/builder/tenants \
 ```
 
 {% hint style="info" %}
-**Auto-link mechanism**: After creating a tenant, the Builder is automatically linked as admin via UserTenant.
+**Auto-link mechanism**: After creating a tenant, the Builder is automatically linked as admin via UserSolution.
 {% endhint %}
 
 ## Step 2: Register Skill
@@ -101,7 +101,7 @@ Skills define the AI assistant's behavior and capabilities.
 
 ### Option A: Register via API
 
-Requires the `X-Tenant-Id` header.
+Requires the `X-Solution-Id` header.
 
 ```bash
 TENANT_ID="a1b2c3d4-..."
@@ -109,7 +109,7 @@ TENANT_ID="a1b2c3d4-..."
 curl -X POST http://localhost:3001/api/v1/skills \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $BUILDER_KEY" \
-  -H "X-Tenant-Id: $TENANT_ID" \
+  -H "X-Solution-Id: $TENANT_ID" \
   -d '{
     "name": "echo-chat",
     "slug": "echo-chat",
@@ -135,7 +135,7 @@ curl -X POST http://localhost:3001/api/v1/skills \
 Create API keys for end users or frontend applications.
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/builder/tenants/$TENANT_ID/api-keys \
+curl -X POST http://localhost:3001/api/v1/builder/solutions/$TENANT_ID/api-keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $BUILDER_KEY" \
   -d '{
@@ -165,7 +165,7 @@ curl -X POST http://localhost:3001/api/v1/builder/tenants/$TENANT_ID/api-keys \
 {% endhint %}
 
 {% hint style="info" %}
-**Builder Key vs Child Key**: The key you just created is a "Tenant key" — it can only call chat/skills/MCP APIs. It cannot create tenants or manage other keys. Only your original Builder key (with `builder` scope and bound `userId`) has management capabilities.
+**Builder Key vs Child Key**: The key you just created is a "Solution key" — it can only call chat/skills/MCP APIs. It cannot create tenants or manage other keys. Only your original Builder key (with `builder` scope and bound `userId`) has management capabilities.
 {% endhint %}
 
 **Available scopes:**
@@ -196,7 +196,7 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
   -H "Authorization: Bearer $CHAT_KEY" \
   -d "{
     \"message\": \"Hello, this is a test message!\",
-    \"tenantId\": \"$TENANT_ID\",
+    \"solutionId\": \"$TENANT_ID\",
     \"enabledSkills\": [\"echo-chat\"]
   }"
 ```
@@ -206,7 +206,7 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | Field | Required | Description |
 |-------|----------|-------------|
 | `message` | Yes | User message content |
-| `tenantId` | Yes | Tenant ID |
+| `solutionId` | Yes | Solution ID |
 | `enabledSkills` | No | Enabled skill slugs (auto-loads all if omitted) |
 | `context` | No | Page context |
 | `afterSeq` | No | Reconnection sequence number |
@@ -223,21 +223,21 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 
 ## API Quick Reference
 
-### Builder Tenants API
+### Builder Solutions API
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/builder/tenants` | Create tenant |
-| GET | `/api/v1/builder/tenants` | List own tenants |
-| GET | `/api/v1/builder/tenants/:id` | Get details |
-| PUT | `/api/v1/builder/tenants/:id` | Update |
+| POST | `/api/v1/builder/solutions` | Create tenant |
+| GET | `/api/v1/builder/solutions` | List own tenants |
+| GET | `/api/v1/builder/solutions/:id` | Get details |
+| PUT | `/api/v1/builder/solutions/:id` | Update |
 
 ### Builder API Keys API
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/builder/tenants/:tenantId/api-keys` | Create key |
-| GET | `/api/v1/builder/tenants/:tenantId/api-keys` | List keys |
+| POST | `/api/v1/builder/solutions/:solutionId/api-keys` | Create key |
+| GET | `/api/v1/builder/solutions/:solutionId/api-keys` | List keys |
 | PUT | `/api/v1/builder/api-keys/:id` | Update key |
 | POST | `/api/v1/builder/api-keys/:id/revoke` | Revoke key |
 | DELETE | `/api/v1/builder/api-keys/:id` | Delete key |
@@ -264,10 +264,10 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | Error | Cause | Solution |
 |-------|-------|----------|
 | 403: builder key must be linked to a user | Builder key has no `userId` | Fix via `PUT /api/v1/admin/api-keys/:id` with `userId`, or recreate via `POST /api/v1/admin/builder-users` |
-| 403: You do not have access to this tenant | No UserTenant link | Can only operate on self-created tenants |
+| 403: You do not have access to this solution | No UserSolution link | Can only operate on self-created tenants |
 | 403: cannot create keys with scopes: admin | Privilege escalation prevention | Use only allowed scopes |
 | 409: Skill slug already exists | Slug conflict | Change slug or PUT to update |
-| MISSING\_TENANT\_ID | Missing `tenantId` in body | Include it in request body |
+| MISSING\_TENANT\_ID | Missing `solutionId` in body | Include it in request body |
 | 401: Invalid or missing API key | Key invalid/expired/revoked | Check Authorization header |
 
 ## Full Reference

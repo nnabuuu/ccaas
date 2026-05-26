@@ -49,7 +49,7 @@
 
 ```
 ┌──────────────────────────────┐
-│  Tenant 级别                  │
+│  Solution 级别                  │
 │  config.enabledBundles       │  ← 该租户启用的 Bundle 总集
 │  ["structured-output",       │
 │   "file-attachments",        │
@@ -64,12 +64,12 @@
 ```
 
 **规则：**
-- Session Template 的 `bundles` 必须是 Tenant `enabledBundles` 的**子集**
-- 如果 Session Template 未指定 `bundles`，则使用 Tenant 的全部 `enabledBundles`
-- 不在 Tenant `enabledBundles` 中的 Bundle 会被静默忽略并记录警告日志
+- Session Template 的 `bundles` 必须是 Solution `enabledBundles` 的**子集**
+- 如果 Session Template 未指定 `bundles`，则使用 Solution 的全部 `enabledBundles`
+- 不在 Solution `enabledBundles` 中的 Bundle 会被静默忽略并记录警告日志
 
 {% hint style="info" %}
-**Tenant `enabledBundles` 在哪里配置？** 高级模式下，`sessionTemplates.bundles` 中声明的 Bundle 会在 Solution 加载时自动同步到 Tenant 配置。也可通过 Admin API 管理（见下方）。
+**Solution `enabledBundles` 在哪里配置？** 高级模式下，`sessionTemplates.bundles` 中声明的 Bundle 会在 Solution 加载时自动同步到 Solution 配置。也可通过 Admin API 管理（见下方）。
 {% endhint %}
 
 ## Simple 与 Advanced 对比
@@ -127,14 +127,14 @@ Authorization: Bearer <admin-api-key>
 ### 查看租户已启用的 Bundle
 
 ```http
-GET /api/v1/admin/tenants/:tenantId/bundles
+GET /api/v1/admin/solutions/:solutionId/bundles
 Authorization: Bearer <admin-api-key>
 ```
 
 ### 更新租户 Bundle 配置
 
 ```http
-PATCH /api/v1/admin/tenants/:tenantId/bundles
+PATCH /api/v1/admin/solutions/:solutionId/bundles
 Authorization: Bearer <admin-api-key>
 Content-Type: application/json
 
@@ -159,29 +159,29 @@ Content-Type: application/json
 
 - **过度配置** — 如果所有模板需要相同的 Bundle，使用 simple 模式
 - **在 MCP Server 中重复实现** — Bundle 已处理的事件映射无需手动配置 `toolEventTriggers`
-- **忽略子集规则** — Session Template 中引用未在 Tenant 级别启用的 Bundle 会被静默忽略
+- **忽略子集规则** — Session Template 中引用未在 Solution 级别启用的 Bundle 会被静默忽略
 
 ## 故障排查
 
 ### write_output 不触发 output_update 事件
 
-1. 确认 Tenant 已启用 `structured-output` Bundle：
+1. 确认 Solution 已启用 `structured-output` Bundle：
    ```bash
    curl -H "Authorization: Bearer <key>" \
-     http://localhost:3001/api/v1/admin/tenants/<tenantId>/bundles
+     http://localhost:3001/api/v1/admin/solutions/<solutionId>/bundles
    ```
 2. 如果使用了 Session Template，确认模板的 `bundles` 包含 `structured-output`
 3. 确认 MCP Server 中 `write_output` 工具的返回格式正确（`data` 在 `content[].text` 的 JSON 中）
 
 ### attach_file 工具不可用
 
-1. 确认 Tenant 已启用 `file-attachments` Bundle
+1. 确认 Solution 已启用 `file-attachments` Bundle
 2. 确认 `attach-file-server` 的构建产物存在：`packages/mcp/attach-file-server/dist/index.js`
 3. 检查环境变量 `CORE_MCP_DIR` 是否正确指向 MCP 服务器目录
 
 ### read_context 工具不可用
 
-1. 确认 Tenant 已启用 `shared-context` Bundle
+1. 确认 Solution 已启用 `shared-context` Bundle
 2. 确认 `shared-context-server` 的构建产物存在：`packages/mcp/shared-context-server/dist/index.js`
 3. 在 simple 模式下，确保未在 `mcpServers` 中手动声明路径不同的 `shared-context-server`
 
@@ -191,7 +191,7 @@ Content-Type: application/json
 ```
 Bundle "xxx" referenced in template but not enabled at tenant level — skipping
 ```
-这表明该 Bundle 未在 Tenant 级别启用。通过 Admin API 的 `enabledBundles` 端点启用。
+这表明该 Bundle 未在 Solution 级别启用。通过 Admin API 的 `enabledBundles` 端点启用。
 
 ### 如何查看当前会话激活了哪些 Bundle
 

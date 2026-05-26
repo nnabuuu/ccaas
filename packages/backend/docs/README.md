@@ -18,10 +18,10 @@ Complete documentation for Claude Code as a Service backend system.
 ### Core Concepts
 
 #### Authentication & Authorization
-- **API Key Types**: Tenant-Level (system) vs User-Level (personal)
+- **API Key Types**: Solution-Level (system) vs User-Level (personal)
 - **Scopes**: chat, skills:*, mcp:*, admin, analytics:read
 - **Bootstrap Workflow**: Creating first API Key to solve chicken-and-egg
-- **Guard Chain**: ApiKeyGuard → TenantGuard → SkillPermissionGuard
+- **Guard Chain**: ApiKeyGuard → SolutionAuthGuard → SkillPermissionGuard
 - **Permission Patterns**: Public, Personal, Hybrid models
 
 #### Error Handling
@@ -42,7 +42,7 @@ Complete documentation for Claude Code as a Service backend system.
    npm run skill:import -- your-solution
    ```
 
-2. **Create Tenant and Bootstrap Key**
+2. **Create Solution and Bootstrap Key**
    ```bash
    cd solutions/your-solution
    ./create-bootstrap-key.sh
@@ -60,13 +60,13 @@ Complete documentation for Claude Code as a Service backend system.
    // React
    const { connection, chat } = useAgentChat({
      serverUrl: 'http://localhost:3001',
-     tenantId: 'your-solution'
+     solutionId: 'your-solution'
    });
 
    // Vue
    const connection = useAgentConnection({
      serverUrl: 'http://localhost:3001',
-     tenantId: 'your-solution'
+     solutionId: 'your-solution'
    });
    ```
 
@@ -159,7 +159,7 @@ Complete documentation for Claude Code as a Service backend system.
 
 ### Permission Design
 
-**Tenant-Level Keys:**
+**Solution-Level Keys:**
 ```json
 {
   "scopes": ["skills:write", "mcp:write", "admin"],
@@ -196,7 +196,7 @@ curl http://localhost:3001/api/v1/health
 
 # List skills (requires API key)
 curl http://localhost:3001/api/v1/skills \
-  -H "X-Tenant-Id: your-solution" \
+  -H "X-Solution-Id: your-solution" \
   -H "X-Api-Key: sk-xxx"
 ```
 
@@ -210,9 +210,9 @@ curl http://localhost:3001/api/v1/skills \
 - **Cause**: API Key missing `skills:write` scope
 - **Solution**: Create new key with correct scopes or use Bootstrap Key
 
-**Problem: "Tenant not found"**
-- **Cause**: Tenant not created or wrong tenantId
-- **Solution**: Create tenant via `/api/v1/tenants` or check slug
+**Problem: "Solution not found"**
+- **Cause**: Solution not created or wrong solutionId
+- **Solution**: Create tenant via `/api/v1/solutions` or check slug
 
 **Problem: "Invalid API key format"**
 - **Cause**: API Key doesn't start with `sk-`
@@ -260,7 +260,7 @@ KEY_HASH=$(echo -n "$RAW_KEY" | openssl dgst -sha256 -binary | xxd -p -c 256)
 # Insert into database
 sqlite3 "$DB_PATH" <<EOF
 INSERT INTO api_keys (
-  id, tenantId, name, keyHash, keyPrefix,
+  id, solutionId, name, keyHash, keyPrefix,
   scopes, rateLimitRpm, status, createdAt, updatedAt
 ) VALUES (
   lower(hex(randomblob(16))),

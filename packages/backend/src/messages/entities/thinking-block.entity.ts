@@ -36,7 +36,7 @@ export class ThinkingBlock {
    * Solution ID for multi-tenancy support
    */
   @Column({ type: 'varchar', nullable: true })
-  @Index('IDX_thinking_blocks_tenant_id')
+  @Index('IDX_thinking_blocks_solution_id')
   solutionId?: string;
 
   /**

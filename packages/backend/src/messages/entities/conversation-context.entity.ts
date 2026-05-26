@@ -18,7 +18,7 @@ import {
 
 @Entity('conversation_contexts')
 @Index('IDX_conversation_contexts_session_id', ['sessionId'], { unique: true })
-@Index('IDX_conversation_contexts_tenant_id', ['solutionId'])
+@Index('IDX_conversation_contexts_solution_id', ['solutionId'])
 @Index('IDX_conversation_contexts_created_at', ['createdAt'])
 export class ConversationContext {
   @PrimaryGeneratedColumn('uuid')

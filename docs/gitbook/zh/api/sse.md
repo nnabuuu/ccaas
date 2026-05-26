@@ -34,7 +34,7 @@ Accept: text/event-stream
 ```json
 {
   "message": "用户消息内容",
-  "tenantId": "default",
+  "solutionId": "default",
   "apiKey": "sk-..."
 }
 ```
@@ -42,7 +42,7 @@ Accept: text/event-stream
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `message` | string | ✅ | 用户消息内容 |
-| `tenantId` | string | ✅ | 租户 ID |
+| `solutionId` | string | ✅ | 租户 ID |
 | `apiKey` | string | ❌ | API Key（也可通过 `Authorization: Bearer` header 传递） |
 | `enabledSkills` | string[] | ❌ | 指定启用的 Skill slug 列表；不传时自动加载租户下所有已启用的 Skill |
 | `appendSystemPrompt` | string | ❌ | 追加到系统提示词末尾的额外指令 |
@@ -75,7 +75,7 @@ data: {"type":"agent_status","status":"complete","sessionId":"my-session","times
 curl -N -X POST http://localhost:3001/api/v1/sessions/my-session/messages \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
-  -d '{"message": "请帮我写一份报告", "tenantId": "default"}'
+  -d '{"message": "请帮我写一份报告", "solutionId": "default"}'
 ```
 
 ---
@@ -133,7 +133,7 @@ Content-Type: application/json
 
 ```json
 {
-  "tenantId": "default"
+  "solutionId": "default"
 }
 ```
 
@@ -142,7 +142,7 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
   -H "Content-Type: application/json" \
-  -d '{"tenantId": "default"}'
+  -d '{"solutionId": "default"}'
 ```
 
 ---
@@ -420,14 +420,14 @@ curl -N -X POST http://localhost:3001/api/v1/sessions/job-$(uuidgen)/messages \
   -H "Content-Type: application/json" \
   -d '{
     "message": "分析以下日志并输出结构化报告: ...",
-    "tenantId": "default",
+    "solutionId": "default",
     "autoClose": true
   }'
 ```
 
 ```typescript
 // React SDK 用法
-const chat = useAgentChat({ connection, tenantId: 'default' })
+const chat = useAgentChat({ connection, solutionId: 'default' })
 
 // 发送一次性任务
 chat.sendMessage('分析这份数据', { autoClose: true })
@@ -452,7 +452,7 @@ async function streamMessages(
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
     },
-    body: JSON.stringify({ message, tenantId: 'default' }),
+    body: JSON.stringify({ message, solutionId: 'default' }),
   })
 
   if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`)
@@ -501,7 +501,7 @@ function MyApp() {
   })
 
   // 自动处理 POST /messages SSE 流
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, solutionId: 'default' })
 
   // 自动订阅 GET /events 推送频道（SSE 模式下）
   // 自动处理 subagent_started / subagent_completed 事件

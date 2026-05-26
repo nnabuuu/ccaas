@@ -294,7 +294,7 @@ The `args` path points to `dist/index.js`, not `src/index.ts`. You must build th
 {% endhint %}
 
 {% hint style="info" %}
-**Path auto-completion**: Relative paths in `args` (e.g., `mcp-server/dist/index.js`) are automatically scoped to the tenant's MCP server directory at runtime: `tenants/{tenantId}/mcp-servers/{slug}/mcp-server/dist/index.js`. Absolute paths, CLI flags (`-v`), template variables (`${CORE_MCP_DIR}/...`), and URLs are passed through unchanged.
+**Path auto-completion**: Relative paths in `args` (e.g., `mcp-server/dist/index.js`) are automatically scoped to the solution's MCP server directory at runtime: `tenants/{solutionId}/mcp-servers/{slug}/mcp-server/dist/index.js`. Absolute paths, CLI flags (`-v`), template variables (`${CORE_MCP_DIR}/...`), and URLs are passed through unchanged.
 {% endhint %}
 
 {% hint style="info" %}

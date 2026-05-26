@@ -82,7 +82,7 @@ After this week: `WORKSPACE_PROVIDER=agentfs npm run start:prod` gives you full 
 
 **Net mental-model deltas this sprint**:
 
-1. The agent-runtime sync layer is **end-to-end auth'd** in dev and ready for multi-tenant prod (with the documented query-param-in-access-logs caveat tracked for Phase 3 hardening).
+1. The agent-runtime sync layer is **end-to-end auth'd** in dev and ready for multi-solution prod (with the documented query-param-in-access-logs caveat tracked for Phase 3 hardening).
 2. Binary artifacts (images, audio, PDFs) are a **first-class concern** — separate port, separate REST adapter, separate workspace mount. No in-tree consumer yet, but the abstraction is locked so the next solution that needs a JPEG drops straight in.
 3. `SyncEngine` no longer silently drops agent re-creates of DB-deleted paths (long-latent bug, found in code review of the binary version, fixed in both halves).
 
@@ -132,7 +132,7 @@ highest-leverage ones:
 - **Phase C**: extract `SandboxService` + just-bash MCP server.
 - **HeadlessExecutionService provider integration**: scheduled tasks still use local fs only.
 - **Forensic re-mount of closed sessions**: today fs/diff/timeline 404 once session is purged from in-memory map.
-- **`sessions:fs` / `sessions:meta` granular scopes**: currently `admin` for stage-1; needed for multi-tenant SaaS.
+- **`sessions:fs` / `sessions:meta` granular scopes**: currently `admin` for stage-1; needed for multi-solution SaaS.
 - **better-sqlite3 online backup for `fs/diff`**: current cp pattern can produce inconsistent reads under heavy writes; rare in practice but noted.
 - **English gitbook parallel**: only zh updated in this doc-refresh PR.
 
