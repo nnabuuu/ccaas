@@ -31,30 +31,15 @@ export default function ProjectEditorPage() {
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<string | null>(null)
   const [publishOk, setPublishOk] = useState(false)
-  // agent-runtime SSE subscription (Phase 2a): surfaces agent-side
-  // edits so the operator knows when the agent has touched the same
-  // project. Dismissed notices are tracked locally; `reloadKey` bumps
-  // force the active tab to re-fetch from disk.
-  //
-  // Phase 2b-2: ccaas SSE endpoint requires `?token=<apiKey>`. Read the
-  // operator's ccaas API key from localStorage (matches the classroom
-  // frontend's pattern). For a dev workflow without auth UX yet, the
-  // key is provisioned via `scripts/create-dev-api-key.ts` and the
-  // operator pastes it into the console:
-  //   localStorage.setItem('ccaas:apiKey', '<key>')
-  // If the key is missing, the hook reports `error` and skips opening
-  // the EventSource (avoids a 401 retry storm).
-  const ccaasApiKey = useMemo(() => {
-    try {
-      return localStorage.getItem('ccaas:apiKey')
-    } catch {
-      return null
-    }
-  }, [])
-  const { events, isConnected, error: sseError } = useProjectChanges(
-    id ?? null,
-    ccaasApiKey,
-  )
+  // agent-runtime SSE subscription: surfaces agent-side edits so the
+  // operator knows when the agent has touched the same project. The hook
+  // hits a relative `/api/projects/:id/changes` on the live-lesson
+  // backend; the backend proxies through to ccaas using its tenant
+  // CCAAS_API_KEY env var. Browser never holds a ccaas key — see the
+  // hook's header for the design rationale.
+  // Dismissed notices are tracked locally; `reloadKey` bumps force the
+  // active tab to re-fetch from disk.
+  const { events, isConnected, error: sseError } = useProjectChanges(id ?? null)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [reloadKey, setReloadKey] = useState(0)
   // Reset the dismissed set whenever the operator opens a different project

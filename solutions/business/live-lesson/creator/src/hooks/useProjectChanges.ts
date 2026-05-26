@@ -18,12 +18,12 @@
  * server comes back, the browser auto-reconnects and `isConnected`
  * flips true via the next welcome event.
  *
- * **Auth (Phase 2b-2)**: the ccaas SSE endpoint requires
- * `?token=<apiKey>`. The hook accepts a second `apiKey` arg — if
- * absent or empty, the hook flips straight to disconnected (no
- * connection attempt, since the server would 401). Callers typically
- * read the key from `localStorage` (same pattern as classroom
- * `useLiveLesson.ts`).
+ * **Auth model**: the browser never holds a ccaas key. The SSE feed
+ * is proxied through the live-lesson backend's `/api/projects/:id/changes`
+ * endpoint, which authenticates the browser via the solution's own auth
+ * (cookie / session / etc.) and opens the upstream SSE to ccaas using
+ * the solution's tenant `CCAAS_API_KEY` env var. See
+ * `solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts`.
  *
  * Events array is capped at MAX_EVENTS (50) — older events drop off
  * the tail. The UI typically only renders the most recent few.
@@ -63,7 +63,6 @@ const MAX_EVENTS = 50;
 
 export function useProjectChanges(
   projectId: string | null,
-  apiKey?: string | null,
 ): UseProjectChangesResult {
   const [events, setEvents] = useState<ChangeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -81,19 +80,12 @@ export function useProjectChanges(
       setIsConnected(false);
       return;
     }
-    if (!apiKey) {
-      // Without a key the server would 401 every reconnect attempt; skip
-      // opening the EventSource entirely and surface a friendly error.
-      setIsConnected(false);
-      setError('Missing ccaas API key; SSE change feed disabled');
-      return;
-    }
     // Reset on projectId change so the consumer doesn't see stale
     // events from the previous project.
     setEvents([]);
     setError(null);
 
-    const url = getChangesStreamUrl(projectId, apiKey);
+    const url = getChangesStreamUrl(projectId);
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (msg: MessageEvent<string>) => {
@@ -136,7 +128,7 @@ export function useProjectChanges(
       eventSource.close();
       setIsConnected(false);
     };
-  }, [projectId, apiKey]);
+  }, [projectId]);
 
   return { events, isConnected, error, clear };
 }
