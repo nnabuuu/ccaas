@@ -412,16 +412,26 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 
 ### Solution integration — 2 lines
 
+> **β-1 rename (2026-05-26)**: the canonical route is now `attach-workspace-source` with the opaque body `{ sourceUrl, sourceIdentity, tenantId }` (no `projectId` — ccaas no longer pretends to know what a "project" is). The old `bind-project` route stays as an alias for one release and hits the same service code. New solutions: use the new route. Existing solutions: migrate at your convenience during the compat window.
+
 ```ts
-// Solution backend: right after creating a project-scoped agent session
-await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId }),
+// Solution backend: right after creating a workspace-attached agent session
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
+  method: 'POST',
+  body: JSON.stringify({
+    sourceUrl: 'http://your-solution/api/projects',  // base URL ccaas calls back
+    sourceIdentity: projectId,                        // opaque ID, ccaas does not parse
+    tenantId,                                         // transitional during β
+  }),
 });
-// or via the SDK
-sessionsClient.bindToProject(sessionId, projectId);
+
+// Or keep using the legacy alias during the compat window:
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+  method: 'POST', body: JSON.stringify({ projectId, tenantId }),
+});
 ```
 
-`SessionService.bindToProject(sessionId, tenantId, projectId)` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state.
+`SessionService.bindToProject(sessionId, tenantId, sourceIdentity)` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. (The service method will be renamed to `attachWorkspaceSource` in β-2; β-1 changes the wire route + DTO only.)
 
 ### GUI side: consume the SSE so users see agent edits (Phase 2a)
 

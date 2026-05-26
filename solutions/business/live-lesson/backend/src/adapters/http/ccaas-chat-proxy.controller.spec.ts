@@ -150,11 +150,19 @@ describe('CcaasChatProxyController', () => {
     });
   });
 
-  // ── POST /sessions/:sid/bind-project ───────────────────────────────
+  // ── POST /sessions/:sid/bind-project (proxy → ccaas attach-workspace-source) ──
+  //
+  // β-1 wire change: the browser still sends `{ projectId }` (live-lesson's
+  // domain word), but the proxy now calls ccaas's canonical
+  // `attach-workspace-source` route with the translated body
+  // `{ sourceUrl, sourceIdentity, tenantId }`. The legacy upstream route
+  // `bind-project` is still available as an alias on ccaas but we
+  // deliberately don't use it — solutions migrate first, the alias is for
+  // anyone we haven't migrated yet.
 
   describe('bindProject', () => {
-    it('injects tenantId from /auth/me and forwards projectId', async () => {
-      // 1st fetch: auth/me. 2nd: bind-project.
+    it('translates {projectId} → {sourceUrl, sourceIdentity, tenantId} and POSTs to attach-workspace-source', async () => {
+      // 1st fetch: auth/me. 2nd: attach-workspace-source.
       const calls: Array<{ url: string; body?: any }> = [];
       mockFetch(async (url, init) => {
         const body = init?.body ? JSON.parse(init.body as string) : undefined;
@@ -162,16 +170,77 @@ describe('CcaasChatProxyController', () => {
         if (url.endsWith('/api/v1/auth/me')) {
           return jsonResponse({ tenantId: 't-uuid-7' });
         }
-        return jsonResponse({ success: true, sessionId: 'sid-1', projectId: 'proj-9' }, 201);
+        return jsonResponse(
+          {
+            success: true,
+            sessionId: 'sid-1',
+            workspaceSource: { sourceUrl: 'http://example/api/projects', sourceIdentity: 'proj-9' },
+          },
+          201,
+        );
       });
 
       const out = await controller.bindProject('sid-1', { projectId: 'proj-9' });
 
       expect(calls).toHaveLength(2);
       expect(calls[0].url).toBe('http://ccaas.local/api/v1/auth/me');
-      expect(calls[1].url).toBe('http://ccaas.local/api/v1/sessions/sid-1/bind-project');
-      expect(calls[1].body).toEqual({ projectId: 'proj-9', tenantId: 't-uuid-7' });
+      // The wire change: route name + body shape.
+      expect(calls[1].url).toBe('http://ccaas.local/api/v1/sessions/sid-1/attach-workspace-source');
+      expect(calls[1].body).toEqual({
+        // sourceIdentity = the browser's projectId (live-lesson translates).
+        sourceIdentity: 'proj-9',
+        // sourceUrl derived from env (default localhost:3007 in tests).
+        sourceUrl: expect.stringContaining('/api/projects'),
+        // tenantId resolved server-side from CcaasUpstream.resolveTenantId.
+        tenantId: 't-uuid-7',
+      });
       expect(out).toMatchObject({ success: true });
+    });
+
+    it('uses LIVE_LESSON_PUBLIC_URL when set, falling back to BACKEND_URL, then localhost', async () => {
+      const seen: string[] = [];
+      mockFetch(async (url, init) => {
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        const body = init?.body ? JSON.parse(init.body as string) : undefined;
+        if (body?.sourceUrl) seen.push(body.sourceUrl);
+        return jsonResponse({ success: true }, 200);
+      });
+
+      // 1) LIVE_LESSON_PUBLIC_URL wins
+      setEnv({
+        CCAAS_API_KEY: 'k',
+        CCAAS_URL: 'http://ccaas.local',
+        LIVE_LESSON_PUBLIC_URL: 'http://public.example',
+        BACKEND_URL: 'http://shouldnotwin',
+      });
+      // Re-instantiate controller to pick up new env if it caches anything;
+      // since resolveArtifactBaseUrl reads env at call time it does not, but
+      // be explicit about the env-was-set step for the next assertion.
+      await controller.bindProject('s', { projectId: 'p' });
+
+      // 2) BACKEND_URL fallback when LIVE_LESSON_PUBLIC_URL absent
+      setEnv({
+        CCAAS_API_KEY: 'k',
+        CCAAS_URL: 'http://ccaas.local',
+        LIVE_LESSON_PUBLIC_URL: undefined,
+        BACKEND_URL: 'http://backend.example',
+      });
+      await controller.bindProject('s', { projectId: 'p' });
+
+      // 3) Bare default when neither is set
+      setEnv({
+        CCAAS_API_KEY: 'k',
+        CCAAS_URL: 'http://ccaas.local',
+        LIVE_LESSON_PUBLIC_URL: undefined,
+        BACKEND_URL: undefined,
+      });
+      await controller.bindProject('s', { projectId: 'p' });
+
+      expect(seen).toEqual([
+        'http://public.example/api/projects',
+        'http://backend.example/api/projects',
+        'http://localhost:3007/api/projects',
+      ]);
     });
 
     it('rejects with 400 BadRequest when body lacks projectId (not 502 — browser fault, not gateway)', async () => {
@@ -361,7 +430,7 @@ describe('CcaasChatProxyController', () => {
           meCallCount++;
           return jsonResponse({ tenantId: 't1' });
         }
-        if (url.endsWith('/bind-project')) {
+        if (url.endsWith('/attach-workspace-source')) {
           return jsonResponse({ success: true });
         }
         return sseResponse(['data: {}\n\n']);

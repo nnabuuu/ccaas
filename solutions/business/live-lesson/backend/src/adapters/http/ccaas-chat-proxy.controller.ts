@@ -141,22 +141,40 @@ export class CcaasChatProxyController {
   }
 
   /**
-   * Proxy ccaas's `POST /api/v1/sessions/:sid/bind-project`. Injects
-   * `tenantId` server-side from the env-cached value, so the browser
-   * body only carries `{ projectId }`.
+   * Proxy ccaas's `POST /api/v1/sessions/:sid/attach-workspace-source`.
+   * Browser body keeps the domain word — `{ projectId }` — because
+   * live-lesson DOES have projects; this proxy translates into ccaas's
+   * generic descriptor shape (`{ sourceUrl, sourceIdentity, tenantId }`).
+   * Server-side injects tenantId from the env-cached resolver and
+   * derives sourceUrl from `LIVE_LESSON_PUBLIC_URL` / `BACKEND_URL`.
+   *
+   * Why this translation lives here (β-1 of the α+β refactor — see
+   * `~/.claude/plans/kind-exploring-mango.md`): ccaas-core stopped
+   * accepting `{projectId}` as a first-class field in its new route;
+   * it just wants an opaque identifier + a URL. The browser keeps
+   * using "project" because that's its own domain; the proxy is the
+   * one place that knows about both vocabularies and translates.
+   *
+   * The deprecated `bind-project` upstream is still available as an
+   * alias during the compat window — but we use the new route here
+   * so the dependency direction is clean: live-lesson uses the
+   * canonical ccaas API, not the legacy alias.
    *
    * Upstream status mapping (browser-actionable distinctions preserved):
    *   404 → NotFoundException (session doesn't exist; UI may auto-create + retry)
-   *   409 → ConflictException (session already bound to a different project;
-   *         UI should suggest "start a new conversation")
-   *   403 → ForbiddenException (cross-tenant guard tripped; impossible under
-   *         the proxy's injected tenantId, but pass through if it ever happens
-   *         so misconfigs are visible rather than masked as 502)
+   *   409 → ConflictException (session already attached to a different
+   *         workspace source; UI should suggest "start a new conversation")
+   *   403 → ForbiddenException (cross-tenant guard tripped; impossible
+   *         under the proxy's injected tenantId, but pass through if it
+   *         ever happens so misconfigs are visible rather than masked
+   *         as 502)
    *   other 4xx + any 5xx → BadGatewayException (502) — generic upstream issue
    */
   @Post('bind-project')
   @ApiOperation({
-    summary: 'Proxy ccaas bind-project (tenantId injected server-side)',
+    summary:
+      'Proxy ccaas attach-workspace-source (browser keeps {projectId}; ' +
+      'proxy translates + injects tenantId + sourceUrl)',
   })
   @ApiParam({ name: 'sessionId', type: String })
   async bindProject(
@@ -172,17 +190,22 @@ export class CcaasChatProxyController {
     }
     const { url, key } = this.upstream.resolveCcaas();
     const tenantId = await this.upstream.resolveTenantId();
+    const sourceUrl = resolveArtifactBaseUrl();
     let upstreamRes: globalThis.Response;
     try {
       upstreamRes = await fetch(
-        `${url}/api/v1/sessions/${encodeURIComponent(sessionId)}/bind-project`,
+        `${url}/api/v1/sessions/${encodeURIComponent(sessionId)}/attach-workspace-source`,
         {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${key}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ projectId: body.projectId, tenantId }),
+          body: JSON.stringify({
+            sourceUrl,
+            sourceIdentity: body.projectId,
+            tenantId,
+          }),
         },
       );
     } catch (err) {
@@ -192,7 +215,7 @@ export class CcaasChatProxyController {
       const status = upstreamRes.status;
       const text = scrubToken(await this.upstream.readErrorBody(upstreamRes));
       this.logger.warn(
-        `ccaas bind-project ${status} session=${sessionId}: ${text}`,
+        `ccaas attach-workspace-source ${status} session=${sessionId} project=${body.projectId}: ${text}`,
       );
       // Browser-actionable cases pass through with their real semantics;
       // anything else collapses to 502 BadGateway.
@@ -200,11 +223,11 @@ export class CcaasChatProxyController {
         case 404:
           throw new NotFoundException(`session ${sessionId} not found in ccaas`);
         case 409:
-          // Cross-project rebind: agent session already bound to a
-          // different project. UI can suggest "start a new conversation
+          // Reattach to a different workspace source: agent session
+          // already attached. UI can suggest "start a new conversation
           // for this project" instead of pretending it's a gateway error.
           throw new ConflictException(
-            `session ${sessionId} is already bound to a different project; ` +
+            `session ${sessionId} is already attached to a different workspace source; ` +
               'create a new conversation to switch projects',
           );
         case 403:
@@ -212,11 +235,11 @@ export class CcaasChatProxyController {
           // since the proxy injects tenantId from the env-cached value,
           // but if a misconfig ever produces it, surface honestly.
           throw new ForbiddenException(
-            'ccaas rejected bind: tenant mismatch (check CCAAS_API_KEY env)',
+            'ccaas rejected attach: tenant mismatch (check CCAAS_API_KEY env)',
           );
         default:
           throw new BadGatewayException(
-            `ccaas upstream ${status} on bind-project: ${text}`,
+            `ccaas upstream ${status} on attach-workspace-source: ${text}`,
           );
       }
     }
@@ -342,4 +365,35 @@ export class CcaasChatProxyController {
       if (!res.writableEnded) res.end();
     }
   }
+}
+
+/**
+ * Resolve the base URL ccaas should use when calling back into
+ * live-lesson for artifact CRUD (the `sourceUrl` field of
+ * attach-workspace-source). Compose order:
+ *
+ *   1. `LIVE_LESSON_PUBLIC_URL` — explicit override; use this when
+ *      ccaas runs in a different network than the dev machine
+ *      (e.g. docker-compose, k8s) and needs a non-localhost target.
+ *   2. `BACKEND_URL` — the same env Vite uses for the dev proxy;
+ *      reasonable fallback for `localhost`-style dev setups.
+ *   3. Literal `http://localhost:3007` — bare-minimum default for
+ *      a fresh `npm run dev` with no env at all.
+ *
+ * The path segment `/api/projects` is appended because that's where
+ * live-lesson exposes its artifact endpoints (see
+ * `backend/src/project/project.controller.ts`). ccaas will append
+ * `/<sourceIdentity>/artifacts...` when it actually calls back.
+ *
+ * β-1 note: ccaas-core captures this on the wire but doesn't yet use
+ * it — the existing syncer reads `tenant.config.artifactUrl` instead.
+ * β-3 will rewire the syncer to use the per-session value sent here.
+ * Setting it correctly NOW means β-3 will have nothing to update on
+ * the solution side.
+ */
+function resolveArtifactBaseUrl(): string {
+  const explicit = process.env.LIVE_LESSON_PUBLIC_URL?.trim();
+  const fallback = process.env.BACKEND_URL?.trim();
+  const base = (explicit || fallback || 'http://localhost:3007').replace(/\/+$/, '');
+  return `${base}/api/projects`;
 }

@@ -412,17 +412,26 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 
 ### Solution 集成两行
 
+> **β-1 重命名（2026-05-26）**：新规范叫 `attach-workspace-source`，body 用通用字段 `{ sourceUrl, sourceIdentity, tenantId }`（不再有 `projectId` —— ccaas 不再假装知道 "project" 是什么）。旧的 `bind-project` 路由保留为 alias 一个 release，内部走同一份逻辑。新 solution 直接用新路由；旧 solution 在迁移窗口内不用动。
+
 ```ts
-// solution backend：在创建 project-scoped agent session 后立刻调
-await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
-  method: 'POST', body: JSON.stringify({ projectId }),
+// solution backend：在创建 workspace-attached agent session 后立刻调
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/attach-workspace-source`, {
+  method: 'POST',
+  body: JSON.stringify({
+    sourceUrl: 'http://your-solution/api/projects',  // ccaas 回调的 base URL
+    sourceIdentity: projectId,                        // 对 ccaas 不透明的 ID
+    tenantId,                                         // β 阶段过渡：sessionService 还需要
+  }),
 });
 
-// 或者通过 SDK 直接：
-sessionsClient.bindToProject(sessionId, projectId);
+// 或继续用旧路由（compat 窗口内）：
+await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
+  method: 'POST', body: JSON.stringify({ projectId, tenantId }),
+});
 ```
 
-后端 `SessionService.bindToProject(sessionId, tenantId, projectId)` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。
+后端 `SessionService.bindToProject(sessionId, tenantId, sourceIdentity)` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。（服务方法将在 β-2 改名为 `attachWorkspaceSource`；β-1 仅是 route + DTO 改名。）
 
 ### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
 

@@ -98,7 +98,14 @@ export async function postFirstMessage(opts: {
   }
 }
 
-/** POST /api/v1/sessions/:sid/bind-project. */
+/**
+ * POST /api/v1/sessions/:sid/bind-project.
+ *
+ * TODO(β-2): swap to `attach-workspace-source` once β-2 lands. Today
+ * this helper deliberately exercises the legacy alias route so that
+ * the deprecation grace period is actually covered by an e2e — flipping
+ * this to the new route too early would leave the alias path untested.
+ */
 export async function bindProject(
   sessionId: string,
   body: BindBody,
