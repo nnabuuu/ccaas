@@ -18,6 +18,7 @@ describe('MessageWorkerService — processMessage', () => {
   let attachmentService: any;
   let sessionService: any;
   let streamRegistry: any;
+  let assetSyncer: { sync: jest.Mock };
 
   const SESSION_ID = 'worker-test-session';
   const mockSession = {
@@ -80,6 +81,9 @@ describe('MessageWorkerService — processMessage', () => {
     sessionService = {
       getOrCreateSession: jest.fn().mockResolvedValue(mockSession),
       closeSession: jest.fn(),
+      // G4 pre-spawn bind helpers (added for the bind-before-spawn path)
+      getBoundProjectId: jest.fn().mockReturnValue(undefined),
+      bindToProject: jest.fn().mockResolvedValue(undefined),
     };
 
     streamRegistry = {
@@ -91,6 +95,9 @@ describe('MessageWorkerService — processMessage', () => {
       resolveAttachments: jest.fn().mockReturnValue(undefined),
     };
 
+    // Hold a reference to the syncer mock so G4 tests can assert on it.
+    assetSyncer = { sync: jest.fn().mockResolvedValue(undefined) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MessageWorkerService,
@@ -99,7 +106,7 @@ describe('MessageWorkerService — processMessage', () => {
         { provide: AttachmentService, useValue: attachmentService },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
-        { provide: SessionAssetSyncer, useValue: { sync: jest.fn().mockResolvedValue(undefined) } },
+        { provide: SessionAssetSyncer, useValue: assetSyncer },
       ],
     }).compile();
 
@@ -398,6 +405,103 @@ describe('MessageWorkerService — processMessage', () => {
     await process(makeQueueItem());
 
     expect((service as any).activeMessageIds.has('queue-item-1')).toBe(false);
+  });
+
+  // ── G4: bind + sync before engine spawn ───────────────────────────────────
+  //
+  // These tests pin the load-bearing ordering for the agent-runtime
+  // first-turn flow. Without them, refactors could easily reintroduce
+  // the race where the engine spawns on an empty workspace because
+  // bindToProject's @OnEvent listener hasn't finished its bootstrap
+  // sync. The wire is: getOrCreateSession → bind → sync → orchestrate.
+
+  describe('G4 — bind + sync before orchestrateMessage', () => {
+    const PROJECT_ID = 'proj-abc';
+
+    it('calls bindToProject + sync BEFORE orchestrateMessage when payload has projectId', async () => {
+      // Track call order across the three mocks. We don't pin the
+      // exact orchestrate args (other tests cover that) — just the
+      // before/after relationship.
+      const order: string[] = [];
+      sessionService.bindToProject.mockImplementation(async () => { order.push('bind'); });
+      assetSyncer.sync.mockImplementation(async () => { order.push('sync'); });
+      orchestrationService.orchestrateMessage.mockImplementation(async () => {
+        order.push('orchestrate');
+        return { sessionId: SESSION_ID, userMessageId: 'u', assistantMessageId: 'a', skillSyncedCount: 0 };
+      });
+
+      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      expect(order).toEqual(['bind', 'sync', 'orchestrate']);
+    });
+
+    it('passes tenantId from queueItem to bindToProject', async () => {
+      await process(makeQueueItem({ tenantId: 'tenant-xyz', payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      expect(sessionService.bindToProject).toHaveBeenCalledWith(
+        SESSION_ID,
+        'tenant-xyz',
+        PROJECT_ID,
+      );
+    });
+
+    it('skips bind + sync when payload has no projectId (back-compat)', async () => {
+      await process(makeQueueItem()); // default payload has no projectId
+
+      expect(sessionService.bindToProject).not.toHaveBeenCalled();
+      expect(assetSyncer.sync).not.toHaveBeenCalled();
+      // Orchestration still runs.
+      expect(orchestrationService.orchestrateMessage).toHaveBeenCalled();
+    });
+
+    it('skips bind + sync when session is already bound to the same projectId (idempotent re-send)', async () => {
+      sessionService.getBoundProjectId.mockReturnValue(PROJECT_ID);
+
+      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      expect(sessionService.bindToProject).not.toHaveBeenCalled();
+      expect(assetSyncer.sync).not.toHaveBeenCalled();
+    });
+
+    it('still binds when session is bound to a DIFFERENT projectId (lets bindToProject decide the policy)', async () => {
+      sessionService.getBoundProjectId.mockReturnValue('proj-old');
+
+      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      // Worker forwards the bind; bindToProject's 409-on-rebind guard
+      // is its own concern, tested separately in
+      // session.service.bind-project.spec.ts.
+      expect(sessionService.bindToProject).toHaveBeenCalledWith(
+        SESSION_ID,
+        'tenant-123',
+        PROJECT_ID,
+      );
+    });
+
+    it('skips bind when projectId is set but tenantId is missing (anonymous-session regression guard)', async () => {
+      // Anonymous sessions can land here without a tenantId. bindToProject
+      // would 400 on empty-string tenantId; the worker MUST skip the
+      // bind in that case rather than fail the message. This guard is
+      // load-bearing — was missed in initial G4 fix and caught in review.
+      await process(makeQueueItem({ tenantId: null as any, payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      expect(sessionService.bindToProject).not.toHaveBeenCalled();
+      expect(assetSyncer.sync).not.toHaveBeenCalled();
+      // Orchestration still runs — agent will just see an unbound workspace.
+      expect(orchestrationService.orchestrateMessage).toHaveBeenCalled();
+    });
+
+    it('propagates sync failures as message failures (does not silently swallow)', async () => {
+      assetSyncer.sync.mockRejectedValueOnce(new Error('artifact source unreachable'));
+
+      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+
+      // Message gets marked failed via the outer try/catch — same path
+      // any other processing error takes.
+      expect(queueService.markFailed).toHaveBeenCalled();
+      // Orchestration must NOT have run with an empty workspace.
+      expect(orchestrationService.orchestrateMessage).not.toHaveBeenCalled();
+    });
   });
 });
 

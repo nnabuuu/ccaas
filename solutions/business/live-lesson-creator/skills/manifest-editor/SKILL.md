@@ -47,7 +47,7 @@ After **every** edit to `artifacts/execution/manifest.json`, run:
 bash skills/manifest-editor/scripts/validate-manifest.sh
 ```
 
-This calls the live-lesson backend's `POST /api/v1/projects/validate-manifest` endpoint — the **same `ManifestSchema`** the publish flow uses. So a green result here guarantees publish will accept; a red one means publish would 400.
+This calls the live-lesson backend's `POST /api/projects/validate-manifest` endpoint — the **same `ManifestSchema`** the publish flow uses. So a green result here guarantees publish will accept; a red one means publish would 400.
 
 The output is one line of JSON, parse with `jq`:
 

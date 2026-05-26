@@ -188,12 +188,19 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // (subsequent messages in the same conversation), skip entirely —
       // bind/sync are cheap but not free.
       const incomingProjectId = queueItem.payload.projectId;
-      if (incomingProjectId) {
+      // Require tenantId too: bindToProject's input validator rejects
+      // empty string with BadRequestException — passing `|| ''` would
+      // regress the anonymous-session path (queueItem.tenantId can be
+      // null for guest mode under AUTH_ALLOW_ANONYMOUS=true). Skip the
+      // bind entirely when we don't have an explicit tenant; the agent
+      // will run on the materializer-only workspace (still functional,
+      // just without per-project artifacts/).
+      if (incomingProjectId && queueItem.tenantId) {
         const currentBinding = this.sessionService.getBoundProjectId(sessionId);
         if (currentBinding !== incomingProjectId) {
           await this.sessionService.bindToProject(
             sessionId,
-            queueItem.tenantId || '',
+            queueItem.tenantId,
             incomingProjectId,
           );
           await this.assetSyncer.sync(sessionId);

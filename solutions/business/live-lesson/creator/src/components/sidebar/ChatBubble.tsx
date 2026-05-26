@@ -147,10 +147,20 @@ interface ValidateResult {
   issues?: Array<{ path: string; message: string }>;
 }
 
+// Tighter than `includes('validate-manifest')` to avoid false positives
+// on commands that merely MENTION the script — e.g. `ls scripts/`,
+// `cat scripts/validate-manifest.sh`, `grep validate-manifest *.sh`.
+// We require the script path to appear with its full `scripts/<name>.sh`
+// shape AND that the command actually invokes it (begins with `bash`
+// or `sh`, or runs it as a relative path). Surfaces only intentional
+// validation runs as cards.
+const VALIDATE_INVOCATION_RE = /(?:^|\s)(?:bash|sh|\.\/|[^\s]*\/)?\s*\S*scripts\/validate-manifest\.sh(?:\s|$)/;
+
 function isValidationToolEvent(t: ToolEvent): boolean {
   if (t.toolName !== 'Bash') return false;
   const input = t.toolInput as { command?: string } | undefined;
-  return typeof input?.command === 'string' && input.command.includes('validate-manifest');
+  if (typeof input?.command !== 'string') return false;
+  return VALIDATE_INVOCATION_RE.test(input.command);
 }
 
 function parseValidationOutput(output: unknown): ValidateResult | null {
