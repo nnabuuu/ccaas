@@ -3,10 +3,15 @@
  *
  * The SSE endpoint is verified by exercising the Observable directly
  * (not via HTTP) — published events arrive at subscribers, unsubscribe
- * stops delivery. Heartbeat is asserted by advancing fake timers.
+ * stops delivery.
  *
  * Invalidate is verified end-to-end with the syncer mocked: requests
  * for a known projectId fan out to the matching bound sessions.
+ *
+ * **Auth is NOT tested here** — it's enforced by `ProjectAccessGuard`
+ * which runs in `canActivate` before the handler. Guard behavior lives
+ * in `project-access.guard.spec.ts`. Controller tests assume the guard
+ * already let the request through.
  */
 
 import { Test } from '@nestjs/testing';
@@ -19,6 +24,7 @@ import { ProjectChangesController } from './project-changes.controller';
 import { CHANGE_STREAM } from './tokens';
 import { SessionService } from '../session.service';
 import { SessionAssetSyncer } from './session-asset-syncer.service';
+import { ProjectAccessGuard } from './project-access.guard';
 
 describe('ProjectChangesController', () => {
   const PROJ = 'proj-1';
@@ -39,7 +45,13 @@ describe('ProjectChangesController', () => {
         { provide: SessionService, useValue: sessions },
         { provide: SessionAssetSyncer, useValue: syncer },
       ],
-    }).compile();
+    })
+      // The controller declares `@UseGuards(ProjectAccessGuard)`. We test
+      // the guard separately in `project-access.guard.spec.ts`; here we
+      // stub it to always allow so we can focus on the handler semantics.
+      .overrideGuard(ProjectAccessGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     controller = moduleRef.get(ProjectChangesController);
   });
 
@@ -79,15 +91,15 @@ describe('ProjectChangesController', () => {
   });
 
   describe('POST /projects/:projectId/invalidate', () => {
-    it('returns 0 accepted when no sessions are bound', async () => {
-      const out = await controller.invalidate(PROJ);
+    it('returns 0 accepted when no sessions are bound', () => {
+      const out = controller.invalidate(PROJ);
       expect(out).toEqual({ accepted: 0 });
       expect(syncer.sync).not.toHaveBeenCalled();
     });
 
     it('fans out sync() calls to every session bound to the project', async () => {
       sessions.findSessionsByProjectId.mockReturnValueOnce(['s1', 's2', 's3']);
-      const out = await controller.invalidate(PROJ);
+      const out = controller.invalidate(PROJ);
       expect(out).toEqual({ accepted: 3 });
       // sync is called fire-and-forget; allow microtasks to run
       await new Promise((r) => queueMicrotask(() => r(undefined)));
@@ -97,10 +109,10 @@ describe('ProjectChangesController', () => {
       expect(syncer.sync).toHaveBeenCalledWith('s3');
     });
 
-    it('does not reject when sync() throws (fire-and-forget)', async () => {
+    it('does not throw when sync() rejects (fire-and-forget)', () => {
       sessions.findSessionsByProjectId.mockReturnValueOnce(['s1']);
       syncer.sync.mockRejectedValueOnce(new Error('boom'));
-      const out = await controller.invalidate(PROJ);
+      const out = controller.invalidate(PROJ);
       expect(out).toEqual({ accepted: 1 });
     });
   });

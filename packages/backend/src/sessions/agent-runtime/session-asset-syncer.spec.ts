@@ -26,6 +26,7 @@ import {
 import {
   CHANGE_STREAM,
   PROJECT_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './agent-runtime.module';
 import { SessionAssetSyncer, ARTIFACTS_DIR } from './session-asset-syncer.service';
@@ -121,6 +122,13 @@ describe('SessionAssetSyncer', () => {
     const registry = {
       getForTenantSlug: jest.fn(() => source),
     };
+    // Phase 2b-4: binary registry defaults to returning null for every
+    // tenant (no binaryArtifactUrl configured) so the syncer's binary
+    // half is a no-op for the existing text-focused tests. Tests that
+    // exercise binary behavior override this in-line.
+    const binaryRegistry = {
+      getForTenantSlug: jest.fn(async () => null),
+    };
     const tenantsSvc = {
       findOne: jest.fn(async (id: string) => ({ id, slug: 'live-lesson' })),
     };
@@ -129,6 +137,7 @@ describe('SessionAssetSyncer', () => {
       providers: [
         SessionAssetSyncer,
         { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: registry },
+        { provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
@@ -257,6 +266,11 @@ describe('SessionAssetSyncer', () => {
       providers: [
         SessionAssetSyncer,
         { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: localRegistry },
+        // Phase 2b-4: binary registry not exercised here; null = skip.
+        {
+          provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+          useValue: { getForTenantSlug: jest.fn(async () => null) },
+        },
         { provide: SNAPSHOT_STORE, useValue: snapshots },
         { provide: CHANGE_STREAM, useValue: changes },
         { provide: SessionService, useValue: sessionSvc },
@@ -381,6 +395,188 @@ describe('SessionAssetSyncer', () => {
       await expect(syncer.onSessionBound({
         sessionId: SID, tenantId: TID, projectId: PROJ,
       })).resolves.toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Phase 2b-4 — binary half
+  // -----------------------------------------------------------------------
+
+  describe('binary half', () => {
+    const ARTIFACTS_BINARY_DIR = 'artifacts-binary';
+
+    class FakeBinarySource {
+      listings: Array<{
+        path: string;
+        type: string;
+        sizeBytes: number;
+        contentHash?: string;
+      }> = [];
+      saved: Array<{ projectId: string; artifact: any }> = [];
+      deleted: Array<{ projectId: string; path: string }> = [];
+      loaded: Array<{ projectId: string; path: string }> = [];
+
+      async listBinaryArtifacts() {
+        return this.listings;
+      }
+      async loadBinaryArtifact(projectId: string, p: string) {
+        this.loaded.push({ projectId, path: p });
+        const meta = this.listings.find((l) => l.path === p)!;
+        // For tests we synthesize bytes deterministically from path.
+        const content = Buffer.from(`bytes-of-${p}`);
+        return {
+          path: p,
+          content,
+          type: meta?.type ?? 'application/octet-stream',
+          sizeBytes: content.length,
+        };
+      }
+      async saveBinaryArtifact(projectId: string, artifact: any) {
+        this.saved.push({ projectId, artifact });
+      }
+      async deleteBinaryArtifact(projectId: string, p: string) {
+        this.deleted.push({ projectId, path: p });
+      }
+    }
+
+    let binarySource: FakeBinarySource;
+    let binaryRegistry: { getForTenantSlug: jest.Mock };
+    let binarySyncer: SessionAssetSyncer;
+
+    beforeEach(async () => {
+      binarySource = new FakeBinarySource();
+      binaryRegistry = {
+        getForTenantSlug: jest.fn(async () => binarySource),
+      };
+      // Re-build the module wiring the binary registry up.
+      const tenantsSvc = {
+        findOne: jest.fn(async (id: string) => ({ id, slug: 'live-lesson' })),
+      };
+      const textRegistry = {
+        getForTenantSlug: jest.fn(() => source),
+      };
+      const moduleRef = await Test.createTestingModule({
+        providers: [
+          SessionAssetSyncer,
+          { provide: PROJECT_ARTIFACT_SOURCE_REGISTRY, useValue: textRegistry },
+          { provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY, useValue: binaryRegistry },
+          { provide: SNAPSHOT_STORE, useValue: snapshots },
+          { provide: CHANGE_STREAM, useValue: changes },
+          { provide: SessionService, useValue: sessionSvc },
+          { provide: SessionMetadataService, useValue: metaSvc },
+          { provide: TenantsService, useValue: tenantsSvc },
+        ],
+      }).compile();
+      binarySyncer = moduleRef.get(SessionAssetSyncer);
+    });
+
+    it('materializes a DB binary into artifacts-binary/ on first sync', async () => {
+      binarySource.listings = [
+        {
+          path: 'hero.png',
+          type: 'png',
+          sizeBytes: 'bytes-of-hero.png'.length,
+          contentHash: sha256('bytes-of-hero.png'),
+        },
+      ];
+
+      await binarySyncer.sync(SID);
+
+      const written = await fs.readFile(
+        path.join(workspaceDir, ARTIFACTS_BINARY_DIR, 'hero.png'),
+      );
+      expect(Buffer.compare(written, Buffer.from('bytes-of-hero.png'))).toBe(0);
+
+      // Snapshot stores the binary path with the prefix re-applied.
+      const snaps = await snapshots.list(SID);
+      const binarySnap = snaps.find((s) => s.path === 'artifacts-binary/hero.png');
+      expect(binarySnap).toBeDefined();
+      expect(binarySnap!.contentHash).toBe(sha256('bytes-of-hero.png'));
+    });
+
+    it('emits a ChangeEvent (source=gui, actor=binary) for the materialization', async () => {
+      const seen: ChangeEvent[] = [];
+      changes.subscribe(PROJ, (ev) => seen.push(ev));
+      binarySource.listings = [
+        {
+          path: 'audio.mp3',
+          type: 'mp3',
+          sizeBytes: 'bytes-of-audio.mp3'.length,
+          contentHash: sha256('bytes-of-audio.mp3'),
+        },
+      ];
+
+      await binarySyncer.sync(SID);
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toMatchObject({
+        projectId: PROJ,
+        path: 'audio.mp3',
+        source: 'gui',
+        kind: 'updated',
+        actor: 'binary',
+      });
+    });
+
+    it('persists agent-side binary edits via saveBinaryArtifact', async () => {
+      // Empty DB; agent created a new binary in artifacts-binary/.
+      const newBytes = Buffer.from('agent-png-bytes');
+      const artifactsBinaryDir = path.join(workspaceDir, ARTIFACTS_BINARY_DIR);
+      await fs.mkdir(artifactsBinaryDir, { recursive: true });
+      await fs.writeFile(path.join(artifactsBinaryDir, 'icon.png'), newBytes);
+
+      // Sessionmock with diff() reporting the agent-added file.
+      sessionSvc.getSession.mockReturnValue(
+        makeMockSession({
+          sessionId: SID,
+          workspaceDir,
+          tenantId: TID,
+          diffEntries: [
+            { type: 'file', op: 'added', path: '/artifacts-binary/icon.png' } as any,
+          ],
+        }),
+      );
+
+      await binarySyncer.sync(SID);
+
+      expect(binarySource.saved).toHaveLength(1);
+      expect(binarySource.saved[0].artifact.path).toBe('icon.png');
+      expect(
+        Buffer.compare(
+          binarySource.saved[0].artifact.content as Buffer,
+          newBytes,
+        ),
+      ).toBe(0);
+      expect(binarySource.saved[0].artifact.sizeBytes).toBe(newBytes.length);
+    });
+
+    it('skips the binary half cleanly when no binarySource is registered', async () => {
+      binaryRegistry.getForTenantSlug.mockResolvedValueOnce(null);
+      // Should not throw, should not even create artifacts-binary/ dir.
+      await binarySyncer.sync(SID);
+      const exists = await fs
+        .stat(path.join(workspaceDir, ARTIFACTS_BINARY_DIR))
+        .then(() => true)
+        .catch(() => false);
+      expect(exists).toBe(false);
+    });
+
+    it('fetches+hashes listing entries that lack a precomputed contentHash', async () => {
+      // No contentHash on the listing — syncer should call loadBinaryArtifact
+      // to compute one before planBinary runs.
+      binarySource.listings = [
+        { path: 'no-hash.bin', type: 'bin', sizeBytes: 17 },
+      ];
+      await binarySyncer.sync(SID);
+      expect(binarySource.loaded).toContainEqual({
+        projectId: PROJ,
+        path: 'no-hash.bin',
+      });
+      // And the materialization itself happens — second loadBinaryArtifact
+      // for the write_fs_binary_from_listing action.
+      const written = await fs.readFile(
+        path.join(workspaceDir, ARTIFACTS_BINARY_DIR, 'no-hash.bin'),
+      );
+      expect(written.length).toBeGreaterThan(0);
     });
   });
 });

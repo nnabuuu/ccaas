@@ -32,7 +32,10 @@
 import { DynamicModule, Module, Provider, Type } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import type { ProjectArtifactSource } from '@kedge-agentic/agent-runtime';
+import type {
+  ProjectArtifactSource,
+  ProjectTenantResolver,
+} from '@kedge-agentic/agent-runtime';
 import { InMemoryChangeStream } from '@kedge-agentic/agent-runtime';
 
 import { SessionArtifactSnapshot } from './session-artifact-snapshot.entity';
@@ -40,6 +43,8 @@ import { TypeOrmSnapshotStore } from './typeorm-snapshot-store';
 import {
   PROJECT_ARTIFACT_SOURCE,
   PROJECT_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_TENANT_RESOLVER,
   SNAPSHOT_STORE,
   CHANGE_STREAM,
 } from './tokens';
@@ -47,6 +52,8 @@ import {
 export {
   PROJECT_ARTIFACT_SOURCE,
   PROJECT_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_TENANT_RESOLVER,
   SNAPSHOT_STORE,
   CHANGE_STREAM,
 };
@@ -68,6 +75,18 @@ class NoopArtifactSource implements ProjectArtifactSource {
   }
   async saveArtifact(): Promise<void> {
     // intentionally empty — nothing to persist
+  }
+}
+
+/**
+ * Default resolver: deny all (returns false for every call). Solutions
+ * opt in by overriding `PROJECT_TENANT_RESOLVER` in their module
+ * providers with a concrete impl querying their project table or
+ * reusing ccaas's `SessionMetadataProjectTenantResolver`. Phase 2b-2.
+ */
+class DenyAllProjectTenantResolver implements ProjectTenantResolver {
+  async verifyProjectAccess(): Promise<boolean> {
+    return false;
   }
 }
 
@@ -105,6 +124,14 @@ export class AgentRuntimeModule {
           ? [options.artifactSource]
           : [NoopArtifactSource]),
         singleSourceProvider,
+        // Default tenant resolver — denies all. Solutions override
+        // `PROJECT_TENANT_RESOLVER` in their own module to enable
+        // SSE auth for their projects.
+        DenyAllProjectTenantResolver,
+        {
+          provide: PROJECT_TENANT_RESOLVER,
+          useExisting: DenyAllProjectTenantResolver,
+        },
         // Note: ProjectArtifactSourceRegistry is NOT registered here. It
         // depends on TenantsService, which lives in the @Global TenantsModule
         // that the consuming module (SessionsModule) imports. Registering it
@@ -114,6 +141,7 @@ export class AgentRuntimeModule {
       ],
       exports: [
         PROJECT_ARTIFACT_SOURCE,
+        PROJECT_TENANT_RESOLVER,
         SNAPSHOT_STORE,
         CHANGE_STREAM,
         TypeOrmSnapshotStore,

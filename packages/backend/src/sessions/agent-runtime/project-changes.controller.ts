@@ -2,19 +2,36 @@
  * Project-scoped sync REST endpoints — the GUI's window into the
  * agent-runtime sync layer.
  *
- *   GET   /api/v1/projects/:projectId/changes      (SSE)
- *   POST  /api/v1/projects/:projectId/invalidate
+ *   GET   /projects/:projectId/changes?token=K   (SSE)
+ *   POST  /projects/:projectId/invalidate?token=K
+ *
+ * Note: ccaas does not set a global API prefix; sessions endpoints use
+ * `@Controller('api/v1/sessions')` but the agent-runtime project routes
+ * deliberately sit at the root namespace. Solutions wiring SSE clients
+ * (e.g. the creator's `getChangesStreamUrl`) target the bare path.
  *
  * The SSE stream relays `ChangeEvent`s from the in-process
  * `InMemoryChangeStream`. The invalidate endpoint is optional sugar
  * for solutions that want lower-latency GUI→agent updates than the
  * default "wait for the next agent turn boundary" cadence.
  *
- * Auth: both endpoints require the caller's tenant scope. The
- * project-id space is solution-defined; the runtime treats it as
- * opaque and does no per-tenant filtering of subscriptions — solutions
- * that need that should encode tenancy in their projectId or layer a
- * solution-side guard.
+ * **Auth (Phase 2b-2)**: both endpoints are gated by `ProjectAccessGuard`
+ * which validates `?token=<apiKey>` and checks the token's tenant
+ * matches the project's owning tenant (via `ProjectTenantResolver`).
+ * The guard runs in `canActivate` BEFORE the handler — necessary for
+ * SSE, where the @Sse handler would otherwise commit HTTP 200 before
+ * an in-handler auth check could reject. See `project-access.guard.ts`
+ * for why this can't be done inside the Observable.
+ *
+ * Reject paths (handled by the Guard, surfaced as proper HTTP statuses):
+ *   401: missing/invalid/expired token
+ *   403: token's tenant doesn't match the project's tenant, OR
+ *        no `ProjectTenantResolver` registered (default denies)
+ *
+ * Query-param tokens leak to access logs. Acceptable for single-tenant
+ * dev / prod-with-trusted-network. For true multi-tenant prod, a
+ * short-lived exchange token (`POST /sessions/exchange`) is a Phase 3
+ * hardening — not in scope here.
  */
 
 import {
@@ -25,9 +42,10 @@ import {
   Param,
   Post,
   Sse,
+  UseGuards,
   type MessageEvent,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
 
 import type { ChangeEvent, ChangeStream } from '@kedge-agentic/agent-runtime';
@@ -35,6 +53,8 @@ import type { ChangeEvent, ChangeStream } from '@kedge-agentic/agent-runtime';
 import { CHANGE_STREAM } from './tokens';
 import { SessionService } from '../session.service';
 import { SessionAssetSyncer } from './session-asset-syncer.service';
+import { Public } from '../../auth/decorators';
+import { ProjectAccessGuard } from './project-access.guard';
 
 @ApiTags('agent-runtime')
 @Controller('projects/:projectId')
@@ -50,16 +70,18 @@ export class ProjectChangesController {
    * disconnect (handled automatically by NestJS's SSE Observable
    * teardown).
    *
-   * Event shape:
-   *   data: JSON-stringified ChangeEvent
-   *     { projectId, path, source: 'agent'|'gui'|'system',
-   *       kind: 'created'|'updated'|'deleted', at, actor? }
+   * `@Public()` skips the global ApiKey decorator-based auth (which is
+   * header-based and wouldn't fit EventSource anyway); `ProjectAccessGuard`
+   * does the query-param token check + tenant match instead.
    */
   @Get('changes')
+  @Public()
+  @UseGuards(ProjectAccessGuard)
   @ApiOperation({
     summary: 'Live SSE feed of artifact change events for a project',
   })
   @ApiParam({ name: 'projectId', type: String })
+  @ApiQuery({ name: 'token', type: String, required: true })
   @Sse('changes')
   changes$(@Param('projectId') projectId: string): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {
@@ -67,9 +89,7 @@ export class ProjectChangesController {
         subscriber.next({ data: ev });
       });
       // Initial keep-alive welcome event so the GUI knows the subscription
-      // is live even before the first real change. SSE `data` accepts
-      // string | object — Record<string, unknown> is fine and lets us
-      // include arbitrary metadata without an `as any` escape.
+      // is live even before the first real change.
       const welcome: Record<string, unknown> = {
         projectId,
         kind: 'subscribed',
@@ -103,14 +123,17 @@ export class ProjectChangesController {
    * asynchronously per-session.
    */
   @Post('invalidate')
+  @Public()
+  @UseGuards(ProjectAccessGuard)
   @HttpCode(202)
   @ApiOperation({
     summary: 'Request early sync of bound sessions for a project',
   })
   @ApiParam({ name: 'projectId', type: String })
-  async invalidate(
+  @ApiQuery({ name: 'token', type: String, required: true })
+  invalidate(
     @Param('projectId') projectId: string,
-  ): Promise<{ accepted: number }> {
+  ): { accepted: number } {
     const bound = this.findSessionsBoundTo(projectId);
     // Fire-and-forget; errors are logged by the syncer itself.
     for (const sid of bound) {

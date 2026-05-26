@@ -49,7 +49,14 @@ import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service
 import { ProjectChangesController } from './agent-runtime/project-changes.controller';
 import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
 import { ProjectArtifactSourceRegistry } from './agent-runtime/project-artifact-source-registry';
-import { PROJECT_ARTIFACT_SOURCE_REGISTRY } from './agent-runtime/tokens';
+import { ProjectBinaryArtifactSourceRegistry } from './agent-runtime/project-binary-artifact-source-registry';
+import { SessionMetadataProjectTenantResolver } from './agent-runtime/session-metadata-project-tenant-resolver';
+import { ProjectAccessGuard } from './agent-runtime/project-access.guard';
+import {
+  PROJECT_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_TENANT_RESOLVER,
+} from './agent-runtime/tokens';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Skill } from '../skills/entities/skill.entity';
@@ -116,6 +123,30 @@ import { BundleModule } from '../bundles/bundle.module';
       provide: PROJECT_ARTIFACT_SOURCE_REGISTRY,
       useExisting: ProjectArtifactSourceRegistry,
     },
+    // Phase 2b-4: binary artifact registry. Same pattern as the text
+    // one — solutions opt in via `tenant.config.binaryArtifactUrl`;
+    // tenants without it skip the binary half of sync entirely.
+    ProjectBinaryArtifactSourceRegistry,
+    {
+      provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
+      useExisting: ProjectBinaryArtifactSourceRegistry,
+    },
+    // Phase 2b-2: ProjectChangesController auth uses this resolver to map
+    // projectId → tenantId. Overrides the AgentRuntimeModule's DenyAll
+    // default. Lives here (not in AgentRuntimeModule) because it depends
+    // on the SessionMetadata repo registered above — wiring it in
+    // AgentRuntimeModule would mean re-importing TypeOrmModule for the
+    // same entity twice and leaks the SessionsModule-owned table.
+    SessionMetadataProjectTenantResolver,
+    {
+      provide: PROJECT_TENANT_RESOLVER,
+      useExisting: SessionMetadataProjectTenantResolver,
+    },
+    // Guard for /projects/:id/* endpoints (SSE + invalidate). Must be a
+    // Guard rather than in-handler auth because @Sse commits the HTTP
+    // response before the handler's Observable subscribes — see
+    // project-access.guard.ts header for details.
+    ProjectAccessGuard,
   ],
   exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, PROJECT_ARTIFACT_SOURCE_REGISTRY],
 })

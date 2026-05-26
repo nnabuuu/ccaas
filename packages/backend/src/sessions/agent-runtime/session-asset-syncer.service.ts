@@ -27,6 +27,15 @@
  * sessions: per-projectId in-memory mutex prevents two sessions on
  * the same project from racing each other.
  *
+ * **Single-replica assumption**: the projectId mutex is process-local
+ * (`Map<string, Promise<void>>`). ccaas is single-replica by design
+ * — SQLite + agentfs FUSE mounts preclude horizontal scaling — so a
+ * cross-process lock isn't needed today. If ccaas ever sheds those
+ * constraints, this mutex must move to Postgres advisory locks /
+ * redlock; otherwise two replicas syncing the same project will
+ * interleave `snapshots.clear()` + per-entry `put()` and corrupt the
+ * snapshot store. Tracked as Phase 3+.
+ *
  * Failure mode: any thrown error is logged + the session's snapshot
  * is left unchanged so the next turn's sync sees the same delta.
  * Hard guarantee: no partial commits — actions apply in order, and
@@ -42,11 +51,16 @@ import * as path from 'node:path';
 
 import type {
   ArtifactSnapshot,
+  BinaryArtifactSource,
+  BinaryContentHasher,
+  BinaryFsDelta,
+  BinarySyncAction,
   ChangeEvent,
   ChangeStream,
   ContentHasher,
   FsDelta,
   ProjectArtifactSource,
+  SnapshotEntry,
   SnapshotStore,
   SyncAction,
 } from '@kedge-agentic/agent-runtime';
@@ -60,15 +74,28 @@ import type { FsDiffEntry } from '../workspace/types';
 import {
   CHANGE_STREAM,
   PROJECT_ARTIFACT_SOURCE_REGISTRY,
+  PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './tokens';
 import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
+import { ProjectBinaryArtifactSourceRegistry } from './project-binary-artifact-source-registry';
 
-/** Workspace-relative directory holding live artifact projections. */
+/** Workspace-relative directory holding live text artifact projections. */
 export const ARTIFACTS_DIR = 'artifacts';
+/**
+ * Phase 2b-4: workspace-relative directory holding live BINARY artifact
+ * projections (images, audio, PDFs). Sibling of `artifacts/`. Keeping
+ * the two namespaces split means the agent's `Read` / `cat` tool can't
+ * accidentally stream a JPEG into context — the path simply isn't
+ * under the text dir it walks.
+ */
+export const ARTIFACTS_BINARY_DIR = 'artifacts-binary';
 
 const sha256Hasher: ContentHasher = (s: string) =>
   createHash('sha256').update(s).digest('hex');
+
+const sha256BinaryHasher: BinaryContentHasher = (b: Buffer | Uint8Array) =>
+  createHash('sha256').update(b).digest('hex');
 
 export interface SessionTurnCompleteEvent {
   sessionId: string;
@@ -95,6 +122,8 @@ export class SessionAssetSyncer {
   constructor(
     @Inject(PROJECT_ARTIFACT_SOURCE_REGISTRY)
     private readonly sourceRegistry: ProjectArtifactSourceRegistry,
+    @Inject(PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY)
+    private readonly binarySourceRegistry: ProjectBinaryArtifactSourceRegistry,
     @Inject(SNAPSHOT_STORE) private readonly snapshots: SnapshotStore,
     @Inject(CHANGE_STREAM) private readonly changes: ChangeStream,
     private readonly sessions: SessionService,
@@ -196,11 +225,36 @@ export class SessionAssetSyncer {
     source: ProjectArtifactSource,
   ): Promise<void> {
     const artifactsDir = path.join(workspaceDir, ARTIFACTS_DIR);
+    const artifactsBinaryDir = path.join(workspaceDir, ARTIFACTS_BINARY_DIR);
     await fs.mkdir(artifactsDir, { recursive: true });
 
-    const [dbNow, previousSnapshot, fsDelta] = await Promise.all([
+    // Phase 2b-4: binary source is independently optional. Resolve up-
+    // front so the binary half can be skipped cleanly if the tenant has
+    // no `binaryArtifactUrl` configured. Resolving here (vs inside the
+    // binary helper) avoids creating `artifacts-binary/` for tenants
+    // that aren't using binaries.
+    const slug = await this.resolveSlug(
+      this.sessions.getSession(sessionId)?.tenantId,
+    );
+    const binarySource = await this.binarySourceRegistry.getForTenantSlug(slug);
+    if (binarySource) {
+      await fs.mkdir(artifactsBinaryDir, { recursive: true });
+    }
+
+    const previousSnapshot = await this.snapshots.list(sessionId);
+    // Split snapshot entries by mount-point so each half-plan only sees
+    // its own paths (text and binary both write to one shared store but
+    // the engine's "deleted from DB" detection would mis-fire if it saw
+    // the other mount's entries as orphans).
+    const textPrevSnapshot = previousSnapshot.filter(
+      (e) => !e.path.startsWith(`${ARTIFACTS_BINARY_DIR}/`),
+    );
+    const binaryPrevSnapshot = previousSnapshot
+      .filter((e) => e.path.startsWith(`${ARTIFACTS_BINARY_DIR}/`))
+      .map((e) => ({ ...e, path: e.path.slice(ARTIFACTS_BINARY_DIR.length + 1) }));
+
+    const [dbNow, fsDelta] = await Promise.all([
       source.loadArtifacts(projectId),
-      this.snapshots.list(sessionId),
       this.buildFsDelta(sessionId, artifactsDir),
     ]);
 
@@ -208,7 +262,7 @@ export class SessionAssetSyncer {
       sessionId,
       dbNow,
       fsDelta,
-      previousSnapshot,
+      previousSnapshot: textPrevSnapshot,
       now: new Date().toISOString(),
       hasher: sha256Hasher,
       // When the solution can't delete, the engine plans `write_fs`
@@ -217,13 +271,48 @@ export class SessionAssetSyncer {
       allowDelete: typeof source.deleteArtifact === 'function',
     });
 
-    if (plan.actions.length === 0) {
+    // Phase 2b-4: parallel binary plan. Only computed when the tenant
+    // has a `binaryArtifactUrl` configured. The plan uses the binary
+    // engine; actions, events, and snapshot entries are kept separate
+    // from the text half until commit time.
+    let binaryPlan: {
+      actions: ReadonlyArray<BinarySyncAction>;
+      nextSnapshot: ReadonlyArray<SnapshotEntry>;
+    } = { actions: [], nextSnapshot: [] };
+    let binaryFsDelta: BinaryFsDelta = { modified: [], deleted: [] };
+    if (binarySource) {
+      const binaryListing = await binarySource.listBinaryArtifacts(projectId);
+      // The engine requires contentHash on every listing entry. Fetch +
+      // hash on demand for any listing entry the solution didn't pre-
+      // hash (rare — solutions are encouraged to send precomputed
+      // hashes to avoid this extra round-trip).
+      const hashedListing = await Promise.all(
+        binaryListing.map(async (l) => {
+          if (l.contentHash) return l;
+          const fetched = await binarySource.loadBinaryArtifact(projectId, l.path);
+          return { ...l, contentHash: sha256BinaryHasher(fetched.content) };
+        }),
+      );
+      binaryFsDelta = await this.buildBinaryFsDelta(sessionId, artifactsBinaryDir);
+      binaryPlan = new SyncEngine().planBinary({
+        sessionId,
+        dbNow: hashedListing,
+        fsDelta: binaryFsDelta,
+        previousSnapshot: binaryPrevSnapshot,
+        now: new Date().toISOString(),
+        hasher: sha256BinaryHasher,
+        allowDelete: typeof binarySource.deleteBinaryArtifact === 'function',
+      });
+    }
+
+    if (plan.actions.length === 0 && binaryPlan.actions.length === 0) {
       this.logger.debug(`sync: session=${sessionId} project=${projectId} no-op`);
       return;
     }
 
     this.logger.log(
-      `sync: session=${sessionId} project=${projectId} applying ${plan.actions.length} action(s)`,
+      `sync: session=${sessionId} project=${projectId} applying ` +
+      `${plan.actions.length} text + ${binaryPlan.actions.length} binary action(s)`,
     );
 
     // Track path rewrites that solutions return from saveArtifact
@@ -243,10 +332,26 @@ export class SessionAssetSyncer {
       }
     }
 
-    // Replace the snapshot wholesale — actions are over, the new
-    // snapshot is the source of truth for the next sync. Apply any
-    // path rewrites the solution surfaced so we record the canonical
-    // path the DB actually holds.
+    const binaryPathRewrites = new Map<string, string>();
+    for (const action of binaryPlan.actions) {
+      const rewrite = await this.applyBinaryAction(
+        action,
+        projectId,
+        artifactsBinaryDir,
+        binarySource!,
+      );
+      if (rewrite && rewrite.sentPath !== rewrite.canonicalPath) {
+        this.logger.warn(
+          `sync (binary): solution rewrote path ${rewrite.sentPath} → ${rewrite.canonicalPath}`,
+        );
+        binaryPathRewrites.set(rewrite.sentPath, rewrite.canonicalPath);
+      }
+    }
+
+    // Replace the snapshot wholesale ONCE for both halves. Text entries
+    // keep their paths verbatim; binary entries get the binary-mount
+    // prefix re-applied so the shared store can distinguish them on
+    // the next sync's snapshot-split step above.
     await this.snapshots.clear(sessionId);
     for (const entry of plan.nextSnapshot) {
       const canonical = pathRewrites.get(entry.path);
@@ -254,11 +359,23 @@ export class SessionAssetSyncer {
         canonical ? { ...entry, path: canonical } : entry,
       );
     }
+    for (const entry of binaryPlan.nextSnapshot) {
+      const canonical = binaryPathRewrites.get(entry.path);
+      const finalPath = `${ARTIFACTS_BINARY_DIR}/${canonical ?? entry.path}`;
+      await this.snapshots.put({ ...entry, path: finalPath });
+    }
 
     // Publish change events for the GUI — rewritten to canonical path
-    // so SSE consumers reload-from-DB against the right key.
+    // so SSE consumers reload-from-DB against the right key. Binary
+    // events carry the binary-mount-relative path (no prefix) so GUI
+    // consumers can route to the binary fetch endpoint.
     for (const action of plan.actions) {
       this.changes.publish(this.actionToEvent(projectId, action, pathRewrites));
+    }
+    for (const action of binaryPlan.actions) {
+      this.changes.publish(
+        this.binaryActionToEvent(projectId, action, binaryPathRewrites),
+      );
     }
   }
 
@@ -340,6 +457,83 @@ export class SessionAssetSyncer {
     await fs.writeFile(absPath, content);
   }
 
+  /**
+   * Binary counterpart to `writeFs` — writes raw bytes (no string
+   * encoding). Caller is responsible for sourcing the bytes (from the
+   * agent-side fs read for save_db_binary, or from
+   * `BinaryArtifactSource.loadBinaryArtifact` for
+   * `write_fs_binary_from_listing`).
+   */
+  private async writeFsBinary(
+    absPath: string,
+    content: Buffer | Uint8Array,
+  ): Promise<void> {
+    await fs.mkdir(path.dirname(absPath), { recursive: true });
+    await fs.writeFile(absPath, content);
+  }
+
+  /**
+   * Phase 2b-4: apply a single binary sync action. Mirrors `applyAction`
+   * but for byte content. The action shapes deliberately split fetch +
+   * write for the DB→fs cases (`write_fs_binary_from_listing` carries
+   * the hash, not bytes) so we only pay the network round-trip for
+   * paths that actually need it.
+   */
+  private async applyBinaryAction(
+    action: BinarySyncAction,
+    projectId: string,
+    artifactsBinaryDir: string,
+    source: BinaryArtifactSource,
+  ): Promise<{ sentPath: string; canonicalPath: string } | undefined> {
+    const filePath = (rel: string) => path.join(artifactsBinaryDir, rel);
+    switch (action.kind) {
+      case 'write_fs_binary_from_listing': {
+        // Fetch the bytes from the solution; size cap is enforced by
+        // the source adapter itself (RestBinaryArtifactSource).
+        const snap = await source.loadBinaryArtifact(projectId, action.path);
+        await this.writeFsBinary(filePath(action.path), snap.content);
+        return undefined;
+      }
+      case 'delete_fs_binary':
+        await fs.rm(filePath(action.path), { force: true });
+        return undefined;
+      case 'save_db_binary': {
+        const result = await source.saveBinaryArtifact(projectId, {
+          path: action.path,
+          content: action.content,
+          type: action.type,
+          sizeBytes: action.sizeBytes,
+        });
+        if (result?.canonicalPath) {
+          return { sentPath: action.path, canonicalPath: result.canonicalPath };
+        }
+        return undefined;
+      }
+      case 'delete_db_binary':
+        if (source.deleteBinaryArtifact) {
+          await source.deleteBinaryArtifact(projectId, action.path);
+        }
+        return undefined;
+      case 'conflict_agent_wins_binary': {
+        const result = await source.saveBinaryArtifact(projectId, {
+          path: action.path,
+          content: action.agentContent,
+          type: action.agentType,
+          sizeBytes: action.agentSizeBytes,
+        });
+        if (result?.canonicalPath) {
+          return { sentPath: action.path, canonicalPath: result.canonicalPath };
+        }
+        return undefined;
+      }
+      default: {
+        const _exhaust: never = action;
+        void _exhaust;
+        return undefined;
+      }
+    }
+  }
+
   private actionToEvent(
     projectId: string,
     action: SyncAction,
@@ -372,6 +566,74 @@ export class SessionAssetSyncer {
         const _exhaust: never = action;
         void _exhaust;
         throw new Error(`unreachable: unhandled action kind`);
+      }
+    }
+  }
+
+  /**
+   * Phase 2b-4: project binary actions into ChangeEvents on the shared
+   * stream. Path is binary-mount-relative (no `artifacts-binary/` prefix)
+   * so consumers can route to the binary fetch endpoint without parsing
+   * the prefix. Distinguished from text events by `actor: 'binary'`
+   * — keeps the existing `ChangeEvent` shape unchanged.
+   */
+  private binaryActionToEvent(
+    projectId: string,
+    action: BinarySyncAction,
+    pathRewrites?: ReadonlyMap<string, string>,
+  ): ChangeEvent {
+    const at = new Date().toISOString();
+    const canonicalPath = (sent: string) => pathRewrites?.get(sent) ?? sent;
+    switch (action.kind) {
+      case 'write_fs_binary_from_listing':
+        return {
+          projectId,
+          path: action.path,
+          source: 'gui',
+          kind: 'updated',
+          at,
+          actor: 'binary',
+        };
+      case 'delete_fs_binary':
+        return {
+          projectId,
+          path: action.path,
+          source: 'gui',
+          kind: 'deleted',
+          at,
+          actor: 'binary',
+        };
+      case 'save_db_binary':
+        return {
+          projectId,
+          path: canonicalPath(action.path),
+          source: 'agent',
+          kind: 'updated',
+          at,
+          actor: 'binary',
+        };
+      case 'delete_db_binary':
+        return {
+          projectId,
+          path: action.path,
+          source: 'agent',
+          kind: 'deleted',
+          at,
+          actor: 'binary',
+        };
+      case 'conflict_agent_wins_binary':
+        return {
+          projectId,
+          path: canonicalPath(action.path),
+          source: 'agent',
+          kind: 'updated',
+          at,
+          actor: 'binary-conflict-agent-wins',
+        };
+      default: {
+        const _exhaust: never = action;
+        void _exhaust;
+        throw new Error(`unreachable: unhandled binary action kind`);
       }
     }
   }
@@ -485,5 +747,73 @@ export class SessionAssetSyncer {
     if (ext === 'yaml' || ext === 'yml') return 'yaml';
     if (ext === 'txt') return 'txt';
     return ext || 'txt';
+  }
+
+  /**
+   * Phase 2b-4: binary counterpart to `buildFsDelta`. Filters the
+   * agent's fs diff to the `artifacts-binary/` prefix and reads file
+   * contents as raw Buffers (no encoding). Returns an empty delta when
+   * the provider doesn't support diff() — sync becomes one-way DB→fs
+   * for binaries on LocalProvider too.
+   */
+  private async buildBinaryFsDelta(
+    sessionId: string,
+    artifactsBinaryDir: string,
+  ): Promise<BinaryFsDelta> {
+    const session = this.sessions.getSession(sessionId);
+    if (!session?.workspaceHandle?.diff) {
+      return { modified: [], deleted: [] };
+    }
+
+    const allEntries: FsDiffEntry[] = await session.workspaceHandle.diff();
+    const modified: Array<{
+      path: string;
+      content: Buffer;
+      type: string;
+      sizeBytes: number;
+    }> = [];
+    const deleted: string[] = [];
+
+    const prefix = ARTIFACTS_BINARY_DIR.endsWith('/')
+      ? ARTIFACTS_BINARY_DIR
+      : `${ARTIFACTS_BINARY_DIR}/`;
+
+    for (const entry of allEntries) {
+      if (entry.type !== 'file') continue;
+      const rel = entry.path.startsWith('/') ? entry.path.slice(1) : entry.path;
+      if (!rel.startsWith(prefix)) continue;
+      const artifactPath = rel.slice(prefix.length);
+      if (artifactPath.length === 0) continue;
+
+      if (entry.op === 'removed') {
+        deleted.push(artifactPath);
+        continue;
+      }
+
+      const absPath = path.join(artifactsBinaryDir, artifactPath);
+      try {
+        const content = await fs.readFile(absPath); // no encoding → Buffer
+        modified.push({
+          path: artifactPath,
+          content,
+          type: this.guessBinaryType(artifactPath),
+          sizeBytes: content.length,
+        });
+      } catch (err) {
+        this.logger.warn(
+          `failed to read agent-modified binary ${absPath}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    return { modified, deleted };
+  }
+
+  /** Best-effort extension → binary type mapping. Solutions can override
+   *  via `saveBinaryArtifact` (the persisted type is whatever the
+   *  solution chooses to store). */
+  private guessBinaryType(artifactPath: string): string {
+    const ext = path.extname(artifactPath).slice(1).toLowerCase();
+    return ext || 'application/octet-stream';
   }
 }
