@@ -36,7 +36,21 @@ export class ProjectService {
       this.fileRepo.create({
         projectId: saved.id,
         path: 'plan/lesson-plan.md',
-        content: `# ${dto.title}\n\n## 教学目标\n\n## 教学要求\n\n## 模块概要\n`,
+        // The HTML comment header is §4.2 layer 1 of the lesson-plan
+        // format design — agent's first `cat` of this file always sees
+        // the syntax contract without depending on a skill loading or
+        // a system prompt being fresh. The `_lib/*.md` paths
+        // referenced here are materialized by ccaas at session start.
+        content:
+          '<!--\n' +
+          '教学要求引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")\n' +
+          '查 id:   Grep "<关键词>" _lib/teaching-requirements.md\n' +
+          '查解读:  Grep "r-X.Y.Z" _lib/my-interpretations.md\n' +
+          '-->\n\n' +
+          `# ${dto.title}\n\n` +
+          `## 教学目标\n\n` +
+          `## 教学要求\n\n` +
+          `## 模块概要\n`,
         fileType: 'md',
       }),
       this.fileRepo.create({

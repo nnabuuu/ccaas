@@ -28,6 +28,10 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+
+// `NotFoundException` import is retained — used elsewhere in this
+// controller for unknown subject/id lookups.
+void NotFoundException;
 import {
   ApiBody,
   ApiOperation,
@@ -44,6 +48,7 @@ import type {
   TeachingRequirementsLibrary,
 } from './types';
 import { resolveUserId, type RequestLike } from './user-context';
+import { materializeLibFiles } from './lib-renderer';
 
 // Conservative cap on interpretation note size. Markdown for personal
 // pedagogical notes shouldn't approach this; values above suggest
@@ -109,6 +114,53 @@ export class TeachingRequirementsController {
   ): Promise<Array<{ reqId: string; notes: string; updatedAt: string }>> {
     const userId = resolveUserId(req);
     return this.interpretations.listForUser(userId);
+  }
+
+  /**
+   * One-shot materialization endpoint for ccaas's session bootstrap.
+   * Returns both rendered markdown files in a single round-trip so
+   * the materializer doesn't need to plumb two fetches.
+   *
+   * ccaas writes the response into the workspace as:
+   *   _lib/teaching-requirements.md   ← `libraryMd`
+   *   _lib/my-interpretations.md      ← `interpretationsMd`
+   *
+   * Subject is required so the right library is rendered; without
+   * it we'd materialize ALL subjects (potentially huge + confusing).
+   */
+  @Get('_materialize')
+  @ApiOperation({
+    summary: "Render _lib/*.md files for ccaas's session materializer",
+  })
+  @ApiQuery({ name: 'subject', required: true })
+  async materialize(
+    @Query('subject') subject: string,
+    @Req() req: RequestLike,
+  ): Promise<{ libraryMd: string | null; interpretationsMd: string }> {
+    if (!subject || !subject.trim()) {
+      // 400 (caller mistake), not 404 (subject not found). 404 would
+      // confuse ccaas's retry / error-log heuristics.
+      throw new BadRequestException('subject query parameter is required');
+    }
+    const userId = resolveUserId(req);
+    const lib = this.svc.getLibrary(subject);
+    const interpretationRows = await this.interpretations.listForUser(userId);
+    // Join interpretations with their L1 text for the materialized
+    // file's context heading. Orphans (L1 dropped the id) get null
+    // text — the renderer marks them "已失效".
+    const enriched = interpretationRows.map((row) => {
+      const item = this.svc.tryFindItemById(row.reqId);
+      return {
+        reqId: row.reqId,
+        notes: row.notes,
+        updatedAt: row.updatedAt,
+        text: item?.text,
+      };
+    });
+    return materializeLibFiles({
+      library: lib,
+      interpretations: enriched,
+    });
   }
 
   /**

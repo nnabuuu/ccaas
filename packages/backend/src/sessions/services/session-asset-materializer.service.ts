@@ -52,6 +52,12 @@ export interface MaterializeAssetsResult {
 export class SessionAssetMaterializer {
   private readonly logger = new Logger(SessionAssetMaterializer.name);
   private readonly solutionDirs: Record<string, string>;
+  /**
+   * Per-tenant base URL for lesson-plan lib materialization. Parsed
+   * from env `LESSON_PLAN_LIB_URLS=<slug>:<url>,<slug>:<url>`. Empty
+   * map disables this feature (no lib files written).
+   */
+  private readonly lessonPlanLibUrls: Record<string, string>;
 
   constructor(
     @Inject(ConfigService) cfg: ConfigService,
@@ -61,10 +67,19 @@ export class SessionAssetMaterializer {
       'workspace.solutionDirs',
       {},
     );
+    this.lessonPlanLibUrls = parseLessonPlanLibUrls(
+      process.env.LESSON_PLAN_LIB_URLS,
+    );
     const keys = Object.keys(this.solutionDirs);
     if (keys.length > 0) {
       this.logger.log(
         `Session asset materializer active for ${keys.length} tenant(s): ${keys.join(', ')}`,
+      );
+    }
+    const libKeys = Object.keys(this.lessonPlanLibUrls);
+    if (libKeys.length > 0) {
+      this.logger.log(
+        `Lesson-plan lib materialization configured for ${libKeys.length} tenant(s): ${libKeys.join(', ')}`,
       );
     }
   }
@@ -126,6 +141,119 @@ export class SessionAssetMaterializer {
       );
     }
     return result;
+  }
+
+  /**
+   * Optional second pass: fetch lesson-plan library + per-user
+   * interpretations from a solution-provided URL and write them as
+   * `_lib/teaching-requirements.md` + `_lib/my-interpretations.md`
+   * into the session workspace.
+   *
+   * Opt-in via per-tenant env config `LESSON_PLAN_LIB_URLS=<slug>:<base>,...`
+   * (e.g. `live-lesson:http://localhost:3007`). When set, ccaas issues
+   * `GET <base>/api/teaching-requirements/_materialize?subject=<subj>`
+   * with `X-Caller-User-Id: <userId>` and writes the two files.
+   *
+   * **SSRF + DoS hardening**:
+   *  - 5s timeout (slow / black-holing hosts can't stall session boot)
+   *  - 2 MB response cap (malicious server can't stream multi-GB body)
+   *  - private/loopback addresses rejected unless
+   *    `LESSON_PLAN_LIB_ALLOW_INTERNAL=true` (default for dev where the
+   *    proxy IS localhost:3007; explicit opt-out in prod)
+   *  - operators MUST point `LESSON_PLAN_LIB_URLS` at trusted hosts only;
+   *    a misconfigured URL could leak `X-Caller-User-Id` to a third
+   *    party. Documented in env help.
+   *
+   * Failure modes are non-fatal: if the URL is unreachable, times out,
+   * or returns a malformed response, we log + return null. Agent then
+   * operates without the materialized files — the lesson-plan format
+   * design accounts for this by also offering the bash helper path
+   * (§4.2 layer 3) for environments where library lookup is needed.
+   *
+   * Stays ccaas-core-agnostic: ccaas doesn't import any live-lesson
+   * code; the URL config + HTTP contract are the entire surface.
+   *
+   * NOTE: not yet called from SessionService bootstrap — wiring is
+   * tracked as a follow-up. The method is testable + ready.
+   */
+  async materializeLessonPlanLib(opts: {
+    sessionDir: string;
+    tenantSlug: string;
+    subject: string;
+    userId: string;
+  }): Promise<{ libraryWritten: boolean; interpretationsWritten: boolean } | null> {
+    const baseUrl = this.lessonPlanLibUrls[opts.tenantSlug];
+    if (!baseUrl) return null;
+
+    if (!isUrlSafeForServerFetch(baseUrl)) {
+      this.logger.warn(
+        `lesson-plan lib url for ${opts.tenantSlug} resolves to ` +
+          `private/loopback (${baseUrl}); set LESSON_PLAN_LIB_ALLOW_INTERNAL=true to permit`,
+      );
+      return null;
+    }
+
+    const url = `${baseUrl.replace(/\/+$/, '')}/api/teaching-requirements/_materialize?subject=${encodeURIComponent(opts.subject)}`;
+    let payload: { libraryMd: string | null; interpretationsMd: string };
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'X-Caller-User-Id': opts.userId,
+          Accept: 'application/json',
+        },
+        // 5-second budget. Session bootstrap blocks on this; longer
+        // delays would be perceived as a hang.
+        signal: AbortSignal.timeout(MATERIALIZE_TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        this.logger.warn(
+          `lesson-plan lib materialize ${res.status} for ${opts.tenantSlug}/${opts.subject}`,
+        );
+        return null;
+      }
+      // Read body with a byte cap before parsing — protects against a
+      // malicious server streaming a multi-GB payload.
+      const text = await readWithByteCap(res, MATERIALIZE_MAX_BYTES);
+      if (text == null) {
+        this.logger.warn(
+          `lesson-plan lib materialize response exceeded ${MATERIALIZE_MAX_BYTES}B cap`,
+        );
+        return null;
+      }
+      payload = JSON.parse(text);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`lesson-plan lib materialize failed: ${msg}`);
+      return null;
+    }
+
+    const libDir = path.join(opts.sessionDir, '_lib');
+    fs.mkdirSync(libDir, { recursive: true });
+    let libraryWritten = false;
+    let interpretationsWritten = false;
+    if (payload.libraryMd) {
+      fs.writeFileSync(
+        path.join(libDir, 'teaching-requirements.md'),
+        payload.libraryMd,
+        'utf8',
+      );
+      libraryWritten = true;
+    }
+    if (typeof payload.interpretationsMd === 'string') {
+      fs.writeFileSync(
+        path.join(libDir, 'my-interpretations.md'),
+        payload.interpretationsMd,
+        'utf8',
+      );
+      interpretationsWritten = true;
+    }
+    if (libraryWritten || interpretationsWritten) {
+      this.logger.log(
+        `Materialized lesson-plan lib for ${opts.tenantSlug}/${opts.subject} ` +
+          `(library=${libraryWritten}, interpretations=${interpretationsWritten})`,
+      );
+    }
+    return { libraryWritten, interpretationsWritten };
   }
 
   /**
@@ -212,4 +340,124 @@ export class SessionAssetMaterializer {
 
 function sha1(buf: Buffer | string): string {
   return createHash('sha1').update(buf).digest('hex');
+}
+
+const MATERIALIZE_TIMEOUT_MS = 5_000;
+const MATERIALIZE_MAX_BYTES = 2_000_000; // 2 MB
+
+/**
+ * SSRF defense for `LESSON_PLAN_LIB_URLS` fetches.
+ *
+ * Rejects URLs whose hostname is a private / loopback / link-local
+ * address — these are common SSRF targets (cloud metadata, internal
+ * Redis, etc.). Local dev (`localhost:3007`) is the most common case
+ * for this materializer, so we opt-in via
+ * `LESSON_PLAN_LIB_ALLOW_INTERNAL=true`. Production deployments
+ * should NOT set that flag and should point the materializer at an
+ * external/proxied URL.
+ *
+ * Note: only checks the *hostname literal* in the URL. A hostname
+ * that resolves via DNS to a private IP isn't caught — full
+ * defense would require DNS lookup + IP check, with TOCTOU issues.
+ * For our threat model (operator-controlled env, mostly localhost),
+ * this catches the common misconfig without the complexity.
+ */
+export function isUrlSafeForServerFetch(rawUrl: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  if (!/^https?:$/.test(parsed.protocol)) return false;
+
+  const allowInternal = process.env.LESSON_PLAN_LIB_ALLOW_INTERNAL === 'true';
+  if (allowInternal) return true;
+
+  // hostname may be wrapped in brackets for IPv6 (`[::1]`) in some
+  // runtimes; strip for consistency.
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  // Loopback
+  if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
+  // RFC1918 IPv4
+  if (/^10\./.test(host)) return false;
+  if (/^192\.168\./.test(host)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  // Link-local IPv4 (incl. cloud metadata 169.254.169.254)
+  if (/^169\.254\./.test(host)) return false;
+  // Link-local IPv6
+  if (host.startsWith('fe80:')) return false;
+  // Unique-local IPv6
+  if (/^f[cd][0-9a-f]{2}:/.test(host)) return false;
+  return true;
+}
+
+/**
+ * Read response body capped at `maxBytes`. Returns null when the cap
+ * is exceeded (caller treats as a fetch failure). Avoids buffering
+ * an attacker-controlled multi-GB stream into memory.
+ */
+async function readWithByteCap(
+  res: Response,
+  maxBytes: number,
+): Promise<string | null> {
+  // Cheap pre-check from Content-Length if the server is honest.
+  const cl = Number(res.headers.get('content-length'));
+  if (cl > maxBytes) return null;
+
+  const reader = res.body?.getReader();
+  if (!reader) {
+    // Old runtime fallback: just buffer with size assertion.
+    const text = await res.text();
+    return text.length > maxBytes ? null : text;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  return new TextDecoder('utf-8').decode(Buffer.concat(chunks.map((c) => Buffer.from(c))));
+}
+
+/**
+ * Parse the LESSON_PLAN_LIB_URLS env var.
+ *
+ * Format: `slug:url[,slug:url]*` where url is the live-lesson base
+ * (e.g. `http://localhost:3007`). The `/api/...` path is appended
+ * by the materializer.
+ *
+ * Examples:
+ *   LESSON_PLAN_LIB_URLS=live-lesson:http://localhost:3007
+ *   LESSON_PLAN_LIB_URLS=live-lesson:https://ll.internal,demo:http://demo:8080
+ *
+ * Bad entries are logged + skipped, not fatal: an operator
+ * mistyping one entry shouldn't break boot for the others.
+ */
+export function parseLessonPlanLibUrls(
+  raw: string | undefined,
+): Record<string, string> {
+  if (!raw) return {};
+  const out: Record<string, string> = {};
+  for (const entry of raw.split(',')) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    // Find the FIRST ':' so URLs with `://` work (slug:scheme://host).
+    const sep = trimmed.indexOf(':');
+    if (sep <= 0) continue;
+    const slug = trimmed.slice(0, sep).trim();
+    const url = trimmed.slice(sep + 1).trim();
+    if (!slug || !url) continue;
+    // Basic URL sanity — only http/https.
+    if (!/^https?:\/\//.test(url)) continue;
+    out[slug] = url;
+  }
+  return out;
 }

@@ -271,6 +271,44 @@ describe('TeachingRequirementsController', () => {
     });
   });
 
+  describe('GET /_materialize', () => {
+    it('renders both files when subject library exists', async () => {
+      interpretations.listForUser.mockResolvedValueOnce([
+        {
+          reqId: 'r-1.2.3',
+          notes: '我的解读',
+          updatedAt: '2026-05-27T00:00:00Z',
+        },
+      ]);
+      const out = await controller.materialize('english', reqWithHeader('alice'));
+      expect(out.libraryMd).toBeTruthy();
+      expect(out.libraryMd).toContain('# 教学要求库');
+      expect(out.interpretationsMd).toContain('# 我的解读');
+      // L1 text was joined into the interpretation heading.
+      expect(out.interpretationsMd).toContain('r-1.2.3 — 在课文中推断生词含义');
+    });
+
+    it('libraryMd is null when subject is unknown', async () => {
+      interpretations.listForUser.mockResolvedValueOnce([]);
+      const out = await controller.materialize('biology', reqWithHeader('alice'));
+      expect(out.libraryMd).toBeNull();
+      // Still emits the interpretations file (placeholder content).
+      expect(out.interpretationsMd).toContain('# 我的解读');
+    });
+
+    it('rejects empty subject', async () => {
+      await expect(
+        controller.materialize('   ', reqWithHeader('alice')),
+      ).rejects.toThrow();
+    });
+
+    it('uses resolved userId — never query/body', async () => {
+      interpretations.listForUser.mockResolvedValueOnce([]);
+      await controller.materialize('english', reqWithHeader('alice'));
+      expect(interpretations.listForUser).toHaveBeenCalledWith('alice');
+    });
+  });
+
   describe('DELETE /:id/interpretation', () => {
     it('removes using resolved userId', async () => {
       interpretations.remove.mockResolvedValueOnce(undefined as any);
