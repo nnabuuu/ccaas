@@ -69,6 +69,25 @@ After this week: `WORKSPACE_PROVIDER=agentfs npm run start:prod` gives you full 
 |---|---|
 | (current) | Documentation refresh: 6 new gitbook pages + 4 in-repo entry-point updates + this CHANGES file |
 
+### Week 3-4: agent-runtime bidirectional sync (Phase 1/1.6/2b)
+
+| Date | Commit | What |
+|---|---|---|
+| 2026-05-25 | `523710cc` | **Phase 2b-1** path-normalization round-trip: `SaveArtifactResult.canonicalPath` flows from `RestProjectArtifactSource` → `SessionAssetSyncer` → snapshot/change-event. Live-lesson's `upsertArtifact` returns `{ path: safePath, fileType }`. Closes the silent delete-then-recreate path when solution and runtime disagree on path form. |
+| 2026-05-26 | `924191f3` | **Phase 2b-4 runtime**: `BinaryArtifactSource` port + `SyncEngine.planBinary()` (parallel to text, same 4-case conflict matrix, agent-wins). New action kinds `write_fs_binary_from_listing` / `save_db_binary` / `delete_*_binary` / `conflict_agent_wins_binary`. Includes a **lost-write fix** for both engines: `!db && fsMod` (agent re-creates a path the DB deleted between turns) was silently dropped; now persists back to DB. `ProjectTenantResolver.verifyProjectAccess(projectId, callerTenantId)` API (refactored from "resolveTenant" — keys the lookup on the pair so a tenant can't piggyback on another's binding). Bumps to `@kedge-agentic/agent-runtime@0.4.0`. |
+| 2026-05-26 | `63c7b072` | **Phase 2b-2 backend**: SSE auth via `?token=<apiKey>` query-param on `/projects/:id/{changes,invalidate}` (EventSource can't send headers). Auth runs in `ProjectAccessGuard.canActivate` — **not** inside the `@Sse` Observable, because `@Sse` commits HTTP 200 + `text/event-stream` before subscribing; an Observable-internal `from(Promise).pipe(switchMap)` auth fails the request silently. Default impl `SessionMetadataProjectTenantResolver` reuses the (tenant, project) row `bind-project` already writes into `session_metadata` — zero per-solution work, single indexed SQLite lookup. Trade-off: project must be bound at least once before SSE can subscribe. **Phase 2b-4 backend**: `RestBinaryArtifactSource` (streaming octet-stream upload/download via `node:stream/pipeline`, content-length pre-check + mid-stream cap), `ProjectBinaryArtifactSourceRegistry` (tenant.config.binaryArtifactUrl), syncer's binary half materializes into `<workspace>/artifacts-binary/` (sibling of `artifacts/`, deliberately outside the agent's `Read` tool reach). Includes review fixes: guard rejects array-shaped `?token`, save uses `content.byteLength` (not caller-supplied `sizeBytes`). |
+| 2026-05-26 | `3d572c63` | **Phase 2b-2 frontend**: `useProjectChanges(projectId, apiKey?)` — second arg required for SSE auth; hook skips opening EventSource when key is missing. `getChangesStreamUrl` appends `?token=…` and **corrects the URL path** to `/projects/:id/changes` (no `/api/v1/` prefix — that controller mounts at the bare namespace). |
+| 2026-05-26 | `fde74eff` | **Phase 2b-3 smoke**: `poc-smoke.sh` reordered for auth flow — `bind-project` first (writes the metadata row that auth requires) → SSE subscribe → live-lesson PUT (sim GUI edit) → `/invalidate` → assert SSE captures the change. Also: `create-dev-api-key.ts` extended with positional tenant-slug + `--raw-only` flag so the smoke can mint a tenant-scoped key inline. |
+| 2026-05-26 | `eb4eda16` | **Phase 2b-3 docs**: gitbook (zh) `reference/agent-runtime.md` gains "认证" + "二进制 artifact" subsections + corrected SSE URL path. `agent-runtime/README.md` phase table updated. `packages/backend/CLAUDE.md` end-to-end smoke + binary mount note. `poc-result.md` reflects the new auth + reordered flow. |
+
+**Net mental-model deltas this sprint**:
+
+1. The agent-runtime sync layer is **end-to-end auth'd** in dev and ready for multi-tenant prod (with the documented query-param-in-access-logs caveat tracked for Phase 3 hardening).
+2. Binary artifacts (images, audio, PDFs) are a **first-class concern** — separate port, separate REST adapter, separate workspace mount. No in-tree consumer yet, but the abstraction is locked so the next solution that needs a JPEG drops straight in.
+3. `SyncEngine` no longer silently drops agent re-creates of DB-deleted paths (long-latent bug, found in code review of the binary version, fixed in both halves).
+
+**Smoke check after pulling**: `bash solutions/business/live-lesson-creator/scripts/poc-smoke.sh` against a booted ccaas + live-lesson backend pair should print `✓ end-to-end PoC passed: 1 change events delivered (auth + sync + SSE)`.
+
 ---
 
 ## Surface area added (so you know where to grep)

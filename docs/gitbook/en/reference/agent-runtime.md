@@ -328,9 +328,87 @@ curl -X PUT $CCAAS/api/v1/tenants/$ID \
 ### REST endpoints (consumed by GUI)
 
 ```
-GET   /api/v1/projects/:projectId/changes    # SSE feed of ChangeEvents
-POST  /api/v1/projects/:projectId/invalidate # request early sync (optional optimization)
+GET   /projects/:projectId/changes    # SSE feed of ChangeEvents
+POST  /projects/:projectId/invalidate # request early sync (optional optimization)
 ```
+
+Note: these endpoints sit at the **bare namespace** (no `/api/v1/` prefix), unlike the `sessions` controller. Source: `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts:@Controller('projects/:projectId')`.
+
+### Authentication (Phase 2b-2)
+
+Both endpoints require a `?token=<apiKey>` query param:
+
+```
+GET   /projects/:projectId/changes?token=ccaas_xxxx
+POST  /projects/:projectId/invalidate?token=ccaas_xxxx
+```
+
+Why a query param and not an `Authorization` header? Because the browser's `EventSource` doesn't support custom headers — a W3C spec constraint, not a ccaas implementation choice.
+
+Verification chain:
+
+1. `ApiKeyService.validateKey(token)` resolves the caller's tenant.
+2. `ProjectTenantResolver.verifyProjectAccess(projectId, callerTenantId)` returns true iff the caller owns the project.
+3. False → 403; missing or invalid token → 401.
+
+**`ProjectTenantResolver` port**: solutions can register their own resolver (e.g. querying their own project table) under the `PROJECT_TENANT_RESOLVER` DI token. If none is registered, agent-runtime falls back to `DenyAllProjectTenantResolver` — every request 403s.
+
+**ccaas default resolver (`SessionMetadataProjectTenantResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(tenantId, projectId)` row that `bind-project` already writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work.
+
+- ✅ Pro: solutions don't need a `tenantId` column, a new REST endpoint, or a cross-process callback.
+- ⚠️ Trade-off: **projects that have never been bind-project'd resolve to false → 403.** Callers must bind a session before subscribing to SSE. This matches `poc-smoke.sh`'s flow and is the canonical pattern.
+
+To override, register your resolver against `PROJECT_TENANT_RESOLVER` in your SessionsModule providers.
+
+**Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-tenant dev and trusted-network prod. For true multi-tenant prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
+
+### Binary artifacts (Phase 2b-4)
+
+Text artifacts go through `ProjectArtifactSource` (content is `string`); images, audio, PDFs go through a separate `BinaryArtifactSource` (content is `Buffer | Uint8Array`). **Two ports are independent** — text-only solutions don't implement the binary port and vice versa.
+
+Why separate?
+
+- Content type differs (`string` vs `Buffer`) — mixing them in one port would complicate every consumer's type story.
+- REST transport differs — text is `application/json` (content inlined); binary is `application/octet-stream` (streaming via `node:stream/pipeline`, never buffered).
+- Filesystem mount differs — text under `<workspace>/artifacts/`, binary under `<workspace>/artifacts-binary/`. **This split is a security boundary**: the agent's `Read` / `cat` tool only walks the text directory, so a JPEG can never be slurped into context.
+
+ccaas-side registration: a solution sets `tenant.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `tenant.config.changed` invalidation. Optional `tenant.config.binaryMaxBytes` pins a per-tenant size cap.
+
+Solution-side REST contract:
+
+```
+GET    {base}/projects/:projectId/binary-artifacts
+     # 200: [{ path, type, sizeBytes, contentHash?, attributes? }]
+     # Metadata only — no bytes; full-read every turn would be too expensive.
+     # If contentHash is included, runtime uses it directly against the snapshot;
+     # otherwise runtime fetches and hashes once via the endpoint below.
+
+GET    {base}/projects/:projectId/binary-artifacts?path=<encoded>
+     # 200 application/octet-stream + Content-Length + X-Artifact-Type
+     # Streamed download; ccaas consumes via stream.pipeline and aborts before
+     # draining the body if Content-Length exceeds maxBytes.
+
+PUT    {base}/projects/:projectId/binary-artifacts?path=<encoded>&type=<encoded>
+     # body: application/octet-stream
+     # 200 (idempotent); may return JSON { path } for path canonicalization
+     # (same convention as text — Phase 2b-1).
+
+DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
+     # 200 (idempotent; 404 treated as already-deleted)
+```
+
+**Sync behavior**:
+
+- Same conflict matrix as text: agent write → `save_db_binary`; GUI write → `write_fs_binary_from_listing` (fetch on demand); dual write → agent wins + `conflict_agent_wins_binary` event.
+- Same `SnapshotStore`; binary entries carry the `artifacts-binary/` prefix so paths can't collide with text.
+- Same `ChangeStream`; binary events carry `actor: 'binary'` (or `actor: 'binary-conflict-agent-wins'`); event `path` is binary-mount-relative (no prefix) so GUI consumers can route to the binary fetch endpoint.
+- Same per-`projectId` mutex — text and binary halves run serially per project, no race.
+
+**Not yet (Phase 2c or later)**:
+
+- No in-tree solution implements the binary REST endpoints yet. The runtime side is complete and unit-tested; end-to-end will be exercised when a real binary use case appears.
+- Explicit agent-tool deny rules for `artifacts-binary/*` (e.g. blocking `Read` on the path). Today the directory split + naming convention is the entire enforcement; an explicit deny is a hardening item.
+- True streaming uploads (current PUT wraps the buffer in a Blob). Switch to a streaming wrapper when uploads exceed ~100MB.
 
 ### Solution integration — 2 lines
 
@@ -347,7 +425,7 @@ sessionsClient.bindToProject(sessionId, projectId);
 
 ### GUI side: consume the SSE so users see agent edits (Phase 2a)
 
-The backend `/api/v1/projects/:projectId/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
+The backend `/projects/:projectId/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
 
 Reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` — a React hook that uses `EventSource` to subscribe, filters out heartbeat / subscribed / own-gui writes, and returns agent-side events to the UI:
 
@@ -355,7 +433,10 @@ Reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChan
 import { useProjectChanges } from './hooks/useProjectChanges';
 
 function ProjectEditorPage({ projectId }) {
-  const { events, isConnected, error } = useProjectChanges(projectId);
+  // Phase 2b-2: the second arg is the ccaas API key (the SSE endpoint's
+  // ?token=… auth). Read it from localStorage in dev:
+  const apiKey = localStorage.getItem('ccaas:apiKey');
+  const { events, isConnected, error } = useProjectChanges(projectId, apiKey);
   // `events` contains only source==='agent' changes, including
   // actor==='conflict-agent-wins' (when an agent edit overrode a GUI edit).
   return <ProjectChangeNotice events={events} ... />;

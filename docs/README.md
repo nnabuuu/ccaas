@@ -1,161 +1,98 @@
 # KedgeAgentic Documentation
 
-Welcome to the KedgeAgentic (即见Agentic) documentation.
+Welcome to the KedgeAgentic (即见Agentic) docs. This README lists every file and directory that actually exists; the GitBook under [`gitbook/`](gitbook/) is the canonical end-user surface.
 
-## 📚 Documentation Structure
+> **Catching up after a break?** Read [`CHANGES_2026-05.md`](./CHANGES_2026-05.md) — it covers the runtime + sandbox + agent-runtime sprint chronologically with commit refs.
 
-### [Guides](guides/) - Solution Development Tutorials
-
-Step-by-step guides for creating KedgeAgentic solutions:
-
-- **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create a solution in 10 minutes
-- **[Creating a Solution - Complete Guide](guides/CREATING_A_SOLUTION.md)** - Comprehensive solution development guide
-- **[File Upload Customization](guides/FILE_UPLOAD_CUSTOMIZATION.md)** - File attachment system guide
-- **[Solution Troubleshooting](guides/solution-troubleshooting.md)** - Debugging common issues
-- **[Migrating to Solution Lib](guides/migrating-to-solution-lib.md)** - Migration guide
-
-### [SDK Documentation](sdk/) - Client SDK Libraries
-
-Complete documentation for React and Vue SDK client libraries:
-
-- **[SDK Comparison](sdk/SDK_COMPARISON.md)** - Feature comparison between React and Vue SDKs
-- **[Choosing an SDK](sdk/CHOOSING_SDK.md)** - Decision guide for selecting the right SDK
-- **[Migration Guide](sdk/MIGRATION_GUIDE.md)** - Upgrading and migrating between SDKs
-
-**React SDK Documentation:**
-- **[API Reference](../packages/react-sdk/docs/API.md)** - Complete API for hooks and components
-- **[Advanced Patterns](../packages/react-sdk/docs/ADVANCED_PATTERNS.md)** - Custom hooks, error handling, state management
-- **[Troubleshooting](../packages/react-sdk/docs/TROUBLESHOOTING.md)** - Common issues and debugging
-
-**Vue SDK Documentation (Bilingual 双语):**
-- **[API Reference](../packages/vue-sdk/docs/API.md)** | **[API 参考](../packages/vue-sdk/docs/API_ZH.md)**
-- **[Advanced Patterns](../packages/vue-sdk/docs/ADVANCED_PATTERNS.md)** | **[高级模式](../packages/vue-sdk/docs/ADVANCED_PATTERNS_ZH.md)**
-- **[Architecture](../packages/vue-sdk/docs/ARCHITECTURE_EN.md)** | **[架构文档](../packages/vue-sdk/docs/ARCHITECTURE.md)**
-
-### [GitBook](gitbook/) - Comprehensive Platform Documentation
-
-Main documentation for the KedgeAgentic platform, available in English and Chinese.
-
-- **[English](gitbook/en/)** - Full English documentation
-- **[中文](gitbook/zh/)** - 完整中文文档
-
-Topics covered:
-- Platform overview and architecture
-- Getting started guides
-- Developer guides (Solutions, Skills, MCP Servers)
-- API reference (REST, WebSocket, Types)
-- Best practices and migration guides
-
-### [ADR](adr/) - Architecture Decision Records
-
-Key architectural decisions and their rationale:
-
-- **[0001](adr/0001-core-must-not-contain-domain-entities.md)** - Core must not contain domain entities
-- **[0002](adr/0002-rest-resource-naming-principles.md)** - REST resource naming principles
-- **[0003](adr/0003-tenant-level-mcp-server-management.md)** - Tenant-level MCP server management
-- **[0004](adr/0004-single-entry-point-for-messages.md)** - Single entry point for messages
-- **[0006](adr/0006-ai-assisted-development-workflow.md)** - AI-assisted development workflow
-- **[0007](adr/0007-messaging-hierarchy-and-resource-ownership.md)** - Messaging hierarchy and resource ownership
-- **[0009](adr/0009-conversation-persistence-architecture.md)** - Conversation persistence architecture
-- **[0011](adr/0011-solution-json-v3-simplification.md)** - Solution.json v3 simplification
-
-### [Advanced](advanced/) - Internal Implementation Guides
-
-Deep-dive documentation for platform internals:
-
-- **[SSE Session Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)** - Complete REST/SSE message pipeline with sequence diagrams
-- **[AgentEngine Lifecycle](advanced/AGENT_ENGINE_LIFECYCLE.md)** - CLI process management details
-- **[Engine Integration Guide](advanced/ENGINE_INTEGRATION_GUIDE.md)** - Implementing custom AgentEngine types
-
-### [Testing](testing/) - Testing Documentation
-
-- **[Backend SubAgent Testing Guide](testing/BACKEND_SUBAGENT_TESTING_GUIDE.md)**
-- **[FilesView Testing Guide](testing/FILESVIEW_TESTING_GUIDE.md)**
-- **[AgentActivityLine Testing Guide](testing/AGENTACTIVITYLINE_TESTING_GUIDE.md)**
-- **[Manual Test Instructions](testing/MANUAL_TEST_INSTRUCTIONS.md)**
-
-### [Design & Designs](design/) - Design Documents
-
-- **[Session Workspace File API](design/session-workspace-file-api.md)** - API design spec
-- **[Admin Sessions Phase 2 PRD](designs/admin-sessions-phase-2-prd.md)**
-- **[Sync Card Optimization](designs/sync-card-optimization-design.md)**
-
-### [Migration](migration/) - Migration Guides
-
-- **[Solution JSON v2 → v3](migration/solution-json-v2-to-v3.md)**
-
----
-
-## 🚀 Quick Links
-
-### For Solution Developers
-1. **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - 10-minute tutorial
-2. **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide with tenant setup, MCP, skills
-3. **[Solution Best Practices](SOLUTION_BEST_PRACTICES.md)**
-4. **[Auto Discovery](AUTO_DISCOVERY.md)** - solution.json v3 format reference
-5. **[Skill Frontmatter](SKILL_MD_FRONTMATTER.md)** - SKILL.md format reference
-6. **[MCP REST Migration](SOLUTION_MCP_REST_MIGRATION.md)** - stdio → REST API migration
-
-### For Frontend Developers
-1. **[SDK Documentation](sdk/)** - Client SDK libraries for React & Vue
-2. **[Frontend Integration Guide](gitbook/zh/guide/frontend.md)**
-3. **[SSE Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)** - Understanding the event pipeline
-
-### For Backend Developers
-1. **[REST API Endpoints](gitbook/zh/api/rest.md)**
-2. **[Session Workspace API](design/session-workspace-file-api.md)**
-3. **[SSE Session Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)**
-4. **[ADR Index](adr/README.md)** - Architectural decisions
-
-### For Skill Writers
-1. **[Skill Writing Guide](gitbook/zh/guide/skill-writing.md)**
-2. **[Skill Frontmatter Spec](SKILL_MD_FRONTMATTER.md)**
-3. **[write_output Best Practices](BEST_PRACTICE_WRITE_OUTPUT.md)**
-
----
-
-## 📝 Document Organization
+## 📚 Layout
 
 ```
 docs/
-├── README.md                      # This file
+├── README.md                        # this file
 │
-├── adr/                           # Architecture Decision Records
-├── advanced/                      # Internal implementation deep-dives
-├── design/                        # API design specs
-├── designs/                       # Feature design docs & PRDs
-├── external/                      # Partner/client-facing materials (Chinese)
-├── features/                      # Feature-specific documentation
-├── gitbook/                       # Full platform docs (EN + ZH)
-├── guides/                        # Step-by-step developer tutorials
-├── migration/                     # Migration guides between versions
-├── prd/                           # Product requirement documents
-├── quickstart/                    # Quick start references
-├── sdk/                           # SDK comparison & selection guides
-├── testing/                       # Testing guides & procedures
+├── adr/                             # architecture decision records (numbered, immutable)
+├── articles/                        # long-form essays + reusable prose
+├── design/                          # design specs (API design, JTBD analysis, picker patterns)
+├── examples/                        # small reference snippets (e.g. SKILL.md with frontmatter)
+├── gitbook/                         # canonical platform docs (en + zh)
+├── guides/                          # focused tutorial-style docs
+├── harness-audit/                   # harness reviewer skill + audit history
+├── media/                           # binary assets (images, slides)
+├── reference/                       # external references + UI mockups (html)
 │
-├── AUTO_DISCOVERY.md              # solution.json auto-discovery spec
-├── BEST_PRACTICE_WRITE_OUTPUT.md  # write_output tool guidelines
-├── CONVERSATION_PERSISTENCE.md    # Conversation persistence architecture
-├── DEVELOPMENT_PRINCIPLES.md      # Core development principles
-├── PROJECT_MANAGEMENT_GUIDE.md    # When & how to create docs
-├── SKILL_MD_FRONTMATTER.md        # SKILL.md frontmatter spec
-├── SOLUTION_BEST_PRACTICES.md     # Solution development best practices
-├── SOLUTION_DEVELOPER_GUIDE.md    # Comprehensive developer guide
-├── SOLUTION_MCP_REST_MIGRATION.md # MCP stdio → REST migration guide
-├── SOLUTION_TEMPLATE.md           # Solution scaffolding template
-└── WORKFLOW.md                    # Development workflow guide
+├── AGENT_RUNTIME_DESIGN.md          # the agent-runtime package roadmap (Phase A/0/1/1.6/2b shipped)
+├── BUILDER_TUTORIAL.md              # builder flow tutorial
+├── CHANGES_2026-05.md               # chronological changelog for the runtime+sandbox+2b sprint
+├── CONVENTIONS.md                   # project conventions (naming, commits, scopes)
+├── DEPLOYMENT.md                    # deployment notes
+├── DEVELOPMENT_PRINCIPLES.md        # core engineering principles
+├── PROJECT_MANAGEMENT_GUIDE.md      # when & how to create docs / use Linear
+├── PROJECT_PATTERN_CATALOG.md       # patterns observed in live-lesson (drives agent-runtime design)
+├── QUALITY_SCORE.md                 # quality-score rubric for solutions
+├── SOLUTION_BEST_PRACTICES.md       # solution-level best practices
+├── SOLUTION_TEMPLATE.md             # solution scaffolding template
+├── WORKFLOW.md                      # day-to-day development workflow
+├── agent-session-runtime-spec.md    # agent session runtime spec
+└── resume-technical-narrative.md    # technical narrative for resumes (Kedge team)
 ```
 
----
+## 🚀 Starting points by role
 
-## 🌐 Language Availability
+### New to the project
 
-Most documentation is available in both English and Chinese:
-- **English**: [`docs/gitbook/en/`](gitbook/en/)
-- **中文**: [`docs/gitbook/zh/`](gitbook/zh/) and [`docs/zh/`](zh/)
+1. Read [`gitbook/zh/README.md`](gitbook/zh/README.md) or [`gitbook/en/README.md`](gitbook/en/README.md) for the platform intro.
+2. Skim [`gitbook/zh/platform/runtime-architecture.md`](gitbook/zh/platform/runtime-architecture.md) for the sandbox + workspace + agent-runtime mental model.
+3. Boot locally via [`gitbook/zh/getting-started/local-self-host.md`](gitbook/zh/getting-started/local-self-host.md).
 
-## 🔗 External Resources
+### Solution developer
 
-- **Claude API Docs**: [docs.anthropic.com](https://docs.anthropic.com)
-- **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
+1. [`gitbook/zh/tutorial/01-architecture.md`](gitbook/zh/tutorial/01-architecture.md) → 02 → ... — full tutorial
+2. [`SOLUTION_BEST_PRACTICES.md`](./SOLUTION_BEST_PRACTICES.md)
+3. [`SOLUTION_TEMPLATE.md`](./SOLUTION_TEMPLATE.md)
+4. [`guides/solution-troubleshooting.md`](guides/solution-troubleshooting.md)
+5. [`gitbook/zh/reference/solution-json.md`](gitbook/zh/reference/solution-json.md) — `solution.json` v3 schema
+
+### Frontend / SDK integrator
+
+1. [`gitbook/zh/guide/frontend.md`](gitbook/zh/guide/frontend.md) — integration overview
+2. [`gitbook/zh/guide/chat-integration.md`](gitbook/zh/guide/chat-integration.md) — React SDK chat
+3. [`../packages/react-sdk/README.md`](../packages/react-sdk/README.md) and [`../packages/vue-sdk/docs/`](../packages/vue-sdk/docs/) — package-local SDK docs (bilingual for Vue)
+
+### Backend engineer
+
+1. [`AGENT_RUNTIME_DESIGN.md`](./AGENT_RUNTIME_DESIGN.md) — the agent-runtime package roadmap and rationale
+2. [`gitbook/zh/reference/runtime-api.md`](gitbook/zh/reference/runtime-api.md) — runtime REST API (fs + metadata endpoints)
+3. [`gitbook/zh/reference/agent-runtime.md`](gitbook/zh/reference/agent-runtime.md) — agent-runtime package reference (Phase 2b-2 auth + 2b-4 binary artifacts shipped)
+4. [`adr/`](adr/) — architectural decisions
+5. [`design/session-workspace-file-api.md`](design/session-workspace-file-api.md) — session workspace FS spec
+
+### Skill writer
+
+1. [`gitbook/zh/guide/skill-writing.md`](gitbook/zh/guide/skill-writing.md)
+2. [`examples/SKILL-with-frontmatter.md`](examples/SKILL-with-frontmatter.md) — frontmatter example
+3. [`gitbook/zh/guide/write-output.md`](gitbook/zh/guide/write-output.md) — `write_output` best practices
+
+## 🗂 What lives where
+
+| Topic | Where |
+|---|---|
+| Architecture decisions (immutable) | [`adr/`](adr/) (numbered, see [`adr/README.md`](adr/README.md)) |
+| Cross-cutting design specs | [`design/`](design/) (3 specs: session-workspace-file-api, AtPicker, JTBD analysis) |
+| Phase roadmap for `@kedge-agentic/agent-runtime` | [`AGENT_RUNTIME_DESIGN.md`](./AGENT_RUNTIME_DESIGN.md) |
+| Recent changes (2026-05 sprint catch-up) | [`CHANGES_2026-05.md`](./CHANGES_2026-05.md) |
+| Long-form prose / articles | [`articles/`](articles/) |
+| Process — commits, conventions, workflow | [`CONVENTIONS.md`](./CONVENTIONS.md), [`WORKFLOW.md`](./WORKFLOW.md), [`DEVELOPMENT_PRINCIPLES.md`](./DEVELOPMENT_PRINCIPLES.md) |
+| Process — docs hygiene | [`PROJECT_MANAGEMENT_GUIDE.md`](./PROJECT_MANAGEMENT_GUIDE.md) |
+| UI mockups | [`reference/*.html`](reference/) |
+| Deployment notes | [`DEPLOYMENT.md`](./DEPLOYMENT.md) |
+| Harness reviewer skill + history | [`harness-audit/`](harness-audit/) |
+
+## 🌐 Language
+
+- **中文** (canonical): [`gitbook/zh/`](gitbook/zh/) — the team writes here first
+- **English**: [`gitbook/en/`](gitbook/en/) — mirror of zh; some pages may lag (notably the reference subdirectory; see `CHANGES_2026-05.md` for known drift)
+
+## 🔗 External
+
+- Claude API — [docs.anthropic.com](https://docs.anthropic.com)
+- MCP Protocol — [modelcontextprotocol.io](https://modelcontextprotocol.io)

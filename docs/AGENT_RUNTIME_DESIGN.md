@@ -77,7 +77,7 @@ agent-runtime package's job is to make that pattern reusable.
 |---|---|---|
 | `workspace/` | Project skills+MCP-servers from a `ContentSource` onto a host directory for the agentfs `--base` overlay | TypeORM ContentSource (already in backend; built on top) (A done) |
 | `project/` | Define what a Project IS (tenant-owned container of artifacts with title/status/attributes) | TypeORM ProjectStore (Phase 1) |
-| `artifact/` | Define what an Artifact IS + how it can be edited | JsonEditProvider (Phase 0 — shipped); MarkdownArtifactEditor wraps DocumentEditProvider (Phase 1); BinaryEditor for blobs (Phase 1) |
+| `artifact/` | Define what an Artifact IS + how it can be edited | JsonEditProvider (Phase 0 — shipped); `ProjectArtifactSource` + `SaveArtifactResult.canonicalPath` (Phase 1 / 2b-1 — shipped); `BinaryArtifactSource` (Phase 2b-4 — shipped); MarkdownArtifactEditor wraps DocumentEditProvider (Phase 2 rest) |
 | `schema/` | Map schemaId → validator, used by artifact edits | Zod adapter (Phase 1); JSON Schema adapter (Phase 1 stretch) |
 | `sync/` | Bidirectional change feed; agent + GUI subscribe + publish | in-memory pub/sub (Phase 2); Redis pub/sub (Phase 2 stretch) |
 
@@ -94,7 +94,7 @@ own `solutions/business/live-lesson/backend/`:
 | `schemas/` dir (`manifest`, `answer-key`, `board-data`, etc.) | registered with `SchemaRegistry` |
 | inline Zod parsing in services | `SchemaValidator` adapter |
 | no story for agent ↔ GUI mid-session sync | `ChangeStream` |
-| binary content squeezed into `content` TEXT column | `BinaryEditor` + blob storage adapter |
+| binary content squeezed into `content` TEXT column | `BinaryArtifactSource` port + solution-owned storage adapter (Phase 2b-4) |
 
 Live-lesson migration is **Phase 3** — last, after all the
 abstractions stabilize from Phase 0/1/2. The pattern catalog
@@ -109,51 +109,60 @@ abstractions stabilize from Phase 0/1/2. The pattern catalog
 | **1 (v0.3)** | **`ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`; backend `SessionAssetSyncer` orchestrator at turn boundaries; `bindToProject` + session-bound bootstrap; `RestProjectArtifactSource` adapter for cross-process solutions; `/projects/:id/{changes,invalidate}` REST; live-lesson `/artifacts` endpoint contract** | ~1.5 weeks | ✅ **shipped** |
 | **1.5** | env-CSV tenant routing (`SOLUTION_ARTIFACT_URLS=slug:url,...`) | — | ⚠️ **superseded by 1.6** |
 | **1.6** | **declarative registration via `solution.json` + auto-discovery: `artifactUrl` field on solution.json + Tenant.config (existing JSON blob); `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/<slug>/solution.json` with Zod validation; `TenantsService.{create,update}` emit `tenant.config.changed` events; `ProjectArtifactSourceRegistry` reads tenant.config lazily, caches per slug, evicts on event. Zero env vars for URL routing. Dev workflow becomes zero-key.** | ~3 hours | ✅ **shipped** |
-| 2 | Redis-backed `ChangeStream` (cross-instance fanout); `BinaryArtifactSource` + blob storage; `MarkdownArtifactEditor` wrapping `DocumentEditProvider`; Zod schema adapter; conflict markers in GUI | ~1-2 weeks | next |
+| **2b-1 (v0.3.1)** | **path-normalization round-trip: `SaveArtifactResult.canonicalPath` so solutions that normalize paths server-side surface the canonical key; runtime snapshot + change events use it. Avoids silent delete-then-recreate when solution and runtime disagree on path form.** | ~0.5 day | ✅ **shipped** |
+| **2b-2 (v0.3.2)** | **SSE auth: `?token=<apiKey>` query-param on `/projects/:id/{changes,invalidate}` (EventSource can't set headers). `ProjectTenantResolver` port (default deny-all). Backend ships `ProjectAccessGuard` (NestJS `canActivate` — has to run before the `@Sse` handler commits HTTP 200) + `SessionMetadataProjectTenantResolver` that reuses the (tenant, project) link `bind-project` already writes into `session_metadata` — zero per-solution work, one indexed SQLite lookup. Trade-off: project must be bound at least once before SSE can subscribe.** | ~2 days | ✅ **shipped** |
+| **2b-3** | **end-to-end smoke (`solutions/business/live-lesson-creator/scripts/poc-smoke.sh`): mint dev key → message-post → bind-project → SSE subscribe → live-lesson PUT → invalidate → SSE captures change. Doc refresh for the corrected SSE URL path (`/projects/:id/...`, not `/api/v1/projects/...`).** | ~0.5 day | ✅ **shipped** |
+| **2b-4 (v0.4)** | **`BinaryArtifactSource` port (separate from text — content is `Buffer | Uint8Array`; solutions opt in independently). `SyncEngine.planBinary()` mirrors the text conflict matrix. Backend ships `RestBinaryArtifactSource` (octet-stream streaming, content-length pre-check, mid-stream cap) + `ProjectBinaryArtifactSourceRegistry` (tenant.config.binaryArtifactUrl). Syncer materializes binary actions into `<workspace>/artifacts-binary/` — sibling of `artifacts/`, deliberately outside the agent's `Read` tool reach so JPEGs can't be slurped into context. No in-tree consumer yet; full vertical unit-tested.** | ~3 days | ✅ **shipped** |
+| 2 (rest) | Redis-backed `ChangeStream` (cross-instance fanout); `MarkdownArtifactEditor` wrapping `DocumentEditProvider`; Zod schema adapter; conflict markers in GUI | ~1 week | next |
 | 3 | live-lesson full migration onto new abstractions (drop bespoke project entity if applicable); pattern catalog deltas; first non-live-lesson consumer | ~2-3 weeks | last |
 
-Total: ~1.5–2 months end-to-end. Phases A, 0, 1, 1.6 = ~3 weeks shipped.
+Total: ~1.5–2 months end-to-end. Phases A, 0, 1, 1.6, 2b-1/2/3/4 = ~4 weeks shipped.
 
-### Phase 1 — what's deliberately not in scope (Phase 2+ backlog)
+### Phase 1 — what's deliberately not in scope (closed-out as Phase 2b shipped)
 
-* Redis-backed cross-process `ChangeStream` (single-instance only today)
+* Redis-backed cross-process `ChangeStream` (single-instance ccaas is the design constraint; not on roadmap)
 * Per-field projection (1 entity → N files via column-mapping) — Phase 1 is strictly 1 row = 1 file via `ProjectArtifactSource`. Solutions compose multiple rows internally.
-* Binary blob projection
-* `MarkdownArtifactEditor` (Phase 0's `JsonEditProvider` already covers JSON artifacts)
+* ~~Binary blob projection~~ — **shipped in Phase 2b-4** (`BinaryArtifactSource` port + REST adapter + `artifacts-binary/` mount)
+* `MarkdownArtifactEditor` (Phase 0's `JsonEditProvider` already covers JSON artifacts; markdown editor remains "Phase 2 rest")
 * Zod entity hooks on live-lesson's `ProjectFile` for schema enforcement at the entity boundary
-* Frontend SSE consumer of `/projects/:id/changes`
+* ~~Frontend SSE consumer of `/projects/:id/changes`~~ — **shipped in Phase 2a** (creator's `useProjectChanges` hook), now with `?token=<apiKey>` auth (Phase 2b-2)
 
 ## Open design questions (still unresolved)
 
 These get resolved in their respective phases — flagging them here
 so future contributors don't think the answers exist yet:
 
-### Conflict resolution (Phase 2 owns this)
+### ~~Conflict resolution~~ — RESOLVED in Phase 1 + Phase 2b
 
-When agent and GUI both edit the same artifact mid-session, what
-happens? Options:
-- **Last-write-wins** with a UI warning ("the agent updated this
-  file 3 seconds ago; reload?")
-- **Optimistic concurrency** with a version field on Artifact;
-  edits fail loudly when version is stale
-- **CRDT-style merge** (overkill for our domain; nope)
-- **Per-artifact lock** held briefly during agent's edit window
+`SyncEngine.plan` ships **agent-wins** semantics for dual writes,
+with a `conflict_agent_wins` action that publishes a `ChangeEvent`
+carrying both the agent's new content AND the discarded DB content
+so the GUI can surface the conflict. The creator's
+`useProjectChanges` hook treats `actor === 'conflict-agent-wins'`
+as a distinct event class (red banner; explicit reload). Phase
+2b-4 mirrors the semantics for binary artifacts
+(`conflict_agent_wins_binary` — metadata-only in the event since
+binary content can be MB-sized).
 
-Current lean: optimistic concurrency. But this needs real
-multi-user testing in Phase 2.
+Future hardening (not currently planned): a version-field
+optimistic-concurrency layer for solutions that want stricter
+guarantees than "agent wins." Defer until a consumer asks.
 
-### Blob storage (Phase 1 owns this)
+### ~~Blob storage~~ — RESOLVED in Phase 2b-4
 
-Where do binary attachments live?
-- Solution-backend filesystem (works locally, doesn't scale)
-- S3-compatible object store (the "right" answer for cloud)
-- agentfs delta (current live-lesson hack — TEXT column with
-  base64; doesn't scale)
+`BinaryArtifactSource` is a separate port (content is `Buffer |
+Uint8Array`; text-only solutions don't implement it). Storage is
+adapter-decided: the runtime ships `RestBinaryArtifactSource`
+(streaming octet-stream over HTTP) for the cross-process case;
+solutions wrap their own storage behind the port — solution-backend
+filesystem, S3, or whatever fits.
 
-Lean toward an `ArtifactStore` port that supports both `text` (for
-markdown/JSON) and `binary` (Buffer/stream) content, with
-adapter-decided storage. The interface might need a `getBinaryUrl()`
-for the GUI to fetch large attachments directly.
+Workspace mount is split: text → `<workspace>/artifacts/`, binary →
+`<workspace>/artifacts-binary/`. The split keeps the agent's `Read`
+tool from streaming a JPEG into context. The size cap is
+declared per-tenant via `tenant.config.binaryMaxBytes`; the REST
+adapter enforces it via content-length pre-check before draining
+the body.
 
 ### Session-project binding (Phase 1 owns this)
 
