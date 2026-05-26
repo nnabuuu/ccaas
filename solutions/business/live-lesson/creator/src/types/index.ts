@@ -5,7 +5,11 @@ export interface Project {
   status: 'draft' | 'published' | 'archived';
   createdAt: string;
   updatedAt: string;
+  /** Present on list responses (loaded via TypeORM loadRelationCountAndMap); absent on detail responses. */
+  fileCount?: number;
 }
+
+export type ProjectListStatus = 'active' | 'archived' | 'all';
 
 export interface ProjectFile {
   id: string;

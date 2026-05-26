@@ -52,8 +52,16 @@ export class ProjectController {
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'archived', 'all'],
+    description: 'Filter by status. Default `active` returns draft + published; `archived` for the recovery view.',
+  })
+  findAll(@Query('status') status?: string) {
+    const normalized =
+      status === 'archived' || status === 'all' ? status : 'active';
+    return this.service.findAll({ status: normalized });
   }
 
   @Get(':id')
@@ -64,6 +72,15 @@ export class ProjectController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.archive(id);
+  }
+
+  @Post(':id/restore')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Restore an archived project back to draft status.',
+  })
+  restore(@Param('id') id: string) {
+    return this.service.restore(id);
   }
 
   // ── File operations ──

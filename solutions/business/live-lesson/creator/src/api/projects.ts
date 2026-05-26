@@ -1,4 +1,4 @@
-import type { Project, ProjectFile } from '../types';
+import type { Project, ProjectFile, ProjectListStatus } from '../types';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -13,8 +13,11 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export async function listProjects(): Promise<Project[]> {
-  return request<Project[]>('/api/projects');
+export async function listProjects(
+  opts: { status?: ProjectListStatus } = {},
+): Promise<Project[]> {
+  const status = opts.status ?? 'active';
+  return request<Project[]>(`/api/projects?status=${status}`);
 }
 
 export async function createProject(data: { title: string; description?: string }): Promise<Project> {
@@ -30,6 +33,10 @@ export async function getProject(id: string): Promise<Project & { files: Project
 
 export async function deleteProject(id: string): Promise<void> {
   return request<void>(`/api/projects/${id}`, { method: 'DELETE' });
+}
+
+export async function restoreProject(id: string): Promise<Project> {
+  return request<Project>(`/api/projects/${id}/restore`, { method: 'POST' });
 }
 
 export async function listFiles(projectId: string): Promise<ProjectFile[]> {

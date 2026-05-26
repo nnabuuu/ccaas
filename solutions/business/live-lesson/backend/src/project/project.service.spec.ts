@@ -11,6 +11,15 @@ import { ManifestSchema } from '../schemas';
 // ── Mock repository factory ──
 
 function mockRepo() {
+  // Chainable query-builder mock — every method returns `qb` so tests
+  // can configure `getMany()` and assert calls to `where` / `orderBy` /
+  // `loadRelationCountAndMap` happened.
+  const qb: any = {
+    loadRelationCountAndMap: jest.fn(() => qb),
+    orderBy: jest.fn(() => qb),
+    where: jest.fn(() => qb),
+    getMany: jest.fn(() => Promise.resolve([])),
+  };
   return {
     create: jest.fn((dto) => ({ ...dto })),
     save: jest.fn((entity) => Promise.resolve(Array.isArray(entity) ? entity : { id: 'uuid-1', ...entity })),
@@ -23,6 +32,8 @@ function mockRepo() {
     insert: jest.fn(() => Promise.resolve()),
     update: jest.fn(() => Promise.resolve()),
     remove: jest.fn(() => Promise.resolve()),
+    createQueryBuilder: jest.fn(() => qb),
+    qb,
   };
 }
 
@@ -100,10 +111,59 @@ describe('ProjectService', () => {
   // ── findAll ──
 
   describe('findAll', () => {
-    it('returns non-archived projects', async () => {
-      projectRepo.find.mockResolvedValueOnce([{ id: 'p1', status: 'draft' }]);
+    it('default (active) filters to draft + published with order DESC + fileCount mapped', async () => {
+      (projectRepo as any).qb.getMany.mockResolvedValueOnce([
+        { id: 'p1', status: 'draft', fileCount: 2 },
+      ]);
       const result = await service.findAll();
-      expect(result).toHaveLength(1);
+      expect(result).toEqual([{ id: 'p1', status: 'draft', fileCount: 2 }]);
+      expect((projectRepo as any).qb.loadRelationCountAndMap).toHaveBeenCalledWith(
+        'project.fileCount',
+        'project.files',
+      );
+      expect((projectRepo as any).qb.orderBy).toHaveBeenCalledWith('project.updatedAt', 'DESC');
+      expect((projectRepo as any).qb.where).toHaveBeenCalledWith(
+        'project.status IN (:...statuses)',
+        { statuses: ['draft', 'published'] },
+      );
+    });
+
+    it('status="archived" filters to archived only', async () => {
+      (projectRepo as any).qb.getMany.mockResolvedValueOnce([]);
+      await service.findAll({ status: 'archived' });
+      expect((projectRepo as any).qb.where).toHaveBeenCalledWith(
+        'project.status = :status',
+        { status: 'archived' },
+      );
+    });
+
+    it('status="all" applies no status filter', async () => {
+      (projectRepo as any).qb.getMany.mockResolvedValueOnce([]);
+      await service.findAll({ status: 'all' });
+      expect((projectRepo as any).qb.where).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── restore ──
+
+  describe('restore', () => {
+    it('throws NotFoundException for unknown id', async () => {
+      projectRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.restore('bad-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException if project is not archived', async () => {
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      await expect(service.restore('p1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('flips archived → draft and persists', async () => {
+      const project: any = { id: 'p1', status: 'archived' };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      await service.restore('p1');
+      expect(projectRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1', status: 'draft' }),
+      );
     });
   });
 

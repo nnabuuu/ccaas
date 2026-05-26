@@ -93,11 +93,30 @@ export class ProjectService {
     return saved;
   }
 
-  async findAll(): Promise<CourseProject[]> {
-    return this.projectRepo.find({
-      where: [{ status: 'draft' as const }, { status: 'published' as const }],
-      order: { updatedAt: 'DESC' },
-    });
+  /**
+   * List projects by status. Returns each project with a `fileCount`
+   * field (count of associated ProjectFile rows) via
+   * loadRelationCountAndMap so the list page can show "N files" badges
+   * without an N+1 query.
+   *
+   * `status='active'` (default) returns draft + published; `'archived'`
+   * returns only archived (for the recovery view); `'all'` is unfiltered
+   * (used by tests + admin tooling).
+   */
+  async findAll(
+    opts: { status?: 'active' | 'archived' | 'all' } = {},
+  ): Promise<Array<CourseProject & { fileCount: number }>> {
+    const status = opts.status ?? 'active';
+    const qb = this.projectRepo
+      .createQueryBuilder('project')
+      .loadRelationCountAndMap('project.fileCount', 'project.files')
+      .orderBy('project.updatedAt', 'DESC');
+    if (status === 'active') {
+      qb.where('project.status IN (:...statuses)', { statuses: ['draft', 'published'] });
+    } else if (status === 'archived') {
+      qb.where('project.status = :status', { status: 'archived' });
+    }
+    return qb.getMany() as Promise<Array<CourseProject & { fileCount: number }>>;
   }
 
   async findOne(id: string): Promise<CourseProject & { files: { path: string; fileType: string; updatedAt: string }[] }> {
@@ -117,6 +136,23 @@ export class ProjectService {
     project.status = 'archived';
     project.updatedAt = this.now();
     await this.projectRepo.save(project);
+  }
+
+  /**
+   * Restore an archived project to `draft` status. Called from the
+   * Archived tab in creator. 404 if no such project; 400 if the project
+   * is not currently archived (idempotency guard — keeps the API honest
+   * instead of silently no-op'ing on a draft project).
+   */
+  async restore(id: string): Promise<CourseProject> {
+    const project = await this.projectRepo.findOne({ where: { id } });
+    if (!project) throw new NotFoundException(`Project ${id} not found`);
+    if (project.status !== 'archived') {
+      throw new BadRequestException(`Project ${id} is not archived (status=${project.status})`);
+    }
+    project.status = 'draft';
+    project.updatedAt = this.now();
+    return this.projectRepo.save(project);
   }
 
   // ── File operations ──
