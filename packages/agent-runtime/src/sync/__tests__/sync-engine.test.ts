@@ -126,6 +126,27 @@ describe('SyncEngine.plan — create/delete edge cases', () => {
       { kind: 'save_db', path: 'notes.md', content: 'agent jot', type: 'md' },
     ]);
   });
+
+  it('agent re-created a path the DB had deleted between turns → save_db (no silent loss)', () => {
+    // Setup: a path was previously in DB (prev snapshot has it). Between
+    // turns the DB row was deleted (db doesn't have it now). The agent
+    // observed the file pre-delete and recreated it with new content.
+    // Without an explicit branch for `!db && fsMod`, the decision tree
+    // falls through and the agent's bytes are silently lost. Verified:
+    // we treat this as agent-wins and persist back to DB.
+    const result = plan(
+      /* db   */ [],
+      /* fs   */ { modified: [{ path: 'restored.md', content: 'agent-recreated', type: 'md' }], deleted: [] },
+      /* prev */ [snap('restored.md', 'old-deleted-content')],
+    );
+    expect(result.actions).toEqual([
+      { kind: 'save_db', path: 'restored.md', content: 'agent-recreated', type: 'md' },
+    ]);
+    // And the snapshot reflects the agent's version so the next sync
+    // doesn't re-trigger the same action.
+    expect(result.nextSnapshot).toHaveLength(1);
+    expect(result.nextSnapshot[0].contentHash).toBe(hasher('agent-recreated'));
+  });
 });
 
 describe('SyncEngine.plan — multi-path scenarios', () => {

@@ -30,7 +30,7 @@ export type {
 export { noopLogger } from './workspace/logger.js';
 export type { Logger } from './workspace/logger.js';
 
-// Artifact (Phase 0 + Phase 1 source-loader port)
+// Artifact (Phase 0 + Phase 1 source-loader port + Phase 2b-4 binary port)
 export { JsonEditProvider } from './artifact/json-edit-provider.js';
 export type {
   ArtifactType,
@@ -43,6 +43,11 @@ export type {
   ArtifactSnapshot,
   ProjectArtifactSource,
   SaveArtifactResult,
+  ProjectTenantResolver,
+  BinaryArtifactSnapshot,
+  BinaryArtifactListing,
+  BinaryArtifactSource,
+  SaveBinaryArtifactResult,
 } from './artifact/index.js';
 
 // Project (Phase 0 interfaces)
@@ -72,4 +77,9 @@ export type {
   SyncAction,
   SyncEngineInput,
   SyncPlan,
+  BinaryContentHasher,
+  BinaryFsDelta,
+  BinarySyncAction,
+  BinarySyncEngineInput,
+  BinarySyncPlan,
 } from './sync/sync-engine.js';

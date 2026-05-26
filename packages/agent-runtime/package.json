@@ -1,6 +1,6 @@
 {
   "name": "@kedge-agentic/agent-runtime",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Framework-free runtime for ccaas agentic services. Phase 0: workspace (BaseMaterializer + ContentSource port) + artifact (JsonEditProvider) + interface skeletons for project/schema/sync. Future phases fill in concrete impls for project store, artifact store, schema registry, and bidirectional sync.",
   "type": "commonjs",
