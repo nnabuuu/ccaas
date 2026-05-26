@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { AlertCircle, FileText, RefreshCw } from 'lucide-react'
+import { AlertCircle, FileText, RefreshCw, Eye, Edit } from 'lucide-react'
 
 import { readFile, HttpError } from '../../api/projects'
 import {
@@ -38,7 +38,9 @@ import {
   parseLessonPlan,
   type PlanDocument,
 } from '../../lib/lesson-plan-md'
+import PlanEditor from './PlanEditor'
 import PlanRenderer, { type ChipResolver } from './PlanRenderer'
+import InterpretationEditorModal from './InterpretationEditorModal'
 
 const LESSON_PLAN_PATH = 'plan/lesson-plan.md'
 
@@ -50,7 +52,10 @@ type State =
       phase: 'ready'
       doc: PlanDocument
       resolver: ChipResolver
+      libraryItems: ReqItem[]
     }
+
+type Mode = 'view' | 'edit'
 
 interface Props {
   projectId: string
@@ -61,6 +66,38 @@ interface Props {
 export default function PlanTab({ projectId, subject }: Props) {
   const [state, setState] = useState<State>({ phase: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
+  const [mode, setMode] = useState<Mode>('view')
+  const [interpretationEditId, setInterpretationEditId] = useState<string | null>(null)
+  const [editorDirty, setEditorDirty] = useState(false)
+
+  // beforeunload guard: when editor is dirty, the browser asks
+  // before leaving. Belt-and-braces with the in-app mode-switch
+  // confirm (which catches the more common case).
+  useEffect(() => {
+    if (!editorDirty) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      // Modern browsers ignore the message string and show a generic
+      // prompt — we set returnValue purely to trigger the dialog.
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [editorDirty])
+
+  const requestModeChange = useCallback(
+    (next: Mode) => {
+      if (next === mode) return
+      if (editorDirty && mode === 'edit') {
+        if (!confirm('教案有未保存的修改。切换到预览会丢失这些修改, 继续?')) {
+          return
+        }
+      }
+      setMode(next)
+      setEditorDirty(false)
+    },
+    [mode, editorDirty],
+  )
 
   useEffect(() => {
     // Race guard: if projectId/subject change mid-fetch (or React
@@ -131,7 +168,12 @@ export default function PlanTab({ projectId, subject }: Props) {
           interpretationsByRefId.get(refId) ?? { interpretation: null }
 
         if (!cancelled) {
-          setState({ phase: 'ready', doc: canonicalized, resolver })
+          setState({
+            phase: 'ready',
+            doc: canonicalized,
+            resolver,
+            libraryItems: allItems,
+          })
         }
       } catch (err) {
         if (cancelled) return
@@ -154,7 +196,7 @@ export default function PlanTab({ projectId, subject }: Props) {
   // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <div className="px-6 py-6 max-w-3xl mx-auto w-full">
+    <div className="flex flex-col h-full">
       {state.phase === 'loading' && (
         <div className="text-center text-gray-500 py-12">
           <RefreshCw size={24} className="mx-auto animate-spin mb-3" />
@@ -163,34 +205,114 @@ export default function PlanTab({ projectId, subject }: Props) {
       )}
 
       {state.phase === 'empty' && (
-        <div className="text-center text-gray-500 py-16 border border-dashed border-gray-300 rounded-lg">
-          <FileText size={36} className="mx-auto mb-3 text-gray-300" />
-          <p className="text-sm">这个项目还没有教案</p>
-          <p className="text-xs text-gray-400 mt-1">
-            文件 <code>plan/lesson-plan.md</code> 不存在
-          </p>
+        <div className="px-6 py-12">
+          <div className="text-center text-gray-500 py-16 border border-dashed border-gray-300 rounded-lg max-w-xl mx-auto">
+            <FileText size={36} className="mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">这个项目还没有教案</p>
+            <p className="text-xs text-gray-400 mt-1">
+              文件 <code>plan/lesson-plan.md</code> 不存在
+            </p>
+          </div>
         </div>
       )}
 
       {state.phase === 'error' && (
-        <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertCircle size={14} />
-            <span className="font-medium">加载失败</span>
+        <div className="px-6 py-6">
+          <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle size={14} />
+              <span className="font-medium">加载失败</span>
+            </div>
+            <p className="font-mono text-xs">{state.message}</p>
+            <button
+              type="button"
+              onClick={reload}
+              className="mt-2 text-xs underline hover:text-red-900"
+            >
+              重试
+            </button>
           </div>
-          <p className="font-mono text-xs">{state.message}</p>
-          <button
-            onClick={reload}
-            className="mt-2 text-xs underline hover:text-red-900"
-          >
-            重试
-          </button>
         </div>
       )}
 
       {state.phase === 'ready' && (
-        <PlanRenderer doc={state.doc} resolveChip={state.resolver} />
+        <>
+          <div className="flex items-center justify-end gap-1 px-4 py-2 border-b border-gray-200 bg-white">
+            <ModeToggle mode={mode} setMode={requestModeChange} dirty={editorDirty} />
+          </div>
+          {mode === 'view' ? (
+            <div className="flex-1 overflow-y-auto px-6 py-6 max-w-3xl mx-auto w-full">
+              <PlanRenderer
+                doc={state.doc}
+                resolveChip={state.resolver}
+                onEditInterpretation={(id) => setInterpretationEditId(id)}
+              />
+            </div>
+          ) : (
+            <PlanEditor
+              projectId={projectId}
+              initialDoc={state.doc}
+              libraryItems={state.libraryItems}
+              resolveChip={state.resolver}
+              subject={subject}
+              onSaved={reload}
+              onInterpretationChanged={reload}
+              onDirtyChange={setEditorDirty}
+            />
+          )}
+
+          <InterpretationEditorModal
+            open={!!interpretationEditId}
+            reqId={interpretationEditId}
+            onClose={() => setInterpretationEditId(null)}
+            onChanged={reload}
+          />
+        </>
       )}
+    </div>
+  )
+}
+
+function ModeToggle({
+  mode,
+  setMode,
+  dirty,
+}: {
+  mode: Mode
+  setMode: (m: Mode) => void
+  dirty: boolean
+}) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      {dirty && (
+        <span className="text-xs text-amber-700">未保存的修改</span>
+      )}
+      <div className="inline-flex bg-gray-100 border border-gray-200 rounded-lg p-0.5">
+        <button
+          type="button"
+          onClick={() => setMode('view')}
+          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded ${
+            mode === 'view'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Eye size={12} />
+          预览
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('edit')}
+          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded ${
+            mode === 'edit'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Edit size={12} />
+          编辑
+        </button>
+      </div>
     </div>
   )
 }

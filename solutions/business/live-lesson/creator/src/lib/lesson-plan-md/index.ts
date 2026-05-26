@@ -7,6 +7,7 @@ export {
   type LibraryEntry,
   type LibraryLookup,
 } from './canonicalize';
+export { toTiptapJson, fromTiptapJson, type TiptapJson } from './tiptap-bridge';
 export type {
   BlockNode,
   HeadingBlock,
