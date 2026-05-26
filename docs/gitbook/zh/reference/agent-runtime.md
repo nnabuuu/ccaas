@@ -11,7 +11,7 @@
 | 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
 | 0 | `project/` `schema/` `sync/` — 接口骨架 | ✅ shipped |
 | **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped（本版本）** |
-| **1 (backend)** | **`SessionAssetSyncer` + `RestProjectArtifactSource` + `/projects/:id/{changes,invalidate}` REST + `bindToProject` 钩子** | **✅ shipped（packages/backend）** |
+| **1 (backend)** | **`SessionAssetSyncer` + `RestWorkspaceArtifactSource` + `/workspaces/:id/{changes,invalidate}` REST + `attachWorkspaceSource` 钩子** | **✅ shipped（packages/backend）** |
 | 2 | Redis-backed ChangeStream（跨进程 fan-out）；BinaryArtifactSource；MarkdownArtifactEditor | ⏳ 之后 |
 | 3 | live-lesson 完全迁移到新抽象上 | ⏳ 最后 |
 
@@ -263,9 +263,9 @@ Runtime 自带 `InMemorySnapshotStore` 给测试用；backend 提供 TypeORM-bac
 5. 替换 snapshot
 6. 发 ChangeEvent
 
-`@OnEvent('session.bound')` —— 在 `SessionService.bindToProject()` 调用时触发，跑同一个 `sync()` 方法。空 snapshot ⇒ 把整套 artifact 初始化进工作区。
+`@OnEvent('session.bound')` —— 在 `SessionService.attachWorkspaceSource()` 调用时触发（旧别名 `bindToProject` 也是一样），跑同一个 `sync()` 方法。空 snapshot ⇒ 把整套 artifact 初始化进工作区。
 
-### `RestProjectArtifactSource`（跨进程 adapter）
+### `RestWorkspaceArtifactSource`（跨进程 adapter）
 
 适用于 solution backend 跟 ccaas 是**独立进程**的场景（如 live-lesson 在 :3007、ccaas 在 :3001）。Solution 暴露 3 个 REST endpoint：
 
@@ -358,7 +358,7 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 
 **`ProjectTenantResolver` port**：solution 可以注册自己的 resolver（比如查自己的 project 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
 
-**ccaas 默认 resolver（`SessionMetadataProjectTenantResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `bind-project` 流程已经写到 `session_metadata` 表里的 `(tenantId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。
+**ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source`（以及它的 `bind-project` 别名）流程已经写到 `session_metadata` 表里的 `(tenantId, projectId)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。`session_metadata` 里的 row name `projectId` 是 β-2 之前数据的 compat 命名；存的是新的 `sourceIdentity` 值。
 
 - ✅ pro：solution 端不需要加 `tenantId` column / 不需要写新 endpoint / 不需要跨进程回调
 - ⚠️ trade-off：**从未被 bind-project 过的 project 解析为 null → 403**。caller 必须先 bind 一个 session，才能订阅 SSE。这跟 bind-project 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
@@ -436,11 +436,11 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
 });
 ```
 
-后端 `SessionService.bindToProject(sessionId, tenantId, sourceIdentity)` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。（服务方法将在 β-2 改名为 `attachWorkspaceSource`；β-1 仅是 route + DTO 改名。）
+后端 `SessionService.attachWorkspaceSource(sessionId, tenantId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` 写 metadata + emit `session.bound` → 触发 bootstrap → 第一轮 agent 看到的就是 DB 当前状态。废弃别名 `bindToProject(sessionId, tenantId, projectId)` 内部 delegate 到这里，传入 `{ sourceIdentity: projectId }`。
 
 ### GUI 端：消费 SSE 让用户能看到 agent 改动（Phase 2a）
 
-后端 `/projects/:projectId/changes` SSE 会把所有 ChangeEvent 发出来。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
+后端 `/workspaces/:identity/changes` SSE 会把所有 ChangeEvent 发出来（旧别名 `/projects/:identity/changes` 也通）。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
 
 **关键设计原则**：浏览器**永远不持有 ccaas key**。原因是 ccaas 只认 tenant，而每个 solution 后端就是一个 tenant —— ccaas key 是 solution 后端的，不是终端用户的。终端用户走 solution 自己的鉴权（cookie / session / JWT / 任何 solution 自己的方案），solution 后端代理所有 ccaas 调用。
 
@@ -453,9 +453,9 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
   → 验证终端用户身份（solution 自己的逻辑）
   → 验证该用户能访问这个 project
   → opens upstream EventSource:
-      GET ${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}
+      GET ${CCAAS_URL}/workspaces/:id/changes?token=${CCAAS_API_KEY}
 [ccaas (:3001)]
-  → ProjectAccessGuard 验证 token + tenant 拥有 project
+  → WorkspaceAccessGuard 验证 token + tenant 拥有 workspace
   → SSE stream
 ```
 

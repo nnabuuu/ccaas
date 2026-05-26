@@ -11,7 +11,7 @@
 | 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
 | 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped |
 | **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped (this version)** |
-| **1 (backend)** | **`SessionAssetSyncer` + `RestProjectArtifactSource` + `/projects/:id/{changes,invalidate}` REST + `bindToProject` hook** | **✅ shipped (packages/backend)** |
+| **1 (backend)** | **`SessionAssetSyncer` + `RestWorkspaceArtifactSource` + `/workspaces/:id/{changes,invalidate}` REST + `attachWorkspaceSource` hook** | **✅ shipped (packages/backend)** |
 | 2 | Redis-backed ChangeStream (cross-process); BinaryArtifactSource; MarkdownArtifactEditor | ⏳ later |
 | 3 | live-lesson full migration onto the new abstractions | ⏳ last |
 
@@ -263,9 +263,9 @@ Runtime ships `InMemorySnapshotStore` for tests; backend provides a TypeORM-back
 5. Replace snapshot.
 6. Publish ChangeEvents.
 
-`@OnEvent('session.bound')` — fires when `SessionService.bindToProject()` is called, runs the same `sync()`. Empty snapshot ⇒ every DB-side artifact bootstraps into the workspace before the agent's first turn.
+`@OnEvent('session.bound')` — fires when `SessionService.attachWorkspaceSource()` is called (or its deprecated alias `bindToProject`), runs the same `sync()`. Empty snapshot ⇒ every DB-side artifact bootstraps into the workspace before the agent's first turn.
 
-### `RestProjectArtifactSource` (cross-process adapter)
+### `RestWorkspaceArtifactSource` (cross-process adapter)
 
 For solutions running as a **separate process** from ccaas (e.g., live-lesson on :3007, ccaas on :3001). Solution exposes 3 REST endpoints:
 
@@ -358,10 +358,10 @@ Verification chain:
 
 **`ProjectTenantResolver` port**: solutions can register their own resolver (e.g. querying their own project table) under the `PROJECT_TENANT_RESOLVER` DI token. If none is registered, agent-runtime falls back to `DenyAllProjectTenantResolver` — every request 403s.
 
-**ccaas default resolver (`SessionMetadataProjectTenantResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(tenantId, projectId)` row that `bind-project` already writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work.
+**ccaas default resolver (`SessionMetadataWorkspaceResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(tenantId, projectId)` row that `attach-workspace-source` (and its `bind-project` alias) writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work. The `session_metadata` row name `projectId` is kept for compat with pre-β-2 data; it stores the new `sourceIdentity` value.
 
 - ✅ Pro: solutions don't need a `tenantId` column, a new REST endpoint, or a cross-process callback.
-- ⚠️ Trade-off: **projects that have never been bind-project'd resolve to false → 403.** Callers must bind a session before subscribing to SSE. This matches `poc-smoke.sh`'s flow and is the canonical pattern.
+- ⚠️ Trade-off: **workspaces that have never been attached resolve to false → 403.** Callers must attach a session first before subscribing to SSE. This matches `poc-smoke.sh`'s flow and is the canonical pattern.
 
 To override, register your resolver against `PROJECT_TENANT_RESOLVER` in your SessionsModule providers.
 
@@ -436,11 +436,11 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
 });
 ```
 
-`SessionService.bindToProject(sessionId, tenantId, sourceIdentity)` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. (The service method will be renamed to `attachWorkspaceSource` in β-2; β-1 changes the wire route + DTO only.)
+`SessionService.attachWorkspaceSource(sessionId, tenantId, { sourceIdentity, sourceUrl?, sourceSchemaHash? })` writes metadata + emits `session.bound` → triggers bootstrap → agent's first turn sees the current DB state. The deprecated alias `bindToProject(sessionId, tenantId, projectId)` delegates here with `{ sourceIdentity: projectId }`.
 
 ### GUI side: consume the SSE so users see agent edits (Phase 2a)
 
-The backend `/projects/:projectId/changes` SSE emits every ChangeEvent. A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
+The backend `/workspaces/:identity/changes` SSE emits every ChangeEvent (legacy alias `/projects/:identity/changes` also works). A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
 
 **Critical design rule**: the browser **never holds a ccaas key.** ccaas knows tenants, not end users — each solution backend is one tenant and holds the one ccaas key. End users belong to the solution, not to ccaas. They authenticate to the solution backend (using whatever the solution's own auth is — cookie session, JWT, anything) and the solution backend mediates every ccaas call.
 
@@ -453,9 +453,9 @@ Concretely for SSE:
   → verifies the browser user (solution's own auth)
   → verifies the user can access this project
   → opens upstream EventSource:
-      GET ${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}
+      GET ${CCAAS_URL}/workspaces/:id/changes?token=${CCAAS_API_KEY}
 [ccaas (:3001)]
-  → ProjectAccessGuard verifies token + tenant owns the project
+  → WorkspaceAccessGuard verifies token + tenant owns the workspace
   → SSE stream
 ```
 
