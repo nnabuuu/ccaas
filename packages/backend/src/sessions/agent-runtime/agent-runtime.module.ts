@@ -10,7 +10,7 @@
  * Operators can also update directly via `PUT /tenants/:id`.
  *
  * This module therefore no longer parses env vars or constructs
- * per-tenant `RestProjectArtifactSource` instances at init. The
+ * per-tenant `RestWorkspaceArtifactSource` instances at init. The
  * `ProjectArtifactSourceRegistry` is a plain `@Injectable` class that
  * caches `slug → source` lazily and invalidates via the
  * `tenant.config.changed` event.
@@ -82,7 +82,7 @@ class NoopArtifactSource implements ProjectArtifactSource {
  * Default resolver: deny all (returns false for every call). Solutions
  * opt in by overriding `PROJECT_TENANT_RESOLVER` in their module
  * providers with a concrete impl querying their project table or
- * reusing ccaas's `SessionMetadataProjectTenantResolver`. Phase 2b-2.
+ * reusing ccaas's `SessionMetadataWorkspaceResolver`. Phase 2b-2.
  */
 class DenyAllProjectTenantResolver implements ProjectTenantResolver {
   async verifyProjectAccess(): Promise<boolean> {

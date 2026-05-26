@@ -328,19 +328,24 @@ curl -X PUT $CCAAS/api/v1/tenants/$ID \
 ### REST endpoints (consumed by GUI)
 
 ```
-GET   /projects/:projectId/changes    # SSE feed of ChangeEvents
-POST  /projects/:projectId/invalidate # request early sync (optional optimization)
+# canonical (since β-3, 2026-05-26)
+GET   /workspaces/:identity/changes     # SSE feed of ChangeEvents
+POST  /workspaces/:identity/invalidate  # request early sync (optional optimization)
+
+# deprecated alias — kept for one release while solutions migrate
+GET   /projects/:identity/changes
+POST  /projects/:identity/invalidate
 ```
 
-Note: these endpoints sit at the **bare namespace** (no `/api/v1/` prefix), unlike the `sessions` controller. Source: `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts:@Controller('projects/:projectId')`.
+These endpoints sit at the **bare namespace** (no `/api/v1/` prefix), unlike the `sessions` controller. Source: `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts:@Controller()` with route arrays handling both URL surfaces.
 
 ### Authentication (Phase 2b-2)
 
-Both endpoints require a `?token=<apiKey>` query param:
+Both endpoints (canonical + alias) require a `?token=<apiKey>` query param:
 
 ```
-GET   /projects/:projectId/changes?token=ccaas_xxxx
-POST  /projects/:projectId/invalidate?token=ccaas_xxxx
+GET   /workspaces/:identity/changes?token=ccaas_xxxx
+POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 ```
 
 Why a query param and not an `Authorization` header? Because the browser's `EventSource` doesn't support custom headers — a W3C spec constraint, not a ccaas implementation choice.

@@ -305,7 +305,7 @@ export class SessionService implements OnModuleDestroy {
   /**
    * Attach a session to a workspace source for the agent-runtime sync
    * layer. Writes `session_metadata['projectId']` (kept for compat with
-   * the existing `SessionMetadataProjectTenantResolver`) plus the new
+   * the existing `SessionMetadataWorkspaceResolver`) plus the new
    * `workspaceSourceUrl` / `workspaceSourceSchemaHash` keys when those
    * fields are present, and emits `session.bound` so the
    * SessionAssetSyncer bootstraps the workspace `artifacts/` dir from
@@ -371,7 +371,7 @@ export class SessionService implements OnModuleDestroy {
       );
     }
     // Persist to session_metadata. `projectId` key kept for compat
-    // (β-3's SessionMetadataProjectTenantResolver still reads it). New
+    // (β-3's SessionMetadataWorkspaceResolver still reads it). New
     // keys `workspaceSourceUrl` / `workspaceSourceSchemaHash` only
     // written when the caller supplied them — pre-β-1 callers landing
     // through the legacy alias don't have these fields and shouldn't

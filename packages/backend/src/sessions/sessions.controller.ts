@@ -739,7 +739,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    * Bind a session to a project so the agent-runtime sync layer knows
    * which artifacts to load/save. Fires `session.bound` → triggers
    * `SessionAssetSyncer.onSessionBound` which bootstraps the workspace
-   * from `RestProjectArtifactSource.loadArtifacts(projectId)`.
+   * from `RestWorkspaceArtifactSource.loadArtifacts(projectId)`.
    *
    * Idempotent on same projectId; rebinding to a different project
    * returns 409 (use a fresh session). Cross-tenant binds are rejected

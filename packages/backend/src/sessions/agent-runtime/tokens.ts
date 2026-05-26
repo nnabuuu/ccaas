@@ -11,7 +11,7 @@
 export const PROJECT_ARTIFACT_SOURCE = 'PROJECT_ARTIFACT_SOURCE';
 /**
  * DI token for the solution-provided `ProjectTenantResolver` (Phase 2b-2).
- * `ProjectChangesController` injects this to verify that a token-presented
+ * `WorkspaceChangesController` injects this to verify that a token-presented
  * tenant matches the projectId's owning tenant before serving SSE / running
  * invalidate. Default impl (no-op) denies all — solutions MUST register
  * their resolver to enable the feature.

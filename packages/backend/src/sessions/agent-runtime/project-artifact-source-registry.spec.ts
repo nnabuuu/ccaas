@@ -3,7 +3,7 @@
  *
  * Mocks TenantsService and exercises:
  *   - cache hit returns instance, doesn't re-query
- *   - cache miss + tenant has artifactUrl → constructs RestProjectArtifactSource
+ *   - cache miss + tenant has artifactUrl → constructs RestWorkspaceArtifactSource
  *   - cache miss + tenant has no artifactUrl → caches null (negative cache)
  *   - cache miss + tenant config has invalid URL → caches null + logs
  *   - null/undefined slug → returns null without DB call
@@ -12,7 +12,7 @@
 
 import { ProjectArtifactSourceRegistry } from './project-artifact-source-registry';
 import { TENANT_CONFIG_CHANGED } from '../../tenants/tenant-config-events';
-import { RestProjectArtifactSource } from './rest-project-artifact-source';
+import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 
 const tenant = (slug: string, artifactUrl?: string) => ({
   id: `id-${slug}`,
@@ -30,10 +30,10 @@ describe('ProjectArtifactSourceRegistry', () => {
     registry = new ProjectArtifactSourceRegistry(tenants as any);
   });
 
-  it('cache miss + tenant has artifactUrl → constructs RestProjectArtifactSource', async () => {
+  it('cache miss + tenant has artifactUrl → constructs RestWorkspaceArtifactSource', async () => {
     tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://localhost:3007/api'));
     const source = await registry.getForTenantSlug('live-lesson');
-    expect(source).toBeInstanceOf(RestProjectArtifactSource);
+    expect(source).toBeInstanceOf(RestWorkspaceArtifactSource);
     expect(tenants.findOne).toHaveBeenCalledWith('live-lesson');
   });
 
@@ -71,10 +71,10 @@ describe('ProjectArtifactSourceRegistry', () => {
 
   it('accepts both http:// and https:// URLs', async () => {
     tenants.findOne.mockResolvedValueOnce(tenant('plain', 'http://localhost:3007/api'));
-    expect(await registry.getForTenantSlug('plain')).toBeInstanceOf(RestProjectArtifactSource);
+    expect(await registry.getForTenantSlug('plain')).toBeInstanceOf(RestWorkspaceArtifactSource);
 
     tenants.findOne.mockResolvedValueOnce(tenant('secure', 'https://api.example.com/v1'));
-    expect(await registry.getForTenantSlug('secure')).toBeInstanceOf(RestProjectArtifactSource);
+    expect(await registry.getForTenantSlug('secure')).toBeInstanceOf(RestWorkspaceArtifactSource);
   });
 
   it('null/undefined slug → returns null without DB call', async () => {
@@ -97,7 +97,7 @@ describe('ProjectArtifactSourceRegistry', () => {
     it('evicts the cached entry for the changed slug', async () => {
       tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://a.local/api'));
       const first = await registry.getForTenantSlug('live-lesson');
-      expect(first).toBeInstanceOf(RestProjectArtifactSource);
+      expect(first).toBeInstanceOf(RestWorkspaceArtifactSource);
 
       // Simulate the event: TenantsService.update writes new URL, then fires.
       registry.onTenantConfigChanged({ tenantId: 'id-live-lesson', slug: 'live-lesson' });
@@ -105,7 +105,7 @@ describe('ProjectArtifactSourceRegistry', () => {
       // Next lookup re-queries; new mock returns the new URL.
       tenants.findOne.mockResolvedValueOnce(tenant('live-lesson', 'http://b.local/api'));
       const second = await registry.getForTenantSlug('live-lesson');
-      expect(second).toBeInstanceOf(RestProjectArtifactSource);
+      expect(second).toBeInstanceOf(RestWorkspaceArtifactSource);
       expect(second).not.toBe(first);
       expect(tenants.findOne).toHaveBeenCalledTimes(2);
     });

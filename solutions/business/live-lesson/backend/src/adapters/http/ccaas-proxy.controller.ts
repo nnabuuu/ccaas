@@ -70,8 +70,17 @@ export class CcaasProxyController {
   @ApiParam({ name: 'projectId', type: String })
   changes$(@Param('projectId') projectId: string): Observable<MessageEvent> {
     const { url, key } = this.upstream.resolveCcaas();
+    // Browser hits `/api/projects/:projectId/changes` (live-lesson keeps
+    // "project" as its domain word); proxy calls ccaas's canonical
+    // `/workspaces/:identity/changes` under the hood. ccaas's old
+    // `/projects/:identity/changes` route still works as an alias for
+    // one release, but we flip to the canonical name here so the
+    // dependency direction is clean.
+    //
+    // The agent-runtime routes deliberately sit at the root of ccaas
+    // (no `/api/v1/` prefix — see `WorkspaceChangesController` header).
     const upstreamUrl =
-      `${url}/projects/${encodeURIComponent(projectId)}/changes?token=${encodeURIComponent(key)}`;
+      `${url}/workspaces/${encodeURIComponent(projectId)}/changes?token=${encodeURIComponent(key)}`;
 
     return new Observable<MessageEvent>((subscriber) => {
       const controller = new AbortController();
@@ -154,8 +163,11 @@ export class CcaasProxyController {
     @Param('projectId') projectId: string,
   ): Promise<{ accepted: boolean }> {
     const { url, key } = this.upstream.resolveCcaas();
+    // Browser keeps the "project" word in its public URL; proxy calls
+    // ccaas's canonical /workspaces/ route at the root namespace. See
+    // `changes$` above for the same rationale.
     const upstreamUrl =
-      `${url}/projects/${encodeURIComponent(projectId)}/invalidate?token=${encodeURIComponent(key)}`;
+      `${url}/workspaces/${encodeURIComponent(projectId)}/invalidate?token=${encodeURIComponent(key)}`;
     let res: Response;
     try {
       res = await fetch(upstreamUrl, { method: 'POST' });

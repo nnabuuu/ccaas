@@ -328,19 +328,24 @@ curl -X PUT $CCAAS/api/v1/tenants/$ID \
 ### REST endpoints（GUI 用的）
 
 ```
-GET   /projects/:projectId/changes    # SSE — 监听 ChangeEvent
-POST  /projects/:projectId/invalidate # 提前请求一次 sync（可选优化）
+# canonical（β-3 起，2026-05-26）
+GET   /workspaces/:identity/changes     # SSE — 监听 ChangeEvent
+POST  /workspaces/:identity/invalidate  # 提前请求一次 sync（可选优化）
+
+# deprecated alias —— 保留一个 release 给 solution 迁移
+GET   /projects/:identity/changes
+POST  /projects/:identity/invalidate
 ```
 
-注意：这两个 endpoint **挂在 bare namespace**（不在 `/api/v1/` 下面）—— 跟 `sessions` controller 不同。代码见 `packages/backend/src/sessions/agent-runtime/project-changes.controller.ts:@Controller('projects/:projectId')`。
+这些 endpoint **挂在 bare namespace**（不在 `/api/v1/` 下面）—— 跟 `sessions` controller 不同。代码见 `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts:@Controller()`（用 route array 同时支持两套 URL）。
 
 ### 认证（Phase 2b-2）
 
-两个 endpoint 都需要 `?token=<apiKey>` query param：
+两个 endpoint（canonical + alias）都需要 `?token=<apiKey>` query param：
 
 ```
-GET   /projects/:projectId/changes?token=ccaas_xxxx
-POST  /projects/:projectId/invalidate?token=ccaas_xxxx
+GET   /workspaces/:identity/changes?token=ccaas_xxxx
+POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 ```
 
 为什么是 query param 而不是 `Authorization` header？因为浏览器的 `EventSource` 不支持自定义 header —— 这是 W3C 规范限制，不是 ccaas 实现的选择。

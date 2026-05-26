@@ -1,18 +1,25 @@
 /**
- * RestProjectArtifactSource — HTTP-backed `ProjectArtifactSource` impl
+ * RestWorkspaceArtifactSource — HTTP-backed `ProjectArtifactSource` impl
  * for solutions that run in a separate process from ccaas (the common
- * case: live-lesson on :3007, ccaas on :3001).
+ * case: live-lesson on :3007, ccaas on :3001). Renamed from
+ * `RestProjectArtifactSource` in β-3 — the deprecated class name is
+ * still re-exported at the bottom of this file for one release.
  *
- * Solutions expose three endpoints under a configurable base URL:
+ * Solutions expose three endpoints under a configurable base URL. The
+ * URL **template** still uses `/projects/:id/artifacts` because that's
+ * what solutions implement today — ccaas-core stops calling its own
+ * abstraction "project" but the wire contract solutions promise is
+ * still expressed in solution-domain vocabulary. A future phase may
+ * make the URL template configurable per-tenant.
  *
- *   GET    {base}/projects/:projectId/artifacts
+ *   GET    {base}/projects/:identity/artifacts
  *     → 200: [{ path, content, type, attributes? }]
  *
- *   PUT    {base}/projects/:projectId/artifacts?path=<encoded>
+ *   PUT    {base}/projects/:identity/artifacts?path=<encoded>
  *     body: { content: string, type: string, attributes?: object }
  *     → 200 (upsert; idempotent)
  *
- *   DELETE {base}/projects/:projectId/artifacts?path=<encoded>
+ *   DELETE {base}/projects/:identity/artifacts?path=<encoded>
  *     → 200 (idempotent — 404 is treated as already-deleted)
  *
  * Solutions don't have to know about ccaas-internal types; the
@@ -20,7 +27,7 @@
  *
  * Configuration: set `tenant.config.artifactUrl` (via `solution.json`
  * auto-discovery or `PUT /tenants/:id`). The `ProjectArtifactSourceRegistry`
- * lazily constructs a `RestProjectArtifactSource(url)` per tenant on
+ * lazily constructs a `RestWorkspaceArtifactSource(url)` per tenant on
  * first use and caches it, invalidating on `tenant.config.changed` events.
  *
  * Failure behavior: network errors throw; the syncer logs + swallows
@@ -37,13 +44,13 @@ import type {
 } from '@kedge-agentic/agent-runtime';
 
 @Injectable()
-export class RestProjectArtifactSource implements ProjectArtifactSource {
-  private readonly logger = new Logger(RestProjectArtifactSource.name);
+export class RestWorkspaceArtifactSource implements ProjectArtifactSource {
+  private readonly logger = new Logger(RestWorkspaceArtifactSource.name);
   private readonly baseUrl: string;
 
   constructor(baseUrl: string) {
     if (!baseUrl) {
-      throw new Error('RestProjectArtifactSource requires baseUrl');
+      throw new Error('RestWorkspaceArtifactSource requires baseUrl');
     }
     this.baseUrl = baseUrl.replace(/\/+$/, '');
   }
@@ -146,3 +153,12 @@ export class RestProjectArtifactSource implements ProjectArtifactSource {
     }
   }
 }
+
+/**
+ * @deprecated since β-3 (2026-05-26) — use `RestWorkspaceArtifactSource`.
+ * Kept as a re-export so any out-of-tree consumer importing the old
+ * name from this file (file path itself moved via `git mv`) gets a
+ * clear deprecation notice instead of a silent ImportError.
+ */
+export { RestWorkspaceArtifactSource as RestProjectArtifactSource };
+

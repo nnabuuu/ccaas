@@ -1,12 +1,12 @@
 /**
- * RestProjectArtifactSource tests.
+ * RestWorkspaceArtifactSource tests.
  *
  * Mocks global `fetch` and asserts: URL shape, request method/body, response
  * parsing, error mapping (404→empty, !ok→throw), validation of malformed
  * server responses.
  */
 
-import { RestProjectArtifactSource } from './rest-project-artifact-source';
+import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 
 const BASE = 'http://solution.local/api';
 
@@ -21,11 +21,11 @@ function makeResponse(body: unknown, status = 200): Response {
   });
 }
 
-describe('RestProjectArtifactSource', () => {
-  let source: RestProjectArtifactSource;
+describe('RestWorkspaceArtifactSource', () => {
+  let source: RestWorkspaceArtifactSource;
 
   beforeEach(() => {
-    source = new RestProjectArtifactSource(BASE);
+    source = new RestWorkspaceArtifactSource(BASE);
   });
 
   afterEach(() => {
@@ -34,11 +34,11 @@ describe('RestProjectArtifactSource', () => {
 
   describe('constructor', () => {
     it('throws on empty baseUrl', () => {
-      expect(() => new RestProjectArtifactSource('')).toThrow(/baseUrl/);
+      expect(() => new RestWorkspaceArtifactSource('')).toThrow(/baseUrl/);
     });
 
     it('strips trailing slashes from baseUrl', () => {
-      const s = new RestProjectArtifactSource(`${BASE}///`);
+      const s = new RestWorkspaceArtifactSource(`${BASE}///`);
       mockFetch((url) => {
         expect(url).toBe(`${BASE}/projects/p1/artifacts`);
         return makeResponse([]);

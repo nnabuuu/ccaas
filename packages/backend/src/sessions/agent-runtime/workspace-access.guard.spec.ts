@@ -1,15 +1,21 @@
 /**
- * ProjectAccessGuard spec.
+ * WorkspaceAccessGuard spec.
  *
  * Exercises canActivate directly against a synthetic ExecutionContext
  * so the test doesn't depend on a NestJS HTTP host. Covers:
  *   - 401 on missing token
  *   - 401 on invalid/expired token (ApiKeyService.validateKey rejects)
- *   - 403 on resolver returning null (project unknown / no resolver)
+ *   - 403 on resolver returning false (workspace unknown / no resolver)
  *   - 403 on tenant mismatch
  *   - true (pass) on valid token + matching tenant
- *   - defensive 403 when projectId is missing (should not happen in
+ *   - defensive 403 when identity is missing (should not happen in
  *     production but the guard fails closed)
+ *
+ * Renamed from `ProjectAccessGuard` in β-3; param name flipped from
+ * `projectId` to `identity` so the guard works for both
+ * `/workspaces/:identity/*` (canonical) and `/projects/:identity/*`
+ * (deprecated alias). The synthesized req.params therefore uses the
+ * unified `identity` key.
  */
 
 import {
@@ -18,14 +24,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { ProjectAccessGuard } from './project-access.guard';
+import { WorkspaceAccessGuard } from './workspace-access.guard';
 
 function ctx(params: {
-  projectId?: string | unknown;
+  identity?: string | unknown;
   token?: string | unknown;
 }): ExecutionContext {
   const req = {
-    params: params.projectId === undefined ? {} : { projectId: params.projectId },
+    params: params.identity === undefined ? {} : { identity: params.identity },
     query: params.token === undefined ? {} : { token: params.token },
   };
   return {
@@ -33,14 +39,14 @@ function ctx(params: {
   } as unknown as ExecutionContext;
 }
 
-describe('ProjectAccessGuard', () => {
+describe('WorkspaceAccessGuard', () => {
   const TENANT = 'tenant-A';
   const VALID_TOKEN = 'k_valid';
-  const PROJ = 'proj-1';
+  const IDENTITY = 'proj-1';
 
   let apiKeys: { validateKey: jest.Mock };
   let tenantResolver: { verifyProjectAccess: jest.Mock };
-  let guard: ProjectAccessGuard;
+  let guard: WorkspaceAccessGuard;
 
   beforeEach(() => {
     apiKeys = {
@@ -53,50 +59,53 @@ describe('ProjectAccessGuard', () => {
     };
     tenantResolver = {
       // Default: caller tenant always matches. Individual tests override
-      // to assert the deny paths.
+      // to assert the deny paths. Note: method name stays
+      // `verifyProjectAccess` because that's what the agent-runtime
+      // package's `ProjectTenantResolver` interface defines (renaming
+      // the package's interface is out of β-3 scope).
       verifyProjectAccess: jest
         .fn()
-        .mockImplementation(async (_pid: string, callerTenantId: string) =>
+        .mockImplementation(async (_id: string, callerTenantId: string) =>
           callerTenantId === TENANT,
         ),
     };
-    guard = new ProjectAccessGuard(apiKeys as any, tenantResolver as any);
+    guard = new WorkspaceAccessGuard(apiKeys as any, tenantResolver as any);
   });
 
   it('returns true when token and tenant match', async () => {
     await expect(
-      guard.canActivate(ctx({ projectId: PROJ, token: VALID_TOKEN })),
+      guard.canActivate(ctx({ identity: IDENTITY, token: VALID_TOKEN })),
     ).resolves.toBe(true);
   });
 
   it('throws 401 when token is missing', async () => {
     await expect(
-      guard.canActivate(ctx({ projectId: PROJ })),
+      guard.canActivate(ctx({ identity: IDENTITY })),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('throws 401 when token is invalid (ApiKeyService rejects)', async () => {
     await expect(
-      guard.canActivate(ctx({ projectId: PROJ, token: 'bogus' })),
+      guard.canActivate(ctx({ identity: IDENTITY, token: 'bogus' })),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('throws 403 when the resolver verifies false (unknown project or wrong tenant)', async () => {
+  it('throws 403 when the resolver verifies false (unknown workspace or wrong tenant)', async () => {
     tenantResolver.verifyProjectAccess.mockResolvedValueOnce(false);
     await expect(
-      guard.canActivate(ctx({ projectId: PROJ, token: VALID_TOKEN })),
+      guard.canActivate(ctx({ identity: IDENTITY, token: VALID_TOKEN })),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('passes the caller tenant id through to verifyProjectAccess', async () => {
-    await guard.canActivate(ctx({ projectId: PROJ, token: VALID_TOKEN }));
+    await guard.canActivate(ctx({ identity: IDENTITY, token: VALID_TOKEN }));
     expect(tenantResolver.verifyProjectAccess).toHaveBeenCalledWith(
-      PROJ,
+      IDENTITY,
       TENANT,
     );
   });
 
-  it('throws 403 (fail-closed) when projectId is missing', async () => {
+  it('throws 403 (fail-closed) when identity is missing', async () => {
     await expect(
       guard.canActivate(ctx({ token: VALID_TOKEN })),
     ).rejects.toBeInstanceOf(ForbiddenException);
@@ -108,14 +117,14 @@ describe('ProjectAccessGuard', () => {
     // explicit type-check, the array would slip past `!token` and crash
     // inside the SHA hasher with a confusing error. Guard must reject.
     await expect(
-      guard.canActivate(ctx({ projectId: PROJ, token: [VALID_TOKEN, 'other'] })),
+      guard.canActivate(ctx({ identity: IDENTITY, token: [VALID_TOKEN, 'other'] })),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(apiKeys.validateKey).not.toHaveBeenCalled();
   });
 
-  it('throws 403 when projectId is an array (defense-in-depth)', async () => {
+  it('throws 403 when identity is an array (defense-in-depth)', async () => {
     await expect(
-      guard.canActivate(ctx({ projectId: ['a', 'b'], token: VALID_TOKEN })),
+      guard.canActivate(ctx({ identity: ['a', 'b'], token: VALID_TOKEN })),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(apiKeys.validateKey).not.toHaveBeenCalled();
   });

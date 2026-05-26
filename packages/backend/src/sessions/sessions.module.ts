@@ -46,12 +46,12 @@ import { WorkspaceProviderFactory } from './workspace/workspace-provider.factory
 import { WORKSPACE_PROVIDER } from './workspace/types';
 import { SandboxService } from './sandbox/sandbox.service';
 import { SessionAssetSyncer } from './agent-runtime/session-asset-syncer.service';
-import { ProjectChangesController } from './agent-runtime/project-changes.controller';
+import { WorkspaceChangesController } from './agent-runtime/workspace-changes.controller';
 import { AgentRuntimeModule } from './agent-runtime/agent-runtime.module';
 import { ProjectArtifactSourceRegistry } from './agent-runtime/project-artifact-source-registry';
 import { ProjectBinaryArtifactSourceRegistry } from './agent-runtime/project-binary-artifact-source-registry';
-import { SessionMetadataProjectTenantResolver } from './agent-runtime/session-metadata-project-tenant-resolver';
-import { ProjectAccessGuard } from './agent-runtime/project-access.guard';
+import { SessionMetadataWorkspaceResolver } from './agent-runtime/session-metadata-workspace-resolver';
+import { WorkspaceAccessGuard } from './agent-runtime/workspace-access.guard';
 import {
   PROJECT_ARTIFACT_SOURCE_REGISTRY,
   PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
@@ -85,7 +85,7 @@ import { BundleModule } from '../bundles/bundle.module';
     // invalidates on `tenant.config.changed` events.
     AgentRuntimeModule.forRoot(),
   ],
-  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController, ProjectChangesController],
+  controllers: [SessionsController, ConversationsAliasController, QueueController, SessionFsController, SessionMetadataController, WorkspaceChangesController],
   providers: [
     SessionsController,
     SessionsGateway,
@@ -131,22 +131,23 @@ import { BundleModule } from '../bundles/bundle.module';
       provide: PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
       useExisting: ProjectBinaryArtifactSourceRegistry,
     },
-    // Phase 2b-2: ProjectChangesController auth uses this resolver to map
-    // projectId → tenantId. Overrides the AgentRuntimeModule's DenyAll
-    // default. Lives here (not in AgentRuntimeModule) because it depends
-    // on the SessionMetadata repo registered above — wiring it in
-    // AgentRuntimeModule would mean re-importing TypeOrmModule for the
-    // same entity twice and leaks the SessionsModule-owned table.
-    SessionMetadataProjectTenantResolver,
+    // Phase 2b-2: WorkspaceChangesController auth uses this resolver to map
+    // workspace identity → tenantId. Overrides the AgentRuntimeModule's
+    // DenyAll default. Lives here (not in AgentRuntimeModule) because it
+    // depends on the SessionMetadata repo registered above — wiring it
+    // in AgentRuntimeModule would mean re-importing TypeOrmModule for
+    // the same entity twice and leaks the SessionsModule-owned table.
+    SessionMetadataWorkspaceResolver,
     {
       provide: PROJECT_TENANT_RESOLVER,
-      useExisting: SessionMetadataProjectTenantResolver,
+      useExisting: SessionMetadataWorkspaceResolver,
     },
-    // Guard for /projects/:id/* endpoints (SSE + invalidate). Must be a
-    // Guard rather than in-handler auth because @Sse commits the HTTP
-    // response before the handler's Observable subscribes — see
-    // project-access.guard.ts header for details.
-    ProjectAccessGuard,
+    // Guard for /workspaces/:id/* (and /projects/:id/* alias) endpoints
+    // (SSE + invalidate). Must be a Guard rather than in-handler auth
+    // because @Sse commits the HTTP response before the handler's
+    // Observable subscribes — see workspace-access.guard.ts header for
+    // details.
+    WorkspaceAccessGuard,
   ],
   exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, PROJECT_ARTIFACT_SOURCE_REGISTRY],
 })

@@ -207,7 +207,7 @@ describe('SessionService.bindToProject — legacy alias path (CRITICAL #1)', () 
       workspaceSource: { sourceIdentity: 'proj-happy' },
     });
     // session_metadata still keyed by 'projectId' for compat — β-3's
-    // SessionMetadataProjectTenantResolver reads this exact row.
+    // SessionMetadataWorkspaceResolver reads this exact row.
     expect(metadata.put).toHaveBeenCalledWith(
       'sess-happy',
       'tenant-A',

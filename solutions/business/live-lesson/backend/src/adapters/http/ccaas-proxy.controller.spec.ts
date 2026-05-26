@@ -93,8 +93,11 @@ describe('CcaasProxyController', () => {
         ]);
       });
       const first = await firstValueFrom(controller.changes$('p1').pipe(take(1)));
+      // β-3: proxy calls ccaas's canonical /workspaces/ route (the
+      // old /projects/ route still works as alias on ccaas, but we
+      // pin the canonical URL here so future renames stay honest).
       expect(observedUrl).toBe(
-        'http://ccaas.local/projects/p1/changes?token=sk-test',
+        'http://ccaas.local/workspaces/p1/changes?token=sk-test',
       );
       expect((first.data as any).kind).toBe('subscribed');
       expect((first.data as any).projectId).toBe('p1');
@@ -108,7 +111,7 @@ describe('CcaasProxyController', () => {
       });
       await firstValueFrom(controller.changes$('p/1?evil=true').pipe(take(1)));
       expect(observedUrl).toBe(
-        'http://ccaas.local/projects/p%2F1%3Fevil%3Dtrue/changes?token=sk-test',
+        'http://ccaas.local/workspaces/p%2F1%3Fevil%3Dtrue/changes?token=sk-test',
       );
     });
 
@@ -230,8 +233,10 @@ describe('CcaasProxyController', () => {
         return new Response(null, { status: 202 });
       });
       const out = await controller.invalidate('p1');
+      // β-3: canonical /workspaces/ route (alias /projects/ stays
+      // working on ccaas, but the proxy calls canonical).
       expect(observedUrl).toBe(
-        'http://ccaas.local/projects/p1/invalidate?token=sk-test',
+        'http://ccaas.local/workspaces/p1/invalidate?token=sk-test',
       );
       expect(observedMethod).toBe('POST');
       expect(out).toEqual({ accepted: true });

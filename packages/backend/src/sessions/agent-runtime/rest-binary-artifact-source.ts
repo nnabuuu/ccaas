@@ -30,7 +30,7 @@
  * listing's `contentHash` against its snapshot to filter to just the
  * paths that need a fetch, then `loadBinaryArtifact` streams the bytes.
  *
- * Why a separate class (not a method on RestProjectArtifactSource)?
+ * Why a separate class (not a method on RestWorkspaceArtifactSource)?
  * MIME-type and content-stream handling diverge enough that one mixed
  * class would obscure both flows. Per the Phase 2b-4 plan.
  *

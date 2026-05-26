@@ -1,5 +1,5 @@
 /**
- * SessionMetadataProjectTenantResolver spec.
+ * SessionMetadataWorkspaceResolver spec.
  *
  * Covers: returns true when a binding exists for (projectId, tenantId)
  * with the canonical JSON-quoted value the SessionMetadataService
@@ -13,12 +13,12 @@
 import { DataSource, Repository } from 'typeorm';
 
 import { SessionMetadata } from '../entities/session-metadata.entity';
-import { SessionMetadataProjectTenantResolver } from './session-metadata-project-tenant-resolver';
+import { SessionMetadataWorkspaceResolver } from './session-metadata-workspace-resolver';
 
-describe('SessionMetadataProjectTenantResolver', () => {
+describe('SessionMetadataWorkspaceResolver', () => {
   let dataSource: DataSource;
   let repo: Repository<SessionMetadata>;
-  let resolver: SessionMetadataProjectTenantResolver;
+  let resolver: SessionMetadataWorkspaceResolver;
 
   const TENANT_A = 'tenant-A';
   const TENANT_B = 'tenant-B';
@@ -41,7 +41,7 @@ describe('SessionMetadataProjectTenantResolver', () => {
 
   beforeEach(async () => {
     await repo.clear();
-    resolver = new SessionMetadataProjectTenantResolver(repo);
+    resolver = new SessionMetadataWorkspaceResolver(repo);
   });
 
   it('returns false for empty projectId', async () => {

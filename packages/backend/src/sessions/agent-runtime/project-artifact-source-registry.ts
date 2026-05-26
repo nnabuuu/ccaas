@@ -25,7 +25,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import type { ProjectArtifactSource } from '@kedge-agentic/agent-runtime';
 
 import { TenantsService } from '../../tenants/tenants.service';
-import { RestProjectArtifactSource } from './rest-project-artifact-source';
+import { RestWorkspaceArtifactSource } from './rest-workspace-artifact-source';
 import {
   TENANT_CONFIG_CHANGED,
   type TenantConfigChangedEvent,
@@ -55,7 +55,7 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
    * Behavior:
    *   - cache hit: returns the cached instance (or null sentinel)
    *   - cache miss + tenant has valid `config.artifactUrl`: construct
-   *     `RestProjectArtifactSource(url)`, cache, return
+   *     `RestWorkspaceArtifactSource(url)`, cache, return
    *   - cache miss + tenant has no `artifactUrl` (or it's invalid):
    *     cache `null` so we don't re-query, return `null`
    *   - null/undefined slug: return `null` (no DB call)
@@ -84,7 +84,7 @@ export class ProjectArtifactSourceRegistry implements OnModuleInit {
       this.cache.set(slug, null);
       return null;
     }
-    const source = new RestProjectArtifactSource(url);
+    const source = new RestWorkspaceArtifactSource(url);
     this.cache.set(slug, source);
     this.logger.log(`cached artifact source for slug=${slug} (url=${url})`);
     return source;
