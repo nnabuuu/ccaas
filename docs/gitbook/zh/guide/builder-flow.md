@@ -18,7 +18,7 @@ Builder 是拥有 `builder` scope API key 的外部开发者。通过 Builder AP
 | 能力 | Builder | Admin |
 |------|---------|-------|
 | 创建 Solution | 只能管理自己创建的 | 管理所有 |
-| 管理 API Key | 只能管理自己 tenant 下的 | 管理所有 |
+| 管理 API Key | 只能管理自己 solution 下的 | 管理所有 |
 | 创建 admin/builder scope 的 key | 禁止 | 允许 |
 
 Builder key 自动拥有除 `admin` 和 `builder` 外的所有 scope。
@@ -29,7 +29,7 @@ Builder key 自动拥有除 `admin` 和 `builder` 外的所有 scope。
 - 拥有一个 `builder` scope 的 API key（由平台管理员创建）
 - **Builder key 必须绑定 `userId`**，否则所有 Builder 端点返回 403
 
-**推荐方式**：使用一站式 onboarding 接口（一次创建 user + tenant + key）：
+**推荐方式**：使用一站式 onboarding 接口（一次创建 user + solution + key）：
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/admin/builder-users \
@@ -49,7 +49,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk-admin_xxx" \
   -d '{
-    "solutionId": "<platform-tenant-id>",
+    "solutionId": "<platform-solution-id>",
     "name": "Builder: Acme Corp",
     "scopes": ["builder"],
     "userId": "<builder-user-id>"
@@ -62,7 +62,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
 
 ## Step 1: 创建 Solution
 
-每个 Builder 可以创建多个 tenant，每个 tenant 代表一个独立的业务空间。
+每个 Builder 可以创建多个 solution，每个 solution 代表一个独立的业务空间。
 
 ```bash
 BUILDER_KEY="sk-builder_xxx"
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions \
 ```json
 {
   "id": "a1b2c3d4-...",
-  "tenant": {
+  "solution": {
     "id": "a1b2c3d4-...",
     "name": "My Solution",
     "slug": "my-solution",
@@ -92,7 +92,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions \
 ```
 
 {% hint style="info" %}
-**Auto-link 机制**：创建 tenant 后，Builder 自动成为该 tenant 的 admin（通过 UserSolution 关联）。
+**Auto-link 机制**：创建 solution 后，Builder 自动成为该 solution 的 admin（通过 UserSolution 关联）。
 {% endhint %}
 
 ## Step 2: 注册 Skill
@@ -132,7 +132,7 @@ curl -X POST http://localhost:3001/api/v1/skills \
 
 ## Step 3: 创建 API Key
 
-为 tenant 创建供终端用户或前端应用使用的 API key。
+为 solution 创建供终端用户或前端应用使用的 API key。
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/builder/solutions/$TENANT_ID/api-keys \
@@ -165,7 +165,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions/$TENANT_ID/api-keys 
 {% endhint %}
 
 {% hint style="info" %}
-**Builder Key vs 子 Key**：你刚刚创建的是一个 "Solution key"——它只能调用 chat/skills/MCP 等 API，无法创建 tenant 或管理其他 key。只有你的原始 Builder key（拥有 `builder` scope 且绑定了 `userId`）才有管理能力。
+**Builder Key vs 子 Key**：你刚刚创建的是一个 "Solution key"——它只能调用 chat/skills/MCP 等 API，无法创建 solution 或管理其他 key。只有你的原始 Builder key（拥有 `builder` scope 且绑定了 `userId`）才有管理能力。
 {% endhint %}
 
 **可用 scope：**
@@ -227,8 +227,8 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| POST | `/api/v1/builder/solutions` | 创建 tenant |
-| GET | `/api/v1/builder/solutions` | 列出自己的 tenant |
+| POST | `/api/v1/builder/solutions` | 创建 solution |
+| GET | `/api/v1/builder/solutions` | 列出自己的 solution |
 | GET | `/api/v1/builder/solutions/:id` | 获取详情 |
 | PUT | `/api/v1/builder/solutions/:id` | 更新 |
 
@@ -264,7 +264,7 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | 错误 | 原因 | 解决 |
 |------|------|------|
 | 403: builder key must be linked to a user | Builder key 没有 `userId` | 通过 `PUT /api/v1/admin/api-keys/:id` 补充 `userId`，或通过 `POST /api/v1/admin/builder-users` 重建 |
-| 403: You do not have access to this solution | 无 UserSolution 关联 | 只能操作自己创建的 tenant |
+| 403: You do not have access to this solution | 无 UserSolution 关联 | 只能操作自己创建的 solution |
 | 403: cannot create keys with scopes: admin | 权限提升防护 | 只用允许的 scope |
 | 409: Skill slug already exists | slug 冲突 | 换 slug 或 PUT 更新 |
 | MISSING\_TENANT\_ID | body 缺 `solutionId` | 确保请求体包含该字段 |

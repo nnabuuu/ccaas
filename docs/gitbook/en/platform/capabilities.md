@@ -114,7 +114,7 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 
 ## Multi-Solution Management
 
-- **Solution Isolation** -- Each tenant has independent configuration, Skills, and data
+- **Solution Isolation** -- Each solution has independent configuration, Skills, and data
 - **API Key Authentication** -- Fine-grained permission control based on Scopes
 - **Quota Management** -- Maximum sessions, daily token limits, and available model restrictions
 - **Usage Analytics** -- Token usage statistics, session analytics, and cost tracking

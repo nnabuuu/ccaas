@@ -147,7 +147,7 @@ KedgeAgentic uses 13 standard error codes that are consistent across both REST A
 ```json
 {
   "code": "ALREADY_EXISTS",
-  "message": "Solution with slug 'my-tenant' already exists",
+  "message": "Solution with slug 'my-solution' already exists",
   "statusCode": 409,
   "recoverable": false,
   "retryable": false

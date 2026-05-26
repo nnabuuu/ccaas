@@ -24,13 +24,13 @@ Each plan has a default TTL and a maximum configurable TTL:
 | **Business** | 30 min (1800000ms) | 30 min (1800000ms) |
 | **Enterprise** | 30 min (1800000ms) | 30 min (1800000ms) |
 
-> **Free plan restriction**: The TTL cap for Free tenants is 5 minutes and cannot be extended by configuration. Upgrade to Starter or above for longer session durations.
+> **Free plan restriction**: The TTL cap for Free solutions is 5 minutes and cannot be extended by configuration. Upgrade to Starter or above for longer session durations.
 
 ---
 
 ## Configuring Solution TTL
 
-Use the admin API to set a custom TTL for a tenant:
+Use the admin API to set a custom TTL for a solution:
 
 ```http
 PUT /api/v1/solutions/:id
@@ -44,7 +44,7 @@ Authorization: Bearer <admin-api-key>
 
 **Notes:**
 - `sessionTtlMs` is in milliseconds; minimum value is 60000 (1 minute).
-- The value is automatically capped at the plan maximum. For example, passing `1800000` for a Free tenant is silently reduced to `300000`.
+- The value is automatically capped at the plan maximum. For example, passing `1800000` for a Free solution is silently reduced to `300000`.
 - If omitted, the plan's default TTL is used.
 
 ---
@@ -78,7 +78,7 @@ If an Agent stays in `processing` state for longer than `maxProcessingMs` (defau
 |-----------|---------|-------------|
 | `workspace.maxProcessingMs` | 1800000 (30 min) | Sessions stuck in processing beyond this threshold are force-closed |
 
-This is a server-side hard limit and cannot be overridden by tenant configuration.
+This is a server-side hard limit and cannot be overridden by solution configuration.
 
 ---
 

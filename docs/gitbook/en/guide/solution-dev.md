@@ -67,7 +67,7 @@ my-solution/
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "My Solution",
     "slug": "my-solution",
     "description": "Solution description"
@@ -89,7 +89,7 @@ my-solution/
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "My Solution",
     "slug": "my-solution",
     "description": "Solution description"
@@ -130,7 +130,7 @@ v3.0 requires complete frontmatter in all SKILL.md files:
 name: Main Skill
 slug: main-skill
 description: Main skill description
-scope: tenant
+scope: solution
 triggers:
   - type: keyword
     value: "design"
@@ -290,7 +290,7 @@ Skills and MCP servers defined in `solution.json` are **automatically registered
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": { ... },
+  "solution": { ... },
   "discovery": { "enabled": false }
 }
 ```

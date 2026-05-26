@@ -43,7 +43,7 @@ SOLUTION_DIRS=<你的 slug>:$PWD/solutions/business/<你的 slug> \
 
 后端启动后看到：
 ```
-[SessionAssetMaterializer] Session asset materializer active for 1 tenant(s): <你的 slug>
+[SessionAssetMaterializer] Session asset materializer active for 1 solution(s): <你的 slug>
 ```
 
 之后该租户每创建一个新 session，`SessionAssetMaterializer` 都会把这两个目录的内容拷到 session 的 workspace 根。Agent 起来就能 `ls entities/`。
@@ -125,11 +125,11 @@ const src = new InMemoryContentSource([/* fixtures */]);
 async function executeRiskyStep(sessionId: string) {
   const ccaas = process.env.CCAAS_URL;
   const apiKey = process.env.CCAAS_API_KEY;
-  const tenant = 'my-solution';
+  const solution = 'my-solution';
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'x-solution-id': tenant,
+    'x-solution-id': solution,
   };
 
   // 1. checkpoint
@@ -213,7 +213,7 @@ curl -s "http://localhost:3001/api/v1/sessions/$SID/meta/workflow.step" \
 ```jsonc
 {
   "schemaVersion": "3.0",
-  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "solution": { "name": "Live Lesson", "slug": "live-lesson" },
   "artifactUrl": "http://localhost:3007/api",
   "skills": ["./skills/*"]
 }
@@ -268,7 +268,7 @@ await sessionsClient.bindToProject(sessionId, projectId);
 2. UI 显示「步骤历史」可以让用户点回任意 step
 3. 点回 = `POST /fs/rollback` + 把 KV 的 step 回滚
 
-**Multi-tenant 安全沙箱**：
+**Multi-solution 安全沙箱**：
 1. 每租户单独的 SOLUTION_DIRS entry，entities/ 隔离
 2. session 之间互不可见（agentfs delta 是 per-session 的）
 3. 同租户多 session 共享 base overlay（skills），不共享 delta

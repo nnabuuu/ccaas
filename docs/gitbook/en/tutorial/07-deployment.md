@@ -564,7 +564,7 @@ Use this checklist before every production deployment:
 ### Solution-Specific
 
 ```
-[] solution.json is correct (MCP servers, Skills, tenant ID)
+[] solution.json is correct (MCP servers, Skills, solution ID)
 [] Skills injected: ./inject-skills.sh
 [] MCP server health checks pass
 [] Frontend connects to correct backend URLs

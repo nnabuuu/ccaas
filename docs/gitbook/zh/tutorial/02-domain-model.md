@@ -569,7 +569,7 @@ CCAAS 后端 (端口 3001)              Solution 后端 (端口 3002)
 │ skills               │            │ agent_files          │
 │ messages             │            │ chat_messages        │
 │ api_keys             │            │ (你的领域数据)        │
-│ tenants              │            │                     │
+│ solutions            │            │                     │
 └─────────────────────┘            └─────────────────────┘
      平台数据库                         Solution 数据库
 ```

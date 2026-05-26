@@ -444,7 +444,7 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 curl -X POST https://dev.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "solutionId": "dev-tenant",
+    "solutionId": "dev-solution",
     "name": "开发环境",
     "scopes": ["chat", "skills:read"]
   }'

@@ -285,7 +285,7 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
      # idempotent — 404 视作已删除
 ```
 
-**Solution 注册（v0.3.2 起）**：baseUrl 不再走 env var，而是存在 `solution.config.artifactUrl` 里 —— 跟 `webhookUrl` / `customSystemPrompt` 一样，是 tenant 配置的一个字段。两种填法：
+**Solution 注册（v0.3.2 起）**：baseUrl 不再走 env var，而是存在 `solution.config.artifactUrl` 里 —— 跟 `webhookUrl` / `customSystemPrompt` 一样，是 solution 配置的一个字段。两种填法：
 
 ### 方式 A：solution.json + 自动发现（推荐，dev 零密钥）
 
@@ -294,7 +294,7 @@ DELETE {base}/projects/:projectId/artifacts?path=<encoded>
 ```jsonc
 {
   "schemaVersion": "3.0",
-  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "solution": { "name": "Live Lesson", "slug": "live-lesson" },
   "artifactUrl": "http://localhost:3007/api",
   "skills": ["./skills/*"]
 }
@@ -312,7 +312,7 @@ SOLUTIONS_DIR=./solutions/business
 
 ```bash
 # 1. 拿到 admin key（启动时自动打印，或 POST /auth/login）
-# 2. 创建/找到 tenant
+# 2. 创建/找到 solution
 # 3. 把 artifactUrl 写到它的 config
 curl -X PUT $CCAAS/api/v1/solutions/$ID \
   -H "x-api-key: $K" \
@@ -352,8 +352,8 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 
 校验链：
 
-1. `ApiKeyService.validateKey(token)` 解出 caller 的 tenant
-2. `ProjectTenantResolver.resolveTenant(projectId)` 查出 project 归属的 tenant
+1. `ApiKeyService.validateKey(token)` 解出 caller 的 solution
+2. `ProjectTenantResolver.resolveTenant(projectId)` 查出 project 归属的 solution
 3. 两者必须一致，否则 403；resolver 返回 null（project 未知 / 无 resolver 注册）也是 403；token 缺失或无效是 401
 
 **`ProjectTenantResolver` port**：solution 可以注册自己的 resolver（比如查自己的 project 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
@@ -365,7 +365,7 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 
 要换 resolver 的话，在 SessionsModule 里覆盖 `PROJECT_TENANT_RESOLVER` token 即可。
 
-**安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-tenant dev / prod-with-trusted-network 是可接受的；真正的 multi-solution 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
+**安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-solution dev / prod-with-trusted-network 是可接受的；真正的 multi-solution 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
 
 ### 二进制 artifact（Phase 2b-4）
 
@@ -377,7 +377,7 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 - REST 传输不同 —— 文本是 `application/json`（content inline），binary 是 `application/octet-stream`（streaming via `node:stream/pipeline`，never buffered）
 - 文件系统挂载点不同 —— 文本在 `<workspace>/artifacts/`，binary 在 `<workspace>/artifacts-binary/`。**这个分离是关键 security 边界**：agent 的 `Read` / `cat` 工具只能扫文本目录，永远不会把一张 JPEG slurp 进 context
 
-ccaas 端注册：solution 在 `solution.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `solution.config.changed` 失效。可选 `solution.config.binaryMaxBytes` 设置 per-tenant 大小上限。
+ccaas 端注册：solution 在 `solution.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `solution.config.changed` 失效。可选 `solution.config.binaryMaxBytes` 设置 per-solution 大小上限。
 
 Solution 端实现的 REST endpoints：
 
@@ -442,7 +442,7 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
 
 后端 `/workspaces/:identity/changes` SSE 会把所有 ChangeEvent 发出来（旧别名 `/projects/:identity/changes` 也通）。前端订阅这个流就能在 user 编辑同一个 project 时实时显示「agent 改了 lesson-plan.md」的横幅。
 
-**关键设计原则**：浏览器**永远不持有 ccaas key**。原因是 ccaas 只认 tenant，而每个 solution 后端就是一个 tenant —— ccaas key 是 solution 后端的，不是终端用户的。终端用户走 solution 自己的鉴权（cookie / session / JWT / 任何 solution 自己的方案），solution 后端代理所有 ccaas 调用。
+**关键设计原则**：浏览器**永远不持有 ccaas key**。原因是 ccaas 只认 solution，而每个 solution 后端就是一个 solution —— ccaas key 是 solution 后端的，不是终端用户的。终端用户走 solution 自己的鉴权（cookie / session / JWT / 任何 solution 自己的方案），solution 后端代理所有 ccaas 调用。
 
 具体到 SSE：
 
@@ -455,13 +455,13 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
   → opens upstream EventSource:
       GET ${CCAAS_URL}/workspaces/:id/changes?token=${CCAAS_API_KEY}
 [ccaas (:3001)]
-  → WorkspaceAccessGuard 验证 token + tenant 拥有 workspace
+  → WorkspaceAccessGuard 验证 token + solution 拥有 workspace
   → SSE stream
 ```
 
 solution 后端的代理实现见 `solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts`。env 变量：
 - `CCAAS_URL`（默认 `http://localhost:3001`）—— ccaas 的 base URL
-- `CCAAS_API_KEY`（必填）—— solution tenant 的 ccaas API key
+- `CCAAS_API_KEY`（必填）—— solution solution 的 ccaas API key
 
 参考浏览器侧实现：`solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` —— React hook，内部用 `EventSource` 订阅相对路径，过滤掉 heartbeat / subscribed / 自己的 gui 写入，把剩下的 agent 事件返回给 UI：
 

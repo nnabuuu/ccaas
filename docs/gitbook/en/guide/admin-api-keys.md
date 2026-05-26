@@ -16,7 +16,7 @@ API keys are the primary authentication mechanism for accessing the CCaaS platfo
 | Type | Scope | Created By | Purpose |
 |------|-------|------------|---------|
 | Admin | `admin` | Platform bootstrap | Full platform management |
-| Builder | `builder` | Admin (via Builder Users API) | Self-serve tenant & key management |
+| Builder | `builder` | Admin (via Builder Users API) | Self-serve solution & key management |
 | Solution | `chat`, `skills:*`, etc. | Admin or Builder | SDK/frontend integration |
 
 ### Key Hierarchy
@@ -36,7 +36,7 @@ Solution keys created by builders intentionally have no `userId` — they cannot
 
 1. Log in to the admin dashboard
 2. Click **API Keys** in the sidebar navigation
-3. The list page shows all API keys for the selected tenant
+3. The list page shows all API keys for the selected solution
 
 ### List View
 
@@ -55,7 +55,7 @@ The API keys list displays:
 1. Click **Create API Key** button
 2. Fill in the form:
    - **Name**: Descriptive name (e.g., "Production Frontend")
-   - **Solution ID**: Select target tenant (default: "default")
+   - **Solution ID**: Select target solution (default: "default")
 3. Click **Create Key**
 4. **⚠️ IMPORTANT**: The complete key is shown only once
    - Copy the key immediately
@@ -412,7 +412,7 @@ Grant only the minimum scopes required:
 
 **Check**:
 1. ✓ Key has the required scope (e.g., `skills:write` for creating skills)
-2. ✓ Solution ID matches the key's tenant
+2. ✓ Solution ID matches the key's solution
 3. ✓ Operation is allowed for the key's scope level
 4. ✓ Builder keys must have a `userId` — update via `PUT /api/v1/admin/api-keys/:id` or recreate via `POST /api/v1/admin/builder-users`
 
@@ -444,7 +444,7 @@ For detailed analytics:
 curl -X POST https://dev.example.com/api/v1/admin/api-keys \
   -H "Authorization: Bearer $ADMIN_KEY" \
   -d '{
-    "solutionId": "dev-tenant",
+    "solutionId": "dev-solution",
     "name": "Dev Environment",
     "scopes": ["chat", "skills:read"]
   }'

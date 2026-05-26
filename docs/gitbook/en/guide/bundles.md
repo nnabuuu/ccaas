@@ -9,7 +9,7 @@ By default, **all built-in Bundles are automatically enabled** for every Solutio
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "My Solution",
     "slug": "my-solution"
   },

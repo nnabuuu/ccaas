@@ -59,7 +59,7 @@ ccaas backend 接收会话请求 → 通过 `WorkspaceProvider` 抽象给每个 
 
 调用方（前端 / solution backend 代理 / curl）发送第一条消息时触发 session 创建。代码入口：
 
-- `packages/backend/src/sessions/sessions.controller.ts:281-415` — 接收请求，做 tenant resolve + skill resolve
+- `packages/backend/src/sessions/sessions.controller.ts:281-415` — 接收请求，做 solution resolve + skill resolve
 - `packages/backend/src/sessions/session.service.ts:_createNewSession` — 真正的创建逻辑
 
 关键步骤（按代码执行顺序）：
@@ -363,7 +363,7 @@ FS 4 个端点需要 `WORKSPACE_PROVIDER=agentfs`（local 返回 400 + 明确 me
 
 `solutions/business/<slug>/` 是一个独立 NestJS 进程（独立端口），启动时：
 
-1. **Bootstrap**：读自己的 `solution.json`，POST `/api/v1/admin/solutions/import` 注册 tenant + sessionTemplates 到 ccaas DB
+1. **Bootstrap**：读自己的 `solution.json`，POST `/api/v1/admin/solutions/import` 注册 solution + sessionTemplates 到 ccaas DB
 2. **Skill 注册**：每个 `skills/<slug>/SKILL.md`（+ 子文件 `tools/`、`examples/`）POST 到 `/api/v1/skills` + PUT files + publish
 3. **Hot reload**（可选）：chokidar 监听 `skills/` 目录，文件变动 → 防抖 500ms → 重跑 skill 注册步骤
 4. **领域 API**（可选）：暴露自己的 REST endpoint（如 demo-sandbox 的 DocumentEditProvider）
@@ -378,7 +378,7 @@ FS 4 个端点需要 `WORKSPACE_PROVIDER=agentfs`（local 返回 400 + 明确 me
 ccaas backend 启动 + 一个 session 跑下来，日志里大致是这个顺序：
 
 ```
-[SessionAssetMaterializer] Session asset materializer active for 1 tenant(s): demo-sandbox
+[SessionAssetMaterializer] Session asset materializer active for 1 solution(s): demo-sandbox
 [SandboxService]   Bash sandbox mode: just-bash (server: ...)
 [AgentfsWorkspaceProvider] agentfs binary OK: agentfs <sha>
 [BaseMaterializer] materialized 1 skills (6 files) + 0 mcp servers → /tmp/.../_agentfs_base (4ms)

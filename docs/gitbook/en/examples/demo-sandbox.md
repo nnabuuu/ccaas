@@ -54,7 +54,7 @@ On backend startup you should see:
 ```
 [SandboxService]            Bash sandbox mode: just-bash (server: ...)
 [BaseMaterializer]          materialized 1 skills (6 files) + 0 mcp servers → /tmp/.../base
-[SessionAssetMaterializer]  Session asset materializer active for 1 tenant(s): demo-sandbox
+[SessionAssetMaterializer]  Session asset materializer active for 1 solution(s): demo-sandbox
 [Bootstrap]                 Application is running on: http://localhost:3009
 ```
 
@@ -113,7 +113,7 @@ Next session create (re-copies base) picks up the new content.
 
 ```
 solutions/business/demo-sandbox/
-├── solution.json                  # tenant + sessionTemplates config
+├── solution.json                  # solution + sessionTemplates config
 ├── README.md
 ├── skills/sandbox-explorer/        # progressive-disclosure skill exemplar
 │   ├── SKILL.md                   # main 60 lines; tells agent "cat sub-files when needed"

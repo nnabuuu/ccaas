@@ -90,7 +90,7 @@ Frontend: Receives output_update events, displays analysis ✅
 ┌─────────────────────────┐
 │  import-solution-skills │  ← CLI tool (script)
 │  - Read solution.json   │
-│  - Create/update tenant │
+│  - Create/update solution │
 │  - Register skills      │
 │  - Publish skills       │
 └────────────┬────────────┘
@@ -99,7 +99,7 @@ Frontend: Receives output_update events, displays analysis ✅
              ↓
 ┌─────────────────────────┐
 │  CCAAS Database         │  ← Runtime storage
-│  - tenants table        │
+│  - solutions table        │
 │  - skills table         │
 │  - skill_versions       │
 └────────────┬────────────┘
@@ -184,13 +184,13 @@ npm run skill:import -- <solution-name>
 ### What It Does
 
 1. **Load Configuration**: Reads `solutions/<solution-name>/solution.json`
-2. **Create/Get Solution**: Ensures tenant exists in database
+2. **Create/Get Solution**: Ensures solution exists in database
 3. **Register Skills**: For each skill in `solution.json`:
    - Reads skill file content from `skillFile` path (if specified)
    - Appends additional `instructions` (if specified)
    - Creates or updates skill in database
    - Sets `status='published'` and `enabled=true`
-4. **Output Summary**: Shows created/updated counts and tenant ID
+4. **Output Summary**: Shows created/updated counts and solution ID
 
 ### Example Output
 
@@ -265,7 +265,7 @@ The script handles:
       "slug": "my-skill",
       "description": "Skill description",
       "skillFile": "skills/my-skill/SKILL.md",
-      "scope": "tenant",
+      "scope": "solution",
       "allowedTools": ["tool1", "tool2"],
       "triggers": [
         {
@@ -290,7 +290,7 @@ The script handles:
 | `instructions` | string | ⚠️ Optional | Additional instructions appended to content |
 | `allowedTools` | string[] | ⚠️ Optional | Tools AI can use with this skill |
 | `triggers` | object[] | ⚠️ Optional | Trigger conditions for skill activation |
-| `scope` | enum | ⚠️ Optional | `"tenant"` (default) or `"personal"` |
+| `scope` | enum | ⚠️ Optional | `"solution"` (default) or `"personal"` |
 | `outputFormat` | string | ⚠️ Optional | Expected output format |
 
 ### Trigger Schema
@@ -357,8 +357,8 @@ curl "http://localhost:3001/api/v1/skills?solutionId=my-solution" | python3 -m j
 When a session starts with `solutionId`:
 
 ```
-[SkillRouter] Auto-loading skills for tenant: quiz-analyzer
-[SkillRouter] Loaded 4 skills for tenant quiz-analyzer
+[SkillRouter] Auto-loading skills for solution: quiz-analyzer
+[SkillRouter] Loaded 4 skills for solution quiz-analyzer
 [SkillRouter] Matched skill: three-column-analysis (trigger: keyword)
 ```
 
@@ -367,7 +367,7 @@ When a session starts with `solutionId`:
 When user sends a message:
 
 ```javascript
-console.log("Auto-loading tenant skills for: quiz-analyzer")
+console.log("Auto-loading solution skills for: quiz-analyzer")
 // AI should call solution-specific tools
 console.log("Tool call: parse_quiz_content") // ✅ Correct
 // NOT global tools:
@@ -482,7 +482,7 @@ When creating a new solution, ensure:
 - [ ] Skill files exist at paths specified in `skillFile` (optional)
 - [ ] `allowedTools` array matches MCP tools available
 - [ ] `triggers` array covers expected user phrases
-- [ ] `scope` is set to `"tenant"` (default) or `"personal"`
+- [ ] `scope` is set to `"solution"` (default) or `"personal"`
 
 ### Solution README Template
 
@@ -555,7 +555,7 @@ export class SolutionLoaderService implements OnModuleInit {
 
     // 2. For each solution.json:
     for (const solution of solutions) {
-      // 3. Create/update tenant
+      // 3. Create/update solution
       await this.ensureTenant(solution);
 
       // 4. Sync skills (with version tracking)

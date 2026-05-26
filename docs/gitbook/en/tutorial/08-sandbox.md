@@ -35,12 +35,12 @@ Adding the sandbox is **not free**:
 
 **Triggers** (if any one applies, lean toward adding):
 
-1. **Multi-tenant**: multiple teachers share one solution backend; you don't want teacher A's session to see teacher B's resources
+1. **Multi-solution**: multiple teachers share one solution backend; you don't want teacher A's session to see teacher B's resources
 2. **Sensitive data seeding**: you want the AI to see reference textbooks you've curated, not whatever the AI fetches from the host
 3. **Reversible multi-draft workflow**: teacher asks the AI to generate 5 drafts, picks 1, the rest are discarded
 4. **Audit requirement**: you need to answer "which files did the AI change in that session?"
 
-If your solution is single-tenant, has the AI read only fixed templates, and has no "try-and-discard" workflow, **you can skip this chapter**.
+If your solution is single-solution, has the AI read only fixed templates, and has no "try-and-discard" workflow, **you can skip this chapter**.
 
 ## 8.2 Enable agentfs (deploy side)
 
@@ -71,7 +71,7 @@ Verify 4 startup log lines:
 [BaseMaterializer]            materialized N skills (X files) + Y mcp servers → ...
 [SandboxService]              Bash sandbox mode: just-bash (server: ...)
 [AgentfsWorkspaceProvider]    agentfs binary OK: agentfs <sha>
-[SessionAssetMaterializer]    Session asset materializer active for 1 tenant(s): lesson-plan-designer
+[SessionAssetMaterializer]    Session asset materializer active for 1 solution(s): lesson-plan-designer
 ```
 
 Your solution is now running in the sandbox. The agent still does everything Chapters 1-7 taught — **just in an isolated environment now**.
@@ -123,7 +123,7 @@ Backend log:
 
 **Capacity guardrails** (no config needed): 500 files / 1 MB per file / 10 MB total / symbolic-link rejection.
 
-If your textbook library exceeds 10 MB, either split into multiple session templates (per-subject tenants), or move to a different storage (e.g. object storage) + MCP tool.
+If your textbook library exceeds 10 MB, either split into multiple session templates (per-subject solutions), or move to a different storage (e.g. object storage) + MCP tool.
 
 ## 8.4 Make Your SKILL Sandbox-Aware
 

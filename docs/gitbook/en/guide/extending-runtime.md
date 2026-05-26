@@ -43,7 +43,7 @@ SOLUTION_DIRS=<your-slug>:$PWD/solutions/business/<your-slug> \
 
 After startup you should see:
 ```
-[SessionAssetMaterializer] Session asset materializer active for 1 tenant(s): <your-slug>
+[SessionAssetMaterializer] Session asset materializer active for 1 solution(s): <your-slug>
 ```
 
 Every new session under this solution: `SessionAssetMaterializer` copies these directories into the workspace root. The agent can `ls entities/` right away.
@@ -124,11 +124,11 @@ Full API + adapter-writing notes: `reference/agent-runtime.md`.
 async function executeRiskyStep(sessionId: string) {
   const ccaas = process.env.CCAAS_URL;
   const apiKey = process.env.CCAAS_API_KEY;
-  const tenant = 'my-solution';
+  const solution = 'my-solution';
   const HDR = {
     'Content-Type': 'application/json',
     'x-api-key': apiKey,
-    'x-solution-id': tenant,
+    'x-solution-id': solution,
   };
 
   // 1. checkpoint
@@ -212,7 +212,7 @@ Details: `reference/runtime-api.md` § Metadata KV endpoints + [[sandbox-mount-v
 ```jsonc
 {
   "schemaVersion": "3.0",
-  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "solution": { "name": "Live Lesson", "slug": "live-lesson" },
   "artifactUrl": "http://localhost:3007/api",
   "skills": ["./skills/*"]
 }
@@ -273,10 +273,10 @@ and the next sync turn uses the new URL. No backend restart.
 2. UI shows a "step history" letting the user click back to any step
 3. Click back = `POST /fs/rollback` + roll the KV step back
 
-**Multi-tenant safe sandbox**:
-1. Per-tenant SOLUTION_DIRS entries, entities/ isolated
+**Multi-solution safe sandbox**:
+1. Per-solution SOLUTION_DIRS entries, entities/ isolated
 2. Sessions don't see each other (agentfs delta is per-session)
-3. Same tenant's sessions share base overlay (skills), no shared delta
+3. Same solution's sessions share base overlay (skills), no shared delta
 
 ---
 

@@ -47,7 +47,7 @@ solutions/business/lesson-plan-designer/
 {
   "schemaVersion": "3.0",
 
-  "tenant": {
+  "solution": {
     "name": "Lesson Plan Designer",
     "slug": "lesson-plan-designer",
     "description": "AI-powered lesson plan design assistant"
@@ -82,7 +82,7 @@ solutions/business/lesson-plan-designer/
 | 字段 | 用途 |
 |------|------|
 | `schemaVersion` | 配置格式版本（始终为 `"3.0"`） |
-| `tenant` | 租户身份 — 名称、slug（唯一标识符）和描述 |
+| `solution` | 租户身份 — 名称、slug（唯一标识符）和描述 |
 | `mcpServers` | AI Agent 可以调用的 MCP 工具服务 |
 | `sessionTemplates` | 会话预设，定义哪些 Skill 和 bundle 处于活跃状态 |
 | `skills` | Skill 引用列表 — 每个条目是一个 `{slug, name}` 对 |
@@ -389,7 +389,7 @@ VITE_API_URL=http://localhost:3002
 VITE_CCAAS_URL=http://localhost:3001
 
 # 默认租户 ID（setup.sh 创建租户后设置）
-VITE_DEFAULT_TENANT_ID=default-tenant
+VITE_DEFAULT_TENANT_ID=default-solution
 ```
 
 复制为 `.env`：
@@ -516,8 +516,8 @@ main() {
     # Step 3.5: Custom initialization (MCP build)
     custom_init
 
-    # Step 4: Setup tenant and API key
-    log_step "4" "Setting up tenant and API key"
+    # Step 4: Setup solution and API key
+    log_step "4" "Setting up solution and API key"
     eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
     log_info "Solution ID: $TENANT_ID"
 

@@ -10,7 +10,7 @@ This guide provides solutions to common issues when developing and deploying CCA
 - [Setup Issues](#setup-issues)
 - [Dependency Issues](#dependency-issues)
 - [Port Conflicts](#port-conflicts)
-- [Solution & API Key Issues](#tenant--api-key-issues)
+- [Solution & API Key Issues](#solution--api-key-issues)
 - [Service Startup Issues](#service-startup-issues)
 - [Skill & MCP Issues](#skill--mcp-issues)
 - [Database Issues](#database-issues)
@@ -289,18 +289,18 @@ Please start CCAAS backend first
 **Symptoms**:
 ```bash
 ❌ Error: Solution 'my-solution' not found in database
-Please create the tenant first.
+Please create the solution first.
 ```
 
 **Solutions**:
 
 1. **Let setup script create it** (automatic):
    ```bash
-   # The script creates tenant automatically
+   # The script creates solution automatically
    TENANT_ID=$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")
    ```
 
-2. **Verify tenant was created**:
+2. **Verify solution was created**:
    ```bash
    curl http://localhost:3001/api/v1/solutions/my-solution
    ```
@@ -842,7 +842,7 @@ lsof -ti:3002 | xargs kill -9
 # Check CCAAS
 curl http://localhost:3001/api/v1/health
 
-# Verify tenant
+# Verify solution
 curl http://localhost:3001/api/v1/solutions/my-solution
 
 # Check database

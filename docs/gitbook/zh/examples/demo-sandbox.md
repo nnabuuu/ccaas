@@ -54,7 +54,7 @@ open http://localhost:3010/
 ```
 [SandboxService]            Bash sandbox mode: just-bash (server: ...)
 [BaseMaterializer]          materialized 1 skills (6 files) + 0 mcp servers → /tmp/.../base
-[SessionAssetMaterializer]  Session asset materializer active for 1 tenant(s): demo-sandbox
+[SessionAssetMaterializer]  Session asset materializer active for 1 solution(s): demo-sandbox
 [Bootstrap]                 Application is running on: http://localhost:3009
 ```
 
@@ -113,7 +113,7 @@ solution backend log 立刻看到：
 
 ```
 solutions/business/demo-sandbox/
-├── solution.json                  # tenant + sessionTemplates 配置
+├── solution.json                  # solution + sessionTemplates 配置
 ├── README.md
 ├── skills/sandbox-explorer/        # 渐进式披露 skill 范例
 │   ├── SKILL.md                   # 主 60 行；告诉 agent "需要时去 cat sub-files"

@@ -579,7 +579,7 @@ Fine-grained access control per file (read-only, read-write).
 
 ### 8. Quotas
 
-Limit workspace size per tenant/session.
+Limit workspace size per solution/session.
 
 ---
 
@@ -628,6 +628,6 @@ Pre-launch security review:
 
 ## Change Log
 
-- **2026-02-24**: Added user-facing inline viewer endpoint (§3); added SDK hooks (useFileContent, useWorkspaceTree) for React and Vue; completed endpoint list in Executive Summary; updated Gitbook docs to remove cross-tenant detail from Admin section
+- **2026-02-24**: Added user-facing inline viewer endpoint (§3); added SDK hooks (useFileContent, useWorkspaceTree) for React and Vue; completed endpoint list in Executive Summary; updated Gitbook docs to remove cross-solution detail from Admin section
 - **2026-02-24**: Status → Implemented; added Admin Inline Viewer endpoint (§4); corrected Alternatives §1 (Query Parameter adopted for Admin API); updated Non-Goals (versioning/history)
 - **2026-02-05**: Initial draft

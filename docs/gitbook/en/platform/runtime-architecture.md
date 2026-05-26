@@ -60,7 +60,7 @@ Below: walk through each layer in the order a session encounters them.
 
 A caller (frontend / solution-backend proxy / curl) sending the first message triggers session creation. Entry points:
 
-- `packages/backend/src/sessions/sessions.controller.ts:281-415` — receives the request, resolves tenant + skills
+- `packages/backend/src/sessions/sessions.controller.ts:281-415` — receives the request, resolves solution + skills
 - `packages/backend/src/sessions/session.service.ts:_createNewSession` — actual creation logic
 
 Key steps (in code order):
@@ -381,7 +381,7 @@ Concrete walkthrough + screenshots: `examples/demo-sandbox.md`. Extension recipe
 ccaas backend startup + one session running, the logs roughly go:
 
 ```
-[SessionAssetMaterializer] Session asset materializer active for 1 tenant(s): demo-sandbox
+[SessionAssetMaterializer] Session asset materializer active for 1 solution(s): demo-sandbox
 [SandboxService]   Bash sandbox mode: just-bash (server: ...)
 [AgentfsWorkspaceProvider] agentfs binary OK: agentfs <sha>
 [BaseMaterializer] materialized 1 skills (6 files) + 0 mcp servers → /tmp/.../_agentfs_base (4ms)

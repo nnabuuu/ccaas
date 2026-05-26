@@ -71,7 +71,7 @@ WORKSPACE_PROVIDER=agentfs \
 [BaseMaterializer]            materialized N skills (X files) + Y mcp servers → ...
 [SandboxService]              Bash sandbox mode: just-bash (server: ...)
 [AgentfsWorkspaceProvider]    agentfs binary OK: agentfs <sha>
-[SessionAssetMaterializer]    Session asset materializer active for 1 tenant(s): lesson-plan-designer
+[SessionAssetMaterializer]    Session asset materializer active for 1 solution(s): lesson-plan-designer
 ```
 
 到这里你的 Solution 已经在沙箱里跑了。Agent 仍然能干前面 7 章教的所有事 —— **只是它现在跑在隔离环境里**。

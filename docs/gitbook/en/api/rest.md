@@ -668,7 +668,7 @@ Get solution details.
 
 ## Builder API
 
-API for builder-scoped developers to manage their own tenants and API keys. All endpoints require `builder` scope. Builders can only operate on tenants they own and cannot create `admin` or `builder` scoped API keys.
+API for builder-scoped developers to manage their own solutions and API keys. All endpoints require `builder` scope. Builders can only operate on solutions they own and cannot create `admin` or `builder` scoped API keys.
 
 ### POST /builder/solutions
 
@@ -681,13 +681,13 @@ Create a solution and auto-link the current builder as its admin via UserSolutio
 | `name` | string | Yes | Solution name |
 | `slug` | string | No | Solution identifier (auto-generated) |
 
-**Response**: The created tenant object. The builder user is automatically linked as `admin` role via UserSolution.
+**Response**: The created solution object. The builder user is automatically linked as `admin` role via UserSolution.
 
 ### GET /builder/solutions
 
-List tenants owned by the current builder (filtered via UserSolution).
+List solutions owned by the current builder (filtered via UserSolution).
 
-**Response**: Array of tenants with `active` status only.
+**Response**: Array of solutions with `active` status only.
 
 ### GET /builder/solutions/:id
 
@@ -849,7 +849,7 @@ Endpoints for managing user-solution relationships. Each user can have one role 
 
 **Authentication**: Requires API Key (`admin` scope)
 
-### POST /users/tenants
+### POST /users/solutions
 
 Add a user to a solution with a specific role.
 
@@ -872,13 +872,13 @@ List all users in a solution.
 
 **Response**: Array of `UserSolution` objects (with user details).
 
-### GET /users/tenants/by-user/:userId
+### GET /users/solutions/by-user/:userId
 
-List all tenants a user belongs to.
+List all solutions a user belongs to.
 
 **Response**: Array of `UserSolution` objects (with solution details).
 
-### PATCH /users/tenants/:id
+### PATCH /users/solutions/:id
 
 Update a user-solution association.
 
@@ -892,7 +892,7 @@ Update a user-solution association.
 
 **Response**: Updated `UserSolution` object.
 
-### DELETE /users/tenants/:id
+### DELETE /users/solutions/:id
 
 Soft remove a user from a solution (sets `isActive` to `false`).
 
@@ -900,7 +900,7 @@ Soft remove a user from a solution (sets `isActive` to `false`).
 
 ## Admin - API Key Management
 
-Admin API for managing API keys across tenants. All endpoints require `admin` scope.
+Admin API for managing API keys across solutions. All endpoints require `admin` scope.
 
 ### GET /admin/api-keys
 
@@ -966,7 +966,7 @@ Create a new API key. The raw key is returned only once and cannot be retrieved 
 - `mcp:write` - Manage MCP servers
 - `analytics:read` - View analytics
 - `admin` - Full admin access
-- `builder` - Builder developer access (manage own tenants and API keys)
+- `builder` - Builder developer access (manage own solutions and API keys)
 
 **Response**:
 

@@ -18,7 +18,7 @@ Set `mode: "advanced"` in your `solution.json` and declare `bundles` in each ses
 {
   "schemaVersion": "3.0",
   "mode": "advanced",
-  "tenant": {
+  "solution": {
     "name": "Lesson Plan Designer",
     "slug": "lesson-plan-designer"
   },
@@ -189,7 +189,7 @@ After updating, newly created sessions will use the new configuration. Existing 
 
 Check the backend logs for warnings like:
 ```
-Bundle "xxx" referenced in template but not enabled at tenant level — skipping
+Bundle "xxx" referenced in template but not enabled at solution level — skipping
 ```
 This means the Bundle is not enabled at the Solution level. Enable it via the Admin API's `enabledBundles` endpoint.
 

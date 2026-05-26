@@ -81,7 +81,7 @@ Operator quickstart: **[gitbook → 本地自托管](../../docs/gitbook/zh/getti
 | `WORKSPACE_AGENTFS_BASE_DIR` | `${WORKSPACE_DIR}/_agentfs_base` | shared overlay base for materialized skills |
 | `WORKSPACE_AGENTFS_DELTA_STORE` | `${WORKSPACE_DIR}/_agentfs_deltas` | per-session SQLite delta dbs |
 | `SOLUTION_DIRS` | empty | CSV `slug:abspath` to register solution dirs for per-session asset seed |
-| `SOLUTIONS_DIR` | empty | Root dir whose subdirs each contain a `solution.json`. `SolutionLoaderService.onModuleInit` auto-imports each at boot (tenant + skills + MCP + `solution.config.artifactUrl`). Unset → no auto-import; use `POST /admin/solutions/import` instead. |
+| `SOLUTIONS_DIR` | empty | Root dir whose subdirs each contain a `solution.json`. `SolutionLoaderService.onModuleInit` auto-imports each at boot (solution + skills + MCP + `solution.config.artifactUrl`). Unset → no auto-import; use `POST /admin/solutions/import` instead. |
 
 ## Database Schema
 
@@ -114,7 +114,7 @@ bash solutions/business/live-lesson-creator/scripts/poc-smoke.sh
 # expects exit 0 + "✓ end-to-end PoC passed: N change events delivered" (N ≥ 2)
 ```
 
-The script auto-mints a tenant-scoped API key (`scripts/create-dev-api-key.ts <slug> --raw-only`) for the Phase 2b-2 `?token=…` SSE auth. Set `CCAAS_API_KEY=<key>` to use a pre-existing key instead.
+The script auto-mints a solution-scoped API key (`scripts/create-dev-api-key.ts <slug> --raw-only`) for the Phase 2b-2 `?token=…` SSE auth. Set `CCAAS_API_KEY=<key>` to use a pre-existing key instead.
 
 ## Important Notes
 

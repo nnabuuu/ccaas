@@ -40,7 +40,7 @@ SOLUTION_DIRS=demo-sandbox:$PWD/solutions/business/demo-sandbox \
   npm run start:prod -w @kedge-agentic/backend
 ```
 
-(This lets `SessionAssetMaterializer` copy `entities/` + `resources/` into the workspace whenever a demo-sandbox-tenant session is created. See `platform/runtime-architecture.md` § 4.2.)
+(This lets `SessionAssetMaterializer` copy `entities/` + `resources/` into the workspace whenever a demo-sandbox-solution session is created. See `platform/runtime-architecture.md` § 4.2.)
 
 ## How to verify the sandbox is really active
 
@@ -80,7 +80,7 @@ $ tail $WORKSPACE_DIR/_sandbox_logs/bash-mcp.log
 | `WORKSPACE_AGENTFS_BASE_DIR=/var/...` | `${WORKSPACE_DIR}/_agentfs_base` | where the materialized base overlay lives |
 | `WORKSPACE_AGENTFS_DELTA_STORE=/var/...` | `${WORKSPACE_DIR}/_agentfs_deltas` | where per-session delta DBs live |
 | `SOLUTION_DIRS=slug:abspath,slug2:abspath2` | empty | tells SessionAssetMaterializer which solutions' entities+resources to seed per session |
-| `SOLUTIONS_DIR=./solutions/business` | empty | At boot, `SolutionLoaderService` auto-imports every `<subdir>/solution.json` it finds — tenant + skills + MCP + `solution.config.artifactUrl`. Phase 1.6+. Leave unset to opt out; use `POST /admin/solutions/import` instead. |
+| `SOLUTIONS_DIR=./solutions/business` | empty | At boot, `SolutionLoaderService` auto-imports every `<subdir>/solution.json` it finds — solution + skills + MCP + `solution.config.artifactUrl`. Phase 1.6+. Leave unset to opt out; use `POST /admin/solutions/import` instead. |
 
 ## Reserved naming conventions
 
@@ -125,7 +125,7 @@ These are **not** in scope for this iteration; they're tracked in backlog:
 
 - Scheduled tasks (HeadlessExecutionService) still use local fs, not WorkspaceProvider
 - Network isolation for claude itself
-- Multi-tenant agentfs encryption (`--key/--cipher`)
+- Multi-solution agentfs encryption (`--key/--cipher`)
 - Forensic file browsing UI for closed sessions
 - Containerized deploy (stage-1 is bare-metal Node)
 

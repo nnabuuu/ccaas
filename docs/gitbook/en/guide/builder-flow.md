@@ -4,7 +4,7 @@ This tutorial guides **external Solution developers** through the complete Build
 
 ## What is Builder Flow
 
-A Builder is an external developer who holds a `builder`-scoped API key. Through the Builder API, developers can self-serve tenant creation, skill registration, and API key management without requiring platform admin intervention for day-to-day operations.
+A Builder is an external developer who holds a `builder`-scoped API key. Through the Builder API, developers can self-serve solution creation, skill registration, and API key management without requiring platform admin intervention for day-to-day operations.
 
 **Core Flow:**
 
@@ -18,7 +18,7 @@ Get Builder Key → Create Solution → Register Skill → Create API Key → Ch
 | Capability | Builder | Admin |
 |-----------|---------|-------|
 | Create Solution | Only their own | Manage all |
-| Manage API Keys | Only for owned tenants | Manage all |
+| Manage API Keys | Only for owned solutions | Manage all |
 | Create admin/builder scoped keys | Forbidden | Allowed |
 
 Builder keys automatically have all scopes except `admin` and `builder`.
@@ -29,7 +29,7 @@ Builder keys automatically have all scopes except `admin` and `builder`.
 - A `builder`-scoped API key (created by platform admin)
 - **Builder key must have a `userId` bound** — otherwise all Builder endpoints return 403
 
-**Recommended**: Use the one-step onboarding endpoint (creates user + tenant + key in one call):
+**Recommended**: Use the one-step onboarding endpoint (creates user + solution + key in one call):
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/admin/builder-users \
@@ -49,7 +49,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk-admin_xxx" \
   -d '{
-    "solutionId": "<platform-tenant-id>",
+    "solutionId": "<platform-solution-id>",
     "name": "Builder: Acme Corp",
     "scopes": ["builder"],
     "userId": "<builder-user-id>"
@@ -62,7 +62,7 @@ Save the returned `rawKey` — all subsequent steps require it. Builder keys wit
 
 ## Step 1: Create Solution
 
-Each Builder can create multiple tenants, each representing an isolated business space.
+Each Builder can create multiple solutions, each representing an isolated business space.
 
 ```bash
 BUILDER_KEY="sk-builder_xxx"
@@ -82,7 +82,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions \
 ```json
 {
   "id": "a1b2c3d4-...",
-  "tenant": {
+  "solution": {
     "id": "a1b2c3d4-...",
     "name": "My Solution",
     "slug": "my-solution",
@@ -92,7 +92,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions \
 ```
 
 {% hint style="info" %}
-**Auto-link mechanism**: After creating a tenant, the Builder is automatically linked as admin via UserSolution.
+**Auto-link mechanism**: After creating a solution, the Builder is automatically linked as admin via UserSolution.
 {% endhint %}
 
 ## Step 2: Register Skill
@@ -165,7 +165,7 @@ curl -X POST http://localhost:3001/api/v1/builder/solutions/$TENANT_ID/api-keys 
 {% endhint %}
 
 {% hint style="info" %}
-**Builder Key vs Child Key**: The key you just created is a "Solution key" — it can only call chat/skills/MCP APIs. It cannot create tenants or manage other keys. Only your original Builder key (with `builder` scope and bound `userId`) has management capabilities.
+**Builder Key vs Child Key**: The key you just created is a "Solution key" — it can only call chat/skills/MCP APIs. It cannot create solutions or manage other keys. Only your original Builder key (with `builder` scope and bound `userId`) has management capabilities.
 {% endhint %}
 
 **Available scopes:**
@@ -227,8 +227,8 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/builder/solutions` | Create tenant |
-| GET | `/api/v1/builder/solutions` | List own tenants |
+| POST | `/api/v1/builder/solutions` | Create solution |
+| GET | `/api/v1/builder/solutions` | List own solutions |
 | GET | `/api/v1/builder/solutions/:id` | Get details |
 | PUT | `/api/v1/builder/solutions/:id` | Update |
 
@@ -264,7 +264,7 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | Error | Cause | Solution |
 |-------|-------|----------|
 | 403: builder key must be linked to a user | Builder key has no `userId` | Fix via `PUT /api/v1/admin/api-keys/:id` with `userId`, or recreate via `POST /api/v1/admin/builder-users` |
-| 403: You do not have access to this solution | No UserSolution link | Can only operate on self-created tenants |
+| 403: You do not have access to this solution | No UserSolution link | Can only operate on self-created solutions |
 | 403: cannot create keys with scopes: admin | Privilege escalation prevention | Use only allowed scopes |
 | 409: Skill slug already exists | Slug conflict | Change slug or PUT to update |
 | MISSING\_TENANT\_ID | Missing `solutionId` in body | Include it in request body |

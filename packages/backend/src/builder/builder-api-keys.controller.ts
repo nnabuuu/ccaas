@@ -53,7 +53,7 @@ export class BuilderApiKeysController {
    *
    * Create an API key for an owned tenant (no admin/builder scope allowed).
    */
-  @Post('tenants/:solutionId/api-keys')
+  @Post('solutions/:solutionId/api-keys')
   async create(
     @Param('solutionId') solutionId: string,
     @Body() dto: CreateApiKeyDto,
@@ -96,7 +96,7 @@ export class BuilderApiKeysController {
    *
    * List API keys for an owned tenant.
    */
-  @Get('tenants/:solutionId/api-keys')
+  @Get('solutions/:solutionId/api-keys')
   async findAll(
     @Param('solutionId') solutionId: string,
     @Ctx() ctx: RequestContext,

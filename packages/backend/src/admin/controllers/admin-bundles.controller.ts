@@ -53,7 +53,7 @@ export class AdminBundlesController {
    *
    * Get enabled bundles for a tenant.
    */
-  @Get('tenants/:solutionId/bundles')
+  @Get('solutions/:solutionId/bundles')
   async getTenantBundles(@Param('solutionId') solutionId: string) {
     const tenant = await this.tenantsService.findOne(solutionId);
     if (!tenant) {
@@ -78,7 +78,7 @@ export class AdminBundlesController {
    * Update enabled bundles for a tenant.
    * Body: { enabledBundles: string[] }
    */
-  @Patch('tenants/:solutionId/bundles')
+  @Patch('solutions/:solutionId/bundles')
   async updateTenantBundles(
     @Param('solutionId') solutionId: string,
     @Body() body: { enabledBundles: string[] },

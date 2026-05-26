@@ -4,7 +4,7 @@ This guide explains how CCAAS implements conversation persistence, enabling user
 
 ## Overview
 
-CCAAS uses a frontend-driven persistence model where the `conversationId` is stored in tenant-scoped `localStorage` and message history is automatically loaded from the backend on reconnection.
+CCAAS uses a frontend-driven persistence model where the `conversationId` is stored in solution-scoped `localStorage` and message history is automatically loaded from the backend on reconnection.
 
 ```
 Page Load

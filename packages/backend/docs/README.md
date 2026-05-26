@@ -212,7 +212,7 @@ curl http://localhost:3001/api/v1/skills \
 
 **Problem: "Solution not found"**
 - **Cause**: Solution not created or wrong solutionId
-- **Solution**: Create tenant via `/api/v1/solutions` or check slug
+- **Solution**: Create solution via `/api/v1/solutions` or check slug
 
 **Problem: "Invalid API key format"**
 - **Cause**: API Key doesn't start with `sk-`
@@ -264,8 +264,8 @@ INSERT INTO api_keys (
   scopes, rateLimitRpm, status, createdAt, updatedAt
 ) VALUES (
   lower(hex(randomblob(16))),
-  (SELECT id FROM tenants WHERE slug='$TENANT_SLUG'),
-  'bootstrap-tenant-key',
+  (SELECT id FROM solutions WHERE slug='$TENANT_SLUG'),
+  'bootstrap-solution-key',
   '$KEY_HASH',
   '${RAW_KEY:0:16}',
   '["skills:write","mcp:write","admin"]',

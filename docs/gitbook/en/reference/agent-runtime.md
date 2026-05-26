@@ -294,7 +294,7 @@ Each solution ships a `solution.json` in its source tree:
 ```jsonc
 {
   "schemaVersion": "3.0",
-  "tenant": { "name": "Live Lesson", "slug": "live-lesson" },
+  "solution": { "name": "Live Lesson", "slug": "live-lesson" },
   "artifactUrl": "http://localhost:3007/api",
   "skills": ["./skills/*"]
 }
@@ -352,7 +352,7 @@ Why a query param and not an `Authorization` header? Because the browser's `Even
 
 Verification chain:
 
-1. `ApiKeyService.validateKey(token)` resolves the caller's tenant.
+1. `ApiKeyService.validateKey(token)` resolves the caller's solution.
 2. `ProjectTenantResolver.verifyProjectAccess(projectId, callerTenantId)` returns true iff the caller owns the project.
 3. False → 403; missing or invalid token → 401.
 
@@ -365,7 +365,7 @@ Verification chain:
 
 To override, register your resolver against `PROJECT_TENANT_RESOLVER` in your SessionsModule providers.
 
-**Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-tenant dev and trusted-network prod. For true multi-solution prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
+**Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-solution dev and trusted-network prod. For true multi-solution prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
 
 ### Binary artifacts (Phase 2b-4)
 
@@ -377,7 +377,7 @@ Why separate?
 - REST transport differs — text is `application/json` (content inlined); binary is `application/octet-stream` (streaming via `node:stream/pipeline`, never buffered).
 - Filesystem mount differs — text under `<workspace>/artifacts/`, binary under `<workspace>/artifacts-binary/`. **This split is a security boundary**: the agent's `Read` / `cat` tool only walks the text directory, so a JPEG can never be slurped into context.
 
-ccaas-side registration: a solution sets `solution.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `solution.config.changed` invalidation. Optional `solution.config.binaryMaxBytes` pins a per-tenant size cap.
+ccaas-side registration: a solution sets `solution.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `solution.config.changed` invalidation. Optional `solution.config.binaryMaxBytes` pins a per-solution size cap.
 
 Solution-side REST contract:
 
@@ -442,7 +442,7 @@ await fetch(`${CCAAS_URL}/api/v1/sessions/${sessionId}/bind-project`, {
 
 The backend `/workspaces/:identity/changes` SSE emits every ChangeEvent (legacy alias `/projects/:identity/changes` also works). A frontend subscriber renders banners in real time when the agent touches a file the user is editing.
 
-**Critical design rule**: the browser **never holds a ccaas key.** ccaas knows tenants, not end users — each solution backend is one tenant and holds the one ccaas key. End users belong to the solution, not to ccaas. They authenticate to the solution backend (using whatever the solution's own auth is — cookie session, JWT, anything) and the solution backend mediates every ccaas call.
+**Critical design rule**: the browser **never holds a ccaas key.** ccaas knows solutions, not end users — each solution backend is one solution and holds the one ccaas key. End users belong to the solution, not to ccaas. They authenticate to the solution backend (using whatever the solution's own auth is — cookie session, JWT, anything) and the solution backend mediates every ccaas call.
 
 Concretely for SSE:
 
@@ -455,13 +455,13 @@ Concretely for SSE:
   → opens upstream EventSource:
       GET ${CCAAS_URL}/workspaces/:id/changes?token=${CCAAS_API_KEY}
 [ccaas (:3001)]
-  → WorkspaceAccessGuard verifies token + tenant owns the workspace
+  → WorkspaceAccessGuard verifies token + solution owns the workspace
   → SSE stream
 ```
 
 The solution-side proxy implementation lives at `solutions/business/live-lesson/backend/src/adapters/http/ccaas-proxy.controller.ts`. Env vars:
 - `CCAAS_URL` (default `http://localhost:3001`) — the base URL for ccaas
-- `CCAAS_API_KEY` (required) — the solution tenant's ccaas API key
+- `CCAAS_API_KEY` (required) — the solution solution's ccaas API key
 
 Browser-side reference impl: `solutions/business/live-lesson/creator/src/hooks/useProjectChanges.ts` — a React hook that uses `EventSource` to subscribe to the relative path, filters out heartbeat / subscribed / own-gui writes, and returns agent-side events to the UI:
 

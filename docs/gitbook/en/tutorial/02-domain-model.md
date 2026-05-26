@@ -569,7 +569,7 @@ CCAAS Backend (port 3001)          Solution Backend (port 3002)
 │ skills               │            │ agent_files          │
 │ messages             │            │ chat_messages        │
 │ api_keys             │            │ (your domain data)   │
-│ tenants              │            │                     │
+│ solutions            │            │                     │
 └─────────────────────┘            └─────────────────────┘
      Platform DB                        Solution DB
 ```

@@ -851,7 +851,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 **认证**: 🔐 需要 API Key（`admin` 权限范围）
 
-### POST /users/tenants
+### POST /users/solutions
 
 将用户添加到租户并分配角色。
 
@@ -874,13 +874,13 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 **响应**：`UserSolution` 对象数组（包含用户详情）。
 
-### GET /users/tenants/by-user/:userId
+### GET /users/solutions/by-user/:userId
 
 获取用户所属的所有租户。
 
 **响应**：`UserSolution` 对象数组（包含租户详情）。
 
-### PATCH /users/tenants/:id
+### PATCH /users/solutions/:id
 
 更新用户-租户关联。
 
@@ -894,7 +894,7 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 
 **响应**：更新后的 `UserSolution` 对象。
 
-### DELETE /users/tenants/:id
+### DELETE /users/solutions/:id
 
 软移除用户与租户的关联（设置 `isActive` 为 `false`）。
 

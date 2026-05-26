@@ -18,7 +18,7 @@
 {
   "schemaVersion": "3.0",
   "mode": "advanced",
-  "tenant": {
+  "solution": {
     "name": "备课方案设计器",
     "slug": "lesson-plan-designer"
   },
@@ -189,7 +189,7 @@ Content-Type: application/json
 
 检查后端日志中是否有以下警告：
 ```
-Bundle "xxx" referenced in template but not enabled at tenant level — skipping
+Bundle "xxx" referenced in template but not enabled at solution level — skipping
 ```
 这表明该 Bundle 未在 Solution 级别启用。通过 Admin API 的 `enabledBundles` 端点启用。
 

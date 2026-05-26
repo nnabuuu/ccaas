@@ -37,7 +37,7 @@ The simplest valid solution.json (recommended for most solutions):
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "My Solution",
     "slug": "my-solution",
     "description": "Brief description of what this solution does"
@@ -92,7 +92,7 @@ Controls how Bundles are configured for this solution.
 
 Most solutions should omit this field to use the default `simple` mode, which provides `write_output`, `attach_file`, and `read_context` tools out of the box.
 
-### tenant
+### solution
 
 **Type:** `Object`
 **Required:** Yes
@@ -101,7 +101,7 @@ Identifies your solution in the CCAAS platform.
 
 ```json
 {
-  "tenant": {
+  "solution": {
     "name": "Quiz Analyzer",
     "slug": "quiz-analyzer",
     "description": "Educational quiz analysis system"
@@ -126,7 +126,7 @@ Defines which skills to load. Supports glob patterns for auto-discovery.
 
 ```json
 {
-  "tenant": { ... },
+  "solution": { ... },
   "mcpServers": { ... }
   // No "skills" field = uses default ["skills/*"]
 }
@@ -392,7 +392,7 @@ Full solution.json with all features:
   "schemaVersion": "3.0",
 
   // ============ CCAAS Core Configuration ============
-  "tenant": {
+  "solution": {
     "name": "Quiz Analyzer",
     "slug": "quiz-analyzer",
     "description": "Educational quiz intelligent analysis system"
@@ -462,7 +462,7 @@ Choose the configuration level that fits your needs:
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "My Solution",
     "slug": "my-solution"
   },
@@ -484,7 +484,7 @@ Choose the configuration level that fits your needs:
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": { ... },
+  "solution": { ... },
   "skills": [
     "skills/analyzer",
     "skills/reporter"
@@ -501,7 +501,7 @@ Choose the configuration level that fits your needs:
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": { ... },
+  "solution": { ... },
   "mcpServers": { ... },
   "backend": {
     "port": 3002,
@@ -530,7 +530,7 @@ v3.0 requires **complete frontmatter** in all SKILL.md files. This is the single
 name: My Skill
 slug: my-skill
 description: Brief description
-scope: tenant
+scope: solution
 ---
 
 # Skill Content
@@ -545,7 +545,7 @@ Instructions for the AI agent...
 name: Quiz Analyzer
 slug: quiz-analyzer
 description: Intelligent quiz analysis
-scope: tenant
+scope: solution
 triggers:
   - type: keyword
     value: "analyze this quiz"
@@ -567,7 +567,7 @@ This skill analyzes educational quizzes...
 - ✅ `name` - Display name
 - ✅ `slug` - Unique identifier
 - ✅ `description` - Brief description
-- ✅ `scope` - `"tenant"` or `"personal"`
+- ✅ `scope` - `"solution"` or `"personal"`
 
 **Optional Fields:**
 - `triggers` - Activation triggers

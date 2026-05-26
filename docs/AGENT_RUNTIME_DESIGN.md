@@ -33,7 +33,7 @@ agent-runtime package's job is to make that pattern reusable.
 ```
 @kedge-agentic/agent-runtime/
 ├── workspace/    — agent's FS view (BaseMaterializer + ContentSource)
-├── project/      — Project container (id, tenant, status, attributes)
+├── project/      — Project container (id, solution, status, attributes)
 ├── artifact/     — typed Artifacts + ArtifactEditor union
 ├── schema/       — SchemaRegistry + SchemaValidator
 └── sync/         — ChangeStream for agent ↔ GUI updates
@@ -76,7 +76,7 @@ agent-runtime package's job is to make that pattern reusable.
 | Sub-module | Purpose | Concrete impls (Phase) |
 |---|---|---|
 | `workspace/` | Project skills+MCP-servers from a `ContentSource` onto a host directory for the agentfs `--base` overlay | TypeORM ContentSource (already in backend; built on top) (A done) |
-| `project/` | Define what a Project IS (tenant-owned container of artifacts with title/status/attributes) | TypeORM ProjectStore (Phase 1) |
+| `project/` | Define what a Project IS (solution-owned container of artifacts with title/status/attributes) | TypeORM ProjectStore (Phase 1) |
 | `artifact/` | Define what an Artifact IS + how it can be edited | JsonEditProvider (Phase 0 — shipped); `ProjectArtifactSource` + `SaveArtifactResult.canonicalPath` (Phase 1 / 2b-1 — shipped); `BinaryArtifactSource` (Phase 2b-4 — shipped); MarkdownArtifactEditor wraps DocumentEditProvider (Phase 2 rest) |
 | `schema/` | Map schemaId → validator, used by artifact edits | Zod adapter (Phase 1); JSON Schema adapter (Phase 1 stretch) |
 | `sync/` | Bidirectional change feed; agent + GUI subscribe + publish | in-memory pub/sub (Phase 2); Redis pub/sub (Phase 2 stretch) |
@@ -107,10 +107,10 @@ abstractions stabilize from Phase 0/1/2. The pattern catalog
 | A (was v0.1) | `workspace/` only | ~1 week | ✅ shipped |
 | 0 (v0.2) | rename to `agent-runtime`; sub-module skeletons (types only) for project/artifact/schema/sync; ship `JsonEditProvider` | ~4 days | ✅ shipped |
 | **1 (v0.3)** | **`ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`; backend `SessionAssetSyncer` orchestrator at turn boundaries; `bindToProject` + session-bound bootstrap; `RestProjectArtifactSource` adapter for cross-process solutions; `/projects/:id/{changes,invalidate}` REST; live-lesson `/artifacts` endpoint contract** | ~1.5 weeks | ✅ **shipped** |
-| **1.5** | env-CSV tenant routing (`SOLUTION_ARTIFACT_URLS=slug:url,...`) | — | ⚠️ **superseded by 1.6** |
+| **1.5** | env-CSV solution routing (`SOLUTION_ARTIFACT_URLS=slug:url,...`) | — | ⚠️ **superseded by 1.6** |
 | **1.6** | **declarative registration via `solution.json` + auto-discovery: `artifactUrl` field on solution.json + Solution.config (existing JSON blob); `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/<slug>/solution.json` with Zod validation; `SolutionsService.{create,update}` emit `solution.config.changed` events; `ProjectArtifactSourceRegistry` reads solution.config lazily, caches per slug, evicts on event. Zero env vars for URL routing. Dev workflow becomes zero-key.** | ~3 hours | ✅ **shipped** |
 | **2b-1 (v0.3.1)** | **path-normalization round-trip: `SaveArtifactResult.canonicalPath` so solutions that normalize paths server-side surface the canonical key; runtime snapshot + change events use it. Avoids silent delete-then-recreate when solution and runtime disagree on path form.** | ~0.5 day | ✅ **shipped** |
-| **2b-2 (v0.3.2)** | **SSE auth: `?token=<apiKey>` query-param on `/projects/:id/{changes,invalidate}` (EventSource can't set headers). `ProjectTenantResolver` port (default deny-all). Backend ships `ProjectAccessGuard` (NestJS `canActivate` — has to run before the `@Sse` handler commits HTTP 200) + `SessionMetadataProjectTenantResolver` that reuses the (tenant, project) link `bind-project` already writes into `session_metadata` — zero per-solution work, one indexed SQLite lookup. Trade-off: project must be bound at least once before SSE can subscribe.** | ~2 days | ✅ **shipped** |
+| **2b-2 (v0.3.2)** | **SSE auth: `?token=<apiKey>` query-param on `/projects/:id/{changes,invalidate}` (EventSource can't set headers). `ProjectTenantResolver` port (default deny-all). Backend ships `ProjectAccessGuard` (NestJS `canActivate` — has to run before the `@Sse` handler commits HTTP 200) + `SessionMetadataProjectTenantResolver` that reuses the (solution, project) link `bind-project` already writes into `session_metadata` — zero per-solution work, one indexed SQLite lookup. Trade-off: project must be bound at least once before SSE can subscribe.** | ~2 days | ✅ **shipped** |
 | **2b-3** | **end-to-end smoke (`solutions/business/live-lesson-creator/scripts/poc-smoke.sh`): mint dev key → message-post → bind-project → SSE subscribe → live-lesson PUT → invalidate → SSE captures change. Doc refresh for the corrected SSE URL path (`/projects/:id/...`, not `/api/v1/projects/...`).** | ~0.5 day | ✅ **shipped** |
 | **2b-4 (v0.4)** | **`BinaryArtifactSource` port (separate from text — content is `Buffer | Uint8Array`; solutions opt in independently). `SyncEngine.planBinary()` mirrors the text conflict matrix. Backend ships `RestBinaryArtifactSource` (octet-stream streaming, content-length pre-check, mid-stream cap) + `ProjectBinaryArtifactSourceRegistry` (solution.config.binaryArtifactUrl). Syncer materializes binary actions into `<workspace>/artifacts-binary/` — sibling of `artifacts/`, deliberately outside the agent's `Read` tool reach so JPEGs can't be slurped into context. No in-tree consumer yet; full vertical unit-tested.** | ~3 days | ✅ **shipped** |
 | 2 (rest) | Redis-backed `ChangeStream` (cross-instance fanout); `MarkdownArtifactEditor` wrapping `DocumentEditProvider`; Zod schema adapter; conflict markers in GUI | ~1 week | next |
@@ -160,7 +160,7 @@ filesystem, S3, or whatever fits.
 Workspace mount is split: text → `<workspace>/artifacts/`, binary →
 `<workspace>/artifacts-binary/`. The split keeps the agent's `Read`
 tool from streaming a JPEG into context. The size cap is
-declared per-tenant via `solution.config.binaryMaxBytes`; the REST
+declared per-solution via `solution.config.binaryMaxBytes`; the REST
 adapter enforces it via content-length pre-check before draining
 the body.
 
@@ -170,7 +170,7 @@ Today a ccaas session has a `solutionId` but no `projectId`. Several
 options for adding it:
 - Add `projectId` to `ManagedSession` (one project per session)
 - Allow one session to span multiple projects (rare, complex)
-- Project is a stronger isolation than tenant; sessions become
+- Project is a stronger isolation than solution; sessions become
   project-scoped
 
 Lean: one project per session, with `projectId` injected via the

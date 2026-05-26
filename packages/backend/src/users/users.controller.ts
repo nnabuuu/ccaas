@@ -67,25 +67,25 @@ export class UsersController {
     return this.userTenantService.create(createUserTenantDto);
   }
 
-  @Get('tenants/by-tenant/:solutionId')
+  @Get('solutions/by-solution/:solutionId')
   @RequireScopes('admin')
   findByTenant(@Param('solutionId') solutionId: string) {
     return this.userTenantService.findByTenant(solutionId);
   }
 
-  @Get('tenants/by-user/:userId')
+  @Get('solutions/by-user/:userId')
   @RequireScopes('admin')
   findByUser(@Param('userId') userId: string) {
     return this.userTenantService.findByUser(userId);
   }
 
-  @Patch('tenants/:id')
+  @Patch('solutions/:id')
   @RequireScopes('admin')
   updateUserTenant(@Param('id') id: string, @Body() updateUserTenantDto: UpdateUserTenantDto) {
     return this.userTenantService.update(id, updateUserTenantDto);
   }
 
-  @Delete('tenants/:id')
+  @Delete('solutions/:id')
   @RequireScopes('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeUserTenant(@Param('id') id: string) {

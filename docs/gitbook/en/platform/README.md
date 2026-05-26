@@ -22,7 +22,7 @@ KedgeAgentic consists of the following core components:
 | **MCP Server** | Tool service layer providing external tools callable by AI Agents |
 | **Solution Framework** | A complete application framework for vertical use cases |
 | **Vue SDK** | Frontend integration SDK with reactive state management |
-| **Admin Console** | Administration dashboard with tenant management and analytics |
+| **Admin Console** | Administration dashboard with solution management and analytics |
 
 ## Technical Advantages
 

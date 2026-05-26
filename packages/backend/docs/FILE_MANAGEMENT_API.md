@@ -55,7 +55,7 @@ GET /api/v1/sessions/:sessionId/files
     "messageId": "msg-uuid-1",
     "filename": "report.md",
     "originalPath": "/reports/summary.md",
-    "storedPath": "/storage/tenant-1/msg-uuid-1/summary.md",
+    "storedPath": "/storage/solution-1/msg-uuid-1/summary.md",
     "mimeType": "text/markdown",
     "size": 2048,
     "status": "new",
@@ -192,7 +192,7 @@ Content-Type: multipart/form-data
   "status": "new",
   "currentVersion": "1.0.0",
   "originalPath": "upload.pdf",
-  "storedPath": "/storage/tenant-1/session-1/upload.pdf",
+  "storedPath": "/storage/solution-1/session-1/upload.pdf",
   "uploadedBy": "user",
   "createdAt": "2024-01-15T11:00:00Z"
 }
@@ -298,7 +298,7 @@ POST /api/v1/files/:fileId/versions
   "fileId": "file-uuid-1",
   "version": "1.0.1",
   "contentHash": "sha256:abc123...",
-  "storedPath": "/storage/versions/tenant-1/file-uuid-1/1.0.1-report.md",
+  "storedPath": "/storage/versions/solution-1/file-uuid-1/1.0.1-report.md",
   "size": 2048,
   "mimeType": "text/markdown",
   "changelog": "Updated introduction section",
@@ -674,7 +674,7 @@ eventSource.addEventListener('file.modified', (e) => {
 
 ## Rate Limiting
 
-File operations are rate-limited per tenant:
+File operations are rate-limited per solution:
 - **Default**: 60 requests per minute
 - **Upload**: 10 uploads per minute
 - **Version creation**: 20 versions per minute

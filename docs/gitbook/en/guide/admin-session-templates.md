@@ -6,7 +6,7 @@ Session Templates allow you to pre-configure agent behavior and reuse configurat
 
 **What are Session Templates?**
 
-Session Templates are reusable configurations stored per-tenant that define:
+Session Templates are reusable configurations stored per-solution that define:
 - **System Prompts** — Custom instructions appended to the agent's base prompt
 - **Enabled Skills** — Which skills the agent can use
 - **MCP Servers** — External tool integrations
@@ -15,13 +15,13 @@ Session Templates are reusable configurations stored per-tenant that define:
 
 **Benefits:**
 - ✅ Centralized configuration — update agent behavior without code deploys
-- ✅ Multi-tenant support — each solution has independent template sets
+- ✅ Multi-solution support — each solution has independent template sets
 - ✅ Role-based agent personalities (teacher, student, admin, etc.)
 - ✅ A/B testing different prompts
 - ✅ Full audit trail for compliance
 
 **Limits:**
-- Maximum **50 templates per tenant**
+- Maximum **50 templates per solution**
 - Template names are **immutable** after creation
 
 ## When to Use This
@@ -115,7 +115,7 @@ Click **"Create Template"** and fill in:
 |-------|---------|-------|
 | Name | `teacher-assistant` | Lowercase, hyphens/underscores only. Immutable after creation. |
 | Description | `Teacher view with full analysis` | Optional, max 500 chars |
-| Model Override | `claude-opus-4-6` | Optional — leave blank to use tenant default |
+| Model Override | `claude-opus-4-6` | Optional — leave blank to use solution default |
 | System Prompt | `You are a teacher assistant...` | Appended at runtime, max 10,000 chars |
 | Skill Slugs | `knowledge-matching, analysis` | Comma-separated |
 | MCP Servers | `{ "server": { "command": "node", ... } }` | JSON format |
@@ -130,7 +130,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 export function TeacherView() {
   const chat = useAgentChat({
     serverUrl: 'http://localhost:3001',
-    solutionId: 'your-tenant-id',
+    solutionId: 'your-solution-id',
     sessionTemplate: 'teacher-assistant', // ← Use your template name
   })
 
@@ -493,7 +493,7 @@ const chat = useAgentChat({ sessionTemplate: template })
 ### Multi-Solution SaaS
 
 ```typescript
-// Each tenant manages their own templates through the Admin UI.
+// Each solution manages their own templates through the Admin UI.
 // Frontend just references the template name:
 const chat = useAgentChat({
   solutionId: user.solutionId,
@@ -557,7 +557,7 @@ curl -H "Authorization: Bearer <key>" \
 
 **Error**: `Session template already exists`
 
-**Solution**: Template names must be unique per tenant. Use Edit to update the existing template, or choose a different name.
+**Solution**: Template names must be unique per solution. Use Edit to update the existing template, or choose a different name.
 
 ### Template creation returns 400 (limit reached)
 

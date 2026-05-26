@@ -130,7 +130,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 export function TeacherView() {
   const chat = useAgentChat({
     serverUrl: 'http://localhost:3001',
-    solutionId: 'your-tenant-id',
+    solutionId: 'your-solution-id',
     sessionTemplate: 'teacher-assistant', // ← 填入模板名称
   })
 

@@ -7,7 +7,7 @@
 所有 endpoint 都在 `/api/v1/sessions/:id/` 下，都用 `Auth('admin')` + `SolutionAuthGuard`（stage-1 简化）：
 
 - header: `x-api-key: <admin-key>`
-- header: `x-solution-id: <slug-or-uuid>`（admin key 可以跨租户；tenant 不匹配 session 时返回 403）
+- header: `x-solution-id: <slug-or-uuid>`（admin key 可以跨租户；solution 不匹配 session 时返回 403）
 
 后续 stage-2 会引入更细的 `sessions:fs` / `sessions:meta` scope；当前 admin scope 是 cross-solution by design。
 

@@ -65,7 +65,7 @@ my-solution/
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "我的解决方案",
     "slug": "my-solution",
     "description": "解决方案描述"
@@ -87,7 +87,7 @@ my-solution/
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": {
+  "solution": {
     "name": "我的解决方案",
     "slug": "my-solution",
     "description": "解决方案描述"
@@ -128,7 +128,7 @@ v3.0 要求所有 SKILL.md 文件都有完整的 frontmatter:
 name: 主技能
 slug: main-skill
 description: 主技能描述
-scope: tenant
+scope: solution
 triggers:
   - type: keyword
     value: "设计"
@@ -283,7 +283,7 @@ echo "Solution 启动完成！"
 ```json
 {
   "schemaVersion": "3.0",
-  "tenant": { ... },
+  "solution": { ... },
   "discovery": { "enabled": false }
 }
 ```

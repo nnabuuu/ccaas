@@ -8,7 +8,7 @@
 
 - [概述](#概述)
 - [API Key 系统](#api-key-系统)
-  - [Solution-Level Keys vs User-Level Keys](#tenant-level-keys-vs-user-level-keys)
+  - [Solution-Level Keys vs User-Level Keys](#solution-level-keys-vs-user-level-keys)
   - [API Key Scopes](#api-key-scopes)
   - [API Key 格式](#api-key-格式)
 - [权限控制架构](#权限控制架构)
@@ -108,7 +108,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
 ```typescript
 // SkillPermissionGuard.ts
 if (!context.userTenant) {
-  throw new ForbiddenException('User tenant information required');
+  throw new ForbiddenException('User solution information required');
 }
 
 // Check user's role and permissions
@@ -287,11 +287,11 @@ POST /api/v1/auth/login
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| `POST /users/tenants` | 将用户添加到租户（userId, solutionId, role） |
+| `POST /users/solutions` | 将用户添加到租户（userId, solutionId, role） |
 | `GET /users/solutions/by-solution/:solutionId` | 列出租户下用户 |
-| `GET /users/tenants/by-user/:userId` | 列出用户所属租户 |
-| `PATCH /users/tenants/:id` | 更新角色/权限 |
-| `DELETE /users/tenants/:id` | 软移除（isActive → false） |
+| `GET /users/solutions/by-user/:userId` | 列出用户所属租户 |
+| `PATCH /users/solutions/:id` | 更新角色/权限 |
+| `DELETE /users/solutions/:id` | 软移除（isActive → false） |
 
 ### canCreateSkills 自动推导
 
@@ -384,7 +384,7 @@ Request
 3. **SkillPermissionGuard**（`@UseGuards(SkillPermissionGuard)`）
    - 针对 Skill 操作的细粒度权限控制
    - 区分 Solution-Level Key 和 User-Level Key
-   - 检查 Skill 作用域（tenant, personal）
+   - 检查 Skill 作用域（solution, personal）
    - 验证用户角色和权限
 
 ### RequestContext
@@ -395,7 +395,7 @@ Request
 export interface RequestContext {
   // Solution 信息
   solutionId: string;              // 租户 ID
-  tenant?: Solution;               // 租户对象（可选）
+  solution?: Solution;               // 租户对象（可选）
 
   // API Key 信息
   apiKeyId?: string;             // API Key ID
@@ -439,7 +439,7 @@ export interface UserSolution {
 
 3. User-Level Key 检查
    if (!context.userTenant) {
-     throw ForbiddenException('User tenant information required');
+     throw ForbiddenException('User solution information required');
    }
 
    3.1 CREATE 操作
@@ -462,7 +462,7 @@ export interface UserSolution {
 
 1. Solution-Scoped Skills
    if (skill.scope === 'tenant') {
-     return true; // Anyone in tenant can read
+     return true; // Anyone in solution can read
    }
 
 2. Personal Skills
@@ -544,8 +544,8 @@ INSERT INTO api_keys (
   updatedAt
 ) VALUES (
   lower(hex(randomblob(16))),
-  (SELECT id FROM tenants WHERE slug='$TENANT_SLUG'),
-  'bootstrap-tenant-key',
+  (SELECT id FROM solutions WHERE slug='$TENANT_SLUG'),
+  'bootstrap-solution-key',
   '$KEY_HASH',
   '$KEY_PREFIX',
   '["skills:write","mcp:write","admin"]',
@@ -850,8 +850,8 @@ const sendMessage = async (text: string) => {
 
 **配置：**
 ```typescript
-// Skill.scope = 'tenant'
-// 所有租户内用户都可以访问和执行
+// Skill.scope = 'tenant'  (load-bearing DB string; SkillScope enum kept as 'tenant'|'personal' post-α)
+// 所有 solution 内用户都可以访问和执行
 
 // 权限设置
 {
@@ -870,7 +870,7 @@ const sendMessage = async (text: string) => {
 
 **配置：**
 ```typescript
-// Skill.scope = 'personal'
+// Skill.scope == 'tenant' | 'personal'
 // Skill.createdBy = userId
 
 // 权限设置

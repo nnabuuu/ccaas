@@ -39,7 +39,7 @@ solutions/business/lesson-plan-designer/
 
 ## Step 2: Create solution.json
 
-The `solution.json` file is the central configuration for your Solution. It defines your tenant identity, MCP tool servers, session templates, and Skill references.
+The `solution.json` file is the central configuration for your Solution. It defines your solution identity, MCP tool servers, session templates, and Skill references.
 
 Create `lesson-plan-designer/solution.json`:
 
@@ -47,7 +47,7 @@ Create `lesson-plan-designer/solution.json`:
 {
   "schemaVersion": "3.0",
 
-  "tenant": {
+  "solution": {
     "name": "Lesson Plan Designer",
     "slug": "lesson-plan-designer",
     "description": "AI-powered lesson plan design assistant"
@@ -82,7 +82,7 @@ Create `lesson-plan-designer/solution.json`:
 | Field | Purpose |
 |-------|---------|
 | `schemaVersion` | Configuration format version (always `"3.0"`) |
-| `tenant` | Solution identity — name, slug (unique identifier), and description |
+| `solution` | Solution identity — name, slug (unique identifier), and description |
 | `mcpServers` | MCP tool services the AI Agent can invoke |
 | `sessionTemplates` | Session presets that define which Skills and bundles are active |
 | `skills` | Skill reference list — each entry is a `{slug, name}` pair |
@@ -388,8 +388,8 @@ VITE_API_URL=http://localhost:3002
 # Production:        https://ccaas.zhushou.one/
 VITE_CCAAS_URL=http://localhost:3001
 
-# Default tenant ID (set by setup.sh after tenant creation)
-VITE_DEFAULT_TENANT_ID=default-tenant
+# Default solution ID (set by setup.sh after solution creation)
+VITE_DEFAULT_TENANT_ID=default-solution
 ```
 
 Copy it to `.env`:
@@ -450,7 +450,7 @@ The Vite proxy routes relative URL requests (`/api/...`) to the correct backend.
 
 ## Step 5: Create the Startup Script
 
-The `setup.sh` script automates the entire startup process. It uses the shared `solution-lib.sh` library that handles tenant creation, API key management, and Skill injection.
+The `setup.sh` script automates the entire startup process. It uses the shared `solution-lib.sh` library that handles solution creation, API key management, and Skill injection.
 
 Create `lesson-plan-designer/setup.sh`:
 
@@ -516,8 +516,8 @@ main() {
     # Step 3.5: Custom initialization (MCP build)
     custom_init
 
-    # Step 4: Setup tenant and API key
-    log_step "4" "Setting up tenant and API key"
+    # Step 4: Setup solution and API key
+    log_step "4" "Setting up solution and API key"
     eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
     log_info "Solution ID: $TENANT_ID"
 
@@ -586,7 +586,7 @@ chmod +x lesson-plan-designer/setup.sh
 3. Verifies the CCAAS backend is reachable (default: `http://localhost:3001`)
 4. Installs npm dependencies for frontend and backend
 5. Builds the MCP server (`npm install && npm run build`)
-6. Creates a tenant and API key via the CCAAS Admin API
+6. Creates a solution and API key via the CCAAS Admin API
 7. Registers Skills and MCP Servers with the CCAAS backend
 8. Starts the backend (port 3002) and frontend (port 5280)
 

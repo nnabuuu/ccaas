@@ -80,7 +80,7 @@ node dist/main.js
 
 On first startup, the backend will:
 - Create `.agent-workspace/data.db`
-- Create a default tenant
+- Create a default solution
 - Register the `INITIAL_ADMIN_KEY` as the bootstrap admin key
 
 Confirm it's running:
@@ -143,13 +143,13 @@ server {
 
 ## 5. First-Time Setup: Create a Solution
 
-Every solution needs its own tenant and API key.
+Every solution needs its own solution and API key.
 
 ```bash
 BACKEND=http://localhost:3001
 ADMIN_KEY=sk-default-<your-key>
 
-# Create a tenant
+# Create a solution
 curl -s -X POST $BACKEND/api/v1/solutions \
   -H "x-api-key: $ADMIN_KEY" \
   -H "Content-Type: application/json" \
@@ -157,14 +157,14 @@ curl -s -X POST $BACKEND/api/v1/solutions \
     "name": "My Solution",
     "slug": "my-solution"
   }'
-# → { "id": "<tenant-id>", ... }
+# → { "id": "<solution-id>", ... }
 
-# Create an API key for the tenant
+# Create an API key for the solution
 curl -s -X POST $BACKEND/api/v1/admin/api-keys \
   -H "x-api-key: $ADMIN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "solutionId": "<tenant-id>",
+    "solutionId": "<solution-id>",
     "name": "My Solution Key",
     "scopes": ["skills:read", "skills:write", "mcp:read", "mcp:write", "chat"]
   }'
@@ -176,7 +176,7 @@ curl -s -X POST $BACKEND/api/v1/admin/api-keys \
 
 ## 6. Register Skills
 
-After creating a tenant, import its skills from `solution.json`:
+After creating a solution, import its skills from `solution.json`:
 
 ```bash
 cd packages/backend
@@ -187,7 +187,7 @@ npm run skill:import -- quiz-analyzer
 npm run skill:import -- live-lesson
 ```
 
-Verify in the Admin UI: **Solutions → [your tenant] → Skills tab**
+Verify in the Admin UI: **Solutions → [your solution] → Skills tab**
 
 ---
 
