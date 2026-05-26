@@ -1,0 +1,33 @@
+{
+  "subject": "math",
+  "subjectLabel": "数学",
+  "version": "2026-05",
+  "categories": [
+    {
+      "id": "knowledge",
+      "label": "知识理解",
+      "color": "teal",
+      "items": [
+        { "id": "m-1.1.1", "code": "课标 1.1", "text": "理解函数的对应关系定义" },
+        { "id": "m-1.1.2", "code": "课标 1.2", "text": "理解函数概念的形式化定义" }
+      ]
+    },
+    {
+      "id": "skill",
+      "label": "技能应用",
+      "color": "purple",
+      "items": [
+        { "id": "m-2.3.1", "code": "课标 2.3", "text": "能在坐标系中描点画出基本函数图像" },
+        { "id": "m-2.3.2", "code": "课标 2.4", "text": "识别一次/二次函数的图像特征" }
+      ]
+    },
+    {
+      "id": "math-language",
+      "label": "数学语言",
+      "color": "amber",
+      "items": [
+        { "id": "m-3.1.2", "code": "课标 3.1", "text": "使用变量符号表达数量关系" }
+      ]
+    }
+  ]
+}
