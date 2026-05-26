@@ -15,7 +15,8 @@
  */
 
 import { ServiceUnavailableException } from '@nestjs/common';
-import { CcaasUpstream, scrubToken } from './ccaas-upstream.service';
+import { CcaasUpstream } from './ccaas-upstream.service';
+import { scrubToken } from './scrub-token';
 
 const ORIG_ENV = { ...process.env };
 

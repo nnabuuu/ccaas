@@ -19,6 +19,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { scrubToken } from './scrub-token';
 
 const DEFAULT_CCAAS_URL = 'http://localhost:3001';
 
@@ -158,30 +159,3 @@ export class CcaasUpstream {
   }
 }
 
-/**
- * Strip the ccaas API key out of any string that might land in a log,
- * a thrown Error message, or an HTTP response body. Two leak vectors
- * covered:
- *
- *   1. `?token=<value>` — used by the project-scoped SSE proxy because
- *      EventSource can't set headers, so the key is in the URL. A
- *      misconfigured intermediary echoing `req.url` back in an error
- *      body (e.g. "Cannot GET <full-url>") would surface the key.
- *
- *   2. `Authorization: Bearer <value>` — used by the chat-scoped
- *      proxy (fetch with auth header). If Node's fetch ever includes
- *      request headers in an error message (some runtimes do on
- *      connection failures), or if ccaas's error body ever echoes
- *      the Authorization header back, the key would leak. The Bearer
- *      branch is defence-in-depth — there's no known path today that
- *      surfaces it, but the cost of the extra regex is zero.
- *
- * Conservative on URL-encoded forms — if the surrounding text already
- * escaped or encoded the token, the regex won't match and we leave it
- * alone (the encoding is itself protection).
- */
-export function scrubToken(s: string): string {
-  return s
-    .replace(/(token=)[^&\s"'<>]+/gi, '$1***')
-    .replace(/(bearer\s+)[A-Za-z0-9._\-]+/gi, '$1***');
-}

@@ -26,9 +26,12 @@ import {
   BadGatewayException,
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   Logger,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -37,7 +40,8 @@ import {
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 import type { Response } from 'express';
-import { CcaasUpstream, scrubToken } from './ccaas-upstream.service';
+import { CcaasUpstream } from './ccaas-upstream.service';
+import { scrubToken } from './scrub-token';
 
 /**
  * Browser body for POST /api/sessions/:sid/bind-project. tenantId is
@@ -141,10 +145,14 @@ export class CcaasChatProxyController {
    * `tenantId` server-side from the env-cached value, so the browser
    * body only carries `{ projectId }`.
    *
-   * 4xx upstream (e.g. session not found, cross-tenant rebind 409,
-   * malformed body 400) is promoted to 502 BadGateway so the browser
-   * sees a single recognizable error category. The actual upstream
-   * status is included in the message for debugging.
+   * Upstream status mapping (browser-actionable distinctions preserved):
+   *   404 → NotFoundException (session doesn't exist; UI may auto-create + retry)
+   *   409 → ConflictException (session already bound to a different project;
+   *         UI should suggest "start a new conversation")
+   *   403 → ForbiddenException (cross-tenant guard tripped; impossible under
+   *         the proxy's injected tenantId, but pass through if it ever happens
+   *         so misconfigs are visible rather than masked as 502)
+   *   other 4xx + any 5xx → BadGatewayException (502) — generic upstream issue
    */
   @Post('bind-project')
   @ApiOperation({
@@ -181,13 +189,36 @@ export class CcaasChatProxyController {
       throw this.upstream.wrapUpstreamError('connect', err);
     }
     if (!upstreamRes.ok) {
+      const status = upstreamRes.status;
       const text = scrubToken(await this.upstream.readErrorBody(upstreamRes));
       this.logger.warn(
-        `ccaas bind-project ${upstreamRes.status} session=${sessionId}: ${text}`,
+        `ccaas bind-project ${status} session=${sessionId}: ${text}`,
       );
-      throw new BadGatewayException(
-        `ccaas upstream ${upstreamRes.status} on bind-project: ${text}`,
-      );
+      // Browser-actionable cases pass through with their real semantics;
+      // anything else collapses to 502 BadGateway.
+      switch (status) {
+        case 404:
+          throw new NotFoundException(`session ${sessionId} not found in ccaas`);
+        case 409:
+          // Cross-project rebind: agent session already bound to a
+          // different project. UI can suggest "start a new conversation
+          // for this project" instead of pretending it's a gateway error.
+          throw new ConflictException(
+            `session ${sessionId} is already bound to a different project; ` +
+              'create a new conversation to switch projects',
+          );
+        case 403:
+          // Cross-tenant guard tripped upstream. Should be impossible
+          // since the proxy injects tenantId from the env-cached value,
+          // but if a misconfig ever produces it, surface honestly.
+          throw new ForbiddenException(
+            'ccaas rejected bind: tenant mismatch (check CCAAS_API_KEY env)',
+          );
+        default:
+          throw new BadGatewayException(
+            `ccaas upstream ${status} on bind-project: ${text}`,
+          );
+      }
     }
     return upstreamRes.json();
   }

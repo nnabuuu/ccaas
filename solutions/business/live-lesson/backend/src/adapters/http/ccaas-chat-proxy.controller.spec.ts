@@ -13,6 +13,9 @@
 import {
   BadGatewayException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { CcaasChatProxyController } from './ccaas-chat-proxy.controller';
@@ -175,7 +178,7 @@ describe('CcaasChatProxyController', () => {
       await expect(controller.bindProject('sid-1', {} as any)).rejects.toThrow(BadRequestException);
     });
 
-    it('promotes upstream 4xx to 502', async () => {
+    it('passes through upstream 404 as NotFoundException (browser can choose to recreate the session)', async () => {
       mockFetch(async (url) => {
         if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
         return new Response('session not found', { status: 404 });
@@ -183,6 +186,48 @@ describe('CcaasChatProxyController', () => {
 
       await expect(
         controller.bindProject('ghost', { projectId: 'p' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('passes through upstream 409 as ConflictException (already bound to a different project)', async () => {
+      // ccaas returns 409 when the session is already bound to a project
+      // different from the one the browser is asking for. This is a real
+      // browser-actionable case ("start a new conversation") — collapsing
+      // it to 502 would lose that signal, so we surface it verbatim.
+      mockFetch(async (url) => {
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        return new Response('session already bound to project p-other', { status: 409 });
+      });
+
+      await expect(
+        controller.bindProject('sid-rebind', { projectId: 'p-new' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('passes through upstream 403 as ForbiddenException (tenant mismatch — surfaces env misconfig honestly)', async () => {
+      // 403 from ccaas means the bearer token resolves to a different
+      // tenant than the one in the request body. Under the proxy this
+      // is impossible by construction (we inject the resolved tenantId
+      // ourselves), but if a misconfig ever produces it, we want the
+      // operator to see "tenant mismatch" not "ccaas upstream 403".
+      mockFetch(async (url) => {
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        return new Response('cross-tenant access denied', { status: 403 });
+      });
+
+      await expect(
+        controller.bindProject('sid-x', { projectId: 'p-x' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('falls back to 502 BadGateway for other 4xx (e.g. unexpected 422) and any 5xx', async () => {
+      mockFetch(async (url) => {
+        if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
+        return new Response('upstream is feeling unwell', { status: 503 });
+      });
+
+      await expect(
+        controller.bindProject('sid-q', { projectId: 'p' }),
       ).rejects.toThrow(BadGatewayException);
     });
   });

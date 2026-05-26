@@ -46,7 +46,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Observable } from 'rxjs';
-import { CcaasUpstream, scrubToken } from './ccaas-upstream.service';
+import { CcaasUpstream } from './ccaas-upstream.service';
+import { scrubToken } from './scrub-token';
 
 @ApiTags('ccaas-proxy')
 @Controller('projects/:projectId')
