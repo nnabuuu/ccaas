@@ -1,5 +1,17 @@
 import type { Project, ProjectFile, ProjectListStatus } from '../types';
 
+/**
+ * Typed HTTP error so callers can branch on `status` instead of
+ * parsing error.message prefixes (which were fragile when bodies
+ * happened to start with the status digits).
+ */
+export class HttpError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
@@ -7,7 +19,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`${res.status}: ${body || res.statusText}`);
+    throw new HttpError(res.status, `${res.status}: ${body || res.statusText}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json();

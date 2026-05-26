@@ -8,6 +8,7 @@ import AiPanel from '../components/sidebar/AiPanel'
 import TabBar from '../components/layout/TabBar'
 import FileBrowser from '../components/sidebar/FileBrowser'
 import ExecutionTab from '../components/execution/ExecutionTab'
+import PlanTab from '../components/plan/PlanTab'
 import ProjectChangeNotice from '../components/ProjectChangeNotice'
 import { useProjectChanges } from '../hooks/useProjectChanges'
 
@@ -147,8 +148,8 @@ export default function ProjectEditorPage() {
         return <ExecutionTab projectId={project.id} reloadKey={reloadKey} />
       case 'plan':
         return (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            教案设计 (coming soon)
+          <div className="flex-1 overflow-y-auto">
+            <PlanTab projectId={project.id} />
           </div>
         )
       case 'skills':
