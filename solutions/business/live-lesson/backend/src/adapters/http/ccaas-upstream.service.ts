@@ -29,8 +29,21 @@ export class CcaasUpstream {
    * Once-per-process cache of the tenantId derived from `CCAAS_API_KEY`.
    * One solution backend = one ccaas tenant (by design), so this never
    * needs to change unless the operator rotates the key and restarts.
+   *
+   * Rotation procedure: change CCAAS_API_KEY in the env, restart the
+   * process. There's no live-reload — a stale cache + new tenant
+   * would silently route to the wrong tenant.
    */
   private cachedTenantId: string | null = null;
+
+  /**
+   * In-flight resolveTenantId promise. Without this, the first N
+   * concurrent calls all miss the cache and all fire `/auth/me` in
+   * parallel (thundering herd). With it, the first caller's promise
+   * is reused by every concurrent waiter. Cleared on success or
+   * failure so a retry can run cleanly.
+   */
+  private inFlightTenantId: Promise<string> | null = null;
 
   /**
    * Resolve env + assert the ccaas key is configured. We fail loud here
@@ -67,6 +80,17 @@ export class CcaasUpstream {
    */
   async resolveTenantId(): Promise<string> {
     if (this.cachedTenantId) return this.cachedTenantId;
+    // Single-flight: if a concurrent caller already started fetching
+    // /auth/me, just wait for that one's promise. Without this every
+    // request during the bootstrap window would issue its own /auth/me.
+    if (this.inFlightTenantId) return this.inFlightTenantId;
+    this.inFlightTenantId = this.doResolveTenantId().finally(() => {
+      this.inFlightTenantId = null;
+    });
+    return this.inFlightTenantId;
+  }
+
+  private async doResolveTenantId(): Promise<string> {
     const { url, key } = this.resolveCcaas();
     let res: Response;
     try {
@@ -135,23 +159,29 @@ export class CcaasUpstream {
 }
 
 /**
- * Strip `token=<value>` from any string before it might land in a log,
- * a thrown Error message, or an HTTP response body.
+ * Strip the ccaas API key out of any string that might land in a log,
+ * a thrown Error message, or an HTTP response body. Two leak vectors
+ * covered:
  *
- * The SSE upstream URL we open against ccaas looks like
- * `${CCAAS_URL}/projects/:id/changes?token=${CCAAS_API_KEY}` — the
- * master tenant key is literally in the URL. We never log the URL
- * ourselves, but two paths could indirectly leak it:
- *   - the upstream's error body (e.g. a misconfigured intermediary's
- *     "Cannot GET <full-url>" page that echoes `req.url`)
- *   - Node's own fetch-failure messages on some runtimes
- * Apply scrubbing wherever those land in user-visible strings.
+ *   1. `?token=<value>` — used by the project-scoped SSE proxy because
+ *      EventSource can't set headers, so the key is in the URL. A
+ *      misconfigured intermediary echoing `req.url` back in an error
+ *      body (e.g. "Cannot GET <full-url>") would surface the key.
  *
- * Matches `token=` followed by any non-whitespace / non-separator chars.
- * Conservative — if the surrounding text already escaped or encoded
- * the token, the regex won't match and we leave it alone (the encoding
- * is itself protection).
+ *   2. `Authorization: Bearer <value>` — used by the chat-scoped
+ *      proxy (fetch with auth header). If Node's fetch ever includes
+ *      request headers in an error message (some runtimes do on
+ *      connection failures), or if ccaas's error body ever echoes
+ *      the Authorization header back, the key would leak. The Bearer
+ *      branch is defence-in-depth — there's no known path today that
+ *      surfaces it, but the cost of the extra regex is zero.
+ *
+ * Conservative on URL-encoded forms — if the surrounding text already
+ * escaped or encoded the token, the regex won't match and we leave it
+ * alone (the encoding is itself protection).
  */
 export function scrubToken(s: string): string {
-  return s.replace(/(token=)[^&\s"'<>]+/gi, '$1***');
+  return s
+    .replace(/(token=)[^&\s"'<>]+/gi, '$1***')
+    .replace(/(bearer\s+)[A-Za-z0-9._\-]+/gi, '$1***');
 }

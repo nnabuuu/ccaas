@@ -24,6 +24,7 @@
 
 import {
   BadGatewayException,
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -34,8 +35,52 @@ import {
   Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 import type { Response } from 'express';
 import { CcaasUpstream, scrubToken } from './ccaas-upstream.service';
+
+/**
+ * Browser body for POST /api/sessions/:sid/bind-project. tenantId is
+ * intentionally NOT here — the proxy injects it server-side from the
+ * env-cached value (see CcaasUpstream.resolveTenantId).
+ */
+class BindProjectBody {
+  @IsString()
+  @IsNotEmpty({ message: 'projectId required in request body' })
+  projectId!: string;
+}
+
+/**
+ * Write an SSE frame whose `data:` payload conforms to ccaas's
+ * StreamEventEnvelope shape — `{ seq, sessionId, timestamp, event }`
+ * with `event.type` set. The useAgentChat parser in the creator only
+ * inspects the `data:` line and switches on `env.event.type`, so any
+ * payload we want it to act on (incl. errors) MUST use this shape.
+ * Raw `event:` lines or freeform `data:` payloads are silently dropped
+ * by the parser's catch block.
+ */
+function writeErrorEnvelope(
+  res: Response,
+  sessionId: string,
+  err: { code?: string; status?: number; message: string },
+): void {
+  if (res.writableEnded) return;
+  const ts = new Date().toISOString();
+  const envelope = {
+    seq: -1,
+    sessionId,
+    timestamp: ts,
+    event: {
+      type: 'error' as const,
+      code: err.code ?? (err.status ? String(err.status) : 'UPSTREAM_ERROR'),
+      message: err.message,
+      recoverable: false,
+      sessionId,
+      timestamp: ts,
+    },
+  };
+  res.write(`data: ${JSON.stringify(envelope)}\n\n`);
+}
 
 @ApiTags('ccaas-proxy')
 @Controller('sessions/:sessionId')
@@ -75,7 +120,10 @@ export class CcaasChatProxyController {
     if (upstreamRes.status === 404) {
       // Fresh session — no history yet. ccaas returns 404 because the
       // session row hasn't been created; the UI shouldn't surface that
-      // as an error, just an empty conversation.
+      // as an error, just an empty conversation. Logged at debug so a
+      // genuine bug (typo'd sessionId from a future caller) is still
+      // observable when DEBUG=true.
+      this.logger.debug(`messages 404 for session=${sessionId} — treating as empty`);
       return { messages: [] };
     }
     if (!upstreamRes.ok) {
@@ -105,10 +153,14 @@ export class CcaasChatProxyController {
   @ApiParam({ name: 'sessionId', type: String })
   async bindProject(
     @Param('sessionId') sessionId: string,
-    @Body() body: { projectId?: string },
+    @Body() body: BindProjectBody,
   ): Promise<unknown> {
+    // class-validator pipe catches missing/empty projectId with 400 +
+    // a structured Zod-style message field. Defence in depth: re-check
+    // here for the case where the global ValidationPipe isn't enabled
+    // in tests / minimal bootstraps.
     if (!body?.projectId) {
-      throw new BadGatewayException('projectId required in request body');
+      throw new BadRequestException('projectId required in request body');
     }
     const { url, key } = this.upstream.resolveCcaas();
     const tenantId = await this.upstream.resolveTenantId();
@@ -173,15 +225,11 @@ export class CcaasChatProxyController {
     @Res() res: Response,
   ): Promise<void> {
     const { url, key } = this.upstream.resolveCcaas();
-    let tenantId: string;
-    try {
-      tenantId = await this.upstream.resolveTenantId();
-    } catch (err) {
-      // Tenant resolution failed BEFORE we touched the response —
-      // surface as a normal HTTP error (NestJS exception filter
-      // catches), not a half-written SSE stream.
-      throw err;
-    }
+    // Tenant resolution runs BEFORE we touch the response so any
+    // failure bubbles as a normal HTTP 503 (caught by Nest's exception
+    // filter) instead of a half-written SSE stream the browser would
+    // see as a successful-but-empty turn.
+    const tenantId = await this.upstream.resolveTenantId();
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -214,12 +262,16 @@ export class CcaasChatProxyController {
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         // Client gone before upstream connected — nothing to do.
-        res.end();
+        if (!res.writableEnded) res.end();
         return;
       }
       const safe = scrubToken((err as Error).message ?? String(err));
-      res.write(`event: error\ndata: ${JSON.stringify({ message: safe })}\n\n`);
-      res.end();
+      // Error envelope mirrors ccaas's StreamEventEnvelope shape so
+      // useAgentChat's parser hits the 'error' branch and surfaces it
+      // in the UI via setError. A raw `event: error` SSE frame would
+      // be silently dropped by the parser's catch block.
+      writeErrorEnvelope(res, sessionId, { code: 'UPSTREAM_CONNECT', message: safe });
+      if (!res.writableEnded) res.end();
       return;
     }
 
@@ -227,10 +279,11 @@ export class CcaasChatProxyController {
       const status = upstream.status;
       const text = upstream.body ? scrubToken(await this.upstream.readErrorBody(upstream)) : '';
       this.logger.warn(`ccaas POST messages upstream ${status} session=${sessionId}: ${text}`);
-      res.write(
-        `event: error\ndata: ${JSON.stringify({ status, message: text || `ccaas ${status}` })}\n\n`,
-      );
-      res.end();
+      writeErrorEnvelope(res, sessionId, {
+        status,
+        message: text || `ccaas upstream ${status}`,
+      });
+      if (!res.writableEnded) res.end();
       return;
     }
 
@@ -248,11 +301,11 @@ export class CcaasChatProxyController {
         res.write(decoder.decode(value, { stream: true }));
       }
     } catch (err) {
-      // Mid-stream upstream error — write a final SSE error event so
-      // the chat UI's event-parser can surface it, then close.
-      if ((err as Error).name !== 'AbortError' && !res.writableEnded) {
+      // Mid-stream upstream error — write a final error envelope so
+      // the chat UI's parser surfaces it via setError, then close.
+      if ((err as Error).name !== 'AbortError') {
         const safe = scrubToken((err as Error).message ?? String(err));
-        res.write(`event: error\ndata: ${JSON.stringify({ message: safe })}\n\n`);
+        writeErrorEnvelope(res, sessionId, { code: 'UPSTREAM_STREAM', message: safe });
       }
     } finally {
       if (!res.writableEnded) res.end();

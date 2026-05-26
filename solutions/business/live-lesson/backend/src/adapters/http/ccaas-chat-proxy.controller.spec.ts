@@ -10,7 +10,11 @@
  *   - resolveTenantId failure → 503
  */
 
-import { BadGatewayException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { CcaasChatProxyController } from './ccaas-chat-proxy.controller';
 import { CcaasUpstream } from './ccaas-upstream.service';
 
@@ -167,8 +171,8 @@ describe('CcaasChatProxyController', () => {
       expect(out).toMatchObject({ success: true });
     });
 
-    it('rejects when body lacks projectId', async () => {
-      await expect(controller.bindProject('sid-1', {} as any)).rejects.toThrow(BadGatewayException);
+    it('rejects with 400 BadRequest when body lacks projectId (not 502 — browser fault, not gateway)', async () => {
+      await expect(controller.bindProject('sid-1', {} as any)).rejects.toThrow(BadRequestException);
     });
 
     it('promotes upstream 4xx to 502', async () => {
@@ -206,7 +210,7 @@ describe('CcaasChatProxyController', () => {
       expect(f.isEnded()).toBe(true);
     });
 
-    it('writes an SSE error event when upstream returns !ok BEFORE sending body', async () => {
+    it('writes a proper SseEnvelope error when upstream returns !ok (so useAgentChat parser surfaces it)', async () => {
       mockFetch(async (url) => {
         if (url.endsWith('/api/v1/auth/me')) return jsonResponse({ tenantId: 't' });
         return new Response('unauthorized', { status: 401 });
@@ -215,10 +219,47 @@ describe('CcaasChatProxyController', () => {
       const f = fakeRes();
       await controller.sendMessage('sid-1', { message: 'hi' }, f.res);
 
-      // First chunk is the error event; then end().
+      // CRITICAL: the frontend (useAgentChat.ts) only inspects `data:`
+      // lines and expects them to JSON-parse into the ccaas
+      // StreamEventEnvelope shape `{ seq, sessionId, timestamp, event }`
+      // with `event.type` set. A raw `event: error\ndata: {message}`
+      // SSE frame would be silently dropped by the parser's catch.
       const joined = f.chunks.join('');
-      expect(joined).toMatch(/^event: error\ndata: /);
-      expect(joined).toContain('401');
+      expect(joined).toMatch(/^data: /);
+      // Extract the JSON after `data: ` up to the `\n\n` terminator
+      const match = joined.match(/^data: (.+?)\n\n/);
+      expect(match).not.toBeNull();
+      const envelope = JSON.parse(match![1]);
+      expect(envelope.event.type).toBe('error');
+      expect(envelope.event.code).toBe('401');
+      expect(envelope.event.message).toContain('unauthorized');
+      expect(envelope.sessionId).toBe('sid-1');
+      expect(f.isEnded()).toBe(true);
+    });
+
+    it('writes a proper SseEnvelope error on connect failure (mid-stream-class errors too)', async () => {
+      // Tenant resolution succeeds, then the messages fetch throws
+      // (simulating ccaas down between auth/me and the POST).
+      let meDone = false;
+      mockFetch(async (url) => {
+        if (url.endsWith('/api/v1/auth/me')) {
+          meDone = true;
+          return jsonResponse({ tenantId: 't' });
+        }
+        if (!meDone) return jsonResponse({});
+        throw new TypeError('fetch failed: ECONNREFUSED');
+      });
+
+      const f = fakeRes();
+      await controller.sendMessage('sid-2', { message: 'hi' }, f.res);
+
+      const joined = f.chunks.join('');
+      const match = joined.match(/^data: (.+?)\n\n/);
+      expect(match).not.toBeNull();
+      const envelope = JSON.parse(match![1]);
+      expect(envelope.event.type).toBe('error');
+      expect(envelope.event.code).toBe('UPSTREAM_CONNECT');
+      expect(envelope.event.message).toContain('ECONNREFUSED');
       expect(f.isEnded()).toBe(true);
     });
 
