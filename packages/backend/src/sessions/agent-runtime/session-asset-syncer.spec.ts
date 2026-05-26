@@ -29,7 +29,7 @@ import {
   PROJECT_BINARY_ARTIFACT_SOURCE_REGISTRY,
   SNAPSHOT_STORE,
 } from './agent-runtime.module';
-import { SessionAssetSyncer, ARTIFACTS_DIR } from './session-asset-syncer.service';
+import { SessionAssetSyncer, ARTIFACTS_DIR, COALESCE_WINDOW_MS } from './session-asset-syncer.service';
 import { SessionService } from '../session.service';
 import { SessionMetadataService } from '../services/session-metadata.service';
 import { TenantsService } from '../../tenants/tenants.service';
@@ -492,6 +492,70 @@ describe('SessionAssetSyncer', () => {
       await expect(syncer.onSessionBound({
         sessionId: SID, tenantId: TID, projectId: PROJ,
       })).resolves.toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Coalesce — dedup G4 dual-trigger so the second sync is a no-op wait
+  // -----------------------------------------------------------------------
+
+  describe('coalesce — back-to-back sync() calls within the window', () => {
+    it('skips the second loadArtifacts when called twice within COALESCE_WINDOW_MS', async () => {
+      // The G4 case: bindToProject fires session.bound → onSessionBound
+      // kicks off sync; worker then awaits its own explicit sync. Both
+      // observe the same DB state — the second pass would just load
+      // + diff + plan 0 actions, wasting a round trip. With coalesce,
+      // the second call awaits the in-flight one and returns.
+      const loadSpy = jest.spyOn(source, 'loadArtifacts');
+      source.rows = [{ path: 'a.md', content: 'v1', type: 'md' }];
+
+      // Fire two syncs in parallel — no awaits between them. The 2nd
+      // will reach the projectLocks check while the 1st is in flight,
+      // registeredAt < 100ms ago → coalesce.
+      await Promise.all([syncer.sync(SID), syncer.sync(SID)]);
+
+      expect(loadSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('still chains a second sync that arrives AFTER the window (e.g. real later trigger)', async () => {
+      jest.useFakeTimers();
+      try {
+        const loadSpy = jest.spyOn(source, 'loadArtifacts');
+        source.rows = [{ path: 'a.md', content: 'v1', type: 'md' }];
+
+        // First sync runs to completion; lock GC'd by the cleanup
+        // in finally{}. (Even without GC, advancing time past the
+        // coalesce window forces the next call to chain.)
+        await syncer.sync(SID);
+        expect(loadSpy).toHaveBeenCalledTimes(1);
+
+        jest.setSystemTime(Date.now() + COALESCE_WINDOW_MS + 50);
+
+        // A real later sync should NOT be coalesced — it has its
+        // own intent (push agent edits, observe new DB state, etc).
+        await syncer.sync(SID);
+        expect(loadSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('coalesced caller still surfaces correctness when the in-flight sync fires its ChangeEvents', async () => {
+      // The coalesced call returns without doing its own pass, but
+      // the in-flight sync IS doing the real work — its ChangeEvents
+      // must still reach subscribers. This pins that contract.
+      source.rows = [{ path: 'b.md', content: 'gui', type: 'md' }];
+      const events: ChangeEvent[] = [];
+      changes.subscribe(PROJ, (e) => events.push(e));
+
+      await Promise.all([syncer.sync(SID), syncer.sync(SID)]);
+      await new Promise((r) => queueMicrotask(() => r(undefined)));
+
+      // Single in-flight sync emitted exactly one ChangeEvent for
+      // the materialization. Coalesce didn't suppress the event.
+      const updated = events.filter((e) => e.kind === 'updated');
+      expect(updated).toHaveLength(1);
+      expect(updated[0].path).toBe('b.md');
     });
   });
 

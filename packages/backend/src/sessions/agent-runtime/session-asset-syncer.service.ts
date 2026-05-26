@@ -110,11 +110,32 @@ export interface SessionBoundEvent {
   projectId: string;
 }
 
+/**
+ * Coalesce window for dedup: if a sync for the same project was
+ * registered within this many milliseconds, a subsequent sync just
+ * awaits it and returns instead of registering its own doSync after.
+ *
+ * Tuned for the G4 case: `MessageWorker.processMessage` calls
+ * `bindToProject` → `@OnEvent('session.bound')` listener kicks off
+ * sync (registers lock A) → worker then calls `assetSyncer.sync()`
+ * (would register lock B chained after A). Both observe the same
+ * pre-edit state, so B's doSync is wasted work. 100ms easily covers
+ * the microsecond gap between the two triggers AND is small enough
+ * that legitimately-chained calls (`/invalidate` after a real
+ * `turn-complete`, which are seconds apart) DO chain normally.
+ */
+export const COALESCE_WINDOW_MS = 100;
+
 @Injectable()
 export class SessionAssetSyncer {
   private readonly logger = new Logger(SessionAssetSyncer.name);
-  /** Per-projectId mutex so two sessions on the same project don't race. */
-  private readonly projectLocks = new Map<string, Promise<void>>();
+  /**
+   * Per-projectId mutex so two sessions on the same project don't race.
+   * Value carries the in-flight Promise + the wall-clock time the lock
+   * was registered, so a follow-up call within `COALESCE_WINDOW_MS`
+   * can short-circuit instead of queueing yet another doSync.
+   */
+  private readonly projectLocks = new Map<string, { promise: Promise<void>; registeredAt: number }>();
 
   /** Cache of `tenantId → slug` lookups; slugs are stable per tenant. */
   private readonly tenantSlugCache = new Map<string, string | null>();
@@ -197,22 +218,43 @@ export class SessionAssetSyncer {
     // previous one so two sessions on the same project don't race the
     // SyncEngine.plan inputs or the SnapshotStore writes.
     const prior = this.projectLocks.get(projectId);
+
+    // Coalesce dual-trigger calls (G4): if the prior lock was registered
+    // very recently — small enough that it must be the same triggering
+    // event (e.g. bind fires the @OnEvent listener which registers the
+    // prior, and we're the worker's own explicit sync called immediately
+    // after) — just await the in-flight one and skip our own pass.
+    // Both syncs would observe the same upstream state, so the second
+    // doSync is guaranteed-no-op work. See COALESCE_WINDOW_MS comment.
+    if (prior && Date.now() - prior.registeredAt < COALESCE_WINDOW_MS) {
+      try {
+        await prior.promise;
+      } catch {
+        // Prior's error is orthogonal to this caller's intent (which is
+        // "be in sync after this returns"). The in-flight sync at least
+        // attempted that; swallowing matches the .catch() the chained
+        // path uses below for the same reason.
+      }
+      return;
+    }
+
     const run = (async () => {
-      await prior?.catch(() => undefined);
+      await prior?.promise.catch(() => undefined);
       await this.doSync(sessionId, projectId, session.workspaceDir, source);
     })();
     const settled: Promise<void> = run.then(
       () => undefined,
       () => undefined,
     );
-    this.projectLocks.set(projectId, settled);
+    const entry = { promise: settled, registeredAt: Date.now() };
+    this.projectLocks.set(projectId, entry);
     try {
       await run;
     } finally {
       // GC the lock if no later sync has chained onto ours. Reference
       // equality means we only delete the entry we wrote; if another
       // call has already replaced it, that one owns the slot.
-      if (this.projectLocks.get(projectId) === settled) {
+      if (this.projectLocks.get(projectId) === entry) {
         this.projectLocks.delete(projectId);
       }
     }
