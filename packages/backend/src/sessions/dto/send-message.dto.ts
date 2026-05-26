@@ -137,18 +137,18 @@ export class SendMessageDto {
 
   @ApiProperty({
     description:
-      '可选 project ID — 给出后 worker 在 spawn agent 引擎之前会 await ' +
-      'bind-project + bootstrap sync，确保 agent 第一轮就能在 workspace ' +
-      '里看到 artifacts/。每条消息都带是安全的（worker 会比对当前绑定， ' +
-      '相同就 skip）。 / Optional project ID — when present the worker ' +
-      'awaits bind+bootstrap before spawning the agent, so the agent ' +
-      'sees artifacts/ on its very first turn instead of an empty ' +
-      'workspace. Safe to include on every message; the worker skips ' +
-      'when the session is already bound to the same project.',
+      '可选 workspace source identity — 给出后 worker 在 spawn agent 引擎之前会 ' +
+      'await attach-workspace-source + bootstrap sync，确保 agent 第一轮就能在 ' +
+      'workspace 里看到 artifacts/。每条消息都带是安全的（worker 会比对当前绑定， ' +
+      '相同就 skip）。 / Optional workspace source identity — when present the ' +
+      'worker awaits attach + bootstrap before spawning the agent, so the agent ' +
+      'sees artifacts/ on its very first turn instead of an empty workspace. ' +
+      'Safe to include on every message; the worker skips when the session is ' +
+      'already attached to the same source.',
     required: false,
     example: 'proj_01HXYZ',
   })
   @IsOptional()
   @IsString()
-  projectId?: string;
+  sourceIdentity?: string;
 }

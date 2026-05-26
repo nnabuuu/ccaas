@@ -1,6 +1,6 @@
 /**
  * CcaasChatProxyController — proxies session-scoped ccaas endpoints
- * (chat history / send / bind-project) from the browser to ccaas.
+ * (chat history / send / attach-workspace-source) from the browser to ccaas.
  *
  * Same architectural rationale as `CcaasProxyController`: the browser
  * must never see the ccaas master key. The solution backend holds
@@ -148,17 +148,10 @@ export class CcaasChatProxyController {
    * Server-side injects solutionId from the env-cached resolver and
    * derives sourceUrl from `LIVE_LESSON_PUBLIC_URL` / `BACKEND_URL`.
    *
-   * Why this translation lives here (β-1 of the α+β refactor — see
-   * `~/.claude/plans/kind-exploring-mango.md`): ccaas-core stopped
-   * accepting `{projectId}` as a first-class field in its new route;
-   * it just wants an opaque identifier + a URL. The browser keeps
-   * using "project" because that's its own domain; the proxy is the
-   * one place that knows about both vocabularies and translates.
-   *
-   * The deprecated `bind-project` upstream is still available as an
-   * alias during the compat window — but we use the new route here
-   * so the dependency direction is clean: live-lesson uses the
-   * canonical ccaas API, not the legacy alias.
+   * ccaas-core does not accept `{projectId}` — it only takes an opaque
+   * identifier + URL. The browser keeps using "project" because that's
+   * its own domain; the proxy is the one place that knows about both
+   * vocabularies and translates.
    *
    * Upstream status mapping (browser-actionable distinctions preserved):
    *   404 → NotFoundException (session doesn't exist; UI may auto-create + retry)
@@ -298,6 +291,14 @@ export class CcaasChatProxyController {
     // open socket to ccaas after the client is gone.
     res.on('close', () => controller.abort());
 
+    // Translate browser's domain word `projectId` → ccaas's
+    // generic `sourceIdentity` field. Browser keeps domain
+    // vocabulary; ccaas-core stays domain-agnostic.
+    const { projectId, ...rest } = body;
+    const upstreamBody = projectId
+      ? { ...rest, sourceIdentity: projectId, solutionId }
+      : { ...rest, solutionId };
+
     let upstream: globalThis.Response;
     try {
       upstream = await fetch(
@@ -309,7 +310,7 @@ export class CcaasChatProxyController {
             'Content-Type': 'application/json',
             Accept: 'text/event-stream',
           },
-          body: JSON.stringify({ ...body, solutionId }),
+          body: JSON.stringify(upstreamBody),
           signal: controller.signal,
         },
       );

@@ -14,7 +14,7 @@ vi.mock('vue', async () => {
 const mockSkills = [
   {
     id: 'skill-1',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     name: 'Math Helper',
     slug: 'math-helper',
     description: 'Helps with math',
@@ -28,7 +28,7 @@ const mockSkills = [
   },
   {
     id: 'skill-2',
-    tenantId: 'tenant-1',
+    solutionId: 'tenant-1',
     name: 'Writing Coach',
     slug: 'writing-coach',
     description: 'Helps with writing',
@@ -58,7 +58,7 @@ describe('useSkills', () => {
       json: () => Promise.resolve(mockSkills),
     } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     // Wait for fetch to resolve
     await vi.waitFor(() => {
@@ -77,7 +77,7 @@ describe('useSkills', () => {
       statusText: 'Internal Server Error',
     } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     await vi.waitFor(() => {
       expect(result.loading.value).toBe(false)
@@ -94,7 +94,7 @@ describe('useSkills', () => {
       json: () => Promise.resolve(mockSkills),
     } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     await vi.waitFor(() => {
       expect(result.loading.value).toBe(false)
@@ -114,7 +114,7 @@ describe('useSkills', () => {
       json: () => Promise.resolve(mockSkills),
     } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     await vi.waitFor(() => {
       expect(result.loading.value).toBe(false)
@@ -138,7 +138,7 @@ describe('useSkills', () => {
         json: () => Promise.resolve({ ...mockSkills[1], enabled: true }),
       } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     await vi.waitFor(() => {
       expect(result.loading.value).toBe(false)
@@ -160,7 +160,7 @@ describe('useSkills', () => {
       json: () => Promise.resolve({ items: mockSkills }),
     } as Response)
 
-    const result = useSkills({ serverUrl: 'http://localhost:3001', tenantId: 'tenant-1' })
+    const result = useSkills({ serverUrl: 'http://localhost:3001', solutionId: 'tenant-1' })
 
     await vi.waitFor(() => {
       expect(result.loading.value).toBe(false)

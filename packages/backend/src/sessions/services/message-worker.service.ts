@@ -173,44 +173,43 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
 
       // G4 fix — synchronous bind + bootstrap before spawning the engine.
       //
-      // Without this, the SendMessageDto's optional projectId would
-      // only land in session_metadata via the async @OnEvent('session.bound')
-      // handler, and the orchestration call below would spawn the agent
-      // BEFORE SessionAssetSyncer copied artifacts/ into the workspace.
-      // Agent's first turn would `ls artifacts/` and see nothing — the
-      // user would have to send a warm-up message to bind the project.
+      // Without this, the SendMessageDto's optional sourceIdentity
+      // would only land in session_metadata via the async
+      // @OnEvent('session.bound') handler, and the orchestration call
+      // below would spawn the agent BEFORE SessionAssetSyncer copied
+      // artifacts/ into the workspace. Agent's first turn would
+      // `ls artifacts/` and see nothing — the user would have to send
+      // a warm-up message to attach the workspace source.
       //
       // We await the syncer directly (not via the event bus) so the
       // ordering is deterministic: when orchestrateMessage runs, the
-      // workspace already has the project's artifacts/.
+      // workspace already has the source's artifacts/.
       //
-      // Idempotency: if the session is already bound to the same project
-      // (subsequent messages in the same conversation), skip entirely —
-      // bind/sync are cheap but not free.
-      const incomingProjectId = queueItem.payload.projectId;
+      // Idempotency: if the session is already attached to the same
+      // source (subsequent messages in the same conversation), skip
+      // entirely — attach/sync are cheap but not free.
+      const incomingSourceIdentity = queueItem.payload.sourceIdentity;
       // Require solutionId too: attachWorkspaceSource's input validator
       // rejects empty string with BadRequestException — passing `|| ''`
       // would regress the anonymous-session path (queueItem.solutionId
       // can be null for guest mode under AUTH_ALLOW_ANONYMOUS=true).
-      // Skip the attach entirely when we don't have an explicit tenant;
+      // Skip the attach entirely when we don't have an explicit solution;
       // the agent will run on the materializer-only workspace (still
-      // functional, just without per-project artifacts/).
+      // functional, just without per-source artifacts/).
       //
-      // β-2 note: worker calls the canonical `attachWorkspaceSource`
-      // with a minimal `{sourceIdentity}` descriptor — `sourceUrl` +
-      // `sourceSchemaHash` aren't available on `MessageQueue.payload`
-      // (the queue carries the legacy `projectId` field). Solutions
-      // that need the new fields persisted go through the explicit
-      // `attach-workspace-source` HTTP route. β-3 may extend the queue
-      // payload if a worker-side use case appears.
-      if (incomingProjectId && queueItem.solutionId) {
+      // Worker calls `attachWorkspaceSource` with a minimal
+      // `{sourceIdentity}` descriptor — `sourceUrl` +
+      // `sourceSchemaHash` aren't available on `MessageQueue.payload`.
+      // Solutions that need the full descriptor persisted go through
+      // the explicit `attach-workspace-source` HTTP route.
+      if (incomingSourceIdentity && queueItem.solutionId) {
         const currentBinding =
           this.sessionService.getAttachedWorkspaceSource(sessionId);
-        if (currentBinding?.sourceIdentity !== incomingProjectId) {
+        if (currentBinding?.sourceIdentity !== incomingSourceIdentity) {
           await this.sessionService.attachWorkspaceSource(
             sessionId,
             queueItem.solutionId,
-            { sourceIdentity: incomingProjectId },
+            { sourceIdentity: incomingSourceIdentity },
           );
           await this.assetSyncer.sync(sessionId);
         }

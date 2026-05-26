@@ -15,7 +15,7 @@
  *
  * const connection = useAgentConnection({
  *   serverUrl: 'http://localhost:3001',
- *   tenantId: 'my-tenant',
+ *   solutionId: 'my-solution',
  * })
  *
  * const { context, updateContext, clearContext } = usePageContext()
@@ -35,7 +35,7 @@
  * })
  *
  * // Pass context to chat hook
- * const chat = useAgentChatSse({ connection, tenantId: 'my-tenant', context })
+ * const chat = useAgentChatSse({ connection, solutionId: 'my-solution', context })
  * </script>
  * ```
  */

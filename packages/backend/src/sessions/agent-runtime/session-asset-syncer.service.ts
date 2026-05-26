@@ -181,12 +181,12 @@ export class SessionAssetSyncer {
 
   /**
    * Bootstrap hook — fires when a session first attaches to a
-   * workspace source (via `SessionService.attachWorkspaceSource`,
-   * or its deprecated alias `bindToProject`). Runs the same `sync()`
-   * flow as turn-end; since the previous snapshot is empty, every
-   * DB-side artifact is treated as a `write_fs` action, producing
-   * the initial materialized state under `<workspace>/artifacts/`
-   * before the agent's first turn ever reads it.
+   * workspace source (via `SessionService.attachWorkspaceSource`).
+   * Runs the same `sync()` flow as turn-end; since the previous
+   * snapshot is empty, every DB-side artifact is treated as a
+   * `write_fs` action, producing the initial materialized state
+   * under `<workspace>/artifacts/` before the agent's first turn
+   * ever reads it.
    */
   @OnEvent('session.bound')
   async onSessionBound(payload: SessionBoundEvent): Promise<void> {
@@ -211,7 +211,7 @@ export class SessionAssetSyncer {
 
     const projectId = await this.lookupSourceIdentity(sessionId, session.solutionId);
     if (!projectId) {
-      this.logger.debug(`sync: session ${sessionId} has no projectId binding, skipping`);
+      this.logger.debug(`sync: session ${sessionId} has no workspace source binding, skipping`);
       return;
     }
 

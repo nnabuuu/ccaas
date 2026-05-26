@@ -93,7 +93,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     expect(result.current.messages).toEqual([])
@@ -105,7 +105,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test-tenant' }),
+      useAgentChat({ connection, solutionId: 'test-tenant' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -120,7 +120,7 @@ describe('useAgentChat', () => {
     expect(url).toContain('/api/v1/sessions/test-session-id/messages')
     const body = JSON.parse((callArgs![1] as Record<string, string>).body)
     expect(body.message).toBe('Hello')
-    expect(body.tenantId).toBe('test-tenant')
+    expect(body.solutionId).toBe('test-tenant')
     // SSE mode does not include clientId
     expect(body.clientId).toBeUndefined()
   })
@@ -129,7 +129,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -148,7 +148,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection({ sessionId: '' })
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await act(async () => {
@@ -165,7 +165,7 @@ describe('useAgentChat', () => {
     ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -195,7 +195,7 @@ describe('useAgentChat', () => {
     ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test', onOutputUpdate }),
+      useAgentChat({ connection, solutionId: 'test', onOutputUpdate }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -220,7 +220,7 @@ describe('useAgentChat', () => {
     ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -238,7 +238,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -260,7 +260,7 @@ describe('useAgentChat', () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -291,7 +291,7 @@ describe('useAgentChat', () => {
     ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test', onTokenUsage }),
+      useAgentChat({ connection, solutionId: 'test', onTokenUsage }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -316,7 +316,7 @@ describe('useAgentChat', () => {
     ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
+      useAgentChat({ connection, solutionId: 'test' }),
     )
 
     await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
@@ -333,7 +333,7 @@ describe('useAgentChat', () => {
     const { result } = renderHook(() =>
       useAgentChat({
         connection,
-        tenantId: 'test',
+        solutionId: 'test',
         enabledSkills: ['skill-a', 'skill-b'],
       }),
     )

@@ -368,12 +368,12 @@ export interface SolutionConfig {
 export interface UseAgentConnectionOptions {
   /** Server URL. Defaults to '/' (relative, proxied by Vite) */
   serverUrl?: string
-  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when tenantId is not provided. */
+  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when solutionId is not provided. */
   sessionPrefix?: string
   /** Whether to auto-connect on mount. Defaults to true */
   autoConnect?: boolean
-  /** Tenant ID for tenant-scoped localStorage persistence. When provided, sessionId uses conv_ prefix and is persisted. */
-  tenantId?: string
+  /** Solution ID for solution-scoped localStorage persistence. When provided, sessionId uses conv_ prefix and is persisted. */
+  solutionId?: string
   /** Force a new conversation, clearing any saved sessionId from localStorage */
   forceNewConversation?: boolean
   /** Explicit session ID. When provided, skips localStorage resolution. */
@@ -422,7 +422,7 @@ export interface PageContext {
 
 export interface UseAgentChatOptions {
   connection: UseAgentConnectionReturn
-  tenantId: string
+  solutionId: string
   enabledSkills?: string[]
   onOutputUpdate?: (update: OutputUpdate) => void
   onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void
@@ -531,7 +531,7 @@ export interface UseOutputSyncReturn<T extends Record<string, unknown>> {
 
 export interface UseSkillsOptions {
   serverUrl?: string
-  tenantId: string
+  solutionId: string
   apiKey?: string
 }
 
@@ -638,13 +638,13 @@ export interface ChatSectionProps {
 
 export interface ApiClientOptions {
   baseUrl?: string
-  tenantId: string
+  solutionId: string
 }
 
 export interface CompletionParams {
   clientId: string
   message: string
-  tenantId: string
+  solutionId: string
   enabledSkills?: string[]
   attachments?: { type: string; path: string }[]
   templateName?: string

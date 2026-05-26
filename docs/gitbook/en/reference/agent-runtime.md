@@ -1,7 +1,6 @@
 # `@kedge-agentic/agent-runtime` Package Reference
 
 > Framework-free runtime for ccaas agentic services. Current version v0.3 (Phase 1).
-> **2026-05 rename note**: this package was previously `@kedge-agentic/agentfs-runtime` (v0.1) when it contained only the workspace layer. The rename signals the broader scope: workspace + project + artifact + schema + sync.
 
 ## Phase status
 
@@ -10,7 +9,7 @@
 | A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped |
 | 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
 | 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped |
-| **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped (this version)** |
+| **1** | **`artifact/WorkspaceArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped (this version)** |
 | **1 (backend)** | **`SessionAssetSyncer` + `RestWorkspaceArtifactSource` + `/workspaces/:id/{changes,invalidate}` REST + `attachWorkspaceSource` hook** | **✅ shipped (packages/backend)** |
 | 2 | Redis-backed ChangeStream (cross-process); BinaryArtifactSource; MarkdownArtifactEditor | ⏳ later |
 | 3 | live-lesson full migration onto the new abstractions | ⏳ last |
@@ -184,10 +183,10 @@ Phase 1 will ship a Zod adapter.
 
 **Headline**: solutions write their DB however they want (TypeORM, raw SQL, batch jobs); the runtime auto-projects changes into the agent's workspace `artifacts/` dir at every turn boundary, and propagates the agent's fs edits back to the DB. **No solution code changes** — only a ~30-line interface impl or 3 REST endpoints.
 
-### Design center: `ProjectArtifactSource`
+### Design center: `WorkspaceArtifactSource`
 
 ```ts
-import type { ProjectArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
+import type { WorkspaceArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
 
 export interface ArtifactSnapshot {
   readonly path: string;       // workspace-relative, e.g. 'lesson-plan.md'
@@ -196,7 +195,7 @@ export interface ArtifactSnapshot {
   readonly attributes?: Readonly<Record<string, unknown>>;
 }
 
-export interface ProjectArtifactSource {
+export interface WorkspaceArtifactSource {
   loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>>;
   saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void>;
   deleteArtifact?(projectId: string, path: string): Promise<void>;
@@ -256,14 +255,14 @@ Runtime ships `InMemorySnapshotStore` for tests; backend provides a TypeORM-back
 
 `@OnEvent('session.turn.complete')` — hooked on `CliProcessService`'s cli-exit boundary. Per turn:
 
-1. Look up bound projectId from `session_metadata['projectId']` (no binding → no-op).
+1. Look up bound source identity from `session_metadata['sourceIdentity']` (no binding → no-op).
 2. Parallel-fetch `(source.loadArtifacts, /fs/diff, snapshotStore.list)`.
 3. `SyncEngine.plan()` produces the action list.
 4. Apply: writes through the mount (Spike 0 verified host fs.writeFile through FUSE is safe in the idle window), calls source.saveArtifact, deletes on either side.
 5. Replace snapshot.
 6. Publish ChangeEvents.
 
-`@OnEvent('session.bound')` — fires when `SessionService.attachWorkspaceSource()` is called (or its deprecated alias `bindToProject`), runs the same `sync()`. Empty snapshot ⇒ every DB-side artifact bootstraps into the workspace before the agent's first turn.
+`@OnEvent('session.bound')` — fires when `SessionService.attachWorkspaceSource()` is called, runs the same `sync()`. Empty snapshot ⇒ every DB-side artifact bootstraps into the workspace before the agent's first turn.
 
 ### `RestWorkspaceArtifactSource` (cross-process adapter)
 
@@ -323,25 +322,20 @@ curl -X PUT $CCAAS/api/v1/solutions/$ID \
 
 ### Runtime updates take effect without a restart
 
-`solutions.update()` emits a `solution.config.changed` event when the update payload carried a `config` field; `ProjectArtifactSourceRegistry` subscribes and evicts the cached source for that slug. The next sync turn re-reads `solution.config.artifactUrl` from the fresh DB row — no backend restart.
+`solutions.update()` emits a `solution.config.changed` event when the update payload carried a `config` field; `WorkspaceArtifactSourceRegistry` subscribes and evicts the cached source for that slug. The next sync turn re-reads `solution.config.artifactUrl` from the fresh DB row — no backend restart.
 
 ### REST endpoints (consumed by GUI)
 
 ```
-# canonical (since β-3, 2026-05-26)
 GET   /workspaces/:identity/changes     # SSE feed of ChangeEvents
 POST  /workspaces/:identity/invalidate  # request early sync (optional optimization)
-
-# deprecated alias — kept for one release while solutions migrate
-GET   /projects/:identity/changes
-POST  /projects/:identity/invalidate
 ```
 
-These endpoints sit at the **bare namespace** (no `/api/v1/` prefix), unlike the `sessions` controller. Source: `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts:@Controller()` with route arrays handling both URL surfaces.
+These endpoints sit at the **bare namespace** (no `/api/v1/` prefix), unlike the `sessions` controller. Source: `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts`.
 
 ### Authentication (Phase 2b-2)
 
-Both endpoints (canonical + alias) require a `?token=<apiKey>` query param:
+Both endpoints require a `?token=<apiKey>` query param:
 
 ```
 GET   /workspaces/:identity/changes?token=ccaas_xxxx
@@ -353,23 +347,23 @@ Why a query param and not an `Authorization` header? Because the browser's `Even
 Verification chain:
 
 1. `ApiKeyService.validateKey(token)` resolves the caller's solution.
-2. `ProjectTenantResolver.verifyProjectAccess(projectId, callerTenantId)` returns true iff the caller owns the project.
+2. `WorkspaceAccessResolver.verifyWorkspaceAccess(identity, callerSolutionId)` returns true iff the caller owns the workspace.
 3. False → 403; missing or invalid token → 401.
 
-**`ProjectTenantResolver` port**: solutions can register their own resolver (e.g. querying their own project table) under the `PROJECT_TENANT_RESOLVER` DI token. If none is registered, agent-runtime falls back to `DenyAllProjectTenantResolver` — every request 403s.
+**`WorkspaceAccessResolver` port**: solutions can register their own resolver (e.g. querying their own project table) under the `WORKSPACE_ACCESS_RESOLVER` DI token. If none is registered, agent-runtime falls back to `DenyAllWorkspaceAccessResolver` — every request 403s.
 
-**ccaas default resolver (`SessionMetadataWorkspaceResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(solutionId, projectId)` row that `attach-workspace-source` (and its `bind-project` alias) writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work. The `session_metadata` row name `projectId` is kept for compat with pre-β-2 data; it stores the new `sourceIdentity` value.
+**ccaas default resolver (`SessionMetadataWorkspaceResolver`)**: a deviation from the original 2b-2 design. ccaas doesn't require every solution to ship a resolver. It reuses the `(solutionId, sourceIdentity)` row that `attach-workspace-source` writes into `session_metadata` — a single indexed SQLite lookup, zero solution-side work.
 
 - ✅ Pro: solutions don't need a `solutionId` column, a new REST endpoint, or a cross-process callback.
 - ⚠️ Trade-off: **workspaces that have never been attached resolve to false → 403.** Callers must attach a session first before subscribing to SSE. This matches `poc-smoke.sh`'s flow and is the canonical pattern.
 
-To override, register your resolver against `PROJECT_TENANT_RESOLVER` in your SessionsModule providers.
+To override, register your resolver against `WORKSPACE_ACCESS_RESOLVER` in your SessionsModule providers.
 
 **Security caveat**: query-param tokens leak into access logs / proxy logs. Acceptable for single-solution dev and trusted-network prod. For true multi-solution prod, a short-lived exchange token (e.g. `POST /sessions/exchange` for a one-time SSE token) is the right hardening — Phase 3, not in scope here.
 
 ### Binary artifacts (Phase 2b-4)
 
-Text artifacts go through `ProjectArtifactSource` (content is `string`); images, audio, PDFs go through a separate `BinaryArtifactSource` (content is `Buffer | Uint8Array`). **Two ports are independent** — text-only solutions don't implement the binary port and vice versa.
+Text artifacts go through `WorkspaceArtifactSource` (content is `string`); images, audio, PDFs go through a separate `BinaryArtifactSource` (content is `Buffer | Uint8Array`). **Two ports are independent** — text-only solutions don't implement the binary port and vice versa.
 
 Why separate?
 
@@ -377,7 +371,7 @@ Why separate?
 - REST transport differs — text is `application/json` (content inlined); binary is `application/octet-stream` (streaming via `node:stream/pipeline`, never buffered).
 - Filesystem mount differs — text under `<workspace>/artifacts/`, binary under `<workspace>/artifacts-binary/`. **This split is a security boundary**: the agent's `Read` / `cat` tool only walks the text directory, so a JPEG can never be slurped into context.
 
-ccaas-side registration: a solution sets `solution.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `ProjectBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `solution.config.changed` invalidation. Optional `solution.config.binaryMaxBytes` pins a per-solution size cap.
+ccaas-side registration: a solution sets `solution.config.binaryArtifactUrl` (a separate field from `artifactUrl`). `WorkspaceBinaryArtifactSourceRegistry` mirrors the text registry — lazy load + `solution.config.changed` invalidation. Optional `solution.config.binaryMaxBytes` pins a per-solution size cap.
 
 Solution-side REST contract:
 
@@ -416,8 +410,6 @@ DELETE {base}/projects/:projectId/binary-artifacts?path=<encoded>
 - True streaming uploads (current PUT wraps the buffer in a Blob). Switch to a streaming wrapper when uploads exceed ~100MB.
 
 ### Solution integration — 2 lines
-
-> **β-1 rename (2026-05-26)**: the canonical route is now `attach-workspace-source` with the opaque body `{ sourceUrl, sourceIdentity, solutionId }` (no `projectId` — ccaas no longer pretends to know what a "project" is). The old `bind-project` route stays as an alias for one release and hits the same service code. New solutions: use the new route. Existing solutions: migrate at your convenience during the compat window.
 
 ```ts
 // Solution backend: right after creating a workspace-attached agent session

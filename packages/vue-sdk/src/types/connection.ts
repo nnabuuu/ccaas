@@ -122,12 +122,12 @@ export interface ChatPageContext {
 export interface UseAgentConnectionOptions {
   /** Server URL. MUST be absolute URL (e.g., http://localhost:3001) */
   serverUrl?: string
-  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when tenantId is not provided. */
+  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when solutionId is not provided. */
   sessionPrefix?: string
   /** Whether to auto-connect on mount. Defaults to true */
   autoConnect?: boolean
-  /** Tenant ID for tenant-scoped localStorage persistence */
-  tenantId?: string
+  /** Solution ID for solution-scoped localStorage persistence */
+  solutionId?: string
   /** Force a new conversation, clearing any saved sessionId from localStorage */
   forceNewConversation?: boolean
   /** Explicit session ID. When provided, skips localStorage resolution. */
@@ -159,7 +159,7 @@ export interface UseAgentConnectionReturn {
 
 export interface UseSseChatV2Options {
   connection: UseAgentConnectionReturn
-  tenantId: string
+  solutionId: string
   enabledSkills?: string[]
   onOutputUpdate?: (update: import('./chat').OutputUpdate) => void
   onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void

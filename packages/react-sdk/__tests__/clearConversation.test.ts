@@ -54,7 +54,7 @@ describe('useAgentConnection - startNewConversation', () => {
 
   it('should expose startNewConversation in the return value', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ solutionId: 'tenant-1' }),
     )
 
     expect(result.current).toHaveProperty('startNewConversation')
@@ -63,7 +63,7 @@ describe('useAgentConnection - startNewConversation', () => {
 
   it('should generate a new sessionId with conv_ prefix', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ solutionId: 'tenant-1' }),
     )
 
     const oldSessionId = result.current.sessionId
@@ -80,7 +80,7 @@ describe('useAgentConnection - startNewConversation', () => {
     mockLocalStorage['ccaas_session_tenant-1'] = 'conv_old-session'
 
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ solutionId: 'tenant-1' }),
     )
 
     act(() => {
@@ -93,7 +93,7 @@ describe('useAgentConnection - startNewConversation', () => {
 
   it('should save the new sessionId to localStorage', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ solutionId: 'tenant-1' }),
     )
 
     act(() => {
@@ -109,7 +109,7 @@ describe('useAgentConnection - startNewConversation', () => {
 
   it('should disconnect the existing socket (socket transport)', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1', transport: 'socket' }),
+      useAgentConnection({ solutionId: 'tenant-1', transport: 'socket' }),
     )
 
     act(() => {
@@ -121,7 +121,7 @@ describe('useAgentConnection - startNewConversation', () => {
 
   it('should reconnect with a new socket (socket transport)', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1', transport: 'socket' }),
+      useAgentConnection({ solutionId: 'tenant-1', transport: 'socket' }),
     )
 
     // Initial connect call
@@ -135,7 +135,7 @@ describe('useAgentConnection - startNewConversation', () => {
     expect(mockIo.mock.calls.length).toBeGreaterThan(initialCallCount)
   })
 
-  it('should work without tenantId (no localStorage interaction)', () => {
+  it('should work without solutionId (no localStorage interaction)', () => {
     const { result } = renderHook(() =>
       useAgentConnection({ sessionPrefix: 'test' }),
     )
@@ -156,7 +156,7 @@ describe('useAgentConnection - startNewConversation', () => {
     })
 
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ solutionId: 'tenant-1' }),
     )
 
     expect(() => {

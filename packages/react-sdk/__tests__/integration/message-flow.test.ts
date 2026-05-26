@@ -56,7 +56,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'What is 2+2?',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -97,7 +97,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'Echo back the text "Integration test successful"',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -129,7 +129,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'What is 2+2?',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -152,7 +152,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'What about 3+3?',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -181,7 +181,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId: client1.clientId,
           message: 'Session 1 message',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }),
       fetch(`${BACKEND_URL}/api/v1/sessions/${session2}/completion`, {
@@ -190,7 +190,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId: client2.clientId,
           message: 'Session 2 message',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }),
     ])
@@ -229,7 +229,7 @@ describe('Message Flow Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'List files in current directory',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )

@@ -1,7 +1,6 @@
 # `@kedge-agentic/agent-runtime` 包参考
 
 > 框架无关的 ccaas agentic runtime 包。当前版本 v0.3（Phase 1）。
-> **2026-05 改名提示**：本包此前叫 `@kedge-agentic/agentfs-runtime`（v0.1），当时只有 workspace 一层。改名后承载 workspace + project + artifact + schema + sync 五个子模块。
 
 ## 当前阶段状态
 
@@ -10,7 +9,7 @@
 | A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped |
 | 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
 | 0 | `project/` `schema/` `sync/` — 接口骨架 | ✅ shipped |
-| **1** | **`artifact/ProjectArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped（本版本）** |
+| **1** | **`artifact/WorkspaceArtifactSource` + `sync/SyncEngine` + `sync/InMemoryChangeStream` + `sync/SnapshotStore`** | **✅ shipped（本版本）** |
 | **1 (backend)** | **`SessionAssetSyncer` + `RestWorkspaceArtifactSource` + `/workspaces/:id/{changes,invalidate}` REST + `attachWorkspaceSource` 钩子** | **✅ shipped（packages/backend）** |
 | 2 | Redis-backed ChangeStream（跨进程 fan-out）；BinaryArtifactSource；MarkdownArtifactEditor | ⏳ 之后 |
 | 3 | live-lesson 完全迁移到新抽象上 | ⏳ 最后 |
@@ -184,10 +183,10 @@ Phase 1 会附带一个 Zod adapter。
 
 **核心交付**：solution backend 照常用 REST 写自己的 DB（任何方式都行：TypeORM、原始 SQL、批处理），runtime 在 agent **每轮结束的空闲窗口** 自动把变化拉到 agent 工作区的 `artifacts/` 目录；agent 修改的文件在下一轮空闲时反向写回 DB。**Solution 代码完全不变**——只需要实现一个 ~30 行的接口或暴露 3 个 REST endpoint。
 
-### 设计中心：`ProjectArtifactSource`
+### 设计中心：`WorkspaceArtifactSource`
 
 ```ts
-import type { ProjectArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
+import type { WorkspaceArtifactSource, ArtifactSnapshot } from '@kedge-agentic/agent-runtime';
 
 export interface ArtifactSnapshot {
   readonly path: string;       // workspace 相对路径，如 'lesson-plan.md'
@@ -196,7 +195,7 @@ export interface ArtifactSnapshot {
   readonly attributes?: Readonly<Record<string, unknown>>;
 }
 
-export interface ProjectArtifactSource {
+export interface WorkspaceArtifactSource {
   loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>>;
   saveArtifact(projectId: string, artifact: ArtifactSnapshot): Promise<void>;
   deleteArtifact?(projectId: string, path: string): Promise<void>;
@@ -256,14 +255,14 @@ Runtime 自带 `InMemorySnapshotStore` 给测试用；backend 提供 TypeORM-bac
 
 `@OnEvent('session.turn.complete')` —— 在 `CliProcessService` 的 cli 退出钩子上挂着。每个 turn 边界：
 
-1. 从 `session_metadata['projectId']` 拿到绑定的 projectId（无绑定 → no-op）
+1. 从 `session_metadata['sourceIdentity']` 拿到绑定的 source identity（无绑定 → no-op）
 2. 并行拉 `(source.loadArtifacts, /fs/diff, snapshotStore.list)`
 3. `SyncEngine.plan()` 生成动作列表
 4. 应用动作：写文件到 mount（Spike 0 已验证 idle 窗口下 host fs.writeFile 通过 FUSE 是安全的）、调 source.saveArtifact、删两边
 5. 替换 snapshot
 6. 发 ChangeEvent
 
-`@OnEvent('session.bound')` —— 在 `SessionService.attachWorkspaceSource()` 调用时触发（旧别名 `bindToProject` 也是一样），跑同一个 `sync()` 方法。空 snapshot ⇒ 把整套 artifact 初始化进工作区。
+`@OnEvent('session.bound')` —— 在 `SessionService.attachWorkspaceSource()` 调用时触发，跑同一个 `sync()` 方法。空 snapshot ⇒ 把整套 artifact 初始化进工作区。
 
 ### `RestWorkspaceArtifactSource`（跨进程 adapter）
 
@@ -323,25 +322,20 @@ curl -X PUT $CCAAS/api/v1/solutions/$ID \
 
 ### 运行时更新
 
-`solutions.update()` 在 `config` 改动时会发 `solution.config.changed` 事件；`ProjectArtifactSourceRegistry` 订阅后清除该 slug 的缓存。下一轮 sync 就会读到新的 `artifactUrl`，**不用重启 backend**。
+`solutions.update()` 在 `config` 改动时会发 `solution.config.changed` 事件；`WorkspaceArtifactSourceRegistry` 订阅后清除该 slug 的缓存。下一轮 sync 就会读到新的 `artifactUrl`，**不用重启 backend**。
 
 ### REST endpoints（GUI 用的）
 
 ```
-# canonical（β-3 起，2026-05-26）
 GET   /workspaces/:identity/changes     # SSE — 监听 ChangeEvent
 POST  /workspaces/:identity/invalidate  # 提前请求一次 sync（可选优化）
-
-# deprecated alias —— 保留一个 release 给 solution 迁移
-GET   /projects/:identity/changes
-POST  /projects/:identity/invalidate
 ```
 
-这些 endpoint **挂在 bare namespace**（不在 `/api/v1/` 下面）—— 跟 `sessions` controller 不同。代码见 `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts:@Controller()`（用 route array 同时支持两套 URL）。
+这些 endpoint **挂在 bare namespace**（不在 `/api/v1/` 下面）—— 跟 `sessions` controller 不同。代码见 `packages/backend/src/sessions/agent-runtime/workspace-changes.controller.ts`。
 
 ### 认证（Phase 2b-2）
 
-两个 endpoint（canonical + alias）都需要 `?token=<apiKey>` query param：
+两个 endpoint 都需要 `?token=<apiKey>` query param：
 
 ```
 GET   /workspaces/:identity/changes?token=ccaas_xxxx
@@ -353,23 +347,23 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 校验链：
 
 1. `ApiKeyService.validateKey(token)` 解出 caller 的 solution
-2. `ProjectTenantResolver.resolveTenant(projectId)` 查出 project 归属的 solution
-3. 两者必须一致，否则 403；resolver 返回 null（project 未知 / 无 resolver 注册）也是 403；token 缺失或无效是 401
+2. `WorkspaceAccessResolver.verifyWorkspaceAccess(identity, callerSolutionId)` 返回 true 当且仅当 caller 拥有该 workspace
+3. false → 403；token 缺失或无效是 401
 
-**`WorkspaceAccessResolver` port**：solution 可以注册自己的 resolver（比如查自己的 workspace 表）。如果不注册，agent-runtime 默认走 `DenyAllProjectTenantResolver` —— 所有请求都 403。
+**`WorkspaceAccessResolver` port**：solution 可以注册自己的 resolver（比如查自己的 workspace 表）。如果不注册，agent-runtime 默认走 `DenyAllWorkspaceAccessResolver` —— 所有请求都 403。
 
 **ccaas 默认 resolver（`SessionMetadataWorkspaceResolver`）**：跟原始 2b-2 设计不同，ccaas 不要求每个 solution 都注册 resolver。它复用 `attach-workspace-source` 流程已经写到 `session_metadata` 表里的 `(solutionId, sourceIdentity)` 关系 —— 一次索引化 SQLite 查询就够了，零 solution 改动。
 
 - ✅ pro：solution 端不需要加 `solutionId` column / 不需要写新 endpoint / 不需要跨进程回调
-- ⚠️ trade-off：**从未被 attach 过的 workspace 解析为 null → 403**。caller 必须先 attach 一个 session，才能订阅 SSE。这跟 attach 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
+- ⚠️ trade-off：**从未被 attach 过的 workspace 解析为 false → 403**。caller 必须先 attach 一个 session，才能订阅 SSE。这跟 attach 是 SSE 消费的前置步骤这一现实是一致的（poc-smoke.sh 就是这个顺序）。
 
-要换 resolver 的话，在 SessionsModule 里覆盖 `PROJECT_TENANT_RESOLVER` token 即可。
+要换 resolver 的话，在 SessionsModule 里覆盖 `WORKSPACE_ACCESS_RESOLVER` token 即可。
 
 **安全注意**：query-param token **会泄露到 access log / proxy log**。在 single-solution dev / prod-with-trusted-network 是可接受的；真正的 multi-solution 生产环境应该用短期 exchange token（例如 `POST /sessions/exchange` 换一次性 SSE token），这是 Phase 3 hardening，目前不在范围内。
 
 ### 二进制 artifact（Phase 2b-4）
 
-文本 artifact 走 `ProjectArtifactSource`（content 是 `string`）；图片 / 音频 / PDF 走单独的 `BinaryArtifactSource`（content 是 `Buffer | Uint8Array`）。**两个 port 是独立的** —— 仅文本的 solution 不需要实现 binary port，反之亦然。
+文本 artifact 走 `WorkspaceArtifactSource`（content 是 `string`）；图片 / 音频 / PDF 走单独的 `BinaryArtifactSource`（content 是 `Buffer | Uint8Array`）。**两个 port 是独立的** —— 仅文本的 solution 不需要实现 binary port，反之亦然。
 
 为什么独立？
 
@@ -377,7 +371,7 @@ POST  /workspaces/:identity/invalidate?token=ccaas_xxxx
 - REST 传输不同 —— 文本是 `application/json`（content inline），binary 是 `application/octet-stream`（streaming via `node:stream/pipeline`，never buffered）
 - 文件系统挂载点不同 —— 文本在 `<workspace>/artifacts/`，binary 在 `<workspace>/artifacts-binary/`。**这个分离是关键 security 边界**：agent 的 `Read` / `cat` 工具只能扫文本目录，永远不会把一张 JPEG slurp 进 context
 
-ccaas 端注册：solution 在 `solution.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`ProjectBinaryArtifactSourceRegistry` 同样懒加载 + `solution.config.changed` 失效。可选 `solution.config.binaryMaxBytes` 设置 per-solution 大小上限。
+ccaas 端注册：solution 在 `solution.config.binaryArtifactUrl` 设置 binary endpoint URL（独立于 `artifactUrl`）。`WorkspaceBinaryArtifactSourceRegistry` 同样懒加载 + `solution.config.changed` 失效。可选 `solution.config.binaryMaxBytes` 设置 per-solution 大小上限。
 
 Solution 端实现的 REST endpoints：
 

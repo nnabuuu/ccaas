@@ -63,7 +63,7 @@ export interface UseOutputSyncReturn<T extends Record<string, unknown>> {
 
 export interface UseSkillsOptions {
   serverUrl?: string
-  tenantId: string
+  solutionId: string
 }
 
 export interface UseSkillsReturn {
@@ -84,13 +84,13 @@ export interface UseSkillsReturn {
 
 export interface ApiClientOptions {
   baseUrl?: string
-  tenantId: string
+  solutionId: string
 }
 
 export interface CompletionParams {
   clientId: string
   message: string
-  tenantId: string
+  solutionId: string
   mcpServers?: Record<string, McpServerConfig>
   skillPath?: string | null
   enabledSkills?: string[]

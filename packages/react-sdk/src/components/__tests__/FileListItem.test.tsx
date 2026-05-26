@@ -24,7 +24,7 @@ describe('FileListItem', () => {
     createdAt: new Date('2024-01-01'),
     uploadedBy: 'user',
     sessionId: 'session-123',
-    tenantId: 'tenant-123',
+    solutionId: 'solution-123',
     messageId: 'msg-123',
     originalPath: '/test.md',
     storedPath: '/storage/test.md',

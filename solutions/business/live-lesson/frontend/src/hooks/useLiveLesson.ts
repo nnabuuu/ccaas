@@ -17,7 +17,7 @@ import { saveSession, getSavedSession } from '../utils/sessionStore'
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
 const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
-const TENANT_ID = 'live-lesson'
+const SOLUTION_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'
 
 export type TutoringMode = 'idle' | 'picking' | 'suggesting' | 'explaining'
@@ -137,7 +137,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
   const { context, updateContext } = usePageContext()
 
   // Prevent cross-lesson session leakage: when no explicit session from URL,
-  // check per-lesson store instead of falling through to tenant-scoped localStorage
+  // check per-lesson store instead of falling through to solution-scoped localStorage
   const effectiveSessionId = initialSessionId
     || (!forceNew ? (getSavedSession(lessonId) || undefined) : undefined)
   const effectiveForceNew = forceNew
@@ -148,7 +148,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
   // autoConnect is disabled for empty lessonId to avoid wasting a backend session
   const connection = useAgentConnection({
     serverUrl: SERVER_URL,
-    tenantId: TENANT_ID,
+    solutionId: SOLUTION_ID,
     autoConnect: lessonId !== '',
     transport: 'sse',
     forceNewConversation: effectiveForceNew,
@@ -159,7 +159,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
   const chat = useAgentChat({
     connection,
     context,
-    tenantId: TENANT_ID,
+    solutionId: SOLUTION_ID,
     sessionTemplate: SESSION_TEMPLATE,
     onOutputUpdate: (update) => {
       if (update.field === 'boardState') {

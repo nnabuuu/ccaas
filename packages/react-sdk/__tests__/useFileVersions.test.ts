@@ -41,7 +41,7 @@ describe('useFileVersions', () => {
     mockConnection = {
       socket: {} as any,
       serverUrl: 'http://localhost:3001',
-      tenantId: 'tenant-123',
+      solutionId: 'tenant-123',
       connectionState: 'connected',
       isConnected: true,
       error: null,

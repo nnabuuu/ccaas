@@ -38,7 +38,7 @@ describe('useAgentConnection', () => {
   describe('SSE mode (default)', () => {
     it('should be connected immediately in SSE mode', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test' })
+        useAgentConnection({ solutionId: 'test' })
       )
 
       // SSE mode: always connected (HTTP is stateless)
@@ -53,7 +53,7 @@ describe('useAgentConnection', () => {
       expect(mockIo).not.toHaveBeenCalled()
     })
 
-    it('should have sessionId with prefix when no tenantId', () => {
+    it('should have sessionId with prefix when no solutionId', () => {
       const { result } = renderHook(() =>
         useAgentConnection({ sessionPrefix: 'lpd' }),
       )
@@ -154,7 +154,7 @@ describe('useAgentConnection', () => {
   })
 
   // =========================================================================
-  // localStorage persistence (tenant-scoped, no userId)
+  // localStorage persistence (solution-scoped, no userId)
   // =========================================================================
 
   describe('localStorage persistence (Task #5)', () => {
@@ -162,29 +162,29 @@ describe('useAgentConnection', () => {
       localStorage.clear()
     })
 
-    it('should generate conv_ format sessionId when tenantId is provided', () => {
+    it('should generate conv_ format sessionId when solutionId is provided', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant' })
+        useAgentConnection({ solutionId: 'test_solution' })
       )
 
       expect(result.current.sessionId).toMatch(/^conv_/)
     })
 
-    it('should persist sessionId to tenant-scoped localStorage', () => {
+    it('should persist sessionId to solution-scoped localStorage', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant' })
+        useAgentConnection({ solutionId: 'test_solution' })
       )
 
-      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      const stored = localStorage.getItem('ccaas_session_test_solution')
       expect(stored).toBe(result.current.sessionId)
     })
 
     it('should recover sessionId from localStorage on mount', () => {
       // Pre-populate localStorage
-      localStorage.setItem('ccaas_session_test_tenant', 'conv_existing_123')
+      localStorage.setItem('ccaas_session_test_solution', 'conv_existing_123')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant' })
+        useAgentConnection({ solutionId: 'test_solution' })
       )
 
       expect(result.current.sessionId).toBe('conv_existing_123')
@@ -192,19 +192,19 @@ describe('useAgentConnection', () => {
 
     it('should clear localStorage when forceNewConversation is true', () => {
       // Pre-populate localStorage
-      localStorage.setItem('ccaas_session_test_tenant', 'conv_existing_123')
+      localStorage.setItem('ccaas_session_test_solution', 'conv_existing_123')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant', forceNewConversation: true })
+        useAgentConnection({ solutionId: 'test_solution', forceNewConversation: true })
       )
 
       expect(result.current.sessionId).not.toBe('conv_existing_123')
       expect(result.current.sessionId).toMatch(/^conv_/)
-      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      const stored = localStorage.getItem('ccaas_session_test_solution')
       expect(stored).toBe(result.current.sessionId)
     })
 
-    it('should use legacy prefix format when no tenantId provided', () => {
+    it('should use legacy prefix format when no solutionId provided', () => {
       const { result } = renderHook(() =>
         useAgentConnection({ sessionPrefix: 'demo' })
       )
@@ -213,16 +213,16 @@ describe('useAgentConnection', () => {
       expect(localStorage.getItem('ccaas_session_demo')).toBeNull()
     })
 
-    it('should isolate sessions by tenantId', () => {
+    it('should isolate sessions by solutionId', () => {
       const { result: result1 } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant_a' })
+        useAgentConnection({ solutionId: 'solution_a' })
       )
       const { result: result2 } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant_b' })
+        useAgentConnection({ solutionId: 'solution_b' })
       )
 
-      const storedA = localStorage.getItem('ccaas_session_tenant_a')
-      const storedB = localStorage.getItem('ccaas_session_tenant_b')
+      const storedA = localStorage.getItem('ccaas_session_solution_a')
+      const storedB = localStorage.getItem('ccaas_session_solution_b')
 
       expect(storedA).toBe(result1.current.sessionId)
       expect(storedB).toBe(result2.current.sessionId)
@@ -239,39 +239,39 @@ describe('useAgentConnection', () => {
       localStorage.clear()
     })
 
-    it('should use tenant+user-scoped localStorage key when userId is provided', () => {
+    it('should use solution+user-scoped localStorage key when userId is provided', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'user_alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'user_alice' })
       )
 
       // Should persist under the user-scoped key
-      const stored = localStorage.getItem('ccaas_session_tenant1_user_alice')
+      const stored = localStorage.getItem('ccaas_session_solution1_user_alice')
       expect(stored).toBe(result.current.sessionId)
 
-      // Should NOT persist under the tenant-only key
-      const tenantOnly = localStorage.getItem('ccaas_session_tenant1')
-      expect(tenantOnly).toBeNull()
+      // Should NOT persist under the solution-only key
+      const solutionOnly = localStorage.getItem('ccaas_session_solution1')
+      expect(solutionOnly).toBeNull()
     })
 
-    it('should use tenant-only key when userId is not provided', () => {
+    it('should use solution-only key when userId is not provided', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1' })
+        useAgentConnection({ solutionId: 'solution1' })
       )
 
-      const stored = localStorage.getItem('ccaas_session_tenant1')
+      const stored = localStorage.getItem('ccaas_session_solution1')
       expect(stored).toBe(result.current.sessionId)
     })
 
-    it('should isolate sessions between different users on the same tenant', () => {
+    it('should isolate sessions between different users on the same solution', () => {
       const { result: alice } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
       const { result: bob } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'bob' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'bob' })
       )
 
-      const storedAlice = localStorage.getItem('ccaas_session_tenant1_alice')
-      const storedBob = localStorage.getItem('ccaas_session_tenant1_bob')
+      const storedAlice = localStorage.getItem('ccaas_session_solution1_alice')
+      const storedBob = localStorage.getItem('ccaas_session_solution1_bob')
 
       expect(storedAlice).toBe(alice.current.sessionId)
       expect(storedBob).toBe(bob.current.sessionId)
@@ -281,24 +281,24 @@ describe('useAgentConnection', () => {
 
     it('should recover user-scoped sessionId from localStorage', () => {
       // Pre-populate with user-scoped key
-      localStorage.setItem('ccaas_session_tenant1_alice', 'conv_alice_saved_123')
+      localStorage.setItem('ccaas_session_solution1_alice', 'conv_alice_saved_123')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
       expect(result.current.sessionId).toBe('conv_alice_saved_123')
     })
 
-    it('should not recover from tenant-only key when userId is provided', () => {
-      // Pre-populate tenant-only key (from before userId was added)
-      localStorage.setItem('ccaas_session_tenant1', 'conv_old_tenant_only')
+    it('should not recover from solution-only key when userId is provided', () => {
+      // Pre-populate solution-only key (from before userId was added)
+      localStorage.setItem('ccaas_session_solution1', 'conv_old_tenant_only')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
-      // Should NOT recover from the tenant-only key
+      // Should NOT recover from the solution-only key
       expect(result.current.sessionId).not.toBe('conv_old_tenant_only')
       // Should generate a new conv_ ID
       expect(result.current.sessionId).toMatch(/^conv_/)
@@ -307,22 +307,22 @@ describe('useAgentConnection', () => {
     it('should persist explicit sessionId under user-scoped key', () => {
       renderHook(() =>
         useAgentConnection({
-          tenantId: 'tenant1',
+          solutionId: 'solution1',
           userId: 'alice',
           sessionId: 'conv_explicit_999',
         })
       )
 
-      const stored = localStorage.getItem('ccaas_session_tenant1_alice')
+      const stored = localStorage.getItem('ccaas_session_solution1_alice')
       expect(stored).toBe('conv_explicit_999')
     })
 
     it('should clear user-scoped key when forceNewConversation is true', () => {
-      localStorage.setItem('ccaas_session_tenant1_alice', 'conv_alice_old')
+      localStorage.setItem('ccaas_session_solution1_alice', 'conv_alice_old')
 
       const { result } = renderHook(() =>
         useAgentConnection({
-          tenantId: 'tenant1',
+          solutionId: 'solution1',
           userId: 'alice',
           forceNewConversation: true,
         })
@@ -330,25 +330,25 @@ describe('useAgentConnection', () => {
 
       expect(result.current.sessionId).not.toBe('conv_alice_old')
       expect(result.current.sessionId).toMatch(/^conv_/)
-      const stored = localStorage.getItem('ccaas_session_tenant1_alice')
+      const stored = localStorage.getItem('ccaas_session_solution1_alice')
       expect(stored).toBe(result.current.sessionId)
     })
 
     it('should not affect other users when one user forces new conversation', () => {
-      localStorage.setItem('ccaas_session_tenant1_alice', 'conv_alice_original')
-      localStorage.setItem('ccaas_session_tenant1_bob', 'conv_bob_original')
+      localStorage.setItem('ccaas_session_solution1_alice', 'conv_alice_original')
+      localStorage.setItem('ccaas_session_solution1_bob', 'conv_bob_original')
 
       // Alice forces new conversation
       renderHook(() =>
         useAgentConnection({
-          tenantId: 'tenant1',
+          solutionId: 'solution1',
           userId: 'alice',
           forceNewConversation: true,
         })
       )
 
       // Bob's session should remain untouched
-      const storedBob = localStorage.getItem('ccaas_session_tenant1_bob')
+      const storedBob = localStorage.getItem('ccaas_session_solution1_bob')
       expect(storedBob).toBe('conv_bob_original')
     })
   })
@@ -364,7 +364,7 @@ describe('useAgentConnection', () => {
 
     it('should clear localStorage and generate new sessionId', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant' })
+        useAgentConnection({ solutionId: 'test_solution' })
       )
 
       const oldSessionId = result.current.sessionId
@@ -375,13 +375,13 @@ describe('useAgentConnection', () => {
 
       expect(result.current.sessionId).not.toBe(oldSessionId)
       expect(result.current.sessionId).toMatch(/^conv_/)
-      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      const stored = localStorage.getItem('ccaas_session_test_solution')
       expect(stored).toBe(result.current.sessionId)
     })
 
     it('should reconnect with new sessionId (socket transport)', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant', transport: 'socket' })
+        useAgentConnection({ solutionId: 'test_solution', transport: 'socket' })
       )
 
       mockSocket.emit.mockClear()
@@ -402,7 +402,7 @@ describe('useAgentConnection', () => {
       })
     })
 
-    it('should work without tenantId (legacy mode)', () => {
+    it('should work without solutionId (legacy mode)', () => {
       const { result } = renderHook(() =>
         useAgentConnection({ sessionPrefix: 'demo' })
       )
@@ -421,11 +421,11 @@ describe('useAgentConnection', () => {
 
     it('should clear user-scoped localStorage key when userId is provided', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
       const oldSessionId = result.current.sessionId
-      expect(localStorage.getItem('ccaas_session_tenant1_alice')).toBe(oldSessionId)
+      expect(localStorage.getItem('ccaas_session_solution1_alice')).toBe(oldSessionId)
 
       act(() => {
         result.current.startNewConversation()
@@ -435,15 +435,15 @@ describe('useAgentConnection', () => {
       expect(newSessionId).not.toBe(oldSessionId)
       expect(newSessionId).toMatch(/^conv_/)
       // New session should be saved under user-scoped key
-      expect(localStorage.getItem('ccaas_session_tenant1_alice')).toBe(newSessionId)
+      expect(localStorage.getItem('ccaas_session_solution1_alice')).toBe(newSessionId)
     })
 
     it('should not affect other users sessions when starting new conversation', () => {
       // Set up bob's session
-      localStorage.setItem('ccaas_session_tenant1_bob', 'conv_bob_999')
+      localStorage.setItem('ccaas_session_solution1_bob', 'conv_bob_999')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
       act(() => {
@@ -451,12 +451,12 @@ describe('useAgentConnection', () => {
       })
 
       // Bob's session should be untouched
-      expect(localStorage.getItem('ccaas_session_tenant1_bob')).toBe('conv_bob_999')
+      expect(localStorage.getItem('ccaas_session_solution1_bob')).toBe('conv_bob_999')
     })
 
     it('should reset sessionReady to false', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'test_tenant' })
+        useAgentConnection({ solutionId: 'test_solution' })
       )
 
       // Mark session as ready
@@ -484,7 +484,7 @@ describe('useAgentConnection', () => {
 
     it('should update sessionId to the provided value', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1' })
+        useAgentConnection({ solutionId: 'solution1' })
       )
 
       act(() => {
@@ -494,44 +494,44 @@ describe('useAgentConnection', () => {
       expect(result.current.sessionId).toBe('conv_target_session')
     })
 
-    it('should persist switched session to tenant-scoped localStorage', () => {
+    it('should persist switched session to solution-scoped localStorage', () => {
       renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1' })
+        useAgentConnection({ solutionId: 'solution1' })
       )
 
       // switchSession is on result.current, need to get it first
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1' })
+        useAgentConnection({ solutionId: 'solution1' })
       )
 
       act(() => {
         result.current.switchSession('conv_switched_456')
       })
 
-      const stored = localStorage.getItem('ccaas_session_tenant1')
+      const stored = localStorage.getItem('ccaas_session_solution1')
       expect(stored).toBe('conv_switched_456')
     })
 
     it('should persist switched session to user-scoped localStorage when userId provided', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
       act(() => {
         result.current.switchSession('conv_alice_switched_789')
       })
 
-      const stored = localStorage.getItem('ccaas_session_tenant1_alice')
+      const stored = localStorage.getItem('ccaas_session_solution1_alice')
       expect(stored).toBe('conv_alice_switched_789')
-      // Should NOT affect tenant-only key
-      expect(localStorage.getItem('ccaas_session_tenant1')).toBeNull()
+      // Should NOT affect solution-only key
+      expect(localStorage.getItem('ccaas_session_solution1')).toBeNull()
     })
 
     it('should not affect other users when switching session', () => {
-      localStorage.setItem('ccaas_session_tenant1_bob', 'conv_bob_original')
+      localStorage.setItem('ccaas_session_solution1_bob', 'conv_bob_original')
 
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1', userId: 'alice' })
+        useAgentConnection({ solutionId: 'solution1', userId: 'alice' })
       )
 
       act(() => {
@@ -539,10 +539,10 @@ describe('useAgentConnection', () => {
       })
 
       // Bob's session untouched
-      expect(localStorage.getItem('ccaas_session_tenant1_bob')).toBe('conv_bob_original')
+      expect(localStorage.getItem('ccaas_session_solution1_bob')).toBe('conv_bob_original')
     })
 
-    it('should not persist to localStorage when tenantId is absent', () => {
+    it('should not persist to localStorage when solutionId is absent', () => {
       const { result } = renderHook(() =>
         useAgentConnection({ sessionPrefix: 'demo' })
       )
@@ -552,13 +552,13 @@ describe('useAgentConnection', () => {
       })
 
       expect(result.current.sessionId).toBe('demo_switched')
-      // No localStorage persistence without tenantId
+      // No localStorage persistence without solutionId
       expect(localStorage.length).toBe(0)
     })
 
     it('should reset sessionReady to false', () => {
       const { result } = renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant1' })
+        useAgentConnection({ solutionId: 'solution1' })
       )
 
       // Mark session as ready
@@ -586,11 +586,11 @@ describe('useAgentConnection', () => {
 
     it('should use explicit sessionId and skip localStorage resolution', () => {
       // Pre-populate localStorage with a different value
-      localStorage.setItem('ccaas_session_tenant1', 'conv_old_saved')
+      localStorage.setItem('ccaas_session_solution1', 'conv_old_saved')
 
       const { result } = renderHook(() =>
         useAgentConnection({
-          tenantId: 'tenant1',
+          solutionId: 'solution1',
           sessionId: 'conv_explicit_override',
         })
       )
@@ -601,13 +601,13 @@ describe('useAgentConnection', () => {
     it('should persist explicit sessionId to user-scoped key', () => {
       renderHook(() =>
         useAgentConnection({
-          tenantId: 'tenant1',
+          solutionId: 'solution1',
           userId: 'alice',
           sessionId: 'conv_from_sidebar',
         })
       )
 
-      expect(localStorage.getItem('ccaas_session_tenant1_alice')).toBe('conv_from_sidebar')
+      expect(localStorage.getItem('ccaas_session_solution1_alice')).toBe('conv_from_sidebar')
     })
   })
 })

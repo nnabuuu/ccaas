@@ -9,7 +9,7 @@ import type { UseSkillsOptions, UseSkillsReturn } from '../types'
  * and toggle enabled/disabled state (persisted to CCAAS).
  */
 export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
-  const { serverUrl = '', tenantId } = options
+  const { serverUrl = '', solutionId } = options
 
   const skills = ref<Skill[]>([])
   const loading = ref(true)
@@ -22,7 +22,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
 
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills`, {
-        headers: { 'X-Tenant-Id': tenantId },
+        headers: { 'X-Solution-Id': solutionId },
       })
 
       if (!response.ok) {
@@ -66,7 +66,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills/${skillId}/toggle`, {
         method: 'PATCH',
-        headers: { 'X-Tenant-Id': tenantId },
+        headers: { 'X-Solution-Id': solutionId },
       })
 
       if (!response.ok) {

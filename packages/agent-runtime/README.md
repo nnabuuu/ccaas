@@ -4,25 +4,18 @@ Framework-free runtime for ccaas agentic services. Zero dependencies
 on NestJS, TypeORM, or Express — just `node:fs` / `node:crypto` /
 `node:path` and pure TypeScript.
 
-> **Naming history**: this package was `@kedge-agentic/agentfs-runtime`
-> (v0.1) in May 2026 when it contained only the workspace layer
-> (BaseMaterializer). Renamed to `@kedge-agentic/agent-runtime` in
-> v0.2 to reflect the broader scope: workspace + project + artifact
-> + schema + sync. See `docs/AGENT_RUNTIME_DESIGN.md` for the full
-> roadmap.
-
 ## Phase status
 
 | Phase | Sub-module | Status |
 |---|---|---|
-| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped (was the entirety of v0.1) |
+| A | `workspace/` — BaseMaterializer + ContentSource + Logger | ✅ shipped |
 | 0 | `artifact/` — types + `JsonEditProvider` | ✅ shipped |
 | 0 | `project/` `schema/` `sync/` — interface skeletons | ✅ shipped |
-| **1** | **pull-based bidirectional sync — `ProjectArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`. Backend ships `SessionAssetSyncer` orchestrator hooked at agent turn boundaries.** | ✅ **shipped (this version)** |
-| **1.5** | tenant-keyed routing (later recanted into Phase 1.6 — see below) | ⚠️ superseded |
-| **1.6** | **`solution.json` + auto-discovery: solutions declare `artifactUrl` in their config file; `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and writes through to `tenant.config.artifactUrl`. Registry caches per slug + invalidates via `tenant.config.changed` event. Runtime updates via `PUT /tenants/:id` take effect on next sync without restart.** | ✅ **shipped** |
+| **1** | **pull-based bidirectional sync — `WorkspaceArtifactSource` port + `SyncEngine` (pure) + `InMemoryChangeStream` + `SnapshotStore`. Backend ships `SessionAssetSyncer` orchestrator hooked at agent turn boundaries.** | ✅ **shipped (this version)** |
+| **1.5** | solution-keyed routing (later recanted into Phase 1.6 — see below) | ⚠️ superseded |
+| **1.6** | **`solution.json` + auto-discovery: solutions declare `artifactUrl` in their config file; `SolutionLoaderService.onModuleInit` walks `SOLUTIONS_DIR/*/solution.json` and writes through to `solution.config.artifactUrl`. Registry caches per slug + invalidates via `solution.config.changed` event. Runtime updates via `PUT /solutions/:id` take effect on next sync without restart.** | ✅ **shipped** |
 | **2b-1** | **Path normalization round-trip — `SaveArtifactResult.canonicalPath` so solutions can return their normalized path; snapshot + change events use the canonical form to avoid silent delete-then-recreate when the solution path-normalizes server-side.** | ✅ **shipped** |
-| **2b-2** | **SSE auth (ccaas-side wiring): `?token=<apiKey>` on `/projects/:id/changes` + `/invalidate`; `ProjectTenantResolver` port (default `DenyAll`); ccaas ships `SessionMetadataProjectTenantResolver` using the bind-project `session_metadata` row for project→tenant resolution.** | ✅ **shipped** |
+| **2b-2** | **SSE auth (ccaas-side wiring): `?token=<apiKey>` on `/workspaces/:id/changes` + `/invalidate`; `WorkspaceAccessResolver` port (default `DenyAll`); ccaas ships `SessionMetadataWorkspaceResolver` using the attach-workspace-source `session_metadata` row for sourceIdentity→solution resolution.** | ✅ **shipped** |
 | **2b-4** | **`BinaryArtifactSource` port + sync engine binary actions (`SyncEngine.planBinary`) + REST adapter (`RestBinaryArtifactSource`, octet-stream streaming, size-cap enforced pre-buffer) + syncer materialization into `artifacts-binary/` (sibling of `artifacts/`, isolated from agent `Read`).** | ✅ **shipped** |
 | 2 (rest) | Redis-backed `ChangeStream` (cross-process fanout); `MarkdownArtifactEditor`; Zod schema adapter | ⏳ next |
 | 3 | live-lesson full migration onto the new abstractions | ⏳ last |
@@ -146,13 +139,13 @@ import {
   InMemoryChangeStream,
   InMemorySnapshotStore,
   SyncEngine,
-  type ProjectArtifactSource,
+  type WorkspaceArtifactSource,
   type ArtifactSnapshot,
 } from '@kedge-agentic/agent-runtime';
 
 // 1. Solution implements this one interface (~30 lines wrapping
 //    whatever storage they like — TypeORM, raw SQL, REST API):
-class MySource implements ProjectArtifactSource {
+class MySource implements WorkspaceArtifactSource {
   async loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>> {
     /* ... query DB, return [{ path, content, type }] */ return [];
   }
@@ -187,7 +180,7 @@ without touching the `ChangeStream` interface.
 ```ts
 import { InMemoryContentSource } from '@kedge-agentic/agent-runtime/testing';
 
-const src = new InMemoryContentSource([{ id, tenantId, slug, content, files: [] }]);
+const src = new InMemoryContentSource([{ id, solutionId, slug, content, files: [] }]);
 const m = new BaseMaterializer(src, '/tmp/test-base');
 await m.materialize();
 ```

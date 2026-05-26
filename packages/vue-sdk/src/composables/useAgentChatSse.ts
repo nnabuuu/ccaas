@@ -14,12 +14,12 @@
  *
  * const connection = useAgentConnection({
  *   serverUrl: 'http://localhost:3001',
- *   tenantId: 'my-tenant',
+ *   solutionId: 'my-solution',
  * })
  *
  * const chat = useAgentChatSse({
  *   connection,
- *   tenantId: 'my-tenant',
+ *   solutionId: 'my-solution',
  *   onOutputUpdate: (update) => outputSync.handleOutputUpdate(update),
  * })
  * </script>
@@ -43,7 +43,7 @@ import { useSseStream } from './useSseStream'
 export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Return {
   const {
     connection,
-    tenantId,
+    solutionId,
     enabledSkills,
     onOutputUpdate,
     onTokenUsage,
@@ -299,7 +299,7 @@ export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Retur
     // Build payload
     const payload: Record<string, unknown> = {
       message: content,
-      tenantId,
+      solutionId,
     }
     if (sessionTemplate) payload.templateName = sessionTemplate
     if (enabledSkills?.length) payload.enabledSkills = enabledSkills

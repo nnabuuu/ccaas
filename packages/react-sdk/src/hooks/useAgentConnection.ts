@@ -6,11 +6,11 @@ import { generateId } from '../utils/generateId'
 /** Generate a conversation ID with conv_ prefix */
 const generateConversationId = (): string => `conv_${generateId()}`
 
-/** Get tenant+user-scoped localStorage key */
-const getStorageKey = (tenantId: string, userId?: string): string =>
+/** Get solution+user-scoped localStorage key */
+const getStorageKey = (solutionId: string, userId?: string): string =>
   userId
-    ? `ccaas_session_${tenantId}_${userId}`
-    : `ccaas_session_${tenantId}`
+    ? `ccaas_session_${solutionId}_${userId}`
+    : `ccaas_session_${solutionId}`
 
 /**
  * Try to read a value from localStorage, returning null on any error.
@@ -46,10 +46,10 @@ const safeRemoveItem = (key: string): void => {
 }
 
 /**
- * Resolve the initial sessionId based on tenantId, forceNewConversation, and localStorage.
+ * Resolve the initial sessionId based on solutionId, forceNewConversation, and localStorage.
  */
 const resolveSessionId = (
-  tenantId: string | undefined,
+  solutionId: string | undefined,
   sessionPrefix: string,
   forceNewConversation: boolean,
   explicitSessionId?: string,
@@ -57,16 +57,16 @@ const resolveSessionId = (
 ): string => {
   // If explicitly provided, use it directly (and persist for recovery)
   if (explicitSessionId) {
-    if (tenantId) safeSetItem(getStorageKey(tenantId, userId), explicitSessionId)
+    if (solutionId) safeSetItem(getStorageKey(solutionId, userId), explicitSessionId)
     return explicitSessionId
   }
 
-  // No tenantId: use legacy prefix-based ID (no persistence)
-  if (!tenantId) {
+  // No solutionId: use legacy prefix-based ID (no persistence)
+  if (!solutionId) {
     return `${sessionPrefix}_${generateId()}`
   }
 
-  const storageKey = getStorageKey(tenantId, userId)
+  const storageKey = getStorageKey(solutionId, userId)
 
   // Force new conversation: clear storage and generate fresh
   if (forceNewConversation) {
@@ -94,8 +94,8 @@ const resolveSessionId = (
  * Default transport is 'sse' (HTTP streaming, no WebSocket required).
  * Socket.IO transport is available via `transport: 'socket'` but is deprecated.
  *
- * When `tenantId` is provided, the sessionId is persisted in localStorage
- * under a tenant+user-scoped key (`ccaas_session_${tenantId}_${userId}`) and uses the
+ * When `solutionId` is provided, the sessionId is persisted in localStorage
+ * under a solution+user-scoped key (`ccaas_session_${solutionId}_${userId}`) and uses the
  * `conv_${uuid}` format. This enables conversation recovery across page refreshes
  * while keeping each user's session isolated.
  */
@@ -104,7 +104,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     serverUrl = '/',
     sessionPrefix = 'session',
     autoConnect = true,
-    tenantId,
+    solutionId,
     forceNewConversation = false,
     transport = 'sse',
     userId,
@@ -117,7 +117,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
   const [sessionReady, setSessionReady] = useState(false)
   const socketRef = useRef<Socket | null>(null)
   const initialSessionId = useRef<string>(
-    resolveSessionId(tenantId, sessionPrefix, forceNewConversation, options.sessionId, userId),
+    resolveSessionId(solutionId, sessionPrefix, forceNewConversation, options.sessionId, userId),
   ).current
   const [sessionId, setSessionId] = useState<string>(initialSessionId)
   const sessionIdRef = useRef<string>(initialSessionId)
@@ -209,19 +209,19 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
 
   const startNewConversation = useCallback(() => {
     // Clear old session from localStorage
-    if (tenantId) {
-      safeRemoveItem(getStorageKey(tenantId, userId))
+    if (solutionId) {
+      safeRemoveItem(getStorageKey(solutionId, userId))
     }
 
     // Generate new session ID
-    const newId = tenantId ? generateConversationId() : `${sessionPrefix}_${generateId()}`
+    const newId = solutionId ? generateConversationId() : `${sessionPrefix}_${generateId()}`
     sessionIdRef.current = newId
     setSessionId(newId)
     setSessionReady(false)
 
     // Save new session to localStorage
-    if (tenantId) {
-      safeSetItem(getStorageKey(tenantId, userId), newId)
+    if (solutionId) {
+      safeSetItem(getStorageKey(solutionId, userId), newId)
     }
 
     if (transport !== 'sse') {
@@ -229,17 +229,17 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
       disconnect()
       connect()
     }
-  }, [tenantId, sessionPrefix, userId, disconnect, connect, transport])
+  }, [solutionId, sessionPrefix, userId, disconnect, connect, transport])
 
   /** Switch to an existing session. Consumer must remount chat component (via React key) to reset message state. */
   const switchSession = useCallback((newSessionId: string) => {
     sessionIdRef.current = newSessionId
     setSessionId(newSessionId)
     setSessionReady(false)
-    if (tenantId) {
-      safeSetItem(getStorageKey(tenantId, userId), newSessionId)
+    if (solutionId) {
+      safeSetItem(getStorageKey(solutionId, userId), newSessionId)
     }
-  }, [tenantId, userId])
+  }, [solutionId, userId])
 
   return {
     socket: socketRef.current,

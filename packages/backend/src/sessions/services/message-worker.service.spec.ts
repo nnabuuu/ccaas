@@ -428,7 +428,7 @@ describe('MessageWorkerService — processMessage', () => {
   describe('G4 — attach + sync before orchestrateMessage', () => {
     const PROJECT_ID = 'proj-abc';
 
-    it('calls attachWorkspaceSource + sync BEFORE orchestrateMessage when payload has projectId', async () => {
+    it('calls attachWorkspaceSource + sync BEFORE orchestrateMessage when payload has sourceIdentity', async () => {
       // Track call order across the three mocks. We don't pin the
       // exact orchestrate args (other tests cover that) — just the
       // before/after relationship.
@@ -440,13 +440,13 @@ describe('MessageWorkerService — processMessage', () => {
         return { sessionId: SESSION_ID, userMessageId: 'u', assistantMessageId: 'a', skillSyncedCount: 0 };
       });
 
-      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       expect(order).toEqual(['attach', 'sync', 'orchestrate']);
     });
 
     it('passes solutionId + minimal WorkspaceSource (sourceIdentity only) to attachWorkspaceSource', async () => {
-      await process(makeQueueItem({ solutionId: 'tenant-xyz', payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ solutionId: 'tenant-xyz', payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       // Queue payload doesn't carry sourceUrl / sourceSchemaHash; worker
       // only knows the identity. Solutions that need the URL persisted
@@ -458,8 +458,8 @@ describe('MessageWorkerService — processMessage', () => {
       );
     });
 
-    it('skips attach + sync when payload has no projectId (back-compat)', async () => {
-      await process(makeQueueItem()); // default payload has no projectId
+    it('skips attach + sync when payload has no sourceIdentity (back-compat)', async () => {
+      await process(makeQueueItem()); // default payload has no sourceIdentity
 
       expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
       expect(assetSyncer.sync).not.toHaveBeenCalled();
@@ -472,7 +472,7 @@ describe('MessageWorkerService — processMessage', () => {
         sourceIdentity: PROJECT_ID,
       });
 
-      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
       expect(assetSyncer.sync).not.toHaveBeenCalled();
@@ -483,7 +483,7 @@ describe('MessageWorkerService — processMessage', () => {
         sourceIdentity: 'proj-old',
       });
 
-      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       // Worker forwards the attach; attachWorkspaceSource's
       // 409-on-rebind guard is its own concern, tested separately in
@@ -495,13 +495,13 @@ describe('MessageWorkerService — processMessage', () => {
       );
     });
 
-    it('skips attach when projectId is set but solutionId is missing (anonymous-session regression guard)', async () => {
+    it('skips attach when sourceIdentity is set but solutionId is missing (anonymous-session regression guard)', async () => {
       // Anonymous sessions can land here without a solutionId.
       // attachWorkspaceSource would 400 on empty-string solutionId; the
       // worker MUST skip the attach in that case rather than fail the
       // message. This guard is load-bearing — was missed in initial G4
       // fix and caught in review.
-      await process(makeQueueItem({ solutionId: null as any, payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ solutionId: null as any, payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
       expect(assetSyncer.sync).not.toHaveBeenCalled();
@@ -512,7 +512,7 @@ describe('MessageWorkerService — processMessage', () => {
     it('propagates sync failures as message failures (does not silently swallow)', async () => {
       assetSyncer.sync.mockRejectedValueOnce(new Error('artifact source unreachable'));
 
-      await process(makeQueueItem({ payload: { message: 'hi', projectId: PROJECT_ID } as any }));
+      await process(makeQueueItem({ payload: { message: 'hi', sourceIdentity: PROJECT_ID } as any }));
 
       // Message gets marked failed via the outer try/catch — same path
       // any other processing error takes.

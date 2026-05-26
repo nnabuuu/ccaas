@@ -298,12 +298,12 @@ export class SessionService implements OnModuleDestroy {
 
   /**
    * Attach a session to a workspace source for the agent-runtime sync
-   * layer. Writes `session_metadata['sourceIdentity']` (kept for compat with
-   * the existing `SessionMetadataWorkspaceResolver`) plus the new
+   * layer. Writes `session_metadata['sourceIdentity']` (read by
+   * `SessionMetadataWorkspaceResolver`) plus optional
    * `workspaceSourceUrl` / `workspaceSourceSchemaHash` keys when those
    * fields are present, and emits `session.bound` so the
    * SessionAssetSyncer bootstraps the workspace `artifacts/` dir from
-   * the solution's `ProjectArtifactSource.loadArtifacts()` before the
+   * the solution's `WorkspaceArtifactSource.loadArtifacts()` before the
    * first agent turn.
    *
    * Idempotent: calling twice with the same `sourceIdentity` is a
@@ -357,10 +357,9 @@ export class SessionService implements OnModuleDestroy {
           'different workspace',
       );
     }
-    // Persist to session_metadata. `projectId` key kept for compat
-    // (β-3's SessionMetadataWorkspaceResolver still reads it). New
-    // keys `workspaceSourceUrl` / `workspaceSourceSchemaHash` only
-    // written when the caller supplied them — pre-β-1 callers landing
+    // Persist to session_metadata under key `'sourceIdentity'`. Optional
+    // `workspaceSourceUrl` / `workspaceSourceSchemaHash` only written
+    // when the caller supplied them.
     await this.sessionMetadataService.put(
       sessionId,
       solutionId,

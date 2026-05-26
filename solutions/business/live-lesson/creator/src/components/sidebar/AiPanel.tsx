@@ -25,9 +25,9 @@ interface AiPanelProps {
 export default function AiPanel({ project }: AiPanelProps) {
   const conv = useConversations(project.id);
 
-  // No tenantId / API-key state in the browser. live-lesson's
+  // No solutionId / API-key state in the browser. live-lesson's
   // CcaasChatProxyController holds the env CCAAS_API_KEY and resolves
-  // tenantId server-side; same-origin /api/sessions/... calls just work.
+  // solutionId server-side; same-origin /api/sessions/... calls just work.
   const chat = useAgentChat({
     sessionId: conv.active?.sessionId ?? '',
     projectId: project.id,

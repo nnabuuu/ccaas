@@ -20,7 +20,7 @@
  * } = useSseChat({
  *   serverUrl: 'http://localhost:3001',
  *   sessionId: 'my-session',
- *   tenantId: 'my-tenant',
+ *   solutionId: 'my-solution',
  * })
  * </script>
  * ```
@@ -40,7 +40,7 @@ export interface SseChatMessage {
 export interface UseSseChatOptions {
   serverUrl: string
   sessionId: string
-  tenantId: string
+  solutionId: string
   mcpServers?: Record<string, { command: string; args: string[]; env?: Record<string, string> }>
   enabledSkills?: string[]
   skillPath?: string
@@ -157,7 +157,7 @@ export function useSseChat(options: UseSseChatOptions): UseSseChatReturn {
     try {
       const payload: Record<string, unknown> = {
         message: content,
-        tenantId: options.tenantId,
+        solutionId: options.solutionId,
       }
       if (options.mcpServers) payload.mcpServers = options.mcpServers
       if (options.enabledSkills?.length) payload.enabledSkills = options.enabledSkills

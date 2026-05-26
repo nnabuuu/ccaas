@@ -31,7 +31,7 @@ import { useSseStream } from './useSseStream'
 export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const {
     connection,
-    tenantId,
+    solutionId,
     enabledSkills,
     onOutputUpdate,
     onTokenUsage,
@@ -432,7 +432,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     const buildPayload = (): Record<string, unknown> => {
       const payload: Record<string, unknown> = {
         message: content,
-        tenantId,
+        solutionId,
       }
 
       // Always send sessionTemplate to backend for server-side resolution
@@ -502,7 +502,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         throw err
       }
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkills, context, sessionTemplate, userId, waitForReconnection, transport, startStream, dispatchEvent])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, solutionId, enabledSkills, context, sessionTemplate, userId, waitForReconnection, transport, startStream, dispatchEvent])
 
   const clearMessages = useCallback(() => {
     setMessages([])

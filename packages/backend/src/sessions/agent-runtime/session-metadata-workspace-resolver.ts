@@ -1,26 +1,22 @@
 /**
- * SessionMetadataWorkspaceResolver — the default tenant-access resolver
- * for ccaas (Phase 2b-2). Renamed from
- * `SessionMetadataProjectTenantResolver` in β-3.
+ * SessionMetadataWorkspaceResolver — the default workspace-access resolver
+ * for ccaas (Phase 2b-2).
  *
  * Implements the agent-runtime package's `WorkspaceAccessResolver`
- * interface (the package's interface name still uses the legacy
- * "Project" vocabulary; renaming the npm package's exported types is
- * out of β-3's scope). The semantic question this class answers is
- * the same as the interface: "is `callerTenantId` allowed to read /
- * write the workspace identified by `identity`?"
+ * interface. The semantic question this class answers: "is
+ * `callerTenantId` allowed to read / write the workspace identified
+ * by `identity`?"
  *
  * **Why this design (deviation from the original 2b-2 plan):**
  *
  * The 2b-2 plan called for solutions to ship their own resolver
- * querying their own DB (e.g. `LiveLessonProjectTenantResolver` →
- * `CourseProject.solutionId`). That works but forces every solution to
+ * querying their own DB. That works but forces every solution to
  * add a tenant column + migration AND requires a cross-process
  * callback (ccaas → solution REST) at every SSE/invalidate request —
  * extra latency, extra failure modes, extra schema rollout.
  *
- * The attach-workspace-source flow (`POST /sessions/:id/attach-workspace-source`,
- * plus its deprecated `bind-project` alias) already writes
+ * The attach-workspace-source flow (`POST /sessions/:id/attach-workspace-source`)
+ * already writes
  * `session_metadata(sessionId, solutionId, key='sourceIdentity', value=<sourceIdentity>)`
  * with the caller's solutionId on it. That's by construction the source
  * of truth for "who owns this workspace from ccaas's point of view".

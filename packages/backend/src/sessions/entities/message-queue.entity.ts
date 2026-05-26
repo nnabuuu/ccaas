@@ -35,13 +35,8 @@ export interface MessageQueuePayload {
    * artifacts/ directory on its very first turn. Without this, attach
    * happens out-of-band via the `@OnEvent('session.bound')` listener
    * and races the engine spawn.
-   *
-   * Field name kept as `projectId` for queue-payload compat (β-2
-   * renames the service method + Map but not the queue payload —
-   * extending the queue schema is β-3+ territory). Worker translates
-   * to `{ sourceIdentity: projectId }` at the call site.
    */
-  projectId?: string;
+  sourceIdentity?: string;
 }
 
 /**

@@ -17,7 +17,7 @@ export interface ApiClient {
  * - Skills CRUD
  */
 export function createApiClient(options: ApiClientOptions): ApiClient {
-  const { baseUrl = '', tenantId } = options
+  const { baseUrl = '', solutionId } = options
 
   const sendCompletion = async (sessionId: string, params: CompletionParams): Promise<Response> => {
     const response = await fetch(`${baseUrl}/api/v1/sessions/${sessionId}/completion`, {
@@ -47,7 +47,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
   const fetchSkills = async (): Promise<Skill[]> => {
     const response = await fetch(`${baseUrl}/api/v1/skills`, {
-      headers: { 'X-Tenant-Id': tenantId },
+      headers: { 'X-Solution-Id': solutionId },
     })
 
     if (!response.ok) {
@@ -61,7 +61,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const toggleSkill = async (skillId: string): Promise<Skill> => {
     const response = await fetch(`${baseUrl}/api/v1/skills/${skillId}/toggle`, {
       method: 'PATCH',
-      headers: { 'X-Tenant-Id': tenantId },
+      headers: { 'X-Solution-Id': solutionId },
     })
 
     if (!response.ok) {

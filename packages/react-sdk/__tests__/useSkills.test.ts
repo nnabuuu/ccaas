@@ -15,7 +15,7 @@ import { vi } from 'vitest';
 global.fetch = vi.fn() as any;
 
 const serverUrl = 'http://localhost:3001';
-const tenantId = 'tenant-123';
+const solutionId = 'tenant-123';
 const apiKey = 'test-api-key';
 
 const mockSkills = [
@@ -36,7 +36,7 @@ describe('useSkills', () => {
     });
 
     const { result } = renderHook(() =>
-      useSkills({ serverUrl, tenantId, apiKey }),
+      useSkills({ serverUrl, solutionId, apiKey }),
     );
 
     expect(result.current.loading).toBe(true);
@@ -51,7 +51,7 @@ describe('useSkills', () => {
       `${serverUrl}/api/v1/skills`,
       expect.objectContaining({
         headers: expect.objectContaining({
-          'X-Tenant-Id': tenantId,
+          'X-Solution-Id': solutionId,
           'X-API-Key': apiKey,
         }),
       }),
@@ -66,7 +66,7 @@ describe('useSkills', () => {
     });
 
     const { result } = renderHook(() =>
-      useSkills({ serverUrl, tenantId, apiKey }),
+      useSkills({ serverUrl, solutionId, apiKey }),
     );
 
     await waitFor(() => {
@@ -104,7 +104,7 @@ describe('useSkills', () => {
     });
 
     const { result } = renderHook(() =>
-      useSkills({ serverUrl, tenantId, apiKey }),
+      useSkills({ serverUrl, solutionId, apiKey }),
     );
 
     await waitFor(() => {
@@ -144,7 +144,7 @@ describe('useSkills', () => {
     });
 
     const { result } = renderHook(() =>
-      useSkills({ serverUrl, tenantId, apiKey }),
+      useSkills({ serverUrl, solutionId, apiKey }),
     );
 
     await waitFor(() => {

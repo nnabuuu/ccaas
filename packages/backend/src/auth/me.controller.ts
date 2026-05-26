@@ -3,8 +3,8 @@
  *
  * Used by the creator UI (and any other browser frontend) at boot to
  * resolve the solutionId that goes with the API key in localStorage.
- * Without this, the UI can't construct a valid bind-project body
- * (which requires the session's owning solutionId).
+ * Without this, the UI can't construct a valid attach-workspace-source
+ * body (which requires the session's owning solutionId).
  *
  * Returns the same identity facts the ApiKeyGuard already attached to
  * the request — no fresh DB hit beyond what the guard performed.
@@ -41,10 +41,10 @@ export class MeController {
     summary: 'Resolve caller identity (tenant + scopes)',
     description:
       'Returns the solutionId, tenant slug, scopes attached to the API ' +
-      'key. The UI uses solutionId for bind-project body composition. ' +
-      'Returns 401 when no key is present and anonymous access is ' +
-      'disabled — the frontend treats 401 as a "paste your API key" ' +
-      'prompt.',
+      'key. The UI uses solutionId for attach-workspace-source body ' +
+      'composition. Returns 401 when no key is present and anonymous ' +
+      'access is disabled — the frontend treats 401 as a "paste your ' +
+      'API key" prompt.',
   })
   @ApiResponse({
     status: 200,

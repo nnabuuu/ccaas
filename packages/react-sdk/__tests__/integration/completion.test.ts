@@ -47,7 +47,7 @@ describe('Session Completion Endpoint Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'Hello, test!',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -150,7 +150,7 @@ describe('Session Completion Endpoint Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'What is 2+2?',
-          tenantId: 'test-tenant',
+          solutionId: 'test-tenant',
         }),
       }
     )
@@ -163,7 +163,7 @@ describe('Session Completion Endpoint Integration', () => {
     expect(statusData.sessionId).toBe(sessionId)
   }, 20000)
 
-  it('should include tenantId in request payload', async () => {
+  it('should include solutionId in request payload', async () => {
     const { socket, clientId } = await createConnectedSocket()
     sockets.push(socket)
 
@@ -177,7 +177,7 @@ describe('Session Completion Endpoint Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'Test message',
-          tenantId: 'quiz-analyzer',
+          solutionId: 'quiz-analyzer',
         }),
       }
     )
@@ -199,7 +199,7 @@ describe('Session Completion Endpoint Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'Test',
-          tenantId: 'test',
+          solutionId: 'test',
           mcpServers: {
             'test-server': {
               command: 'node',
@@ -227,7 +227,7 @@ describe('Session Completion Endpoint Integration', () => {
         body: JSON.stringify({
           clientId,
           message: 'Test',
-          tenantId: 'test',
+          solutionId: 'test',
           enabledSkills: ['skill-a', 'skill-b'],
         }),
       }

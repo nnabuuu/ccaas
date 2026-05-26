@@ -232,7 +232,7 @@ export function useAgentChat(opts: UseAgentChatOpts): UseAgentChatState {
       try {
         // Same-origin via Vite proxy → live-lesson backend's
         // CcaasChatProxyController. The proxy adds Authorization +
-        // tenantId server-side; browser body carries only the user's
+        // solutionId server-side; browser body carries only the user's
         // intent. projectId still flows through so the ccaas worker
         // can bind-before-spawn (G4 fix) before the first turn.
         const res = await fetch(

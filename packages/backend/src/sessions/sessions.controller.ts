@@ -398,7 +398,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
           subscriberId,
           attachments: data.attachments?.map(a => ({ type: a.type, path: a.path })),
           userId: data.userId,
-          projectId: data.projectId,
+          sourceIdentity: data.sourceIdentity,
         },
       );
       // Return — SSE stays open until the worker calls streamRegistry.closeSession()

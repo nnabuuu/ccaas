@@ -19,7 +19,7 @@
  *
  * const connection = useAgentConnection({
  *   serverUrl: 'http://localhost:3001',
- *   tenantId: 'my-tenant',
+ *   solutionId: 'my-solution',
  * })
  *
  * const {

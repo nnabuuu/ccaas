@@ -41,7 +41,7 @@ describe('useFiles', () => {
   let mockConnection: UseAgentConnectionReturn;
   let mockSocket: any;
   const sessionId = 'session-123';
-  const tenantId = 'tenant-123';
+  const solutionId = 'tenant-123';
 
   beforeEach(() => {
     // Reset mocks
@@ -58,7 +58,7 @@ describe('useFiles', () => {
     mockConnection = {
       socket: mockSocket,
       serverUrl: 'http://localhost:3001',
-      tenantId,
+      solutionId,
       connectionState: 'connected',
       isConnected: true,
       error: null,

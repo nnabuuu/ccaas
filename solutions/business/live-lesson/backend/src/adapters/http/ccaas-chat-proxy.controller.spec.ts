@@ -393,7 +393,10 @@ describe('CcaasChatProxyController', () => {
       );
 
       expect(upstreamBody.solutionId).toBe('tnt-X');
-      expect(upstreamBody.projectId).toBe('p');
+      // Browser sends `projectId`; proxy translates to ccaas's
+      // generic `sourceIdentity` and strips the domain word.
+      expect(upstreamBody.sourceIdentity).toBe('p');
+      expect(upstreamBody.projectId).toBeUndefined();
       expect(upstreamBody.message).toBe('m');
       expect(upstreamBody.enabledSkills).toEqual(['s']);
       expect(upstreamBody.templateName).toBe('edit-lesson');

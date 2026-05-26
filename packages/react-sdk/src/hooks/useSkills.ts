@@ -12,7 +12,7 @@ import { buildAuthHeaders } from '../utils/authHeaders'
  * Extracted from both solutions' useSkills hooks (nearly identical).
  */
 export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
-  const { serverUrl = '', tenantId, apiKey } = options
+  const { serverUrl = '', solutionId, apiKey } = options
 
   const [skills, setSkills] = useState<Skill[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,7 +25,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
 
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills`, {
-        headers: { 'X-Tenant-Id': tenantId, ...buildAuthHeaders(apiKey) },
+        headers: { 'X-Solution-Id': solutionId, ...buildAuthHeaders(apiKey) },
       })
 
       if (!response.ok) {
@@ -40,7 +40,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     } finally {
       setLoading(false)
     }
-  }, [serverUrl, tenantId, apiKey])
+  }, [serverUrl, solutionId, apiKey])
 
   useEffect(() => {
     fetchSkills()
@@ -70,7 +70,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills/${skillId}/toggle`, {
         method: 'PATCH',
-        headers: { 'X-Tenant-Id': tenantId, ...buildAuthHeaders(apiKey) },
+        headers: { 'X-Solution-Id': solutionId, ...buildAuthHeaders(apiKey) },
       })
 
       if (!response.ok) {
@@ -83,7 +83,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
       setError(err instanceof Error ? err.message : 'Failed to toggle skill')
       throw err
     }
-  }, [serverUrl, tenantId, apiKey])
+  }, [serverUrl, solutionId, apiKey])
 
   const isSkillEnabled = useCallback(
     (skillId: string): boolean => enabledSkillIds.has(skillId),

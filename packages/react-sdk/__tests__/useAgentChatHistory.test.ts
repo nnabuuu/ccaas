@@ -69,7 +69,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection()
 
       renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -84,7 +84,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection({ sessionId: 'conv_my-session' })
 
       renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -100,7 +100,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection()
 
       renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -130,7 +130,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -147,7 +147,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection({ connected: false })
 
       renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       const historyCalls = fetchMock.mock.calls.filter(
@@ -162,7 +162,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection({ connected: false })
 
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       expect(result.current).toHaveProperty('isLoadingHistory')
@@ -172,7 +172,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection()
 
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -192,7 +192,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -216,7 +216,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -239,7 +239,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
@@ -277,7 +277,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       // Wait for history to load
@@ -305,7 +305,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection({ connected: false })
 
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       expect(result.current).toHaveProperty('clearConversation')
@@ -330,7 +330,7 @@ describe('useAgentChat - message history auto-loading', () => {
 
       const connection = createMockConnection()
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       // Wait for history to load
@@ -351,7 +351,7 @@ describe('useAgentChat - message history auto-loading', () => {
       const connection = createMockConnection({ startNewConversation })
 
       const { result } = renderHook(() =>
-        useAgentChat({ connection, tenantId: 'test' }),
+        useAgentChat({ connection, solutionId: 'test' }),
       )
 
       await waitFor(() => {
