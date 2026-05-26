@@ -104,10 +104,34 @@ export interface SessionTurnCompleteEvent {
   exitCode: number | null;
 }
 
+/**
+ * Payload of the `session.bound` event emitted by
+ * `SessionService.attachWorkspaceSource` (and its β-2 alias
+ * `bindToProject`).
+ *
+ * Both `projectId` and `workspaceSource.sourceIdentity` carry the
+ * same value during the β compat window. Existing listeners
+ * (`SessionAssetSyncer.onSessionBound`) read `projectId`; β-3
+ * listeners that need the URL or schema-hash read `workspaceSource`.
+ * Once β-2 + β-3 are fully landed and α has renamed `tenant` →
+ * `solution`, `projectId` is removed from this payload.
+ */
 export interface SessionBoundEvent {
   sessionId: string;
   tenantId: string;
+  /** @deprecated since β-2 — use `workspaceSource.sourceIdentity`. */
   projectId: string;
+  /**
+   * Added in β-2. Carries the full descriptor (identity + optional
+   * URL + optional schema hash) so β-3's syncer rewrite can read
+   * `sourceUrl` directly off the event without reaching back into
+   * session_metadata.
+   */
+  workspaceSource: {
+    sourceIdentity: string;
+    sourceUrl?: string;
+    sourceSchemaHash?: string;
+  };
 }
 
 /**
@@ -116,8 +140,9 @@ export interface SessionBoundEvent {
  * awaits it and returns instead of registering its own doSync after.
  *
  * Tuned for the G4 case: `MessageWorker.processMessage` calls
- * `bindToProject` → `@OnEvent('session.bound')` listener kicks off
- * sync (registers lock A) → worker then calls `assetSyncer.sync()`
+ * `attachWorkspaceSource` → `@OnEvent('session.bound')` listener
+ * kicks off sync (registers lock A) → worker then calls
+ * `assetSyncer.sync()`
  * (would register lock B chained after A). Both observe the same
  * pre-edit state, so B's doSync is wasted work. 100ms easily covers
  * the microsecond gap between the two triggers AND is small enough
@@ -167,12 +192,13 @@ export class SessionAssetSyncer {
   }
 
   /**
-   * Bootstrap hook — fires when a session first binds to a projectId
-   * (via `SessionService.bindToProject`). Runs the same `sync()` flow
-   * as turn-end; since the previous snapshot is empty, every DB-side
-   * artifact is treated as a `write_fs` action, producing the initial
-   * materialized state under `<workspace>/artifacts/` before the
-   * agent's first turn ever reads it.
+   * Bootstrap hook — fires when a session first attaches to a
+   * workspace source (via `SessionService.attachWorkspaceSource`,
+   * or its deprecated alias `bindToProject`). Runs the same `sync()`
+   * flow as turn-end; since the previous snapshot is empty, every
+   * DB-side artifact is treated as a `write_fs` action, producing
+   * the initial materialized state under `<workspace>/artifacts/`
+   * before the agent's first turn ever reads it.
    */
   @OnEvent('session.bound')
   async onSessionBound(payload: SessionBoundEvent): Promise<void> {

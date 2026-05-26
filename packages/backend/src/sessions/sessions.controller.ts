@@ -667,7 +667,7 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
    * identity returns 409 (use a fresh session). Cross-tenant attaches
    * are rejected with 403 — the body's tenantId must match the
    * session's owning tenant (enforced in
-   * SessionService.bindToProject — service rename comes in β-2).
+   * `SessionService.attachWorkspaceSource`).
    *
    * Compat: `POST /sessions/:sessionId/bind-project` below is kept as
    * an alias for one release. Both routes wire into the same service
@@ -708,16 +708,18 @@ Backend writes the answers to CLI stdin, resuming the paused LLM execution.
     sessionId: string;
     workspaceSource: { sourceUrl: string; sourceIdentity: string; sourceSchemaHash?: string };
   }> {
-    // β-1 deliberately does NOT touch SessionService internals — we
-    // just pass sourceIdentity through as the existing projectId arg.
-    // β-2 renames the service method + its Map to use the new names.
-    // sourceUrl + sourceSchemaHash are accepted on the wire but **not
-    // persisted** — the existing bindings only know about an identity.
-    // Solutions re-send them on every bind by design, so β-3 can wire
-    // the sync layer to them without a DB migration. If the same
-    // sessionId attaches twice with different sourceUrls, the second
-    // value is silently dropped here today.
-    await this.sessionService.bindToProject(sessionId, body.tenantId, body.sourceIdentity);
+    // β-2: thread the full WorkspaceSource into the service. sourceUrl +
+    // sourceSchemaHash are now captured in the in-memory bindings Map
+    // AND in session_metadata, so β-3's syncer rewrite can read them
+    // per-session without reaching back into tenant config. If the
+    // same sessionId attaches twice with the same sourceIdentity but a
+    // different sourceUrl, the second value DOES overwrite — by design,
+    // for the case where a solution moves between dev/staging hosts.
+    await this.sessionService.attachWorkspaceSource(sessionId, body.tenantId, {
+      sourceIdentity: body.sourceIdentity,
+      sourceUrl: body.sourceUrl,
+      ...(body.sourceSchemaHash ? { sourceSchemaHash: body.sourceSchemaHash } : {}),
+    });
     return {
       success: true,
       sessionId,

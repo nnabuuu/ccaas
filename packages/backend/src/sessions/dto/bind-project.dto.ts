@@ -1,12 +1,16 @@
 /**
  * Bind Project DTO
  *
+ * @deprecated since β-2 (2026-05-26) — use `AttachWorkspaceSourceDto`
+ * with the new `POST /api/v1/sessions/:sessionId/attach-workspace-source`
+ * route. This DTO is kept for one release while solutions migrate.
+ *
  * Request body for POST /api/v1/sessions/:sessionId/bind-project.
  *
  * Tenant note: the body-supplied tenantId is validated against the
- * session's owning tenant inside SessionService.bindToProject — see
- * the ForbiddenException there. The DTO only enforces shape; the
- * service enforces ownership.
+ * session's owning tenant inside `SessionService.bindToProject` (a
+ * deprecated alias that delegates to `attachWorkspaceSource`). The
+ * DTO only enforces shape; the service enforces ownership.
  */
 
 import { IsString, IsNotEmpty } from 'class-validator';

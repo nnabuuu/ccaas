@@ -22,15 +22,18 @@
  *   - `sourceSchemaHash` — optional fingerprint so the solution can
  *                       reject stale syncs after a schema change
  *   - `tenantId`      — kept here transitionally because
- *                       SessionService.bindToProject still requires
- *                       it. α phase will sweep this to solutionId; β-2
- *                       may pull it from auth context instead. For
- *                       now: solutions pass it the same way they did
- *                       for bind-project.
+ *                       SessionService.attachWorkspaceSource still
+ *                       requires it. α phase will sweep this to
+ *                       solutionId; future phases may pull it from
+ *                       auth context instead. For now: solutions
+ *                       pass it the same way they did for bind-project.
  *
  * The old `bind-project` route stays as an alias for one release.
- * Both routes wire into the same `SessionService.bindToProject` —
- * β-1 deliberately does NOT touch internals; β-2 renames them.
+ * New route calls the canonical `SessionService.attachWorkspaceSource`;
+ * the old route calls the deprecated `bindToProject` alias which
+ * delegates to the same canonical method. β-1 added the wire rename
+ * + DTO; β-2 renamed the service internals + widened the in-memory
+ * binding map to hold the full WorkspaceSource descriptor.
  */
 
 import { IsString, IsNotEmpty, IsOptional, IsUrl } from 'class-validator';
@@ -80,8 +83,9 @@ export class AttachWorkspaceSourceDto {
     description:
       'Owning tenant ID — must match the session\'s tenant. Cross-tenant ' +
       'attaches are rejected with 403. **Transitional**: kept on the body ' +
-      'while SessionService.bindToProject still requires it; α phase will ' +
-      'rename to `solutionId`, β-2 may pull it from auth context entirely.',
+      'while SessionService.attachWorkspaceSource still requires it; α ' +
+      'phase will rename to `solutionId`, a future phase may pull it from ' +
+      'auth context entirely.',
     example: 'tenant-uuid',
   })
   // TODO(β-2): once SessionService is renamed + tenantId is read from

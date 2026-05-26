@@ -633,13 +633,14 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
 
 // ── attach-workspace-source (new) + bind-project (compat alias) ───────────────
 //
-// β-1 of the α+β refactor (~/.claude/plans/kind-exploring-mango.md):
-// `bind-project` is renamed to `attach-workspace-source` with an opaque
-// body shape. The old route stays as an alias for one release. Both routes
-// hit the same `SessionService.bindToProject` — internals don't change
-// until β-2. These tests pin the wire contract for both routes so the
-// alias actually stays an alias (i.e. service is called with the same
-// args regardless of which route the caller used).
+// β-2 of the α+β refactor (~/.claude/plans/kind-exploring-mango.md):
+// the new route calls the canonical service method
+// `attachWorkspaceSource(sessionId, tenantId, source)`; the legacy
+// `bind-project` route still calls `bindToProject(sessionId, tenantId,
+// projectId)` which is now a deprecated delegating alias at the
+// service layer. These tests pin the wire contract for both routes;
+// the service-level alias equivalence is verified in
+// `session.service.attach-workspace-source.spec.ts`.
 
 describe('SessionsController — attach-workspace-source + bind-project alias', () => {
   let controller: SessionsController;
@@ -649,6 +650,11 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
 
   beforeEach(async () => {
     sessionService = {
+      attachWorkspaceSource: jest.fn().mockResolvedValue(undefined),
+      // Legacy alias still mocked because the old bind-project route
+      // calls it directly (the controller doesn't go through the
+      // alias chain inside the service — the route handler calls
+      // bindToProject; SessionService.bindToProject then delegates).
       bindToProject: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -684,19 +690,44 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
   });
 
   describe('POST /sessions/:sid/attach-workspace-source (new)', () => {
-    it('passes sourceIdentity to bindToProject as the projectId argument (β-1: internals unchanged)', async () => {
+    it('calls attachWorkspaceSource with the full WorkspaceSource descriptor (β-2: sourceUrl now persisted)', async () => {
       await controller.attachWorkspaceSource(SESSION_ID, {
         sourceUrl: 'http://localhost:3007/api/projects',
         sourceIdentity: 'proj-abc',
         tenantId: 'tenant-1',
       });
 
-      // The whole point of β-1: the service still receives the old
-      // 3-arg shape (sessionId, tenantId, projectId). Wire rename only.
-      expect(sessionService.bindToProject).toHaveBeenCalledWith(
+      // β-2 contract: the new route threads sourceUrl through to the
+      // service. Pre-β-2 this called the legacy bindToProject with
+      // just (sessionId, tenantId, projectId) and dropped sourceUrl.
+      expect(sessionService.attachWorkspaceSource).toHaveBeenCalledWith(
         SESSION_ID,
         'tenant-1',
-        'proj-abc',
+        {
+          sourceIdentity: 'proj-abc',
+          sourceUrl: 'http://localhost:3007/api/projects',
+        },
+      );
+      // Old method is NOT called for the new route — verifies the
+      // controller migrated cleanly (no double-call regression).
+      expect(sessionService.bindToProject).not.toHaveBeenCalled();
+    });
+
+    it('threads sourceSchemaHash into the descriptor when provided', async () => {
+      await controller.attachWorkspaceSource(SESSION_ID, {
+        sourceUrl: 'http://x',
+        sourceIdentity: 'p',
+        sourceSchemaHash: 'sha256:abcd',
+        tenantId: 't',
+      });
+      expect(sessionService.attachWorkspaceSource).toHaveBeenCalledWith(
+        SESSION_ID,
+        't',
+        {
+          sourceIdentity: 'p',
+          sourceUrl: 'http://x',
+          sourceSchemaHash: 'sha256:abcd',
+        },
       );
     });
 
@@ -738,55 +769,41 @@ describe('SessionsController — attach-workspace-source + bind-project alias', 
       expect(withoutHash.workspaceSource).not.toHaveProperty('sourceSchemaHash');
     });
 
-    it('propagates errors from SessionService.bindToProject (e.g. 409 rebind, 403 cross-tenant)', async () => {
-      sessionService.bindToProject.mockRejectedValue(new Error('already bound'));
+    it('propagates errors from attachWorkspaceSource (e.g. 409 rebind, 403 cross-tenant)', async () => {
+      sessionService.attachWorkspaceSource.mockRejectedValue(new Error('already attached'));
       await expect(
         controller.attachWorkspaceSource(SESSION_ID, {
           sourceUrl: 'http://x',
           sourceIdentity: 'p',
           tenantId: 't',
         }),
-      ).rejects.toThrow('already bound');
+      ).rejects.toThrow('already attached');
     });
   });
 
   describe('POST /sessions/:sid/bind-project (compat alias)', () => {
-    it('still works — passes projectId straight through (no behavior change in β-1)', async () => {
+    it('still calls the legacy bindToProject service method (no migration to the new method yet)', async () => {
       const out = await controller.bindToProject(SESSION_ID, {
         projectId: 'proj-legacy',
         tenantId: 'tenant-1',
       });
 
+      // The old route is supposed to keep calling the deprecated
+      // alias method specifically — the alias's job is to delegate to
+      // attachWorkspaceSource internally. Calling attachWorkspaceSource
+      // directly here would defeat the point of having the alias
+      // exercise the delegation path in production.
       expect(sessionService.bindToProject).toHaveBeenCalledWith(
         SESSION_ID,
         'tenant-1',
         'proj-legacy',
       );
+      expect(sessionService.attachWorkspaceSource).not.toHaveBeenCalled();
       expect(out).toEqual({
         success: true,
         sessionId: SESSION_ID,
         projectId: 'proj-legacy',
       });
-    });
-
-    it('and the new route make IDENTICAL service calls for equivalent inputs (alias contract)', async () => {
-      await controller.bindToProject(SESSION_ID, {
-        projectId: 'proj-X',
-        tenantId: 'tenant-Y',
-      });
-      const oldCall = (sessionService.bindToProject as jest.Mock).mock.calls.at(-1);
-
-      sessionService.bindToProject.mockClear();
-      await controller.attachWorkspaceSource(SESSION_ID, {
-        sourceUrl: 'http://ignored-for-now',
-        sourceIdentity: 'proj-X',
-        tenantId: 'tenant-Y',
-      });
-      const newCall = (sessionService.bindToProject as jest.Mock).mock.calls.at(-1);
-
-      // If this assertion ever fails, β-1's "alias = no behavior
-      // change" guarantee broke. Look at what diverged.
-      expect(newCall).toEqual(oldCall);
     });
   });
 });

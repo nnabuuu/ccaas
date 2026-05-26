@@ -28,12 +28,18 @@ export interface MessageQueuePayload {
   /** User ID for session ownership */
   userId?: string;
   /**
-   * Project ID to bind the session to before spawning the engine. When
-   * present, the worker awaits SessionService.bindToProject +
-   * SessionAssetSyncer.sync BEFORE orchestrating the message, so the
-   * agent sees a populated artifacts/ directory on its very first turn.
-   * Without this, bind happens out-of-band via the @OnEvent listener
+   * Source identity to attach the session to before spawning the
+   * engine. When present, the worker awaits
+   * `SessionService.attachWorkspaceSource` + `SessionAssetSyncer.sync`
+   * BEFORE orchestrating the message, so the agent sees a populated
+   * artifacts/ directory on its very first turn. Without this, attach
+   * happens out-of-band via the `@OnEvent('session.bound')` listener
    * and races the engine spawn.
+   *
+   * Field name kept as `projectId` for queue-payload compat (β-2
+   * renames the service method + Map but not the queue payload —
+   * extending the queue schema is β-3+ territory). Worker translates
+   * to `{ sourceIdentity: projectId }` at the call site.
    */
   projectId?: string;
 }

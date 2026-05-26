@@ -188,20 +188,29 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // (subsequent messages in the same conversation), skip entirely —
       // bind/sync are cheap but not free.
       const incomingProjectId = queueItem.payload.projectId;
-      // Require tenantId too: bindToProject's input validator rejects
-      // empty string with BadRequestException — passing `|| ''` would
-      // regress the anonymous-session path (queueItem.tenantId can be
-      // null for guest mode under AUTH_ALLOW_ANONYMOUS=true). Skip the
-      // bind entirely when we don't have an explicit tenant; the agent
-      // will run on the materializer-only workspace (still functional,
-      // just without per-project artifacts/).
+      // Require tenantId too: attachWorkspaceSource's input validator
+      // rejects empty string with BadRequestException — passing `|| ''`
+      // would regress the anonymous-session path (queueItem.tenantId
+      // can be null for guest mode under AUTH_ALLOW_ANONYMOUS=true).
+      // Skip the attach entirely when we don't have an explicit tenant;
+      // the agent will run on the materializer-only workspace (still
+      // functional, just without per-project artifacts/).
+      //
+      // β-2 note: worker calls the canonical `attachWorkspaceSource`
+      // with a minimal `{sourceIdentity}` descriptor — `sourceUrl` +
+      // `sourceSchemaHash` aren't available on `MessageQueue.payload`
+      // (the queue carries the legacy `projectId` field). Solutions
+      // that need the new fields persisted go through the explicit
+      // `attach-workspace-source` HTTP route. β-3 may extend the queue
+      // payload if a worker-side use case appears.
       if (incomingProjectId && queueItem.tenantId) {
-        const currentBinding = this.sessionService.getBoundProjectId(sessionId);
-        if (currentBinding !== incomingProjectId) {
-          await this.sessionService.bindToProject(
+        const currentBinding =
+          this.sessionService.getAttachedWorkspaceSource(sessionId);
+        if (currentBinding?.sourceIdentity !== incomingProjectId) {
+          await this.sessionService.attachWorkspaceSource(
             sessionId,
             queueItem.tenantId,
-            incomingProjectId,
+            { sourceIdentity: incomingProjectId },
           );
           await this.assetSyncer.sync(sessionId);
         }

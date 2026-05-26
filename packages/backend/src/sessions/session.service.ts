@@ -45,6 +45,31 @@ import type {
 export type { ResolvedAttachment } from './services/cli-process.service';
 
 /**
+ * Opaque descriptor a solution gives ccaas to identify where a
+ * session's editable artifacts live. `sourceIdentity` is the only
+ * required field — it's the key ccaas uses for sync routing,
+ * idempotency checks, and the reverse lookup that drives the
+ * `/projects/:id/invalidate` endpoint.
+ *
+ * `sourceUrl` + `sourceSchemaHash` ride along for β-3 when the syncer
+ * reads them; β-2 captures them in memory + session_metadata but does
+ * NOT consume them yet — the existing syncer continues to derive its
+ * artifact base URL from tenant config. β-3 will flip the syncer to
+ * read these fields per-session.
+ *
+ * `sourceIdentity` is the new name for what was called `projectId`
+ * pre-β-2. The shape is identical (opaque string). The rename drops
+ * ccaas-core's pretense of knowing what a "project" is — solutions
+ * own the "project" word in their own domain; ccaas just routes on
+ * the identity.
+ */
+export interface WorkspaceSource {
+  sourceIdentity: string;
+  sourceUrl?: string;
+  sourceSchemaHash?: string;
+}
+
+/**
  * Session details for REST API responses
  * Week 4: Added for session restart endpoint
  */
@@ -65,12 +90,19 @@ export class SessionService implements OnModuleDestroy {
   private sessions = new Map<string, ManagedSession>();
   private clientSessions = new Map<string, Set<string>>();
   /**
-   * agent-runtime sync layer: sessionId → bound projectId. Populated by
-   * `bindToProject`; cleared when the session is removed from `sessions`.
-   * Provides O(n) reverse lookup for `findSessionsByProjectId`, which the
-   * invalidate REST endpoint and any cross-session sync orchestration use.
+   * agent-runtime sync layer: sessionId → attached WorkspaceSource.
+   * Populated by `attachWorkspaceSource` (and its legacy alias
+   * `bindToProject`); cleared when the session is removed from
+   * `sessions`. Provides O(n) reverse lookup for
+   * `findSessionsByWorkspaceSource`, which the invalidate REST
+   * endpoint and any cross-session sync orchestration use.
+   *
+   * Pre-β-2 this was `projectBindings: Map<string, string>` holding
+   * just the projectId. β-2 widens it to the full descriptor so β-3
+   * can wire the syncer to read `sourceUrl` per-session without
+   * touching the bindings logic.
    */
-  private projectBindings = new Map<string, string>();
+  private workspaceSourceBindings = new Map<string, WorkspaceSource>();
   /**
    * Per-sessionId Promise dedup for concurrent getOrCreateSession calls
    * (sanity check A in WORKSPACE_PROVIDER.md). Map.has + Map.set are
@@ -271,26 +303,38 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Bind a session to a project for the agent-runtime sync layer.
-   * Writes `session_metadata['projectId']` and emits `session.bound`
-   * so the SessionAssetSyncer bootstraps the workspace `artifacts/`
-   * dir from the solution's `ProjectArtifactSource.loadArtifacts()`
-   * before the first agent turn.
+   * Attach a session to a workspace source for the agent-runtime sync
+   * layer. Writes `session_metadata['projectId']` (kept for compat with
+   * the existing `SessionMetadataProjectTenantResolver`) plus the new
+   * `workspaceSourceUrl` / `workspaceSourceSchemaHash` keys when those
+   * fields are present, and emits `session.bound` so the
+   * SessionAssetSyncer bootstraps the workspace `artifacts/` dir from
+   * the solution's `ProjectArtifactSource.loadArtifacts()` before the
+   * first agent turn.
    *
-   * Idempotent: calling twice with the same `projectId` is a no-op
-   * write (metadata upserts) + a re-bootstrap (also no-op when the
-   * snapshot is already current).
+   * Canonical name as of β-2. The pre-β-2 method `bindToProject` is
+   * preserved as a deprecated alias that delegates here with a
+   * minimal `{sourceIdentity}` descriptor (sourceUrl undefined). Both
+   * paths share the same idempotency + cross-tenant + 409-rebind
+   * semantics — the rename is a wire/vocabulary change, not a
+   * behavior change.
    *
-   * Solutions call this immediately after creating a project-scoped
+   * Idempotent: calling twice with the same `sourceIdentity` is a
+   * no-op write (metadata upserts) + a re-bootstrap (also no-op when
+   * the snapshot is already current). Re-attach with a different
+   * `sourceIdentity` throws 409 — solutions should start a fresh
+   * session for a different workspace.
+   *
+   * Solutions call this immediately after creating a workspace-attached
    * agent session, before the first message lands.
    */
-  async bindToProject(
+  async attachWorkspaceSource(
     sessionId: string,
     tenantId: string,
-    projectId: string,
+    source: WorkspaceSource,
   ): Promise<void> {
-    if (!projectId) {
-      throw new BadRequestException('projectId required');
+    if (!source?.sourceIdentity) {
+      throw new BadRequestException('sourceIdentity required');
     }
     if (!tenantId) {
       throw new BadRequestException('tenantId required');
@@ -300,9 +344,9 @@ export class SessionService implements OnModuleDestroy {
       throw new NotFoundException(`session ${sessionId} not found`);
     }
     // Cross-tenant defence. If the session already has a tenantId (set
-    // by an earlier message or by createSession), the body's tenantId
+    // by an earlier message or by createSession), the caller's tenantId
     // MUST match — otherwise an attacker who knows a sessionId from
-    // tenant A could rebind it under tenant B and steal its project
+    // tenant A could attach it under tenant B and steal its workspace
     // stream. If the session has no tenantId yet (anonymous-first
     // pattern), accept and assign the caller's tenantId here.
     if (session.tenantId && session.tenantId !== tenantId) {
@@ -313,58 +357,137 @@ export class SessionService implements OnModuleDestroy {
     if (!session.tenantId) {
       session.tenantId = tenantId;
     }
-    // Rebind-to-different-project conflict. Same-projectId is idempotent
-    // (used to re-trigger bootstrap sync after a refactor); different
-    // projectId would silently overwrite the binding + leak the agent's
-    // workspace across projects. Force the caller to start a fresh
-    // session for a different project.
-    const existingPid = this.projectBindings.get(sessionId);
-    if (existingPid && existingPid !== projectId) {
+    // Re-attach-to-different-source conflict. Same sourceIdentity is
+    // idempotent (used to re-trigger bootstrap sync after a refactor);
+    // different sourceIdentity would silently overwrite the binding +
+    // leak the agent's workspace across projects. Force the caller to
+    // start a fresh session for a different workspace.
+    const existing = this.workspaceSourceBindings.get(sessionId);
+    if (existing && existing.sourceIdentity !== source.sourceIdentity) {
       throw new ConflictException(
-        `session ${sessionId} is already bound to project ${existingPid}; ` +
-        `create a new session to bind a different project`,
+        `session ${sessionId} is already attached to workspace source ` +
+          `${existing.sourceIdentity}; create a new session to attach a ` +
+          'different workspace',
       );
     }
+    // Persist to session_metadata. `projectId` key kept for compat
+    // (β-3's SessionMetadataProjectTenantResolver still reads it). New
+    // keys `workspaceSourceUrl` / `workspaceSourceSchemaHash` only
+    // written when the caller supplied them — pre-β-1 callers landing
+    // through the legacy alias don't have these fields and shouldn't
+    // see ghost rows.
     await this.sessionMetadataService.put(
       sessionId,
       tenantId,
       'projectId',
-      projectId,
+      source.sourceIdentity,
     );
-    this.projectBindings.set(sessionId, projectId);
-    this.eventEmitter.emit('session.bound', { sessionId, tenantId, projectId });
+    if (source.sourceUrl) {
+      await this.sessionMetadataService.put(
+        sessionId,
+        tenantId,
+        'workspaceSourceUrl',
+        source.sourceUrl,
+      );
+    }
+    if (source.sourceSchemaHash) {
+      await this.sessionMetadataService.put(
+        sessionId,
+        tenantId,
+        'workspaceSourceSchemaHash',
+        source.sourceSchemaHash,
+      );
+    }
+    this.workspaceSourceBindings.set(sessionId, { ...source });
+    // Event payload carries both shapes for the compat window:
+    // - `projectId` for existing listeners (SessionAssetSyncer.onSessionBound)
+    // - `workspaceSource` for β-3 listeners that want the full descriptor
+    this.eventEmitter.emit('session.bound', {
+      sessionId,
+      tenantId,
+      projectId: source.sourceIdentity,
+      workspaceSource: { ...source },
+    });
   }
 
   /**
-   * Cheap read of "is this session bound to a project, and if so which?"
-   * Used by MessageWorker to decide whether the incoming message's
-   * projectId requires a fresh bind+bootstrap before spawning the
-   * engine, or whether the session is already correctly bound and the
-   * pre-spawn await can be skipped.
+   * Cheap read of "is this session attached to a workspace source,
+   * and if so which?" Used by MessageWorker to decide whether the
+   * incoming message's sourceIdentity requires a fresh
+   * attach+bootstrap before spawning the engine, or whether the
+   * session is already correctly attached and the pre-spawn await
+   * can be skipped.
    *
    * O(1) lookup against the same in-memory map populated by
-   * `bindToProject`. Returns `undefined` if the session has never been
-   * bound (typical on first message of a new conversation).
+   * `attachWorkspaceSource`. Returns `undefined` if the session has
+   * never been attached (typical on first message of a new
+   * conversation).
    */
-  getBoundProjectId(sessionId: string): string | undefined {
-    return this.projectBindings.get(sessionId);
+  getAttachedWorkspaceSource(sessionId: string): WorkspaceSource | undefined {
+    return this.workspaceSourceBindings.get(sessionId);
   }
 
   /**
    * Reverse lookup for the agent-runtime invalidate endpoint:
-   * which active sessions are bound to `projectId`. Walks the
-   * in-memory bindings map; only returns sessions that are still
-   * live in `this.sessions` (filters out stale entries from
+   * which active sessions are attached to `sourceIdentity`. Walks
+   * the in-memory bindings map; only returns sessions that are
+   * still live in `this.sessions` (filters out stale entries from
    * pre-cleanup races).
    */
-  findSessionsByProjectId(projectId: string): string[] {
+  findSessionsByWorkspaceSource(sourceIdentity: string): string[] {
     const out: string[] = [];
-    for (const [sid, pid] of this.projectBindings) {
-      if (pid === projectId && this.sessions.has(sid)) {
+    for (const [sid, source] of this.workspaceSourceBindings) {
+      if (source.sourceIdentity === sourceIdentity && this.sessions.has(sid)) {
         out.push(sid);
       }
     }
     return out;
+  }
+
+  /**
+   * @deprecated since β-2 (2026-05-26) — use
+   * `attachWorkspaceSource(sessionId, tenantId, { sourceIdentity })`.
+   * Kept as a delegating alias for the duration of the β
+   * backwards-compat window so the legacy `bind-project` route + any
+   * straggler SDK callers keep working. Will be removed in the
+   * cleanup release after both β and α windows close.
+   */
+  async bindToProject(
+    sessionId: string,
+    tenantId: string,
+    projectId: string,
+  ): Promise<void> {
+    // Validate projectId here so the alias preserves the old error
+    // message verbatim — `attachWorkspaceSource` says "sourceIdentity
+    // required" which would surprise anyone reading bindToProject's
+    // existing 400 behavior. Defence in depth: attachWorkspaceSource
+    // re-validates the same condition.
+    if (!projectId) {
+      throw new BadRequestException('projectId required');
+    }
+    return this.attachWorkspaceSource(sessionId, tenantId, {
+      sourceIdentity: projectId,
+    });
+  }
+
+  /**
+   * @deprecated since β-2 (2026-05-26) — use
+   * `getAttachedWorkspaceSource(sessionId)?.sourceIdentity`. Kept as
+   * a delegating alias for the β compat window; legacy callers in
+   * MessageWorker etc. flip over PR-by-PR.
+   */
+  getBoundProjectId(sessionId: string): string | undefined {
+    return this.workspaceSourceBindings.get(sessionId)?.sourceIdentity;
+  }
+
+  /**
+   * @deprecated since β-2 (2026-05-26) — use
+   * `findSessionsByWorkspaceSource(sourceIdentity)`. Kept as a
+   * delegating alias for the β compat window; the agent-runtime
+   * invalidate controller flips over in β-3.
+   */
+  findSessionsByProjectId(projectId: string): string[] {
+    return this.findSessionsByWorkspaceSource(projectId);
   }
 
   /**
@@ -462,7 +585,7 @@ export class SessionService implements OnModuleDestroy {
 
     this.sessions.delete(sessionId);
     this.clientSessions.get(session.clientId)?.delete(sessionId);
-    this.projectBindings.delete(sessionId);
+    this.workspaceSourceBindings.delete(sessionId);
 
     this.eventMapperService.clearSessionState(sessionId);
 

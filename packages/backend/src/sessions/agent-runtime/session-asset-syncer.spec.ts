@@ -466,7 +466,12 @@ describe('SessionAssetSyncer', () => {
         { path: 'execution-plan.json', content: '{"v":1}', type: 'json' },
       ];
 
-      await syncer.onSessionBound({ sessionId: SID, tenantId: TID, projectId: PROJ });
+      await syncer.onSessionBound({
+        sessionId: SID,
+        tenantId: TID,
+        projectId: PROJ,
+        workspaceSource: { sourceIdentity: PROJ },
+      });
 
       const plan = await fs.readFile(
         path.join(workspaceDir, ARTIFACTS_DIR, 'lesson-plan.md'), 'utf8',
@@ -490,7 +495,10 @@ describe('SessionAssetSyncer', () => {
         throw new Error('boom');
       });
       await expect(syncer.onSessionBound({
-        sessionId: SID, tenantId: TID, projectId: PROJ,
+        sessionId: SID,
+        tenantId: TID,
+        projectId: PROJ,
+        workspaceSource: { sourceIdentity: PROJ },
       })).resolves.toBeUndefined();
     });
   });
