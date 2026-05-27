@@ -336,6 +336,13 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       最后用户问"对照 design doc 还有 gap 吗", gap audit 发现 3 处偏离, 其中"预览课程"modal 的内容渲染是真决定 ——
       cross-package 重构 vs iframe vs 占位, 选了占位 (D-07)。 另两处 (audit done 高亮 + 报告头部 badge) 是设计合规, 没替代方案权衡。
     </p>
+    <p>
+      Session 收尾时用户问了一个 meta-scope 问题: <em>"只动了前端, 后端发布状态 / 状态变更都有了吗?"</em>
+      Backend audit 发现 publish 状态机已经完整 (5 条边: <code>publish / re-publish / archive×2 / restore</code>)
+      跟 60 个 <code>project.service.spec.ts</code> 测试覆盖, 本轮前端 UI 入口不引入新后端语义。
+      唯一缺的边是 <code>published → archived</code> 之前隐式由 <code>ensureProject</code> guard 覆盖 ——
+      顺手补了一个显式测试 lock 住 (commit <code>dd3f85d0</code>, +1 backend test)。
+    </p>
   </div>
 
   <!-- DECISIONS -->
@@ -962,9 +969,9 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
     </summary>
     <div class="cs-body">
       <div class="cs-stat-row">
-        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">Commits (feature + pivot + cleanup + gap-closure)</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">21</span><span class="cs-stat-l">Tests (8 audit-prompt + 13 parse-nav)</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">5</span><span class="cs-stat-l">Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">6</span><span class="cs-stat-l">Commits (feature → pivot → cleanup → gap-closure → polish → backend test)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">22</span><span class="cs-stat-l">Tests added (8 audit-prompt + 13 parse-nav + 1 backend transition)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">6</span><span class="cs-stat-l">Review Rounds</span></div>
         <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Decisions Superseded</span></div>
         <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
       </div>
@@ -975,6 +982,7 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/preview/CoursePreviewModal.tsx (D-07 gap closure)</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/audit/AuditReportView.tsx (AI 生成 badge + 重新生成 button)</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/topbar/TopBar.tsx + AuditButton.tsx (预览 button + done state)</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/project/project.service.spec.ts (+1 explicit published→archived test after backend coverage audit)</span></div>
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.spec.ts</span></div>
