@@ -80,12 +80,14 @@ describe('PlanTab — scroll-to-anchor effect', () => {
 
   it('no-ops when no chip matches', async () => {
     mockReadFile.mockResolvedValueOnce({ content: '# Plan' })
+    // Fake timers for deterministic coverage of rAF + 200ms retry;
+    // see AuditReportView.spec for the canonical pattern.
+    vi.useFakeTimers()
     render(
       <PlanTab projectId="p1" scrollAnchor="r-missing" scrollNonce={1} />,
     )
-    // 500ms covers rAF + 200ms retry with headroom; see ExecutionTab
-    // spec for the same negative-path pattern.
-    await new Promise((r) => setTimeout(r, 500))
+    await vi.advanceTimersByTimeAsync(250)
+    vi.useRealTimers()
     expect(mockFlash).not.toHaveBeenCalled()
   })
 

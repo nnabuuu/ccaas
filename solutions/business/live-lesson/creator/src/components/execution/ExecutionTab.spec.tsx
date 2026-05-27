@@ -87,6 +87,11 @@ describe('ExecutionTab — scroll-to-anchor effect', () => {
 
   it('no-ops when no step matches (deleted-step scenario)', async () => {
     mockReadFile.mockResolvedValueOnce({ content: MANIFEST })
+    // Fake timers for deterministic coverage of the rAF + 200ms
+    // retry window — wallclock setTimeout(500) is flaky on
+    // contended CI. Same pattern AuditReportView.spec uses for its
+    // cooldown assertion.
+    vi.useFakeTimers()
     render(
       <ExecutionTab
         projectId="p1"
@@ -94,11 +99,8 @@ describe('ExecutionTab — scroll-to-anchor effect', () => {
         scrollNonce={1}
       />,
     )
-    // Wait past the scroll effect's rAF + 200ms retry window with
-    // headroom. Bumped to 500ms (was 300ms) for safer slack under
-    // CI load — under-sleeping here would let a real regression
-    // (where scroll WAS triggered) slip through.
-    await new Promise((r) => setTimeout(r, 500))
+    await vi.advanceTimersByTimeAsync(250)
+    vi.useRealTimers()
     expect(mockFlash).not.toHaveBeenCalled()
   })
 
@@ -128,6 +130,7 @@ describe('ExecutionTab — scroll-to-anchor effect', () => {
     // An anchor containing characters that would break a raw
     // attribute selector (`"` `]`) must not throw — querySelector
     // either matches (no step has this id) or returns null.
+    vi.useFakeTimers()
     render(
       <ExecutionTab
         projectId="p1"
@@ -135,7 +138,8 @@ describe('ExecutionTab — scroll-to-anchor effect', () => {
         scrollNonce={1}
       />,
     )
-    await new Promise((r) => setTimeout(r, 300))
+    await vi.advanceTimersByTimeAsync(250)
+    vi.useRealTimers()
     expect(mockFlash).not.toHaveBeenCalled()
   })
 })
