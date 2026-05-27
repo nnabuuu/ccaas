@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>项目级 subjects[] · 决定档案 · ccaas · 2026-05-27</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.process{background:var(--surface2);color:var(--t2)}
+.d-scope.architecture{background:var(--red-bg);color:var(--red)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">项目级 subjects[] · 3 commits · 2026-05-27</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">e4a1e339..4dd2741e</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">把 process-global env 变成 per-row 列</span>
+    </div>
+    <h1>同一个 backend, <em>多个学科</em>。<br>从隐式 env 到<em>显式</em> project 状态。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      上一份 decision archive (commit <code>105833ea</code>) 留下了 5 项 deferred —— 第一条 <strong>DEF-01</strong> 就是 "per-project subject 配置": 当时的 MVP 用一个 <code>LIVE_LESSON_LESSON_PLAN_SUBJECT</code> env 锁住整个 live-lesson 进程的学科,跨学科项目共存做不到。这次把它做掉了。
+    </p>
+    <p>
+      触发是用户说 <em>"创建course_projects的时候选择(之后也可以调整)... subject是数组吧。这样我们的test coverage就更明确了"</em>—— 三个明确诉求:per-row 状态 / 可后期修改 / 多值数组。同时,显式状态意味着测试不再有"env-vs-DB 的隐式分支",coverage 变得确定。
+      Scope: 后端 schema + DTO + endpoint + 物化器重写; 前端 picker UI + edit modal; 下游 skill / helper script / 设计文档同步。<strong>Out</strong>: prod DB migration script (synchronize:true 还在用), per-subject RBAC, manifest 子学科联动。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 array vs single -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Subject 在 DB 上是单值还是数组?</h3>
+        </div>
+        <span class="d-scope backend">Schema · Shape</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">用户回应 DEF-01 的描述时直接给方向: "subject 是<strong>数组</strong>吧"。</span>
+        <span class="lbl">约束</span>
+        <span class="val">SQLite + TypeORM. 数组列需要一个序列化器 (simple-array / simple-json); 老行需要默认值。绝大多数项目其实只有 1 个 subject —— 数组要为常态保留简洁,不能强制 caller 永远 wrap。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">单字段 <code>subject: string | null</code></span>
+          <span class="opt-verdict">❌ 拒 —— 无法表达"英语+数学跨学科项目"</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><code>subjects: string[]</code> · simple-json 列</span>
+          <span class="opt-verdict">✓ 选 —— 数组原生支持多值, 长度 1 就是常态</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">单字段 + 多对多关联表 <code>project_subjects</code></span>
+          <span class="opt-verdict">❌ 拒 —— join 复杂度 ≫ 信息价值</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          数组比单字段多一个表达力维度,代价只是一个 JSON serializer。多对多关联表理论上"更正确"(范式化),但在<strong>这个域</strong>里没有用例 —— 我们不会查"所有有 english 学科的项目",分布也不会扭曲到要建索引。数据规模上,项目 × 学科 永远 &lt; 1000 行,内存里完全装得下。
+        </p>
+        <p>
+          关键的设计杠杆是 <em>数组 + 显式空集</em>: <code>subjects: []</code> 不是"未配置"的歧义,而是显式声明"不依赖任何教学要求库"。这让物化器的入口判断变成纯函数: <code>opts.userId && subjects.length > 0</code>,没有隐式 fallback,测试矩阵彻底闭合。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 subject-aware 操作都按数组迭代; 单值假设永远不能再回来
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来真的要 N 对 N 关联 (subject 自己也是个实体),迁移成本中等
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>backend/src/adapters/persistence/entities/course-project.entity.ts</code>
+        <span class="lbl">commit</span><code>e4a1e339</code>
+      </div>
+    </div>
+
+    <!-- D-02 env removal -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 已有的 <code>LIVE_LESSON_LESSON_PLAN_SUBJECT</code> env 怎么收尾?</h3>
+        </div>
+        <span class="d-scope backend">Migration · Cleanup</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">数组列定下来之后, runtime 还要不要看 env? 这关系到现有项目 (subjects 默认 []) 启动后的"沉默期"会不会让人困惑。用 AskUserQuestion 显式问了用户。</span>
+        <span class="lbl">约束</span>
+        <span class="val">env 是上一次 commit ed451403 才落地的; 立刻删除是"churn"。但保留意味着 runtime 永远有 "env-vs-row" 隐式分支,违反"test coverage 更明确"的初衷。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">完全删除 env, project.subjects 是唯一来源</span>
+          <span class="opt-verdict">✓ 选 (用户) —— 显式 > 隐式, 测试不含 env mock</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">降级为新项目创建时的 default fallback</span>
+          <span class="opt-verdict">❌ 拒 —— "什么时候用 env" 是新的认知负担</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">保留作为 subjects=[] 时的 runtime fallback</span>
+          <span class="opt-verdict">❌ 拒 —— 双轨, 测试矩阵爆炸</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是一个<strong>"测试可读性优先"</strong>的决定。用户原话: "test coverage 更明确"。如果保留 env fallback,每一条 listArtifactsWithContent 测试都要在 <code>beforeEach</code> mock env、在 <code>afterEach</code> restore —— 这是上一版 spec 的真实状态,污染了所有不关心 lib 物化的测试。
+        </p>
+        <p>
+          代价: dev 老 SQLite 上的项目 <code>subjects = []</code>,启动后看不到 lib 物化输出。但这是<em>loud breakage</em> —— 用户打开 Edit modal 选 subject,文件就回来了; 比"为什么我没改东西就坏了"那种沉默 fallback 更可调试。在 prod 还没起飞 (synchronize:true 仍在用) 的阶段,优化"开发期可读"是正确的权衡。
+        </p>
+        <p>
+          副产品: 整个仓库 <code>git grep LIVE_LESSON_LESSON_PLAN_SUBJECT</code> 现在只剩两处 —— 历史决定档案 HTML 里的引用,和 entity 注释里"为什么这个列存在"的说明。两处都是<em>有意保留</em>的考古学注释。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 lib 物化测试用例都通过 fixture 显式声明 subjects, 无 env 隐式分支
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来想给"未配置 subject 的项目"自动 fallback 一个 default subject, 要重新引入隐式行为
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>backend/src/project/project.service.ts</code>, <code>project.service.spec.ts</code>
+        <span class="lbl">commit</span><code>e4a1e339</code>
+      </div>
+    </div>
+
+    <!-- D-03 per-subject file layout -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 多 subject 时, <code>_lib/</code> 物化成几个文件?</h3>
+        </div>
+        <span class="d-scope design">Materialization · Layout</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">数组定了之后立刻冒出: 一个项目带 [english, math], 物化到 workspace 是<strong>一个</strong>文件 (concat) 还是<strong>多个</strong>? AskUserQuestion 让用户挑。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Agent 用 Grep 找 reqId。如果两个 subject 都用 "r-1.2.3" 这种命名 (虽然约定上不该), 单文件里 grep 会同时命中两条 —— 难调试。但单文件物化最简单。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">每 subject 一个文件: <code>_lib/teaching-requirements/&lt;subject&gt;.md</code></span>
+          <span class="opt-verdict">✓ 选 (用户) —— grep 隔离 + 文件名即学科签</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">单一拼接文件, H1 分段</span>
+          <span class="opt-verdict">❌ 拒 —— 跨学科 reqId 冲突难分辨</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键洞察: <strong>文件路径本身可以是一个分类信号</strong>。Agent 跑 <code>Grep -r "推断生词" artifacts/_lib/teaching-requirements/</code> 时, 结果里的 <code>english.md:r-1.2.3</code> 比 H1 分段的 <code># Math\n## English\n## r-1.2.3</code> 更难误读。前者天然带学科标签,后者要看上下文。
+        </p>
+        <p>
+          代价: helper script (<code>find-req.sh</code>) 要 glob 多个文件, awk 要从多个文件聚合。bash-3.2 的 nullglob 这次需要 <em>belt-and-suspenders</em> 防御 (代码评审抓到的实际 bug —— 见 D-06)。但脚本只是辅助路径; agent 的 critical path 还是 <code>Grep -r</code>。
+        </p>
+        <p>
+          副产品: 物化器的代码结构变成"对每个 subject 调一次 renderLibrary",L2 interpretation 按 subject 分桶 —— 后者解决了一个我们差点没注意的<em>cross-subject leak</em>问题: per-user interpretation 表是不分学科的,如果不过滤,英语项目的 <code>_lib/my-interpretations/english.md</code> 会泄露用户对数学 reqId 的笔记。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Workspace 路径约定: <code>_lib/&lt;concern&gt;/&lt;subject&gt;.md</code>。新加 concern 类型 (e.g. <code>_lib/glossary/</code>) 可以平行扩展
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想反过来"按 reqId 聚合 (单文件按 id 排序)" 需要重写物化器 + 改 reserved-path guard
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>backend/src/project/project.service.ts:listArtifactsWithContent</code>, <code>scripts/find-req.sh</code>
+        <span class="lbl">commit</span><code>e4a1e339</code>
+      </div>
+    </div>
+
+    <!-- D-04 L2 partitioning strategy -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> L2 解读怎么按 subject 分桶?</h3>
+        </div>
+        <span class="d-scope architecture">Data Model · Filtering</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-03 决定每 subject 一个 <code>my-interpretations/&lt;subject&gt;.md</code>。但 L2 表的 schema 是 <code>(userId, reqId, notes)</code> —— 没有 subject 列,只有 reqId。怎么决定某条解读属于哪个 subject?</span>
+        <span class="lbl">约束</span>
+        <span class="val">既不能加 schema migration (这次 scope 不含),也不能让英语项目泄露用户对数学的解读。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">给 L2 表加 subject 列, 写时填,读时按 subject 过滤</span>
+          <span class="opt-verdict">❌ 拒 —— 需要 migration + 写路径改造</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">物化时查 L1 库的 reqId 集合, 在内存里过滤</span>
+          <span class="opt-verdict">✓ 选 —— schema 不变, 计算成本低</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">从 reqId 前缀推断 subject (<code>r-*</code> = english, <code>m-*</code> = math)</span>
+          <span class="opt-verdict">❌ 拒 —— 约定不是契约, 容易破</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          L1 库本身就是"reqId → subject"的<strong>权威映射</strong>: <code>library.categories[].items[].id</code>。物化器对每个 subject <code>getLibrary(subject)</code>,收集所有 reqId,然后用 <code>userInterps.filter(reqIdsInSubject.has)</code> 切出归属此 subject 的解读。一次内存里的 Set lookup,O(n) 不到。
+        </p>
+        <p>
+          关键的设计哲学是<em>"compute the partition at read time, don't denormalize"</em>: L2 的存储模型保持 per-user 全局 (用户对一条标准的看法跨项目稳定 —— 教用户思考的方式)。Subject 归属是<em>library snapshot 的函数</em>,而不是存储事实。如果哪天 L1 库重组分类、把一条 reqId 从 english 移到 math, L2 自然跟着走,不会留 stale partition。
+        </p>
+        <p>
+          抓到的细节: 跨学科 reqId 冲突 (e.g. 两个 library 都声明 <code>r-1.2.3</code>) 会让那条用户解读同时出现在两个 subject 的物化文件里。这是约定问题不是 bug —— ids 按约定 namespace (<code>r-*</code> vs <code>m-*</code>),但代码不强制。<code>collectReqIds</code> 的 JSDoc 显式记下这个边界。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          L2 schema 保持稳定; 任何"按 subject 看我的解读" 都可以从 L1 ∩ L2 推出
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来要支持"我对同一 reqId 在不同 subject 上的不同解读" (跨学科切换思路), L2 必须扩 schema
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>backend/src/project/project.service.ts:collectReqIds</code>, <code>listArtifactsWithContent</code> 的 L2 过滤段
+        <span class="lbl">commit</span><code>e4a1e339</code>
+      </div>
+    </div>
+
+    <!-- D-05 shared modal extraction -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 前端 Create + Edit 两个 modal 怎么组织?</h3>
+        </div>
+        <span class="d-scope design">Frontend · Components</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">原 CreateProjectModal 是 160 行 (form + a11y + 状态管理)。Edit 需要同样的字段、同样的 a11y、同样的 subject picker —— 只是 submit 调 PATCH 而不是 POST。</span>
+        <span class="lbl">约束</span>
+        <span class="val">React 没有原生 form 抽象,容易复制粘贴出三份"差不多但又不一样"的代码。修一处 a11y bug 就要改三遍。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">复制 CreateProjectModal 改 5 行成 EditProjectModal</span>
+          <span class="opt-verdict">❌ 拒 —— 两份代码,a11y 维护翻倍</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">提取共享 <code>ProjectFormModal</code>, Create/Edit 是薄包装 (~20 行)</span>
+          <span class="opt-verdict">✓ 选 —— 一处 a11y, 两处用</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">引入 react-hook-form / Formik</span>
+          <span class="opt-verdict">❌ 拒 —— 一个表单不值得加依赖</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是 <strong>"重构在新增之前"</strong> 的标准时刻 —— Create modal 已经存在, 直接复制是<em>明显</em>的本地最优, 但全局最差。提取 ProjectFormModal 让 CreateProjectModal 缩到 19 行 (纯包装), EditProjectModal 也是 19 行, 共享的部分都在一处。
+        </p>
+        <p>
+          代价: 引入了 <code>ProjectFormValues</code> 这个 props shape, ProjectListPage 的 <code>handleCreate</code>/<code>handleEdit</code> 都吃同一个类型 —— 小代价。收益: 接下来加 a11y 改进 (代码评审建议的 fieldset+legend) 时, 改一个文件就覆盖了两个流程。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Create 和 Edit 的表单 UX 永远对称; 一处 a11y 改进双倍生效
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来 Create 和 Edit 想分叉 (e.g. Edit 加 "subject 移除时的影响预览"), 共享组件要拆
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>creator/src/components/{ProjectFormModal,CreateProjectModal,EditProjectModal}.tsx</code>
+        <span class="lbl">commit</span><code>7bb18910</code>
+      </div>
+    </div>
+
+    <!-- D-06 validation layers -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Subjects 数组的验证职责在哪一层?</h3>
+        </div>
+        <span class="d-scope security">Defense · Layers</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">第一版只在 Service 层做"是不是合法 subject"。Code reviewer 抓到 HIGH: 没有 array 长度上限 —— caller 提交 <code>Array(10000).fill('english')</code> 还能 pass。</span>
+        <span class="lbl">约束</span>
+        <span class="val">DTO 的 class-validator (HTTP 边界) 跟 Service 的语义验证不重合: 前者管"形状对不对",后者管"内容是不是已知 subject"。要分清两者职责。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">所有验证集中到 Service (含长度上限)</span>
+          <span class="opt-verdict">❌ 拒 —— Service 处理形状错误违反单一职责</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">DTO 管形状 (<code>@ArrayMaxSize</code> + <code>@MaxLength each</code>), Service 管语义 (catalog 成员 + 去重)</span>
+          <span class="opt-verdict">✓ 选 —— 边界各管各的</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">单层验证 + 文档警告</span>
+          <span class="opt-verdict">❌ 拒 —— DoS 入口要类型化拦</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          经典<em>defense in depth</em>: HTTP 边界 (DTO + ValidationPipe) 在路由 handler 进入前就把不合理形状打回 400; Service 边界假定形状合法,只关心"这个值在我的 catalog 里吗"。两层各管各的,Service 不需要重复写 "is array? items are strings?",DTO 不需要知道 catalog 是什么。
+        </p>
+        <p>
+          关键的代码评审收获: <strong>"unbounded array on a write endpoint"</strong> 是一个被忽略的 attack surface。catalog 检查不能替代长度检查 —— 10k 个 "english" 的 array 全部 pass 语义检查 (都是合法 subject) 之后,被 dedup 成 1 个,但中间的 <code>Set.has</code> 10000 次 + JSON serialize 是真实代价。<code>@ArrayMaxSize(32)</code> 是真正的边界,选 32 是因为<em>任何合理课程都 &lt; 10 个学科</em>,留 3 倍 headroom 防"未来某种变种 track"。
+        </p>
+        <p>
+          错误响应体故意带上 <code>{unknownSubjects, validSubjects}</code> 而不是单纯 message 字符串 —— frontend picker 可以直接从 400 body 渲染出可选项,不用额外打一遍 <code>GET /_subjects</code>。这是 API design 里"<em>错误也是产品的一部分</em>"的体现。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          DTO 永远是第一道 wall, Service 假定 input 是合理形状; 新 subject 类输入复用此 pattern
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想绕过 ValidationPipe (e.g. 内部调用 Service 不走 HTTP) 时, 长度检查不生效 —— 但这是 in-tree 决定
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>backend/src/project/project.dto.ts</code> (DTO 层), <code>project.service.ts:normalizeSubjects</code> (Service 层)
+        <span class="lbl">commit</span><code>e4a1e339</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">4 项 · 每条带 revisit trigger</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4><code>GET /_subjects</code> 只返回 keys, 没带 <code>subjectLabel</code></h4>
+        <p><span class="lbl">现状</span>endpoint 返回 <code>{ subjects: ["english", "math"] }</code>。前端 picker 直接用 key 当显示文字, 教师看到的是英文 slug 而不是 "英语"/"数学"。</p>
+        <p><span class="lbl">推迟理由</span>UI 还在 dev/demo 阶段, 教师不会看到这个 picker; 用 slug 也能区分。扩成 <code>{ subjects: [{ key, label }] }</code> 是向后兼容的 (key 字段还在), 等真有教师反馈 "看不懂" 再做。</p>
+        <p><span class="lbl">重新审视的触发</span>第一次教师使用反馈 / i18n 启动 / 任何要在 UI 显示 subject 的新页面 (e.g. 项目卡片 hover tooltip)。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4>HttpError 不暴露 <code>body</code>, 前端拿不到 <code>validSubjects</code></h4>
+        <p><span class="lbl">现状</span>backend 在 400 body 里返回 <code>validSubjects</code> 列表 (D-06), 但 creator 的 HttpError class 只存了 <code>status + message</code>, 把 body 丢了。前端 modal 显示的是 message 字符串, picker 不能"自动恢复"。</p>
+        <p><span class="lbl">推迟理由</span>需要改 HttpError 的 API (加 body 字段) + 改所有错误处理调用点。当前手动选 subject 的 UX 也 OK, 用户自己看出哪个是 unknown。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个用户报告 "我选了 X 但提交失败,不知道为什么" / 类似 400 with structured body 的新 endpoint 出现时一并改造。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>Prod DB migration script</h4>
+        <p><span class="lbl">现状</span>新列 <code>subjects</code> 通过 TypeORM <code>synchronize:true</code> 在 dev 启动时自动加。Production migration 不在 scope (live-lesson 还没有 prod 部署)。</p>
+        <p><span class="lbl">推迟理由</span>整个 live-lesson backend schema 都还在 synchronize 阶段; 单独给一列写 migration 是过早的工程化。等启动 prod 时一起做。</p>
+        <p><span class="lbl">重新审视的触发</span>live-lesson 进入 staging / prod / 第一个真实生产 SQLite 实例。届时统一引入 typeorm migration 流程。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>Per-subject RBAC / 学科访问控制</h4>
+        <p><span class="lbl">现状</span>任何已登录用户都可以把任意 subject 加到自己的项目里。没有 "教师 X 只能选 english+math, 不能选 chemistry" 的策略。</p>
+        <p><span class="lbl">推迟理由</span>当前所有 subject 库都是 platform-shipped, 不涉及付费/权限/机构隔离。多租户 + 学科分配是更大的 feature, 不该夹带做。</p>
+        <p><span class="lbl">重新审视的触发</span>多机构 / SaaS 场景, 或者 subject 库开始按客户定制 (这个客户买了 english, 那个买了 math)。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>SQLite <code>synchronize:true</code> 真的会给老行 backfill <code>simple-json default '[]'</code> 吗?</h4>
+        <p><span class="lbl">问题</span>TypeORM 文档说会, SQLite 3.31+ 的 ALTER TABLE ADD COLUMN DEFAULT 也会, 但中间是否有 race / 特殊情况 (synchronize 决定 recreate table 时)? 我们加了 <code>project.subjects ?? []</code> 防御兜底, 但不知道这个兜底是不是真的会被触发。</p>
+        <p><span class="lbl">为什么 open</span>需要在一个有真实老数据的 dev DB 上跑一次 synchronize 才能验证。当前 dev 团队都是 fresh DB, 看不到这个边缘场景。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>跨学科 reqId 冲突要不要硬性约束?</h4>
+        <p><span class="lbl">问题</span>现在的 L1 catalog 加载允许同一个 reqId 出现在多个 subject 库里 (warning log, 不报错)。<code>collectReqIds</code> 的 JSDoc 也承认这种情况下 "两个 subject 的 interpretation 文件都会出现这条解读"。要不要让 catalog 加载在冲突时直接拒绝, 强制约定 "namespace by prefix"?</p>
+        <p><span class="lbl">为什么 open</span>当前内置 catalog 文件遵守约定 (<code>r-*</code> / <code>m-*</code>), 没有出现过冲突。强制约束会拒绝一些合法的极端用例 (e.g. 同一条课标在跨学科课程里被引用)。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>Subject picker 是不是 "项目级唯一" 还是有更细粒度?</h4>
+        <p><span class="lbl">问题</span>当前 subjects 是 project-level 的。但一个跨学科课程 (e.g. STEM) 在不同 lesson step 上可能只用其中一个 subject 的 reqId。要不要支持 "step-level subject scope" 让物化更精准?</p>
+        <p><span class="lbl">为什么 open</span>没有真实用户报告需要。step-level scope 会让 lesson plan 文件依赖 step → subject 的映射, 复杂度跳一个台阶。等真的有跨学科课程编写者抱怨 "我每步只关心一个学科,为什么 _lib/ 还有别的" 再说。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 3 commits · 提交 + 测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">3</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1,631</span><span class="cs-stat-l">Tests Pass (live-lesson)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">+19</span><span class="cs-stat-l">New tests added</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Code Review Passes (1 HIGH + 4 MED resolved)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l"><code>LIVE_LESSON_LESSON_PLAN_SUBJECT</code> in production code</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">e4a1e339</span><span class="tag feat">feat</span><span class="msg">backend: subjects[] column, PATCH endpoint, _subjects catalog endpoint, per-subject _lib/ materialization, env deletion, tests</span></div>
+        <div class="cs-row"><span class="hash">7bb18910</span><span class="tag feat">feat</span><span class="msg">frontend: shared ProjectFormModal (fieldset+legend a11y), EditProjectModal, subject badges + edit action on list page</span></div>
+        <div class="cs-row"><span class="hash">4dd2741e</span><span class="tag docs">docs</span><span class="msg">skill / find-req.sh (nullglob safety, header dedup) / design doc updated to per-subject layout</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin-top:14px;line-height:1.5">
+        Total tests: 1631 live-lesson backend (up from 1612 baseline; 19 new across project + teaching-requirements specs). tsc clean across <code>backend/</code> and <code>creator/</code> (pre-existing tsc errors in unrelated <code>BlockEditorDrawer.tsx</code> / lesson-plan-md parser specs untouched). ccaas backend (1558 tests) unchanged.
+        Code review run on each commit before push; HIGH (unbounded array) + 4 MEDs (a11y fieldset, find-req.sh nullglob + dedup, comment clarity, collectReqIds JSDoc) all addressed before commit.
+      </p>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-27 · ccaas Decision Archive · 接续 <code>decision-archive-lesson-plan-impl-2026-05-27.html</code> DEF-01
+  </footer>
+
+</div>
+
+</body>
+</html>
