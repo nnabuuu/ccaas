@@ -28,11 +28,14 @@ export function flashScrollTarget(el: Element | null): void {
   // class entirely is also fine; we apply it so the teacher *could*
   // still get a static highlight if they later flip the setting.
   el.classList.add('scroll-target-flash')
-  const t = setTimeout(() => {
+  // Class-removal timer (1600ms) is intentionally 100ms longer than
+  // the CSS keyframe duration (1.5s) in `src/index.css` so the class
+  // outlives the animation frame and removal isn't visible as a
+  // re-color. Keep these two numbers in sync when tuning.
+  // Fire-and-forget: if the element unmounts while the timer is
+  // pending, classList.remove on a detached node is a no-op — no
+  // cleanup needed.
+  setTimeout(() => {
     el.classList.remove('scroll-target-flash')
   }, 1600)
-  // No cleanup return — the element might unmount while the timer is
-  // pending; that's fine, removeProperty on a detached node is a
-  // no-op. If memory pressure ever matters, callers can wrap.
-  return void t
 }

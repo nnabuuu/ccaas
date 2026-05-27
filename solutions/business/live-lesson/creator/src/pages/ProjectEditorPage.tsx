@@ -113,8 +113,9 @@ export default function ProjectEditorPage() {
     // consumed by AiPanel (e.g. because chat was mid-stream) would fire
     // into project B's chat session on next mount. Cross-project leak.
     setPendingChatMessage(null)
-    // Same rationale for the scroll signal — a pending step-N anchor
-    // on project A would otherwise try to scroll project B's tab.
+    // Same rationale for the scroll signal — a pending step-id (or
+    // req-id) anchor from project A would otherwise try to scroll
+    // project B's tab.
     setScrollSignal(EMPTY_SIGNAL)
   }, [id])
 

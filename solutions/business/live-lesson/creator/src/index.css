@@ -56,7 +56,10 @@ body {
 }
 
 /* Brief amber flash for nav:// scroll targets — applied by
- * ExecutionTab / PlanTab when the chat bridge requests a scroll-to. */
+ * ExecutionTab / PlanTab when the chat bridge requests a scroll-to.
+ * Duration (1.5s) is paired with the 1600ms class-removal timer in
+ * `src/lib/flash-scroll-target.ts`; the 100ms buffer keeps removal
+ * invisible. Tune both when changing one. */
 @keyframes scroll-target-flash {
   0%   { background-color: rgba(251, 191, 36, 0.35); }  /* amber-400 */
   100% { background-color: transparent; }

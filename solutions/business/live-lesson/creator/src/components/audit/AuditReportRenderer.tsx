@@ -26,7 +26,7 @@ import {
 } from './audit-markdown'
 import { useChatBridge } from '../../contexts/ChatBridgeContext'
 import type { AuditSeverity } from '../../api/audit'
-import type { WorkspaceTabKey } from '../../lib/dynamic-tabs'
+import { parseNavWorkspace } from '../../lib/parse-nav'
 
 /**
  * CalloutContext: carries the enclosing callout's metadata down into
@@ -307,23 +307,6 @@ function renderInline(node: PhrasingContent, key: number): ReactNode {
  * semantics defined yet.
  */
 const HTTP_SCHEMES = /^https?:\/\//
-
-// Map a nav://<target>/<anchor> URL to a workspace key. Returns null
-// when the target isn't a known workspace.
-function parseNavWorkspace(url: string): {
-  key: WorkspaceTabKey
-  anchor?: string
-} | null {
-  // Accept e.g. nav://execution/step-1, nav://plan/r-1.2.3,
-  // nav://skills, nav://execution.
-  const m = url.match(/^nav:\/\/([^/?#]+)(?:\/([^?#]*))?/)
-  if (!m) return null
-  const target = m[1]
-  if (target === 'plan' || target === 'execution' || target === 'skills') {
-    return { key: target, anchor: m[2] || undefined }
-  }
-  return null
-}
 
 /**
  * Trust boundary note: `callout.body` originates from the LLM (audit

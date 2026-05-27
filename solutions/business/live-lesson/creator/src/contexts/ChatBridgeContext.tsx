@@ -27,9 +27,17 @@ export interface ChatBridge {
   sendMessage(text: string): void
 
   /**
-   * Switch the active workspace tab. Optional `anchor` will eventually
-   * scroll the target tab to a specific step / req id — for v1 it's
-   * accepted but unused (tab switch only).
+   * Switch the active workspace tab. Optional `anchor` is the bare id
+   * portion of `nav://<workspace>/<id>`:
+   *  - execution: a step.id (matches `data-step-id` on each step row)
+   *  - plan:      a req id without the `req://` prefix (matches
+   *               `data-req-id` on each ReferenceChip)
+   * The target tab scrolls the matching DOM node into view and
+   * briefly flashes it. An anchor that doesn't resolve to a node
+   * (e.g. the step was deleted after the audit ran) is a silent
+   * no-op — we never fall back to a positional guess because
+   * scrolling to wrong content is worse than not scrolling. Omit
+   * anchor for "just switch the tab, don't scroll".
    */
   switchToWorkspace(key: WorkspaceTabKey, anchor?: string): void
 }
