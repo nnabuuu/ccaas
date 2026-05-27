@@ -19,8 +19,8 @@
 
 set -euo pipefail
 
-LIB_FILE="_lib/teaching-requirements.md"
-INTERP_FILE="_lib/my-interpretations.md"
+LIB_FILE="artifacts/_lib/teaching-requirements.md"
+INTERP_FILE="artifacts/_lib/my-interpretations.md"
 
 if [ "$#" -lt 1 ]; then
   echo "usage: bash scripts/find-req.sh <keyword-or-id>" >&2

@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as posixPath from 'path/posix';
@@ -8,6 +8,9 @@ import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../domain/ports/lesson-repo.port';
 import { ManifestSchema } from '../schemas';
 import { CreateProjectDto, CreateFileDto } from './project.dto';
+import { TeachingRequirementsService } from '../teaching-requirements/teaching-requirements.service';
+import { RequirementInterpretationService } from '../teaching-requirements/requirement-interpretation.service';
+import { materializeLibFiles } from '../teaching-requirements/lib-renderer';
 
 @Injectable()
 export class ProjectService {
@@ -20,6 +23,12 @@ export class ProjectService {
     private readonly fileRepo: Repository<ProjectFile>,
     @Inject(LESSON_REPO_PORT)
     private readonly lessonRepo: LessonRepoPort,
+    // L1 / L2 services used to append `_lib/*.md` to the artifact
+    // response — lets the agent path see canonical lib + user
+    // interpretations alongside project files via the existing
+    // artifact-sync pipeline (no domain knowledge in ccaas).
+    private readonly teachingRequirements: TeachingRequirementsService,
+    private readonly interpretations: RequirementInterpretationService,
   ) {}
 
   // ── Project CRUD ──
@@ -39,13 +48,15 @@ export class ProjectService {
         // The HTML comment header is §4.2 layer 1 of the lesson-plan
         // format design — agent's first `cat` of this file always sees
         // the syntax contract without depending on a skill loading or
-        // a system prompt being fresh. The `_lib/*.md` paths
-        // referenced here are materialized by ccaas at session start.
+        // a system prompt being fresh. The `_lib/*.md` files are
+        // materialized by ccaas via the artifact sync at session
+        // start (so they appear under `artifacts/_lib/` from the
+        // agent's CWD).
         content:
           '<!--\n' +
           '教学要求引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")\n' +
-          '查 id:   Grep "<关键词>" _lib/teaching-requirements.md\n' +
-          '查解读:  Grep "r-X.Y.Z" _lib/my-interpretations.md\n' +
+          '查 id:   Grep "<关键词>" artifacts/_lib/teaching-requirements.md\n' +
+          '查解读:  Grep "r-X.Y.Z" artifacts/_lib/my-interpretations.md\n' +
           '-->\n\n' +
           `# ${dto.title}\n\n` +
           `## 教学目标\n\n` +
@@ -221,23 +232,67 @@ export class ProjectService {
    * shape `{path, content, type, attributes?}[]`. Distinct from `listFiles`
    * which is lightweight (no content) for the GUI's file tree.
    *
-   * Called by ccaas's `RestProjectArtifactSource.loadArtifacts` at each turn
-   * boundary, so keep this query cheap. Live-lesson projects are small
-   * (5-10 files); a single SELECT * is fine.
+   * Called by ccaas's `RestWorkspaceArtifactSource.loadArtifacts` at each
+   * turn boundary, so keep this query cheap. Live-lesson projects are
+   * small (5-10 files); a single SELECT * is fine.
+   *
+   * **User-scoped append** (`opts.userId` present + env
+   * `LIVE_LESSON_LESSON_PLAN_SUBJECT` configured): also returns the
+   * rendered L1 library + the caller's L2 interpretations at
+   * `_lib/*.md` paths. This implements design §4.1 path B (the
+   * bash-free agent access) via the existing artifact-sync pipeline —
+   * no separate materializer in ccaas needed.
+   *
+   * When userId is absent (anonymous session) or subject env unset,
+   * we skip the lib append silently. The agent can still use the
+   * bash helper (§4.2 layer 3) if available.
    */
   async listArtifactsWithContent(
     projectId: string,
+    opts: { userId?: string } = {},
   ): Promise<Array<{ path: string; content: string; type: string }>> {
     await this.ensureProject(projectId);
     const rows = await this.fileRepo.find({
       where: { projectId },
       order: { path: 'ASC' },
     });
-    return rows.map((r) => ({
+    const out: Array<{ path: string; content: string; type: string }> = rows.map((r) => ({
       path: r.path,
       content: r.content,
       type: r.fileType,
     }));
+
+    const subject = process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT?.trim();
+    if (opts.userId && subject) {
+      const library = this.teachingRequirements.getLibrary(subject);
+      const interpretationRows = await this.interpretations.listForUser(opts.userId);
+      const enriched = interpretationRows.map((row) => ({
+        reqId: row.reqId,
+        notes: row.notes,
+        updatedAt: row.updatedAt,
+        text: this.teachingRequirements.tryFindItemById(row.reqId)?.text,
+      }));
+      const { libraryMd, interpretationsMd } = materializeLibFiles({
+        library,
+        interpretations: enriched,
+      });
+      if (libraryMd) {
+        out.push({
+          path: '_lib/teaching-requirements.md',
+          content: libraryMd,
+          type: 'md',
+        });
+      }
+      // Always emit my-interpretations.md when subject is configured + userId
+      // is known — even if empty, the file's presence signals "lib materialization
+      // ran" to the agent. The renderer's placeholder text handles the empty case.
+      out.push({
+        path: '_lib/my-interpretations.md',
+        content: interpretationsMd,
+        type: 'md',
+      });
+    }
+    return out;
   }
 
   /**
@@ -245,9 +300,18 @@ export class ProjectService {
    * overwrites if it does. Updates `fileType` on each call so the agent
    * can promote a `.txt` to a `.md` by changing the path's extension.
    *
-   * Called by ccaas's `RestProjectArtifactSource.saveArtifact` when the
+   * Called by ccaas's `RestWorkspaceArtifactSource.saveArtifact` when the
    * agent edits a file. Idempotent — repeating with the same content is
    * a no-op-ish write.
+   *
+   * **Reserved prefix `_lib/`**: paths under `_lib/` are platform-rendered
+   * lib materializations (see `listArtifactsWithContent`'s user-aware
+   * append) — they appear in `loadArtifacts` output but writes back
+   * would cause round-trip pollution (the next `loadArtifacts` would
+   * return both the stored row AND the freshly-rendered lib content,
+   * creating a duplicate-path conflict). Reject writes to `_lib/` so
+   * any agent-side edit becomes a no-op visible only to the agent
+   * in-session.
    */
   async upsertArtifact(
     projectId: string,
@@ -257,6 +321,12 @@ export class ProjectService {
   ): Promise<{ path: string; fileType: string }> {
     await this.ensureProject(projectId);
     const safePath = this.sanitizePath(filePath);
+    if (isReservedLibPath(safePath)) {
+      throw new ForbiddenException(
+        `path "${safePath}" is platform-rendered (reserved _lib/ prefix); ` +
+          `edits must go through the L2 interpretation API, not artifact writes`,
+      );
+    }
     const existing = await this.fileRepo.findOne({
       where: { projectId, path: safePath },
     });
@@ -285,6 +355,14 @@ export class ProjectService {
 
   async deleteFile(projectId: string, filePath: string): Promise<void> {
     const safePath = this.sanitizePath(filePath);
+    if (isReservedLibPath(safePath)) {
+      // Reserved prefix — there's no row to delete (platform-rendered
+      // content, not stored). Surfaced as 403 so agents notice rather
+      // than silently no-op'ing on a delete the engine planned.
+      throw new ForbiddenException(
+        `path "${safePath}" is platform-rendered (reserved _lib/ prefix); cannot delete`,
+      );
+    }
     const file = await this.fileRepo.findOne({ where: { projectId, path: safePath } });
     if (!file) throw new NotFoundException(`File not found: ${safePath}`);
     await this.fileRepo.remove(file);
@@ -438,4 +516,19 @@ export class ProjectService {
   private now(): string {
     return new Date().toISOString();
   }
+}
+
+/**
+ * Paths reserved for platform-rendered lib materializations
+ * (`_lib/teaching-requirements.md`, `_lib/my-interpretations.md`, …).
+ *
+ * These appear in `loadArtifacts` output as derived content (rendered
+ * from L1+L2 services) but are NOT stored in `project_files`. Writes
+ * are rejected so a save-back from the agent (after the engine
+ * spuriously plans `save_db` for a transient fs touch) doesn't
+ * persist them — which would cause duplicate-path conflicts on the
+ * next `loadArtifacts` (stored row + freshly-rendered content).
+ */
+function isReservedLibPath(safePath: string): boolean {
+  return safePath === '_lib' || safePath.startsWith('_lib/');
 }

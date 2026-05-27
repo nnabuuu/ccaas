@@ -36,6 +36,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import type {
+  ArtifactCallContext,
   ArtifactSnapshot,
   WorkspaceArtifactSource,
   SaveArtifactResult,
@@ -53,10 +54,21 @@ export class RestWorkspaceArtifactSource implements WorkspaceArtifactSource {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
   }
 
-  async loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>> {
+  async loadArtifacts(
+    projectId: string,
+    context?: ArtifactCallContext,
+  ): Promise<ReadonlyArray<ArtifactSnapshot>> {
+    // Forward the caller's userId (when present) so the solution can
+    // return user-scoped content alongside project artifacts. ccaas
+    // stays domain-agnostic — it doesn't know what the solution does
+    // with this header, only that it's the auth-context-derived userId.
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (context?.userId) {
+      headers['X-Caller-User-Id'] = context.userId;
+    }
     const res = await fetch(
       `${this.baseUrl}/projects/${encodeURIComponent(projectId)}/artifacts`,
-      { method: 'GET', headers: { Accept: 'application/json' } },
+      { method: 'GET', headers },
     );
     if (!res.ok) {
       // 404 = project doesn't exist yet → empty set is the right answer

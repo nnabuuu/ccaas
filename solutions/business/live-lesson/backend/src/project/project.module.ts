@@ -10,9 +10,17 @@ import { CcaasChatProxyController } from '../adapters/http/ccaas-chat-proxy.cont
 import { CcaasUpstream } from '../adapters/http/ccaas-upstream.service';
 import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/lesson.repository';
+import { TeachingRequirementsModule } from '../teaching-requirements/teaching-requirements.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CourseProject, ProjectFile, Lesson])],
+  imports: [
+    TypeOrmModule.forFeature([CourseProject, ProjectFile, Lesson]),
+    // TeachingRequirementsModule exports both L1 (TeachingRequirementsService)
+    // and L2 (RequirementInterpretationService). ProjectService uses these
+    // to append `_lib/*.md` files into the artifact response when the
+    // calling user has a userId AND a lesson-plan subject is configured.
+    TeachingRequirementsModule,
+  ],
   // - CcaasProxyController shares the `projects/:projectId` prefix with
   //   ProjectController. Disjoint routes: proxy adds `changes` (SSE) +
   //   `invalidate`; ProjectController owns CRUD + files + artifacts.

@@ -43,6 +43,7 @@ export type {
   ArtifactSnapshot,
   WorkspaceArtifactSource,
   SaveArtifactResult,
+  ArtifactCallContext,
   WorkspaceAccessResolver,
   BinaryArtifactSnapshot,
   BinaryArtifactListing,

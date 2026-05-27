@@ -12,6 +12,7 @@ export type {
   ArtifactSnapshot,
   WorkspaceArtifactSource,
   SaveArtifactResult,
+  ArtifactCallContext,
 } from './workspace-artifact-source.js';
 export type { WorkspaceAccessResolver } from './workspace-access-resolver.js';
 export type {

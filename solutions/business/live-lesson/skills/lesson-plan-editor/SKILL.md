@@ -20,8 +20,8 @@ Key contract from the file's HTML comment header:
 
 ```
 教学要求引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")
-查 id:   Grep "<关键词>" _lib/teaching-requirements.md
-查解读:  Grep "r-X.Y.Z" _lib/my-interpretations.md
+查 id:   Grep "<关键词>" artifacts/_lib/teaching-requirements.md
+查解读:  Grep "r-X.Y.Z" artifacts/_lib/my-interpretations.md
 ```
 
 ## Reference layers
@@ -31,9 +31,9 @@ before editing:
 
 - **L0** — the markdown file you `Read` / `Edit`. Plain text on disk. The
   source of truth.
-- **L1** — the teaching-requirements library at `_lib/teaching-requirements.md`.
+- **L1** — the teaching-requirements library at `artifacts/_lib/teaching-requirements.md`.
   Platform-shipped, read-only. Use `Grep` to find ids.
-- **L2** — the user's interpretations at `_lib/my-interpretations.md`.
+- **L2** — the user's interpretations at `artifacts/_lib/my-interpretations.md`.
   Per-user notes about each req. **Never write L2 content into the lesson
   plan file** — that's personal context, not lesson content. Use it as
   reading context when authoring the plan.
@@ -45,7 +45,7 @@ before editing:
 1. Find the right req id:
 
    ```
-   Grep "推断生词" _lib/teaching-requirements.md
+   Grep "推断生词" artifacts/_lib/teaching-requirements.md
    ```
 
    The result shows entries like:
@@ -58,7 +58,7 @@ before editing:
 2. Read the user's interpretation if any:
 
    ```
-   Grep -A 6 "r-1.2.3" _lib/my-interpretations.md
+   Grep -A 6 "r-1.2.3" artifacts/_lib/my-interpretations.md
    ```
 
 3. Insert the canonical link in the `## 教学要求` section:
@@ -81,7 +81,7 @@ Read plan/lesson-plan.md
 
 Make sure:
 - The HTML comment header at the top is intact (agents downstream need it)
-- All `req://` links you added use valid ids from `_lib/teaching-requirements.md`
+- All `req://` links you added use valid ids from `artifacts/_lib/teaching-requirements.md`
 - Headings use `## / ###` consistently for sections / modules
 
 ### Restructure modules
@@ -96,7 +96,7 @@ When restructuring:
 ### Handle stale `req://` references
 
 If the user reports a "stale chip" in the editor or you see a ref to an
-id not in `_lib/teaching-requirements.md`:
+id not in `artifacts/_lib/teaching-requirements.md`:
 - Don't delete the line silently. The text after the chip may carry the
   user's intent (e.g. `—— 本课重点`).
 - Either look up a replacement id (`Grep` on the text fragment) or ask
@@ -108,7 +108,7 @@ id not in `_lib/teaching-requirements.md`:
   are sidecar data; embedding them duplicates state and creates conflicts
   on subsequent canonicalize.
 - **Don't** invent `req://` ids. If you can't find a match in
-  `_lib/teaching-requirements.md`, the requirement isn't in the library
+  `artifacts/_lib/teaching-requirements.md`, the requirement isn't in the library
   — ask the user before adding.
 - **Don't** remove the HTML comment header. It's the agent contract for
   this file's format; future agents (including yourself in another
@@ -120,7 +120,7 @@ id not in `_lib/teaching-requirements.md`:
 ## Where to find more
 
 - `docs/lesson-plan-format-design.md` — full format spec
-- `_lib/teaching-requirements.md` — current library (subject-scoped)
-- `_lib/my-interpretations.md` — current user's notes
+- `artifacts/_lib/teaching-requirements.md` — current library (subject-scoped)
+- `artifacts/_lib/my-interpretations.md` — current user's notes
 - `scripts/find-req.sh` (when bash is available) — convenience: search
   library + interpretation in one shot

@@ -309,8 +309,14 @@ export class SessionAssetSyncer {
       .filter((e) => e.path.startsWith(`${ARTIFACTS_BINARY_DIR}/`))
       .map((e) => ({ ...e, path: e.path.slice(ARTIFACTS_BINARY_DIR.length + 1) }));
 
+    // Forward the session's authenticated userId so solutions can
+    // return user-scoped content (e.g. per-user overlays / notes /
+    // library files) alongside project artifacts. ccaas stays
+    // domain-agnostic — what the solution does with userId is its
+    // own concern.
+    const userId = this.sessions.getSession(sessionId)?.userId;
     const [dbNow, fsDelta] = await Promise.all([
-      source.loadArtifacts(projectId),
+      source.loadArtifacts(projectId, userId ? { userId } : undefined),
       this.buildFsDelta(sessionId, artifactsDir, textPrevSnapshot),
     ]);
 

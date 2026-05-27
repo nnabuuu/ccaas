@@ -7,6 +7,8 @@ import { ProjectFile } from '../adapters/persistence/entities/project-file.entit
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 import { ManifestSchema } from '../schemas';
+import { TeachingRequirementsService } from '../teaching-requirements/teaching-requirements.service';
+import { RequirementInterpretationService } from '../teaching-requirements/requirement-interpretation.service';
 
 // ── Mock repository factory ──
 
@@ -42,11 +44,24 @@ describe('ProjectService', () => {
   let projectRepo: ReturnType<typeof mockRepo>;
   let fileRepo: ReturnType<typeof mockRepo>;
   let lessonRepo: ReturnType<typeof mockRepo>;
+  let teachingRequirements: jest.Mocked<TeachingRequirementsService>;
+  let interpretations: jest.Mocked<RequirementInterpretationService>;
 
   beforeEach(async () => {
     projectRepo = mockRepo();
     fileRepo = mockRepo();
     lessonRepo = mockRepo();
+    // Default to "no library, no interpretations" — keeps the
+    // pre-existing test cases (which don't care about the lib append)
+    // operating against the original artifact list. The new tests
+    // override these mocks per-case.
+    teachingRequirements = {
+      getLibrary: jest.fn().mockReturnValue(null),
+      tryFindItemById: jest.fn().mockReturnValue(undefined),
+    } as unknown as jest.Mocked<TeachingRequirementsService>;
+    interpretations = {
+      listForUser: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<RequirementInterpretationService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,6 +69,8 @@ describe('ProjectService', () => {
         { provide: getRepositoryToken(CourseProject), useValue: projectRepo },
         { provide: getRepositoryToken(ProjectFile), useValue: fileRepo },
         { provide: LESSON_REPO_PORT, useValue: lessonRepo },
+        { provide: TeachingRequirementsService, useValue: teachingRequirements },
+        { provide: RequirementInterpretationService, useValue: interpretations },
       ],
     }).compile();
 
@@ -439,6 +456,164 @@ describe('ProjectService', () => {
 
       await service.publish('p1');
       expect(projectRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'published' }));
+    });
+  });
+
+  // ── listArtifactsWithContent (with optional user-scoped lib append) ──
+
+  describe('listArtifactsWithContent', () => {
+    const originalEnv = { ...process.env };
+
+    beforeEach(() => {
+      // Default state for these tests: project exists, returns 2 files.
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      fileRepo.find.mockResolvedValueOnce([
+        { path: 'plan/lesson-plan.md', content: '# plan', fileType: 'md' },
+        { path: 'execution/manifest.json', content: '{}', fileType: 'json' },
+      ]);
+    });
+
+    afterEach(() => {
+      process.env = { ...originalEnv };
+    });
+
+    it('returns only project files when no userId provided', async () => {
+      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
+      const out = await service.listArtifactsWithContent('p1');
+      expect(out).toHaveLength(2);
+      expect(out.map((a) => a.path)).toEqual([
+        'plan/lesson-plan.md',
+        'execution/manifest.json',
+      ]);
+      expect(interpretations.listForUser).not.toHaveBeenCalled();
+    });
+
+    it('returns only project files when userId present but subject env unset', async () => {
+      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      expect(out).toHaveLength(2);
+      // L1/L2 services not consulted when subject is missing — the
+      // env switch is the opt-in.
+      expect(teachingRequirements.getLibrary).not.toHaveBeenCalled();
+      expect(interpretations.listForUser).not.toHaveBeenCalled();
+    });
+
+    it('returns only project files when subject env set but userId absent', async () => {
+      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
+      const out = await service.listArtifactsWithContent('p1');
+      expect(out).toHaveLength(2);
+      expect(interpretations.listForUser).not.toHaveBeenCalled();
+    });
+
+    it('appends _lib/*.md when userId + subject both present', async () => {
+      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
+      teachingRequirements.getLibrary.mockReturnValueOnce({
+        subject: 'english',
+        subjectLabel: '英语',
+        version: '2026-05',
+        categories: [
+          {
+            id: 'lang',
+            label: '语言能力',
+            color: 'teal',
+            items: [{ id: 'r-1.2.3', code: '课标 2.1.3', text: '推断生词含义' }],
+          },
+        ],
+      });
+      interpretations.listForUser.mockResolvedValueOnce([
+        {
+          reqId: 'r-1.2.3',
+          notes: 'my note',
+          updatedAt: '2026-05-27T00:00:00Z',
+        },
+      ]);
+      teachingRequirements.tryFindItemById.mockReturnValueOnce({
+        id: 'r-1.2.3',
+        code: '课标 2.1.3',
+        text: '推断生词含义',
+        subject: 'english',
+        categoryId: 'lang',
+        categoryLabel: '语言能力',
+        categoryColor: 'teal',
+      });
+
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      const paths = out.map((a) => a.path);
+      expect(paths).toContain('_lib/teaching-requirements.md');
+      expect(paths).toContain('_lib/my-interpretations.md');
+      expect(interpretations.listForUser).toHaveBeenCalledWith('alice');
+      const libFile = out.find((a) => a.path === '_lib/teaching-requirements.md');
+      expect(libFile?.content).toContain('推断生词含义');
+      const myFile = out.find((a) => a.path === '_lib/my-interpretations.md');
+      expect(myFile?.content).toContain('my note');
+    });
+
+    it('emits empty-state my-interpretations.md when user has zero recorded', async () => {
+      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
+      teachingRequirements.getLibrary.mockReturnValueOnce(null);
+      interpretations.listForUser.mockResolvedValueOnce([]);
+
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      const paths = out.map((a) => a.path);
+      // No library (subject not registered) → no teaching-requirements.md
+      expect(paths).not.toContain('_lib/teaching-requirements.md');
+      // But still emit my-interpretations.md (placeholder) so the
+      // agent sees the lib materialization ran.
+      expect(paths).toContain('_lib/my-interpretations.md');
+    });
+
+    it('never queries L2 service unless both userId + subject are set', async () => {
+      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
+      await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      expect(interpretations.listForUser).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── _lib/ reserved-prefix guard (round-trip pollution prevention) ──
+
+  describe('upsertArtifact reserved-prefix guard', () => {
+    beforeEach(() => {
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+    });
+
+    it('rejects writes to _lib/teaching-requirements.md (platform-rendered)', async () => {
+      await expect(
+        service.upsertArtifact('p1', '_lib/teaching-requirements.md', '...', 'md'),
+      ).rejects.toThrow(/_lib\/ prefix/);
+    });
+
+    it('rejects writes to _lib/my-interpretations.md', async () => {
+      await expect(
+        service.upsertArtifact('p1', '_lib/my-interpretations.md', '...', 'md'),
+      ).rejects.toThrow(/_lib\/ prefix/);
+    });
+
+    it('rejects writes to arbitrary _lib/ subpath', async () => {
+      await expect(
+        service.upsertArtifact('p1', '_lib/future-thing.md', '...', 'md'),
+      ).rejects.toThrow(/_lib\/ prefix/);
+    });
+
+    it('does NOT call save when path is reserved', async () => {
+      await expect(
+        service.upsertArtifact('p1', '_lib/x.md', '...', 'md'),
+      ).rejects.toThrow();
+      expect(fileRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('allows writes to non-_lib paths', async () => {
+      fileRepo.findOne.mockResolvedValueOnce(null);
+      await service.upsertArtifact('p1', 'plan/lesson-plan.md', '# new', 'md');
+      expect(fileRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteFile reserved-prefix guard', () => {
+    it('rejects deletes against _lib/* (platform-rendered)', async () => {
+      await expect(
+        service.deleteFile('p1', '_lib/teaching-requirements.md'),
+      ).rejects.toThrow(/_lib\/ prefix/);
+      expect(fileRepo.findOne).not.toHaveBeenCalled();
     });
   });
 });

@@ -92,6 +92,35 @@ describe('RestWorkspaceArtifactSource', () => {
       });
       await source.loadArtifacts('p/weird id');
     });
+
+    it('omits X-Caller-User-Id header when context is undefined', async () => {
+      mockFetch((_url, init) => {
+        const headers = (init?.headers ?? {}) as Record<string, string>;
+        expect(headers['X-Caller-User-Id']).toBeUndefined();
+        return makeResponse([]);
+      });
+      await source.loadArtifacts('p1');
+    });
+
+    it('omits X-Caller-User-Id when context.userId is missing/empty', async () => {
+      mockFetch((_url, init) => {
+        const headers = (init?.headers ?? {}) as Record<string, string>;
+        expect(headers['X-Caller-User-Id']).toBeUndefined();
+        return makeResponse([]);
+      });
+      await source.loadArtifacts('p1', {});
+      await source.loadArtifacts('p1', { userId: '' });
+    });
+
+    it('forwards X-Caller-User-Id header when context.userId is set', async () => {
+      mockFetch((_url, init) => {
+        const headers = (init?.headers ?? {}) as Record<string, string>;
+        expect(headers['X-Caller-User-Id']).toBe('alice');
+        expect(headers['Accept']).toBe('application/json');
+        return makeResponse([]);
+      });
+      await source.loadArtifacts('p1', { userId: 'alice' });
+    });
   });
 
   describe('saveArtifact', () => {

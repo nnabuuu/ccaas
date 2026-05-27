@@ -132,20 +132,22 @@ Agent 同时需要 L0 + L1 + L2 三层数据。但**不能假设 agent 有 bash*
 
 #### 路径 B: Materialized 库 + 解读 (L1 完整 + L2)
 
-Agent session 启动时, **`SessionAssetMaterializer` 把 L1 库 + 当前 user 的 L2 解读 写进 workspace 的 `_lib/` 目录**:
+Agent session 启动时, **live-lesson 通过现有的 artifact-sync 通道把 L1 库 + 当前 user 的 L2 解读返回给 ccaas, ccaas 把它们写进 workspace 的 `artifacts/_lib/` 目录**:
 
-- `_lib/teaching-requirements.md` —— L1 完整库, 按 category 分 section, 每个 item 一段
-- `_lib/my-interpretations.md` —— 当前 user 的所有 L2 解读, 一个 req 一段
+- `artifacts/_lib/teaching-requirements.md` —— L1 完整库, 按 category 分 section, 每个 item 一段
+- `artifacts/_lib/my-interpretations.md` —— 当前 user 的所有 L2 解读, 一个 req 一段
 
 Agent 用标准工具访问:
 
 ```
-Read   _lib/teaching-requirements.md      # 翻全库
-Grep   "推断生词" _lib/teaching-requirements.md  # 关键词找 id
-Grep   "r-1.2.3" _lib/my-interpretations.md     # 看你对某条的解读
+Read   artifacts/_lib/teaching-requirements.md      # 翻全库
+Grep   "推断生词" artifacts/_lib/teaching-requirements.md  # 关键词找 id
+Grep   "r-1.2.3" artifacts/_lib/my-interpretations.md     # 看你对某条的解读
 ```
 
-这条路径**不依赖任何外部工具**, 唯一前提是 ccaas 的 materializer 跑了。跟 ccaas 现有 `entities/` / `resources/` 物化是同一机制扩展。
+这条路径**不依赖任何外部工具**, 唯一前提是 ccaas 的 artifact sync 跑了 (这是默认行为)。
+
+**架构边界**: ccaas-core **不知道**这两个文件存在 —— 它只是把 live-lesson 通过 artifact endpoint 返回的所有路径机械地物化进 workspace。ccaas 唯一的"扩展"是给 artifact loadArtifacts 调用加了一个 `X-Caller-User-Id` header (从 `session.userId` 来), 让 solution 端能 user-scope 返回内容。"教学要求库" + "用户解读" 是 live-lesson 自己的概念, 完全在 solution 侧处理。
 
 #### 路径 C: Bash helper (optional, 只在有 shell 环境)
 

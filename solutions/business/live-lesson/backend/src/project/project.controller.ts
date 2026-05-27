@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Delete,
-  Param, Query, Body, BadRequestException,
+  Param, Query, Body, BadRequestException, Headers,
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -131,10 +131,27 @@ export class ProjectController {
   /**
    * Return all artifacts for the project with content inlined.
    * Shape: [{ path, content, type }]
+   *
+   * When ccaas forwards `X-Caller-User-Id` (the session's authenticated
+   * user) AND this backend has `LIVE_LESSON_LESSON_PLAN_SUBJECT` set
+   * in env, the response ALSO includes `_lib/teaching-requirements.md`
+   * + `_lib/my-interpretations.md` — see ProjectService.listArtifactsWithContent.
+   *
+   * userId is read from the header (trusted because ccaas's proxy
+   * injects it server-side; see design doc §5.3 path A). Bare client
+   * requests won't send the header, so they get only project files
+   * (no user-scoped content) — safe default.
    */
   @Get(':id/artifacts')
-  listArtifacts(@Param('id') id: string) {
-    return this.service.listArtifactsWithContent(id);
+  listArtifacts(
+    @Param('id') id: string,
+    @Headers('x-caller-user-id') userId?: string,
+  ) {
+    const trimmed = userId?.trim();
+    return this.service.listArtifactsWithContent(
+      id,
+      trimmed ? { userId: trimmed } : {},
+    );
   }
 
   /**

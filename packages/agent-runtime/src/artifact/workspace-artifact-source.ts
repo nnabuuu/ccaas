@@ -58,6 +58,20 @@ export interface SaveArtifactResult {
 }
 
 /**
+ * Optional per-call context the runtime can attach to artifact-source
+ * calls. Solutions decide whether to consult it. Adding new fields is
+ * non-breaking — implementations ignore what they don't understand.
+ *
+ * `userId` lets the solution return *user-scoped* content alongside
+ * project artifacts (e.g. per-user notes / overlays / sidecar files)
+ * without ccaas needing to know what that content is.
+ */
+export interface ArtifactCallContext {
+  /** Authenticated caller's user id, propagated from session.userId. */
+  userId?: string;
+}
+
+/**
  * The port solutions implement. Two required methods cover the full
  * bidirectional sync; `deleteArtifact` is opt-in.
  */
@@ -76,8 +90,23 @@ export interface WorkspaceArtifactSource {
    *
    * Implementations should treat the read as point-in-time; if
    * consistency across artifacts matters, wrap in a transaction.
+   *
+   * **Path namespace**: paths are a flat namespace (no
+   * formal sub-roots). Returning two entries with the same path is
+   * undefined; the runtime takes one of them but which is unspecified.
+   * Solutions that surface derived content (e.g. platform-rendered
+   * libraries under a prefix like `_lib/`) should reject writes
+   * back to those prefixes in `saveArtifact` to prevent round-trip
+   * pollution.
+   *
+   * `context` carries optional per-call metadata (currently just the
+   * caller's `userId`). Solutions opt-in by reading it; ones that
+   * don't need user-scoped content can ignore it.
    */
-  loadArtifacts(projectId: string): Promise<ReadonlyArray<ArtifactSnapshot>>;
+  loadArtifacts(
+    projectId: string,
+    context?: ArtifactCallContext,
+  ): Promise<ReadonlyArray<ArtifactSnapshot>>;
 
   /**
    * Persist one artifact that the agent wrote (detected via fs diff).
