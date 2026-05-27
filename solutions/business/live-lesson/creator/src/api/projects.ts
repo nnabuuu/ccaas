@@ -32,9 +32,29 @@ export async function listProjects(
   return request<Project[]>(`/api/projects?status=${status}`);
 }
 
-export async function createProject(data: { title: string; description?: string }): Promise<Project> {
+export async function createProject(data: {
+  title: string;
+  description?: string;
+  subjects?: string[];
+}): Promise<Project> {
   return request<Project>('/api/projects', {
     method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Patch a project's metadata (title / description / subjects). Only
+ * provided fields are touched. Unknown subjects return HTTP 400 with a
+ * body listing valid options; callers should surface that to the user
+ * rather than swallowing.
+ */
+export async function updateProject(
+  id: string,
+  data: { title?: string; description?: string; subjects?: string[] },
+): Promise<Project> {
+  return request<Project>(`/api/projects/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }

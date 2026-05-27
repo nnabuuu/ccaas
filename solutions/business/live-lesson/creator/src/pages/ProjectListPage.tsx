@@ -8,15 +8,19 @@ import {
   ArchiveRestore,
   FileText,
   ArrowUpDown,
+  Pencil,
 } from 'lucide-react'
 import {
   listProjects,
   createProject,
+  updateProject,
   deleteProject,
   restoreProject,
 } from '../api/projects'
 import type { Project, ProjectListStatus } from '../types'
 import CreateProjectModal from '../components/CreateProjectModal'
+import EditProjectModal from '../components/EditProjectModal'
+import type { ProjectFormValues } from '../components/ProjectFormModal'
 
 type SortKey = 'updatedAt' | 'createdAt' | 'title'
 
@@ -89,6 +93,10 @@ export default function ProjectListPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  // `editing` doubles as both the dialog's open trigger and the source
+  // of pre-filled values; null = closed, project = open with that row's
+  // values. Avoids a separate open boolean drifting out of sync.
+  const [editing, setEditing] = useState<Project | null>(null)
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -139,10 +147,22 @@ export default function ProjectListPage() {
     })
   }
 
-  const handleCreate = async (data: { title: string; description: string }) => {
+  const handleCreate = async (data: ProjectFormValues) => {
     const project = await createProject(data)
     setShowCreateModal(false)
     navigate(`/projects/${project.id}`)
+  }
+
+  const handleEdit = async (data: ProjectFormValues) => {
+    if (!editing) return
+    const updated = await updateProject(editing.id, data)
+    setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+    setEditing(null)
+  }
+
+  const handleOpenEdit = (project: Project, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditing(project)
   }
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -278,6 +298,7 @@ export default function ProjectListPage() {
                 project={project}
                 isArchivedView={isArchivedView}
                 onOpen={() => navigate(`/projects/${project.id}`)}
+                onEdit={(e) => handleOpenEdit(project, e)}
                 onDelete={(e) => handleDelete(project.id, e)}
                 onRestore={(e) => handleRestore(project.id, e)}
               />
@@ -290,6 +311,13 @@ export default function ProjectListPage() {
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreate}
+      />
+
+      <EditProjectModal
+        open={editing !== null}
+        project={editing}
+        onClose={() => setEditing(null)}
+        onSubmit={handleEdit}
       />
     </div>
   )
@@ -341,15 +369,21 @@ function ProjectCard({
   project,
   isArchivedView,
   onOpen,
+  onEdit,
   onDelete,
   onRestore,
 }: {
   project: Project
   isArchivedView: boolean
   onOpen: () => void
+  onEdit: (e: React.MouseEvent) => void
   onDelete: (e: React.MouseEvent) => void
   onRestore: (e: React.MouseEvent) => void
 }) {
+  // Defensive `?? []` for rows persisted before the `subjects` column
+  // was added — synchronize:true backfills the default, but legacy
+  // SQLite snapshots may surface as null.
+  const subjects = project.subjects ?? []
   return (
     <div
       onClick={onOpen}
@@ -357,29 +391,41 @@ function ProjectCard({
         isArchivedView ? 'opacity-75' : ''
       }`}
     >
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-2 gap-1">
         <h3 className="font-medium text-gray-900 truncate flex-1">
           {project.title}
         </h3>
-        {isArchivedView ? (
-          <button
-            onClick={onRestore}
-            className="p-1 text-gray-400 hover:text-green-600 opacity-0 group-hover:opacity-100"
-            title="恢复项目"
-            aria-label="恢复项目"
-          >
-            <ArchiveRestore size={14} />
-          </button>
-        ) : (
-          <button
-            onClick={onDelete}
-            className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100"
-            title="归档项目"
-            aria-label="归档项目"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+          {!isArchivedView && (
+            <button
+              onClick={onEdit}
+              className="p-1 text-gray-400 hover:text-gray-700"
+              title="编辑项目"
+              aria-label="编辑项目"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+          {isArchivedView ? (
+            <button
+              onClick={onRestore}
+              className="p-1 text-gray-400 hover:text-green-600"
+              title="恢复项目"
+              aria-label="恢复项目"
+            >
+              <ArchiveRestore size={14} />
+            </button>
+          ) : (
+            <button
+              onClick={onDelete}
+              className="p-1 text-gray-400 hover:text-red-500"
+              title="归档项目"
+              aria-label="归档项目"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
       <p className="text-sm text-gray-500 mb-3 line-clamp-2 min-h-[2.5rem]">
         {project.description || '暂无描述'}
@@ -391,6 +437,15 @@ function ProjectCard({
           >
             {STATUS_LABELS[project.status]}
           </span>
+          {subjects.map((s) => (
+            <span
+              key={s}
+              className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap bg-teal-50 text-teal-700"
+              title="教学要求库"
+            >
+              {s}
+            </span>
+          ))}
           {typeof project.fileCount === 'number' && (
             <span className="inline-flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
               <FileText size={11} />

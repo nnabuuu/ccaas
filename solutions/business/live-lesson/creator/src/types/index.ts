@@ -3,6 +3,13 @@ export interface Project {
   title: string;
   description: string;
   status: 'draft' | 'published' | 'archived';
+  /**
+   * Teaching-requirement subjects this project covers. Drives which L1
+   * libraries get materialized into the agent's `_lib/` workspace. Empty
+   * array = no lib materialization. Validated server-side against the
+   * loaded subject catalog.
+   */
+  subjects: string[];
   createdAt: string;
   updatedAt: string;
   /** Present on list responses (loaded via TypeORM loadRelationCountAndMap); absent on detail responses. */

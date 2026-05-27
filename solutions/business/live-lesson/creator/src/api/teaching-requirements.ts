@@ -67,6 +67,20 @@ export async function listLibraries(opts?: {
 }
 
 /**
+ * List loaded subject keys (e.g. `["english", "math"]`). Used by the
+ * project create / edit modal to populate the subject picker.
+ *
+ * Server returns `{ subjects: string[] }`; we unwrap to keep the
+ * call-site signature consistent with the rest of this module.
+ */
+export async function listSubjects(): Promise<string[]> {
+  const res = await request<{ subjects: string[] }>(
+    '/api/teaching-requirements/_subjects',
+  );
+  return res.subjects;
+}
+
+/**
  * Search across libraries (flat result). Used by the picker's search
  * box and by the read-only Plan Tab when it wants to resolve all
  * referenced ids at once.
