@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Rich Chat Cards POC · Decision Archive · 2026-05-28</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;letter-spacing:-.4px}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.hero{margin-bottom:24px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.hero-eyebrow .pill{background:var(--teal-bg);color:var(--teal);padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px}
+.hero h1{font-family:"Fraunces",Georgia,serif;font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.context{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 30px;margin-bottom:48px;border-left:3px solid var(--teal)}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+.context p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+.d-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 32px;display:flex;flex-direction:column;gap:20px}
+.d-head{display:flex;align-items:flex-start;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.d-num{font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;color:var(--t3);font-style:italic;letter-spacing:-.1px;min-width:46px;padding-top:5px}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:3px;background:var(--surface2);color:var(--t2);align-self:flex-start;margin-top:5px}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.frontend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.contract{background:var(--teal-bg);color:var(--teal)}
+.d-frame{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;font-size:13px;line-height:1.6;color:var(--t2)}
+.d-frame .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);padding-top:3px;white-space:nowrap}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-options{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.d-options-h{display:grid;grid-template-columns:90px 1fr 140px;gap:14px;padding:9px 16px;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg);border-bottom:1px solid var(--border)}
+.d-option{display:grid;grid-template-columns:90px 1fr 140px;gap:14px;padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.55;align-items:start}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{content:'▸ ';color:var(--green);font-weight:700}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+.d-why{background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;padding:18px 22px}
+.d-why-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t1);margin-bottom:8px}
+.d-why p{font-family:"Fraunces",Georgia,serif;font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);margin-bottom:10px}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;font-style:normal;font-weight:500}
+.d-locks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.d-lock{padding:14px 16px;border-radius:8px;background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2)}
+.d-lock-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-artifact{font-size:11px;color:var(--t3);font-weight:500;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:14px}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 22px;display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start}
+.dq-num{font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;color:var(--t3);font-weight:500;padding-top:3px}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);margin-right:6px}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+details.change-surface{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:36px}
+details.change-surface > summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:700;color:var(--t1)}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-row{display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.test{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+@media (max-width:760px){.wrap{padding:32px 20px}.hero h1{font-size:30px}.d-card{padding:22px}.d-options-h,.d-option{grid-template-columns:1fr;gap:6px}.d-locks{grid-template-columns:1fr}.cs-row{grid-template-columns:1fr;gap:3px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">Rich Chat Cards POC · live-lesson creator · 2026-05-28</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">007bc0e5..6f0f173d</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">让 AI 的"我在做什么"<em>可见</em></span>
+    </div>
+    <h1>从纯文本到<br><em>结构化进度</em>:打通三类富卡片。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      <code>creator-v7-rich-chat-doc.md</code> (8 节正式规格) 描述了三类 chat 富消息卡片 (Todo / Questions / Verify), 完整 mockup 在 <code>creator-v7-rich-chat.jsx</code> 已实现 —— 但 shipped 创作器只渲染纯文本气泡。
+      用户带着假设进来: "实现可能要走 ccaas-core 的 'solution-defined tools + sessionTemplate' 机制, 但担心已 broken"。
+    </p>
+    <p>
+      <strong>第一个意外发现</strong>: 假设错了。 两套机制都 LIVE + tested ——
+      <code>solution.json</code> 注册 MCP server + <code>toolEventTriggers</code> 配置就能把 tool 结果转为 <code>output_update</code> SSE event。
+      Live-lesson 一直在用它跑 classroom 场景, 只是 creator 没用过。 POC 真正的工作是<em>第一次把 creator 接入这条已经在跑的轨道</em>。
+    </p>
+    <p>
+      4 个真决定: <em>走 ccaas MCP 还是 hack 私有渠道</em> (D-09), <em>怎么持久化富消息</em> (D-10), <em>scope 3 个卡片同时上 vs 增量</em> (D-11), <em>Questions submit 怎么回流到 agent</em> (D-12)。
+      共 9 个 commit, 92 个新测试, 4 轮 code review (catch 了 1 个 CRITICAL: 卡片在 chat 忙时静默 freeze, 答案丢失但 UI 显示"已确认")。 manual smoke 通过 4/4 MCP 协议路径 + Playwright 视觉验证 5 个卡片样本渲染。
+    </p>
+  </div>
+
+  <!-- DECISIONS -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">4 项 · 按对话顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-09 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-09</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 富 chat 卡片走 ccaas-core MCP 还是 hack 私有渠道?</h3>
+        </div>
+        <span class="d-scope contract">Contract · Architecture</span>
+      </div>
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">用户假设要走 "solution-defined tools + sessionTemplate" 但担心 broken。 研究发现机制完整 + classroom 在用 (3 个 MCP 工具配置了 toolEventTriggers), 只是 creator 场景没用过。 问题变成: 我们也走这条路, 还是 live-lesson 自己 hack 一个绕开 ccaas 的私有渠道?</span>
+        <span class="lbl">约束</span>
+        <span class="val">creator 当前用 HTTP 直连 ccaas (CcaasChatProxyController), 已经能塞任意数据进 chat。 直接 hack 一个 emit_card endpoint 跳过 MCP 协议是可能的。 但任何后续<em>solution</em>想要类似富消息能力, 都要重新发明轮子。</span>
+      </div>
+      <div class="d-options">
+        <div class="d-options-h"><span>Option</span><span>Approach</span><span>Verdict</span></div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">live-lesson 加私有 HTTP endpoint, 绕开 ccaas-core MCP 完全自管</span>
+          <span class="opt-verdict">❌ 拒 —— 重复造轮子 + 跟 ccaas-core 解耦了 future-proof 但也丢了所有 future-proof</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">注册 MCP server + <code>toolEventTriggers: [{ toolName, eventType:'output_update', field:'card' }]</code></span>
+          <span class="opt-verdict">✓ 选 —— 0 ccaas-core 改动, 复用现成机制, 任何 solution 都能照样做</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">改 EventMapperService 加一个 hardcoded "live-lesson 富卡片" branch</span>
+          <span class="opt-verdict">❌ 拒 —— ccaas-core 不该知道某个 solution 的具体 UI 概念</span>
+        </div>
+      </div>
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是个 <em>"走对了既有架构 vs 偷工"</em> 的选择。 ccaas-core 的 MCP + toolEventTriggers 机制本来就是为这个场景设计的 ——
+          <code>field: 'card'</code> 把工具结果包成 <code>{ field: 'card', value: &lt;parsed&gt; }</code> 然后 emit 为 <code>output_update</code> SSE event。
+          这是<strong>已经在跑的通路</strong>, 我们只是第一次<em>用它</em>。
+        </p>
+        <p>
+          Option A 看着诱人 (live-lesson 全栈在手, 添个 endpoint 几小时搞定), 但它<strong>把 ccaas-core 当成了哑管道</strong>。
+          一旦其他 solution 想要类似功能, 它们要么各自 hack 一遍, 要么我们最终被迫做 B 的扩展 ——
+          反正都得做, 不如一次做对。 Phase 0 烟雾测试只用了 10 分钟就确认了 (跑现有的 <code>event-mapper.service.spec.ts</code> 10/10 全绿), 假设破除。
+        </p>
+      </div>
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          任何新富消息类型只要: 加 MCP 工具 + 注册 toolEventTriggers + 写 frontend 渲染器。 0 ccaas-core 改动。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          MCP server 进程生命周期 + 启动延迟由 ccaas-core 控制; solution 无法精调。 工具 schema 是 raw JSONSchema (不是 Zod-to-JSONSchema bridge), 手工同步两边。
+        </div>
+      </div>
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>solutions/business/live-lesson/creator-mcp-server/</code> <em>(新)</em>
+        <code>solutions/business/live-lesson/solution.json</code>
+        <span class="lbl">commits</span><code>007bc0e5</code>
+      </div>
+    </div>
+
+    <!-- D-10 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-10</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 富卡片怎么持久化, 页面刷新后还能看到?</h3>
+        </div>
+        <span class="d-scope backend">Persistence · Schema</span>
+      </div>
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">POC 阶段卡片只在 live SSE 流中渲染, 刷新页面就丢了。 生产环境必须持久化, 但当前 messages 表只有 role + text, 没 type 字段。 选什么持久化路径?</span>
+        <span class="lbl">约束</span>
+        <span class="val">不想 migrate messages schema (跨包改动, ccaas-core + 多 solution 都要追)。 但工具调用结果<em>已经</em>被 ccaas-core 写到了 <code>tool_events</code> 表 (toolName + toolId + toolOutput), 只是前端 history 渲染只把它们当"调用 X 工具"通用标签显示。</span>
+      </div>
+      <div class="d-options">
+        <div class="d-options-h"><span>Option</span><span>Approach</span><span>Verdict</span></div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">messages 表加 <code>type</code> + <code>payload</code> 列 (schema migration)</span>
+          <span class="opt-verdict">❌ 拒 —— 跨包 schema 改动 + 要同步改 ccaas-core message persistence</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">复用 <code>tool_events.toolOutput</code> 存 card payload, 前端 history reload 时按 toolName 重建 card message</span>
+          <span class="opt-verdict">✓ 选 —— 0 migration, 现成持久化通路, frontend pure helper 完成 rebuild</span>
+        </div>
+      </div>
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <code>tool_events.toolOutput</code> <strong>已经在持久化我们要的东西</strong> ——
+          MCP 工具的返回值就是 card payload (我们的 echo 设计让这一点天然成立)。
+          所以"持久化"的真问题不是 schema, 是<em>前端 history 渲染时把这些 toolOutput 重新当成卡片消息显示</em>。
+          辅助函数 <code>expandHistoryMessage</code> 做这个: 遍历 toolEvents, 凡是 <code>emit_*_card</code> 工具且 toolOutput 能 parse 出 <code>kind</code>, 就 hoist 出一条独立的 card-type ChatMessage。
+        </p>
+        <p>
+          代价: 前端的两条渲染路径 (live SSE / history reload) 必须<strong>语义等价</strong>。
+          活路径 push 一条 <code>{type:'card', card}</code>; 重建路径同样 push 一条, 用 <code>toolId</code> 做 React key (后端分配, 跨 reload 稳定)。
+          一致性 review 后特意做了 "card 插入位置" 的修正 —— 活路径要把 card 插在 in-flight agent bubble<em>之前</em>,
+          这样跟 history reload 的 hoist-before-text 顺序一致, 用户刷新页面不会看到消息顺序突变。
+        </p>
+      </div>
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 emit_*_card 工具的 toolOutput 是持久化的唯一数据源。 schema 演进只要保持 <code>kind</code> 字段 + backward-compat。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          toolOutput 持久化 size cap 限制了卡片体量 (verify 几十检查项是上限)。 卡片提交后的<em>state</em> (Questions 的 submitted=true) 不持久化 —— 刷新后 submit 按钮重现, 但下游 user message 已发, agent 已 reply, 实际不会出 bug。
+        </div>
+      </div>
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/hooks/useAgentChat.ts</code>
+        <code>creator/src/types/chat-cards.ts</code>
+        <span class="lbl">commits</span><code>223828e5</code>
+      </div>
+    </div>
+
+    <!-- D-11 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-11</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> POC 只做最简单的 Todo, 还是 3 个卡片同时做?</h3>
+        </div>
+        <span class="d-scope design">Design · Scope</span>
+      </div>
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Phase 1 plan 默认 POC 只做 Todo (最简单, 单向数据流), Questions + Verify 留后续 sprint。 但用户决定: 三个都上 (~7.5 天 vs 3 天)。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Todo 是单向 (LLM → 卡片), Verify 多一个 running 动画 (前端 setInterval 模拟), Questions 多一个回流 (教师提交 → user message → agent). 复杂度递增。</span>
+      </div>
+      <div class="d-options">
+        <div class="d-options-h"><span>Option</span><span>Approach</span><span>Verdict</span></div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">只 Todo, 验证 architecture, 另两个留后续</span>
+          <span class="opt-verdict">❌ 拒 —— architecture 验证不需要 3 个; 但<em>UX 价值</em>验证需要</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">三个一起做 (Todo + Verify + Questions), 把 architecture 跟 UX 完整价值同时落地</span>
+          <span class="opt-verdict">✓ 选 —— +4.5 天换"教师真能用"</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Todo + Verify (跳过 Questions 的回流复杂度)</span>
+          <span class="opt-verdict">❌ 拒 —— Questions 是唯一双向卡, architecture 真正的"完整测试"需要它</span>
+        </div>
+      </div>
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          POC 的目的不只是"证明能做", 而是"教师真能用得上"。 Todo 单独验证了<strong>数据从后端到前端的渲染管道</strong>;
+          Verify 验证了<strong>前端 stateful 卡片 (动画) 的渲染管道</strong>; Questions 验证了<strong>用户输入回流到 agent 的反向通路</strong>。
+          三个一起做才把 architecture 跑完整 —— 反向通路是唯一新 architecture 点, 不做就只是"单向 SSE 验证", 跟其它 output_update event 没本质区别。
+        </p>
+        <p>
+          +4.5 天的代价主要在 Phase 3 (component 实现): Verify 1d, Questions 1.5d, vs Todo 0.5d。
+          但<strong>测试规模化几乎免费</strong> (每个 card 5-8 个 component test); review-driven fix 也是分摊 (3a 的反 motion 修复让 3b/3c 受益)。
+          最大风险在 Questions 的 submit-back 设计 —— 哪个文本格式 agent 能 reliably 解析? 这次选 <code>- [id] label: value</code> 结构化前缀, 但属于 contract decision, 真接入下游 prompt 可能要调。
+        </p>
+      </div>
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          完整 architecture 端到端 (单向 + 双向) 验证。 Todo / Verify / Questions 三个 react 组件 + 完整 component tests 是 future 富卡片的模板。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          +4.5 天的实施 effort。 review cycle 也长了 (CRITICAL 的 questions 静默 freeze bug 只有在 Questions 真做了才暴露)。
+        </div>
+      </div>
+      <div class="d-artifact">
+        <span class="lbl">commits</span>
+        <code>455fa156</code> (todo) <code>9224ea44</code> (verify) <code>6f0f173d</code> (questions + submit-back)
+      </div>
+    </div>
+
+    <!-- D-12 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-12</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Questions 卡片提交后, 答案怎么回流给 agent?</h3>
+        </div>
+        <span class="d-scope contract">Contract · Submit-back</span>
+      </div>
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">原型只有 <code>setSubmitted(true)</code>, 没设计提交后的 agent 通信。 但实际场景里 agent 问了问题, 它需要<em>收到答案</em>才能继续。 怎么把教师的填写发回 agent?</span>
+        <span class="lbl">约束</span>
+        <span class="val">不想新增 user message type (跟 D-10 同样的"避免 schema migration"动机)。 chat 协议唯一标准 user → agent 通路是 user message text。 但 review 暴露了一个 CRITICAL: 如果 send 被 silently 丢弃 (chat 忙), 卡片 freeze 显示 "✓ 已确认", agent 永远收不到答案。</span>
+      </div>
+      <div class="d-options">
+        <div class="d-options-h"><span>Option</span><span>Approach</span><span>Verdict</span></div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">新增 user message type <code>'questions_answer'</code>, agent 解析结构化字段</span>
+          <span class="opt-verdict">❌ 拒 —— schema 改动 + 跨包契约工作量超过 POC 预算</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">提交时自动 send 一条 user message 文本 (<code>已确认以下选择:\n- [q1] label: value\n...</code>), agent 文本解析</span>
+          <span class="opt-verdict">✓ 选 —— 0 协议改动, agent prompt 教它格式即可</span>
+        </div>
+      </div>
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          User message text 是<strong>已经存在的 user → agent 唯一通路</strong>。 任何 "新通路" 都要在 chat 协议上加 type 字段, ccaas-core 跟所有 solution 都要追。
+          文本通路的代价是<em>解析的脆弱性</em> —— 这是 review 阶段提出的 (Warning #2): 当 label 含 <code>:</code> 或重复时 agent 难分清。
+          修复: 文本格式加 <code>[id]</code> 前缀 (<code>- [q1] 矩阵维度: ...</code>), 给 agent 一个稳定 anchor 去 regex 匹配。
+        </p>
+        <p>
+          但<strong>review 还抓到一个更深的 bug</strong>: 提交流程是 "card 调 onSubmit → setSubmitted(true)" 这两步是同步的。
+          如果 <code>onSubmit</code> 是 <code>sendNow(text)</code>, 而 chat 当时 <code>isThinking=true</code>, sendNow no-op 返回 void —— card 仍然显示"已确认"但 agent 没收到。
+          <em>Silently 丢失 user 输入是 chat UI 的最大灾难</em>。 修复让 sendNow 返回 boolean (true=已发, false=guarded), card 检查返回值, false 时不冻结允许重试。 没这条修, 整个回流 architecture 就是个谎言。
+        </p>
+      </div>
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          submit-back 用 user message 文本通路, agent prompt 教它解析 <code>[id]</code> 前缀。 Drop-detection (sendNow boolean return) 是<em>所有</em> chat-bridge 路径的新契约 (action://fix 也受益)。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          agent prompt 要稳定地按格式解析; 如果 LLM 偶尔漂移 (省略 id 前缀 / 用别的语言), 解析失败。 prompt-tuning 是后续工作。
+        </div>
+      </div>
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/components/sidebar/cards/ChatQuestionsCard.tsx</code>
+        <code>creator/src/components/sidebar/AiPanel.tsx</code>
+        <span class="lbl">commits</span><code>6f0f173d</code>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DEFERRED -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">4 项 · 触发条件下重新审视</span>
+  </div>
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-05</div>
+      <div class="dq-body">
+        <h4>LLM prompt 生产化 (per-skill + per-card-type 调优)</h4>
+        <p><span class="lbl">现状</span>POC 在 <code>solution.json</code> 的 <code>appendSystemPrompt</code> 里塞了一段总指令告诉 agent 三个工具的用法。 真集成需要 per-skill 决策 (谁能用 emit_questions_card, 在什么 surface 上)。</p>
+        <p><span class="lbl">推迟理由</span>需要真实 dogfood 数据 (agent 用得对不对? 教师吃不吃这套?), 否则 prompt 调成什么样都是猜。 POC 阶段 prompt 够 demo。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个真实班级用 creator 产生 ≥10 个真实 chat 对话之后, 拉数据看 emit_*_card 触发率 + 命中率。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-06</div>
+      <div class="dq-body">
+        <h4>卡片 schema 升级路径 (v1 → v2 backward-compat)</h4>
+        <p><span class="lbl">现状</span>今天三个卡片的 <code>kind</code> + 字段都是 v1 隐含的 (没显式版本号). 持久化的 toolOutput 也没 schemaVersion 字段。</p>
+        <p><span class="lbl">推迟理由</span>没真实 schema 演进发生; 提前设计版本协议属于过度工程。 frontend 已经做了 forward-compat (不识别的 kind 静默忽略 + 不识别字段不破坏渲染), 倒退兼容性能撑。</p>
+        <p><span class="lbl">重新审视的触发</span>第一次需要给某个 card 加 required 字段时。 加 <code>schemaVersion: 'v2'</code> + 前端按版本路由。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-07</div>
+      <div class="dq-body">
+        <h4>ChatTodoCard 流式更新 (中途改 active item)</h4>
+        <p><span class="lbl">现状</span>后端一次性发完整 card payload。 如果 agent 想说"item 3 完成了, 现在做 item 4", 它需要重发整个 card (会渲染成<em>第二张卡片</em>而非更新第一张)。</p>
+        <p><span class="lbl">推迟理由</span>POC 简化决定, 真用起来教师可能会 expecting incremental update。 但解决方案需要在 SSE 协议层加 "patch this previous card by id" 概念, 是新 contract。</p>
+        <p><span class="lbl">重新审视的触发</span>第一次 dogfood 反馈 "为什么 todo 重复出现" 类型抱怨。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-08</div>
+      <div class="dq-body">
+        <h4>QuestionsCard 键盘 a11y (radio arrow-key navigation)</h4>
+        <p><span class="lbl">现状</span>radio options 是 <code>&lt;button role="radio"&gt;</code> 列表, 没有 ArrowUp/ArrowDown 导航。 鼠标 OK, 屏幕阅读器在 VoiceOver/NVDA 下也工作 (会读 role + aria-checked), 但纯键盘用户必须 Tab 过每个 option。</p>
+        <p><span class="lbl">推迟理由</span>真 fix 需要要么换原生 <code>&lt;input type="radio"&gt;</code> (样式重写麻烦) 要么自己实现 keyboard handler (~30 行 + 测试)。 review 提了, 但不阻塞 POC。</p>
+        <p><span class="lbl">重新审视的触发</span>实际有 a11y 用户反馈, 或 a11y audit 要求。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- OPEN QUESTIONS -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-04</div>
+      <div class="dq-body">
+        <h4>submit-back text 格式跟 agent 解析在真 LLM 上的可靠性</h4>
+        <p><span class="lbl">问题</span>POC 选了 <code>- [q1] label: value</code> 文本格式 + prompt 教 agent 按 <code>[id]</code> regex 匹配。 但 Claude / 其他 LLM 在多轮 chat 后是否仍能稳定按格式 emit + parse?</p>
+        <p><span class="lbl">为什么 open</span>没真实数据。 prompt 调优 + agent 行为评估属于 dogfood 阶段。 真不行的话, fallback 是 D-12 选项 A (新 user message type), 但那是 schema 改动。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-05</div>
+      <div class="dq-body">
+        <h4>card 应该不应该有"撤销"按钮?</h4>
+        <p><span class="lbl">问题</span>prototype 没有撤销。 Questions 提交后 freeze 就 freeze 了; Todo 没"取消任务"; Verify 没"重跑"。 但教师真用起来, 万一选错了选项, 当前的恢复路径是"在 chat 里发一条文字纠正"。 体验够好吗?</p>
+        <p><span class="lbl">为什么 open</span>取决于教师真使用模式。 撤销按钮本质是<em>card state 跟 chat history 的关系</em>问题 —— card 已经把 user message 发出去了, 撤销意味着<em>从 history 里删掉那条 user message + 让 agent 知道</em>, 涉及 ccaas-core 行为。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-06</div>
+      <div class="dq-body">
+        <h4>classroom 跟 creator 的两套 MCP server 该不该合并?</h4>
+        <p><span class="lbl">问题</span>live-lesson 现在有两个 MCP server 进程: <code>mcp-server/</code> (classroom 用, 板书工具) 跟 <code>creator-mcp-server/</code> (creator 用, 富卡片工具)。 是不是该合并成一个?</p>
+        <p><span class="lbl">为什么 open</span>合并的好处: 一个进程少一份生命周期管理。 坏处: 两组工具的<em>语义</em>很不一样 (classroom 是"操作真课堂", creator 是"在 UI 上渲染卡片"), 合在一起 schema 文件会很混乱。 sessionTemplate 已经能按 template 分配工具集了, 拆开更清晰。 当前的决定是<em>拆开</em>, 但如果未来 solution 数量大涨这个判断可能要重审。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHANGE SURFACE -->
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 提交 + 测试 + 文件</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">9</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">92</span><span class="cs-stat-l">Tests Added</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">Code-Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1</span><span class="cs-stat-l">CRITICAL Caught (submit drop)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">007bc0e5</span><span class="tag feat">feat</span><span class="msg">creator-mcp-server with 3 rich chat card tools (Phase 1)</span></div>
+        <div class="cs-row"><span class="hash">223828e5</span><span class="tag feat">feat</span><span class="msg">useAgentChat handles rich card SSE + history rebuild (Phase 2)</span></div>
+        <div class="cs-row"><span class="hash">455fa156</span><span class="tag feat">feat</span><span class="msg">ChatTodoCard component + AiPanel routing (Phase 3a)</span></div>
+        <div class="cs-row"><span class="hash">9224ea44</span><span class="tag feat">feat</span><span class="msg">ChatVerifyCard component + progressive reveal (Phase 3b)</span></div>
+        <div class="cs-row"><span class="hash">6f0f173d</span><span class="tag feat">feat</span><span class="msg">ChatQuestionsCard with submit-back flow (Phase 3c)</span></div>
+        <div class="cs-row"><span class="hash">(this)</span><span class="tag docs">docs</span><span class="msg">Phase 4 LLM prompt hint + cards-smoke.sh + dev preview page + D-09..D-12 archive (Phase 4 + 5)</span></div>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-28 · ccaas Decision Archive · 9 commits · 4 decisions · 4 deferred · 3 open
+  </footer>
+</div>
+</body>
+</html>
