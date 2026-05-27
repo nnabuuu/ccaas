@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException, BadRequestException, Logger, forwardRef } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as posixPath from 'path/posix';
@@ -12,17 +12,6 @@ import { TeachingRequirementsService } from '../teaching-requirements/teaching-r
 import { RequirementInterpretationService } from '../teaching-requirements/requirement-interpretation.service';
 import { renderLibrary, renderInterpretations } from '../teaching-requirements/lib-renderer';
 import type { TeachingRequirementsLibrary } from '../teaching-requirements/types';
-import { LintService } from '../application/lint/lint.service';
-
-/**
- * Paths that, when written, trigger a debounced AI lint re-run.
- * Anything else (skills/*, _lib/, raw assets) is ignored —
- * lint only cares about plan + manifest consistency.
- */
-const LINT_TRIGGER_PATHS: ReadonlySet<string> = new Set([
-  'plan/lesson-plan.md',
-  'execution/manifest.json',
-]);
 
 @Injectable()
 export class ProjectService {
@@ -41,30 +30,7 @@ export class ProjectService {
     // artifact-sync pipeline (no domain knowledge in ccaas).
     private readonly teachingRequirements: TeachingRequirementsService,
     private readonly interpretations: RequirementInterpretationService,
-    // LintService consumes plan + manifest content for AI lint.
-    // forwardRef breaks the circular import (LintService.readFile via
-    // ProjectService; ProjectService.enqueue via LintService).
-    @Inject(forwardRef(() => LintService))
-    private readonly lintService: LintService,
   ) {}
-
-  /**
-   * Fire-and-forget hook: when a write touches a lint-relevant path,
-   * enqueue a debounced AI lint re-run. Never blocks the response and
-   * never throws — lint is best-effort, file save is the contract.
-   */
-  private maybeEnqueueLint(projectId: string, safePath: string): void {
-    if (!LINT_TRIGGER_PATHS.has(safePath)) return;
-    try {
-      this.lintService.enqueue(projectId);
-    } catch (err) {
-      // enqueue itself shouldn't throw (it just registers a timer),
-      // but if some future refactor changes that, don't break saves.
-      this.logger.warn(
-        `lint enqueue failed for ${projectId}/${safePath}: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }
 
   // ── Project CRUD ──
 
@@ -267,7 +233,6 @@ export class ProjectService {
     await this.fileRepo.save(file);
 
     await this.projectRepo.update(projectId, { updatedAt: this.now() });
-    this.maybeEnqueueLint(projectId, safePath);
   }
 
   async createFile(projectId: string, dto: CreateFileDto): Promise<ProjectFile> {
@@ -429,7 +394,6 @@ export class ProjectService {
       );
     }
     await this.projectRepo.update(projectId, { updatedAt: this.now() });
-    this.maybeEnqueueLint(projectId, safePath);
     // Return the canonical (sanitized) path so ccaas's
     // RestProjectArtifactSource snapshot uses the actual persisted
     // key, not the (possibly differently-shaped) sent path.

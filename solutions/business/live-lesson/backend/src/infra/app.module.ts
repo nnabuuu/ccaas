@@ -8,7 +8,7 @@ import { ClassroomModule } from './classroom.module';
 import { ProjectModule } from '../project/project.module';
 import { ExerciseTypeModule } from '../exercise-type/exercise-type.module';
 import { TeachingRequirementsModule } from '../teaching-requirements/teaching-requirements.module';
-import { LintModule } from '../application/lint/lint.module';
+import { AuditModule } from '../application/audit/audit.module';
 
 @Module({
   imports: [
@@ -24,7 +24,7 @@ import { LintModule } from '../application/lint/lint.module';
     ProjectModule,
     ExerciseTypeModule,
     TeachingRequirementsModule,
-    LintModule,
+    AuditModule,
   ],
 })
 export class AppModule {}
