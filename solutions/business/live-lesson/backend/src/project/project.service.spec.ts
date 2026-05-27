@@ -366,6 +366,21 @@ describe('ProjectService', () => {
       await service.archive('p1');
       expect(projectRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'archived' }));
     });
+
+    it('archives a published project (published → archived transition)', async () => {
+      // Locks in that `published` is NOT a write-forbidden status —
+      // `ensureProject` only blocks `archived`. Without this explicit
+      // test, "publish then archive" relies on the implicit guarantee
+      // that ensureProject lets `published` through; a future
+      // tightening of the guard could silently break this edge.
+      const project = { id: 'p1', status: 'published' };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+
+      await service.archive('p1');
+      expect(projectRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'p1', status: 'archived' }),
+      );
+    });
   });
 
   // ── sanitizePath (tested indirectly through readFile/createFile) ──
