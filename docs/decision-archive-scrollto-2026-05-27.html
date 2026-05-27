@@ -329,11 +329,12 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       这次把<em>滚动到目标</em>这半步做完, 顺便定下 LLM ↔ frontend 的 anchor 契约 (V7-rich 的 OQ-03)。
     </p>
     <p>
-      6 个非显然决定: <em>anchor 用 idx 还是 id</em> (D-01), <em>state 怎么从 chat-bridge 传到子 tab</em> (D-02),
+      7 个非显然决定: <em>anchor 用 idx 还是 id</em> (D-01), <em>state 怎么从 chat-bridge 传到子 tab</em> (D-02),
       <em>cold-load 时数据还没到怎么 scroll</em> (D-03), <em>同一 anchor 连点两次怎么再 fire</em> (D-04),
       <em>把 DEF-01 直接做掉 + dual schema 编码</em> (D-05), 然后 review 时用户继续追问"那为什么不直接 id" ——
       重读 deleted-step trade-off 后发现 fallback 是 fail-quiet 而非 fail-loud, <em>纯 id schema</em> 把 D-01/D-05 都推翻 (D-06)。
-      cold-load race + nonce 监控 + mid-edit 反复 flash 是 3 轮 review 的发现, 都已修。
+      最后用户问"对照 design doc 还有 gap 吗", gap audit 发现 3 处偏离, 其中"预览课程"modal 的内容渲染是真决定 ——
+      cross-package 重构 vs iframe vs 占位, 选了占位 (D-07)。 另两处 (audit done 高亮 + 报告头部 badge) 是设计合规, 没替代方案权衡。
     </p>
   </div>
 
@@ -343,7 +344,7 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       <span class="num">01 —</span>
       <h2>Decisions <span class="en">这次想清楚了的</span></h2>
     </div>
-    <span class="hint">6 项 · 按设计顺序 (D-01 + D-05 superseded by D-06)</span>
+    <span class="hint">7 项 · 按对话顺序 (D-01 + D-05 superseded by D-06; D-07 是设计 audit 后的 follow-up)</span>
   </div>
 
   <div class="decisions">
@@ -782,6 +783,77 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
 
+    <!-- D-07 — design audit follow-up -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-07</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> "预览课程" modal 内容怎么渲染?</h3>
+        </div>
+        <span class="d-scope design">Design · Scope</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">scrollTo + 纯 id schema 都 ship 完后用户问 "对照 design doc 我们这块都做完了吗", 我做了一次 gap audit, 发现 3 处偏离设计 §3.1, §6.1, §2.1。 §3.1 的 "预览课程" 按钮跟 modal 缺失最严重 (其他两项是按钮高亮 + 报告头部 badge, 都是几十行的事)。 modal 要展示什么是真问题。</span>
+        <span class="lbl">约束</span>
+        <span class="val">学生端 (live-lesson <code>frontend/</code>) 跟 creator 是独立 app, share 组件需要跨包 import 加复杂度; iframe 指向 <code>/session/.../demo</code> 要求 sessionId, 但 unpublished project 没有 sessionId。 完整学生端预览这一轮做不完。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">iframe 指向 <code>/session/&lt;id&gt;/demo</code> 实时预览</span>
+          <span class="opt-verdict">❌ 拒 —— 没发布的项目没 sessionId, 不通。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Cross-package import 学生端 <code>StudentShell</code> 等组件, 用项目当前 manifest 当数据源</span>
+          <span class="opt-verdict">❌ 拒 —— 共享代码需要重构两个 app, 跨包 import + types 一堆事, 本轮预算外。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">占位 modal: 只展示 manifest 的 step list 概览 (idx + label + duration + strategy) + 明确写 "完整预览开发中"</span>
+          <span class="opt-verdict">✓ 选 —— 让"预览"入口立起来, 实际渲染留 backlog 真做 B 时再换。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          设计文档 §3.1 的"预览课程"按钮位置跟<em>语义</em>是稳定的产品资产 (跟"发布"对照, 让用户先看再发);
+          modal 里<em>具体渲染什么内容</em>反而是实现细节, 真要做学生端预览需要 cross-package 重构, 这种决定不应该在 design audit 这轮顺手做。
+        </p>
+        <p>
+          占位 modal 把"按钮 + 入口"<strong>这层产品决定</strong>跟"实际预览内容"<strong>这层技术实现</strong>解耦了。
+          按钮以后不会再动, 内容以后可以独立替换。 modal 里写明 "完整预览开发中 · 暂用发布走真实课堂",
+          用户知道是<em>有意占位</em>不是 broken。 这是 <em>"先把 product surface 立起来, 内容慢慢填"</em> 的典型应用。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          顶栏布局已含 "预览" 按钮; <code>CoursePreviewModal</code> 组件骨架 + ESC/backdrop 关闭 + manifest fetch 都已就位。 真预览只需替换 body。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          用户首次看到这个 modal 会被"完整预览开发中"告知, 短期内可能误以为整个功能 broken; backlog 跟一定要有可执行 follow-up。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/components/preview/CoursePreviewModal.tsx</code> <em>(新)</em>
+        <code>creator/src/components/topbar/TopBar.tsx</code>
+        <code>creator/src/pages/ProjectEditorPage.tsx</code>
+        <span class="lbl">commit</span><code>f1d03f2a</code>
+      </div>
+    </div>
+
   </div>
 
   <!-- DEFERRED -->
@@ -890,15 +962,19 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
     </summary>
     <div class="cs-body">
       <div class="cs-stat-row">
-        <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Commits (feature + pivot)</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">audit-prompt Tests</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">Commits (feature + pivot + cleanup + gap-closure)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">21</span><span class="cs-stat-l">Tests (8 audit-prompt + 13 parse-nav)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">5</span><span class="cs-stat-l">Review Rounds</span></div>
         <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Decisions Superseded</span></div>
         <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
       </div>
       <div class="cs-files">
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/scroll-anchor.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/lib/scroll-anchor.spec.ts (added then deleted in D-06 pivot)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/parse-nav.ts + .spec.ts (extracted from AuditReportRenderer; 13 tests)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/preview/CoursePreviewModal.tsx (D-07 gap closure)</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/audit/AuditReportView.tsx (AI 生成 badge + 重新生成 button)</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/topbar/TopBar.tsx + AuditButton.tsx (预览 button + done state)</span></div>
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.spec.ts</span></div>

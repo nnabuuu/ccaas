@@ -96,10 +96,20 @@ export default function CoursePreviewModal({
     <div
       className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6"
       onMouseDown={(e) => {
+        // Only count the press as a backdrop press when it literally
+        // landed on the backdrop element itself, not when bubbled up
+        // from a child.
         backdropMouseDown.current = e.target === e.currentTarget
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && backdropMouseDown.current) {
+      onMouseUp={(e) => {
+        // Close only when BOTH endpoints of the click land on the
+        // backdrop. A drag from anywhere onto / off the backdrop
+        // doesn't dismiss — that includes text-selection drags from
+        // the body releasing on the backdrop AND backdrop presses
+        // that drag into the body. Using mouseup (with onClick
+        // dropped) sidesteps `click` event dispatch on the common
+        // ancestor when down + up land on different elements.
+        if (backdropMouseDown.current && e.target === e.currentTarget) {
           onClose()
         }
         backdropMouseDown.current = false

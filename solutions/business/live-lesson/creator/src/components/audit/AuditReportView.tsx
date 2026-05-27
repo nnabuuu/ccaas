@@ -51,10 +51,24 @@ export default function AuditReportView({
   // top-bar AuditButton's polling owns the long-running visual
   // feedback; we just guard the click.
   const [regenInFlight, setRegenInFlight] = useState(false)
+  // Holds the cooldown setTimeout id so we can clear it on unmount —
+  // otherwise the timer's setState fires on a stale component if
+  // the user closes the audit tab within the cooldown window.
+  const regenCooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   const activeProjectId = useRef(projectId)
   useEffect(() => {
     activeProjectId.current = projectId
   }, [projectId])
+  useEffect(() => {
+    return () => {
+      if (regenCooldownTimer.current !== null) {
+        clearTimeout(regenCooldownTimer.current)
+        regenCooldownTimer.current = null
+      }
+    }
+  }, [])
 
   const load = async () => {
     const pid = activeProjectId.current
@@ -93,9 +107,16 @@ export default function AuditReportView({
       // transitions to its busy state. Without this gap, a fast
       // double-click would slip through the local guard (the
       // backend in-flight guard catches it, but UX should not
-      // pretend the second click was effective).
+      // pretend the second click was effective). The timer id is
+      // tracked so unmount-cleanup can clear it; without that, a
+      // teacher closing the tab within 3.5s would trigger a setState
+      // on a stale component (React 18 no-ops but warns).
       if (activeProjectId.current === pid) {
-        setTimeout(() => {
+        if (regenCooldownTimer.current !== null) {
+          clearTimeout(regenCooldownTimer.current)
+        }
+        regenCooldownTimer.current = setTimeout(() => {
+          regenCooldownTimer.current = null
           if (activeProjectId.current === pid) setRegenInFlight(false)
         }, 3_500)
       }
