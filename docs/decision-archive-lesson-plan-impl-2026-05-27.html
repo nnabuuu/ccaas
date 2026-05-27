@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>教案实现 · 决定档案 · ccaas · 2026-05-27</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.process{background:var(--surface2);color:var(--t2)}
+.d-scope.architecture{background:var(--red-bg);color:var(--red)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">教案格式实现 · 7 commits · 2026-05-27</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">68d051c3..ed451403</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">从设计到实现, 中途撞上一次架构纠错</span>
+    </div>
+    <h1>实现一份<em> 设计文档</em>, <br>然后被用户抓住<em>越界</em>。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      上一轮 (commit <code>6ca9b458</code>) 落地了 <code>lesson-plan-format-design.md</code> ——
+      一份关于教案文件格式 (L0 markdown / L1 库 / L2 per-user 解读) 的设计文档。
+      这一轮把它<strong>完整实现</strong>: 后端 L1 库 + L2 entity, markdown parse/serialize/canonicalize
+      库, Plan Tab 编辑器 (TipTap), agent 集成 (skill + 助手脚本).
+    </p>
+    <p>
+      实现的最后一步是 "ccaas 怎么把 lib 物化进 workspace?" —— 这里我犯了错: 在 ccaas-core 加了一个
+      <code>materializeLessonPlanLib</code> 方法, 让 ccaas 知道了 "lesson plan" 这个 domain 概念。
+      用户直接打回: <em>"ccaas agentRuntime 为什么会知道 solution 的内容?"</em>
+      最后一个 commit (<code>ed451403</code>) 是回滚 + 重新走对路 —— 通过现有 artifact-sync
+      port 加 userId context 实现, ccaas 完全不知道 "lesson plan" 存在。
+      整份 report 中最重要的决定就是这个 "被纠正" 的瞬间。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01: editor library -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Plan Tab 用什么编辑器框架?</h3>
+        </div>
+        <span class="d-scope design">Frontend · Editor</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计文档 §8 open question #1 列了三个候选 (TipTap / BlockNote / Lexical),"暂不决定"。实现到 track 5 时必须选一个。</span>
+        <span class="lbl">约束</span>
+        <span class="val">需要支持自定义 inline atom node (<code>req://</code> chip) + 自定义 block node (HTML 注释保留) + roundtrip stable 的 markdown ↔ JSON 桥。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">TipTap v3 (StarterKit + 自定义 Node 扩展)</span>
+          <span class="opt-verdict">✓ 选 —— 成熟、可扩展、社区例子多</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">BlockNote (现成 Notion-feel, 不开放底层)</span>
+          <span class="opt-verdict">❌ 拒 —— 自定义 chip node 困难</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Lexical / 自建</span>
+          <span class="opt-verdict">❌ 拒 —— 工作量过大, 我们要的是富文本不是搜索引擎</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这个决定本来是"两难选一", 但 chip 需求把选项剪掉了 —— BlockNote 的高级 API 不给我们足够口子去定义自定义 inline atom node (chip 是 React-rendered + has-data-attrs + non-editable, 这套组合在 BlockNote 里只能 hack 进去)。
+          TipTap 走 <strong>ProseMirror 的原生扩展机制</strong>, 我们写 <code>Node.create({...})</code> + <code>ReactNodeViewRenderer</code> 就拿到完全控制权。
+        </p>
+        <p>
+          代价: TipTap "Notion-feel" 不是 out-of-box, 我们自己写了 toolbar + slash command pattern + chip picker modal. 大概 1500 行 React. 但每一行都明确知道在做什么, 比 hack-BlockNote 调试要省时间。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          ProseMirror schema 是我们的内部表达; bridge 在 <code>tiptap-bridge.ts</code> 集中维护
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          换到 BlockNote 要重写 chip + HtmlBlockNode 扩展 (~500 行)
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>creator/src/components/plan/{PlanEditor,ReferenceChipNode,HtmlBlockNode}.tsx</code>
+        <span class="lbl">commit</span><code>e9f8aa9f</code>
+      </div>
+    </div>
+
+    <!-- D-02: chip as atom node -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Chip 在 ProseMirror 里是什么节点类型?</h3>
+        </div>
+        <span class="d-scope design">Frontend · Node Type</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">实现 <code>ReferenceChipNode</code> 时, TipTap 让我选 mark / inline non-atom / inline atom / block。每个都能 "工作", 但语义不一样, 影响光标行为 + 选区 + 撤销。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Chip 内容 (text + title) 是 <strong>library 渲染出来的</strong>, 用户不应该字符级编辑 (避免误改 → canonicalize 又刷回); 但 chip 整体可以被选中 + 删除。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Inline mark (字符上的标记)</span>
+          <span class="opt-verdict">❌ 拒 —— 用户可以在 marked 文本上敲字, 半个 chip 内容混乱</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Inline atom node (<code>atom: true, selectable: true</code>)</span>
+          <span class="opt-verdict">✓ 选 —— 原子选区, 整体删, 不可字符级编辑</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Block-level node (独占一行)</span>
+          <span class="opt-verdict">❌ 拒 —— chip 要 inline (跟普通文本同一行), block 太重</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          ProseMirror 的 <strong>atom 语义</strong>恰好是我们要的: 节点对编辑器来说是不透明的, 光标跳过, Backspace 整删, 选中是 "选整个 chip" 而不是 "光标在文字中间"。
+          这跟 markdown 语义吻合 —— <code>[文本](req://id)</code> 是一个不可分割的链接 token, 不是文本流的一部分。
+        </p>
+        <p>
+          代价: 不能在 chip 文字里直接编辑 (得通过 picker / interpretation 编辑器 modal)。但这正是设计要求 —— canonicalizer 会覆盖手改的文字, 不让用户直接编辑反而避免了"为什么我改的字消失了"的困惑。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Chip 选区 / 删除 / 拷贝 行为依赖 ProseMirror atom 语义
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来允许 chip 内嵌富文本 (粗体名字, 链接等), atom 模型不支持; 要回到 mark 形态
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>creator/src/components/plan/ReferenceChipNode.tsx</code>
+        <span class="lbl">commit</span><code>e9f8aa9f</code>
+      </div>
+    </div>
+
+    <!-- D-03: THE big one — architectural revert -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> ccaas 怎么把 lib 物化进 workspace?</h3>
+        </div>
+        <span class="d-scope architecture">Architecture · Boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">第一版实现 (commit <code>9061e903</code>) 在 ccaas-core 加了 <code>SessionAssetMaterializer.materializeLessonPlanLib(...)</code> + <code>LESSON_PLAN_LIB_URLS</code> env + <code>lessonPlanSubject</code> 字段到 <code>Solution.config</code>。用户审阅时直接打回: <em>"ccaas agentRuntime 为什么会知道 solution 的内容?"</em></span>
+        <span class="lbl">约束</span>
+        <span class="val">L2 是 per-user, ccaas 必须告诉 solution 当前 user 是谁; 但 ccaas-core 不能知道 "lesson plan" / "teaching requirement" / "subject" 这种 solution-specific 概念。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保留 ccaas 的 lesson-plan 知识, 仅道歉 + 文档化</span>
+          <span class="opt-verdict">❌ 拒 —— 架构违反不是文档问题</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">ccaas 引入 "sidecar" 概念 (新名词, 不带域名词)</span>
+          <span class="opt-verdict">❌ 拒 —— 加新概念解决可被现有概念解决的问题</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">全部回滚, 走现有 artifact-sync port + 加 userId context</span>
+          <span class="opt-verdict">✓ 选 —— ccaas 零域名词, solution 全权决定返回什么文件</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          ccaas 的核心承诺是 <strong>domain-agnostic platform</strong> —— 它知道 sessions、workspaces、artifacts, 不知道任何 solution 是教育/医疗/金融。Option A 把那条线打破了; 哪怕只是一个方法名, "下一个 solution 来了" 就会发现没有现成的扩展位, 只能再加一组 domain-specific 代码, 复合性病。
+        </p>
+        <p>
+          真正的洞察: <em>"per-user 文件"和"per-project 文件"在 ccaas 视角下没区别</em> —— 它都只是 "solution 通过 artifact endpoint 返回的内容"。ccaas 唯一需要加的是 "我告诉 solution 当前 caller 是谁", 也就是给 <code>loadArtifacts(projectId, context?)</code> 加一个可选的 <code>{userId}</code> 字段。Solution 自己决定怎么用这个 userId —— live-lesson 拿它去查 L2, 别的 solution 可以拿它做别的事或者完全忽略。
+        </p>
+        <p>
+          最终代码 delta: ccaas-core 加了 <strong>约 10 行</strong> (context 参数 + 透传)。删了 commit 9061e903 加的约 200 行 (materializer 方法 + SSRF 防御 + env 解析)。<em>负的代码量, 因为做对了。</em>
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          ccaas-core grep "lesson-plan"/"teaching-requirement"/"LESSON_PLAN" 零命中。架构边界检查工具可以纳入 CI。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          任何"在 ccaas 知道 solution 的什么"的捷径; 未来 solution 想要传入更多 context, 必须扩展 <code>ArtifactCallContext</code> 这个泛用接口 (而不是直接打补丁)
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/agent-runtime/src/artifact/workspace-artifact-source.ts</code>, <code>solutions/business/live-lesson/backend/src/project/project.service.ts</code>
+        <span class="lbl">commit</span><code>ed451403</code>
+      </div>
+    </div>
+
+    <!-- D-04: port extension vs new endpoint -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> userId 怎么从 ccaas 传到 solution?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Port</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-03 定了"通过 artifact sync", 但具体接口形状要选: 给现有 port 加可选参数 vs 新增一个 endpoint vs 用 HTTP header layer 而不动 port 签名。</span>
+        <span class="lbl">约束</span>
+        <span class="val">现有 <code>WorkspaceArtifactSource</code> 接口在 npm 包 <code>@kedge-agentic/agent-runtime</code>, 改动是 type-level breaking change 候选; 但只有 ccaas + live-lesson 在用 (in-tree consumer only).</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">扩展 port: <code>loadArtifacts(projectId, context?: {userId?})</code></span>
+          <span class="opt-verdict">✓ 选 —— 类型化 + 非破坏性 + 自文档</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">新 endpoint: <code>loadArtifactsForUser(projectId, userId)</code></span>
+          <span class="opt-verdict">❌ 拒 —— 与现有 endpoint 双轨, 调用方要选哪条</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">不动 port 签名, 让 REST adapter 偷偷加 header</span>
+          <span class="opt-verdict">❌ 拒 —— 类型签名说谎; 非 REST 实现 (in-process 测试 mock) 拿不到</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          可选第二参数是 TypeScript 接口扩展的<strong>规范做法</strong>: 现有 implementer 不用改 (TS 类型签名 backwards-compatible); 新 implementer 可以选择性地 opt-in; 类型签名告诉读者 "这条信息存在, 你可以读"。
+        </p>
+        <p>
+          关键设计: <code>ArtifactCallContext</code> 是<strong>命名对象</strong>不是裸 string 或 generic dict。未来添加 <code>tenantId</code>, <code>requestId</code>, <code>locale</code> 等只需要在这个接口加字段, 编辑器和类型检查会指出谁需要更新。比起 <code>Record&lt;string, string&gt;</code> 这种 "拍脑袋加 key 还能跑" 的做法更难误用。
+        </p>
+        <p>
+          代价: 改了 npm 包接口, 要 rebuild + 更新 in-tree consumer。但 in-tree only, 所以可控。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          <code>ArtifactCallContext</code> 是 ccaas → solution 上下文传递的 canonical 通道; 未来新字段都加在这
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          不能再让 ccaas 通过裸 header / query 偷偷传 ccaas-specific 信息 —— 必须通过这个 typed 接口
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/agent-runtime/src/artifact/workspace-artifact-source.ts</code>
+        <span class="lbl">commit</span><code>ed451403</code>
+      </div>
+    </div>
+
+    <!-- D-05: reserved prefix -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 怎么防 <code>_lib/*.md</code> round-trip 污染?</h3>
+        </div>
+        <span class="d-scope security">Solution · Data Integrity</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Code reviewer 抓到一个 dangerous edge case: 既然 <code>_lib/*.md</code> 通过 artifact API 返回, SyncEngine 会把它当成普通 artifact。Agent 如果在 workspace 里 <code>touch _lib/x.md</code>, sync 会 plan <code>save_db</code>, 调 live-lesson <code>upsertArtifact</code>, 内容被持久化到 <code>project_files</code>。下次 <code>listArtifacts</code> 返回两份同 path 的内容, 永久污染。</span>
+        <span class="lbl">约束</span>
+        <span class="val">不想加 ccaas 概念 (违反 D-03 刚定的边界); 但又必须阻止 round-trip。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">ccaas 加 "path namespace" 概念, 物化但不 sync-back</span>
+          <span class="opt-verdict">❌ 拒 —— 又一次域名词侵入 ccaas</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Solution 端 silent no-op on <code>_lib/</code> writes</span>
+          <span class="opt-verdict">❌ 拒 —— SyncEngine 看不到 "写了但没存", snapshot 会刷不掉</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Solution 端拒绝 + 403 ForbiddenException, agent 看到错误</span>
+          <span class="opt-verdict">✓ 选 —— 明显, snapshot 自动回退</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是 <strong>"convention via reservation"</strong> 模式: solution 自己声明 <code>_lib/</code> 是 platform-rendered 不可写, 同时在<em>每一个</em>会接收 path 的 API (upsertArtifact + deleteFile) 加一致的 guard。
+          ccaas 完全不知道 <code>_lib/</code> 有什么特殊, 它就是个 path; reject 来自 solution 端, 用 standard HTTP 403 反馈。
+        </p>
+        <p>
+          额外保险: agent-runtime port JSDoc 加了一行约定 ——
+          <em>"solutions surfacing derived content should reject writes to those prefixes"</em>。
+          这把 "convention" 提升到 "documented contract", 让别的 solution 实现端也能复用这个模式 (比如某个 solution 想暴露 <code>_audit/</code> 给 agent 看, 同样写禁 _audit/ 写)。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          live-lesson 永远不能把 <code>_lib/</code> 用作正常 project file 路径
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          反向: agent 不能通过 artifact API 写解读 (得调 L2 API)。SyncEngine 看到 403 会把 snapshot rollback, 不再 retry → agent 看到自己的 fs 写消失。这是<em>期望</em>行为, 但需要 agent 知道 (skill 文档有写)
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>solutions/business/live-lesson/backend/src/project/project.service.ts:isReservedLibPath</code>
+        <span class="lbl">commit</span><code>ed451403</code>
+      </div>
+    </div>
+
+    <!-- D-06: workspace path -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Lib 文件的 workspace path: <code>artifacts/_lib/</code> 还是 workspace-root <code>_lib/</code>?</h3>
+        </div>
+        <span class="d-scope design">Solution · Path Convention</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计文档 §4.1 写的是 workspace-root <code>_lib/teaching-requirements.md</code>。但 D-03 之后决定走 artifact-sync, 而 artifact-sync 把所有路径物化到 <code>&lt;workspace&gt;/artifacts/&lt;path&gt;</code>。</span>
+        <span class="lbl">约束</span>
+        <span class="val">要么改 ccaas (加新物化目录, 域名词侵入), 要么改 path 约定 (脚本 / SKILL.md / 设计文档要 sync)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">坚持设计文档原文 (<code>_lib/</code> at workspace root), ccaas 加 "sidecar mount" 概念</span>
+          <span class="opt-verdict">❌ 拒 —— 再次往 ccaas 注域名词</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">改路径约定到 <code>artifacts/_lib/</code>, 更新 helper / skill / 设计文档</span>
+          <span class="opt-verdict">✓ 选 —— solution-side 改, 不动 ccaas</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          架构边界 (D-03) 是 hard constraint, 路径名是 soft constraint。<em>当两者冲突时, 改 path</em>。
+          <code>artifacts/_lib/teaching-requirements.md</code> 其实读起来甚至更清晰: agent 知道 "这是 artifact 类的内容, 在 lib 子分类下"。
+        </p>
+        <p>
+          代价: 设计文档要打一个 patch (我加了一段说明 "改成 <code>artifacts/_lib/</code> 路径是为了走现有 artifact-sync, ccaas 保持 domain-agnostic")。这种 "实现纠正设计" 比 "强行让设计跑通" 健康 —— 设计文档承认现实, 而不是被供着。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Agent 的 lib 访问全部走 <code>artifacts/_lib/...</code>, 跟其他 artifact 同 root
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          如果未来要把 lib 跟 artifact 隔离 (比如不想被 agent 当 source 读), 现在的路径混在一起会阻碍
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>solutions/business/live-lesson/{skills/lesson-plan-editor/SKILL.md, scripts/find-req.sh, docs/lesson-plan-format-design.md}</code>
+        <span class="lbl">commit</span><code>ed451403</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">5 项 · 每条带 revisit trigger</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>Per-project subject 配置 (取代 env 单一 subject)</h4>
+        <p><span class="lbl">现状</span>Live-lesson 通过 <code>LIVE_LESSON_LESSON_PLAN_SUBJECT</code> env 锁定整个 backend 一个 subject。同一个 backend 不能同时跑 English + Math 项目的 lib materialization。</p>
+        <p><span class="lbl">推迟理由</span>MVP 单一学科是常态; 加 per-project 列要 schema migration + UI 改。等真有跨学科需求再做, 避免 over-engineering。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个用户报告"我的英语和数学项目需要不同的库"。届时加 <code>course_projects.subject</code> 列, 读 column 优先于 env fallback。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4><code>saveArtifact</code> / <code>deleteArtifact</code> 也接收 <code>userId</code></h4>
+        <p><span class="lbl">现状</span>只有 <code>loadArtifacts</code> 接收 <code>ArtifactCallContext</code>。写操作没有 user 归属。</p>
+        <p><span class="lbl">推迟理由</span>当前没用例需要 "agent 写文件时记录是哪个 user 写的"; 写操作走 project-scoped, user 由 session 隐式归属。YAGNI。</p>
+        <p><span class="lbl">重新审视的触发</span>需要做 audit log "user X 在 session Y 改了 file Z" 时, 把 context 加到 saveArtifact 签名。non-breaking 同样能做到。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>HMAC stamping on <code>X-Caller-User-Id</code></h4>
+        <p><span class="lbl">现状</span>live-lesson backend 信任入站 <code>X-Caller-User-Id</code> header。如果端口 3007 被非 ccaas 进程访问, 任何 client 可以伪造 header 冒充任何 user。</p>
+        <p><span class="lbl">推迟理由</span>单机 dev + 内网部署下风险低, 网络层 (反向代理 / firewall) 就够; HMAC 引入密钥分发 + 时间同步问题。</p>
+        <p><span class="lbl">重新审视的触发</span>部署到非内网 / 多 solution backend 共享 ccaas 时。这是设计文档 §8 open question #6 已标记。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>Subject 从 manifest 自动推断</h4>
+        <p><span class="lbl">现状</span>Subject 来自 env, 不读 <code>execution/manifest.json</code> 里的 <code>subject</code> 字段。</p>
+        <p><span class="lbl">推迟理由</span>manifest 是 artifact, 在 lib materialization 之前还没物化进 workspace; chicken-and-egg。要么 server-side 预读 manifest (耦合), 要么 lazy materialize after first artifact sync (复杂)。先用 env 配置规避。</p>
+        <p><span class="lbl">重新审视的触发</span>有 backend 实例需要同时跑多 subject 项目 → DEF-01 落地时一起做。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-05</div>
+      <div class="dq-body">
+        <h4>ccaas-side <code>_materialize</code> endpoint 退役</h4>
+        <p><span class="lbl">现状</span>live-lesson 还保留 <code>GET /api/teaching-requirements/_materialize</code> endpoint。第一版实现 (commit <code>9061e903</code>) 用过它, revert 后没有调用方了。endpoint 留着作为 debug 入口。</p>
+        <p><span class="lbl">推迟理由</span>留 ad-hoc debug 入口对生产无害; 没有 caller 也没有维护成本; 完全删除等真的确认无用再说。</p>
+        <p><span class="lbl">重新审视的触发</span>下次 live-lesson backend 改造时清理。或者发现真的有人在调它 (audit log)。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>ccaas 该不该有正式的 "sidecar path namespace" 概念?</h4>
+        <p><span class="lbl">问题</span>现在 <code>_lib/</code> 是 solution-side 的 convention + reserved-prefix guard。可行但脆: 每个 solution 都要记得自己的 reserved 前缀, 写 guard。如果 ccaas 提供一个 "sidecar mount" 概念 (固定路径, 不参与 sync-back), 是不是更结构化?</p>
+        <p><span class="lbl">为什么 open</span>没有第二个 use case 验证这个抽象的必要性。一个 case 不算 pattern, 三个 case 才算。等出现第二个 (e.g. demo-sandbox 想暴露 <code>_logs/</code> 给 agent) 再判断要不要抽象。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>Env-based "default user" 模型能撑到 production?</h4>
+        <p><span class="lbl">问题</span><code>LIVE_LESSON_DEFAULT_USER_ID</code> 是 MVP 单用户模式。production 需要真实多用户, 但 live-lesson 还没有 auth 模型。</p>
+        <p><span class="lbl">为什么 open</span>auth 模型设计是 cross-cutting 工作, 不只影响 lib materialization。等 live-lesson 自己有用户登录系统再说; 或者 ccaas 把 session.userId 来源做得更可信 (DEF-03 HMAC), 让 live-lesson 直接信任。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>SyncEngine 应不应该感知 reserved prefix?</h4>
+        <p><span class="lbl">问题</span>现在 reserved-prefix guard 在 solution 端 (HTTP 403)。但 SyncEngine 看到 403 后会 retry / 把 snapshot rollback, 在某些 edge case (agent 一直在写 <code>_lib/</code>) 可能死循环。如果 SyncEngine 知道某些路径不该 sync-back, 可以更优雅。</p>
+        <p><span class="lbl">为什么 open</span>这又会回到 D-03 的边界问题 —— ccaas 知道哪些路径是 "sidecar" 等于知道 solution 的内部约定。可能的折中: solution 通过 <code>ArtifactCallContext</code> 反向声明 "这些前缀别 sync-back", 但需要双向接口扩展。等真出问题再做。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 7 commits · 提交 + 测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">7</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">3,259</span><span class="cs-stat-l">Tests Pass (ccaas + ll + creator)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1</span><span class="cs-stat-l">Architectural Revert</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">−10</span><span class="cs-stat-l">Net LOC in ccaas-core</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">6</span><span class="cs-stat-l">Code Review Passes</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">68d051c3</span><span class="tag feat">feat</span><span class="msg">L1 teaching-requirements library (JSON loader + REST API)</span></div>
+        <div class="cs-row"><span class="hash">d82485a1</span><span class="tag feat">feat</span><span class="msg">L2 interpretation overlay (per-user, X-Caller-User-Id, 16KB cap)</span></div>
+        <div class="cs-row"><span class="hash">dae3e7d7</span><span class="tag feat">feat</span><span class="msg">lesson-plan-md parse/serialize/canonicalize lib (+ tiptap bridge)</span></div>
+        <div class="cs-row"><span class="hash">ab90f1b3</span><span class="tag feat">feat</span><span class="msg">Plan Tab read-only with reference chip popover</span></div>
+        <div class="cs-row"><span class="hash">e9f8aa9f</span><span class="tag feat">feat</span><span class="msg">Plan Tab editable: TipTap + picker + interpretation editor</span></div>
+        <div class="cs-row"><span class="hash">9061e903</span><span class="tag feat">feat</span><span class="msg">lesson plan materialization + scaffold + skill + helper ← 包含架构 leak</span></div>
+        <div class="cs-row"><span class="hash">ed451403</span><span class="tag refactor">refactor</span><span class="msg">revert ccaas-core domain leak; route via artifact-sync ← 修正 commit</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin-top:14px;line-height:1.5">
+        Test totals (post-revert): ccaas-backend 1558 + live-lesson backend 1612 + creator vitest 89 = 3259 total.
+        tsc clean across <code>packages/backend</code>, <code>packages/agent-runtime</code>, <code>solutions/business/live-lesson/{backend, creator}</code>.
+        每个 commit 走过 <code>everything-claude-code:code-reviewer</code> agent; 所有 must-fix 在 commit 前修复 (atomic upsert, refId grammar, chip text/title sanitization, save-race guard, HtmlBlockNode preservation, _lib/ reserved-prefix guard 等)。
+      </p>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-27 · ccaas Decision Archive · template at <code>docs/feature-report-template.html</code>
+  </footer>
+
+</div>
+
+</body>
+</html>
