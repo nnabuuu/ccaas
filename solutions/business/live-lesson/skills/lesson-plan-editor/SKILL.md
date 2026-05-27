@@ -20,8 +20,8 @@ Key contract from the file's HTML comment header:
 
 ```
 教学要求引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")
-查 id:   Grep "<关键词>" artifacts/_lib/teaching-requirements.md
-查解读:  Grep "r-X.Y.Z" artifacts/_lib/my-interpretations.md
+查 id:   Grep -r "<关键词>" artifacts/_lib/teaching-requirements/
+查解读:  Grep -r "r-X.Y.Z" artifacts/_lib/my-interpretations/
 ```
 
 ## Reference layers
@@ -31,34 +31,37 @@ before editing:
 
 - **L0** — the markdown file you `Read` / `Edit`. Plain text on disk. The
   source of truth.
-- **L1** — the teaching-requirements library at `artifacts/_lib/teaching-requirements.md`.
-  Platform-shipped, read-only. Use `Grep` to find ids.
-- **L2** — the user's interpretations at `artifacts/_lib/my-interpretations.md`.
-  Per-user notes about each req. **Never write L2 content into the lesson
-  plan file** — that's personal context, not lesson content. Use it as
-  reading context when authoring the plan.
+- **L1** — the teaching-requirements library under
+  `artifacts/_lib/teaching-requirements/<subject>.md`. One file per
+  project subject; platform-shipped, read-only. Use `Grep -r` to find
+  ids across all subjects, or grep one subject's file directly.
+- **L2** — the user's interpretations under
+  `artifacts/_lib/my-interpretations/<subject>.md`. One file per
+  project subject; per-user notes about each req. **Never write L2
+  content into the lesson plan file** — that's personal context, not
+  lesson content. Use it as reading context when authoring the plan.
 
 ## Common tasks
 
 ### Add a teaching requirement
 
-1. Find the right req id:
+1. Find the right req id (search across every subject the project covers):
 
    ```
-   Grep "推断生词" artifacts/_lib/teaching-requirements.md
+   Grep -r "推断生词" artifacts/_lib/teaching-requirements/
    ```
 
    The result shows entries like:
 
    ```
-   ### r-1.2.3 — 课标 2.1.3
+   artifacts/_lib/teaching-requirements/english.md:### r-1.2.3 — 课标 2.1.3
    在课文中推断生词含义
    ```
 
 2. Read the user's interpretation if any:
 
    ```
-   Grep -A 6 "r-1.2.3" artifacts/_lib/my-interpretations.md
+   Grep -r -A 6 "r-1.2.3" artifacts/_lib/my-interpretations/
    ```
 
 3. Insert the canonical link in the `## 教学要求` section:
@@ -81,7 +84,9 @@ Read plan/lesson-plan.md
 
 Make sure:
 - The HTML comment header at the top is intact (agents downstream need it)
-- All `req://` links you added use valid ids from `artifacts/_lib/teaching-requirements.md`
+- All `req://` links you added use valid ids from
+  `artifacts/_lib/teaching-requirements/<subject>.md` (any subject the
+  project covers — grep -r picks them up across files)
 - Headings use `## / ###` consistently for sections / modules
 
 ### Restructure modules
@@ -96,20 +101,21 @@ When restructuring:
 ### Handle stale `req://` references
 
 If the user reports a "stale chip" in the editor or you see a ref to an
-id not in `artifacts/_lib/teaching-requirements.md`:
+id that no subject's library under
+`artifacts/_lib/teaching-requirements/` contains:
 - Don't delete the line silently. The text after the chip may carry the
   user's intent (e.g. `—— 本课重点`).
-- Either look up a replacement id (`Grep` on the text fragment) or ask
-  the user.
+- Either look up a replacement id (`Grep -r` on the text fragment
+  across the directory) or ask the user.
 
 ## Anti-patterns
 
 - **Don't** put L2 interpretations into the lesson plan file. Interpretations
   are sidecar data; embedding them duplicates state and creates conflicts
   on subsequent canonicalize.
-- **Don't** invent `req://` ids. If you can't find a match in
-  `artifacts/_lib/teaching-requirements.md`, the requirement isn't in the library
-  — ask the user before adding.
+- **Don't** invent `req://` ids. If `Grep -r` against
+  `artifacts/_lib/teaching-requirements/` finds nothing, the requirement
+  isn't in any of this project's subjects — ask the user before adding.
 - **Don't** remove the HTML comment header. It's the agent contract for
   this file's format; future agents (including yourself in another
   session) need it.
@@ -120,7 +126,9 @@ id not in `artifacts/_lib/teaching-requirements.md`:
 ## Where to find more
 
 - `docs/lesson-plan-format-design.md` — full format spec
-- `artifacts/_lib/teaching-requirements.md` — current library (subject-scoped)
-- `artifacts/_lib/my-interpretations.md` — current user's notes
+- `artifacts/_lib/teaching-requirements/<subject>.md` — canonical library
+  (one file per project subject)
+- `artifacts/_lib/my-interpretations/<subject>.md` — current user's notes
+  (one file per project subject, filtered to that subject's reqIds)
 - `scripts/find-req.sh` (when bash is available) — convenience: search
-  library + interpretation in one shot
+  library + interpretation across all project subjects in one shot
