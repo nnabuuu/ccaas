@@ -19,6 +19,7 @@ import ChatBubble, { ThinkingDots } from './ChatBubble';
 import ConversationDropdown from './ConversationDropdown';
 import ChatTodoCard from './cards/ChatTodoCard';
 import ChatVerifyCard from './cards/ChatVerifyCard';
+import ChatQuestionsCard from './cards/ChatQuestionsCard';
 
 interface AiPanelProps {
   project: Project;
@@ -82,12 +83,19 @@ export default function AiPanel({
   };
 
   /**
-   * Common send path used by both manual submit + externally-injected
-   * pendingMessage (chat-bridge). Skips the draft state to avoid a
-   * transient flash of the injected text.
+   * Common send path used by manual submit + chat-bridge injection +
+   * card submit-back. Skips the draft state to avoid a transient
+   * flash of the injected text.
+   *
+   * Returns `true` when the message was dispatched, `false` when
+   * silently guarded (empty text, or chat is mid-stream). Callers
+   * like ChatQuestionsCard rely on the return value to decide
+   * whether to freeze their UI — without this signal, dropped sends
+   * leave the card in "✓ 已确认" but the agent never receives the
+   * answers.
    */
-  const sendNow = (text: string) => {
-    if (!text.trim() || chat.isThinking) return;
+  const sendNow = (text: string): boolean => {
+    if (!text.trim() || chat.isThinking) return false;
     // Rename "新会话" to the first user message we send into it. Same
     // logic as manual submit — the rename is "what did we just say"
     // not "what did the user type".
@@ -96,6 +104,7 @@ export default function AiPanel({
       conv.rename(conv.active.id, snippet || '会话');
     }
     void chat.send(text);
+    return true;
   };
 
   // Chat-bridge injection. When the parent supplies a pendingMessage,
@@ -202,13 +211,32 @@ export default function AiPanel({
             if (m.card.kind === 'verify') {
               return <ChatVerifyCard key={m.id} data={m.card} />;
             }
-            // questions card component ships in phase 3c.
-            // Surface unimplemented kinds in dev so a regression
-            // doesn't fall into the silent-fallback hole.
+            if (m.card.kind === 'questions') {
+              // onSubmit: forward the pre-formatted answer text as a
+              // synthetic user message so the agent receives the
+              // teacher's choices on its next turn. Goes through the
+              // same sendNow path manual + chat-bridge use (sendNow
+              // already guards on chat.isThinking so we don't trample
+              // an in-flight response — the answers will land once
+              // the current turn finishes).
+              return (
+                <ChatQuestionsCard
+                  key={m.id}
+                  data={m.card}
+                  onSubmit={(text) => sendNow(text)}
+                />
+              );
+            }
+            // All 3 kinds covered; default surfaces forward-compat
+            // gaps when a future kind lands before the renderer.
+            // (TS narrows `m.card` to `never` after the three
+            // discriminated checks above — cast to read .kind for
+            // the diagnostic.)
             if (import.meta.env.DEV) {
+              const unknownKind = (m.card as { kind: string }).kind;
               // eslint-disable-next-line no-console
               console.warn(
-                `[AiPanel] no renderer for card kind=${m.card.kind} (message ${m.id}); message will not render until a card component is registered.`,
+                `[AiPanel] no renderer for card kind=${unknownKind} (message ${m.id}); message will not render until a card component is registered.`,
               );
             }
             return null;
