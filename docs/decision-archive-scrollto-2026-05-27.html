@@ -343,6 +343,13 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       唯一缺的边是 <code>published → archived</code> 之前隐式由 <code>ensureProject</code> guard 覆盖 ——
       顺手补了一个显式测试 lock 住 (commit <code>dd3f85d0</code>, +1 backend test)。
     </p>
+    <p>
+      最后一个 meta-scope 问题: <em>"test coverage 够不够?"</em>
+      Audit 发现纯逻辑 22 个新测试都实, 但 creator 整个 app 至今没有 React component test infra ——
+      本轮 6 个新写 / 改的组件 0 coverage。 用户选"全量加" (D-08): 引入 jsdom + testing-library, 写 52 个 component test。
+      CoursePreviewModal 的 backdrop close 矩阵 (review 阶段修了 3 次的那个) 被 4 个测试锁死,
+      未来 manual review 再漏类似 bug 也能 catch (commits <code>0e077dfc</code> + <code>7066c189</code>)。
+    </p>
   </div>
 
   <!-- DECISIONS -->
@@ -351,7 +358,7 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       <span class="num">01 —</span>
       <h2>Decisions <span class="en">这次想清楚了的</span></h2>
     </div>
-    <span class="hint">7 项 · 按对话顺序 (D-01 + D-05 superseded by D-06; D-07 是设计 audit 后的 follow-up)</span>
+    <span class="hint">8 项 · 按对话顺序 (D-01 + D-05 superseded by D-06; D-07 设计 audit; D-08 测试 infra 投入)</span>
   </div>
 
   <div class="decisions">
@@ -861,6 +868,79 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
 
+    <!-- D-08 — test infra投资 (last decision of the session) -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-08</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> React 组件层 0 coverage, 这次要补多少?</h3>
+        </div>
+        <span class="d-scope design">Design · Test Infra</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">用户问 "test coverage 够不够" 后我做了一轮 audit。 纯逻辑 22 个新测试 (parse-nav 13, audit-prompt 8, backend transition 1) 已经实, 但<em>所有</em>本轮新写的 React 组件 (ExecutionTab 改, PlanTab 改, AuditButton 改, AuditReportView 改, TopBar 改, CoursePreviewModal 新) <strong>0 component test</strong> —— 因为 creator 整个 app 至今没装 jsdom + testing-library。 这一轮 review-caught bug 中最高频是 CoursePreviewModal 的 backdrop close (3 次 review 修了 3 次), 提示这类 component 行为没测试就反复出 bug。</span>
+        <span class="lbl">约束</span>
+        <span class="val">装 jsdom + testing-library + 改 vitest.config 是 ~30 分钟 setup; 给 6 个组件写 spec 是 ~1.5 小时。 但 setup 一次性, 之后所有新组件都受益; 而且 CoursePreviewModal 那种行为 bug (backdrop 4 方向 mousedown/mouseup) 没有自动化测试就会持续 regression。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Scope</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">现状够用 —— 纯逻辑测试 ok, React 层走 manual smoke + code review 这种 review 流程</span>
+          <span class="opt-verdict">❌ 拒 —— CoursePreviewModal 3 次 review 才修对, 说明 manual review 接不住 component 行为 bug</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">最小加: 只为 CoursePreviewModal 加 jsdom + 5-8 个 backdrop 测试</span>
+          <span class="opt-verdict">❌ 拒 —— infra setup 是一次性 cost; setup 完只覆盖一个组件浪费投入</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">全量加: jsdom + testing-library + 本轮 6 个组件全部 + flash-scroll-target 辅助测 —— 52 个新 test</span>
+          <span class="opt-verdict">✓ 选 —— infra 投入一次, 6 个组件 + 之后所有新组件都受益</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是个 <em>"infra 一次性 cost, payoff 重复使用"</em> 的经典选择。
+          B 选项 (只测 CoursePreviewModal) 表面省事, 但 jsdom + testing-library + react plugin + vitest config 改造 + setupFiles 钩子<strong>同样的成本</strong>无论后面写 1 个还是 10 个 component spec。
+          一次摊销给 6 个 component + 未来所有 component, 单位成本急剧下降。
+        </p>
+        <p>
+          更深的理由: CoursePreviewModal 的 backdrop 4 方向 mousedown/mouseup 矩阵 review 阶段反复出 bug <em>正好</em> 是 manual review 看不出来的那类 ——
+          人眼读代码会忽略"用户从 panel 拖到 backdrop"这种交互, 但 4 个 fireEvent.mouseDown/mouseUp 组合一跑就<strong>必然</strong>测到。
+          这是 <em>"用机器跑用例代替人脑模拟"</em> 的本职工作。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Creator 现在有 component test 基础设施。 未来 PR 加新组件预期带 spec, 不再"按惯例没测"。 186 个 frontend 测试形成 regression 网。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Jsdom env startup 约 +800ms 给 8 个原本 node-only 的 pure-logic spec —— 总体 suite 2.5s 仍可接受, 但若 spec 数过 50 可能要 environmentMatchGlobs 分环境 (review 已 flag, 不急)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/vitest.config.ts</code>
+        <code>creator/src/test/setup.ts</code>
+        <code>creator/package.json</code> (+jsdom +3 @testing-library)
+        <code>+ 7 component spec files</code>
+        <span class="lbl">commits</span><code>0e077dfc</code> + <code>7066c189</code>
+      </div>
+    </div>
+
   </div>
 
   <!-- DEFERRED -->
@@ -969,9 +1049,9 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
     </summary>
     <div class="cs-body">
       <div class="cs-stat-row">
-        <div class="cs-stat"><span class="cs-stat-n">6</span><span class="cs-stat-l">Commits (feature → pivot → cleanup → gap-closure → polish → backend test)</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">22</span><span class="cs-stat-l">Tests added (8 audit-prompt + 13 parse-nav + 1 backend transition)</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">6</span><span class="cs-stat-l">Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">9</span><span class="cs-stat-l">Commits (scrollto → pivot → cleanup → gap-closure → polish → backend test → archive → test infra → fake-timer)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">75</span><span class="cs-stat-l">Tests added (22 pure-logic + 52 component + 1 backend transition)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">Review Rounds</span></div>
         <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Decisions Superseded</span></div>
         <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
       </div>
@@ -983,6 +1063,14 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/audit/AuditReportView.tsx (AI 生成 badge + 重新生成 button)</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/topbar/TopBar.tsx + AuditButton.tsx (预览 button + done state)</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/project/project.service.spec.ts (+1 explicit published→archived test after backend coverage audit)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/vitest.config.ts + src/test/setup.ts (D-08 jsdom + testing-library infra)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.spec.ts (5 tests — null safety, reduce-motion, class timing, detached node)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/preview/CoursePreviewModal.spec.tsx (13 tests — backdrop 4-way matrix locks 3 review-caught bugs)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/topbar/AuditButton.spec.tsx (7 tests — 4 visual states + priority)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/topbar/TopBar.spec.tsx (11 tests — wiring + viewingAuditReport prop drilling)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/audit/AuditReportView.spec.tsx (7 tests — badge + regen cooldown + unmount cleanup)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/execution/ExecutionTab.spec.tsx (5 tests — scroll effect with fake-timer negative paths)</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/components/plan/PlanTab.spec.tsx (4 tests — scroll effect with state.phase gate)</span></div>
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.spec.ts</span></div>
