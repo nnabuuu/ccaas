@@ -8,8 +8,10 @@
  *   - Plain markdown `notes`: no rigid schema; teachers write examples,
  *     pitfalls, evaluation tips, whatever shape fits their thinking.
  *   - **Never embedded in lesson-plan.md**: this is sidecar data
- *     surfaced via API + materialized into `_lib/my-interpretations.md`
- *     at session bootstrap. Markdown files stay user-agnostic.
+ *     surfaced via API + materialized into
+ *     `_lib/my-interpretations/<subject>.md` (one file per project
+ *     subject, filtered to that subject's reqIds) at artifact-sync
+ *     time. Markdown source files stay user-agnostic.
  *
  * Orphaned rows (L1 item deleted) are allowed; admin tooling can scan
  * + prompt cleanup. We don't cascade-delete because the user may want

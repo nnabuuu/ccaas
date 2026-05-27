@@ -100,8 +100,28 @@ export class TeachingRequirementsController {
   }
 
   /**
-   * List all of the caller's interpretations. The materializer uses
-   * this at session start to render `_lib/my-interpretations.md`.
+   * Catalog of loaded subject keys (e.g. `["english", "math"]`).
+   *
+   * Used by the project create / edit modals to populate a subject
+   * picker — the user picks 0..N subjects per project and the service
+   * validates each against this catalog before persist.
+   *
+   * Public (no auth) because it's schema-level metadata, identical for
+   * all callers. The underscore prefix dodges the `:id` route below.
+   */
+  @Get('_subjects')
+  @ApiOperation({
+    summary: 'List loaded subject keys (catalog for project picker UI)',
+  })
+  listSubjects(): { subjects: string[] } {
+    return { subjects: this.svc.listSubjects() };
+  }
+
+  /**
+   * List all of the caller's interpretations (cross-subject). The
+   * artifact materializer in `ProjectService.listArtifactsWithContent`
+   * calls this once per session and then partitions by subject when
+   * writing `_lib/my-interpretations/<subject>.md` per project subject.
    * Static path with underscore prefix to avoid clashing with id
    * lookups (`:id` route below).
    */
@@ -117,20 +137,18 @@ export class TeachingRequirementsController {
   }
 
   /**
-   * One-shot materialization endpoint for ccaas's session bootstrap.
-   * Returns both rendered markdown files in a single round-trip so
-   * the materializer doesn't need to plumb two fetches.
+   * One-shot materialization endpoint. NOT on the lib-materialization
+   * critical path anymore — `ProjectService.listArtifactsWithContent`
+   * renders per-subject `_lib/*.md` directly via the artifact-sync
+   * pipeline. This endpoint stays as an ad-hoc/debug surface (curl one
+   * subject's rendered output without going through ccaas).
    *
-   * ccaas writes the response into the workspace as:
-   *   _lib/teaching-requirements.md   ← `libraryMd`
-   *   _lib/my-interpretations.md      ← `interpretationsMd`
-   *
-   * Subject is required so the right library is rendered; without
-   * it we'd materialize ALL subjects (potentially huge + confusing).
+   * Returns both rendered strings in a single response. Subject is
+   * required so the right library is rendered.
    */
   @Get('_materialize')
   @ApiOperation({
-    summary: "Render _lib/*.md files for ccaas's session materializer",
+    summary: "Render lib markdown for one subject (debug surface).",
   })
   @ApiQuery({ name: 'subject', required: true })
   async materialize(

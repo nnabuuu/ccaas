@@ -1,11 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete,
+  Controller, Get, Post, Put, Patch, Delete,
   Param, Query, Body, BadRequestException, Headers,
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProjectService } from './project.service';
-import { CreateProjectDto, CreateFileDto, UpdateFileDto } from './project.dto';
+import { CreateProjectDto, UpdateProjectDto, CreateFileDto, UpdateFileDto } from './project.dto';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -67,6 +67,20 @@ export class ProjectController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
+  }
+
+  /**
+   * Partial update for project metadata (title, description, subjects).
+   * Each field is optional; only what's in the body gets touched.
+   * Subjects are validated against the L1 catalog server-side — unknown
+   * values return 400 with the valid list attached.
+   */
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Patch project metadata (title / description / subjects).',
+  })
+  update(@Param('id') id: string, @Body() dto: UpdateProjectDto) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
@@ -133,9 +147,11 @@ export class ProjectController {
    * Shape: [{ path, content, type }]
    *
    * When ccaas forwards `X-Caller-User-Id` (the session's authenticated
-   * user) AND this backend has `LIVE_LESSON_LESSON_PLAN_SUBJECT` set
-   * in env, the response ALSO includes `_lib/teaching-requirements.md`
-   * + `_lib/my-interpretations.md` — see ProjectService.listArtifactsWithContent.
+   * user) AND the project has one or more `subjects` configured, the
+   * response ALSO includes per-subject library + user-interpretation
+   * files at `_lib/teaching-requirements/<subject>.md` and
+   * `_lib/my-interpretations/<subject>.md` — see
+   * ProjectService.listArtifactsWithContent.
    *
    * userId is read from the header (trusted because ccaas's proxy
    * injects it server-side; see design doc §5.3 path A). Bare client

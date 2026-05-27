@@ -47,9 +47,11 @@ export class RequirementInterpretationService {
   }
 
   /**
-   * List all interpretations belonging to one user. Used by the
-   * materializer to write `_lib/my-interpretations.md` at session
-   * start.
+   * List all interpretations belonging to one user (cross-subject). The
+   * artifact materializer in `ProjectService.listArtifactsWithContent`
+   * calls this once per session and then partitions the rows by
+   * subject (via each row's reqId membership in `getLibrary(subject)`)
+   * to write one `_lib/my-interpretations/<subject>.md` per subject.
    */
   async listForUser(
     userId: string,

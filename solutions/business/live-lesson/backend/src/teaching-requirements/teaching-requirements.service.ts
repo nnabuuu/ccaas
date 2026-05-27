@@ -196,6 +196,18 @@ export class TeachingRequirementsService implements OnModuleInit {
     return Array.from(this.libraries.values());
   }
 
+  /**
+   * List loaded subject keys, sorted. Used by the project subjects
+   * validator (live-lesson rejects creates / updates referencing
+   * unknown subjects) and by the public picker endpoint.
+   *
+   * Sort makes the response stable across requests so the frontend
+   * doesn't need to re-sort and tests can assert on a fixed order.
+   */
+  listSubjects(): string[] {
+    return Array.from(this.libraries.keys()).sort();
+  }
+
   /** Get one subject's library, or null if unknown subject. */
   getLibrary(subject: string): TeachingRequirementsLibrary | null {
     return this.libraries.get(subject) ?? null;

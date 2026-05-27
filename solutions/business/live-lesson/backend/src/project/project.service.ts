@@ -7,10 +7,11 @@ import { ProjectFile } from '../adapters/persistence/entities/project-file.entit
 import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../domain/ports/lesson-repo.port';
 import { ManifestSchema } from '../schemas';
-import { CreateProjectDto, CreateFileDto } from './project.dto';
+import { CreateProjectDto, CreateFileDto, UpdateProjectDto } from './project.dto';
 import { TeachingRequirementsService } from '../teaching-requirements/teaching-requirements.service';
 import { RequirementInterpretationService } from '../teaching-requirements/requirement-interpretation.service';
-import { materializeLibFiles } from '../teaching-requirements/lib-renderer';
+import { renderLibrary, renderInterpretations } from '../teaching-requirements/lib-renderer';
+import type { TeachingRequirementsLibrary } from '../teaching-requirements/types';
 
 @Injectable()
 export class ProjectService {
@@ -34,9 +35,11 @@ export class ProjectService {
   // ── Project CRUD ──
 
   async create(dto: CreateProjectDto): Promise<CourseProject> {
+    const subjects = this.normalizeSubjects(dto.subjects ?? []);
     const project = this.projectRepo.create({
       title: dto.title,
       description: dto.description || '',
+      subjects,
     });
     const saved = await this.projectRepo.save(project);
 
@@ -48,15 +51,16 @@ export class ProjectService {
         // The HTML comment header is §4.2 layer 1 of the lesson-plan
         // format design — agent's first `cat` of this file always sees
         // the syntax contract without depending on a skill loading or
-        // a system prompt being fresh. The `_lib/*.md` files are
-        // materialized by ccaas via the artifact sync at session
-        // start (so they appear under `artifacts/_lib/` from the
-        // agent's CWD).
+        // a system prompt being fresh. Lib files are materialized by
+        // ccaas via the artifact sync at session start — one file per
+        // project subject under `artifacts/_lib/teaching-requirements/`
+        // and `artifacts/_lib/my-interpretations/`. The recursive grep
+        // works whether the project has one subject or several.
         content:
           '<!--\n' +
           '教学要求引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")\n' +
-          '查 id:   Grep "<关键词>" artifacts/_lib/teaching-requirements.md\n' +
-          '查解读:  Grep "r-X.Y.Z" artifacts/_lib/my-interpretations.md\n' +
+          '查 id:   Grep -r "<关键词>" artifacts/_lib/teaching-requirements/\n' +
+          '查解读:  Grep -r "r-X.Y.Z" artifacts/_lib/my-interpretations/\n' +
           '-->\n\n' +
           `# ${dto.title}\n\n` +
           `## 教学目标\n\n` +
@@ -180,6 +184,27 @@ export class ProjectService {
     return this.projectRepo.save(project);
   }
 
+  /**
+   * Partial update for project metadata. Only fields present in `dto`
+   * are touched. `subjects` is validated against the L1 catalog —
+   * unknown values throw 400 with the catalog attached so the client
+   * can surface a clear picker error.
+   *
+   * Goes through `ensureProject`, so archived projects throw 400
+   * (consistent with create + writeFile behavior). Restore the project
+   * first if you need to edit its metadata.
+   */
+  async update(id: string, dto: UpdateProjectDto): Promise<CourseProject> {
+    const project = await this.ensureProject(id);
+    if (dto.subjects !== undefined) {
+      project.subjects = this.normalizeSubjects(dto.subjects);
+    }
+    if (dto.title !== undefined) project.title = dto.title;
+    if (dto.description !== undefined) project.description = dto.description;
+    project.updatedAt = this.now();
+    return this.projectRepo.save(project);
+  }
+
   // ── File operations ──
 
   async listFiles(projectId: string): Promise<Pick<ProjectFile, 'id' | 'path' | 'fileType' | 'updatedAt'>[]> {
@@ -236,22 +261,24 @@ export class ProjectService {
    * turn boundary, so keep this query cheap. Live-lesson projects are
    * small (5-10 files); a single SELECT * is fine.
    *
-   * **User-scoped append** (`opts.userId` present + env
-   * `LIVE_LESSON_LESSON_PLAN_SUBJECT` configured): also returns the
-   * rendered L1 library + the caller's L2 interpretations at
-   * `_lib/*.md` paths. This implements design §4.1 path B (the
-   * bash-free agent access) via the existing artifact-sync pipeline —
-   * no separate materializer in ccaas needed.
+   * **Per-subject lib append** (`opts.userId` present + project has
+   * `subjects` configured): for each subject, append a rendered library
+   * file at `_lib/teaching-requirements/<subject>.md` and a
+   * (subject-filtered) user-interpretation file at
+   * `_lib/my-interpretations/<subject>.md`. Implements design §4.1
+   * path B (bash-free agent access) via the existing artifact-sync —
+   * no platform-side materializer needed.
    *
-   * When userId is absent (anonymous session) or subject env unset,
-   * we skip the lib append silently. The agent can still use the
-   * bash helper (§4.2 layer 3) if available.
+   * Subject configuration lives on the project row (`course_projects.subjects`)
+   * so the same backend can serve English + Math projects concurrently.
+   * When userId is absent (anonymous session) or the project has zero
+   * subjects, the lib append is skipped silently.
    */
   async listArtifactsWithContent(
     projectId: string,
     opts: { userId?: string } = {},
   ): Promise<Array<{ path: string; content: string; type: string }>> {
-    await this.ensureProject(projectId);
+    const project = await this.ensureProject(projectId);
     const rows = await this.fileRepo.find({
       where: { projectId },
       order: { path: 'ASC' },
@@ -262,35 +289,48 @@ export class ProjectService {
       type: r.fileType,
     }));
 
-    const subject = process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT?.trim();
-    if (opts.userId && subject) {
-      const library = this.teachingRequirements.getLibrary(subject);
-      const interpretationRows = await this.interpretations.listForUser(opts.userId);
-      const enriched = interpretationRows.map((row) => ({
-        reqId: row.reqId,
-        notes: row.notes,
-        updatedAt: row.updatedAt,
-        text: this.teachingRequirements.tryFindItemById(row.reqId)?.text,
-      }));
-      const { libraryMd, interpretationsMd } = materializeLibFiles({
-        library,
-        interpretations: enriched,
-      });
-      if (libraryMd) {
+    // `?? []` defends against pre-migration rows + the TS strict-null gap.
+    const subjects = project.subjects ?? [];
+    if (opts.userId && subjects.length > 0) {
+      const userInterps = await this.interpretations.listForUser(opts.userId);
+
+      for (const subject of subjects) {
+        const library = this.teachingRequirements.getLibrary(subject);
+        // Defensive: if the project references a subject that was removed
+        // from the L1 catalog after the project was last updated, skip
+        // that one — write-time validator should have caught it, but
+        // platform upgrades can drop libraries.
+        if (!library) continue;
+
         out.push({
-          path: '_lib/teaching-requirements.md',
-          content: libraryMd,
+          path: `_lib/teaching-requirements/${subject}.md`,
+          content: renderLibrary(library),
+          type: 'md',
+        });
+
+        // L2: filter the user's interpretations to reqIds belonging to
+        // THIS subject's library so an English project doesn't surface
+        // the teacher's Math notes (and vice versa). Per-subject file
+        // also means agents can grep by file path to scope a search.
+        const reqIdsInSubject = collectReqIds(library);
+        const subjectInterps = userInterps
+          .filter((row) => reqIdsInSubject.has(row.reqId))
+          .map((row) => ({
+            reqId: row.reqId,
+            notes: row.notes,
+            updatedAt: row.updatedAt,
+            text: this.teachingRequirements.tryFindItemById(row.reqId)?.text,
+          }));
+
+        // Always emit (even when zero interpretations) so the agent sees
+        // the file's presence as a signal that lib materialization ran;
+        // renderInterpretations' placeholder text handles the empty case.
+        out.push({
+          path: `_lib/my-interpretations/${subject}.md`,
+          content: renderInterpretations(subjectInterps),
           type: 'md',
         });
       }
-      // Always emit my-interpretations.md when subject is configured + userId
-      // is known — even if empty, the file's presence signals "lib materialization
-      // ran" to the agent. The renderer's placeholder text handles the empty case.
-      out.push({
-        path: '_lib/my-interpretations.md',
-        content: interpretationsMd,
-        type: 'md',
-      });
     }
     return out;
   }
@@ -491,6 +531,29 @@ export class ProjectService {
 
   // ── Helpers ──
 
+  /**
+   * Validate + normalize subjects for write. Rejects entries not in the
+   * L1 catalog (BadRequest with the valid set attached so a frontend
+   * picker can recover without a round-trip). De-dupes input so persisted
+   * rows stay clean — duplicates would otherwise emit duplicate artifact
+   * paths from the materializer and confuse sync.
+   *
+   * Empty input is allowed and returns `[]`: a project explicitly not
+   * using any teaching-requirement library is valid.
+   */
+  private normalizeSubjects(subjects: string[]): string[] {
+    const valid = new Set(this.teachingRequirements.listSubjects());
+    const unknown = subjects.filter((s) => !valid.has(s));
+    if (unknown.length > 0) {
+      throw new BadRequestException({
+        message: `Unknown subjects: ${unknown.join(', ')}`,
+        unknownSubjects: unknown,
+        validSubjects: [...valid].sort(),
+      });
+    }
+    return [...new Set(subjects)];
+  }
+
   private async ensureProject(id: string): Promise<CourseProject> {
     const project = await this.projectRepo.findOne({ where: { id } });
     if (!project) throw new NotFoundException(`Project ${id} not found`);
@@ -520,15 +583,43 @@ export class ProjectService {
 
 /**
  * Paths reserved for platform-rendered lib materializations
- * (`_lib/teaching-requirements.md`, `_lib/my-interpretations.md`, …).
+ * (`_lib/teaching-requirements/<subject>.md`,
+ * `_lib/my-interpretations/<subject>.md`, …).
  *
  * These appear in `loadArtifacts` output as derived content (rendered
- * from L1+L2 services) but are NOT stored in `project_files`. Writes
- * are rejected so a save-back from the agent (after the engine
- * spuriously plans `save_db` for a transient fs touch) doesn't
- * persist them — which would cause duplicate-path conflicts on the
- * next `loadArtifacts` (stored row + freshly-rendered content).
+ * from L1+L2 services per project subject) but are NOT stored in
+ * `project_files`. Writes are rejected so a save-back from the agent
+ * (after the engine spuriously plans `save_db` for a transient fs
+ * touch) doesn't persist them — which would cause duplicate-path
+ * conflicts on the next `loadArtifacts` (stored row + freshly-rendered
+ * content). The prefix match also covers the per-subject sub-paths
+ * without needing per-suffix awareness.
  */
 function isReservedLibPath(safePath: string): boolean {
   return safePath === '_lib' || safePath.startsWith('_lib/');
+}
+
+/**
+ * Flatten a library's `categories[].items[].id` into a Set for O(1)
+ * "does this interpretation belong to this subject?" filtering.
+ *
+ * Cross-subject collision note: if two libraries declare the same reqId
+ * (intentional by convention — `r-*` for english, `m-*` for math — but
+ * not enforced at L1 load), both subjects' interpretation files surface
+ * the same note. That's arguably correct (the user did write it about
+ * that id) but worth knowing if you see "leaks" in tests.
+ *
+ * Module-private (vs a method on TeachingRequirementsService) because
+ * it's a one-line traversal and the materializer is the only caller —
+ * exposing it on the service would invite re-use in code paths that
+ * really want a smarter API (e.g. one that respects category filters).
+ */
+function collectReqIds(library: TeachingRequirementsLibrary): Set<string> {
+  const ids = new Set<string>();
+  for (const cat of library.categories) {
+    for (const item of cat.items) {
+      ids.add(item.id);
+    }
+  }
+  return ids;
 }

@@ -5,13 +5,13 @@
  *
  * Pure functions: take the library + user's interpretations, return
  * markdown strings. The orchestration of "fetch + write to workspace"
- * happens upstream (ccaas-side materializer or, in MVP, an HTTP
- * endpoint that returns the rendered text).
+ * happens upstream (`ProjectService.listArtifactsWithContent` iterates
+ * the project's subjects and emits one rendered file per subject).
  *
  * Format choices follow the design's stated example. The output is
  * grep-friendly: each item starts with `### <reqId> — <code>` so an
- * agent doing `Grep "<id>" _lib/teaching-requirements.md` lands on
- * the heading reliably.
+ * agent doing `Grep -r "<id>" artifacts/_lib/teaching-requirements/`
+ * lands on the heading reliably across any subject's file.
  */
 
 import type {
@@ -30,14 +30,14 @@ export interface InterpretationRow {
 
 const HEADER_REQ = `<!--
 教学要求库 (canonical, read-only). 引用语法: [文本](req://r-X.Y.Z "课标 X.Y · 分类")
-查找用 Grep, 例如: Grep -i "推断" _lib/teaching-requirements.md
-本文件由 ccaas materializer 物化生成. 平台升级时随之刷新; 编辑无效.
+查找用 Grep, 例如: Grep -r -i "推断" artifacts/_lib/teaching-requirements/
+本文件由 live-lesson 在 artifact-sync 时按项目所选 subject 渲染, 一个 subject 一份. 编辑无效.
 -->`;
 
 const HEADER_INTERP = `<!--
 你的解读 (per-user overlay). 编辑解读请回到 Plan Tab 的 chip popover.
-查找用 Grep, 例如: Grep -A 6 "r-1.2.3" _lib/my-interpretations.md
-本文件由 ccaas materializer 物化生成。是当前 session 用户的快照, 不会跨用户泄露.
+查找用 Grep, 例如: Grep -r -A 6 "r-1.2.3" artifacts/_lib/my-interpretations/
+本文件由 live-lesson 在 artifact-sync 时按项目所选 subject + 当前 user 渲染. 不会跨用户泄露.
 -->`;
 
 /**
@@ -110,9 +110,9 @@ export interface MaterializeInput {
 }
 
 export interface MaterializeOutput {
-  /** Content for `_lib/teaching-requirements.md` (null if no library for the subject). */
+  /** Content for `_lib/teaching-requirements/<subject>.md` (null if no library for the subject). */
   libraryMd: string | null;
-  /** Content for `_lib/my-interpretations.md`. */
+  /** Content for `_lib/my-interpretations/<subject>.md`. */
   interpretationsMd: string;
 }
 

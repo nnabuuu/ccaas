@@ -51,11 +51,12 @@ describe('ProjectService', () => {
     projectRepo = mockRepo();
     fileRepo = mockRepo();
     lessonRepo = mockRepo();
-    // Default to "no library, no interpretations" — keeps the
-    // pre-existing test cases (which don't care about the lib append)
-    // operating against the original artifact list. The new tests
-    // override these mocks per-case.
+    // Default mock catalog: english + math are loaded. Tests that
+    // exercise the validator override `listSubjects` to assert
+    // unknown-subject rejection; tests that exercise materialization
+    // override `getLibrary` per-subject.
     teachingRequirements = {
+      listSubjects: jest.fn().mockReturnValue(['english', 'math']),
       getLibrary: jest.fn().mockReturnValue(null),
       tryFindItemById: jest.fn().mockReturnValue(undefined),
     } as unknown as jest.Mocked<TeachingRequirementsService>;
@@ -122,6 +123,154 @@ describe('ProjectService', () => {
       // Example step should be flagged as replaceable so the agent
       // and teacher both know it's template-only.
       expect(parsed.readingSteps[0].label).toMatch(/TODO/i);
+    });
+
+    // ── Subjects column write path ──
+
+    it('defaults to empty subjects when caller omits the field', async () => {
+      projectRepo.save.mockResolvedValueOnce({ id: 'p1', title: 'T', description: '' });
+      await service.create({ title: 'T' });
+      expect(projectRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ subjects: [] }),
+      );
+    });
+
+    it('persists single-subject selection', async () => {
+      projectRepo.save.mockResolvedValueOnce({ id: 'p1', title: 'T', description: '' });
+      await service.create({ title: 'T', subjects: ['english'] });
+      expect(projectRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ subjects: ['english'] }),
+      );
+    });
+
+    it('persists multi-subject selection (project can span subjects)', async () => {
+      projectRepo.save.mockResolvedValueOnce({ id: 'p1', title: 'T', description: '' });
+      await service.create({ title: 'T', subjects: ['english', 'math'] });
+      expect(projectRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ subjects: ['english', 'math'] }),
+      );
+    });
+
+    it('de-duplicates subjects (defensive vs frontend bugs)', async () => {
+      projectRepo.save.mockResolvedValueOnce({ id: 'p1', title: 'T', description: '' });
+      await service.create({ title: 'T', subjects: ['english', 'english', 'math'] });
+      expect(projectRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ subjects: ['english', 'math'] }),
+      );
+    });
+
+    it('rejects unknown subjects with BadRequestException + valid catalog', async () => {
+      try {
+        await service.create({ title: 'T', subjects: ['english', 'biology'] });
+        throw new Error('expected BadRequestException');
+      } catch (err) {
+        expect(err).toBeInstanceOf(BadRequestException);
+        // Surface unknown + valid lists so a frontend picker can
+        // recover without a separate GET /_subjects round-trip.
+        const body = (err as BadRequestException).getResponse() as any;
+        expect(body.unknownSubjects).toEqual(['biology']);
+        expect(body.validSubjects).toEqual(['english', 'math']);
+      }
+      // Critical: the save side-effect must not happen on validator
+      // failure — otherwise an invalid project row would be created
+      // before the 400 surfaced, leaving orphan rows.
+      expect(projectRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Update (partial patch) ──
+
+  describe('update', () => {
+    it('patches title only when only title is provided', async () => {
+      const project = {
+        id: 'p1',
+        status: 'draft',
+        title: 'old',
+        description: 'd',
+        subjects: ['english'],
+      };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      projectRepo.save.mockImplementationOnce((p: any) => Promise.resolve(p));
+      const updated = await service.update('p1', { title: 'new' });
+      expect(updated.title).toBe('new');
+      // Untouched fields stay intact — defends against accidental
+      // overwrites if someone PATCHes one field but the server resets
+      // the rest.
+      expect(updated.description).toBe('d');
+      expect(updated.subjects).toEqual(['english']);
+    });
+
+    it('patches subjects', async () => {
+      const project = {
+        id: 'p1',
+        status: 'draft',
+        title: 't',
+        description: 'd',
+        subjects: ['english'],
+      };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      projectRepo.save.mockImplementationOnce((p: any) => Promise.resolve(p));
+      const updated = await service.update('p1', { subjects: ['english', 'math'] });
+      expect(updated.subjects).toEqual(['english', 'math']);
+    });
+
+    it('accepts subjects: [] (explicit opt-out of lib materialization)', async () => {
+      // Removing the last subject is a meaningful state change —
+      // makes the project stop appearing _lib/ entries. Must be allowed.
+      const project = {
+        id: 'p1',
+        status: 'draft',
+        title: 't',
+        description: 'd',
+        subjects: ['english'],
+      };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      projectRepo.save.mockImplementationOnce((p: any) => Promise.resolve(p));
+      const updated = await service.update('p1', { subjects: [] });
+      expect(updated.subjects).toEqual([]);
+    });
+
+    it('rejects unknown subjects on update with the same validator', async () => {
+      const project = { id: 'p1', status: 'draft', subjects: ['english'] };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      await expect(
+        service.update('p1', { subjects: ['biology'] }),
+      ).rejects.toThrow(BadRequestException);
+      // No persist on validator failure.
+      expect(projectRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('throws 404 when project does not exist', async () => {
+      projectRepo.findOne.mockResolvedValueOnce(null);
+      await expect(service.update('missing', { title: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws 400 when project is archived (ensureProject guard)', async () => {
+      projectRepo.findOne.mockResolvedValueOnce({
+        id: 'p1',
+        status: 'archived',
+      });
+      await expect(service.update('p1', { title: 'x' })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('omitted fields are left untouched (true partial semantics)', async () => {
+      const project = {
+        id: 'p1',
+        status: 'draft',
+        title: 'orig-title',
+        description: 'orig-desc',
+        subjects: ['english'],
+      };
+      projectRepo.findOne.mockResolvedValueOnce(project);
+      projectRepo.save.mockImplementationOnce((p: any) => Promise.resolve(p));
+      const updated = await service.update('p1', {});
+      expect(updated.title).toBe('orig-title');
+      expect(updated.description).toBe('orig-desc');
+      expect(updated.subjects).toEqual(['english']);
     });
   });
 
@@ -459,28 +608,71 @@ describe('ProjectService', () => {
     });
   });
 
-  // ── listArtifactsWithContent (with optional user-scoped lib append) ──
+  // ── listArtifactsWithContent (per-project subjects drive _lib/ materialization) ──
 
   describe('listArtifactsWithContent', () => {
-    const originalEnv = { ...process.env };
+    // Library fixtures for tests below. English has r-1.* ids, math has
+    // m-1.* — non-overlapping so the L2 filter assertion is unambiguous.
+    const ENGLISH_LIB = {
+      subject: 'english',
+      subjectLabel: '英语',
+      version: '2026-05',
+      categories: [
+        {
+          id: 'lang',
+          label: '语言能力',
+          color: 'teal',
+          items: [
+            { id: 'r-1.2.3', code: '课标 2.1.3', text: '推断生词含义' },
+            { id: 'r-2.1.1', code: '课标 3.2.1', text: '识别篇章结构' },
+          ],
+        },
+      ],
+    };
+    const MATH_LIB = {
+      subject: 'math',
+      subjectLabel: '数学',
+      version: '2026-05',
+      categories: [
+        {
+          id: 'know',
+          label: '知识',
+          color: 'purple',
+          items: [{ id: 'm-1.1', code: '课标 1.1', text: '函数对应关系' }],
+        },
+      ],
+    };
 
-    beforeEach(() => {
-      // Default state for these tests: project exists, returns 2 files.
-      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+    function setupProjectWithSubjects(subjects: string[]) {
+      // Both findOne mocks have to be set because listArtifactsWithContent
+      // calls ensureProject → findOne. The fileRepo.find supplies the
+      // baseline 2 project files agent always sees.
+      projectRepo.findOne.mockResolvedValueOnce({
+        id: 'p1',
+        status: 'draft',
+        subjects,
+      });
       fileRepo.find.mockResolvedValueOnce([
         { path: 'plan/lesson-plan.md', content: '# plan', fileType: 'md' },
         { path: 'execution/manifest.json', content: '{}', fileType: 'json' },
       ]);
+    }
+
+    it('returns only project files when project has empty subjects', async () => {
+      setupProjectWithSubjects([]);
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      expect(out.map((a) => a.path)).toEqual([
+        'plan/lesson-plan.md',
+        'execution/manifest.json',
+      ]);
+      // No L2 query when no subjects — skip the round-trip entirely.
+      expect(interpretations.listForUser).not.toHaveBeenCalled();
+      expect(teachingRequirements.getLibrary).not.toHaveBeenCalled();
     });
 
-    afterEach(() => {
-      process.env = { ...originalEnv };
-    });
-
-    it('returns only project files when no userId provided', async () => {
-      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
+    it('returns only project files when userId is absent (anonymous session)', async () => {
+      setupProjectWithSubjects(['english']);
       const out = await service.listArtifactsWithContent('p1');
-      expect(out).toHaveLength(2);
       expect(out.map((a) => a.path)).toEqual([
         'plan/lesson-plan.md',
         'execution/manifest.json',
@@ -488,84 +680,132 @@ describe('ProjectService', () => {
       expect(interpretations.listForUser).not.toHaveBeenCalled();
     });
 
-    it('returns only project files when userId present but subject env unset', async () => {
-      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
-      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
-      expect(out).toHaveLength(2);
-      // L1/L2 services not consulted when subject is missing — the
-      // env switch is the opt-in.
-      expect(teachingRequirements.getLibrary).not.toHaveBeenCalled();
-      expect(interpretations.listForUser).not.toHaveBeenCalled();
-    });
-
-    it('returns only project files when subject env set but userId absent', async () => {
-      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
-      const out = await service.listArtifactsWithContent('p1');
-      expect(out).toHaveLength(2);
-      expect(interpretations.listForUser).not.toHaveBeenCalled();
-    });
-
-    it('appends _lib/*.md when userId + subject both present', async () => {
-      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
-      teachingRequirements.getLibrary.mockReturnValueOnce({
-        subject: 'english',
-        subjectLabel: '英语',
-        version: '2026-05',
-        categories: [
-          {
-            id: 'lang',
-            label: '语言能力',
-            color: 'teal',
-            items: [{ id: 'r-1.2.3', code: '课标 2.1.3', text: '推断生词含义' }],
-          },
-        ],
-      });
+    it('emits per-subject _lib/ files for a single-subject project', async () => {
+      setupProjectWithSubjects(['english']);
+      teachingRequirements.getLibrary.mockReturnValueOnce(ENGLISH_LIB);
       interpretations.listForUser.mockResolvedValueOnce([
-        {
-          reqId: 'r-1.2.3',
-          notes: 'my note',
-          updatedAt: '2026-05-27T00:00:00Z',
-        },
+        { reqId: 'r-1.2.3', notes: 'my note', updatedAt: '2026-05-27' },
       ]);
-      teachingRequirements.tryFindItemById.mockReturnValueOnce({
-        id: 'r-1.2.3',
-        code: '课标 2.1.3',
-        text: '推断生词含义',
-        subject: 'english',
-        categoryId: 'lang',
-        categoryLabel: '语言能力',
-        categoryColor: 'teal',
-      });
+      teachingRequirements.tryFindItemById.mockImplementation((id) =>
+        id === 'r-1.2.3'
+          ? {
+              id: 'r-1.2.3',
+              code: '课标 2.1.3',
+              text: '推断生词含义',
+              subject: 'english',
+              categoryId: 'lang',
+              categoryLabel: '语言能力',
+              categoryColor: 'teal',
+            }
+          : undefined,
+      );
 
       const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
       const paths = out.map((a) => a.path);
-      expect(paths).toContain('_lib/teaching-requirements.md');
-      expect(paths).toContain('_lib/my-interpretations.md');
+      // Per-subject layout — files live under
+      // `_lib/<concern>/<subject>.md` so multi-subject projects can
+      // grow into the same namespace without renaming.
+      expect(paths).toContain('_lib/teaching-requirements/english.md');
+      expect(paths).toContain('_lib/my-interpretations/english.md');
       expect(interpretations.listForUser).toHaveBeenCalledWith('alice');
-      const libFile = out.find((a) => a.path === '_lib/teaching-requirements.md');
+      const libFile = out.find(
+        (a) => a.path === '_lib/teaching-requirements/english.md',
+      );
       expect(libFile?.content).toContain('推断生词含义');
-      const myFile = out.find((a) => a.path === '_lib/my-interpretations.md');
+      const myFile = out.find(
+        (a) => a.path === '_lib/my-interpretations/english.md',
+      );
       expect(myFile?.content).toContain('my note');
     });
 
-    it('emits empty-state my-interpretations.md when user has zero recorded', async () => {
-      process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT = 'english';
-      teachingRequirements.getLibrary.mockReturnValueOnce(null);
+    it('emits one pair of files per subject for a multi-subject project', async () => {
+      setupProjectWithSubjects(['english', 'math']);
+      teachingRequirements.getLibrary.mockImplementation((s) =>
+        s === 'english' ? ENGLISH_LIB : s === 'math' ? MATH_LIB : null,
+      );
       interpretations.listForUser.mockResolvedValueOnce([]);
 
       const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
       const paths = out.map((a) => a.path);
-      // No library (subject not registered) → no teaching-requirements.md
-      expect(paths).not.toContain('_lib/teaching-requirements.md');
-      // But still emit my-interpretations.md (placeholder) so the
-      // agent sees the lib materialization ran.
-      expect(paths).toContain('_lib/my-interpretations.md');
+      // 4 lib files (2 subjects × 2 files) + 2 project files.
+      expect(paths).toContain('_lib/teaching-requirements/english.md');
+      expect(paths).toContain('_lib/my-interpretations/english.md');
+      expect(paths).toContain('_lib/teaching-requirements/math.md');
+      expect(paths).toContain('_lib/my-interpretations/math.md');
     });
 
-    it('never queries L2 service unless both userId + subject are set', async () => {
-      delete process.env.LIVE_LESSON_LESSON_PLAN_SUBJECT;
-      await service.listArtifactsWithContent('p1', { userId: 'alice' });
-      expect(interpretations.listForUser).not.toHaveBeenCalled();
+    it('filters L2 interpretations by subject (no cross-subject leakage)', async () => {
+      // User has interpretations across BOTH english + math req ids
+      // (the L2 store is per-user, cross-subject by design). Project is
+      // english-only — only english interps should appear in the
+      // materialized output. Math notes must not leak into the english
+      // file or vice versa.
+      setupProjectWithSubjects(['english']);
+      teachingRequirements.getLibrary.mockReturnValueOnce(ENGLISH_LIB);
+      interpretations.listForUser.mockResolvedValueOnce([
+        { reqId: 'r-1.2.3', notes: 'english note', updatedAt: 't1' },
+        { reqId: 'm-1.1', notes: 'math note (should NOT appear)', updatedAt: 't2' },
+      ]);
+      teachingRequirements.tryFindItemById.mockImplementation((id) =>
+        id === 'r-1.2.3'
+          ? {
+              id: 'r-1.2.3',
+              code: '课标 2.1.3',
+              text: '推断生词含义',
+              subject: 'english',
+              categoryId: 'lang',
+              categoryLabel: '语言能力',
+              categoryColor: 'teal',
+            }
+          : undefined,
+      );
+
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      const englishInterp = out.find(
+        (a) => a.path === '_lib/my-interpretations/english.md',
+      );
+      expect(englishInterp?.content).toContain('english note');
+      expect(englishInterp?.content).not.toContain('math note');
+      // And no math lib file at all (project doesn't include math).
+      expect(out.find((a) => a.path === '_lib/my-interpretations/math.md'))
+        .toBeUndefined();
+    });
+
+    it('emits empty-state interpretations.md per subject when user has none', async () => {
+      // Placeholder text in renderInterpretations is the signal to the
+      // agent that materialization ran for this subject but the user
+      // hasn't recorded anything yet. Skipping the file would be
+      // ambiguous (did the sync fail? or just no data?).
+      setupProjectWithSubjects(['english']);
+      teachingRequirements.getLibrary.mockReturnValueOnce(ENGLISH_LIB);
+      interpretations.listForUser.mockResolvedValueOnce([]);
+
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      const myFile = out.find(
+        (a) => a.path === '_lib/my-interpretations/english.md',
+      );
+      expect(myFile).toBeDefined();
+      // Placeholder body text comes from renderInterpretations.
+      expect(myFile?.content).toMatch(/尚未记录|未记录|尚未/);
+    });
+
+    it('silently skips subjects whose library is missing from L1 catalog', async () => {
+      // Defensive against platform upgrades that drop a library — a
+      // project that referenced it shouldn't 500 the artifact sync.
+      // Just no lib file emitted for that subject; other subjects
+      // continue to materialize.
+      setupProjectWithSubjects(['english', 'biology-removed']);
+      teachingRequirements.getLibrary.mockImplementation((s) =>
+        s === 'english' ? ENGLISH_LIB : null,
+      );
+      interpretations.listForUser.mockResolvedValueOnce([]);
+
+      const out = await service.listArtifactsWithContent('p1', { userId: 'alice' });
+      const paths = out.map((a) => a.path);
+      expect(paths).toContain('_lib/teaching-requirements/english.md');
+      expect(paths).not.toContain(
+        '_lib/teaching-requirements/biology-removed.md',
+      );
     });
   });
 
@@ -591,6 +831,30 @@ describe('ProjectService', () => {
     it('rejects writes to arbitrary _lib/ subpath', async () => {
       await expect(
         service.upsertArtifact('p1', '_lib/future-thing.md', '...', 'md'),
+      ).rejects.toThrow(/_lib\/ prefix/);
+    });
+
+    it('rejects writes to nested _lib/ paths (per-subject layout)', async () => {
+      // The new layout puts files under `_lib/teaching-requirements/<subject>.md`.
+      // Prefix-match guard must cover those — otherwise the agent could
+      // round-trip pollute a single subject's library file.
+      await expect(
+        service.upsertArtifact(
+          'p1',
+          '_lib/teaching-requirements/english.md',
+          '...',
+          'md',
+        ),
+      ).rejects.toThrow(/_lib\/ prefix/);
+      // First setup consumed `findOne`; reset for the next call.
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      await expect(
+        service.upsertArtifact(
+          'p1',
+          '_lib/my-interpretations/math.md',
+          '...',
+          'md',
+        ),
       ).rejects.toThrow(/_lib\/ prefix/);
     });
 

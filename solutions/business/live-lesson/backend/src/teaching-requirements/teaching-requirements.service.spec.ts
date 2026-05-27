@@ -229,6 +229,29 @@ describe('TeachingRequirementsService', () => {
     });
   });
 
+  describe('listSubjects', () => {
+    it('returns empty array when no libraries loaded', async () => {
+      await svc.reload();
+      expect(svc.listSubjects()).toEqual([]);
+    });
+
+    it('returns the subject keys of every loaded library', async () => {
+      await writeLib(tmpDir, 'english.json', ENGLISH);
+      await writeLib(tmpDir, 'math.json', MATH);
+      await svc.reload();
+      expect(svc.listSubjects()).toEqual(['english', 'math']);
+    });
+
+    it('returns results sorted alphabetically (stable response)', async () => {
+      // Sort guarantee lets the frontend skip its own sort + lets
+      // tests assert on a fixed order without fragile fixture ordering.
+      await writeLib(tmpDir, 'math.json', MATH);
+      await writeLib(tmpDir, 'english.json', ENGLISH);
+      await svc.reload();
+      expect(svc.listSubjects()).toEqual(['english', 'math']);
+    });
+  });
+
   describe('findItemById', () => {
     beforeEach(async () => {
       await writeLib(tmpDir, 'english.json', ENGLISH);

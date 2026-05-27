@@ -109,6 +109,50 @@ describe('TeachingRequirementsController', () => {
     });
   });
 
+  describe('GET /_subjects', () => {
+    it('returns loaded subject keys sorted', async () => {
+      // Add a second library so the assertion shows the catalog is
+      // multi-subject — not just one entry repeated.
+      await fs.writeFile(
+        path.join(tmpDir, 'math.json'),
+        JSON.stringify({
+          subject: 'math',
+          subjectLabel: '数学',
+          version: '2026-05',
+          categories: [
+            {
+              id: 'know',
+              label: '知识',
+              color: 'teal',
+              items: [{ id: 'm-1', code: '1.1', text: 'x' }],
+            },
+          ],
+        }),
+        'utf8',
+      );
+      await svc.reload();
+      expect(controller.listSubjects()).toEqual({
+        subjects: ['english', 'math'],
+      });
+    });
+
+    it('returns empty subjects array when no libraries loaded', async () => {
+      // Fresh service against empty dir.
+      const emptyDir = await fs.mkdtemp(
+        path.join(os.tmpdir(), 'teaching-req-empty-'),
+      );
+      process.env.TEACHING_REQUIREMENTS_DIR = emptyDir;
+      const freshSvc = new TeachingRequirementsService();
+      await freshSvc.reload();
+      const freshCtl = new TeachingRequirementsController(
+        freshSvc,
+        interpretations,
+      );
+      expect(freshCtl.listSubjects()).toEqual({ subjects: [] });
+      await fs.rm(emptyDir, { recursive: true, force: true });
+    });
+  });
+
   describe('GET /_interpretations', () => {
     it('lists interpretations scoped to resolved userId', async () => {
       interpretations.listForUser.mockResolvedValueOnce([
