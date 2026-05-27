@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CourseProject } from '../adapters/persistence/entities/course-project.entity';
 import { ProjectFile } from '../adapters/persistence/entities/project-file.entity';
@@ -11,6 +11,7 @@ import { CcaasUpstream } from '../adapters/http/ccaas-upstream.service';
 import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 import { TypeOrmLessonRepository } from '../adapters/persistence/repositories/lesson.repository';
 import { TeachingRequirementsModule } from '../teaching-requirements/teaching-requirements.module';
+import { LintModule } from '../application/lint/lint.module';
 
 @Module({
   imports: [
@@ -20,6 +21,11 @@ import { TeachingRequirementsModule } from '../teaching-requirements/teaching-re
     // to append `_lib/*.md` files into the artifact response when the
     // calling user has a userId AND a lesson-plan subject is configured.
     TeachingRequirementsModule,
+    // LintModule provides LintService (auto-trigger hook in writeFile +
+    // upsertArtifact). forwardRef because LintService also injects
+    // ProjectService for file reads — circular at module-init, fine at
+    // resolve-time.
+    forwardRef(() => LintModule),
   ],
   // - CcaasProxyController shares the `projects/:projectId` prefix with
   //   ProjectController. Disjoint routes: proxy adds `changes` (SSE) +

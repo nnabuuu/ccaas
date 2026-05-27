@@ -9,6 +9,7 @@ import { LESSON_REPO_PORT } from '../domain/ports/lesson-repo.port';
 import { ManifestSchema } from '../schemas';
 import { TeachingRequirementsService } from '../teaching-requirements/teaching-requirements.service';
 import { RequirementInterpretationService } from '../teaching-requirements/requirement-interpretation.service';
+import { LintService } from '../application/lint/lint.service';
 
 // ── Mock repository factory ──
 
@@ -46,6 +47,7 @@ describe('ProjectService', () => {
   let lessonRepo: ReturnType<typeof mockRepo>;
   let teachingRequirements: jest.Mocked<TeachingRequirementsService>;
   let interpretations: jest.Mocked<RequirementInterpretationService>;
+  let lintService: jest.Mocked<LintService>;
 
   beforeEach(async () => {
     projectRepo = mockRepo();
@@ -63,6 +65,12 @@ describe('ProjectService', () => {
     interpretations = {
       listForUser: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<RequirementInterpretationService>;
+    // LintService.enqueue is the only method ProjectService calls
+    // (fire-and-forget hook on writeFile + upsertArtifact). Mock as
+    // a no-op so save tests don't kick off real debounce timers.
+    lintService = {
+      enqueue: jest.fn(),
+    } as unknown as jest.Mocked<LintService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,6 +80,7 @@ describe('ProjectService', () => {
         { provide: LESSON_REPO_PORT, useValue: lessonRepo },
         { provide: TeachingRequirementsService, useValue: teachingRequirements },
         { provide: RequirementInterpretationService, useValue: interpretations },
+        { provide: LintService, useValue: lintService },
       ],
     }).compile();
 
@@ -422,6 +431,40 @@ describe('ProjectService', () => {
       projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
       fileRepo.findOne.mockResolvedValueOnce(null);
       await expect(service.writeFile('p1', 'missing.json', 'x')).rejects.toThrow(NotFoundException);
+    });
+
+    it('enqueues lint when writing plan/lesson-plan.md', async () => {
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      fileRepo.findOne.mockResolvedValueOnce({ content: '# old', updatedAt: '' });
+      await service.writeFile('p1', 'plan/lesson-plan.md', '# new');
+      expect(lintService.enqueue).toHaveBeenCalledWith('p1');
+    });
+
+    it('enqueues lint when writing execution/manifest.json', async () => {
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      fileRepo.findOne.mockResolvedValueOnce({ content: '{}', updatedAt: '' });
+      await service.writeFile('p1', 'execution/manifest.json', '{}');
+      expect(lintService.enqueue).toHaveBeenCalledWith('p1');
+    });
+
+    it('does NOT enqueue lint for unrelated paths', async () => {
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      fileRepo.findOne.mockResolvedValueOnce({ content: 'x', updatedAt: '' });
+      await service.writeFile('p1', 'notes/random.md', 'y');
+      expect(lintService.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('swallows lint enqueue errors (file write is the contract)', async () => {
+      // The hook is fire-and-forget; if enqueue throws (future regression),
+      // the write must still succeed and the caller must not see the error.
+      projectRepo.findOne.mockResolvedValueOnce({ id: 'p1', status: 'draft' });
+      fileRepo.findOne.mockResolvedValueOnce({ content: '# old', updatedAt: '' });
+      lintService.enqueue.mockImplementationOnce(() => {
+        throw new Error('boom');
+      });
+      await expect(
+        service.writeFile('p1', 'plan/lesson-plan.md', '# new'),
+      ).resolves.toBeUndefined();
     });
   });
 
