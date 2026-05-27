@@ -99,6 +99,14 @@ export default function AiPanel({
   // Chat-bridge injection. When the parent supplies a pendingMessage,
   // send it once + signal consumed. Guards on `chat.isThinking` so we
   // don't trample an in-flight response.
+  //
+  // Semantics: last-writer-wins. If a second pendingMessage arrives
+  // while we're still busy (`isThinking === true`), React replaces the
+  // prop value before the effect re-runs — the prior unsent message
+  // is dropped. That matches user intent: clicking "让 AI 修复" twice
+  // in quick succession should NOT queue both messages; the second
+  // click supersedes the first. Worth this comment so a future "fix"
+  // doesn't add queueing assuming it was an oversight.
   useEffect(() => {
     if (!pendingMessage) return;
     if (chat.isThinking) return;

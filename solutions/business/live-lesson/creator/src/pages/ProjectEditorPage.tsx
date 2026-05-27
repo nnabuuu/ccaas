@@ -84,6 +84,11 @@ export default function ProjectEditorPage() {
     // Switching projects resets the dynamic-tab list — keeping audit
     // tabs from project A visible on project B would be confusing.
     setTabs(initialState())
+    // Drop any unconsumed bridge message. Without this, a "让 AI 修复"
+    // click on project A that triggered a setState but hadn't yet been
+    // consumed by AiPanel (e.g. because chat was mid-stream) would fire
+    // into project B's chat session on next mount. Cross-project leak.
+    setPendingChatMessage(null)
   }, [id])
 
   // Which file path the currently-active tab is editing (so a file-
