@@ -226,6 +226,27 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
   padding:2px 6px;border-radius:3px;margin-left:8px;
   text-decoration:none;display:inline-block;vertical-align:middle;
 }
+.dq-card.resolved{border-left:3px solid var(--green);opacity:.82}
+.dq-card.resolved .dq-num{color:var(--green)}
+.dq-card.resolved h4::after{
+  content:'RESOLVED';font-size:9px;font-weight:700;letter-spacing:.5px;
+  background:var(--green-bg);color:var(--green);
+  padding:2px 6px;border-radius:3px;margin-left:8px;
+  text-decoration:none;display:inline-block;vertical-align:middle;
+}
+
+/* Decision card variant: superseded by a later decision. Keep the
+   card visible (it's a real history beat) but visually de-emphasize
+   it so readers know to look further. */
+.d-card.superseded{opacity:.7;background:#f6f4f0}
+.d-card.superseded .d-title h3{text-decoration:line-through;text-decoration-color:rgba(28,28,26,.2)}
+.d-card.superseded .d-head::after{
+  content:attr(data-superseded-by);
+  font-size:9px;font-weight:700;letter-spacing:.5px;
+  background:var(--amber-bg);color:var(--amber);
+  padding:3px 8px;border-radius:3px;margin-left:8px;
+  white-space:nowrap;align-self:flex-start;margin-top:5px;
+}
 
 details.change-surface{
   background:var(--surface);border:1px solid var(--border);
@@ -308,11 +329,11 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       这次把<em>滚动到目标</em>这半步做完, 顺便定下 LLM ↔ frontend 的 anchor 契约 (V7-rich 的 OQ-03)。
     </p>
     <p>
-      5 个非显然决定: <em>anchor schema 选 idx 还是 id</em> (D-01), <em>state 怎么从 chat-bridge 传到子 tab</em> (D-02),
-      <em>cold-load 时数据还没到怎么 scroll</em> (D-03), <em>同一个 anchor 连点两次怎么再 fire</em> (D-04),
-      最后用户当场决定 <em>把 DEF-01 (id 兜底) 直接做掉</em>, 触发 schema 编码二次决定 (D-05)。
-      cold-load race + nonce 监控都是 code-review HIGH/MEDIUM finding; mid-edit 反复 flash 是第三轮 review 抓出的 behavior bug。
-      真正没答案的进 Open Questions。
+      6 个非显然决定: <em>anchor 用 idx 还是 id</em> (D-01), <em>state 怎么从 chat-bridge 传到子 tab</em> (D-02),
+      <em>cold-load 时数据还没到怎么 scroll</em> (D-03), <em>同一 anchor 连点两次怎么再 fire</em> (D-04),
+      <em>把 DEF-01 直接做掉 + dual schema 编码</em> (D-05), 然后 review 时用户继续追问"那为什么不直接 id" ——
+      重读 deleted-step trade-off 后发现 fallback 是 fail-quiet 而非 fail-loud, <em>纯 id schema</em> 把 D-01/D-05 都推翻 (D-06)。
+      cold-load race + nonce 监控 + mid-edit 反复 flash 是 3 轮 review 的发现, 都已修。
     </p>
   </div>
 
@@ -322,13 +343,13 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       <span class="num">01 —</span>
       <h2>Decisions <span class="en">这次想清楚了的</span></h2>
     </div>
-    <span class="hint">5 项 · 按设计顺序</span>
+    <span class="hint">6 项 · 按设计顺序 (D-01 + D-05 superseded by D-06)</span>
   </div>
 
   <div class="decisions">
 
     <!-- D-01 -->
-    <div class="d-card">
+    <div class="d-card superseded" data-superseded-by="SUPERSEDED BY D-06">
       <div class="d-head">
         <div class="d-num">D-01</div>
         <div class="d-title">
@@ -617,8 +638,8 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
 
-    <!-- D-05 — added when DEF-01 was un-deferred -->
-    <div class="d-card">
+    <!-- D-05 — added when DEF-01 was un-deferred; later superseded by D-06 (pure id) -->
+    <div class="d-card superseded" data-superseded-by="SUPERSEDED BY D-06">
       <div class="d-head">
         <div class="d-num">D-05</div>
         <div class="d-title">
@@ -693,6 +714,74 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
 
+    <!-- D-06 — final pivot to pure id schema -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 双 anchor 还是直接<em>纯 id</em> schema?</h3>
+        </div>
+        <span class="d-scope contract">Contract · Final Form</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-05 ship 之后用户立刻问 "用 id 是不是更好, 否则修改一下就错位了, agent 也找不到了"。 重读 ExecutionTab 里的 "deleted-step trade-off" 注释发现里面那句"some scroll less confusing than no scroll" 站不住 —— 用户在删了 step 之后再点旧报告链接, 双 anchor fallback 会滚到位置上的<em>别的</em> step 上, <strong>静默展示错内容</strong>。 这比 "click 没反应" 更糟, 因为用户以为看到的是 LLM 引用的内容。</span>
+        <span class="lbl">约束</span>
+        <span class="val">删 idx 意味着<em>放弃</em>: (a) 旧报告里的 <code>step-N|...</code> 链接停止工作 (silently no-op); (b) URL 不再人类可读 ("Step 1" 这个文本在 markdown 里仍读得到, 但 URL hover 看到的是 opaque id)。 用户接受这两个代价。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保留 D-05 dual, 但 id 给了找不到时<em>不</em> fallback 到 idx (minimal patch)</span>
+          <span class="opt-verdict">❌ 拒 —— 保留 schema 复杂度跟 parser, 没换来对应收益。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">纯 id: <code>nav://execution/&lt;stepId&gt;</code>。 删 <code>parseStepAnchor</code> + <code>data-step-idx</code>。 删 spec。</span>
+          <span class="opt-verdict">✓ 选 —— 干净, no parse, no fallback, no wrong-scroll。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          双 anchor 的 fallback 路径本质是"<strong>当 id 这条主路失败时, 拿位置猜</strong>" —— 但<em>位置只在 step 没被改过时才有意义</em>。
+          一旦 step 被改过 (而这正是审计后最可能发生的事), 位置猜是<em>系统性</em>错的, 不是随机错。
+          系统性错很危险: 用户跟报告对比时看到的内容跟 LLM 引用的<em>不是同一条</em>, 但视觉上看不出来。
+        </p>
+        <p>
+          删掉 fallback 路径就让"id 失效"<em>显式</em>: 不滚, 用户看到链接没反应, 知道这个引用过期了。
+          这是<strong>fail-loud over fail-quiet</strong>。 顺带把 <code>parseStepAnchor</code> 跟 12 个 spec 测试删了 —— 没有 parser 就没有 parser bug,
+          没有 dual schema 就没有 schema 迁移成本。 anchor IS the id, 这是 plan tab 早就在用的形式, 两个 workspace 现在一致了。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Execution + plan anchor schema 统一为"workspace 后跟一个 doc-author 稳定 id"。 LLM 不需要算位置。 Agent 解析时 anchor 就是 id。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          旧报告 (任何含 <code>step-N</code> 的 anchor) 跳转不响应。 URL 不再有人类可读的位置信息 —— 但链接<em>文本</em>仍然可读 (LLM 写 "[Step 1](nav://execution/s-abc)"), 仅 URL 是 opaque。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/lib/scroll-anchor.ts</code> <em>(简化)</em>
+        <code>creator/src/lib/scroll-anchor.spec.ts</code> <em>(删除)</em>
+        <code>creator/src/components/execution/ExecutionTab.tsx</code>
+        <code>creator/src/components/execution/StepList.tsx</code>
+        <code>backend/src/application/audit/audit-prompt-builder.ts</code>
+      </div>
+    </div>
+
   </div>
 
   <!-- DEFERRED -->
@@ -755,18 +844,17 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       <span class="num">03 —</span>
       <h2>Open Questions <span class="en">真正还没答案的</span></h2>
     </div>
-    <span class="hint">3 项 · 没 confident answer</span>
+    <span class="hint">3 项 · OQ-01 resolved by D-06; 其余仍 open</span>
   </div>
 
   <div class="dq-grid">
 
-    <div class="dq-card open">
+    <div class="dq-card resolved">
       <div class="dq-num">OQ-01</div>
       <div class="dq-body">
         <h4>idx anchor 漂移在真实使用中频率有多高?</h4>
-        <p><span class="lbl">问题</span>选 idx 是因为"reorder 后再看旧报告" 应该是低频。 但<em>多低</em>? 是 1% 还是 30%? 没有数据。</p>
-        <p><span class="lbl">现状</span>已用 dual-anchor (D-05 / DEF-01 SHIPPED) 做了主防御 —— id 优先, idx 兜底。 即使频率高也不会跳错。</p>
-        <p><span class="lbl">为什么仍 open</span>"漂移频率" 这个度量本身还没有数据, 只是后果被 hedged 了。 真正需要数据的场景: 如果将来 step 经常被<em>删除</em>(不是 reorder), id 兜底失败时会落到 <em>"位置上的不同 step"</em>, 那个体感成本要测。</p>
+        <p><span class="lbl">问题</span>选 idx 是因为"reorder 后再看旧报告" 应该是低频。 但<em>多低</em>? 没有数据。</p>
+        <p><span class="lbl">解决</span>D-06 把 idx 整个删了, "idx 漂移"在 schema 层不存在了。 替代风险 (id 失效后 fail-quiet) 不需要频率度量 —— 用户能直接看到链接没反应, 自己判断。</p>
       </div>
     </div>
 
@@ -802,15 +890,15 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
     </summary>
     <div class="cs-body">
       <div class="cs-stat-row">
-        <div class="cs-stat"><span class="cs-stat-n">10</span><span class="cs-stat-l">Files</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">12</span><span class="cs-stat-l">scroll-anchor Tests</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Commits (feature + pivot)</span></div>
         <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">audit-prompt Tests</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">3</span><span class="cs-stat-l">Code-Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">2</span><span class="cs-stat-l">Decisions Superseded</span></div>
         <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
       </div>
       <div class="cs-files">
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/scroll-anchor.ts</span></div>
-        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/scroll-anchor.spec.ts</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/lib/scroll-anchor.spec.ts (added then deleted in D-06 pivot)</span></div>
         <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.ts</span></div>
         <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.spec.ts</span></div>

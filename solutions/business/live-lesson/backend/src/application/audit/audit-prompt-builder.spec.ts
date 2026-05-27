@@ -43,16 +43,13 @@ describe('AuditPromptBuilder', () => {
         manifest: '',
         libItems: [],
       });
-      // Anchor format is a contract with the frontend scrollTo wiring:
-      // execution uses dual `step-N|<stepId>` anchor — N matches
-      // data-step-idx, stepId matches data-step-id; frontend prefers
-      // id (reorder-resilient) and falls back to idx. plan uses bare
-      // reqId without the req:// prefix (matches data-req-id attr
-      // on ReferenceChip). If the prompt drifts, links render but
-      // scrollIntoView misses.
-      expect(systemPrompt).toContain('nav://execution/step-N|<stepId>');
-      expect(systemPrompt).toContain('1-based');
-      expect(systemPrompt).toContain('reorder');
+      // Anchor format is a contract with the frontend scrollTo
+      // wiring: execution uses the bare stepId (matches data-step-id
+      // on each step row); plan uses bare reqId without the
+      // `req://` prefix (matches data-req-id on ReferenceChip). If
+      // the prompt drifts, links render but scrollIntoView misses.
+      expect(systemPrompt).toContain('nav://execution/<stepId>');
+      expect(systemPrompt).toContain('step 的 `id` 字段');
       expect(systemPrompt).toContain('nav://plan/<reqId>');
       expect(systemPrompt).toContain('不带 `req://` 前缀');
     });

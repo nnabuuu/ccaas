@@ -156,7 +156,6 @@ export default function StepList({ steps, onStepsChange, onSelectBlock, selected
         return (
           <div
             key={step.id}
-            data-step-idx={i + 1}
             data-step-id={step.id}
             className={`bg-white border border-gray-200 ${STEP_BORDER[color]} border-l-4 rounded-lg overflow-hidden`}
           >

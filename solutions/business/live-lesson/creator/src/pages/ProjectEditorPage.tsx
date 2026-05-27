@@ -83,12 +83,13 @@ export default function ProjectEditorPage() {
   // Cross-tab stale-anchor safety: the signal is global to the page,
   // not scoped per workspace. If a tab swap (e.g. manual click on
   // tab bar) re-mounts a tab while the signal still holds an anchor
-  // intended for the OTHER tab, that tab's effect fires with a
-  // wrong-format anchor. Today both consumers are safe by input
-  // validation (parseStepAnchor returns null for non-step-N forms;
-  // PlanTab's data-req-id selector returns no element for "step-N"),
-  // so the symptom is a silent no-op. If a future tab is less
-  // selective, scope the signal per WorkspaceTabKey.
+  // intended for the OTHER tab, that tab's effect fires with the
+  // wrong-namespace anchor. Today both consumers are safe by
+  // querySelector miss: a stepId like "s-1700-3" won't match any
+  // `[data-req-id]` on plan side, and a reqId like "r-1.2.3" won't
+  // match any `[data-step-id]` on execution side. The symptom is a
+  // silent no-op. If a future tab uses a less distinct id-space,
+  // scope the signal per WorkspaceTabKey.
   const [scrollSignal, setScrollSignal] = useState<ScrollSignal>(EMPTY_SIGNAL)
   // Monotonic counter for scrollSignal nonces. Avoids Date.now()'s
   // wall-clock fragility — NTP slew or DST adjustments could produce
