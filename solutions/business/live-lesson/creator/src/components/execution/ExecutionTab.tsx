@@ -5,6 +5,8 @@ import type { Manifest, ReadingStep } from '../../types'
 import { getStepColor } from '../../types'
 import StepList from './StepList'
 import BlockEditorDrawer from './BlockEditorDrawer'
+import { parseStepAnchor } from '../../lib/scroll-anchor'
+import { flashScrollTarget } from '../../lib/flash-scroll-target'
 
 interface ExecutionTabProps {
   projectId: string
@@ -15,6 +17,15 @@ interface ExecutionTabProps {
    * change re-runs the fetch.
    */
   reloadKey?: number
+  /**
+   * Scroll-to-anchor signal. When the user clicks a `nav://execution/step-N`
+   * link inside an audit report, the parent ChatBridge sets
+   * `scrollAnchor` to "step-N" and bumps `scrollNonce`. We watch both
+   * (anchor + nonce as deps) so re-clicking the same link still re-fires
+   * the scroll. Null anchor means no scroll pending.
+   */
+  scrollAnchor?: string | null
+  scrollNonce?: number
 }
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved'
@@ -32,7 +43,12 @@ function nextStepId(): string {
   return `s-${Date.now()}-${++stepIdCounter}`
 }
 
-export default function ExecutionTab({ projectId, reloadKey = 0 }: ExecutionTabProps) {
+export default function ExecutionTab({
+  projectId,
+  reloadKey = 0,
+  scrollAnchor,
+  scrollNonce,
+}: ExecutionTabProps) {
   const [manifest, setManifest] = useState<Manifest | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +104,88 @@ export default function ExecutionTab({ projectId, reloadKey = 0 }: ExecutionTabP
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
   }, [projectId, reloadKey])
+
+  // Scroll-to-step on nav:// anchor. Deps include `scrollNonce` so a
+  // re-click with the same anchor still re-fires (otherwise React
+  // skips the effect when only the parent's nonce bumped). Also
+  // depends on `manifest` so when the bridge fires DURING a cold
+  // load (manifest still null on first mount), the effect re-runs
+  // once steps render — a 200ms timer alone misses cold loads
+  // >200ms. Untrusted-input safe: parseStepAnchor returns null for
+  // any unrecognized shape, so the effect silently no-ops on garbage
+  // LLM anchors.
+  //
+  // Dual-anchor selection (DEF-01 follow-up): the parsed anchor may
+  // carry both `id` (stable step.id) and `idx` (1-based position).
+  // Prefer id — it survives the user reordering steps after the
+  // audit was produced. Fall back to idx for the legacy single-form
+  // anchor or when the LLM omitted the id. This is the only place
+  // that decides priority; everything else just consumes whichever
+  // element comes back.
+  //
+  // Deleted-step trade-off: if id is present but no matching DOM
+  // element exists (the step was deleted after audit ran), idx
+  // fallback may land on whatever step now occupies that position —
+  // potentially the wrong content. Accepted as silent-degrade since
+  // (a) the audit context provides enough surrounding info that a
+  // mismatch is recoverable, and (b) "some scroll" is usually less
+  // confusing than "click did nothing".
+  // Use a boolean "data ready" gate rather than `manifest` itself in
+  // the deps below — otherwise every keystroke in the block editor
+  // (which mutates manifest) re-runs this effect and re-flashes the
+  // step row mid-edit. We only need to re-fire when manifest
+  // transitions null → non-null.
+  const manifestReady = manifest != null
+  useEffect(() => {
+    if (!scrollAnchor) return
+    const parsed = parseStepAnchor(scrollAnchor)
+    if (!parsed) return
+    // Wait for manifest to mount — without steps in the DOM neither
+    // selector can resolve. Cheap early-return; the effect re-fires
+    // when `manifestReady` flips true.
+    if (!manifestReady) return
+
+    let rafId = 0
+    let retryId: ReturnType<typeof setTimeout> | null = null
+
+    const tryScroll = () => {
+      // id is doc-author / runtime-generated (`s-${Date.now()}-N`);
+      // CSS.escape defends the selector against pathological chars.
+      // idx is `\d+` straight from the regex — safe to interpolate.
+      const byId =
+        parsed.id != null
+          ? document.querySelector(
+              `[data-step-id="${CSS.escape(parsed.id)}"]`,
+            )
+          : null
+      const byIdx =
+        byId == null && parsed.idx != null
+          ? document.querySelector(`[data-step-idx="${parsed.idx}"]`)
+          : null
+      const el = byId ?? byIdx
+      if (el) {
+        flashScrollTarget(el)
+        return true
+      }
+      return false
+    }
+
+    rafId = requestAnimationFrame(() => {
+      // Defensive retry for the late-paint case (steps mount but
+      // child blocks still measuring). At this point manifest is
+      // non-null so steps WILL render; a single retry covers
+      // React's commit-then-paint gap without growing into
+      // exponential backoff territory.
+      if (!tryScroll()) {
+        retryId = setTimeout(tryScroll, 200)
+      }
+    })
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      if (retryId) clearTimeout(retryId)
+    }
+  }, [scrollAnchor, scrollNonce, manifestReady])
 
   // Save function — generation-guarded against reload races.
   const save = useCallback(async () => {

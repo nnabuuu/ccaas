@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>nav:// scrollTo · Decision Archive · 2026-05-27</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+.context p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.frontend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.contract{background:var(--teal-bg);color:var(--teal)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+.dq-card.shipped{border-left:3px solid var(--green);opacity:.82}
+.dq-card.shipped .dq-num{color:var(--green)}
+.dq-card.shipped h4{text-decoration:line-through;text-decoration-color:rgba(45,102,18,.4)}
+.dq-card.shipped h4::after{
+  content:'SHIPPED';font-size:9px;font-weight:700;letter-spacing:.5px;
+  background:var(--green-bg);color:var(--green);
+  padding:2px 6px;border-radius:3px;margin-left:8px;
+  text-decoration:none;display:inline-block;vertical-align:middle;
+}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-files{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.cs-frow{
+  display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-frow .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-frow .tag.new{background:var(--teal-bg);color:var(--teal)}
+.cs-frow .tag.mod{background:var(--amber-bg);color:var(--amber)}
+.cs-frow .path{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t2);font-weight:500}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">nav:// scrollTo · live-lesson creator · 2026-05-27</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">基线</span><span class="meta-v">37e6c062 · master</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">把"两步并一步"做出来</span>
+    </div>
+    <h1>从"切到对的 tab"到"<em>滚到对的位置</em>"。</h1>
+  </section>
+
+  <!-- CONTEXT -->
+  <div class="context">
+    <p>
+      V7-rich 框架上次 ship 时留了一个 <strong>DEF-01</strong>: 审计报告里 <code>nav://execution/step-1</code> 这种链接,
+      点了只切到执行设计 tab, 但 anchor 部分被丢弃 —— 用户得自己在长长的 step 列表里翻。
+      这次把<em>滚动到目标</em>这半步做完, 顺便定下 LLM ↔ frontend 的 anchor 契约 (V7-rich 的 OQ-03)。
+    </p>
+    <p>
+      5 个非显然决定: <em>anchor schema 选 idx 还是 id</em> (D-01), <em>state 怎么从 chat-bridge 传到子 tab</em> (D-02),
+      <em>cold-load 时数据还没到怎么 scroll</em> (D-03), <em>同一个 anchor 连点两次怎么再 fire</em> (D-04),
+      最后用户当场决定 <em>把 DEF-01 (id 兜底) 直接做掉</em>, 触发 schema 编码二次决定 (D-05)。
+      cold-load race + nonce 监控都是 code-review HIGH/MEDIUM finding; mid-edit 反复 flash 是第三轮 review 抓出的 behavior bug。
+      真正没答案的进 Open Questions。
+    </p>
+  </div>
+
+  <!-- DECISIONS -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">5 项 · 按设计顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> <code>nav://execution/?</code> 的 anchor 用 step 的 idx 还是 id?</h3>
+        </div>
+        <span class="d-scope contract">Contract · LLM ↔ Frontend</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">V7-rich 决定档案里 OQ-03 标了 anchor schema 待定: <code>step.id</code> 还是 <code>step.idx</code>? Audit prompt 已经在 callout 例子里写了 <code>nav://execution/step-1</code>, 但<strong>没明确规定</strong> "1" 是 idx 还是 id 的一部分。 这一次 plan tab 也要支持 anchor (<code>nav://plan/&lt;reqId&gt;</code>), 是个统一定 schema 的好时机。</span>
+        <span class="lbl">约束</span>
+        <span class="val">LLM 写出 anchor 时是基于<em>审计当下</em>的状态;教师可能在审计后重排 step;chip 的 <code>refId</code> (plan 端) 是稳定 doc-author id, 没有相同的问题。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Schema</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc"><code>step.id</code> 不透明 slug (<code>s-1716...-3</code>) —— stable across reorder</span>
+          <span class="opt-verdict">❌ 拒 —— LLM 写出的 anchor 不可读,审计报告里 "跳转 Step 1" 变 "跳转 s-1716123-3"。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><code>step.idx</code> 1-based (<code>step-1</code> = 第一个 step) —— 跟教师视觉编号一致</span>
+          <span class="opt-verdict">✓ 选 —— 跟"教师所见即所得",reorder 漂移作为已知 tradeoff。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">LLM 同时发 idx + id, frontend 优先 id 兜底 idx</span>
+          <span class="opt-verdict">❌ 推迟 —— 需求未现, 现在做就是过度设计。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Anchor schema 是 <strong>LLM prompt ↔ frontend DOM 的契约</strong>。
+          LLM 看到的输入是 manifest JSON (有 idx + id 都行), 但 LLM 输出要让<em>人</em>能读,
+          因为审计报告本身就是给教师看的——一个写着 "建议修改 Step 1" 的报告比 "建议修改 s-1716...-3" 自然得多。
+        </p>
+        <p>
+          Reorder 后 idx 会漂移 —— 这是真实代价。 但<em>审计之后立刻 reorder</em> 是低频场景:
+          审计的产出就是为了 inform 修改, 修改通常是改内容不是改顺序。
+          真出问题再做 <strong>option C 兜底</strong>, OQ 里标着等数据。
+          一开始就上 C 是为不存在的问题付复杂度。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          StepList 永远暴露 <code>data-step-idx={i+1}</code>; audit prompt 里 N 永远是 1-based。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Reorder 后报告 anchor 失效, 没机制重 anchor 旧报告 —— 教师手动重审。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>backend/src/application/audit/audit-prompt-builder.ts</code>
+        <code>creator/src/components/execution/StepList.tsx</code>
+        <code>creator/src/lib/scroll-anchor.ts</code>
+      </div>
+    </div>
+
+    <!-- D-02 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Scroll 信号怎么从 chat-bridge 传到具体 tab?</h3>
+        </div>
+        <span class="d-scope frontend">Frontend · State</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">ChatBridge.<code>switchToWorkspace(key, anchor)</code> 在 ProjectEditorPage 里实现; 但选完 tab 后, <strong>anchor 信息怎么交给即将 mount 的 ExecutionTab / PlanTab</strong>? 旧实现里 <code>_anchor</code> 直接被忽略。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Bridge identity 必须稳定 (<code>useMemo([])</code>), 不能每次 anchor 变都 re-create bridge —— 否则消费者 (AuditReportRenderer) 也跟着 re-render。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Mechanism</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Prop drill <code>scrollAnchor</code> + <code>scrollNonce</code>; ExecutionTab/PlanTab useEffect 监听</span>
+          <span class="opt-verdict">✓ 选 —— 跟现有 <code>reloadKey</code> drill 同款 pattern。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">parent 持有 ref + <code>useImperativeHandle</code>, bridge 调 <code>tabRef.current.scrollTo()</code></span>
+          <span class="opt-verdict">❌ 拒 —— parent 要对每个 workspace tab 持 ref; tab 切换时旧 ref 失效; 复杂。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">PageScrollContext, tab 内部 useContext 消费</span>
+          <span class="opt-verdict">❌ 拒 —— 再加一个 context 跟现有 ChatBridgeContext 平行, 没必要。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">D</span>
+          <span class="opt-desc">编码到 URL 路径 (<code>/projects/:id#step-1</code>), tab 从 URL 读</span>
+          <span class="opt-verdict">❌ 拒 —— 改路由 schema; tab 切换跟 URL 不同步。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Bridge identity 必须稳定 (<code>useMemo([])</code>) 是因为 ChatBridgeContext 一变, AuditReportRenderer 重渲染、callouts 重 mount。
+          所以 bridge 的 <em>method</em> 不能持有 anchor —— 必须用<strong>独立 state</strong> 承载, bridge 调 <code>setState</code>。
+        </p>
+        <p>
+          一旦 anchor 落在独立 state, 怎么传给子 tab 就是普通的 React 状态流动问题。
+          Prop drill 跟 ExecutionTab 已经在用的 <code>reloadKey</code> 完全一致 —— 这是 <em>same shape</em> 复用,
+          代码读起来不需要切上下文。 Refs / contexts 都能做, 但<strong>没有解决 prop drill 不能解决的问题</strong>。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每个新 workspace tab (将来加 Skills 细节) 都要接 <code>scrollAnchor</code> + <code>scrollNonce</code> 两个 prop。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Workspace tab 不能<em>主动</em>触发滚动到自己内部位置 (e.g. block editor drawer 内部); 需要再加一层。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/pages/ProjectEditorPage.tsx</code>
+        <code>creator/src/lib/scroll-anchor.ts</code>
+      </div>
+    </div>
+
+    <!-- D-03 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Cold load 时 anchor 已到但 DOM 还没渲染怎么办?</h3>
+        </div>
+        <span class="d-scope frontend">Frontend · Race</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">初版只用 <code>requestAnimationFrame</code> + <code>setTimeout(200ms)</code> 重试。 Code-reviewer HIGH 标记: ExecutionTab 的 manifest fetch / PlanTab 的 plan+L1+L2 串行 fetch 经常 >200ms, 单次 200ms 重试 <strong>悄无声息漏掉冷加载场景</strong>。</span>
+        <span class="lbl">约束</span>
+        <span class="val">useEffect deps 必须能反映"数据来了"这件事; 但 useEffect 本身不能查询 DOM——只能跑代码 + 找 element。 失败时没 user-visible signal (静默 no-op)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">单次 200ms retry, 不行就放弃</span>
+          <span class="opt-verdict">❌ 拒 —— 冷加载实测 &gt;200ms 是常态, 静默漏。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">指数退避 retry (200ms → 400 → 800 → 1600), 总 3 秒窗口</span>
+          <span class="opt-verdict">❌ 拒 —— 任意时间窗口仍不可靠; 复杂度涨。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">把"data-ready"信号 (<code>manifest</code> / <code>state.phase</code>) 加进 useEffect deps</span>
+          <span class="opt-verdict">✓ 选 —— effect 在数据真到时自然 re-fire, 不靠 timer 估时间。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">D</span>
+          <span class="opt-desc">在 fetch 完成的代码路径里直接调 scroll 函数 (跳过 useEffect)</span>
+          <span class="opt-verdict">❌ 拒 —— 把"滚动到 anchor"耦合进 data fetch 逻辑, 违反 SoC。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Timer-based retry 在本质上是<strong>猜数据什么时候到</strong>——猜得短了漏冷加载,猜得长了浪费时间。
+          但<em>"数据到了"</em>本来就是 React state 能精确表达的事件 (<code>manifest !== null</code>, <code>state.phase === 'ready'</code>),
+          直接拿来当 useEffect dep 就是 zero-guess 的解。
+        </p>
+        <p>
+          这是 React 数据流的 <em>"declare the question, let the framework re-ask it"</em> 的应用:
+          我不需要主动观察 "数据到了吗", 我只要<strong>声明 effect 依赖于这个状态</strong>,
+          React 在状态变化时自然 re-run effect。 配合 <code>scrollNonce</code> 解决重复 anchor 问题,
+          整个 deps 是 <code>[scrollAnchor, scrollNonce, dataReady]</code> ——
+          三个维度任意变化都重新尝试,直觉上严密。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每个 workspace tab 必须暴露一个"data-ready"的 state value 给 effect 监听 (ExecutionTab 用 <code>manifest</code>, PlanTab 用 <code>state.phase</code>)。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          数据加载失败 (error 分支) 永远不会触发 scroll —— 这是设计上正确的, 但如果将来要 "失败也尝试 scroll到错误条目", 需要换 dep。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/components/execution/ExecutionTab.tsx</code>
+        <code>creator/src/components/plan/PlanTab.tsx</code>
+      </div>
+    </div>
+
+    <!-- D-04 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 同一个 anchor 连点两次怎么再触发 scroll?</h3>
+        </div>
+        <span class="d-scope frontend">Frontend · Idempotency</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">如果 child useEffect 只 dep <code>[scrollAnchor]</code>: 用户点 <code>nav://execution/step-1</code> 后滚走, 再点同一链接 —— anchor 不变, deps 不变, effect 不 re-fire, 不滚。 必须有"<em>这是一次新的请求</em>"的 nonce。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Nonce 必须严格单调 (每次 dispatch 都 &gt; 上次), 否则 React 跳过 effect; 必须能 cross-render 保持; 不能跟其它 state 冲突。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Source</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc"><code>Date.now()</code> —— 墙钟时间戳</span>
+          <span class="opt-verdict">❌ 拒 —— NTP slew / 手动改时间能造成 nonce ≤ 前值。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><code>useRef&lt;number&gt;(0)</code> 计数器, 每次 <code>++counter.current</code></span>
+          <span class="opt-verdict">✓ 选 —— 单调由实现强制, 跟系统时钟解耦。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc"><code>useReducer</code> + action dispatch 模式</span>
+          <span class="opt-verdict">❌ 拒 —— 单一 scroll signal 不值得 reducer 仪式感。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          初版用了 <code>Date.now()</code>, code-reviewer 标记为 MEDIUM: NTP slew / DST 调整能让连续两次 <code>Date.now()</code> 出现 <em>nonce<sub>new</sub> ≤ nonce<sub>old</sub></em>,
+          React 的 dep change detection 看到"没变"会跳过 effect, 用户的第二次点击静默没反应。
+        </p>
+        <p>
+          换成 ref 计数器, <strong>单调由我们的代码强制</strong> —— <code>++counter.current</code> 永远比前值大。
+          这是个 <em>"不要把可靠性外包给系统时钟"</em> 的小例子: 业务语义需要严格单调, 就由代码持有这个不变量, 不依赖 OS。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          ProjectEditorPage 持有 <code>scrollNonceRef</code>; 任何未来的 scroll 触发都走 <code>++ref.current</code>。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Nonce 不可读 (任意 int) —— 不能用 nonce 做 "什么时候点的" 这种调试推断, 需要时另存。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span>
+        <code>creator/src/pages/ProjectEditorPage.tsx</code>
+      </div>
+    </div>
+
+    <!-- D-05 — added when DEF-01 was un-deferred -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> id 兜底 anchor 的 URL schema 怎么编?</h3>
+        </div>
+        <span class="d-scope contract">Contract · Encoding</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">D-01 把 reorder 漂移列为 acceptable tradeoff, DEF-01 punt 到"等抱怨"。 但同一个 review session 用户直接说 "step.id 兜底 anchor 做一下" —— 不等数据, 直接做。 那么 URL 怎么<em>同时</em>编 idx + id?</span>
+        <span class="lbl">约束</span>
+        <span class="val">既要保持向后兼容 (旧报告里的 <code>nav://execution/step-N</code> 还得能 scroll), 又要让 LLM 写新格式时不困惑; URL 不能用 <code>/</code> 当分隔符 (跟 <code>parseNavWorkspace</code> 的 path 切分冲突)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Schema</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">两段 path: <code>nav://execution/step-N/&lt;id&gt;</code></span>
+          <span class="opt-verdict">❌ 拒 —— 跟 <code>parseNavWorkspace</code> 的 <code>/</code> 切分冲突, 要改解析器。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Query string: <code>nav://execution/step-N?id=&lt;id&gt;</code></span>
+          <span class="opt-verdict">❌ 拒 —— <code>parseNavWorkspace</code> 当前 strip 掉 query string; 解析器要扩展。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Pipe 分隔: <code>nav://execution/step-N|&lt;id&gt;</code></span>
+          <span class="opt-verdict">✓ 选 —— anchor 内分隔, parseNavWorkspace 不变; 易解析, 易读。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">D</span>
+          <span class="opt-desc">两个独立 link: <code>(nav://execution/step-N) (nav://execution/id/&lt;id&gt;)</code> 让 LLM 选</span>
+          <span class="opt-verdict">❌ 拒 —— LLM 大概率选错; 增加 prompt 复杂度。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Pipe 在 anchor <em>内部</em> 当分隔符意味着<strong>不动 parseNavWorkspace</strong>:
+          那个解析器把 anchor 当不透明字符串提取出来, 内部解析在 <code>parseStepAnchor</code> 里做, 关注点严格分离。
+          换 query string 或多段 path 都需要修改 parser 的 regex —— 拉大改动面积只为了"看起来正规"。
+        </p>
+        <p>
+          Pipe 的另一个好处: <strong>regex 严格匹配 <code>^step-(\d+)(?:\|(.*))?$</code></strong> 让 idx 不能"漏到"id 里去 ——
+          <code>step-1abc</code> 直接被拒绝, 不会被错误解析成 <code>{idx: 1, id: 'abc'}</code>。
+          严格 strict-match 是<em>对 LLM 输出宽容但不<em>糊涂</em></em>: 接受不带 id 的简略形式, 但不接受任何夹杂噪声。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Pipe 是<em>execution anchor 内部</em>的保留字符; ReadingStep id 不能含 pipe (现实中是 <code>s-&lt;timestamp&gt;-N</code>, 没问题)。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Plan anchor 现在只是 reqId 单层, 将来要加"块 id"等需要分隔时不能照搬 pipe (因为 r-id 字符空间可能含 pipe?), 要重新考虑。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span>
+        <code>creator/src/lib/scroll-anchor.ts</code>
+        <code>creator/src/components/execution/ExecutionTab.tsx</code>
+        <code>backend/src/application/audit/audit-prompt-builder.ts</code>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DEFERRED -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">4 项 · DEF-01 在同 session 内 shipped, 其余等触发</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card shipped">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4><code>step.id</code> 兜底 anchor (reorder 抗漂移)</h4>
+        <p><span class="lbl">原现状</span>Anchor 只用 idx; 用户中途重排 step 后再点旧报告的 nav 会跳到位置上对应的 step, 不是审计当时的那个。</p>
+        <p><span class="lbl">原推迟理由</span>"审计之后立刻重排"是低频场景; 实测真实复现率未知。 加 id 兜底要 audit prompt 同时发 idx + id, frontend 优先匹配 id, 增加了 LLM 输出复杂度。</p>
+        <p><span class="lbl">实际触发</span>同一个 review session 里用户直接说 "step.id 兜底 anchor 做一下" —— 不等数据, 立刻做。 推迟时低估了"漂移"的体感成本: 审计完立即在执行 tab 里改 step 的频率比想象中高 (审计本身就是 inform 修改的)。</p>
+        <p><span class="lbl">落地</span>Dual-anchor 方案 (D-05): <code>nav://execution/step-N|&lt;stepId&gt;</code>, 前端优先 id 兜底 idx。 StepList 加 <code>data-step-id</code>; <code>parseStepAnchor</code> 重构返回 <code>{idx, id}</code>。 4 个新测试 lock 行为。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4>Plan tab 内的 section anchor (heading 级跳转)</h4>
+        <p><span class="lbl">现状</span><code>nav://plan/&lt;reqId&gt;</code> 只能跳 ReferenceChip; 没法 <code>nav://plan/section/教学要求</code> 这种跳到二级标题。</p>
+        <p><span class="lbl">推迟理由</span>当前没有真实场景需要跳 section ——审计报告的 cross-refs 都是 chip-level 或 step-level, 没有 heading-level reference。</p>
+        <p><span class="lbl">重新审视的触发</span>审计 prompt 开始引用 plan 的 "## 教学目标 / ## 教学过程" 章节并希望读者跳过去。 实现要 PlanRenderer 为 heading emit <code>data-section-id</code>, 并扩展 anchor parser。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>Audit 报告内部的 #section anchor (报告内跳章节)</h4>
+        <p><span class="lbl">现状</span>Audit markdown 渲染时 heading 没有 <code>id</code> 属性, 浏览器原生 <code>#anchor</code> 失效。</p>
+        <p><span class="lbl">推迟理由</span>不在 nav:// 范围 (那是跨 tab 跳); 浏览器原生 hash anchor 是另一个机制。 当前审计报告通常一屏内, 章节跳转不强烈。</p>
+        <p><span class="lbl">重新审视的触发</span>审计报告长到需要 "跳到第三章" 体验 / 用户反馈 TOC 缺失。 AuditReportRenderer 给 <code>renderHeading</code> 加 <code>id={slugify(text)}</code> 即可。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>Cross-project nav:// (跨 project 引用)</h4>
+        <p><span class="lbl">现状</span>nav:// 只支持当前 project 内的 workspace tab + anchor; 没有 <code>nav://project/&lt;projectId&gt;/execution/step-1</code>。</p>
+        <p><span class="lbl">推迟理由</span>审计也是 per-project 跑的, 报告里不会出现跨 project 引用。 设计上没必要。</p>
+        <p><span class="lbl">重新审视的触发</span>出现 "组级审计" / "教研组对比项目" 这种跨 project workflow。 那时候要重新设计 URL scheme + 路由 + ProjectEditorPage 不再是 leaf 页。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- OPEN QUESTIONS -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>idx anchor 漂移在真实使用中频率有多高?</h4>
+        <p><span class="lbl">问题</span>选 idx 是因为"reorder 后再看旧报告" 应该是低频。 但<em>多低</em>? 是 1% 还是 30%? 没有数据。</p>
+        <p><span class="lbl">现状</span>已用 dual-anchor (D-05 / DEF-01 SHIPPED) 做了主防御 —— id 优先, idx 兜底。 即使频率高也不会跳错。</p>
+        <p><span class="lbl">为什么仍 open</span>"漂移频率" 这个度量本身还没有数据, 只是后果被 hedged 了。 真正需要数据的场景: 如果将来 step 经常被<em>删除</em>(不是 reorder), id 兜底失败时会落到 <em>"位置上的不同 step"</em>, 那个体感成本要测。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>Flash 颜色 (amber-400 35%) 在深色背景下够明显吗?</h4>
+        <p><span class="lbl">问题</span>当前 flash 用 <code>rgba(251,191,36,.35)</code>, 1.5s 衰减。 亮色 step row 上很显; 但 callout 内部、深色背景下、或 dark mode (未来) 下未必。</p>
+        <p><span class="lbl">为什么 open</span>没真实在不同 callout severity (warn 黄底 / error 红底) 跳进去试过。 需要 manual smoke 不同跳转目标看视觉是否够。 可能要换成<strong>边框</strong>而非<strong>背景</strong>的 flash, 或加 outline。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>PlanTab 编辑模式下 TipTap 跟 scrollIntoView 会不会冲突?</h4>
+        <p><span class="lbl">问题</span>Read mode 跟 edit mode 都用同一个 <code>[data-req-id]</code> querySelector + <code>scrollIntoView</code>; TipTap 的 NodeView 不影响 DOM attr。 理论上没冲突, 但 TipTap 自己也有 <code>editor.view.scrollIntoView</code> 在 selection 变化时调用。</p>
+        <p><span class="lbl">为什么 open</span>没真在 edit mode 下点 audit chip 试过 (smoke test 待做)。 真冲突 (e.g. TipTap 自己又滚回来) 要换成 TipTap 的 imperative API。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHANGE SURFACE -->
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 文件 + 测试数</span>
+      </span>
+      <span class="hint">点击展开</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">10</span><span class="cs-stat-l">Files</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">12</span><span class="cs-stat-l">scroll-anchor Tests</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">audit-prompt Tests</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">3</span><span class="cs-stat-l">Code-Review Rounds</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New TS Errors</span></div>
+      </div>
+      <div class="cs-files">
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/scroll-anchor.ts</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/scroll-anchor.spec.ts</span></div>
+        <div class="cs-frow"><span class="tag new">new</span><span class="path">creator/src/lib/flash-scroll-target.ts</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.ts</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">backend/src/application/audit/audit-prompt-builder.spec.ts</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/execution/ExecutionTab.tsx</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/execution/StepList.tsx</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/components/plan/PlanTab.tsx</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/pages/ProjectEditorPage.tsx</span></div>
+        <div class="cs-frow"><span class="tag mod">mod</span><span class="path">creator/src/index.css</span></div>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-27 · ccaas Decision Archive · template at <code>docs/feature-report-template.html</code>
+  </footer>
+
+</div>
+
+</body>
+</html>

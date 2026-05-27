@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getProject, publishProject } from '../api/projects'
 import type { Project, ProjectFile } from '../types'
@@ -30,6 +30,7 @@ import {
   type TabsState,
   type WorkspaceTabKey,
 } from '../lib/dynamic-tabs'
+import { EMPTY_SIGNAL, type ScrollSignal } from '../lib/scroll-anchor'
 
 /**
  * Project editor — v7-rich layout (design `creator-v7-rich-design-doc.md`):
@@ -72,6 +73,28 @@ export default function ProjectEditorPage() {
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(
     null,
   )
+  // Scroll-to-anchor signal for whichever workspace tab is becoming
+  // active. Set by chatBridge.switchToWorkspace; consumed by
+  // ExecutionTab / PlanTab via the `scrollAnchor` + `scrollNonce`
+  // props. Nonce-on-every-dispatch lets a repeat click of the same
+  // nav link re-trigger the scroll (otherwise the child useEffect's
+  // deps wouldn't change).
+  //
+  // Cross-tab stale-anchor safety: the signal is global to the page,
+  // not scoped per workspace. If a tab swap (e.g. manual click on
+  // tab bar) re-mounts a tab while the signal still holds an anchor
+  // intended for the OTHER tab, that tab's effect fires with a
+  // wrong-format anchor. Today both consumers are safe by input
+  // validation (parseStepAnchor returns null for non-step-N forms;
+  // PlanTab's data-req-id selector returns no element for "step-N"),
+  // so the symptom is a silent no-op. If a future tab is less
+  // selective, scope the signal per WorkspaceTabKey.
+  const [scrollSignal, setScrollSignal] = useState<ScrollSignal>(EMPTY_SIGNAL)
+  // Monotonic counter for scrollSignal nonces. Avoids Date.now()'s
+  // wall-clock fragility — NTP slew or DST adjustments could produce
+  // a non-increasing timestamp, which React would then treat as
+  // "unchanged" and skip the child effect re-run.
+  const scrollNonceRef = useRef(0)
 
   // agent-runtime SSE subscription (unchanged from prior layout — top
   // bar surfaces the connection state via a dot).
@@ -89,6 +112,9 @@ export default function ProjectEditorPage() {
     // consumed by AiPanel (e.g. because chat was mid-stream) would fire
     // into project B's chat session on next mount. Cross-project leak.
     setPendingChatMessage(null)
+    // Same rationale for the scroll signal — a pending step-N anchor
+    // on project A would otherwise try to scroll project B's tab.
+    setScrollSignal(EMPTY_SIGNAL)
   }, [id])
 
   // Which file path the currently-active tab is editing (so a file-
@@ -210,11 +236,18 @@ export default function ProjectEditorPage() {
       sendMessage(text) {
         setPendingChatMessage(text)
       },
-      switchToWorkspace(key, _anchor) {
+      switchToWorkspace(key, anchor) {
         setTabs((s) => selectWorkspace(s, key))
-        // _anchor (e.g. step id) is accepted but not yet acted on —
-        // scroll-to-anchor needs each workspace tab to expose an
-        // imperative "scrollTo" API, which is a follow-up.
+        // Set the scroll signal *after* selectWorkspace so the
+        // about-to-mount tab sees the anchor on its first render. The
+        // monotonic counter (vs Date.now()) means repeat clicks of
+        // the same anchor always produce a fresh dep change in the
+        // child useEffect, regardless of system clock behavior.
+        scrollNonceRef.current += 1
+        setScrollSignal({
+          anchor: anchor ?? null,
+          nonce: scrollNonceRef.current,
+        })
       },
     }),
     [],
@@ -266,11 +299,22 @@ export default function ProjectEditorPage() {
     }
     switch (tabs.activeWorkspace) {
       case 'execution':
-        return <ExecutionTab projectId={project.id} reloadKey={reloadKey} />
+        return (
+          <ExecutionTab
+            projectId={project.id}
+            reloadKey={reloadKey}
+            scrollAnchor={scrollSignal.anchor}
+            scrollNonce={scrollSignal.nonce}
+          />
+        )
       case 'plan':
         return (
           <div className="flex-1 overflow-y-auto">
-            <PlanTab projectId={project.id} />
+            <PlanTab
+              projectId={project.id}
+              scrollAnchor={scrollSignal.anchor}
+              scrollNonce={scrollSignal.nonce}
+            />
           </div>
         )
       case 'skills':

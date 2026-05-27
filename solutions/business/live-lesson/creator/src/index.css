@@ -54,3 +54,18 @@ body {
   0%, 60%, 100% { transform: translateY(0);    opacity: .4; }
   30%           { transform: translateY(-3px); opacity:  1; }
 }
+
+/* Brief amber flash for nav:// scroll targets — applied by
+ * ExecutionTab / PlanTab when the chat bridge requests a scroll-to. */
+@keyframes scroll-target-flash {
+  0%   { background-color: rgba(251, 191, 36, 0.35); }  /* amber-400 */
+  100% { background-color: transparent; }
+}
+.scroll-target-flash {
+  animation: scroll-target-flash 1.5s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-target-flash {
+    animation: none;
+  }
+}

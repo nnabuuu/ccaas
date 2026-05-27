@@ -41,6 +41,7 @@ import {
 import PlanEditor from './PlanEditor'
 import PlanRenderer, { type ChipResolver } from './PlanRenderer'
 import InterpretationEditorModal from './InterpretationEditorModal'
+import { flashScrollTarget } from '../../lib/flash-scroll-target'
 
 const LESSON_PLAN_PATH = 'plan/lesson-plan.md'
 
@@ -61,9 +62,23 @@ interface Props {
   projectId: string
   /** Optional subject hint used to narrow the L1 fetch. */
   subject?: string
+  /**
+   * Scroll-to-anchor signal. Anchor is the bare req id (e.g.
+   * "r-1.2.3"); we query `[data-req-id="..."]` on the rendered
+   * ReferenceChip. Works in both view + edit modes because the chip's
+   * data attr survives the TipTap NodeView wrapping. Nonce bump
+   * re-fires the effect for repeat clicks of the same nav link.
+   */
+  scrollAnchor?: string | null
+  scrollNonce?: number
 }
 
-export default function PlanTab({ projectId, subject }: Props) {
+export default function PlanTab({
+  projectId,
+  subject,
+  scrollAnchor,
+  scrollNonce,
+}: Props) {
   const [state, setState] = useState<State>({ phase: 'loading' })
   const [reloadKey, setReloadKey] = useState(0)
   const [mode, setMode] = useState<Mode>('view')
@@ -84,6 +99,51 @@ export default function PlanTab({ projectId, subject }: Props) {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [editorDirty])
+
+  // Scroll-to-chip on nav:// anchor. Anchor is the bare req id (no
+  // `req://` prefix); ReferenceChip already carries `data-req-id` so
+  // a simple querySelector lands the right node in both view + edit
+  // modes. Also depends on `state.phase` — cold loads can run for
+  // seconds (parse + L1 + L2 fetches), and a single 200ms timer
+  // misses them. The effect re-runs when phase flips to 'ready', at
+  // which point chips are in the DOM.
+  useEffect(() => {
+    if (!scrollAnchor) return
+    if (state.phase !== 'ready') return
+
+    let rafId = 0
+    let retryId: ReturnType<typeof setTimeout> | null = null
+
+    const tryScroll = () => {
+      // CSS.escape on the anchor: refId is doc-author input, so a
+      // pathological "r\"]" would otherwise break the selector. The
+      // failure mode is a silent no-op rather than a thrown error
+      // because the audit report is untrusted LLM output.
+      const el = document.querySelector(
+        `[data-req-id="${CSS.escape(scrollAnchor)}"]`,
+      )
+      if (el) {
+        flashScrollTarget(el)
+        return true
+      }
+      return false
+    }
+
+    rafId = requestAnimationFrame(() => {
+      // PlanRenderer / PlanEditor commit chips in one paint after
+      // the ready transition; a single retry covers the
+      // commit-vs-paint gap. The phase-deps re-fire is what carries
+      // us through long cold loads, not this retry.
+      if (!tryScroll()) {
+        retryId = setTimeout(tryScroll, 200)
+      }
+    })
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      if (retryId) clearTimeout(retryId)
+    }
+  }, [scrollAnchor, scrollNonce, state.phase])
 
   const requestModeChange = useCallback(
     (next: Mode) => {

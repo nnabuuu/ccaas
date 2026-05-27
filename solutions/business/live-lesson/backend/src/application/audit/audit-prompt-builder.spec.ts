@@ -36,6 +36,27 @@ describe('AuditPromptBuilder', () => {
       expect(systemPrompt).toContain(':::error');
     });
 
+    it('documents the nav:// anchor schema so the LLM emits scrollable links', () => {
+      const { systemPrompt } = builder.build({
+        projectTitle: '',
+        plan: '',
+        manifest: '',
+        libItems: [],
+      });
+      // Anchor format is a contract with the frontend scrollTo wiring:
+      // execution uses dual `step-N|<stepId>` anchor — N matches
+      // data-step-idx, stepId matches data-step-id; frontend prefers
+      // id (reorder-resilient) and falls back to idx. plan uses bare
+      // reqId without the req:// prefix (matches data-req-id attr
+      // on ReferenceChip). If the prompt drifts, links render but
+      // scrollIntoView misses.
+      expect(systemPrompt).toContain('nav://execution/step-N|<stepId>');
+      expect(systemPrompt).toContain('1-based');
+      expect(systemPrompt).toContain('reorder');
+      expect(systemPrompt).toContain('nav://plan/<reqId>');
+      expect(systemPrompt).toContain('不带 `req://` 前缀');
+    });
+
     it('embeds project title + plan + manifest in the user message', () => {
       const { userMessage } = builder.build({
         projectTitle: 'Ideal Beauty',
