@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, MoreHorizontal, Upload } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal, Upload, Eye } from 'lucide-react'
 import type { Project, ProjectFile } from '../../types'
 import FilesPopover from './FilesPopover'
 import AuditButton from './AuditButton'
@@ -25,8 +25,13 @@ interface Props {
   publishing: boolean
   publishMsg: string | null
   publishOk: boolean
+  /** True when the active dynamic tab is an audit report — drives the
+   *  AuditButton's design §6.1 "done" highlight. */
+  viewingAuditReport?: boolean
   onBack: () => void
   onPublish: () => void
+  /** Open the fullscreen preview modal (design §3.1 "预览课程"). */
+  onPreview: () => void
   onPickFile: (path: string) => void
   onAuditDone: (reportPath: string) => void
   onAuditError?: (message: string) => void
@@ -40,8 +45,10 @@ export default function TopBar({
   publishing,
   publishMsg,
   publishOk,
+  viewingAuditReport = false,
   onBack,
   onPublish,
+  onPreview,
   onPickFile,
   onAuditDone,
   onAuditError,
@@ -87,14 +94,27 @@ export default function TopBar({
         <FilesPopover files={files} onPickFile={onPickFile} />
         <AuditButton
           projectId={project.id}
+          viewingAuditReport={viewingAuditReport}
           onAuditDone={onAuditDone}
           onAuditError={onAuditError}
         />
         <MorePlaceholder open={moreOpen} setOpen={setMoreOpen} />
+        {/* design §3.1 — "预览课程". Distinct from "发布": preview is
+            read-only, publish writes to the lessons table. Order on
+            the bar: ... files | audit | more | preview | publish. */}
+        <button
+          type="button"
+          onClick={onPreview}
+          className="ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50"
+          title="预览课程 — 查看学生端将看到的课程结构 (只读)"
+        >
+          <Eye size={14} />
+          预览
+        </button>
         <button
           onClick={onPublish}
           disabled={publishing}
-          className="ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
         >
           <Upload size={14} />
           {publishing ? '发布中…' : '发布'}

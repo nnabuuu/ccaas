@@ -24,6 +24,11 @@ import {
 
 interface Props {
   projectId: string
+  /** True when an audit-report dynamic tab is the active tab — design
+   *  §6.1 "done" state: button gets a green highlight so the teacher
+   *  can visually associate the report they're reading with the
+   *  button that produced it. */
+  viewingAuditReport?: boolean
   /** Fires when an audit run completes with a fresh report. */
   onAuditDone: (reportPath: string) => void
   /** Fires when an audit run fails — parent can show a toast. */
@@ -37,6 +42,7 @@ const POLL_MAX_ATTEMPTS = 200
 
 export default function AuditButton({
   projectId,
+  viewingAuditReport = false,
   onAuditDone,
   onAuditError,
 }: Props) {
@@ -153,6 +159,10 @@ export default function AuditButton({
   const status = state?.status ?? 'idle'
   const isBusy = running || status === 'running'
   const isError = status === 'error'
+  // design §6.1 "done" highlight: only when an audit report is the
+  // active tab AND we aren't currently running/erroring. Priority:
+  // running > error > viewingAuditReport > idle.
+  const isViewingDone = !isBusy && !isError && viewingAuditReport
 
   return (
     <button
@@ -164,14 +174,18 @@ export default function AuditButton({
           ? '审计中…'
           : isError
             ? `上次失败: ${state?.errorMessage ?? '未知错误'} · 点击重试`
-            : '生成审计报告'
+            : isViewingDone
+              ? '正在查看审计报告 · 点击重新生成'
+              : '生成审计报告'
       }
       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded ${
         isError
           ? 'text-red-600 hover:bg-red-50'
           : isBusy
             ? 'text-blue-600 bg-blue-50 cursor-not-allowed'
-            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            : isViewingDone
+              ? 'text-green-700 bg-green-50 hover:bg-green-100'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
       }`}
     >
       {isBusy ? (

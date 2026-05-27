@@ -13,6 +13,7 @@ import PlanTab from '../components/plan/PlanTab'
 import AuditReportView from '../components/audit/AuditReportView'
 import FileViewer from '../components/dyntab/FileViewer'
 import TopBar from '../components/topbar/TopBar'
+import CoursePreviewModal from '../components/preview/CoursePreviewModal'
 import ProjectChangeNotice from '../components/ProjectChangeNotice'
 import { useProjectChanges } from '../hooks/useProjectChanges'
 import {
@@ -67,6 +68,10 @@ export default function ProjectEditorPage() {
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<string | null>(null)
   const [publishOk, setPublishOk] = useState(false)
+  // design §3.1 — fullscreen preview modal toggle. Separate from
+  // publish flow: this is a read-only "what does the student see"
+  // view, not a write to the lessons table.
+  const [previewOpen, setPreviewOpen] = useState(false)
   // Chat-bridge injection target: when set, AiPanel will auto-send +
   // call onPendingConsumed to clear. Driven by the "让 AI 修复"
   // buttons inside the audit report renderer.
@@ -284,6 +289,11 @@ export default function ProjectEditorPage() {
   const activeDyn = tabs.activeDynamic
     ? tabs.dynamic.find((t) => t.id === tabs.activeDynamic) ?? null
     : null
+  // Used to drive the top-bar AuditButton's `done` highlight state
+  // (design §6.1): the button goes green when the user is actively
+  // viewing an audit report tab. Derived, not stored — single source
+  // of truth is `tabs`.
+  const viewingAuditReport = activeDyn?.kind === 'audit-report'
 
   const renderTabContent = () => {
     if (activeDyn) {
@@ -340,10 +350,19 @@ export default function ProjectEditorPage() {
         publishing={publishing}
         publishMsg={publishMsg}
         publishOk={publishOk}
+        viewingAuditReport={viewingAuditReport}
         onBack={() => navigate('/projects')}
         onPublish={handlePublish}
+        onPreview={() => setPreviewOpen(true)}
         onPickFile={handlePickFile}
         onAuditDone={handleAuditDone}
+      />
+
+      <CoursePreviewModal
+        projectId={project.id}
+        projectTitle={project.title}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
       />
 
       <ProjectChangeNotice
