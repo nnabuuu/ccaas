@@ -9,6 +9,7 @@ import TabBar from '../components/layout/TabBar'
 import FileBrowser from '../components/sidebar/FileBrowser'
 import ExecutionTab from '../components/execution/ExecutionTab'
 import PlanTab from '../components/plan/PlanTab'
+import ReviewTab from '../components/review/ReviewTab'
 import ProjectChangeNotice from '../components/ProjectChangeNotice'
 import { useProjectChanges } from '../hooks/useProjectChanges'
 
@@ -159,11 +160,7 @@ export default function ProjectEditorPage() {
           </div>
         )
       case 'review':
-        return (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            Review (coming soon)
-          </div>
-        )
+        return <ReviewTab projectId={project.id} reloadKey={reloadKey} />
     }
   }
 
