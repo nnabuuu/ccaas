@@ -9,7 +9,7 @@ import TabBar from '../components/layout/TabBar'
 import FileBrowser from '../components/sidebar/FileBrowser'
 import ExecutionTab from '../components/execution/ExecutionTab'
 import PlanTab from '../components/plan/PlanTab'
-import ReviewTab from '../components/review/ReviewTab'
+import AuditTab from '../components/audit/AuditTab'
 import ProjectChangeNotice from '../components/ProjectChangeNotice'
 import { useProjectChanges } from '../hooks/useProjectChanges'
 
@@ -17,7 +17,7 @@ const TABS = [
   { key: 'plan', label: '教案设计', dotColor: 'bg-teal-500' },
   { key: 'execution', label: '执行设计', dotColor: 'bg-blue-500' },
   { key: 'skills', label: 'Skills', dotColor: 'bg-purple-500' },
-  { key: 'review', label: 'Review', dotColor: 'bg-amber-500' },
+  { key: 'review', label: '审计', dotColor: 'bg-amber-500' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -160,7 +160,7 @@ export default function ProjectEditorPage() {
           </div>
         )
       case 'review':
-        return <ReviewTab projectId={project.id} reloadKey={reloadKey} />
+        return <AuditTab projectId={project.id} reloadKey={reloadKey} />
     }
   }
 
