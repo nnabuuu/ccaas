@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Audit 前端 stub · 决定档案 · ccaas · 2026-05-27</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+.d-scope.process{background:var(--surface2);color:var(--t2)}
+.d-scope.architecture{background:var(--red-bg);color:var(--red)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">Audit 前端 stub · 1 commit · 2026-05-27</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交</span><span class="meta-v">454c4ef0</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">能跑就行,不等 v7-rich 整套</span>
+    </div>
+    <h1>把后端接进 UI ——<br><em> 最少代码</em>, 最少新依赖, <em>能用</em>就 ship。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      后端 audit 已经 ship (commits <code>08dae903..94af0c29</code>); 前端这边 lint 时代的 ReviewTab.tsx + LintIssueCard.tsx + api/lint.ts 还指向已删除的 backend endpoint —— 现在打开 Review tab 直接 fetch 失败。 同时 v7-rich design 文档明确了一套新的前端框架 (顶栏审计按钮 / 动态 tab / 左侧 chat panel / 内嵌动作按钮), 但<em>当前 creator 还是 v3-ish 4-tab 布局</em>, 完整 v7-rich 是另一场重构。
+    </p>
+    <p>
+      本次决定: 不等 v7-rich, 在<strong>现有 4-tab 框架内</strong>做最小可用 stub —— Review tab 直接换成 AuditTab, 按按钮触发 /audit/run, 轮询 status, 拉 audit-report.md 渲染。 砍掉 nav:// / action:// / ref:// 这些 chat-bridge 才能闭环的链接交互 (统一渲染成 inert 文本)。 这是<em>"够用就好, 完整重构留给下一阶段"</em> 的明示选择 —— 用户也明确说"go for the Next phase" 而不是 "完整 v7-rich"。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 scope: minimal stub vs full v7-rich -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 这次做完整 v7-rich 还是最小 stub?</h3>
+        </div>
+        <span class="d-scope architecture">Scope · MVP boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">"good go for the Next phase" 触发了前端工作; v7-rich design 列出了顶栏 + 动态 tab + chat-bridge + 内嵌按钮一整套, 但全做范围远超审计本身。</span>
+        <span class="lbl">约束</span>
+        <span class="val">v7-rich 框架(顶栏项目级操作区, 动态 tab 管理, 左侧 chat panel)对所有 tab/组件都有影响, 不是审计专属。完整重构会把"审计能用" 这事拖到一周后。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">完整 v7-rich: 顶栏 + 动态 tab + chat-bridge + 内嵌动作按钮全做</span>
+          <span class="opt-verdict">❌ 拒 —— scope 远超审计需求, 跟 plan 里 "next phase" 不符</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><strong>最小 stub</strong>: 现有 Review tab 换 AuditTab, 按钮 + 轮询 + 渲染。 inert nav:// / action:// 链接</span>
+          <span class="opt-verdict">✓ 选 —— 审计可用; v7-rich 是后续单独工作</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">什么都不做, 保留 broken 的 ReviewTab</span>
+          <span class="opt-verdict">❌ 拒 —— ReviewTab 调用 404 endpoint</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键判断: <strong>"审计能用" 不依赖 v7-rich</strong>。 触发审计 + 看报告这两步可以在任何 UI 框架里实现; v7-rich 提供的是<em>更好的交互</em> (内嵌"让 AI 修复" 按钮 → chat bridge), 不是新功能。 把审计 ship 跟把整个 creator 改造 v7-rich 解耦, 让后端的价值立即可用。
+        </p>
+        <p>
+          代价透明: 报告里的 <code>nav://</code> / <code>action://</code> / <code>ref://</code> 链接<em>渲染但不可点</em> (灰色虚下划线)。 教师看到"AI 建议你跳到 step 1 修复" 时只能手动切到执行设计 tab —— 没那么顺, 但功能闭环。 v7-rich 落地后这些链接接上 chat-bridge 就活了, 不用改报告生成端。
+        </p>
+        <p>
+          这个决定的<em>设计哲学</em>: 把 lower-bound 跟 upper-bound 解耦。 Lower bound = "能用" (本次 ship), upper bound = "理想体验" (v7-rich) 。 等到 lower bound 在真实用户手里跑过, 再决定 upper bound 的优先级 / 形态。 避免在没有反馈的情况下押注大重构。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          审计可用; v7-rich 落地不阻塞审计功能 ship
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          报告里的 nav/action 链接当前不交互; 内嵌"让 AI 修复" 按钮要等 v7-rich + chat-bridge 才能闭环
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>creator/src/components/audit/AuditTab.tsx</code>, <code>AuditReportRenderer.tsx</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+    <!-- D-02 markdown rendering -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 怎么渲染 audit 报告 markdown?</h3>
+        </div>
+        <span class="d-scope design">Frontend · Renderer</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">报告是 markdown + <code>:::pass/warn/guess/error[标题] ... :::</code> callout directive。 标准 markdown 渲染器 (react-markdown / marked) 不识别 directive 语法。</span>
+        <span class="lbl">约束</span>
+        <span class="val">creator 现有依赖只有 <code>unified</code> + <code>remark-parse</code> (lesson-plan-md 在用), 没 react-markdown。 加新 dep vs 复用现成 dep vs 自己手写。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">加 <code>react-markdown</code> 依赖 + remark-directive 插件</span>
+          <span class="opt-verdict">❌ 拒 —— 两个新 dep 只为一个 tab</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><strong>预切 callout block + remark-parse mdast → 手 walk → React</strong>; 跟 PlanRenderer 同 pattern</span>
+          <span class="opt-verdict">✓ 选 —— 零新 dep, 与现有渲染层一致</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">完全自写 mini-parser (正则匹配 # / - / **)</span>
+          <span class="opt-verdict">❌ 拒 —— 边界 case 无穷; remark-parse 现成</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键洞察: <strong>callout directive 跟 markdown 是两个 orthogonal 关注</strong>。Directive 在 line-level 上识别 (开头 <code>:::sev[title]</code>, 结尾 <code>:::</code>), markdown 在 directive 之外 + 之内的内容上。 预切策略让两者解耦: <code>splitIntoSegments</code> 纯字符串处理 (无依赖); 每段 markdown 走 remark-parse (用现成 dep); Callout 组件包裹 directive body 内的 segment。
+        </p>
+        <p>
+          复用 <code>unified</code> 还有<em>风格一致性</em> 的好处。 creator 的 PlanRenderer 也是"remark-parse → walk mdast → emit React" 这条路。 两个 renderer 同 pattern, 后续维护(加新 mdast 节点支持)只学一次。 加 react-markdown 会引入第二种 markdown 处理范式, 团队学习成本翻倍。
+        </p>
+        <p>
+          代价: 手 walk mdast 写代码量比 react-markdown 多 50-100 行。 但这些代码是<em>可见 + 可调</em> 的 —— 当渲染出 bug 时 (LLM 输出某种格式我们没覆盖) 能直接读代码 + 改 case 分支; react-markdown 内部 plugin 链调试要绕。 对于"审计报告" 这种<em>输出格式相对固定</em> (LLM 跟着固定 prompt 走) 的场景, 自写更可控。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          renderer 完全在 creator/ 控制范围内; 加新节点类型 (image / blockquote) 加一行 case
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          支持完整 markdown spec (tables / gfm extensions) 要自己实现 walker; 不像 react-markdown 装个 plugin 就有
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>creator/src/components/audit/AuditReportRenderer.tsx</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+    <!-- D-03 helpers in .ts -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 纯函数 helper 放 .tsx 还是单独 .ts?</h3>
+        </div>
+        <span class="d-scope process">Test · Infra</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">原本把 <code>splitIntoSegments</code> + <code>stripBannerComment</code> 写在 AuditReportRenderer.tsx 里 export 出去。 写 spec 时发现 vitest.config 是 <code>environment: 'node'</code> + <code>include: '*.spec.ts'</code> —— 从 .ts spec 文件 import .tsx 会把 React 拉进 node 测试 runtime。</span>
+        <span class="lbl">约束</span>
+        <span class="val">改 vitest config 加 jsdom + RTL 是另一个工作 (creator 没 React 测试基建)。 但又想要可测试的解析逻辑。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">加 jsdom + @testing-library/react, 写 component 测试</span>
+          <span class="opt-verdict">❌ 拒 —— 设基建超出 stub scope</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><strong>纯 helper 拆到 <code>audit-markdown.ts</code></strong>, renderer 从那 import; spec 也 import 同一 .ts</span>
+          <span class="opt-verdict">✓ 选 —— 零新基建, 核心逻辑覆盖</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">不写 spec, 只手工测</span>
+          <span class="opt-verdict">❌ 拒 —— callout 解析有 CRLF / 边界 case, 必须测</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是个 <strong>"infra 限制 reshape 代码结构"</strong> 的例子: vitest 配的是 node-only, 而 .tsx 文件会被 import 时 evaluate (拉 React/lucide 等模块)。 在不改 infra 的前提下, 唯一的路径是<em>把可测的逻辑跟 React 隔离</em>。 拆出 audit-markdown.ts 是不情愿但正确的妥协。
+        </p>
+        <p>
+          副产品: 这一拆其实改善了模块设计。 <code>splitIntoSegments</code> + <code>stripBannerComment</code> 是<em>纯函数</em>, 跟 React 无关; 它们不该住在 renderer 文件里。 .ts 拆出来之后, renderer 的职责更纯粹 (mdast → React), 测试覆盖更具体 (解析跟渲染各测各的)。 受 infra 推动而做的正向重构。
+        </p>
+        <p>
+          长期看, 等真正需要 component 渲染测试时 (e.g. 测 Callout 颜色配置, 测 useEffect 轮询), 再上 jsdom + RTL 是值得的; 但<em>不为 audit stub 一个人做</em>。 等多个 component 都需要测时一并升级。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          audit 解析逻辑可测 (14 测试覆盖 CRLF / 空 body / 不存在 severity 等); 跟 React 解耦
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          AuditTab / Callout / Renderer 的 React-shape 行为没自动化测试 (轮询逻辑 / 配色 / dom layout 都靠人眼)
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>creator/src/components/audit/audit-markdown.ts</code> + <code>audit-markdown.spec.ts</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+    <!-- D-04 CRLF -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Callout 解析要不要先归一化 CRLF?</h3>
+        </div>
+        <span class="d-scope security">Robustness · Defensive</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Code review HIGH: <code>splitIntoSegments</code> 只 split('\n'), 当输入是 CRLF 时每行尾巴挂一个 <code>\r</code>, callout open/close 正则 (anchored with $) 不匹配 → 每个 callout 静默 fall-through 为普通 markdown。</span>
+        <span class="lbl">约束</span>
+        <span class="val">LLM 输出 / Windows 客户端 / 某些 HTTP 中转可能引入 CRLF。不能依赖"输入总是 LF"。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc"><strong>在 splitIntoSegments 顶上 <code>.replace(/\r\n?/g, '\n')</code></strong>, 后续逻辑只见 LF</span>
+          <span class="opt-verdict">✓ 选 —— 单点处理</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">改正则: <code>\r?$</code> 替代 <code>$</code>, 兼容 CRLF + LF</span>
+          <span class="opt-verdict">❌ 拒 —— 每个正则都要改, 容易漏</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">不修, 文档说明 "只支持 LF"</span>
+          <span class="opt-verdict">❌ 拒 —— 用户看到的失败是"我的报告渲染坏了", 不是"格式不对"</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这是 <strong>"输入 normalization 的位置"</strong> 经典问题: 在<em>边界</em> (parser 入口) 做一次 vs 在<em>每个细节</em> (各 regex) 处处理。 一次入口 normalize 是 "transform input to canonical form once, then everything downstream is simpler", 这是 robust 软件的常见做法 (compiler 前端的 lexer, web 服务器的 URL canonical 化)。
+        </p>
+        <p>
+          代价微乎其微: <code>String.replace</code> 在几 KB 报告上的开销纳秒级。 收益: <em>后面所有正则 / split / index 计算都假设 LF</em>, 永远不用担心"我这个分支考虑 CRLF 了吗"。 一句话, 一个 mental model。
+        </p>
+        <p>
+          Code review 抓到这个的价值在于: 我自己写时根本没想到 CRLF, 因为开发机 + LF 测试输入都是 LF; 但 LLM 部署到 prod 时通过什么传输路径未知, 假设 LF 是脆弱的。 这是<em>从已知未知到 actively defending 边界条件</em> 的转变。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 callout 解析无视行终止符差异; 测试包含 CRLF 用例锁契约
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想保留原 CR 字符 (e.g. 对接古早系统) 不行 —— normalize 一道闸丢了它
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>creator/src/components/audit/audit-markdown.ts:splitIntoSegments</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+    <!-- D-05 handleRun closure→ref -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> handleRun 用 closure 还是 activeProjectId ref?</h3>
+        </div>
+        <span class="d-scope security">Correctness · React Closures</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Code review HIGH: 原本 <code>const pid = projectId</code> 从闭包读, 如果用户在 render 跟点击之间切了项目, pid 是<em>上一个</em> render 的 id, runAudit 会发到错的项目去。</span>
+        <span class="lbl">约束</span>
+        <span class="val">React 的闭包陷阱是经典问题。 useEffect / useCallback 重新绑定可以躲, 但 onClick handler 是函数引用, render 时绑定的 closure 就是那一刻的 props。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保持闭包, 文档说明"切项目期间别点按钮"</span>
+          <span class="opt-verdict">❌ 拒 —— 用户不读文档, 这是 footgun</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><strong>读 <code>activeProjectId.current</code></strong> (已经被 useEffect 同步)</span>
+          <span class="opt-verdict">✓ 选 —— ref 一致性已存在</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">用 useCallback + 把 projectId 加进 deps, 重新绑定 handler</span>
+          <span class="opt-verdict">❌ 拒 —— 每次 projectId 变都重新绑函数, 不如读 ref</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键观察: <strong>activeProjectId ref 已经为别的目的存在</strong> —— fetchOnce 用它做 stale-project guard。 既然 ref 在那, handleRun 借用现成机制最便宜。 不引入第二种状态管理方式。
+        </p>
+        <p>
+          反思: 我自己写时把 <code>const pid = projectId</code> 视为"自然" —— 函数参数捕获嘛, 哪里有问题? 但 React 的 closure model 让"函数式上对" 跟"事件驱动 UI 上对" 经常错位。 onClick 是<em>异步</em> 触发, 跟 render 时的 props 解耦; ref 是用来跨 render 共享"当前状态" 的标准模式。 这次 fix 的本质是把<em>"事件处理读最新状态" 写成 React idiom</em>, 而不是依赖闭包恰好捕到对的值。
+        </p>
+        <p>
+          这跟 D-04 (CRLF) 一样, 是 code review 抓到的"代码看起来对但有 edge case 不对" 的情况。 单元测试覆盖不到 (没人 mock React 的 render 时序); 只能靠人眼或 lint 规则提醒。 把它显式写下并加 comment 让未来读者 (包括 future-self) 不踩同一坑。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          handleRun 永远拿当前 projectId, 不会被切换 race 出 wrong-project POST
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想加 "audit 触发时记录当时的 projectId 用来 callback 时校验" 需要捕获本地变量; 不能完全靠 ref
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>creator/src/components/audit/AuditTab.tsx:handleRun</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+    <!-- D-06 inert link rendering -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> nav:// / action:// / ref:// 链接渲染成什么?</h3>
+        </div>
+        <span class="d-scope design">Frontend · Link Schemes</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Audit prompt 让 LLM 在 callout 里嵌 <code>[让 AI 修复](action://fix?target=step-1)</code> / <code>[Step 1](nav://execution/step-1)</code> 这种 link, 设计上准备给 v7-rich chat-bridge 用。 当前 v7-rich 框架不存在, 这些链接无法 wire。</span>
+        <span class="lbl">约束</span>
+        <span class="val">不能让链接<em>看起来可点但点了无反应</em> (是 UX 灾难); 也不能完全藏掉 (会丢 LLM 表达出来的意图)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">渲染成正常 <code>&lt;a&gt;</code>, 点了 navigate to URL —— 浏览器报"unknown protocol"</span>
+          <span class="opt-verdict">❌ 拒 —— 浏览器原生错</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><strong>inert: 灰色虚下划线 <code>&lt;span&gt;</code></strong>, hover 提示 URL, 不可点</span>
+          <span class="opt-verdict">✓ 选 —— 显示意图但不假装能用</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">完全藏掉 (drop link, 只渲染 text)</span>
+          <span class="opt-verdict">❌ 拒 —— 丢了 LLM 想表达"这条要去某地" 的信息</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键设计原则: <strong>视觉应该反映能力</strong>。 看起来是个普通链接 (蓝色下划线) 但点了没反应 = UI 在<em>骗</em>用户; 完全藏掉 = UI 在<em>遮</em> 信息。 Inert 渲染 (灰色, 虚线, 鼠标 hover 显示 title) 是 "I see what this is, I just can't act on it yet" 的诚实表达。
+        </p>
+        <p>
+          实际意义: 教师看到报告里"<em>[让 AI 修复]</em>" 灰色出现, 直觉理解"哦这是个未来会能点的按钮"; 没出 chat bridge 之前他可以手动切 chat 输入"按报告里说的改", 一样完成任务, 只是多一步。 v7-rich 落地后<em>同一段 LLM 输出</em> 就活了 —— 不用改 prompt, 不用改后端, 只换前端渲染。
+        </p>
+        <p>
+          这条决定让<em>后端跟前端 v7-rich 完全解耦</em>: prompt + LLM + 报告生成都按"最终能交互" 的设想写, 前端按"当前能力" 渲染。 两边可以独立演化, 不互相阻塞。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          后端 prompt + 报告内容当前已经向前兼容 v7-rich; 不需要切换时重新生成
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          想让"让 AI 修复" 立刻能点要么 (a) wire chat-bridge (大重构), (b) 改报告生成 prompt 让 LLM 用其他形式 (背离 design)
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>creator/src/components/audit/AuditReportRenderer.tsx:renderLink + INERT_SCHEMES</code>
+        <span class="lbl">commit</span><code>454c4ef0</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">5 项 · 每条带 revisit trigger</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>v7-rich 整套前端框架 (顶栏 + 动态 tab + chat-bridge)</h4>
+        <p><span class="lbl">现状</span>当前 creator 还是 v3-ish 4-tab 布局 (教案设计 / 执行设计 / Skills / 审计 [前 Review])。 v7-rich design 要求: 顶栏项目级操作区, 动态 tab 可关闭, 左侧 AI 对话面板, 内嵌操作按钮 chat-bridge。</p>
+        <p><span class="lbl">推迟理由</span>跨多 tab + 全局布局重构, 工作量大且影响所有组件 (不只是 audit)。 audit 在当前框架下 minimal stub 已足够 demo。</p>
+        <p><span class="lbl">重新审视的触发</span>第一次内部 demo / 第一波教师反馈 / 出现下一个"需要顶栏项目级操作" 的 feature 时一起做。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4>React component 测试基建 (jsdom + RTL)</h4>
+        <p><span class="lbl">现状</span>vitest 是 <code>environment: 'node'</code> + 只跑 <code>*.spec.ts</code>。 AuditTab / Callout / Renderer 的 React 行为 (轮询时序 / 配色 / DOM 结构) 没自动化测试。</p>
+        <p><span class="lbl">推迟理由</span>装 jsdom + @testing-library/react + 改 config 是另一项工作; 当前 creator 没有 component test 基线。 D-03 已经把可测的纯逻辑拆到 .ts 测过了。</p>
+        <p><span class="lbl">重新审视的触发</span>多个 component 都需要 visual/interaction 测试时一并升级; 或第一次出现"渲染相关 regression" 谁也没 catch 的事件。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>Markdown 表格 / GFM 扩展支持</h4>
+        <p><span class="lbl">现状</span>renderer 不支持 <code>| col | col |</code> 表格, footnote, task-list 之外的 GFM 特性。Audit prompt 不要求 LLM 出表格, 但 LLM 自由发挥时可能会出。</p>
+        <p><span class="lbl">推迟理由</span>需要加 remark-gfm 插件 + walker case 分支; 工作量中等。 第一波 LLM 输出实测之前不知道频率。</p>
+        <p><span class="lbl">重新审视的触发</span>第一份 audit 报告里出现表格, 渲染坏掉 / 教师反馈 / LLM 改 prompt 之后出现新格式。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>aria-live polling 状态播报</h4>
+        <p><span class="lbl">现状</span>顶部 status pill ("运行中" / "已完成") 静默更新, 屏幕阅读器用户不会收到状态变化通知。Callout 加了 role/aria-label 但 tab 顶部的状态没加。</p>
+        <p><span class="lbl">推迟理由</span>当前内部工具, 主要用户教师没 a11y 反馈; aria-live 加一个 attr 但要测真的有 announce 才能算"完成"。</p>
+        <p><span class="lbl">重新审视的触发</span>正式过 a11y review / 产品有屏幕阅读器用户报告。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-05</div>
+      <div class="dq-body">
+        <h4>报告生成进度 (token streaming / 部分内容预览)</h4>
+        <p><span class="lbl">现状</span>POST /audit/run 后前端只看到 "running" → "done" 两态, 中间 5-15 秒没视觉反馈 (只有 spinner)。 教师不知道 "AI 正在第几章节"。</p>
+        <p><span class="lbl">推迟理由</span>需要后端 streaming + 前端 SSE 接入 + 增量渲染。 当前 polling 模式简单可靠, MVP 够用。</p>
+        <p><span class="lbl">重新审视的触发</span>报告生成超过 30 秒 (LLM 慢 / 报告变长) 让"5 秒没反馈" 拖到"30 秒没反馈" 的时候; 或者出现"看上去 hang 了" 的用户报告。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>LLM 实际输出的 directive 格式干净度</h4>
+        <p><span class="lbl">问题</span>Audit prompt 要求 <code>:::pass[标题]</code> / <code>:::warn[标题]</code> 等严格 directive 语法。LLM 是否每次都按格式输出? 会不会出现 <code>::pass</code> (少个冒号), <code>:::Pass</code> (大写), <code>: : :</code> (空格分隔) 等变体?</p>
+        <p><span class="lbl">为什么 open</span>没有真实样本。 我的解析器只认严格语法 (4 个小写 severity + 中括号 title), 任何变体都 fall-through 成普通 markdown。 真实 LLM 输出的稳定度未知, 可能需要 prompt iter 或 parser 容错放宽。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>4-class severity 在教师视角下的可读性</h4>
+        <p><span class="lbl">问题</span>4 种 callout 配色 (绿/琥珀/紫粉/红) 教师能不能凭直觉知道严重度? "guess" 用紫粉是<em>跟 error 区分</em> 的选择, 但 fuchsia 这个颜色对中国教师的语意联想是什么? 紫色在不同文化里有不同含义。</p>
+        <p><span class="lbl">为什么 open</span>没有用户测试。 当前内部 demo 阶段, 这些颜色都靠我的判断。 教师真的看到时, 可能会反馈 "我搞不清绿跟琥珀谁更严重" 之类。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>"audit-report.md is part of the project files" 的语义边界</h4>
+        <p><span class="lbl">问题</span>后端把审计报告写到 <code>audit/audit-report.md</code>, 作为真实 ProjectFile —— 这意味着它会出现在 FileBrowser 的文件树里, 教师能手动编辑, agent 可以 Grep / Read。 这是 feature 还是 footgun? 教师手改报告会发生什么? Agent 把报告当 task list 还是 informational?</p>
+        <p><span class="lbl">为什么 open</span>每次 audit 重跑会覆盖, 所以手改"会丢"; 但教师在丢之前可能不知道。 当前没有 UI 提示"这是 AI 生成的, 别手改"。 等真实使用观察行为再决定。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 1 commit · 提交 + 测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">1</span><span class="cs-stat-l">Commit</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">14</span><span class="cs-stat-l">New tests</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">New deps</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1</span><span class="cs-stat-l">Code Review Pass (2 HIGH + 4 MED resolved)</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">454c4ef0</span><span class="tag feat">feat</span><span class="msg">frontend: audit tab + markdown report renderer (replaces broken lint refs)</span></div>
+      </div>
+      <p style="font-size:11px;color:var(--t3);margin-top:14px;line-height:1.5">
+        New: audit/{AuditTab, AuditReportRenderer, Callout}.tsx, audit-markdown.ts + spec, api/audit.ts. Deleted: review/{ReviewTab, LintIssueCard}.tsx, api/lint.ts. Modified: ProjectEditorPage.tsx (Review tab → 审计 tab). Code review found 2 HIGH (CRLF, handleRun closure) and 4 MED (timer type, reload UX, walker gaps, a11y aria-label) — all fixed before commit. No new dependencies; reused existing unified + remark-parse (came in via lesson-plan-md). React component tests deferred (creator has no jsdom + RTL setup).
+      </p>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-27 · ccaas Decision Archive · 接续 <code>decision-archive-audit-refactor-2026-05-27.html</code> (后端 audit 重构的前端配对)
+  </footer>
+
+</div>
+
+</body>
+</html>

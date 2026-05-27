@@ -6,7 +6,10 @@ import {
   stripFenceWrapper,
 } from './audit.service';
 import { AuditPromptBuilder } from './audit-prompt-builder';
-import { AUDIT_REPORT_PATH } from './audit.schema';
+import { auditReportPath } from './audit.schema';
+
+// Regex matching the generator's output: `audit/<ISO with : and . swapped for ->.md`.
+const AUDIT_PATH_RE = /^audit\/\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.md$/;
 
 /**
  * Unit tests for AuditService. Hand-built service with mocked deps
@@ -36,8 +39,8 @@ function makeService(overrides?: {
       }
       throw new NotFoundException(path);
     }),
-    upsertArtifact: jest.fn(async () => ({
-      path: AUDIT_REPORT_PATH,
+    upsertArtifact: jest.fn(async (_pid: string, path: string) => ({
+      path,
       fileType: 'md',
     })),
     ...(overrides?.findOne ? { findOne: overrides.findOne } : {}),
@@ -96,7 +99,8 @@ describe('AuditService', () => {
       const { svc } = makeService();
       const state = svc.getState('p1');
       expect(state.status).toBe('idle');
-      expect(state.reportPath).toBe(AUDIT_REPORT_PATH);
+      // Idle has no reportPath — there's no run to point at yet.
+      expect(state.reportPath).toBeUndefined();
     });
   });
 
@@ -106,7 +110,8 @@ describe('AuditService', () => {
       const initial = svc.run('p1');
       // Synchronous return: status is already 'running'.
       expect(initial.status).toBe('running');
-      expect(initial.reportPath).toBe(AUDIT_REPORT_PATH);
+      // First run: no previous report, running state has no reportPath.
+      expect(initial.reportPath).toBeUndefined();
 
       // Flush the fire-and-forget compute.
       await flushRun();
@@ -114,14 +119,42 @@ describe('AuditService', () => {
       const done = svc.getState('p1');
       expect(done.status).toBe('done');
       expect(done.lastGeneratedAt).toBeDefined();
-      // Report was written to the canonical path.
+      // Report written to a fresh timestamped path; state.reportPath
+      // tracks where it landed.
+      expect(done.reportPath).toMatch(AUDIT_PATH_RE);
       expect(projects.upsertArtifact).toHaveBeenCalledWith(
         'p1',
-        AUDIT_REPORT_PATH,
+        expect.stringMatching(AUDIT_PATH_RE),
         expect.stringContaining('# 概述'),
         'md',
       );
       expect(ai.callLlm).toHaveBeenCalledTimes(1);
+    });
+
+    it('writes a fresh timestamped path on each run (history kept)', async () => {
+      // Two runs back-to-back should produce two distinct file paths so
+      // each ends up as its own historical artifact. The frontend opens
+      // each as a separate dynamic tab — losing history would collapse
+      // them into the same view.
+      const { svc, projects } = makeService();
+      svc.run('p1');
+      await flushRun();
+      const first = svc.getState('p1').reportPath;
+      // Tick the clock by mocking Date — easiest: wait a real ms so
+      // the new auditReportPath() landing on a different ISO timestamp.
+      await new Promise((r) => setTimeout(r, 5));
+      svc.run('p1');
+      await flushRun();
+      const second = svc.getState('p1').reportPath;
+      expect(first).toBeDefined();
+      expect(second).toBeDefined();
+      expect(second).not.toBe(first);
+      // Both writes happened (history accumulates, not overwrites).
+      const writtenPaths = projects.upsertArtifact.mock.calls.map(
+        (c: any[]) => c[1],
+      );
+      expect(writtenPaths).toContain(first);
+      expect(writtenPaths).toContain(second);
     });
 
     it('coalesces concurrent run() calls (in-flight guard)', async () => {
@@ -289,12 +322,28 @@ describe('AuditService', () => {
     });
   });
 
-  describe('AUDIT_REPORT_PATH contract', () => {
-    it('does not collide with the _lib/ reserved prefix', () => {
-      // upsertArtifact rejects writes under _lib/ — if AUDIT_REPORT_PATH
-      // ever moves there by a typo, every audit run would 500. Pin it.
-      expect(AUDIT_REPORT_PATH.startsWith('_lib')).toBe(false);
-      expect(AUDIT_REPORT_PATH).toMatch(/^[a-z]/);
+  describe('auditReportPath contract', () => {
+    it('produces a path under audit/, never under the _lib/ reserved prefix', () => {
+      // upsertArtifact rejects writes under _lib/. If the path generator
+      // ever moved there by a typo, every audit run would 500. Pin it.
+      const path = auditReportPath(new Date());
+      expect(path.startsWith('audit/')).toBe(true);
+      expect(path.startsWith('_lib')).toBe(false);
+    });
+
+    it('is lexically sortable (chronological = alphabetical)', () => {
+      // Lexical sort = chronological is a useful invariant for the
+      // file browser to show "newest audit last" without extra metadata.
+      const earlier = auditReportPath(new Date('2026-05-27T08:00:00.000Z'));
+      const later = auditReportPath(new Date('2026-05-27T08:30:00.000Z'));
+      expect([later, earlier].sort()[1]).toBe(later);
+    });
+
+    it('uses filesystem-safe separators (no : or .)', () => {
+      // Some filesystems reject `:` and `.` in odd positions; encode
+      // both as `-` so the path is portable.
+      const path = auditReportPath(new Date('2026-05-27T08:28:34.123Z'));
+      expect(path).toBe('audit/2026-05-27T08-28-34-123Z.md');
     });
   });
 });

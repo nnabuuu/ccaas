@@ -7,11 +7,7 @@ import {
 import { ProjectService } from '../../project/project.service';
 import { TeachingRequirementsService } from '../../teaching-requirements/teaching-requirements.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
-import {
-  AUDIT_REPORT_PATH,
-  AuditRunState,
-  idleState,
-} from './audit.schema';
+import { AuditRunState, auditReportPath, idleState } from './audit.schema';
 import {
   AuditPromptBuilder,
   ReferencedLibItem,
@@ -92,13 +88,17 @@ export class AuditService {
     }
 
     const startedAt = new Date().toISOString();
+    const prev = this.state.get(projectId);
     const runningState: AuditRunState = {
       projectId,
       status: 'running',
-      // Preserve the previous lastGeneratedAt so the UI can show
-      // "last completed at X, currently re-running" if it wants to.
-      lastGeneratedAt: this.state.get(projectId)?.lastGeneratedAt,
-      reportPath: AUDIT_REPORT_PATH,
+      // Preserve the previous lastGeneratedAt + reportPath so the UI
+      // can keep showing the last-known-good audit while a new one is
+      // in flight (running → done = swap to new path; running → error
+      // = keep the old one). The new path doesn't exist yet, so we
+      // don't speculate about it here.
+      lastGeneratedAt: prev?.lastGeneratedAt,
+      reportPath: prev?.reportPath,
     };
     this.state.set(projectId, runningState);
 
@@ -169,15 +169,14 @@ export class AuditService {
       return this.persistError(projectId, 'LLM 返回空文档');
     }
 
+    // Each run gets a fresh timestamped path. Older runs stay on disk
+    // — the frontend can open any of them as a dynamic tab, the agent
+    // can Grep audit/*.md across history.
+    const newReportPath = auditReportPath();
     try {
-      // Write the report as a real ProjectFile so it shows up via the
-      // existing /files endpoints + flows through artifact-sync to
-      // the agent's workspace (agent can Grep / Read it like any other
-      // project file). REPORT_BANNER signals downstream readers that
-      // the content is AI-generated + untrusted.
       await this.projects.upsertArtifact(
         projectId,
-        AUDIT_REPORT_PATH,
+        newReportPath,
         REPORT_BANNER + sanitized,
         'md',
       );
@@ -189,22 +188,24 @@ export class AuditService {
       projectId,
       status: 'done',
       lastGeneratedAt: new Date().toISOString(),
-      reportPath: AUDIT_REPORT_PATH,
+      reportPath: newReportPath,
     };
     this.state.set(projectId, result);
-    this.logger.log(`audit completed for ${projectId}`);
+    this.logger.log(`audit completed for ${projectId} → ${newReportPath}`);
     return result;
   }
 
   private persistError(projectId: string, errorMessage: string): AuditRunState {
+    const prev = this.state.get(projectId);
     const result: AuditRunState = {
       projectId,
       status: 'error',
-      // Preserve previous successful timestamp if any — the teacher's
-      // last-known-good report is still on disk + worth reflecting.
-      lastGeneratedAt: this.state.get(projectId)?.lastGeneratedAt,
+      // Preserve previous successful timestamp + path so the UI can
+      // continue to show the last-known-good audit even after a
+      // failed re-run.
+      lastGeneratedAt: prev?.lastGeneratedAt,
+      reportPath: prev?.reportPath,
       errorMessage,
-      reportPath: AUDIT_REPORT_PATH,
     };
     this.state.set(projectId, result);
     this.logger.warn(`audit failed for ${projectId}: ${errorMessage}`);

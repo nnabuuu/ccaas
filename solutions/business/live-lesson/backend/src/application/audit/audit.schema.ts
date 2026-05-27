@@ -3,8 +3,10 @@
  * cross-checking plan/lesson-plan.md against execution/manifest.json.
  *
  * The report itself is markdown (LLM output, callout directives + cross
- * references inline) persisted to `project_files` at
- * `audit/audit-report.md`. THIS module only tracks the **run state**
+ * references inline) persisted to `project_files` at a per-run
+ * timestamped path (`audit/<ISO>.md` via `auditReportPath`). History
+ * accumulates so the frontend can open multiple past reports as
+ * dynamic tabs. THIS module only tracks the **run state**
  * (idle / running / done / error) per project so the UI button can
  * show progress; the report content lives on disk like any other
  * project file.
@@ -44,21 +46,41 @@ export interface AuditRunState {
   /** Populated only when status === 'error'. */
   errorMessage?: string;
   /**
-   * Constant path inside the project — the report file lives here.
-   * Exposed so the frontend doesn't hard-code the string + so the
-   * backend can change the location later without breaking clients.
+   * Path of the *most recent* report file. Each run writes a fresh
+   * timestamped path (kept on disk as history) — this field is just
+   * the latest pointer. Frontend uses it to open a tab on completion;
+   * older runs are still readable via the standard
+   * `/files?path=audit/<...>.md` endpoint, and the file browser sees
+   * every historical report.
+   *
+   * Absent on idle (never run). Absent on the first running tick;
+   * subsequent runs preserve the previous latest pointer so the UI
+   * can still show "last completed report" while a new one is in
+   * flight.
    */
-  reportPath: string;
+  reportPath?: string;
 }
 
-/** Canonical path of the persisted audit report inside a project. */
-export const AUDIT_REPORT_PATH = 'audit/audit-report.md';
+/**
+ * Generate a unique, sortable report path for one audit run.
+ *
+ * Format: `audit/<ISO-timestamp>.md`. The `:` and `.` characters in
+ * ISO 8601 timestamps (e.g. `2026-05-27T08:28:34.123Z`) are unsafe in
+ * some filesystems and URLs, so we replace both with `-`:
+ *   audit/2026-05-27T08-28-34-123Z.md
+ *
+ * Lexical sort = chronological sort, so a directory listing of
+ * `audit/*.md` is naturally history-ordered without extra metadata.
+ */
+export function auditReportPath(date: Date = new Date()): string {
+  const safe = date.toISOString().replace(/[:.]/g, '-');
+  return `audit/${safe}.md`;
+}
 
 /** Initial state returned when the cache has no entry for a project. */
 export function idleState(projectId: string): AuditRunState {
   return {
     projectId,
     status: 'idle',
-    reportPath: AUDIT_REPORT_PATH,
   };
 }
