@@ -1,26 +1,59 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { getProject, publishProject } from '../api/projects'
 import type { Project, ProjectFile } from '../types'
 import EditorLayout from '../components/layout/EditorLayout'
 import AiPanel from '../components/sidebar/AiPanel'
-import TabBar from '../components/layout/TabBar'
-import FileBrowser from '../components/sidebar/FileBrowser'
+import TabBar, {
+  type DynamicTabItem,
+  type WorkspaceTab,
+} from '../components/layout/TabBar'
 import ExecutionTab from '../components/execution/ExecutionTab'
 import PlanTab from '../components/plan/PlanTab'
-import AuditTab from '../components/audit/AuditTab'
+import AuditReportView from '../components/audit/AuditReportView'
+import FileViewer from '../components/dyntab/FileViewer'
+import TopBar from '../components/topbar/TopBar'
 import ProjectChangeNotice from '../components/ProjectChangeNotice'
 import { useProjectChanges } from '../hooks/useProjectChanges'
+import {
+  ChatBridgeContext,
+  type ChatBridge,
+} from '../contexts/ChatBridgeContext'
+import {
+  closeDynamic,
+  dynamicTabId,
+  initialState,
+  openDynamic,
+  selectDynamic,
+  selectWorkspace,
+  type DynamicTab,
+  type TabsState,
+  type WorkspaceTabKey,
+} from '../lib/dynamic-tabs'
 
-const TABS = [
+/**
+ * Project editor — v7-rich layout (design `creator-v7-rich-design-doc.md`):
+ *
+ *   ┌─────────────────────────────────────────────────────────┐
+ *   │ TopBar · 项目级 (← title status 📁 ◇ ⋯ 发布)             │
+ *   ├─────────────────────────────────────────────────────────┤
+ *   │ TabBar · 工作区 (教案/执行/Skills) + 动态 tabs (audit/file) │
+ *   ├──────────┬──────────────────────────────────────────────┤
+ *   │ AiPanel  │ Tab content                                  │
+ *   └──────────┴──────────────────────────────────────────────┘
+ *
+ * Workspace tabs are fixed; dynamic tabs accumulate on demand (each
+ * Audit run produces a new tab; the Files popover can open any project
+ * file as a viewer tab). Multiple audit tabs is the load-bearing case
+ * — each one points at a unique `audit/<timestamp>.md` path so old
+ * runs stay readable after new ones land.
+ */
+
+const WORKSPACE_TABS: readonly WorkspaceTab[] = [
   { key: 'plan', label: '教案设计', dotColor: 'bg-teal-500' },
   { key: 'execution', label: '执行设计', dotColor: 'bg-blue-500' },
   { key: 'skills', label: 'Skills', dotColor: 'bg-purple-500' },
-  { key: 'review', label: '审计', dotColor: 'bg-amber-500' },
 ] as const
-
-type TabKey = (typeof TABS)[number]['key']
 
 export default function ProjectEditorPage() {
   const { id } = useParams<{ id: string }>()
@@ -29,33 +62,39 @@ export default function ProjectEditorPage() {
   const [files, setFiles] = useState<ProjectFile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<TabKey>('execution')
+  const [tabs, setTabs] = useState<TabsState>(initialState)
   const [publishing, setPublishing] = useState(false)
   const [publishMsg, setPublishMsg] = useState<string | null>(null)
   const [publishOk, setPublishOk] = useState(false)
-  // agent-runtime SSE subscription: surfaces agent-side edits so the
-  // operator knows when the agent has touched the same project. The hook
-  // hits a relative `/api/projects/:id/changes` on the live-lesson
-  // backend; the backend proxies through to ccaas using its tenant
-  // CCAAS_API_KEY env var. Browser never holds a ccaas key — see the
-  // hook's header for the design rationale.
-  // Dismissed notices are tracked locally; `reloadKey` bumps force the
-  // active tab to re-fetch from disk.
+  // Chat-bridge injection target: when set, AiPanel will auto-send +
+  // call onPendingConsumed to clear. Driven by the "让 AI 修复"
+  // buttons inside the audit report renderer.
+  const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(
+    null,
+  )
+
+  // agent-runtime SSE subscription (unchanged from prior layout — top
+  // bar surfaces the connection state via a dot).
   const { events, isConnected, error: sseError } = useProjectChanges(id ?? null)
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [reloadKey, setReloadKey] = useState(0)
-  // Reset the dismissed set whenever the operator opens a different project
-  // — stale keys for project A would otherwise accumulate forever.
+
   useEffect(() => {
     setDismissed(new Set())
+    // Switching projects resets the dynamic-tab list — keeping audit
+    // tabs from project A visible on project B would be confusing.
+    setTabs(initialState())
   }, [id])
-  // Map of active tab → the file path it's currently editing. Used to
-  // decide whether the [Reload] button is shown on a given notice.
+
+  // Which file path the currently-active tab is editing (so a file-
+  // change notice can prompt a reload of just that tab).
   const currentlyEditingPath = useMemo(() => {
-    if (activeTab === 'execution') return 'execution/manifest.json'
-    if (activeTab === 'plan') return 'plan/lesson-plan.md'
+    if (tabs.activeWorkspace === 'execution') return 'execution/manifest.json'
+    if (tabs.activeWorkspace === 'plan') return 'plan/lesson-plan.md'
+    // Dynamic tabs (audit / file viewer) have their own reload buttons.
     return null
-  }, [activeTab])
+  }, [tabs.activeWorkspace, tabs.activeDynamic])
+
   const handleDismiss = useCallback((key: string) => {
     setDismissed((prev) => {
       const next = new Set(prev)
@@ -63,23 +102,24 @@ export default function ProjectEditorPage() {
       return next
     })
   }, [])
-  const handleReload = useCallback((path: string) => {
-    // Only the active tab's path is reloaded; other tabs would re-fetch
-    // on their next mount anyway. Tabs that share state across mounts
-    // (none today) would need their own reload signal.
-    if (path === currentlyEditingPath) {
-      setReloadKey((k) => k + 1)
-      // Also clear the matching notice so the banner doesn't linger.
-      // Key must match `eventKey()` in ProjectChangeNotice (includes actor).
-      setDismissed((prev) => {
-        const next = new Set(prev)
-        for (const e of events) {
-          if (e.path === path) next.add(`${e.at}|${e.path}|${e.kind}|${e.actor ?? ''}`)
-        }
-        return next
-      })
-    }
-  }, [currentlyEditingPath, events])
+
+  const handleReload = useCallback(
+    (path: string) => {
+      if (path === currentlyEditingPath) {
+        setReloadKey((k) => k + 1)
+        setDismissed((prev) => {
+          const next = new Set(prev)
+          for (const e of events) {
+            if (e.path === path) {
+              next.add(`${e.at}|${e.path}|${e.kind}|${e.actor ?? ''}`)
+            }
+          }
+          return next
+        })
+      }
+    },
+    [currentlyEditingPath, events],
+  )
 
   const fetchProject = useCallback(async () => {
     if (!id) return
@@ -97,7 +137,7 @@ export default function ProjectEditorPage() {
   }, [id])
 
   useEffect(() => {
-    fetchProject()
+    void fetchProject()
   }, [fetchProject])
 
   const handlePublish = async () => {
@@ -109,7 +149,7 @@ export default function ProjectEditorPage() {
       const { lessonId } = await publishProject(id)
       setPublishMsg(`Published as lesson: ${lessonId}`)
       setPublishOk(true)
-      setProject((p) => p ? { ...p, status: 'published' } : p)
+      setProject((p) => (p ? { ...p, status: 'published' } : p))
       setTimeout(() => setPublishMsg(null), 3000)
     } catch (e) {
       setPublishMsg(e instanceof Error ? e.message : 'Publish failed')
@@ -118,6 +158,62 @@ export default function ProjectEditorPage() {
       setPublishing(false)
     }
   }
+
+  // ── Dynamic tab handlers ──
+
+  const handleAuditDone = useCallback((reportPath: string) => {
+    // Each audit run produces a fresh timestamped reportPath → each
+    // gets its own tab. Title is the trailing time portion of the
+    // timestamp for a recognizable, compact label.
+    const m = reportPath.match(/T(\d{2}-\d{2}-\d{2})/)
+    const title = `审计 ${m ? m[1].replace(/-/g, ':') : ''}`
+    const tab: DynamicTab = {
+      id: dynamicTabId(),
+      kind: 'audit-report',
+      reportPath,
+      title: title.trim() || '审计',
+      openedAt: Date.now(),
+    }
+    setTabs((s) => openDynamic(s, tab))
+    // Refresh project files so the new audit report appears in the
+    // Files popover (background — not blocking).
+    void fetchProject()
+  }, [fetchProject])
+
+  const handlePickFile = useCallback((filePath: string) => {
+    const tab: DynamicTab = {
+      id: dynamicTabId(),
+      kind: 'file-viewer',
+      filePath,
+      title: filePath.split('/').slice(-1)[0] || filePath,
+      openedAt: Date.now(),
+    }
+    setTabs((s) => openDynamic(s, tab))
+  }, [])
+
+  // Convert internal DynamicTab[] into the TabBar's display shape.
+  const dynamicTabItems: DynamicTabItem[] = useMemo(
+    () => tabs.dynamic.map((t) => ({ id: t.id, label: t.title, kind: t.kind })),
+    [tabs.dynamic],
+  )
+
+  // Chat-bridge wiring. Keep the bridge identity stable across renders
+  // so context consumers don't churn; the callbacks read fresh state
+  // via the setState updaters.
+  const chatBridge: ChatBridge = useMemo(
+    () => ({
+      sendMessage(text) {
+        setPendingChatMessage(text)
+      },
+      switchToWorkspace(key, _anchor) {
+        setTabs((s) => selectWorkspace(s, key))
+        // _anchor (e.g. step id) is accepted but not yet acted on —
+        // scroll-to-anchor needs each workspace tab to expose an
+        // imperative "scrollTo" API, which is a follow-up.
+      },
+    }),
+    [],
+  )
 
   if (loading) {
     return (
@@ -143,8 +239,27 @@ export default function ProjectEditorPage() {
     )
   }
 
+  // Resolve the currently-active dynamic tab once for the render
+  // switch below.
+  const activeDyn = tabs.activeDynamic
+    ? tabs.dynamic.find((t) => t.id === tabs.activeDynamic) ?? null
+    : null
+
   const renderTabContent = () => {
-    switch (activeTab) {
+    if (activeDyn) {
+      if (activeDyn.kind === 'audit-report') {
+        return (
+          <AuditReportView
+            projectId={project.id}
+            reportPath={activeDyn.reportPath}
+          />
+        )
+      }
+      return (
+        <FileViewer projectId={project.id} filePath={activeDyn.filePath} />
+      )
+    }
+    switch (tabs.activeWorkspace) {
       case 'execution':
         return <ExecutionTab projectId={project.id} reloadKey={reloadKey} />
       case 'plan':
@@ -159,54 +274,27 @@ export default function ProjectEditorPage() {
             Skills (coming soon)
           </div>
         )
-      case 'review':
-        return <AuditTab projectId={project.id} reloadKey={reloadKey} />
+      default:
+        return null
     }
   }
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      {/* Header bar */}
-      <header className="flex items-center gap-3 px-4 py-2 border-b border-gray-200 bg-white shrink-0">
-        <button
-          onClick={() => navigate('/projects')}
-          className="p-1.5 text-gray-500 hover:text-gray-700 rounded hover:bg-gray-100"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <h1 className="text-sm font-semibold text-gray-900 truncate">{project.title}</h1>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-          project.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-        }`}>
-          {project.status === 'published' ? '已发布' : '草稿'}
-        </span>
-        {publishMsg && (
-          <span className={`text-xs ${publishOk ? 'text-green-600' : 'text-red-500'}`}>
-            {publishMsg}
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          {/* SSE connection indicator — green when subscribed to agent-runtime
-              changes for this project, gray when not (e.g., ccaas not running
-              or env var unset). Hover for the error message if any. */}
-          <span
-            className={`inline-block w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}
-            title={isConnected ? 'Live agent-edit notifications connected' : (sseError ?? 'Disconnected')}
-          />
-          <FileBrowser files={files} />
-          <button
-            onClick={handlePublish}
-            disabled={publishing}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
-          >
-            <Upload size={14} />
-            {publishing ? '发布中...' : '发布'}
-          </button>
-        </div>
-      </header>
+      <TopBar
+        project={project}
+        files={files}
+        isConnected={isConnected}
+        sseError={sseError}
+        publishing={publishing}
+        publishMsg={publishMsg}
+        publishOk={publishOk}
+        onBack={() => navigate('/projects')}
+        onPublish={handlePublish}
+        onPickFile={handlePickFile}
+        onAuditDone={handleAuditDone}
+      />
 
-      {/* Agent-edit notices (Phase 2a). Only renders when there are
-          un-dismissed agent-side events; otherwise self-hides. */}
       <ProjectChangeNotice
         events={events}
         currentlyEditingPath={currentlyEditingPath}
@@ -215,16 +303,37 @@ export default function ProjectEditorPage() {
         dismissed={dismissed}
       />
 
-      {/* Main area */}
-      <EditorLayout
-        left={<AiPanel project={project} />}
-        right={
-          <div className="flex flex-col h-full">
-            <TabBar tabs={TABS} activeTab={activeTab} onTabChange={(k) => setActiveTab(k as TabKey)} />
-            <div className="flex-1 overflow-auto">{renderTabContent()}</div>
-          </div>
-        }
-      />
+      <ChatBridgeContext.Provider value={chatBridge}>
+        <EditorLayout
+          left={
+            <AiPanel
+              project={project}
+              pendingMessage={pendingChatMessage}
+              onPendingConsumed={() => setPendingChatMessage(null)}
+            />
+          }
+          right={
+            <div className="flex flex-col h-full">
+              <TabBar
+                workspaceTabs={WORKSPACE_TABS}
+                activeWorkspace={tabs.activeWorkspace}
+                dynamicTabs={dynamicTabItems}
+                activeDynamic={tabs.activeDynamic}
+                onSelectWorkspace={(k) =>
+                  setTabs((s) => selectWorkspace(s, k as WorkspaceTabKey))
+                }
+                onSelectDynamic={(idArg) =>
+                  setTabs((s) => selectDynamic(s, idArg))
+                }
+                onCloseDynamic={(idArg) =>
+                  setTabs((s) => closeDynamic(s, idArg))
+                }
+              />
+              <div className="flex-1 overflow-auto">{renderTabContent()}</div>
+            </div>
+          }
+        />
+      </ChatBridgeContext.Provider>
     </div>
   )
 }

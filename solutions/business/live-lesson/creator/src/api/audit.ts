@@ -24,8 +24,12 @@ export interface AuditRunState {
   lastGeneratedAt?: string
   /** Populated only when status === 'error'. */
   errorMessage?: string
-  /** Canonical path of the report inside the project (`audit/audit-report.md`). */
-  reportPath: string
+  /**
+   * Path of the most recently completed report. Each run writes to a
+   * fresh timestamped path; this field tracks the latest. Absent on
+   * `idle` (never run) and during the first-ever running tick.
+   */
+  reportPath?: string
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -57,15 +61,17 @@ export async function runAudit(projectId: string): Promise<AuditRunState> {
 }
 
 /**
- * Fetch the persisted audit report markdown. Returns '' when the file
- * doesn't exist yet (status='idle' or status='running' first-time run)
- * so callers can render the empty state without try/catch boilerplate.
- *
- * Errors other than 404 are still surfaced — they likely mean network
- * trouble or a broken endpoint, both of which the UI should warn about.
+ * Fetch one specific audit report markdown. Caller supplies the path
+ * (typically `state.reportPath` from a `getAuditState` response).
+ * Returns '' on 404 so the UI can show "file gone" gracefully instead
+ * of crashing — a teacher might have closed an audit tab whose file
+ * was later deleted.
  */
-export async function getAuditReport(projectId: string): Promise<string> {
-  const url = `/api/projects/${encodeURIComponent(projectId)}/files?path=${encodeURIComponent('audit/audit-report.md')}`
+export async function getAuditReport(
+  projectId: string,
+  reportPath: string,
+): Promise<string> {
+  const url = `/api/projects/${encodeURIComponent(projectId)}/files?path=${encodeURIComponent(reportPath)}`
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
   })
@@ -74,7 +80,6 @@ export async function getAuditReport(projectId: string): Promise<string> {
     const body = await res.text().catch(() => '')
     throw new Error(`${res.status}: ${body || res.statusText}`)
   }
-  // The files endpoint returns `{ content, fileType }`.
   const data = (await res.json()) as { content: string; fileType: string }
   return data.content ?? ''
 }
