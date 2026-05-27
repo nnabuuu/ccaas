@@ -20,12 +20,30 @@
         { "toolName": "execute_dynamic_board", "eventType": "output_update" },
         { "toolName": "suggest_questions", "eventType": "output_update" }
       ]
+    },
+    "live-lesson-creator-tools": {
+      "command": "node",
+      "args": ["creator-mcp-server/dist/index.js"],
+      "description": "Creator-side rich chat card tools (todo / questions / verify) — tool results are wrapped as `{ card: ... }` via toolEventTriggers and render as structured cards in the creator chat panel.",
+      "type": "stdio",
+      "tools": ["emit_todo_card", "emit_questions_card", "emit_verify_card"],
+      "toolEventTriggers": [
+        { "toolName": "emit_todo_card", "eventType": "output_update", "field": "card" },
+        { "toolName": "emit_questions_card", "eventType": "output_update", "field": "card" },
+        { "toolName": "emit_verify_card", "eventType": "output_update", "field": "card" }
+      ]
     }
   },
   "sessionTemplates": {
     "teaching": {
       "description": "苏格拉底式教学会话 - 动态板书引导",
       "enabledSkills": ["socratic-teacher"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": ""
+    },
+    "creator": {
+      "description": "Creator app (lesson plan editor) — rich card chat for multi-step generation, clarification, and schema verification",
+      "enabledSkills": ["lesson-plan-editor"],
       "skillPromptMode": "inline",
       "appendSystemPrompt": ""
     }
@@ -39,6 +57,7 @@
     }
   },
   "skills": [
-    { "slug": "socratic-teacher", "name": "socratic-teacher" }
+    { "slug": "socratic-teacher", "name": "socratic-teacher" },
+    { "slug": "lesson-plan-editor", "name": "lesson-plan-editor" }
   ]
 }

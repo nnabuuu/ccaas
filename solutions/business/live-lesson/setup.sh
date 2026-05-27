@@ -27,22 +27,27 @@ fi
 # Default bootstrap key
 CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
 
-# Custom initialization - build MCP server
+# Custom initialization - build both stdio MCP servers declared in
+# solution.json (classroom: mcp-server/, creator: creator-mcp-server/).
+# If either dir is missing we log + skip rather than fail — preserves
+# the legacy script behavior for the classroom-only case.
 custom_init() {
-    log_step "3.5" "Building MCP server"
+    log_step "3.5" "Building MCP servers"
 
-    local mcp_dir="$SCRIPT_DIR/mcp-server"
-    if [ -d "$mcp_dir" ]; then
-        cd "$mcp_dir"
-        log_info "Installing MCP server dependencies..."
-        npm install > /dev/null 2>&1
-        log_info "Building MCP server..."
-        npm run build > /dev/null 2>&1
-        log_success "MCP server built successfully"
-        cd "$SCRIPT_DIR"
-    else
-        log_warn "MCP server directory not found, skipping build"
-    fi
+    for mcp_dir_name in mcp-server creator-mcp-server; do
+        local mcp_dir="$SCRIPT_DIR/$mcp_dir_name"
+        if [ -d "$mcp_dir" ]; then
+            cd "$mcp_dir"
+            log_info "Installing $mcp_dir_name dependencies..."
+            npm install > /dev/null 2>&1
+            log_info "Building $mcp_dir_name..."
+            npm run build > /dev/null 2>&1
+            log_success "$mcp_dir_name built successfully"
+            cd "$SCRIPT_DIR"
+        else
+            log_warn "$mcp_dir_name directory not found, skipping build"
+        fi
+    done
 
     return 0
 }

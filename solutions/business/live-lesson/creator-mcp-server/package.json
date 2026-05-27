@@ -1,0 +1,25 @@
+{
+  "name": "@live-lesson/creator-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server exposing rich chat card emit tools for the live-lesson creator app (todo / questions / verify). Result payloads flow through ccaas-core toolEventTriggers (configured with field: 'card' in solution.json) as `output_update` SSE events wrapped as `{ data: { field: 'card', value: <parsed> }, status }`. The browser's useAgentChat reads `payload.data.value` and routes on `value.kind` to the right card component.",
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "start:dev": "tsc && node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.0"
+  }
+}
