@@ -18,6 +18,7 @@ import { useAgentChat } from '../../hooks/useAgentChat';
 import ChatBubble, { ThinkingDots } from './ChatBubble';
 import ConversationDropdown from './ConversationDropdown';
 import ChatTodoCard from './cards/ChatTodoCard';
+import ChatVerifyCard from './cards/ChatVerifyCard';
 
 interface AiPanelProps {
   project: Project;
@@ -198,7 +199,10 @@ export default function AiPanel({
             if (m.card.kind === 'todo') {
               return <ChatTodoCard key={m.id} data={m.card} />;
             }
-            // questions / verify card components ship in phase 3b/3c.
+            if (m.card.kind === 'verify') {
+              return <ChatVerifyCard key={m.id} data={m.card} />;
+            }
+            // questions card component ships in phase 3c.
             // Surface unimplemented kinds in dev so a regression
             // doesn't fall into the silent-fallback hole.
             if (import.meta.env.DEV) {

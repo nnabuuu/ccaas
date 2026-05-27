@@ -49,10 +49,20 @@ body {
 }
 
 /* AiPanel "thinking" 3-dot bounce. Each dot offsets its delay so the
- * three together read as a wave. Matches creator-v7-ai-left.jsx:175. */
+ * three together read as a wave. Matches creator-v7-ai-left.jsx:175.
+ * (Used directly via `animation: 'aiDot ...'` inline styles in
+ * AiPanel + ChatVerifyCard.) */
 @keyframes aiDot {
   0%, 60%, 100% { transform: translateY(0);    opacity: .4; }
   30%           { transform: translateY(-3px); opacity:  1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Suppress both card-side animations under reduce-motion. The
+   * aiDot keyframe has no class form, so we kill it via a wildcard
+   * selector — fine because no other element in this app uses it. */
+  *[style*="aiDot"] {
+    animation: none !important;
+  }
 }
 
 /* Pulse used by ChatTodoCard's "active" status icon — slow opacity
