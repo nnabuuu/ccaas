@@ -289,7 +289,15 @@ export class ProjectService {
       type: r.fileType,
     }));
 
-    // `?? []` defends against pre-migration rows + the TS strict-null gap.
+    // `?? []` is intentional defense, not paranoia. The `subjects` column
+    // was added via TypeORM `synchronize:true` with `default: '[]'`. SQLite
+    // is *supposed* to backfill existing rows with that default on ALTER
+    // TABLE ADD COLUMN, but the behavior across synchronize's
+    // recreate-table fallback path isn't verified — see decision-archive
+    // OQ-01 (docs/decision-archive-project-subjects-2026-05-27.html). If
+    // a pre-migration row surfaces as `null`, `subjects.length` would
+    // throw and break the entire artifact sync. Keep this until verified
+    // on a real legacy DB.
     const subjects = project.subjects ?? [];
     if (opts.userId && subjects.length > 0) {
       const userInterps = await this.interpretations.listForUser(opts.userId);
