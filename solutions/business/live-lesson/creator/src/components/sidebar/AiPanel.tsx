@@ -17,6 +17,7 @@ import { useConversations } from '../../hooks/useConversations';
 import { useAgentChat } from '../../hooks/useAgentChat';
 import ChatBubble, { ThinkingDots } from './ChatBubble';
 import ConversationDropdown from './ConversationDropdown';
+import ChatTodoCard from './cards/ChatTodoCard';
 
 interface AiPanelProps {
   project: Project;
@@ -183,10 +184,36 @@ export default function AiPanel({
         {chat.messages.length === 0 && !chat.isLoadingHistory && <EmptyState />}
         {chat.isLoadingHistory && <LoadingHistory />}
 
-        {chat.messages.map((m) =>
-          m.role === 'user' ? (
-            <ChatBubble key={m.id} role="user" text={m.text} />
-          ) : (
+        {chat.messages.map((m) => {
+          // User text bubble.
+          if (m.role === 'user') {
+            return <ChatBubble key={m.id} role="user" text={m.text} />;
+          }
+          // Card-type agent message: route by kind to the right
+          // renderer. Forward-compat: an unrecognized kind (added by
+          // a future card type before this build deploys) falls
+          // through to null — silently invisible rather than
+          // throwing.
+          if ('type' in m && m.type === 'card') {
+            if (m.card.kind === 'todo') {
+              return <ChatTodoCard key={m.id} data={m.card} />;
+            }
+            // questions / verify card components ship in phase 3b/3c.
+            // Surface unimplemented kinds in dev so a regression
+            // doesn't fall into the silent-fallback hole.
+            if (import.meta.env.DEV) {
+              // eslint-disable-next-line no-console
+              console.warn(
+                `[AiPanel] no renderer for card kind=${m.card.kind} (message ${m.id}); message will not render until a card component is registered.`,
+              );
+            }
+            return null;
+          }
+          // Text-bearing agent bubble (the default streaming bubble).
+          // Discriminant: presence of `text` distinguishes from card
+          // variants in the agent role union.
+          if (!('text' in m)) return null;
+          return (
             <ChatBubble
               key={m.id}
               role="agent"
@@ -196,8 +223,8 @@ export default function AiPanel({
               // (last message, while we're still streaming).
               showThinking={chat.isThinking && m.id === lastMsg?.id}
             />
-          ),
-        )}
+          );
+        })}
 
         {/* If thinking but no agent bubble exists yet (shouldn't happen
             because send() inserts one synchronously — but defensive),

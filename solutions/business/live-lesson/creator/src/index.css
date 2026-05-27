@@ -55,6 +55,22 @@ body {
   30%           { transform: translateY(-3px); opacity:  1; }
 }
 
+/* Pulse used by ChatTodoCard's "active" status icon — slow opacity
+ * cycle signals the agent is working on that item. Matches
+ * creator-v7-rich-chat.jsx:215. */
+@keyframes aiBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+.animate-aiBlink {
+  animation: aiBlink 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-aiBlink {
+    animation: none;
+  }
+}
+
 /* Brief amber flash for nav:// scroll targets — applied by
  * ExecutionTab / PlanTab when the chat bridge requests a scroll-to.
  * Duration (1.5s) is paired with the 1600ms class-removal timer in
