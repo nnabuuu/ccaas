@@ -20,9 +20,21 @@ import ConversationDropdown from './ConversationDropdown';
 
 interface AiPanelProps {
   project: Project;
+  /**
+   * Externally-driven message injection. When non-null, AiPanel
+   * auto-sends the text into the current conversation, then calls
+   * `onPendingConsumed` to clear it. Used by the audit report's
+   * "让 AI 修复" buttons via ChatBridgeContext.
+   */
+  pendingMessage?: string | null;
+  onPendingConsumed?: () => void;
 }
 
-export default function AiPanel({ project }: AiPanelProps) {
+export default function AiPanel({
+  project,
+  pendingMessage,
+  onPendingConsumed,
+}: AiPanelProps) {
   const conv = useConversations(project.id);
 
   // No solutionId / API-key state in the browser. live-lesson's
@@ -64,18 +76,37 @@ export default function AiPanel({ project }: AiPanelProps) {
     const text = draft.trim();
     if (!text || chat.isThinking) return;
     setDraft('');
+    sendNow(text);
+  };
 
-    // Rename "新会话" to the first user message we send into it. Doing
-    // this here (not in a useEffect on chat.messages) avoids the
-    // race where switching conversations captures the previous
-    // conversation's messages before the new history fetches.
+  /**
+   * Common send path used by both manual submit + externally-injected
+   * pendingMessage (chat-bridge). Skips the draft state to avoid a
+   * transient flash of the injected text.
+   */
+  const sendNow = (text: string) => {
+    if (!text.trim() || chat.isThinking) return;
+    // Rename "新会话" to the first user message we send into it. Same
+    // logic as manual submit — the rename is "what did we just say"
+    // not "what did the user type".
     if (conv.active && conv.active.title === '新会话') {
       const snippet = text.replace(/\s+/g, ' ').slice(0, 24);
       conv.rename(conv.active.id, snippet || '会话');
     }
-
     void chat.send(text);
   };
+
+  // Chat-bridge injection. When the parent supplies a pendingMessage,
+  // send it once + signal consumed. Guards on `chat.isThinking` so we
+  // don't trample an in-flight response.
+  useEffect(() => {
+    if (!pendingMessage) return;
+    if (chat.isThinking) return;
+    sendNow(pendingMessage);
+    onPendingConsumed?.();
+    // sendNow uses up-to-date conv/chat via closure each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingMessage, chat.isThinking]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
