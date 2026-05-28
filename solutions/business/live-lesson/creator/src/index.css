@@ -1,23 +1,73 @@
+/* ── Plus Jakarta Sans (must precede @tailwind per CSS spec) ───────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens (creator-v7 palette) ─────────────────────────────
- * Mirrors `design/surfaces/creator-v7-ai-left.jsx` so the AiPanel
- * can use the same `var(--...)` references the design jsx uses,
- * keeping the port 1:1 with the mockup. Tailwind utilities still
- * work alongside — these vars are additive.
+/* ── Design tokens (live-lesson source of truth) ──────────────────────
+ * Ported verbatim from `design/surfaces/colors_and_type.css` so that
+ * the creator app shares the warm-neutral + low-saturation semantic
+ * palette with every other live-lesson surface (board / student /
+ * teacher / Lesson Builder mockups). Treat that file as the canonical
+ * spec — any drift here should round-trip back.
  */
 :root {
-  --purple:      #7c3aed;  /* primary AI accent */
-  --purple-bg:   #f5f3ff;  /* agent bubble background */
-  --t1:          #111827;  /* primary text */
-  --t2:          #4b5563;  /* secondary text */
-  --t3:          #9ca3af;  /* muted / helper text */
-  --bg:          #ffffff;  /* input background */
-  --surface:     #ffffff;  /* card surface */
-  --surface2:    #f3f4f6;  /* disabled / hover */
-  --border:      #e5e7eb;  /* dividers */
+  /* ── Base (tinted warm neutrals — NEVER pure #000/#fff/#888) ── */
+  --bg:       #f4f3ef;          /* page background */
+  --surface:  #fbfaf7;          /* cards, panels, sidebar */
+  --surface2: #edece7;          /* hover bg, grouped bg, inputs */
+  --t1:       #1c1c1a;          /* primary text, headings, primary btn */
+  --t2:       #5c5b56;          /* secondary text */
+  --t3:       #9c9a92;          /* tertiary / placeholder */
+  --border:   rgba(28,28,26,.07);
+
+  /* ── Semantic pairs (dark text + tinted bg) ── */
+  --blue:   #1a5fa0;  --blue-bg:   #e4eff8;   /* in-progress, assignments */
+  --green:  #2d6612;  --green-bg:  #e6f2dc;   /* done, passed, published */
+  --amber:  #7a4d0e;  --amber-bg:  #f6edda;   /* warning, pending */
+  --red:    #942929;  --red-bg:    #f8e6e6;   /* error, urgent */
+  --purple: #3a3185;  --purple-bg: #eceafe;   /* AI, Skill, agent */
+  --teal:   #0d5245;  --teal-bg:   #ddf1eb;   /* curriculum, text refs */
+  --coral:  #6b2a14;  --coral-bg:  #f7ebe5;   /* highlighted / recommended */
+
+  /* ── Spacing scale (4px unit) ── */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
+
+  /* ── Radii ── */
+  --r-pill:    3px;   /* badge, tag */
+  --r-input:   6px;   /* button, input */
+  --r-input-lg: 8px;
+  --r-card:    10px;  /* card, panel */
+  --r-card-lg: 12px;  /* modal */
+
+  /* ── Layout ── */
+  --sidebar-w: 232px;
+  --topbar-h:  48px;
+
+  /* ── Type scale ── */
+  --fs-hero:    26px;
+  --fs-h1:      22px;
+  --fs-h2:      16px;
+  --fs-h3:      14px;
+  --fs-body:    13px;
+  --fs-body-sm: 12px;
+  --fs-meta:    11px;
+  --fs-badge:   10px;
+  --fs-label:   10px;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --lh-tight: 1.3;
+  --lh-body:  1.6;
+  --lh-prose: 1.8;
+
+  /* ── Focus accent (subtle purple) ── */
+  --focus: rgba(58,49,133,.3);
 }
 
 * {
@@ -28,8 +78,10 @@
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, 'PingFang SC', sans-serif;
-  background-color: #ffffff;
-  color: #111827;
+  background-color: var(--bg);
+  color: var(--t1);
+  font-feature-settings: "ss01", "cv01";
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
