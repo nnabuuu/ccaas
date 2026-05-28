@@ -359,3 +359,85 @@ if (!connection.connected) {
   // 显示断线提示
 }
 ```
+
+## Ambient identity（端到端身份透传）
+
+如果你的工具<em>按 user 身份返回 / 修改数据</em>（教师只能看自己班、校长只能看自己学校），把对应的 MCP server 翻 `proxyEnabled: true` 后，ccaas 会自动接收 end-user 身份。 你需要做<em>两件事</em>：
+
+### 1. browser 永远不持有 ccaas API key
+
+这是已经定下的安全边界 —— ccaas 信任的是 solution（持有 tenant key），不是 end user。 浏览器对 ccaas 的所有调用都走 solution backend 做<em>同源代理</em>。
+
+```typescript
+// ❌ 错：browser 直接连 ccaas
+const ccaas = new CcaasClient({
+  url: 'http://localhost:3001',
+  apiKey: process.env.NEXT_PUBLIC_CCAAS_KEY,  // 泄露！
+});
+
+// ✅ 对：browser 走 solution backend 的 /api/* 代理
+// 浏览器只调用 solution backend 的 /api/sessions/:sid/messages
+// solution backend 内部加 Bearer key 转给 ccaas
+```
+
+### 2. solution backend 在每次 ccaas 调用时附带 `X-Ccaas-On-Behalf-Of`
+
+```typescript
+async function callCcaas(req: Request, path: string, body: unknown) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${process.env.CCAAS_API_KEY}`,
+    'Content-Type': 'application/json',
+  };
+
+  // 关键：从 solution 自己的 session cookie 解析 user
+  const userId = await resolveUserFromCookie(req.cookies);
+  if (userId) {
+    headers['X-Ccaas-On-Behalf-Of'] = userId;
+    // optional：表明用户在当前 solution 里的角色（forward-compat,目前 ccaas 不强制）
+    // headers['X-Ccaas-Acting-Role'] = await resolveRoleFromUser(userId);
+  }
+
+  return fetch(`${process.env.CCAAS_URL}${path}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+```
+
+### ccaas 这边做什么
+
+| 阶段 | ccaas 行为 |
+|---|---|
+| Session 创建 | 把 `X-Ccaas-On-Behalf-Of` 的值 bind 到 `ManagedSession.actingUserId`。 **不可变** —— 后续 turn 即便携带不同 header,平台也保留首次值且 WARN 日志一条。 |
+| Tool call | 通过 `ExecutionContext.actingUserId` 把身份注入 tool handler。 Agent 写不进, args 里没有, prompt injection 改不了。 |
+| Audit | `tool_events` log 包含 `actingUserId`,可按用户聚合调用历史。 |
+| 没 header 时 | ccaas 退化到 API key 上 bind 的 userId（如果 API key 关联了 UserSolution）;两者都没就<em>记 null</em>并打 debug log。 |
+
+### Security note：header 是 trust assumption
+
+`X-Ccaas-On-Behalf-Of` 本质上是 solution backend 在告诉 ccaas "<em>本次调用代表这个 user</em>"。 ccaas <em>信任</em> solution backend 不撒谎 —— 因为 solution backend 持有 tenant key，理论上已经可以替这个 tenant 的任何 user 行事。 header 只是把这个信任<em>显式化</em>到 audit log 里，让 spoof 可见。
+
+如果你的 solution backend 不是 ccaas 完全信任的（例如第三方 deploy），未来会需要短期 exchange token 或 solution-issued JWT —— 那是<em>下一轮</em>的事。 详见 [ToolCallerProxy 设计文档](../../../design-tool-caller-proxy.md) 第 4 节。
+
+### 验证 ambient identity 是否打通
+
+最简单的 smoke test：用 curl 加 header 调 solution backend 的 chat 代理，观察 ccaas 日志：
+
+```bash
+curl -X POST 'http://localhost:5284/api/sessions/probe-1/messages' \
+  -H 'Content-Type: application/json' \
+  -H 'X-Ccaas-On-Behalf-Of: teacher-42' \
+  -d '{"message":"用 emit_card 工具展示一个 todo","projectId":"xxx"}'
+```
+
+ccaas 日志应该出现：
+
+```
+[audit-fallback] tool=my-tools.emit_card actingUserId=teacher-42 outcome=ok ...
+```
+
+如果是 `actingUserId=none`,逐层排查：
+1. solution backend 是否真把 header 转发上去了（看 backend 自己的请求日志）
+2. ccaas chat-proxy 是否调用了 `@Headers('x-ccaas-on-behalf-of')` 装饰器
+3. ccaas dist 是否是最新的（`npx nest build` 之后再启动）

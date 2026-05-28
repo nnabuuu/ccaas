@@ -373,6 +373,72 @@ FS 4 个端点需要 `WORKSPACE_PROVIDER=agentfs`（local 返回 400 + 明确 me
 
 ---
 
+## 7. ToolCallerProxy — 工具调用的 platform 边界
+
+Solution 的 stdio MCP server 默认走<em>直连</em>路径：Claude Code 在 `--mcp-config` 里指向 solution binary, 中间没有任何 ccaas-core 拦截。 这条路径功能上能跑, 但<em>没有 audit, agent args 没 sanitize, 没有 ambient identity</em> —— 一旦工具按用户身份返回数据, agent 写 `args.userId="admin"` 就是注入面。
+
+**ToolCallerProxy** 是 ccaas-core 自有的<em>platform 拦截层</em>, 解决这三件事。 它<em>不替换</em> stdio MCP server, 而是<em>包在前面</em>：
+
+```
+Claude Code  ──stdio MCP──▶  ccaas-owned proxy bundle  ──HTTP loopback──▶  ccaas-core
+                                                                              │ ToolCallerProxy pipeline
+                                                                              │ 1. strip reserved arg fields
+                                                                              │ 2. validate args (Zod, schema 来自 tools/list 探测)
+                                                                              │ 3. inject ExecutionContext (actingUserId 等)
+                                                                              │ 4. audit (tool_events / [audit-fallback] log)
+                                                                              │ 5. dispatch via StdioMcpToolkit
+                                                                              ▼
+                                                                          solution 原本的 stdio MCP server
+                                                                          (一字未改, 子进程, JSON-RPC)
+```
+
+### 7.1 何时启用
+
+Solution 把对应 MCP server 翻 `proxyEnabled: true`（[solution.json reference](../reference/solution-json.md#toolcallerproxy-路由proxyenabled)）。 平台启动时：
+
+1. **`SolutionLoaderService.registerStdioToolkit`** 临时启动 stdio MCP server 一次, 发送 `initialize` + `tools/list`, 把每个工具的 `name` / `description` / `inputSchema` 复制到 `SolutionToolkitRegistry`, 然后杀掉子进程。
+2. Registry 里有该 solution 的 toolkit → `McpEngineAdapter.shouldProxy(session)` 返回 true。
+3. 每次 `CliProcessService.applyMcpAndSandbox` spawn Claude Code 时, 把<em>所有非 `bundle:*`</em> 的 solution MCP entry 替换成<em>一个</em> proxy bundle entry（`tool-caller-proxy`）。 Bundle 类 MCP server (`bundle:file-attachments` / `bundle:shared-context` 等 ccaas-owned 的) 保持直连。
+
+### 7.2 Ambient identity 链路
+
+| 阶段 | 字段 | 来源 |
+|---|---|---|
+| Session 创建 | `ManagedSession.actingUserId` | `X-Ccaas-On-Behalf-Of` request header（solution backend 在每次 ccaas 调用时附带） |
+| 每次 tool call | `ExecutionContext.actingUserId` | `McpEngineAdapter.registerSession` 在 session 第一次走 proxy 时 snapshot 一份 |
+| Tool handler | `inv.context.actingUserId` | ToolCallerProxy 在 Step 3 注入,**不在 args 里**,agent 写不进 |
+| Audit | `[audit-fallback] ... actingUserId=teacher-42 ...` | Step 4 写到 logger（DB sink 是 DEF-05） |
+
+详细 contract 写在 [设计文档 §4.3](../../../design-tool-caller-proxy.md)。 决定档案：[META arc D-04 / D-05 / D-07](../../../decision-archive-tool-design-arc-2026-05-28.html)。
+
+### 7.3 关键源文件
+
+| 概念 | 文件 |
+|---|---|
+| 6 步 pipeline | `src/tool-caller/tool-caller-proxy.service.ts` |
+| Reserved field 列表 + `satisfies` 锁契约 | `src/tool-caller/reserved-fields.ts` + `.spec.ts` |
+| Engine adapter（per-session token + ledger） | `src/tool-caller/adapters/mcp-engine-adapter.service.ts` |
+| Internal HTTP API（loopback + token-gated） | `src/tool-caller/internal-tool-caller.controller.ts` |
+| stdio wrapping toolkit | `src/tool-caller/toolkits/stdio-mcp-toolkit.ts` |
+| Schema probe（import 时 tools/list） | `src/solutions/solution-loader.service.ts:probeStdioToolList` |
+| Proxy bundle（ccaas-owned stdio MCP） | `packages/mcp/tool-caller-proxy-server/src/index.ts` |
+
+### 7.4 启动日志里看什么
+
+```
+[SolutionLoaderService] Materialized MCP bundle: .../tenants/<sid>/mcp-servers/my-tools → /path/to/solution
+[SolutionToolkitRegistry] Registered toolkit "my-tools" for solution <sid>: 3 tool(s)
+[SolutionLoaderService] Registered StdioMcpToolkit "my-tools" for solution <sid> (3 tool(s) — proxy enabled)
+
+# session 来了, agent 调了一个工具
+[CliProcessService] Session abc routed through ToolCallerProxy (replaced 1 solution MCP entry/entries: my-tools; bundle entries preserved)
+[ToolCallerProxyService] [audit-fallback] tool=my-tools.emit_card solutionId=<sid> sessionId=abc actingUserId=teacher-42 outcome=ok stripped=none durationMs=104
+```
+
+> ⚠️ 如果 audit log 显示 `actingUserId=none`, solution backend 没把 `X-Ccaas-On-Behalf-Of` 转发上来。 用 curl 加 header 直接打 solution backend 排查（详见 [solution-dev · 验证 ambient identity 是否打通](../guide/solution-dev.md#验证-ambient-identity-是否打通)）。
+
+---
+
 ## 看日志的时候你应该认出什么
 
 ccaas backend 启动 + 一个 session 跑下来，日志里大致是这个顺序：

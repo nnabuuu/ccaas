@@ -68,6 +68,7 @@ log lines and code paths make sense:
 - 📡 **[gitbook → 参考 → Runtime REST API](./docs/gitbook/zh/reference/runtime-api.md)** — 8 new endpoints under `/api/v1/sessions/:id/` (fs/diff, fs/timeline, snapshot, rollback, meta KV)
 - 🛠️ **[gitbook → 开发指南 → Solution 扩展点](./docs/gitbook/zh/guide/extending-runtime.md)** — for solution authors using the new runtime
 - 🎯 **[gitbook → 案例 → demo-sandbox](./docs/gitbook/zh/examples/demo-sandbox.md)** — complete e2e demo (B2B SaaS theme), source at [`solutions/business/demo-sandbox/`](./solutions/business/demo-sandbox/)
+- 🛡️ **[gitbook → Runtime 架构 §7 → ToolCallerProxy](./docs/gitbook/zh/platform/runtime-architecture.md#7-toolcallerproxy--工具调用的-platform-边界)** — ambient identity + tool-call audit, opt in per MCP server via `proxyEnabled: true` in solution.json. Full design: [`docs/design-tool-caller-proxy.md`](./docs/design-tool-caller-proxy.md).
 
 Catching up on the last few weeks of churn? See [`docs/CHANGES_2026-05.md`](./docs/CHANGES_2026-05.md).
 

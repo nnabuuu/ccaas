@@ -88,6 +88,24 @@ After this week: `WORKSPACE_PROVIDER=agentfs npm run start:prod` gives you full 
 
 **Smoke check after pulling**: `bash solutions/business/live-lesson-creator/scripts/poc-smoke.sh` against a booted ccaas + live-lesson backend pair should print `✓ end-to-end PoC passed: 1 change events delivered (auth + sync + SSE)`.
 
+### Week 5 (2026-05-28..29): ToolCallerProxy — ambient identity + tool-call audit
+
+| Commit | What |
+|---|---|
+| `b7a541f6` | Platform fix: `SolutionLoader.materializeMcpServerBundle` symlinks `<solutionDir>` into `<workspace>/tenants/<id>/mcp-servers/<slug>`. Without this MCP servers shipped by solutions silently failed to spawn (ENOENT on `node …/dist/index.js`). |
+| `ce88f189` | Reverted speculative `ensureTenant` defensive guard — independent repro proved the alleged TypeORM/SQLite "edge case" doesn't exist; turned out I was querying the wrong (dead) `tenants` table. |
+| `0a65bec6` | Purged 5,925 lines of dead AI-classroom code: `mcp-server/` + `LessonPage`/`useLiveLesson` + 11 board components + `socratic-teacher` skill + `teaching` session template. None of it was routed. Cleared the slate before flipping the proxy on. |
+| `ee7c5027` | ToolCallerProxy infra — `packages/backend/src/tool-caller/` module + per-session proxy bundle at `packages/mcp/tool-caller-proxy-server/`. Pipeline: reserved-field strip → Zod validate → context inject → handler dispatch → audit. Identity is ambient (bound at session creation via `X-Ccaas-On-Behalf-Of` header), never agent-writable. Permission/scope/visibility stubbed until use cases land. |
+| `0d96ab2a` | First migration: `live-lesson-creator-tools.proxyEnabled = true`. SolutionLoader probes the stdio MCP server at import (`tools/list`), captures real schemas, registers `StdioMcpToolkit` in the registry. Solution stdio binary unchanged. |
+| `b430dfc8` | Code-review fixes (H1 namespace match, H2 `releaseSession` wired into `closeSession`, H3 dispose race, M1 conflict logging, M2 env scrubbing for stdio subprocesses, M3 path traversal bound, M4 fetch timeouts in proxy bundle, M5 derived-not-cached routing predicate). |
+| `6b6bd192` | Live E2E smoke surfaced H1 v2: Claude Code sanitizes `.` → `_` in MCP tool names, so wire form is `mcp__tool-caller-proxy__live-lesson-creator-tools_emit_todo_card` (single underscore at namespace/name boundary). Extended trigger match to accept `_<toolName>` suffix in addition to `.<toolName>`. All unit tests had passed; only live smoke caught it. |
+
+**Net effect:** the cards POC (`emit_todo_card` / `emit_verify_card` / `emit_questions_card`) still works exactly as before from the user's perspective, but every tool call now goes through `ToolCallerProxy.invoke()` — sanitized, audited, identity-bound. Any solution can opt in by flipping `proxyEnabled: true` on its MCP server entry.
+
+Mental model: **[gitbook → Runtime 架构 §7](./gitbook/zh/platform/runtime-architecture.md)**.
+Full design: **[design-tool-caller-proxy.md](./design-tool-caller-proxy.md)**.
+Decision archive (META arc across episodes): **[decision-archive-tool-design-arc-2026-05-28.html](./decision-archive-tool-design-arc-2026-05-28.html)**.
+
 ---
 
 ## Surface area added (so you know where to grep)

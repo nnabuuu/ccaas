@@ -22,6 +22,7 @@ src/
 ├── chat/              # SSE relay, session management
 ├── skills/            # Skill CRUD, versioning, routing
 ├── mcp/               # MCP server pool, REST adapter
+├── tool-caller/       # ToolCallerProxy + adapter + registry + StdioMcpToolkit
 ├── scheduler/         # Cron/interval/once task execution
 ├── solutions/         # Solution CRUD
 ├── messages/          # Message persistence
@@ -36,6 +37,7 @@ src/
 - **AuthModule** — API key + 10 scopes (`chat`, `skills:*`, `mcp:*`, `admin`, `builder`, `analytics:read`). Decorators: `@Public()`, `@Auth('scope')`, `@SolutionId()`. Includes Dev Login (`POST /auth/login`, non-production only) and User Management (`/users`, `/users/solutions`). See [docs/AUTHENTICATION_AND_AUTHORIZATION.md](./docs/AUTHENTICATION_AND_AUTHORIZATION.md).
 - **SkillsModule** — CRUD, versioning, trigger-based routing. Register skills: `npm run skill:import -- <solution-name>`. See [docs/SKILL_REGISTRATION.md](./docs/SKILL_REGISTRATION.md).
 - **McpModule** — Server pool lifecycle, health checks, REST-to-MCP adapter. See [docs/MCP_SETUP_AND_TESTING.md](./docs/MCP_SETUP_AND_TESTING.md).
+- **ToolCallerModule** — Platform-owned tool-call boundary. `ToolCallerProxyService` runs the 6-step pipeline (sanitize / validate / context-inject / dispatch / audit), `SolutionToolkitRegistry` holds per-solution toolkits, `McpEngineAdapterService` manages per-session secret tokens, `InternalToolCallerController` is the loopback HTTP API the proxy bundle calls back into, `StdioMcpToolkit` wraps legacy solution stdio MCP servers. Identity is **ambient** (bound at session creation via `X-Ccaas-On-Behalf-Of` header, never agent-writable). See [docs/design-tool-caller-proxy.md](../../docs/design-tool-caller-proxy.md) + [gitbook → Runtime 架构 §7](../../docs/gitbook/zh/platform/runtime-architecture.md).
 - **SchedulerModule** — Cron/interval/once tasks, headless AgentEngine execution, retry logic, missed-run detection.
 - **ProtocolModule** — Shared event types, error codes, metrics, Ajv validation, field transformation.
 - **Error Handling** — 12 ErrorCode types, HTTP status mapping, retry hints, global filter. See [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md).

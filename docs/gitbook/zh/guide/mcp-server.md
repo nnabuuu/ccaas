@@ -271,6 +271,107 @@ await server.connect(transport)
 **Slug 格式**：MCP server 的 slug 必须匹配 `^[a-z0-9][a-z0-9-]*$` — 小写字母、数字和连字符，以字母或数字开头。
 {% endhint %}
 
+## ToolCallerProxy（推荐：按用户身份 gate 数据的工具）
+
+如果你的工具<em>按 user 身份返回 / 修改数据</em>（比如教师只能看自己班的学生、校长只能看自己学校），<strong>翻 `proxyEnabled: true`</strong>：
+
+```json
+{
+  "mcpServers": {
+    "lesson-plan-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "type": "stdio",
+      "proxyEnabled": true
+    }
+  }
+}
+```
+
+### 翻 `proxyEnabled` 之后会发生什么
+
+平台在 ccaas-core 跟 solution stdio MCP server 之间<em>插入</em>一层 **ToolCallerProxy**：
+
+```
+Claude Code  ──stdio MCP──▶  ccaas-owned proxy bundle  ──HTTP──▶  ToolCallerProxy pipeline  ──stdio──▶  你的 stdio server
+                                                                          │ 1. strip reserved arg fields
+                                                                          │ 2. validate args (Zod, schema 来自 tools/list 探测)
+                                                                          │ 3. inject ExecutionContext
+                                                                          │ 4. audit
+                                                                          │ 5. dispatch
+```
+
+**你的 stdio server 不改一行**。 它收到的 args 跟以前格式一致 —— 平台<em>不会</em>把 ExecutionContext 塞进 args。 身份信息只活在<em>调用 ccaas 自家 API 的代码里</em>（比如 RBAC 决策、当前 user 数据查询），不在 stdio MCP server 进程。
+
+### Ambient identity：`ExecutionContext`
+
+每次 tool call,平台<em>自动</em>构造一份 `ExecutionContext`：
+
+```ts
+interface ExecutionContext {
+  solutionId: string;       // session 的 solution UUID
+  sessionId: string;        // 当前 ccaas session id
+  actingUserId?: string;    // 从 X-Ccaas-On-Behalf-Of header 来,bind 在 session 创建时
+  actingRole?: string;      // 从 X-Ccaas-Acting-Role 来（forward-compat）
+  apiKeyId?: string;        // 验证 session 创建的 API key id
+}
+```
+
+每个字段都是<em>**平台 assert 的**</em>—— agent 没法写, 不在 args 里, prompt injection 改不了。
+
+### Reserved field 列表（自动 strip）
+
+agent 调用工具时,如果在 args 里写了下面任何字段名,平台<em>静默 strip</em>并 audit 这次尝试：
+
+```
+userId, tenantId, sessionId, permissions, context, role,
+solutionId, actingUserId, actingRole, apiKeyId, effectiveScope
+```
+
+> ⚠️ 这是<strong>不可推迟的安全保护</strong>。 reserved field 列表通过 TypeScript `satisfies` 约束<em>必须</em>覆盖 `ExecutionContext` 所有字段（编译期 enforce）—— 加新 ExecutionContext 字段时 ccaas-core 测试会自动报红提醒同步。
+
+### Schema 来源：`tools/list` 自动探测
+
+`proxyEnabled: true` 翻牌后,平台启动时会启动你的 stdio MCP server 一次,发送 `initialize` + `tools/list`,把你声明的每个工具的 `inputSchema` 复制到 ToolCallerProxy 的 registry,然后<em>立刻杀掉</em>子进程。
+
+**你不需要在 ccaas 这边手写 schema** —— stdio server 自己的 `inputSchema` 就是 single source of truth。
+
+{% hint style="warning" %}
+探测有 5 秒超时。 慢启动机器（Docker / 冷 disk）上若超时,toolkit 注册失败 + warning,工具<em>不会</em>通过 proxy 暴露。 重启 ccaas 即可重试。
+{% endhint %}
+
+### 何时翻
+
+| 场景 | proxyEnabled |
+|---|---|
+| 工具按用户身份返回 / 修改数据 | ✅ 必须开 |
+| 想要 reserved-field strip + audit 默认保护 | ✅ 开 |
+| 需要 ambient identity（`actingUserId`）在 ccaas 调用 audit log 中可见 | ✅ 开 |
+| 工具是无身份的纯计算（如解析 quiz 文本） | ❌ 留默认（省一次进程跳转） |
+
+### Solution backend 配合
+
+`actingUserId` 来自请求头 `X-Ccaas-On-Behalf-Of`,在 session 创建时 bind。 你的 **solution backend** 需要在<em>每个</em> ccaas 请求上附带这个 header：
+
+```ts
+// solution backend ccaas 请求示例
+const headers: Record<string, string> = {
+  Authorization: `Bearer ${process.env.CCAAS_API_KEY}`,
+  'Content-Type': 'application/json',
+};
+const userId = await resolveUserFromCookie(req.cookies);  // 你自己的 session cookie 解析
+if (userId) {
+  headers['X-Ccaas-On-Behalf-Of'] = userId;
+}
+await fetch(`${ccaasUrl}/api/v1/sessions/${sid}/messages`, {
+  method: 'POST',
+  headers,
+  body: JSON.stringify(body),
+});
+```
+
+详见 [Solution 开发指南 · Ambient identity](./solution-dev.md#ambient-identity-端到端身份透传)。
+
 ## REST API 方式（已有外部服务时的替代方案）
 
 如果你已有独立部署的 HTTP 服务，可以使用 REST 适配器将其接入即见Agentic 平台。

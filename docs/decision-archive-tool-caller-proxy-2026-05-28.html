@@ -276,7 +276,7 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
     <div class="meta">
-      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">ee7c5027 → b430dfc8</span></div>
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">ee7c5027 → 6b6bd192</span></div>
       <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
     </div>
   </header>
@@ -785,7 +785,7 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       <span class="num">03 —</span>
       <h2>Open Questions <span class="en">真正还没答案的</span></h2>
     </div>
-    <span class="hint">4 项 · 没 confident answer</span>
+    <span class="hint">5 项 · 没 confident answer (OQ-05 由 live smoke 揭示)</span>
   </div>
 
   <div class="dq-grid">
@@ -826,6 +826,16 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
       </div>
     </div>
 
+    <!-- OQ-05 — added 2026-05-29 after live smoke -->
+    <div class="dq-card open" style="border-left-color:var(--red)">
+      <div class="dq-num">OQ-05</div>
+      <div class="dq-body">
+        <h4>Claude Code 还对 MCP tool name 做了什么其它隐式 transformation?</h4>
+        <p><span class="lbl">问题</span>Live E2E smoke 时发现 Claude Code 把 advertised <code>creator.emit_todo_card</code> 改成 wire 上的 <code>creator_emit_todo_card</code> (<code>.</code> → <code>_</code>) —— 没 doc, 没明显出处。 我们用 <code>endsWith('_' + toolName)</code> heuristic 接住了, 但<em>同类的隐式 transformation 可能还有</em>: 大写处理? 长度截断? 非 ASCII? 现在不知道。</p>
+        <p><span class="lbl">为什么 open</span>第三方 wire-level 行为只能<em>真聊一遍</em>来发现, 没有可读 spec。 应对: 把 live smoke 升级成 <strong>acceptance gate</strong>, 任何<em>新</em>的 wire 形状改动 push 前必须真聊跑一遍 —— 参见 <a href="./decision-archive-tool-design-arc-2026-05-28.html">META archive D-07</a> 的 postmortem。</p>
+      </div>
+    </div>
+
   </div>
 
   <details class="change-surface">
@@ -839,16 +849,17 @@ footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-
     </summary>
     <div class="cs-body">
       <div class="cs-stat-row">
-        <div class="cs-stat"><span class="cs-stat-n">3</span><span class="cs-stat-l">commits</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">1639</span><span class="cs-stat-l">tests pass · 0 fail</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">+5,318</span><span class="cs-stat-l">net lines</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">review HIGH/MED fixed</span></div>
-        <div class="cs-stat"><span class="cs-stat-n">Low</span><span class="cs-stat-l">risk (gated)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">4</span><span class="cs-stat-l">commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1641</span><span class="cs-stat-l">tests pass · 0 fail</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">+5,381</span><span class="cs-stat-l">net lines</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">9</span><span class="cs-stat-l">H/M findings (8 review + 1 live smoke)</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">Low</span><span class="cs-stat-l">risk (gated + live-verified)</span></div>
       </div>
       <div class="cs-commits">
         <div class="cs-row"><span class="hash">ee7c5027</span><span class="tag feat">feat</span><span class="msg">tool-caller proxy with ambient executioncontext (Phases 1+2+3 + identity-spoofing e2e)</span></div>
         <div class="cs-row"><span class="hash">0d96ab2a</span><span class="tag feat">feat</span><span class="msg">migrate live-lesson-creator-tools to tool-caller proxy (Phase 4 — proxyEnabled flag, schema probe)</span></div>
         <div class="cs-row"><span class="hash">b430dfc8</span><span class="tag fix">fix</span><span class="msg">tool-caller proxy code-review findings (h1-h3, m1-m5)</span></div>
+        <div class="cs-row"><span class="hash">6b6bd192</span><span class="tag fix">fix</span><span class="msg">tooleventtriggers match for claude-code-sanitized proxy names (H1 v2 — live smoke surfaced)</span></div>
       </div>
       <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:11.5px;color:var(--t2);line-height:1.6">
         <strong>Key new surface</strong>:<br>

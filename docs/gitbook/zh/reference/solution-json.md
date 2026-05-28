@@ -234,7 +234,9 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 - `description` (string, 可选) - 人类可读的描述
 - `type` (string, 可选) - `"stdio"`（默认）
 - `env` (object, 可选) - 环境变量
+- `tools` (string[], 可选) - 显式工具名列表（用于注册提示）
 - `toolEventTriggers` (array, 可选) - 工具调用完成时向前端发送事件的触发器配置
+- `proxyEnabled` (boolean, 可选) - 将此 MCP server 的工具调用路由通过 **ToolCallerProxy**（reserved-field strip + ambient identity + audit）。 详见下方 [ToolCallerProxy 路由](#toolcallerproxy-路由proxyenabled)
 
 **toolEventTriggers 配置:**
 
@@ -264,6 +266,50 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 
 {% hint style="info" %}
 `toolEventTriggers` 声明在 `solution.json` 中，平台启动时自动注册，无需修改核心后端代码。Admin 管理员也可通过 `/api/v1/admin/mcp-servers/:id` 实时更新触发器配置（无需重启）。
+{% endhint %}
+
+#### ToolCallerProxy 路由（`proxyEnabled`）
+
+将单个 MCP server 翻入 `proxyEnabled: true` 后，该 server 的工具调用会路由通过 **ToolCallerProxy** —— 一个 ccaas-core 自有的拦截层，对每次 tool call 做：
+
+| 阶段 | 行为 |
+|---|---|
+| 1. Reserved-field strip | 从 agent 提供的 args 中剥离 `userId` / `tenantId` / `sessionId` / `permissions` / `context` / `role` / `solutionId` / `actingUserId` / `actingRole` / `apiKeyId` / `effectiveScope` 等字段。 防止 prompt injection 通过参数伪造身份。 |
+| 2. Schema validation | 对剥离后的 args 用 Zod 校验（schema 由平台在 import 时从 stdio MCP server `tools/list` 探测得到）。 校验失败返回结构化错误,而非 throw。 |
+| 3. Context injection | 注入<em>不可由 agent 写入</em>的 `ExecutionContext`：`solutionId` / `sessionId` / `actingUserId` / `apiKeyId`。 来自 session 创建时绑定的 `X-Ccaas-On-Behalf-Of` 请求头。 |
+| 4. Handler dispatch | 平台用 `StdioMcpToolkit` 转发到 solution 原本的 stdio MCP server（**完全不改 shipped binary**）—— 跟你写的工具实现一字未改。 |
+| 5. Audit | 每次调用都记录(成功/失败、stripped 字段名、actingUserId、duration)。 |
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "proxyEnabled": true,
+      "toolEventTriggers": [
+        { "toolName": "emit_card", "eventType": "output_update", "field": "card" }
+      ]
+    }
+  }
+}
+```
+
+**何时翻 `proxyEnabled: true`：**
+- 工具会按用户身份返回 / 修改数据（必须开,否则有 spoof 风险）
+- 想要 reserved-field strip + audit 默认保护
+- 需要 ambient identity（`ExecutionContext.actingUserId`）在 handler 中可读
+
+**何时<em>不</em>翻：**
+- 工具是无身份的纯计算（如 `parse_quiz_content`）—— 留默认 stdio 直连可省一次进程跳转
+- 已经通过其他机制保证身份的工具（极少见）
+
+{% hint style="warning" %}
+平台在 boot 时启动一次 stdio MCP server 子进程,发送 `initialize` + `tools/list`,捕获 schema,然后杀掉。 server 必须能在 5 秒内响应 —— 慢启动机器/Docker 上若超时,toolkit 注册失败 + warning,该 server 的工具<em>不会</em>通过 proxy 暴露。 重启 ccaas 重试即可。
+{% endhint %}
+
+{% hint style="info" %}
+end-user 身份通过请求头 `X-Ccaas-On-Behalf-Of: <userId>` 透传到 ccaas —— solution backend 在每次 ccaas 调用时附带。 详见 [Solution 开发指南 · Ambient identity](../guide/solution-dev.md#ambient-identity-端到端身份透传)。
 {% endhint %}
 
 ---
