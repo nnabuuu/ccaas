@@ -15,7 +15,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { ApiKeyService } from '../src/auth/api-key.service';
-import { TenantsService } from '../src/tenants/tenants.service';
+import { SolutionsService as TenantsService } from '../src/solutions/solutions.service';
 
 async function bootstrap() {
   // Suppress NestJS' own bootstrap log lines when caller wants just the
