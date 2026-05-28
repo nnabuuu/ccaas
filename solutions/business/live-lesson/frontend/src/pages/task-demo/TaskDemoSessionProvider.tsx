@@ -25,7 +25,7 @@ export function TaskDemoSessionProvider({
 }: {
   code: string
   studentId: string
-  onSubmitResult?: (result: { allCorrect: boolean; score: { total: number } | null; items: unknown[] }) => void
+  onSubmitResult?: (result: { allCorrect: boolean; score: Record<string, unknown> | null; items: unknown[] }) => void
   children: ReactNode
 }) {
   const value: SessionCtxValue = {
@@ -41,7 +41,7 @@ export function TaskDemoSessionProvider({
       // failed-but-not-rejected result they can branch on via `ok`.
       try {
         const result = await taskDemoApi.submit(code, studentId, data)
-        onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score as Record<string, unknown> | null, items: result.items })
+        onSubmitResult?.({ allCorrect: result.allCorrect, score: result.score, items: result.items })
         // Forward scaffold/partId/nextPartId/sampleSolution so plugins like
         // rich-content-quiz can drive their state machine. Backend submitPart
         // populates them when data.partId is set; non-part submits leave

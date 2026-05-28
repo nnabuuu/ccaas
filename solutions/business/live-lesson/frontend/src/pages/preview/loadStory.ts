@@ -6,11 +6,13 @@
  * matching story plus its parent bundle's plugin metadata.
  */
 
+import type { ReviewData } from '../../hooks/useReviewRestore'
+
 export interface PreviewStory {
   name: string
   answerKey: Record<string, unknown>
   initialAns?: Record<string, unknown>
-  reviewData?: { data: Record<string, unknown>; checkItems?: Array<Record<string, unknown>> }
+  reviewData?: ReviewData
   initialPhase?: 'idle' | 'submitting' | 'review'
   initialRole?: 'student' | 'teacher'
   classSubmissions?: Array<{
