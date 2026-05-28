@@ -59,6 +59,8 @@ describe('SolutionLoaderModule', () => {
               eventMapper,
               bundleService,
               { get: () => undefined } as any, // ConfigService — no SOLUTIONS_DIR
+              // Phase 4: SolutionToolkitRegistry — inert stub for module spec
+              { registerToolkit: () => undefined, listToolsForSolution: () => [] } as any,
             ),
           inject: [
             'SolutionsService',

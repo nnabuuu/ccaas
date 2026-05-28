@@ -66,6 +66,16 @@ export const McpServerDefinitionSchema = z.object({
   /** Explicit tool name list for registry prompt. Falls back to toolEventTriggers. */
   tools: z.array(z.string().min(1)).optional(),
   toolEventTriggers: z.array(ToolEventTriggerSchema).optional(),
+  /**
+   * Phase 4 migration switch: route this MCP server's tool calls
+   * through the ccaas ToolCallerProxy instead of letting Claude Code
+   * spawn the stdio binary directly. Provides reserved-field strip,
+   * ambient-identity injection, and audit. When true, the loader
+   * registers a `StdioMcpToolkit` in the registry at import time
+   * and the session-creation path flips `useToolCallerProxy=true`.
+   * See docs/design-tool-caller-proxy.md §5.1.
+   */
+  proxyEnabled: z.boolean().optional(),
 });
 
 /**

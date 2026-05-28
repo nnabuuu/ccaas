@@ -19,7 +19,8 @@
         { "toolName": "emit_todo_card", "eventType": "output_update", "field": "card" },
         { "toolName": "emit_questions_card", "eventType": "output_update", "field": "card" },
         { "toolName": "emit_verify_card", "eventType": "output_update", "field": "card" }
-      ]
+      ],
+      "proxyEnabled": true
     }
   },
   "sessionTemplates": {

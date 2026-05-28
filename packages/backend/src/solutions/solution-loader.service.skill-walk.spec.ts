@@ -142,6 +142,9 @@ describe('SolutionLoaderService — skill walker safety', () => {
       makeEventMapper() as any,
       makeBundleService() as any,
       { get: jest.fn(() => undefined) } as any,
+      // Phase 4: SolutionToolkitRegistry — skill-walk specs never hit
+      // a proxyEnabled MCP server, so an inert stub is sufficient.
+      { registerToolkit: jest.fn(), listToolsForSolution: () => [] } as any,
     );
     // Pin warn so we can assert specific messages without polluting test output.
     warnSpy = jest.spyOn((loader as any).logger, 'warn').mockImplementation(() => undefined);

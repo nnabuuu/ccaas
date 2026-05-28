@@ -23,6 +23,10 @@ import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
 import { EventMapperService } from '../sessions/event-mapper.service';
 import { BundleService } from '../bundles/bundle.service';
+import { SolutionToolkitRegistry } from '../tool-caller/solution-toolkit-registry';
+import { StdioMcpToolkit, type StdioToolSpec } from '../tool-caller/toolkits/stdio-mcp-toolkit';
+import { z } from 'zod';
+import { spawn } from 'node:child_process';
 import type {
   McpServerDefinition,
   SessionTemplateConfig,
@@ -150,6 +154,7 @@ export class SolutionLoaderService implements OnModuleInit {
     private readonly eventMapper: EventMapperService,
     private readonly bundleService: BundleService,
     private readonly cfg: ConfigService,
+    private readonly toolkitRegistry: SolutionToolkitRegistry,
   ) {}
 
   /**
@@ -688,6 +693,10 @@ export class SolutionLoaderService implements OnModuleInit {
         this.materializeMcpServerBundle(solutionId, slug, serverDef, solutionDir, warnings);
       }
 
+      if (serverDef.proxyEnabled && solutionDir) {
+        await this.registerStdioToolkit(solutionId, slug, serverDef, solutionDir, warnings);
+      }
+
       return {
         slug,
         name: serverDef.description || slug,
@@ -726,6 +735,10 @@ export class SolutionLoaderService implements OnModuleInit {
         `MCP server "${slug}" registered without solutionDir — files not materialized; ` +
         `agent sessions will fail to spawn this server unless paths are absolute.`,
       );
+    }
+
+    if (serverDef.proxyEnabled && solutionDir) {
+      await this.registerStdioToolkit(solutionId, slug, serverDef, solutionDir, warnings);
     }
 
     return {
@@ -907,5 +920,178 @@ export class SolutionLoaderService implements OnModuleInit {
       filtered[slug] = def;
     }
     return filtered;
+  }
+
+  // --------------------------------------------------------------------------
+  // ToolCallerProxy migration (Phase 4, docs/design-tool-caller-proxy.md §5.1)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Bootstrap a `StdioMcpToolkit` for an MCP server that declared
+   * `proxyEnabled: true` and register it in the toolkit registry.
+   *
+   * To avoid drift between the stdio server's own `inputSchema` and a
+   * hand-mirrored Zod schema in ccaas-core, we probe the running
+   * subprocess at import time: spawn it, send `initialize` +
+   * `tools/list`, capture each tool's name/description/inputSchema,
+   * shut it down. The registered ToolDefinition uses `z.unknown()` for
+   * `argsSchema` (the ToolCallerProxy's reserved-field strip still
+   * runs; structural validation is delegated to the stdio server
+   * itself which re-validates anyway), and exposes the captured JSON
+   * Schema directly to Claude Code via `jsonSchemaOverride`.
+   *
+   * Failure modes are non-fatal: a missing entry point or a
+   * misbehaving server adds a warning and skips registration. The
+   * solution still loads — its tools just won't be available through
+   * the proxy until the next reload.
+   */
+  private async registerStdioToolkit(
+    solutionId: string,
+    slug: string,
+    serverDef: McpServerDefinition,
+    solutionDir: string,
+    warnings: string[],
+  ): Promise<void> {
+    if (serverDef.type === 'rest-adapter') {
+      warnings.push(
+        `MCP server "${slug}" has proxyEnabled=true but type=rest-adapter; ` +
+        `proxy supports stdio servers only this round — skipping registration`,
+      );
+      return;
+    }
+    if (!serverDef.args || serverDef.args.length === 0) {
+      warnings.push(`MCP server "${slug}" has proxyEnabled=true but no args — skipping registration`);
+      return;
+    }
+    const serverEntry = path.resolve(solutionDir, serverDef.args[0]);
+    if (!fs.existsSync(serverEntry)) {
+      warnings.push(
+        `MCP server "${slug}" entry "${serverEntry}" does not exist — skipping toolkit registration`,
+      );
+      return;
+    }
+
+    let toolSpecs: StdioToolSpec[];
+    try {
+      toolSpecs = await this.probeStdioToolList(serverEntry, solutionDir, serverDef.env);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      warnings.push(
+        `MCP server "${slug}" toolkit probe failed: ${msg} — proxy will not see this server's tools until next reload`,
+      );
+      return;
+    }
+
+    const toolkit = new StdioMcpToolkit({
+      solutionId,
+      namespace: slug,
+      serverEntry,
+      cwd: solutionDir,
+      env: serverDef.env,
+      tools: toolSpecs,
+    });
+    this.toolkitRegistry.registerToolkit(toolkit);
+    this.logger.log(
+      `Registered StdioMcpToolkit "${slug}" for solution ${solutionId} ` +
+      `(${toolSpecs.length} tool(s) — proxy enabled)`,
+    );
+  }
+
+  /**
+   * Spawn the stdio MCP server briefly to probe its tool list +
+   * inputSchema. Sends MCP `initialize` then `tools/list`, parses the
+   * single response, and kills the subprocess. Uses raw spawn rather
+   * than going through StdioMcpToolkit because we don't want to leak
+   * an idle child after the probe.
+   */
+  private probeStdioToolList(
+    serverEntry: string,
+    cwd: string,
+    extraEnv: Record<string, string> | undefined,
+  ): Promise<StdioToolSpec[]> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('node', [serverEntry], {
+        cwd,
+        env: { ...process.env, ...(extraEnv ?? {}) },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let buf = '';
+      const timeout = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error(`probeStdioToolList timed out after 5s for ${serverEntry}`));
+      }, 5000).unref();
+      child.stdout!.setEncoding('utf8');
+      child.stdout!.on('data', (chunk: string) => {
+        buf += chunk;
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) !== -1) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          let msg: { id?: number; result?: { tools?: unknown[] }; error?: { message: string } };
+          try { msg = JSON.parse(line); } catch { continue; }
+          if (msg.id !== 2) continue; // ignore init reply (id=1) + anything else
+          clearTimeout(timeout);
+          child.kill('SIGTERM');
+          if (msg.error) {
+            reject(new Error(`stdio MCP tools/list errored: ${msg.error.message}`));
+            return;
+          }
+          const rawTools = msg.result?.tools;
+          if (!Array.isArray(rawTools)) {
+            reject(new Error('stdio MCP tools/list returned no tools[] array'));
+            return;
+          }
+          const specs: StdioToolSpec[] = [];
+          for (const t of rawTools as Array<{
+            name?: unknown;
+            description?: unknown;
+            inputSchema?: unknown;
+          }>) {
+            if (typeof t.name !== 'string' || !t.name) continue;
+            specs.push({
+              name: t.name,
+              description: typeof t.description === 'string' ? t.description : '',
+              // Defer schema validation to the stdio server itself;
+              // the proxy's reserved-field strip still runs upstream.
+              // Stash the JSON Schema on the spec via a side-channel
+              // (`jsonSchemaOverride` field on the resulting
+              // ToolDefinition — supplied by StdioMcpToolkit when it
+              // builds defs from these specs).
+              argsSchema: z.unknown(),
+              jsonSchemaOverride:
+                t.inputSchema && typeof t.inputSchema === 'object'
+                  ? (t.inputSchema as Record<string, unknown>)
+                  : undefined,
+            });
+          }
+          resolve(specs);
+        }
+      });
+      child.on('error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+      child.on('exit', () => {
+        clearTimeout(timeout);
+      });
+      // Send initialize + tools/list back to back. The server
+      // queues the second until init completes, which is fine.
+      const init = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'ccaas-solution-loader', version: '1.0.0' },
+        },
+      };
+      const initialized = { jsonrpc: '2.0', method: 'notifications/initialized' };
+      const list = { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} };
+      child.stdin!.write(`${JSON.stringify(init)}\n`);
+      child.stdin!.write(`${JSON.stringify(initialized)}\n`);
+      child.stdin!.write(`${JSON.stringify(list)}\n`);
+    });
   }
 }

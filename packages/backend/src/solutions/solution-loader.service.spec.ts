@@ -117,6 +117,8 @@ describe('SolutionLoaderService', () => {
       eventMapper as any,
       bundleService as any,
       { get: jest.fn(() => undefined) } as any, // ConfigService — no SOLUTIONS_DIR
+      // Phase 4: SolutionToolkitRegistry — non-proxyEnabled specs use inert stub.
+      { registerToolkit: jest.fn(), listToolsForSolution: () => [] } as any,
     );
   });
 
