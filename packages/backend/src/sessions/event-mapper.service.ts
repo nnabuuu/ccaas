@@ -1346,18 +1346,17 @@ export class EventMapperService {
       .replace(/^mcp__[^_]+__/, '')
       .replace(/^mcp__/, '');
     // Phase 4: when a tool is routed via the ToolCallerProxy, the
-    // wire-side name is `<namespace>.<localName>` (e.g.
-    // `creator.emit_todo_card`). solution.json's `toolEventTriggers`
-    // entries use the local name (`emit_todo_card`) because that's
-    // what the stdio MCP server originally advertised. Strip the
-    // namespace prefix so triggers continue to match for both the
-    // legacy direct-stdio path and the proxy-routed path.
+    // wire-side name is `<namespace>.<localName>` from the registry
+    // (e.g. `live-lesson-creator-tools.emit_todo_card`). solution.json's
+    // `toolEventTriggers` entries use the local name (`emit_todo_card`)
+    // because that's what the stdio MCP server originally advertised.
     //
-    // SolutionToolkitRegistry uses the *last* dot as the separator;
-    // mirror that here. If there's no dot, this is a no-op.
-    const lastDot = normalizedName.lastIndexOf('.');
-    const unqualifiedName =
-      lastDot >= 0 ? normalizedName.slice(lastDot + 1) : normalizedName;
+    // Claude Code observed behavior: it sanitizes tool names by
+    // replacing `.` with `_` when ingesting MCP tool descriptions.
+    // So the wire toolName for the proxy path actually arrives as
+    // `live-lesson-creator-tools_emit_todo_card` (single underscore),
+    // not the dot form. Both forms need to match the trigger's
+    // local-only `toolName`. See match logic below.
 
     let parsedResult: Record<string, unknown> = {};
     if (typeof result === 'string') {
@@ -1434,12 +1433,25 @@ export class EventMapperService {
     if (session?.solutionId) {
       const triggers = this.getTenantToolTriggers(session.solutionId);
       for (const trigger of triggers) {
-        // Match the full name OR the unqualified (namespace-stripped)
-        // form so proxy-routed tools (`<namespace>.<name>`) match
-        // triggers declared with the local tool name.
+        // Three match shapes:
+        //   1. Exact: legacy direct-stdio (`emit_todo_card`).
+        //   2. Dot suffix: hypothetical client that preserves dots
+        //      in proxy-routed names (`<ns>.emit_todo_card`).
+        //   3. Underscore suffix: Claude Code's actual proxy-routed
+        //      wire shape (`<ns>_emit_todo_card`).
+        // Known limitation: if a tool author declares a degenerate
+        // local trigger name that's *also a suffix* of another
+        // declared tool (e.g. `card` and `emit_todo_card` in the
+        // same solution), the underscore match cannot disambiguate
+        // — both would fire on the longer name. Author guidance:
+        // use distinctive multi-word names. A future refactor that
+        // qualifies triggers with their MCP server slug at
+        // registration time will close this hole without authors
+        // having to think about it.
         if (
           trigger.toolName !== normalizedName &&
-          trigger.toolName !== unqualifiedName
+          !normalizedName.endsWith('.' + trigger.toolName) &&
+          !normalizedName.endsWith('_' + trigger.toolName)
         ) {
           continue;
         }

@@ -1342,31 +1342,56 @@ describe('EventMapperService', () => {
       expect((outputUpdate as any).payload.data).toEqual({ phase: 1 });
     });
 
-    it('matches triggers when the proxy advertises tools as <namespace>.<name> (Phase 4)', () => {
-      // The ToolCallerProxy surfaces tools to Claude Code with their
-      // qualified registry name (e.g. `creator.emit_todo_card`).
-      // solution.json's toolEventTriggers still use the local name
-      // (`emit_todo_card`) because that's what the underlying stdio
-      // server originally advertised. Without the namespace-strip
-      // fallback, the cards POC's output_update events stop firing
-      // the moment proxyEnabled:true lands.
+    it('matches triggers when the proxy advertises tools as <namespace>.<name> — dot form', () => {
+      // Hypothetical client that preserves dots in MCP tool names.
       service.registerTenantToolTriggers(solutionId, [
         { toolName: 'emit_todo_card', eventType: 'output_update', field: 'card' },
       ]);
-
       const events = emitMcpToolCycle(
-        'toolu_proxy1',
+        'toolu_proxy_dot',
         'mcp__tool-caller-proxy__creator.emit_todo_card',
         { kind: 'todo', title: 'Plan', items: [] },
         { title: 'Plan' },
       );
+      expect(events.find((e) => e.type === 'output_update')).toBeDefined();
+    });
 
+    it('matches triggers when proxy-routed name has Claude-Code-sanitized underscores — actual wire shape', () => {
+      // Observed at runtime: Claude Code sanitizes `.` → `_` when
+      // ingesting MCP tool names. The wire toolName arrives as
+      // `mcp__<server>__<namespace>_<localName>` with a single
+      // underscore at the namespace/name boundary. Without this
+      // form being matched, cards stop rendering through the proxy.
+      service.registerTenantToolTriggers(solutionId, [
+        { toolName: 'emit_todo_card', eventType: 'output_update', field: 'card' },
+      ]);
+      const events = emitMcpToolCycle(
+        'toolu_proxy_under',
+        'mcp__tool-caller-proxy__live-lesson-creator-tools_emit_todo_card',
+        { kind: 'todo', title: 'Plan', items: [] },
+        { title: 'Plan' },
+      );
       const outputUpdate = events.find((e) => e.type === 'output_update');
       expect(outputUpdate).toBeDefined();
-      // `field: 'card'` wrap from buildOutputUpdate.
       const payload = (outputUpdate as any).payload.data as { field?: string; value?: unknown };
       expect(payload.field).toBe('card');
       expect(payload.value).toEqual({ kind: 'todo', title: 'Plan', items: [] });
+    });
+
+    it('non-suffix match: tool `emit_todo_card` does NOT match a different tool `emit_questions_card`', () => {
+      // The suffix check is `<separator>` + toolName, so distinct
+      // local names with different prefixes never collide regardless
+      // of the namespace they're qualified under.
+      service.registerTenantToolTriggers(solutionId, [
+        { toolName: 'emit_questions_card', eventType: 'output_update' },
+      ]);
+      const events = emitMcpToolCycle(
+        'toolu_disambig',
+        'mcp__tool-caller-proxy__live-lesson-creator-tools_emit_todo_card',
+        { foo: 'bar' },
+      );
+      // `live-lesson-creator-tools_emit_todo_card`.endsWith('_emit_questions_card') → false
+      expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
     });
 
     it('does not emit output_update when tool name does not match', () => {
