@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>ToolCallerProxy · Decision Archive · 2026-05-28</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">D</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案 / Decision Archive</div>
+        <div class="brand-b">ToolCallerProxy · 平台级 tool-call 边界 · 2026-05-28</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">ee7c5027 → b430dfc8</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">把 identity 从 "agent 可写参数" 变成 "session 不可变事实"</span>
+    </div>
+    <h1>当 prompt injection 试图<br><em>"以管理员身份"</em>访问数据时,<br>没有可以写入的字段。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      解决方案模块今天通过 <em>stdio MCP server 子进程</em> 给 agent 暴露工具 —— ccaas-core 直接把 solution 的 binary 接到 Claude Code 的 <code>--mcp-config</code> 上, 中间没有任何拦截。 这个模型在功能上能跑, 但 <strong>当 solution 开始按用户身份 gate 数据</strong>(教师只能看自己班、校长只能看自己学校)时, 工具参数就成了 prompt injection 注入面 —— agent 可以被骗写 <code>{userId: "admin"}</code>。
+    </p>
+    <p>
+      <strong>本轮目标</strong>(per 用户决定 "security-critical core first"): 不做权限引擎, 不做多 engine 适配器, 不做 in-process toolkit 重构。 只把 <em>identity-spoofing 攻击面</em> 关掉 ——
+      让 identity 在 session 建立时 ambient bind, agent 永远不能写入, reserved field 在 reach handler 之前 stripped, 全程 audit。
+      第一个迁移上来的是 <code>live-lesson-creator-tools</code>(rich-chat-cards POC), 给迁移路径打样。
+    </p>
+    <p>
+      期间触发了 <em>6 个非显然的设计决定</em>(scope、identity 传输、wire 边界放在哪、schema 来源、reserved-field 契约、shouldProxy 何时求值) + <em>8 个 code-review HIGH/MED 修复</em>。 下面每一项都展开为一个决定单元 —— <strong>为什么这么选, 选了什么</strong> 比 <strong>具体改了什么文件</strong> 重要, 所以 file diff / commit list 收在底部的 collapsible 里。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">6 项 · 按对话出现顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 这一轮的实施范围设在哪?</h3>
+        </div>
+        <span class="d-scope design">Process · Scope</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计文档把工作分成 5 个 phase: 核心 proxy / 注册 API / 权限引擎 / 多 engine 适配器 / 审计 dashboard。 用户起点是 "我想分析一下工具暴露的方式 + 让 agent 在身份限制下工作", 我开 AskUserQuestion 让用户拍板。</span>
+        <span class="lbl">约束</span>
+        <span class="val">范围越大, blast radius 越大。 但范围太小又留下一堆悬空的契约 (e.g. ToolDefinition 写了 requiredPermissions 字段但没人 enforce 它)。 找<em>"最小但自洽"</em>的切割线很难。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Scope</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Security-critical core only: ToolCallerProxy + ambient ExecutionContext + sanitization。 wire MCP adapter behind 现有 solution.json。 不做权限引擎, 不做 Opencode 适配器。</span>
+          <span class="opt-verdict">✓ 选 —— 关掉攻击面是<em>不可推迟</em>的; 其他 phase 等真有 use case 再做。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Proxy + SolutionToolkit registration: 把 live-lesson-creator-tools 从 stdio MCP 重写为 typed registration, 走 in-process handler。</span>
+          <span class="opt-verdict">❌ 拒 —— 重写 solution 代码, 干掉刚做的 materializer; 端到端 blast radius 大。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Full Phases 1-5: proxy + registration + permission engine + scopes + 2nd adapter + audit dashboard。</span>
+          <span class="opt-verdict">❌ 拒 —— 多周工程, 把已经能用的 stdio-MCP 卡片 POC 阻塞掉。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">D</span>
+          <span class="opt-desc">Design-only iteration: 写一份 ADR, 把契约里没解的问题列清楚, 不写代码。</span>
+          <span class="opt-verdict">❌ 拒 —— 用户已经写完设计文档, 再写一份 ADR 没价值。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          挑出 <em>"security-critical"</em> 作为切割线是关键。 它不是 "scope 最小" 的同义词 —— 比 D 更大, 比 B/C 都小 ——
+          而是 <strong>"如果这块不做, 后续 phase 的存在意义就归零"</strong> 的子集。 没有 ambient identity 的权限引擎相当于在沙堡上盖楼。
+        </p>
+        <p>
+          B 是 <em>表面上的下一步</em>(把 solution 代码迁移过来), 但它把 "改 ccaas 平台" 和 "改 solution 业务代码" 混在一个 commit 里。 我们刚刚 ship 完 cards POC, 任何回归会立刻被发现, 所以<strong>解耦平台改动和业务改动</strong> 比 "代码量少" 更值钱。
+          A 保留了 stdio MCP server 不动, 只在它前面插了一层 proxy ——
+          <em>shipped binary 一行没改, attack surface 已经关掉</em>。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          ToolDefinition 上声明 <code>requiredPermissions</code> + <code>visibility</code> 的字段已经有了, future 加权限引擎不破 contract。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          权限/scope/visibility 三层只有 strip 起作用; 真要 gate 数据的 solution 还需要等下一轮。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">conv</span><code>AskUserQuestion · "Security-critical core first"</code>
+        <span class="lbl">commits</span><code>ee7c5027 b430dfc8</code>
+      </div>
+    </div>
+
+    <!-- D-02 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> end-user identity 怎么从 solution backend 到 ccaas?</h3>
+        </div>
+        <span class="d-scope security">Security · Transport</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计文档说 identity 必须 ambient + session-bound。 但 end-user 是在<em>solution backend</em>用 cookie/JWT 登录的 —— ccaas 只看到 tenant API key。 怎么把 "现在是谁" 透传给 ccaas?</span>
+        <span class="lbl">约束</span>
+        <span class="val">browser 永远不能持有 ccaas API key (已经定下的安全边界)。 transport 必须经过 solution backend。 但 solution backend 是<em>多 tenant 的</em>, 它能不能被信任替任意 user 说话?</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Transport</span><span>Verdict</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Per-call header: <code>X-Ccaas-On-Behalf-Of: &lt;userId&gt;</code> 在 solution backend 的 Bearer tenant key 旁边附带。 ccaas 信任 header, 在 session 创建时 bind 为 ambient identity。</span>
+          <span class="opt-verdict">✓ 选 —— 0 新基础设施, contract 最小, audit 可见。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">短期 exchange token: solution 用 tenant key 加 userId payload POST <code>/sessions/exchange</code>, 拿回 session-scoped token, 浏览器走 SSE 用那个。</span>
+          <span class="opt-verdict">❌ 拒 —— 多一次 round-trip + 多一张表 (exchange ledger)。 价值在<em>未来公网部署</em>, MVP 不需要。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Solution 签发 JWT 带 userId + role + tenant, ccaas 校验签名。 共享密钥 / JWKS 管理。</span>
+          <span class="opt-verdict">❌ 拒 —— 引入 JWKS rotation, 重 infra。 适合多家第三方 solution 接入的成熟阶段。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          关键判断: <strong>solution backend 已经是 ccaas 的 trust boundary</strong>(它持有 tenant key)。 多绕一层 exchange token 不能改变这个事实 —— 一个有 tenant key 的 backend 已经可以替这个 tenant 的<em>任何</em> user 行事。
+          A 把这个信任关系<em>显式化</em>: header 让 audit log 看到 "solution backend 声称这次调用是 teacher-42"; B 把它<em>隐藏</em>在一个交换流程后面, 让审计 trail 多一跳但安全模型没变。
+        </p>
+        <p>
+          A 的代价是 <em>solution backend 必须正确 auth 它的 end user</em> 才能转发对的 header。 但这不是新风险 ——
+          solution backend 本来就要替 end user 拿数据、写数据。 与其在 ccaas 这层增加交换机制再 paper over 同一个信任问题, 不如保留它的形状, 同时<strong>把 spoof 攻击 observable 起来</strong>: header 若覆盖 API-key 绑定的 userId, ccaas 打 WARN; turn-N payload 跟 first-set 不一致, 也打 WARN。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          一次 HTTP header, 0 新基础设施。 solution backend 已经在每个 ccaas 调用上加 tenant key 了, 多一个 header 是 trivial。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          要 audit 显示 "ccaas 自己也校验过 user 而不是只信 solution backend" 必须升级。 公网/多 tenant solution 接入时迟早要做 (OQ-04)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/sessions/sessions.controller.ts:sanitizeHeader</code>
+        <span class="lbl">file</span><code>solutions/business/live-lesson/backend/src/adapters/http/ccaas-chat-proxy.controller.ts</code>
+        <span class="lbl">conv</span><code>AskUserQuestion · "Per-call header from solution backend"</code>
+      </div>
+    </div>
+
+    <!-- D-03 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> MCP 调用拦截的边界放在哪?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Wire</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Claude Code 跟 stdio MCP server 之间是<em>直接</em>的 stdio JSON-RPC pipe ——ccaas-core 看不到中间任何字节。 想给每个 tool call 加 sanitize/validate/audit, 必须把自己<em>插进</em>这条 pipe。 怎么插?</span>
+        <span class="lbl">约束</span>
+        <span class="val">不能改 Claude Code (没源代码)。 也不想改 shipped solution stdio MCP server (才刚 ship 完, 改了等于 invalidate cards POC)。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Wire boundary</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">In-process toolkit registration: solution 把 tool handlers 当 JS 函数注册进 ccaas-core, ccaas 直接 host 一个 MCP server 给 Claude Code, 不需要任何 subprocess。</span>
+          <span class="opt-verdict">❌ 拒 —— 要求 solution 代码<em>住进</em> ccaas-core 进程; 现有 stdio binary 全部要改。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Per-session ccaas-owned MCP proxy bundle: ccaas 自己 ship 一个 stdio binary, Claude Code 看见这个而不是 solution 的 binary。 binary 通过 loopback HTTP 回调 ccaas-core 的 ToolCallerProxy。 ccaas-core 内部再用 StdioMcpToolkit 转发到 solution 原本的 stdio binary。</span>
+          <span class="opt-verdict">✓ 选 —— Claude Code 视角不变, solution 代码不动, 拦截点正好在两者之间。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Wrap each solution's MCP server with a per-server wrapper subprocess that proxies stdio. ccaas 不 host server, 只插一个 wrapper。</span>
+          <span class="opt-verdict">❌ 拒 —— 每个 server 一个 wrapper 进程, scale 更差; 而且 wrapper 之间没共享 audit log。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          B 的优雅在于它<strong>把 wire 协议保留为不变量</strong>。 Claude Code 不知道发生了什么 —— 它看见一个标准的 stdio MCP server。 Solution 的 stdio binary 也不知道 —— 它收到 JSON-RPC 调用就回复, 跟之前完全一样。
+          <em>中间的 ccaas-owned 那一段</em> 就是新增的 platform 层。
+        </p>
+        <p>
+          A 在<em>美学上</em>更纯 (一个进程, 没有子进程), 但要求 solution 代码改写。 而我们刚刚做完 cards POC 的事实告诉我们: <strong>不破坏既有的 solution shipped code 是这一轮最重要的物理学</strong>。 C 是 B 的弱化版, 它分散了 audit/sanitization 的 single chokepoint 价值 —— 把同一个 pipeline 复制 N 次, 每加一个 server 都多一个进程, 没有 ROI。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          一个 ccaas-owned stdio binary 是 wire 边界。 加任何新功能 (audit DB, permission engine, rate limit) 都加在这一层。 多 engine adapter (Opencode) 只需要换 binary, contract 不变。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          per-session subprocess 数量 = N (每个 active session 一个 proxy binary)。 大规模部署 (1k+ session) 时是 process budget 问题; 当前是<em>对的取舍</em>但未来要 revisit (OQ-02)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/mcp/tool-caller-proxy-server/src/index.ts</code>
+        <span class="lbl">file</span><code>packages/backend/src/tool-caller/adapters/mcp-engine-adapter.service.ts</code>
+        <span class="lbl">file</span><code>packages/backend/src/tool-caller/toolkits/stdio-mcp-toolkit.ts</code>
+      </div>
+    </div>
+
+    <!-- D-04 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> proxy 怎么知道每个 tool 的 schema?</h3>
+        </div>
+        <span class="d-scope design">Design · Schema source</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">proxy 对 Claude Code 暴露的 tool list 需要 JSON Schema 让模型生成正确入参。 ccaas-core 内部的 sanitization pipeline 还想用 Zod 做 reserved-field strip。 schema 从哪里来?</span>
+        <span class="lbl">约束</span>
+        <span class="val">solution 的 stdio MCP server 源代码已经有 schema (hand-mirrored JSON Schema 或 Zod), 但跨 npm package 直接 import 不友好。 hand-mirror 一份在 ccaas-core 就会 drift。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Source</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Hand-mirror schema 在 ccaas-core: 每加一个 proxy-enabled tool 都要在两边手写。</span>
+          <span class="opt-verdict">❌ 拒 —— 必然 drift, 出 bug 时不知道哪边是 source of truth。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">solution.json 里再加一个 <code>toolSchemas</code> 块, 操作员手填 JSON Schema。</span>
+          <span class="opt-verdict">❌ 拒 —— 第三种 source of truth, 跟 stdio server 自身的 inputSchema drift。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">Solution loader 在 import 时<em>启动 stdio MCP server 一次</em>, 发送 <code>tools/list</code>, 把 server 自己声明的 inputSchema 捕获, 然后杀掉子进程。 把 JSON Schema 放到 <code>ToolDefinition.jsonSchemaOverride</code>, Zod schema 用 <code>z.unknown()</code> (sanitization pipeline 不依赖结构验证)。</span>
+          <span class="opt-verdict">✓ 选 —— Single source of truth = stdio server 自己。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          C 的关键认知: <strong>stdio MCP server 的 inputSchema 已经是 source of truth</strong>。 它必须有, 否则 Claude Code 本来就用不了。 我们只是把 ccaas-core 设计成<em>读它</em>而不是<em>另存一份</em>。 probe 是一次性 (开机后 import 时跑一次, 子进程杀掉), 不增加运行时开销。
+        </p>
+        <p>
+          B 看起来 "操作员友好"(JSON 配置文件), 但实际上是<em>增加了一个永远会跟代码 drift 的配置层</em>。 每次 stdio server 改 schema, 操作员要记得同步; 忘记一次, agent 就拿着错的 schema 调用工具。
+          A 同问题, 只是 drift 的两边换成了 ccaas-core 和 solution 代码。 C 的代价是 import 路径要能<em>spawn</em>(probe 一次), 但 SolutionLoader 已经在做 materializer 了, 多一个 probe 是边际成本。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          所有 proxy-enabled solution 的 schema 都从它自己的 stdio server 自动同步。 改一处就够了。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          import 时 probe 失败 (server 启动慢、有 bug) → 该 server 的 toolkit 注册失败, warning 一条, 走 legacy 路径; 不致命但需要操作员看 log。 长期想要的可能是 schema 作为 solution package 的<em>独立 data file</em>(plan §"Open questions")。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/solutions/solution-loader.service.ts:probeStdioToolList</code>
+        <span class="lbl">commit</span><code>0d96ab2a</code>
+      </div>
+    </div>
+
+    <!-- D-05 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 怎么保证 reserved-field 集合永远跟 ExecutionContext 同步?</h3>
+        </div>
+        <span class="d-scope security">Security · Contract</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">第一轮 code review (H1) 发现: 我加了 <code>apiKeyId</code> 到 ExecutionContext, 但忘了把它加进 <code>RESERVED_ARG_FIELDS</code>。 agent 可以写 <code>args.apiKeyId</code> 绕过 strip。 同样的洞会在每次 ExecutionContext 加新字段时重现。</span>
+        <span class="lbl">约束</span>
+        <span class="val">TypeScript 没法在<em>运行时</em> 列出 interface 的所有 key —— interface 是 type-only。 也不能让运行时 array 自动反射出 type signature。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Enforcement</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Code review / 文档纪律: 每次改 ExecutionContext 提醒人也改 RESERVED_ARG_FIELDS。</span>
+          <span class="opt-verdict">❌ 拒 —— 已经验证过这个机制不可靠 (这次就忘了)。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">写一个 spec, 用 TypeScript <code>satisfies</code> 把"reserved-set 的 superset 必须是 ExecutionContext keys"这个性质<em>固化在 type 层</em>。 加新字段不更新 reserved 集合 → spec 编译报红 → 发现得到。</span>
+          <span class="opt-verdict">✓ 选 —— 把"漏字段"从 runtime bug 变成 build-time error。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">用 zod 把 ExecutionContext 改成 runtime schema, 反射 keys 进 reserved 集合。</span>
+          <span class="opt-verdict">❌ 拒 —— ExecutionContext 不是<em>parse 进来</em>的, 是平台构造的; 用 zod 是误用工具。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          B 用 <code>satisfies</code> 子句让<em>测试代码自己声明</em>它依赖的 ExecutionContext keys, 编译器检查这个 literal 是否真是 ExecutionContext 的子集。 然后运行时检查这些 keys 都在 reserved set 里。 漂亮的地方在于:
+          <strong>编译器和 test runner 各负责一半, 任何一半失败都 fail-loud</strong>。
+        </p>
+        <p>
+          这是<em>把 invariant 钉死的工程模式</em>: 别让"保持同步"成为人的纪律。 真正可靠的 invariant 是<em>编译器知道、测试知道、文档同步</em>三层重合。 reserved-field 的契约从此每个 PR 都 trivially 检查 ——
+          加新字段不加 reserved 项, CI 报红, 修复 3 行, 防住一类我们 review 时差点错过的 spoof 类。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          ExecutionContext 加字段 → spec 红 → 提醒加 reserved 项 → 修。 invariant 不会再 drift。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          ExecutionContext 加<em>嵌套对象</em>字段不会被 catch (reserved-set 只覆盖 top-level)。 当前 ExecutionContext 是 flat 的, 长期看可能要扩展 sanitizer (现在写在 docstring 里作为已知限制)。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/tool-caller/reserved-fields.spec.ts:covers-every-ExecutionContext-field</code>
+        <span class="lbl">commit</span><code>b430dfc8 (review fix)</code>
+      </div>
+    </div>
+
+    <!-- D-06 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> <code>shouldProxy</code> 何时求值: 一次 / 每 turn?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Routing</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">第二轮 code review (M5) 指出: 我把 <code>session.useToolCallerProxy</code> 设成 first-turn-only (immutable after first set), 这意味着<em>如果 SolutionLoader 还在 import (boot 慢) 时第一个 session 已经发消息, registry 是空的 → shouldProxy 返回 false → session 一辈子走 legacy 路径</em>。</span>
+        <span class="lbl">约束</span>
+        <span class="val">想要的是: routing 决策是<em>动态的</em>(registry 状态变化能 picked up), 但 identity 决策是<em>静态的</em>(actingUserId 必须 immutable, 否则 spoof 风险)。 两个 invariant 看起来矛盾, 实际不是。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>Approach</span><span>Verdict</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保持原状: 第一 turn 决定一次, immutable。 用 SolutionLoader 排序 + 加 readiness probe 让 session-startup 等到 loader 完成。</span>
+          <span class="opt-verdict">❌ 拒 —— 增加 startup 同步原语, complicate boot, 解决了 lock-in 但带来了新的 race。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">每次 CLI spawn 直接调 <code>adapter.shouldProxy(session)</code>, 不依赖 cached flag。 routing 跟 registry 状态实时一致, identity 依然 immutable (不同字段, 不同生命周期)。</span>
+          <span class="opt-verdict">✓ 选 —— routing 跟 identity 解耦, 各自适合的可变性。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          这里关键是<em>识别出我把两个本质不同的决策耦合在一个字段里</em>。 <strong>identity</strong>(actingUserId) 在 session 创建时 bind, 必须 immutable —— 否则 spoof。 <strong>routing</strong>(走 proxy 还是 legacy) 是<em>每次 spawn 子进程都可以重新决定的部署细节</em>, 跟 identity 无关。
+        </p>
+        <p>
+          原本的 <code>session.useToolCallerProxy</code> 字段把两者绑在一起, 因为我直觉上把 "session 用了 proxy" 当成 session 的属性。 但<em>session 用了 proxy</em> 不是事实, 是<em>当时的环境</em>; 真正的 session 属性是 identity。
+          解耦后每次 spawn 都 ask the adapter; cli-process 不需要任何 cached state; registry 是 single source of truth。 这是<strong>把 "看起来像状态" 的东西识别为 "其实是 derive 出来的"</strong> 的小例子, 但带来了 race 消失 + 代码更简单 + 测试更窄。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          SolutionLoader 慢启动 / 后续注册 / hot reload 全部正确处理 —— 下一 turn 自动 picked up。 cli-process 无 session 内 state 需要维护。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          shouldProxy 的查询频率从 "1 次/session" 变成 "1 次/spawn"。 当前是 in-memory Map 查询, 不是问题; 未来 registry 真大了可能要 cache。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/backend/src/sessions/services/cli-process.service.ts:applyMcpAndSandbox</code>
+        <span class="lbl">commit</span><code>b430dfc8 (review fix M5)</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">这次显式没做的</span></h2>
+    </div>
+    <span class="hint">5 项 · 触发条件下重新审视</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>Permission engine: visibility filtering + requiredPermissions + scope types</h4>
+        <p><span class="lbl">现状</span><code>ToolDefinition</code> 上 <code>requiredPermissions</code> + <code>visibility</code> 字段已经声明; 但 <code>ToolCallerProxyService.invoke</code> 的 Step 3 (permission check) 是 stub —— 总是 allow。 <code>ExecutionContext.effectiveScope</code> 永远 undefined。</p>
+        <p><span class="lbl">推迟理由</span>当前 live-lesson-creator-tools 是<em>单 user 的教师创作场景</em>, 没有跨用户数据访问。 没有 use case 驱动权限引擎; 提前做 = 设计在空气中。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个真正跨用户的 solution 接入 (校长能看本校学生, 教师只能看自己班)。 那时 D-01 的 "stub 字段" 就有了真实 enforcer。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4>SolutionToolkit as in-process module (干掉 stdio subprocess hop)</h4>
+        <p><span class="lbl">现状</span>StdioMcpToolkit 把 tool call 转发给 solution 的 stdio binary; 多一次 IPC hop, 多一个进程, schema 通过 probe 同步。 设计文档预期的<em>最终态</em>是 solution 直接把 toolkit 注册成 ccaas-core 进程内的 JS module —— 没有 subprocess。</p>
+        <p><span class="lbl">推迟理由</span>需要 solution 代码<em>住进</em> ccaas-core (跨 package 依赖、版本管理、code loading 机制)。 D-03 已经选了 "不动 shipped binary" 作为本轮的物理学。</p>
+        <p><span class="lbl">重新审视的触发</span>process count 成为部署瓶颈 (>1k active session) 或 latency budget 紧到 IPC 不可接受; 或第一个 solution 主动愿意改写 (典型场景: solution 跟 ccaas 同语言同 monorepo)。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>多 engine adapter (OpenCode / 自定义 engine)</h4>
+        <p><span class="lbl">现状</span>只有 <code>McpEngineAdapterService</code> (Claude Code MCP)。 <code>EngineAdapter</code> interface 已经声明, 但只一个实现。</p>
+        <p><span class="lbl">推迟理由</span>OpenCode / 自定义 engine 的工具暴露协议跟 MCP 不一样; 不写出来不知道 abstraction 对不对。 在没有第二个 engine 之前, 抽象出的"通用 contract" 大概率是<em>幻象 contract</em>(只 fits 当前实现)。</p>
+        <p><span class="lbl">重新审视的触发</span>真的有 solution 想用 OpenCode (或 ccaas 自己想 default 切换)。 那时根据真实需求 evolve interface, 而不是猜。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4>actingUserId 持久化: first-turn mutation 写回 DB</h4>
+        <p><span class="lbl">现状</span><code>Session</code> entity 有 <code>actingUserId</code> column, 但 worker 是在 in-memory ManagedSession 上 first-turn-set 的 —— restart 后从 DB 读回为 null。 (第一轮 review M2 也提到。)</p>
+        <p><span class="lbl">推迟理由</span>当前 audit 路径还在 logger fallback (没接 DB sink), 持久化 actingUserId 还没下游消费者。 等 audit sink 真的接 <code>tool_events</code> 表时一起做。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个 audit 报表 / 治理流程需要按 actingUserId 历史聚合; 或 incident 调查需要 "重启前那条 session 是谁在用"。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-05</div>
+      <div class="dq-body">
+        <h4>Audit dashboard / 结构化 admin UI</h4>
+        <p><span class="lbl">现状</span>audit 写在 logger ([audit-fallback] 行), 也可以由调用者注入 sink。 没有 admin UI 让 ops 看历史 strip 记录、failed validation、tool 调用频率。</p>
+        <p><span class="lbl">推迟理由</span>logger fallback 够 ops debug; admin UI 是<em>有了 100x audit volume 才 ROI 正</em>的工程。</p>
+        <p><span class="lbl">重新审视的触发</span>第一次 spoof attempt 真的来 (audit log 里看到大量 stripped fields), ops 需要 dashboard 找 pattern; 或合规审计要求结构化 audit。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正还没答案的</span></h2>
+    </div>
+    <span class="hint">4 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>tool schema 长期住在哪?</h4>
+        <p><span class="lbl">问题</span>D-04 选了 import 时 probe stdio server 一次。 这对 single-source-of-truth 是好的, 但意味着 solution 升级 schema 后 ccaas 需要重新 probe (现在只有重启才会)。 长期是要做<em>hot reload</em>(solution 通知 ccaas re-probe), 还是把 schema 抽成<em>独立 data file</em>(solution 直接 ship JSON 不需要 spawn)?</p>
+        <p><span class="lbl">为什么 open</span>取决于 solution 怎么发布 — 如果是 ccaas-controlled rolling deploy, hot reload 有意义; 如果是 solution 自己 maintain 的 npm package, data file 更干净。 当前都没有 driver。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>proxy MCP server 应该 per-session 还是 singleton?</h4>
+        <p><span class="lbl">问题</span>per-session 是<em>D-03 选的</em>: 每个 active session 一个 proxy binary 子进程。 简单, 每个 session 的 token + ExecutionContext 在 env var 里。 但<em>process count = N</em>, 大规模有问题。 singleton 方案: 1 个 proxy server, 每次 tools/call 在 body 里带 sessionId, ccaas 查 ledger。 latency 一样, process budget = 1。</p>
+        <p><span class="lbl">为什么 open</span>singleton 把 sessionId 显式带进 wire, 给 spoof 多一个 attack surface (proxy server 是 untrusted 的; 它能不能伪造 sessionId?)。 当前没 process pressure 不用决定; 真有了再权衡。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4><code>X-Ccaas-On-Behalf-Of</code> 跟 API-key-bound userId 谁赢?</h4>
+        <p><span class="lbl">问题</span>API key 可以绑定一个 userId (作为 "这个 key 代表谁" 的语义)。 同时 solution backend 在 call 时又附带了 header。 当前选择 header 赢 (solution backend has fresher knowledge), 但 logging WARN 当两者不同。 真要让 ccaas <em>独立校验</em>(不只是 trust solution backend 的话) 需要 D-02 升级到 exchange token / JWT。</p>
+        <p><span class="lbl">为什么 open</span>什么场景必须升级? 没有明确标准。 候选: (a) 第一次有<em>非内部</em> solution 接入 (第三方); (b) 合规要求审计 chain 包含 ccaas 自己的 user 校验; (c) 单实例 ccaas 上有多个 solution backend 同时跑。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-04</div>
+      <div class="dq-body">
+        <h4>WebSocket gateway 路径什么时候必须硬 block (不只是 WARN)?</h4>
+        <p><span class="lbl">问题</span>第一轮 review H2: sessions.gateway.ts 上的 chat path 不接 header, 创建的 session 是 actingUserId=null。 当前选择是<em>WARN log</em>, 不 block。 真的 reject 会破坏 (a) 还在用 socket 的 SDK 客户端、(b) AUTH_ALLOW_ANONYMOUS 模式。</p>
+        <p><span class="lbl">为什么 open</span>不知道<em>第一个真的依赖 actingUserId 做 gating 的 solution</em>什么时候出现。 那之前 WARN 已经 observable; 那之后 null actingUserId 意味着访问被拒。 reject vs WARN 的切换需要跟 solution 灰度协调。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>Change surface · 提交 + 文件 + 测试</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作, 做参考</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">3</span><span class="cs-stat-l">commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">1639</span><span class="cs-stat-l">tests pass · 0 fail</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">+5,318</span><span class="cs-stat-l">net lines</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">review HIGH/MED fixed</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">Low</span><span class="cs-stat-l">risk (gated)</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">ee7c5027</span><span class="tag feat">feat</span><span class="msg">tool-caller proxy with ambient executioncontext (Phases 1+2+3 + identity-spoofing e2e)</span></div>
+        <div class="cs-row"><span class="hash">0d96ab2a</span><span class="tag feat">feat</span><span class="msg">migrate live-lesson-creator-tools to tool-caller proxy (Phase 4 — proxyEnabled flag, schema probe)</span></div>
+        <div class="cs-row"><span class="hash">b430dfc8</span><span class="tag fix">fix</span><span class="msg">tool-caller proxy code-review findings (h1-h3, m1-m5)</span></div>
+      </div>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:11.5px;color:var(--t2);line-height:1.6">
+        <strong>Key new surface</strong>:<br>
+        · <code>packages/mcp/tool-caller-proxy-server/</code> — 新 bundled stdio MCP binary, per-session, loopback HTTP 回 ccaas-core<br>
+        · <code>packages/backend/src/tool-caller/</code> — proxy pipeline + registry + adapter + internal controller + StdioMcpToolkit + identity-spoofing e2e<br>
+        · <code>packages/backend/src/sessions/sessions.controller.ts</code> — <code>X-Ccaas-On-Behalf-Of</code> 入口 + Unicode-strict header sanitizer<br>
+        · <code>packages/backend/src/sessions/event-mapper.service.ts</code> — namespace-stripped trigger match (review H1 fix)<br>
+        · <code>solutions/business/live-lesson/solution.json</code> — <code>proxyEnabled: true</code> 翻牌<br>
+        · <code>packages/backend/src/solutions/solution-loader.service.ts</code> — <code>probeStdioToolList</code> + <code>registerStdioToolkit</code>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-28 · ccaas Decision Archive · 由 <code>/feature-report</code> skill 生成 · 模板 <code>~/.claude/skills/feature-report/template.html</code>
+  </footer>
+
+</div>
+
+</body>
+</html>
