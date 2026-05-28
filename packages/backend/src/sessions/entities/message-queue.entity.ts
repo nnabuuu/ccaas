@@ -28,6 +28,18 @@ export interface MessageQueuePayload {
   /** User ID for session ownership */
   userId?: string;
   /**
+   * End user identity bound from `X-Ccaas-On-Behalf-Of` header at
+   * request time. Threaded into ManagedSession on session creation
+   * and read by the ToolCaller pipeline as
+   * `ExecutionContext.actingUserId`. Never agent-writable.
+   * See docs/design-tool-caller-proxy.md §4.3.
+   */
+  actingUserId?: string;
+  /** Forward-compat role; bound from `X-Ccaas-Acting-Role`. */
+  actingRole?: string;
+  /** API key id captured for audit (`ExecutionContext.apiKeyId`). */
+  apiKeyId?: string;
+  /**
    * Source identity to attach the session to before spawning the
    * engine. When present, the worker awaits
    * `SessionService.attachWorkspaceSource` + `SessionAssetSyncer.sync`

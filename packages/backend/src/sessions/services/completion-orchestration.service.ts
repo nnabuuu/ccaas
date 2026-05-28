@@ -28,6 +28,7 @@ import { McpPoolService } from '../../mcp/mcp-pool.service';
 import { SessionEventsService } from '../../messages/session-events.service';
 import type { SessionEvent, ManagedSession } from '../../common/interfaces';
 import { BundleService } from '../../bundles/bundle.service';
+import { McpEngineAdapterService } from '../../tool-caller/adapters/mcp-engine-adapter.service';
 
 /**
  * MCP Server configuration from solution backend
@@ -118,6 +119,7 @@ export class CompletionOrchestrationService {
     private readonly sessionEventsService: SessionEventsService,
     private readonly bundleService: BundleService,
     private readonly eventMapper: EventMapperService,
+    private readonly mcpEngineAdapter: McpEngineAdapterService,
   ) {}
 
   /**
@@ -394,6 +396,19 @@ export class CompletionOrchestrationService {
       } catch (error: any) {
         this.logger.warn(`Failed to create MCP symlinks: ${error.message}`);
         // Continue - non-fatal
+      }
+
+      // Phase 4: flip the ToolCallerProxy route ON for this session
+      // when the solution has registered any StdioMcpToolkit in the
+      // registry (driven by `solution.json.mcpServers.*.proxyEnabled`
+      // at import time). Off by default so unmigrated solutions keep
+      // their direct stdio path. See
+      // docs/design-tool-caller-proxy.md §5.1.
+      if (this.mcpEngineAdapter.shouldProxy(session)) {
+        session.useToolCallerProxy = true;
+        this.logger.log(
+          `Session ${sessionId} routed via ToolCallerProxy (solution has registered toolkit(s))`,
+        );
       }
     }
 

@@ -21,6 +21,7 @@ import { McpPoolService } from '../../mcp/mcp-pool.service';
 import { SessionEventsService } from '../../messages/session-events.service';
 import { BundleService } from '../../bundles/bundle.service';
 import { EventMapperService } from '../event-mapper.service';
+import { McpEngineAdapterService } from '../../tool-caller/adapters/mcp-engine-adapter.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CompletionOrchestrationService - NIE-67: session spawn decision', () => {
@@ -144,6 +145,13 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
             registerTenantToolTriggers: jest.fn(),
             registerBundleTriggers: jest.fn(),
           },
+        },
+        // Phase 4: McpEngineAdapter — these specs do not exercise the
+        // ToolCallerProxy routing path, so a stub that always says
+        // "no proxy" keeps legacy behavior under test.
+        {
+          provide: McpEngineAdapterService,
+          useValue: { shouldProxy: () => false },
         },
       ],
     }).compile();
@@ -372,6 +380,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
           { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
           { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+          { provide: McpEngineAdapterService, useValue: { shouldProxy: () => false } },
         ],
       }).compile();
 
@@ -546,6 +555,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
           { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
           { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+          { provide: McpEngineAdapterService, useValue: { shouldProxy: () => false } },
         ],
       }).compile();
 
@@ -770,6 +780,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
           { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
           { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+          { provide: McpEngineAdapterService, useValue: { shouldProxy: () => false } },
         ],
       }).compile();
 

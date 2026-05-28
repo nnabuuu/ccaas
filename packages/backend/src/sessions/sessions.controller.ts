@@ -15,6 +15,7 @@ import {
   Param,
   Body,
   Query,
+  Headers,
   NotFoundException,
   Logger,
   Res,
@@ -65,6 +66,32 @@ import {
   SearchConversationsQuery,
   UpdateConversationDto,
 } from './dto/session-query.dto';
+
+/**
+ * Trim + bound-check a header value before using it as identity input.
+ * Drops anything with Unicode control / format characters (\p{C}) —
+ * the ASCII control range alone misses bidi marks (U+202E), line
+ * separators (U+2028/U+2029), zero-width joiners, BOM, etc. that
+ * could mangle logs, filesystem paths, or human review.
+ *
+ * Returns undefined when the input is missing or rejected so the
+ * caller can fall back cleanly. Truncates at 128 chars to match the
+ * `Session.actingUserId` column width — keep that constant in sync
+ * with `admin/entities/session.entity.ts`.
+ *
+ * See docs/design-tool-caller-proxy.md §4.3.
+ */
+// Unicode general category \p{C} = control + format + private-use +
+// surrogate + unassigned. Anything in this category is rejected.
+const HEADER_REJECT_RE = /\p{C}/u;
+
+function sanitizeHeader(v: string | undefined): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const trimmed = v.trim();
+  if (!trimmed) return undefined;
+  if (HEADER_REJECT_RE.test(trimmed)) return undefined;
+  return trimmed.length > 128 ? trimmed.slice(0, 128) : trimmed;
+}
 
 @ApiTags('sessions')
 @Controller('api/v1/sessions')
@@ -313,9 +340,44 @@ Response is \`text/event-stream\`, closed when Turn completes.
     @Body() data: SendMessageDto,
     @Res() res: Response,
     @Ctx() ctx: RequestContext | undefined,
+    @Headers('x-ccaas-on-behalf-of') onBehalfOf?: string,
+    @Headers('x-ccaas-acting-role') actingRole?: string,
   ) {
     const subscriberId = uuidv4();
     this.logger.log(`SSE sendMessage: session=${sessionId} subscriber=${subscriberId}`);
+
+    // Ambient identity (docs/design-tool-caller-proxy.md §4.3).
+    // Header takes precedence over `ctx.userId` (API-key-bound user)
+    // because the solution backend has fresher knowledge of the actual
+    // end user. Both empty → actingUserId is null; downstream tool
+    // calls audit as `actingUserId=null` and the legacy creator path
+    // keeps working during the migration window.
+    const headerActingUserId = sanitizeHeader(onBehalfOf);
+    const actingUserId = headerActingUserId ?? ctx?.userId;
+    const actingRoleResolved = sanitizeHeader(actingRole);
+    if (!actingUserId) {
+      this.logger.debug(
+        `sendMessage session=${sessionId}: no X-Ccaas-On-Behalf-Of header and no api-key userId; ` +
+        `tool calls in this session will run with actingUserId=null (migration-window behavior)`,
+      );
+    } else if (
+      // H3 observability: an API-key-bound user is also present and the
+      // header disagrees. Per design the header wins (solution backend
+      // has fresher knowledge), but a malicious solution backend could
+      // forge `X-Ccaas-On-Behalf-Of` to claim a different user than
+      // their key is bound to. Logging the override makes spoof
+      // attempts visible in ops dashboards even though we allow it.
+      headerActingUserId &&
+      ctx?.userId &&
+      headerActingUserId !== ctx.userId
+    ) {
+      this.logger.warn(
+        `sendMessage session=${sessionId}: X-Ccaas-On-Behalf-Of (${headerActingUserId}) ` +
+        `overrides api-key-bound userId (${ctx.userId}). Header wins per design; ` +
+        `monitor for unexpected mismatches that may indicate a misconfigured or ` +
+        `compromised solution backend.`,
+      );
+    }
 
     // Register this response as an SSE subscriber
     this.streamRegistry.subscribe(sessionId, subscriberId, res as any);
@@ -398,6 +460,9 @@ Response is \`text/event-stream\`, closed when Turn completes.
           subscriberId,
           attachments: data.attachments?.map(a => ({ type: a.type, path: a.path })),
           userId: data.userId,
+          actingUserId,
+          actingRole: actingRoleResolved,
+          apiKeyId: ctx?.apiKeyId,
           sourceIdentity: data.sourceIdentity,
         },
       );

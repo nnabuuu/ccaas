@@ -19,6 +19,7 @@ import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
 import { ProtocolModule } from './protocol/protocol.module';
 import { McpModule } from './mcp/mcp.module';
+import { ToolCallerModule } from './tool-caller/tool-caller.module';
 import { AdminModule } from './admin/admin.module';
 import { QuotaModule } from './admin/quota.module';
 import { HealthModule } from './health/health.module';
@@ -132,6 +133,7 @@ import { BuilderModule } from './builder/builder.module';
     ProtocolModule,
     AuthModule,
     McpModule,
+    ToolCallerModule,
     StorageModule,
 
     // Note: AgentRuntimeModule.forRoot() is imported by SessionsModule

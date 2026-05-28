@@ -62,6 +62,8 @@ describe('SessionsController (list/search/update/delete)', () => {
     sessionId,
     solutionId: 'tenant-a',
     userId: null,
+    actingUserId: null,
+    actingRole: null,
     clientId: `client-${sessionId}`,
     status: 'idle' as any,
     messageCount: 5,

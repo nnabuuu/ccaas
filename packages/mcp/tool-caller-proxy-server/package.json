@@ -1,0 +1,21 @@
+{
+  "name": "@kedge-agentic/tool-caller-proxy-server",
+  "version": "1.0.0",
+  "description": "Per-session bundled MCP server that proxies tool calls through the ccaas ToolCallerProxy. The Claude Code subprocess sees this binary as a regular stdio MCP server, but tools/call requests are routed over loopback HTTP back to ccaas-core where they're sanitized + audited + dispatched to the registered solution toolkit. See docs/design-tool-caller-proxy.md.",
+  "type": "module",
+  "bin": {
+    "tool-caller-proxy-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -21,6 +21,7 @@ import * as path from 'node:path';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
 import { SandboxService } from '../sandbox/sandbox.service';
+import { McpEngineAdapterService } from '../../tool-caller/adapters/mcp-engine-adapter.service';
 import type { ManagedSession, CLIEvent, SessionEvent } from '../../common/interfaces';
 
 export interface ResolvedAttachment {
@@ -79,6 +80,7 @@ export class CliProcessService {
     private readonly workspaceService: WorkspaceService,
     private readonly sandboxService: SandboxService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly mcpEngineAdapter: McpEngineAdapterService,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
     this.claudeCliPath = this.configService.get('CLAUDE_CLI_PATH', 'claude');
@@ -111,11 +113,37 @@ export class CliProcessService {
     const mcpServers: Record<string, unknown> = {};
 
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      const resolved = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
-      Object.assign(mcpServers, resolved);
-      this.logger.log(
-        `Session ${session.sessionId} using solution MCP servers: ${Object.keys(session.mcpServers).join(', ')}`,
-      );
+      // Phase 3 routing — when the session has opted into the
+      // ToolCallerProxy AND the adapter actually has tools registered
+      // for the solution, replace every SOLUTION mcp server entry
+      // (anything not prefixed `bundle:`) with the single proxy
+      // bundle. The bundle: entries stay direct because they're
+      // ccaas-owned, not solution-owned. See
+      // docs/design-tool-caller-proxy.md §5.1.
+      if (session.useToolCallerProxy && this.mcpEngineAdapter.shouldProxy(session)) {
+        const resolved = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
+        const replaced: string[] = [];
+        for (const [name, cfg] of Object.entries(resolved)) {
+          if (name.startsWith('bundle:')) {
+            mcpServers[name] = cfg;
+          } else {
+            replaced.push(name);
+          }
+        }
+        const { name, config } = this.mcpEngineAdapter.buildProxyEntry(session);
+        mcpServers[name] = config;
+        this.logger.log(
+          `Session ${session.sessionId} routed through ToolCallerProxy ` +
+          `(replaced ${replaced.length} solution MCP entry/entries: ${replaced.join(', ')}; ` +
+          `bundle entries preserved)`,
+        );
+      } else {
+        const resolved = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
+        Object.assign(mcpServers, resolved);
+        this.logger.log(
+          `Session ${session.sessionId} using solution MCP servers: ${Object.keys(session.mcpServers).join(', ')}`,
+        );
+      }
     }
 
     const sandbox = this.sandboxService.bashMcpSpec(session.workspaceDir, session.sessionId);

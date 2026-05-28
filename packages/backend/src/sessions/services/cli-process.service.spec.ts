@@ -16,6 +16,7 @@ import { CliProcessService } from './cli-process.service';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
 import { SandboxService, SANDBOX_BASH_MCP_NAME } from '../sandbox/sandbox.service';
+import { McpEngineAdapterService } from '../../tool-caller/adapters/mcp-engine-adapter.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CliProcessService - handleCLIClose', () => {
@@ -55,6 +56,13 @@ describe('CliProcessService - handleCLIClose', () => {
           },
         },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        {
+          // Phase 3 injection — these specs only exercise applyMcpAndSandbox
+          // when `session.useToolCallerProxy` is unset, so a stub that
+          // never returns true keeps the existing behavior under test.
+          provide: McpEngineAdapterService,
+          useValue: { shouldProxy: () => false, buildProxyEntry: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -233,6 +241,10 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
         },
         { provide: SandboxService, useValue: sandbox },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        {
+          provide: McpEngineAdapterService,
+          useValue: { shouldProxy: () => false, buildProxyEntry: jest.fn() },
+        },
       ],
     }).compile();
     return module.get<CliProcessService>(CliProcessService);
@@ -373,5 +385,84 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
     expect(out.indexOf('be a helpful assistant')).toBeLessThan(
       out.indexOf('mcp__'),
     );
+  });
+
+  // ─── Phase 3: ToolCallerProxy routing ────────────────────────────────────
+
+  describe('applyMcpAndSandbox + useToolCallerProxy', () => {
+    /**
+     * Builds a CliProcessService where the McpEngineAdapter says
+     * "yes, proxy this session" and returns a canonical entry.
+     */
+    const buildProxyService = async () => {
+      const sandbox = makeSandboxMock(false);
+      const module = await Test.createTestingModule({
+        providers: [
+          CliProcessService,
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          { provide: EventMapperService, useValue: { mapToSessionEvents: jest.fn().mockReturnValue([]) } },
+          {
+            provide: WorkspaceService,
+            useValue: {
+              resolveSessionMcpPaths: (s: Record<string, unknown>) => s,
+            },
+          },
+          { provide: SandboxService, useValue: sandbox },
+          { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+          {
+            provide: McpEngineAdapterService,
+            useValue: {
+              shouldProxy: () => true,
+              buildProxyEntry: () => ({
+                name: 'tool-caller-proxy',
+                config: {
+                  command: 'node',
+                  args: ['/path/to/proxy/dist/index.js'],
+                  env: {
+                    CCAAS_PROXY_BACKEND_URL: 'http://127.0.0.1:3001',
+                    CCAAS_PROXY_SESSION_ID: 'sess-1',
+                    CCAAS_PROXY_SESSION_TOKEN: 'tok',
+                  },
+                },
+              }),
+            },
+          },
+        ],
+      }).compile();
+      return module.get<CliProcessService>(CliProcessService);
+    };
+
+    const sessionWithMcpAndFlag = (flag: boolean): ManagedSession =>
+      makeSession({
+        useToolCallerProxy: flag,
+        mcpServers: {
+          'solution-tool-a': { command: '/old/bin', args: [] },
+          'bundle:file-attachments': { command: '/bundles/file', args: [] },
+        },
+      });
+
+    it('replaces solution MCP entries with the proxy when flag is on', async () => {
+      const svc = await buildProxyService();
+      const args: string[] = [];
+      (svc as any).applyMcpAndSandbox(sessionWithMcpAndFlag(true), args, undefined);
+      const idx = args.indexOf('--mcp-config');
+      expect(idx).toBeGreaterThanOrEqual(0);
+      const cfg = JSON.parse(args[idx + 1]);
+      // Solution entry is gone, proxy entry is in its place
+      expect(cfg.mcpServers['solution-tool-a']).toBeUndefined();
+      expect(cfg.mcpServers['tool-caller-proxy']).toBeDefined();
+      // Bundle entries preserved (ccaas-owned, not solution-owned)
+      expect(cfg.mcpServers['bundle:file-attachments']).toBeDefined();
+    });
+
+    it('leaves solution MCP entries alone when flag is off', async () => {
+      const svc = await buildProxyService();
+      const args: string[] = [];
+      (svc as any).applyMcpAndSandbox(sessionWithMcpAndFlag(false), args, undefined);
+      const idx = args.indexOf('--mcp-config');
+      const cfg = JSON.parse(args[idx + 1]);
+      expect(cfg.mcpServers['solution-tool-a']).toBeDefined();
+      expect(cfg.mcpServers['tool-caller-proxy']).toBeUndefined();
+    });
   });
 });

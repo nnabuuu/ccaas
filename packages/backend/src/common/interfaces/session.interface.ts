@@ -53,6 +53,26 @@ export interface ManagedSession {
   // User tracking (Week 1)
   userId?: string;
 
+  // Ambient identity (ToolCallerProxy / docs/design-tool-caller-proxy.md §4.3).
+  // `actingUserId` is the end-user the solution backend says this session
+  // acts on behalf of — set from `X-Ccaas-On-Behalf-Of` at session creation
+  // and read-only thereafter. Read by the ToolCaller pipeline as
+  // `ExecutionContext.actingUserId` so handlers never derive identity from
+  // agent-supplied args. `actingRole` is forward-compat; the permission
+  // engine that consumes it lands in a later round.
+  actingUserId?: string;
+  actingRole?: string;
+  // Tracked for audit + so the proxy pipeline can stamp the originating
+  // key id without re-resolving auth context per call.
+  apiKeyId?: string;
+
+  // Route this session's solution-MCP-server calls through the
+  // ToolCallerProxy (Phase 3+). Off by default for the migration
+  // window — Phase 4 flips it on a per-solution basis when its
+  // toolkits are registered. With it on, CliProcessService replaces
+  // the direct stdio MCP spawn with the ccaas-owned proxy bundle.
+  useToolCallerProxy?: boolean;
+
   // Session restart tracking (for new skill visibility)
   needsRestart?: boolean;
   skillSyncedAt?: Date;

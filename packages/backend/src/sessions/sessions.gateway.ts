@@ -330,6 +330,26 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       // Get or create session (Week 3: Pass userId for tracking)
       const session = await this.sessionService.getOrCreateSession(sessionId, clientId, client, userId);
 
+      // Ambient-identity observability (docs/design-tool-caller-proxy.md §4.3).
+      //
+      // The WebSocket gateway is deprecated (see CLAUDE.md note: "Socket.IO
+      // gateway is deprecated"). It does NOT receive
+      // `X-Ccaas-On-Behalf-Of` / `X-Ccaas-Acting-Role` headers — those
+      // are HTTP-only — so any tool call in a gateway-initiated session
+      // audits as `actingUserId=null`. Worse, the "immutable after first
+      // set" guard in MessageWorkerService.applyAmbientIdentity means a
+      // later SSE turn on the same session can never inject the missing
+      // identity. We log loudly so operators notice gateway traffic is
+      // still landing and can prioritize removing the path.
+      if (!session.actingUserId) {
+        this.logger.warn(
+          `Gateway chat on session ${sessionId}: actingUserId remains null ` +
+          `(WebSocket transport does not carry X-Ccaas-On-Behalf-Of). ` +
+          `Tool calls in this session will audit with no end-user identity. ` +
+          `Migrate clients to the SSE POST /api/v1/sessions/:id/messages path.`,
+        );
+      }
+
       // Check message queue feature flag
       const messageQueueEnabled = this.configService.get<boolean>('messageQueue.enabled', false);
 

@@ -44,6 +44,26 @@ export class Session {
   userId!: string | null;
 
   /**
+   * End user the session is acting on behalf of. Bound from
+   * `X-Ccaas-On-Behalf-Of` at session creation; never agent-writable.
+   * Read by the ToolCaller pipeline as `ExecutionContext.actingUserId`.
+   * Persisted so audit + history recover it after restart.
+   * See docs/design-tool-caller-proxy.md §4.3.
+   */
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  @Index('IDX_sessions_acting_user_id')
+  actingUserId!: string | null;
+
+  /**
+   * Forward-compat: declared role the session acts in. Not yet
+   * enforced; the permission engine that reads this lands in a later
+   * round. Bound from `X-Ccaas-Acting-Role` if the solution backend
+   * sends it.
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  actingRole!: string | null;
+
+  /**
    * Client ID (browser/app identifier)
    */
   @Column({ type: 'varchar', length: 255 })

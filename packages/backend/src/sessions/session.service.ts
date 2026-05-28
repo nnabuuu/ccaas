@@ -1029,6 +1029,8 @@ export class SessionService implements OnModuleDestroy {
         sessionId: session.sessionId,
         solutionId: session.solutionId || null,
         userId: session.userId || null,
+        actingUserId: session.actingUserId || null,
+        actingRole: session.actingRole || null,
         clientId: session.clientId,
         status: session.status,
         messageCount: session.messageCount,

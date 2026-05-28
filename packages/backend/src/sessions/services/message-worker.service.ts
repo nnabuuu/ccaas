@@ -7,6 +7,7 @@ import { StreamRegistryService } from './stream-registry.service';
 import { SessionAssetSyncer } from '../agent-runtime/session-asset-syncer.service';
 import { makeSseClientId } from '../session-utils';
 import { MessageQueue } from '../entities/message-queue.entity';
+import type { ManagedSession } from '../../common/interfaces/session.interface';
 
 /**
  * Message Worker Service
@@ -171,6 +172,18 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       const userId = queueItem.payload.userId;
       const session = await this.sessionService.getOrCreateSession(sessionId, clientId, null, userId, queueItem.solutionId ?? undefined);
 
+      // Ambient identity is set on first turn of the session and is
+      // immutable thereafter — `actingUserId` is a fact about the
+      // session, not a parameter of any tool call. See
+      // docs/design-tool-caller-proxy.md §4.3. The "only on first set"
+      // guard mirrors how `userId` is treated in getOrCreateSession.
+      //
+      // Turn-N mismatches are silently ignored on the data path (we
+      // honor the first-set value) but WARN-logged so ops can spot a
+      // misconfigured or compromised solution backend that's flipping
+      // identity mid-session — a strong signal of a spoof attempt.
+      this.applyAmbientIdentity(session, queueItem.payload);
+
       // G4 fix — synchronous bind + bootstrap before spawning the engine.
       //
       // Without this, the SendMessageDto's optional sourceIdentity
@@ -319,5 +332,46 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       pollIntervalMs: this.pollIntervalMs,
       isShuttingDown: this.isShuttingDown,
     };
+  }
+
+  /**
+   * Apply ambient identity from a queue payload to the in-memory
+   * session. First-set wins; conflicts on later turns are dropped
+   * AND logged. The log is the whole point of M1 — silent drop
+   * meant a malicious solution backend rotating headers mid-session
+   * was undetectable. See docs/design-tool-caller-proxy.md §4.3.
+   */
+  private applyAmbientIdentity(
+    session: ManagedSession,
+    payload: MessageQueue['payload'],
+  ): void {
+    this.tryApplyAmbientField(
+      session,
+      'actingUserId',
+      payload.actingUserId,
+    );
+    this.tryApplyAmbientField(session, 'actingRole', payload.actingRole);
+    this.tryApplyAmbientField(session, 'apiKeyId', payload.apiKeyId);
+  }
+
+  private tryApplyAmbientField(
+    session: ManagedSession,
+    field: 'actingUserId' | 'actingRole' | 'apiKeyId',
+    incoming: string | undefined,
+  ): void {
+    if (!incoming) return;
+    const current = session[field];
+    if (!current) {
+      session[field] = incoming;
+      return;
+    }
+    if (current !== incoming) {
+      this.logger.warn(
+        `Ambient identity mismatch in session ${session.sessionId}: ` +
+        `${field} bound to "${current}" at first turn but turn-N payload ` +
+        `supplied "${incoming}". Honoring first-set value. ` +
+        `This may indicate a misconfigured or compromised solution backend.`,
+      );
+    }
   }
 }

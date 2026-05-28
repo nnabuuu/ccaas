@@ -30,6 +30,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Headers,
   Logger,
   NotFoundException,
   Param,
@@ -270,6 +271,8 @@ export class CcaasChatProxyController {
       templateName?: string;
     },
     @Res() res: Response,
+    @Headers('x-ccaas-on-behalf-of') onBehalfOf?: string,
+    @Headers('x-ccaas-acting-role') actingRole?: string,
   ): Promise<void> {
     const { url, key } = this.upstream.resolveCcaas();
     // Tenant resolution runs BEFORE we touch the response so any
@@ -299,17 +302,30 @@ export class CcaasChatProxyController {
       ? { ...rest, sourceIdentity: projectId, solutionId }
       : { ...rest, solutionId };
 
+    // Ambient identity passthrough (docs/design-tool-caller-proxy.md §4.3).
+    // Browser sends the header; live-lesson forwards verbatim. If absent,
+    // ccaas treats actingUserId as null + logs a debug — matches the
+    // "migration window" behavior in plan/Phase 2. Solution backends with
+    // their own login session resolve userId from the cookie here instead.
+    const upstreamHeaders: Record<string, string> = {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+    };
+    if (typeof onBehalfOf === 'string' && onBehalfOf.trim()) {
+      upstreamHeaders['X-Ccaas-On-Behalf-Of'] = onBehalfOf.trim();
+    }
+    if (typeof actingRole === 'string' && actingRole.trim()) {
+      upstreamHeaders['X-Ccaas-Acting-Role'] = actingRole.trim();
+    }
+
     let upstream: globalThis.Response;
     try {
       upstream = await fetch(
         `${url}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages`,
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
+          headers: upstreamHeaders,
           body: JSON.stringify(upstreamBody),
           signal: controller.signal,
         },
