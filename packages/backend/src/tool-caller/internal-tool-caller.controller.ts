@@ -61,14 +61,20 @@ const zodToJsonSchemaTyped: (s: ZodTypeAny) => Record<string, unknown> =
  * The remote IP set on `Request` is `string | undefined` in express
  * types; we treat anything other than loopback as a forbidden peer
  * since this endpoint is never meant to reach the public network.
+ *
+ * `undefined` is intentionally NOT in the allowlist. Some in-process
+ * supertest harnesses (and a hypothetical Unix-socket transport)
+ * leave `remoteAddress` undefined — accepting that quietly would
+ * bypass the entire loopback gate. Tests must construct a fake
+ * request with `socket.remoteAddress = '127.0.0.1'` (see the spec
+ * helpers in this directory for the pattern). If real Unix-socket
+ * transport ever lands, gate on a typed `req.socket instanceof
+ * UnixSocket` check rather than a sentinel value.
  */
-const LOOPBACK_PEERS = new Set<string | undefined>([
+const LOOPBACK_PEERS = new Set<string>([
   '127.0.0.1',
   '::1',
   '::ffff:127.0.0.1',
-  // Node sets remoteAddress to undefined when serving over Unix
-  // socket. We accept that case too — Unix sockets are loopback-equivalent.
-  undefined,
 ]);
 
 @ApiTags('internal-tool-caller')
@@ -154,8 +160,10 @@ export class InternalToolCallerController {
     // express's `req.ip` honors trust-proxy; we want the actual socket
     // peer so we read `req.socket.remoteAddress` directly.
     const peer = req.socket?.remoteAddress;
-    if (!LOOPBACK_PEERS.has(peer)) {
-      this.logger.warn(`Rejecting non-loopback peer for internal endpoint: ${peer}`);
+    if (typeof peer !== 'string' || !LOOPBACK_PEERS.has(peer)) {
+      this.logger.warn(
+        `Rejecting non-loopback peer for internal endpoint: ${peer ?? '<undefined>'}`,
+      );
       throw new ForbiddenException('internal endpoint accepts loopback peers only');
     }
   }

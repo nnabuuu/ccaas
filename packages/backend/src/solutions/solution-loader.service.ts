@@ -24,7 +24,11 @@ import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service
 import { EventMapperService } from '../sessions/event-mapper.service';
 import { BundleService } from '../bundles/bundle.service';
 import { SolutionToolkitRegistry } from '../tool-caller/solution-toolkit-registry';
-import { StdioMcpToolkit, type StdioToolSpec } from '../tool-caller/toolkits/stdio-mcp-toolkit';
+import {
+  StdioMcpToolkit,
+  type StdioToolSpec,
+  sanitizeEnvForSolutionSubprocess,
+} from '../tool-caller/toolkits/stdio-mcp-toolkit';
 import { z } from 'zod';
 import { spawn } from 'node:child_process';
 import type {
@@ -963,7 +967,21 @@ export class SolutionLoaderService implements OnModuleInit {
       warnings.push(`MCP server "${slug}" has proxyEnabled=true but no args — skipping registration`);
       return;
     }
-    const serverEntry = path.resolve(solutionDir, serverDef.args[0]);
+    const solutionAbs = path.resolve(solutionDir);
+    const serverEntry = path.resolve(solutionAbs, serverDef.args[0]);
+    // Bound the entry path inside solutionDir. A solution.json declaring
+    // `args: ["../../etc/passwd"]` resolves outside the dir; without this
+    // check we'd spawn `node` against any reachable file. The skill
+    // walker uses the same pattern.
+    if (
+      serverEntry !== solutionAbs &&
+      !serverEntry.startsWith(solutionAbs + path.sep)
+    ) {
+      warnings.push(
+        `MCP server "${slug}" entry path "${serverDef.args[0]}" escapes solution dir — refusing to register`,
+      );
+      return;
+    }
     if (!fs.existsSync(serverEntry)) {
       warnings.push(
         `MCP server "${slug}" entry "${serverEntry}" does not exist — skipping toolkit registration`,
@@ -1012,7 +1030,12 @@ export class SolutionLoaderService implements OnModuleInit {
     return new Promise((resolve, reject) => {
       const child = spawn('node', [serverEntry], {
         cwd,
-        env: { ...process.env, ...(extraEnv ?? {}) },
+        // Match runtime: untrusted solution code never sees the backend's
+        // secret env (CCAAS_API_KEY, LLM keys, DATABASE_PATH, etc.).
+        env: {
+          ...sanitizeEnvForSolutionSubprocess(process.env),
+          ...(extraEnv ?? {}),
+        },
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       let buf = '';

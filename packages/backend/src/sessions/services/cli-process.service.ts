@@ -113,14 +113,20 @@ export class CliProcessService {
     const mcpServers: Record<string, unknown> = {};
 
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      // Phase 3 routing — when the session has opted into the
-      // ToolCallerProxy AND the adapter actually has tools registered
-      // for the solution, replace every SOLUTION mcp server entry
+      // Phase 3 routing — when the adapter has tools registered for
+      // the solution, replace every SOLUTION mcp server entry
       // (anything not prefixed `bundle:`) with the single proxy
       // bundle. The bundle: entries stay direct because they're
       // ccaas-owned, not solution-owned. See
       // docs/design-tool-caller-proxy.md §5.1.
-      if (session.useToolCallerProxy && this.mcpEngineAdapter.shouldProxy(session)) {
+      //
+      // We evaluate `shouldProxy` at every spawn (not once at first
+      // turn) so a late-registered toolkit — e.g. SolutionLoader was
+      // still walking the SOLUTIONS_DIR when this session's first
+      // turn landed — can still flip routing on a subsequent turn.
+      // `session.useToolCallerProxy` is kept as a separate audit
+      // signal but no longer gates routing.
+      if (this.mcpEngineAdapter.shouldProxy(session)) {
         const resolved = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
         const replaced: string[] = [];
         for (const [name, cfg] of Object.entries(resolved)) {

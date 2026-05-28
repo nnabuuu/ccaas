@@ -1345,6 +1345,19 @@ export class EventMapperService {
     const normalizedName = toolName
       .replace(/^mcp__[^_]+__/, '')
       .replace(/^mcp__/, '');
+    // Phase 4: when a tool is routed via the ToolCallerProxy, the
+    // wire-side name is `<namespace>.<localName>` (e.g.
+    // `creator.emit_todo_card`). solution.json's `toolEventTriggers`
+    // entries use the local name (`emit_todo_card`) because that's
+    // what the stdio MCP server originally advertised. Strip the
+    // namespace prefix so triggers continue to match for both the
+    // legacy direct-stdio path and the proxy-routed path.
+    //
+    // SolutionToolkitRegistry uses the *last* dot as the separator;
+    // mirror that here. If there's no dot, this is a no-op.
+    const lastDot = normalizedName.lastIndexOf('.');
+    const unqualifiedName =
+      lastDot >= 0 ? normalizedName.slice(lastDot + 1) : normalizedName;
 
     let parsedResult: Record<string, unknown> = {};
     if (typeof result === 'string') {
@@ -1421,7 +1434,15 @@ export class EventMapperService {
     if (session?.solutionId) {
       const triggers = this.getTenantToolTriggers(session.solutionId);
       for (const trigger of triggers) {
-        if (trigger.toolName !== normalizedName) continue;
+        // Match the full name OR the unqualified (namespace-stripped)
+        // form so proxy-routed tools (`<namespace>.<name>`) match
+        // triggers declared with the local tool name.
+        if (
+          trigger.toolName !== normalizedName &&
+          trigger.toolName !== unqualifiedName
+        ) {
+          continue;
+        }
         if (trigger.eventType === 'output_update') {
           events.push(buildOutputUpdate(trigger.field));
         }

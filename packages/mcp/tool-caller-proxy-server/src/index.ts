@@ -48,6 +48,21 @@ const SESSION_ID = required('CCAAS_PROXY_SESSION_ID');
 const SESSION_TOKEN = required('CCAAS_PROXY_SESSION_TOKEN');
 const DEBUG = process.env.CCAAS_PROXY_DEBUG === '1';
 
+// Hard deadlines for the two callbacks. Node's `fetch` has no
+// default timeout — a tool handler that hangs (a stuck stdio MCP
+// server, a deadlocked DB call) would otherwise lock Claude Code
+// indefinitely. The bundle still returns a structured isError to
+// the agent so the conversation can continue.
+const TOOLS_LIST_TIMEOUT_MS = numEnv('CCAAS_PROXY_TOOLS_TIMEOUT_MS', 30_000);
+const INVOKE_TIMEOUT_MS = numEnv('CCAAS_PROXY_INVOKE_TIMEOUT_MS', 120_000);
+
+function numEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 function required(name: string): string {
   const v = process.env[name];
   if (!v) {
@@ -75,13 +90,28 @@ const sessionPath = `/api/v1/internal/tool-caller/sessions/${encodeURIComponent(
  * subprocess fails loud rather than serving zero tools silently.
  */
 async function fetchToolList(): Promise<Tool[]> {
-  const res = await fetch(`${BACKEND_URL}${sessionPath}/tools`, {
-    method: 'GET',
-    headers: {
-      'X-Proxy-Token': SESSION_TOKEN,
-      Accept: 'application/json',
-    },
-  });
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), TOOLS_LIST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND_URL}${sessionPath}/tools`, {
+      method: 'GET',
+      headers: {
+        'X-Proxy-Token': SESSION_TOKEN,
+        Accept: 'application/json',
+      },
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') {
+      throw new Error(
+        `ccaas-core tool list timed out after ${TOOLS_LIST_TIMEOUT_MS}ms`,
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(t);
+  }
   if (!res.ok) {
     throw new Error(
       `ccaas-core tool list failed: ${res.status} ${await safeBody(res)}`,
@@ -125,6 +155,8 @@ async function invokeTool(
   isError?: boolean;
 }> {
   dlog(`invoke tool=${name}`);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), INVOKE_TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(`${BACKEND_URL}${sessionPath}/invoke`, {
@@ -135,9 +167,15 @@ async function invokeTool(
         Accept: 'application/json',
       },
       body: JSON.stringify({ tool: name, args }),
+      signal: ctrl.signal,
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const aborted = (err as Error).name === 'AbortError';
+    const msg = aborted
+      ? `tool call exceeded ${INVOKE_TIMEOUT_MS}ms deadline`
+      : err instanceof Error
+        ? err.message
+        : String(err);
     dlog(`invoke transport error: ${msg}`);
     return {
       isError: true,
@@ -148,6 +186,8 @@ async function invokeTool(
         },
       ],
     };
+  } finally {
+    clearTimeout(t);
   }
 
   if (!res.ok) {

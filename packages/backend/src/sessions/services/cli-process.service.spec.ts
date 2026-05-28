@@ -394,7 +394,7 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
      * Builds a CliProcessService where the McpEngineAdapter says
      * "yes, proxy this session" and returns a canonical entry.
      */
-    const buildProxyService = async () => {
+    const buildProxyService = async (shouldProxy = true) => {
       const sandbox = makeSandboxMock(false);
       const module = await Test.createTestingModule({
         providers: [
@@ -412,7 +412,7 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
           {
             provide: McpEngineAdapterService,
             useValue: {
-              shouldProxy: () => true,
+              shouldProxy: () => shouldProxy,
               buildProxyEntry: () => ({
                 name: 'tool-caller-proxy',
                 config: {
@@ -432,19 +432,19 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
       return module.get<CliProcessService>(CliProcessService);
     };
 
-    const sessionWithMcpAndFlag = (flag: boolean): ManagedSession =>
+    const sessionWithMcp = (): ManagedSession =>
       makeSession({
-        useToolCallerProxy: flag,
         mcpServers: {
           'solution-tool-a': { command: '/old/bin', args: [] },
           'bundle:file-attachments': { command: '/bundles/file', args: [] },
         },
       });
 
-    it('replaces solution MCP entries with the proxy when flag is on', async () => {
-      const svc = await buildProxyService();
+    it('replaces solution MCP entries with the proxy when adapter says shouldProxy', async () => {
+      // adapter.shouldProxy is the SOLE gate (post review M5 fix).
+      const svc = await buildProxyService(/* shouldProxy: */ true);
       const args: string[] = [];
-      (svc as any).applyMcpAndSandbox(sessionWithMcpAndFlag(true), args, undefined);
+      (svc as any).applyMcpAndSandbox(sessionWithMcp(), args, undefined);
       const idx = args.indexOf('--mcp-config');
       expect(idx).toBeGreaterThanOrEqual(0);
       const cfg = JSON.parse(args[idx + 1]);
@@ -455,14 +455,60 @@ describe('CliProcessService - applyMcpAndSandbox', () => {
       expect(cfg.mcpServers['bundle:file-attachments']).toBeDefined();
     });
 
-    it('leaves solution MCP entries alone when flag is off', async () => {
-      const svc = await buildProxyService();
+    it('leaves solution MCP entries alone when adapter says no toolkit registered', async () => {
+      const svc = await buildProxyService(/* shouldProxy: */ false);
       const args: string[] = [];
-      (svc as any).applyMcpAndSandbox(sessionWithMcpAndFlag(false), args, undefined);
+      (svc as any).applyMcpAndSandbox(sessionWithMcp(), args, undefined);
       const idx = args.indexOf('--mcp-config');
       const cfg = JSON.parse(args[idx + 1]);
       expect(cfg.mcpServers['solution-tool-a']).toBeDefined();
       expect(cfg.mcpServers['tool-caller-proxy']).toBeUndefined();
+    });
+
+    it('flips routing on a LATER turn when the toolkit registers after the session is created (M5)', async () => {
+      // First turn: registry empty → legacy direct stdio.
+      // Second turn: registry populated mid-life → proxy route.
+      let shouldProxyReturn = false;
+      const sandbox = makeSandboxMock(false);
+      const module = await Test.createTestingModule({
+        providers: [
+          CliProcessService,
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+          { provide: EventMapperService, useValue: { mapToSessionEvents: jest.fn().mockReturnValue([]) } },
+          {
+            provide: WorkspaceService,
+            useValue: { resolveSessionMcpPaths: (s: Record<string, unknown>) => s },
+          },
+          { provide: SandboxService, useValue: sandbox },
+          { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+          {
+            provide: McpEngineAdapterService,
+            useValue: {
+              shouldProxy: () => shouldProxyReturn,
+              buildProxyEntry: () => ({
+                name: 'tool-caller-proxy',
+                config: { command: 'node', args: ['/proxy.js'], env: {} },
+              }),
+            },
+          },
+        ],
+      }).compile();
+      const svc = module.get<CliProcessService>(CliProcessService);
+
+      const session = sessionWithMcp();
+      const args1: string[] = [];
+      (svc as any).applyMcpAndSandbox(session, args1, undefined);
+      const cfg1 = JSON.parse(args1[args1.indexOf('--mcp-config') + 1]);
+      expect(cfg1.mcpServers['tool-caller-proxy']).toBeUndefined();
+
+      // Loader catches up mid-session.
+      shouldProxyReturn = true;
+
+      const args2: string[] = [];
+      (svc as any).applyMcpAndSandbox(session, args2, undefined);
+      const cfg2 = JSON.parse(args2[args2.indexOf('--mcp-config') + 1]);
+      expect(cfg2.mcpServers['tool-caller-proxy']).toBeDefined();
+      expect(cfg2.mcpServers['solution-tool-a']).toBeUndefined();
     });
   });
 });

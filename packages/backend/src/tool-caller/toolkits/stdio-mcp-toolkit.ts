@@ -192,7 +192,14 @@ export class StdioMcpToolkit implements SolutionToolkit {
     if (this.child) return;
     const child = spawn('node', [this.opts.serverEntry], {
       cwd: this.opts.cwd,
-      env: { ...process.env, ...(this.opts.env ?? {}) },
+      // Don't inherit the full backend env into untrusted solution
+      // code. `sanitizeEnvForSolutionSubprocess` keeps PATH/HOME/etc.
+      // and strips credentials like CCAAS_API_KEY, LLM keys, and DB
+      // paths. Solution-provided env (this.opts.env) layers on top.
+      env: {
+        ...sanitizeEnvForSolutionSubprocess(process.env),
+        ...(this.opts.env ?? {}),
+      },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     this.child = child;
@@ -295,7 +302,17 @@ export class StdioMcpToolkit implements SolutionToolkit {
     this.child.stdin.write(`${JSON.stringify(payload)}\n`);
   }
 
-  /** Stop the subprocess cleanly. Safe to call multiple times. */
+  /**
+   * Stop the subprocess cleanly. Safe to call multiple times.
+   *
+   * Awaits the captured child's actual `exit` event before resolving
+   * so callers that follow with an immediate respawn don't race the
+   * dispose teardown. The previous fire-and-forget design left a
+   * SIGKILL timer hanging that could fire AFTER the new child was
+   * spawned — under PID reuse, that timer could in principle kill a
+   * recycled PID. We clear the timer on exit to make that
+   * impossible.
+   */
   async dispose(): Promise<void> {
     const child = this.child;
     if (!child) return;
@@ -305,12 +322,22 @@ export class StdioMcpToolkit implements SolutionToolkit {
       reject(new Error(`stdio MCP ${this.namespace} disposed`));
     }
     this.pending.clear();
-    child.kill('SIGTERM');
-    // Force-kill after a grace window so a stuck subprocess can't
-    // hang ccaas-core shutdown.
-    setTimeout(() => {
-      if (!child.killed) child.kill('SIGKILL');
-    }, 1000).unref();
+    if (child.exitCode !== null || child.signalCode !== null) {
+      return; // already gone — nothing to wait for
+    }
+    return new Promise<void>((resolve) => {
+      const killTimer = setTimeout(() => {
+        if (child.exitCode === null && child.signalCode === null) {
+          child.kill('SIGKILL');
+        }
+      }, 1000);
+      killTimer.unref();
+      child.once('exit', () => {
+        clearTimeout(killTimer);
+        resolve();
+      });
+      child.kill('SIGTERM');
+    });
   }
 }
 
@@ -320,4 +347,44 @@ function contentToString(content: Array<{ type: 'text'; text: string }> | undefi
     .filter((c) => c.type === 'text' && typeof c.text === 'string')
     .map((c) => c.text)
     .join('\n');
+}
+
+/**
+ * Variables that MUST be propagated for a Node subprocess to even
+ * start (path resolution, home dir for caches, terminal handling,
+ * Node module resolution overrides set by the test runner).
+ *
+ * Anything not on this list is dropped. Solution stdio MCP servers
+ * are untrusted code from a third party; they should never see
+ * `CCAAS_API_KEY`, LLM provider keys, `DATABASE_PATH`, cloud creds,
+ * etc. Solution-specific env can be re-added via `StdioMcpToolkitOptions.env`.
+ */
+const SOLUTION_SUBPROCESS_ENV_ALLOWLIST = new Set([
+  'PATH',
+  'HOME',
+  'USER',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TERM',
+  'TZ',
+  'TMPDIR',
+  'NODE_PATH',
+  'NODE_OPTIONS',
+  'NODE_ENV',
+  'NVM_BIN',
+  'NVM_DIR',
+]);
+
+export function sanitizeEnvForSolutionSubprocess(
+  env: NodeJS.ProcessEnv,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(env)) {
+    if (v === undefined) continue;
+    if (SOLUTION_SUBPROCESS_ENV_ALLOWLIST.has(k)) {
+      out[k] = v;
+    }
+  }
+  return out;
 }

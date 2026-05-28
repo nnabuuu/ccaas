@@ -1342,6 +1342,33 @@ describe('EventMapperService', () => {
       expect((outputUpdate as any).payload.data).toEqual({ phase: 1 });
     });
 
+    it('matches triggers when the proxy advertises tools as <namespace>.<name> (Phase 4)', () => {
+      // The ToolCallerProxy surfaces tools to Claude Code with their
+      // qualified registry name (e.g. `creator.emit_todo_card`).
+      // solution.json's toolEventTriggers still use the local name
+      // (`emit_todo_card`) because that's what the underlying stdio
+      // server originally advertised. Without the namespace-strip
+      // fallback, the cards POC's output_update events stop firing
+      // the moment proxyEnabled:true lands.
+      service.registerTenantToolTriggers(solutionId, [
+        { toolName: 'emit_todo_card', eventType: 'output_update', field: 'card' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_proxy1',
+        'mcp__tool-caller-proxy__creator.emit_todo_card',
+        { kind: 'todo', title: 'Plan', items: [] },
+        { title: 'Plan' },
+      );
+
+      const outputUpdate = events.find((e) => e.type === 'output_update');
+      expect(outputUpdate).toBeDefined();
+      // `field: 'card'` wrap from buildOutputUpdate.
+      const payload = (outputUpdate as any).payload.data as { field?: string; value?: unknown };
+      expect(payload.field).toBe('card');
+      expect(payload.value).toEqual({ kind: 'todo', title: 'Plan', items: [] });
+    });
+
     it('does not emit output_update when tool name does not match', () => {
       service.registerTenantToolTriggers(solutionId, [
         { toolName: 'advance_beat', eventType: 'output_update' },

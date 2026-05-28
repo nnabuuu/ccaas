@@ -34,6 +34,7 @@ import { SessionAssetMaterializer } from './services/session-asset-materializer.
 import { SessionMetadataService } from './services/session-metadata.service';
 import { WORKSPACE_PROVIDER, type WorkspaceProvider } from './workspace/types';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
+import { McpEngineAdapterService } from '../tool-caller/adapters/mcp-engine-adapter.service';
 import type {
   ManagedSession,
   SessionStats,
@@ -142,6 +143,7 @@ export class SessionService implements OnModuleDestroy {
     private readonly workspaceProvider: WorkspaceProvider,
     @InjectRepository(SessionEntity)
     private readonly sessionRepository: Repository<SessionEntity>,
+    private readonly mcpEngineAdapter: McpEngineAdapterService,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
     this.sessionTtlMs = this.configService.get('workspace.sessionTtlMs', 300000);
@@ -522,6 +524,14 @@ export class SessionService implements OnModuleDestroy {
     this.workspaceSourceBindings.delete(sessionId);
 
     this.eventMapperService.clearSessionState(sessionId);
+
+    // Drop the ToolCallerProxy session registration so the per-session
+    // secret token can no longer authenticate, and the in-memory
+    // ExecutionContext is released. Without this every closed session
+    // leaks both forever — and a re-spawned proxy subprocess (e.g.
+    // after a network blip) could continue to call /invoke long after
+    // the user thinks the session is gone.
+    this.mcpEngineAdapter.releaseSession(sessionId);
 
     // Release provider resources (no-op for LocalProvider; unmounts for
     // AgentfsProvider). Fire-and-forget for non-shutdown callers (idle GC,

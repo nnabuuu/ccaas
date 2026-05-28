@@ -23,6 +23,7 @@ import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
+import { McpEngineAdapterService } from '../tool-caller/adapters/mcp-engine-adapter.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SessionAssetMaterializer } from './services/session-asset-materializer.service';
@@ -73,6 +74,7 @@ describe('SessionService.attachWorkspaceSource', () => {
         { provide: EventEmitter2, useValue: eventEmitter },
         { provide: getRepositoryToken(SessionEntity), useValue: { save: jest.fn(), update: jest.fn() } },
         mockWorkspaceProvider(),
+        { provide: McpEngineAdapterService, useValue: { shouldProxy: () => false, releaseSession: jest.fn() } },
       ],
     }).compile();
 
