@@ -9,18 +9,6 @@
     "description": "AI驱动的交互式动态教学系统 - 苏格拉底式板书教学引擎"
   },
   "mcpServers": {
-    "live-lesson-tools": {
-      "command": "node",
-      "args": ["mcp-server/dist/index.js"],
-      "description": "Live Lesson board state management tools",
-      "type": "stdio",
-      "tools": ["execute_dynamic_board", "suggest_questions", "advance_beat"],
-      "toolEventTriggers": [
-        { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
-        { "toolName": "suggest_questions", "eventType": "output_update" }
-      ]
-    },
     "live-lesson-creator-tools": {
       "command": "node",
       "args": ["creator-mcp-server/dist/index.js"],
@@ -35,12 +23,6 @@
     }
   },
   "sessionTemplates": {
-    "teaching": {
-      "description": "苏格拉底式教学会话 - 动态板书引导",
-      "enabledSkills": ["socratic-teacher"],
-      "skillPromptMode": "inline",
-      "appendSystemPrompt": ""
-    },
     "creator": {
       "description": "Creator app (lesson plan editor) — rich card chat for multi-step generation, clarification, and schema verification",
       "enabledSkills": ["lesson-plan-editor"],
@@ -57,7 +39,6 @@
     }
   },
   "skills": [
-    { "slug": "socratic-teacher", "name": "socratic-teacher" },
     { "slug": "lesson-plan-editor", "name": "lesson-plan-editor" }
   ]
 }

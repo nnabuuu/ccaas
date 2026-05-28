@@ -1,15 +1,18 @@
 # Live Lesson - AI Interactive Teaching System
 
 ## Overview
-AI-driven interactive teaching system with dynamic blackboard and Socratic dialogue.
+AI-driven interactive teaching system. Two product surfaces:
+- **Classroom**: REST-polled teacher/student dashboards for live lessons (the main app).
+- **Creator** (port 5284): rich-chat-card editor for authoring lesson manifests via ccaas. Talks to ccaas via the `creator-mcp-server/` stdio MCP server + the `creator` session template.
+
+An earlier "AI Socratic blackboard" feature line (`mcp-server/`, `LessonPage.tsx`, `useLiveLesson.ts`, `teaching` session template, `socratic-teacher` skill) was removed in commit purging dead chain on 2026-05-28 — it was unrouted and unused.
 
 ## Architecture
 - **SQLite DB** (`backend/data/live-lesson.db`): Lessons + classroom_sessions + students + submissions + snapshots tables, WAL mode. DB path is resolved from `backend/` as cwd.
-- **MCP Server**: State machine backed by SQLite, 8 board control tools, session restore on startup
-- **Solution Backend** (port 3007): NestJS + TypeORM server — lesson API + classroom API (session-based)
-- **Frontend**: React + Vite (port 5283), boardState from output_update events, classroom data via **REST polling** (3s interval)
-- **Observation Engine**: `@kedge-agentic/observer-engine` integration — 6 event handlers emit observations consumed by teacher dashboard
-- **Skill**: socratic-teacher - behavior guide for AI teacher
+- **Solution Backend** (port 3007): NestJS + TypeORM server — lesson API + classroom API (session-based) + ccaas proxy controllers for creator.
+- **Frontend** (port 5283): React + Vite classroom UI, classroom data via **REST polling** (3s interval).
+- **Creator** (port 5284): separate Vite app for authoring lesson plans against ccaas (rich chat cards via `creator-mcp-server/`).
+- **Observation Engine**: `@kedge-agentic/observer-engine` integration — 6 event handlers emit observations consumed by teacher dashboard.
 
 ## Communication Protocol
 
@@ -21,8 +24,6 @@ Frontend uses **REST polling** for classroom state updates — both teacher and 
 | Student | `GET /:code/state` | 3s | Current step, notifications, phase |
 
 The SSE endpoint (`GET /:code/stream`) still exists in code but is **dead code** — no frontend consumer uses it.
-
-CCAAS SDK (`useLiveLesson.ts`) still uses Socket.IO/SSE to connect to CCAAS backend (port 3001) for the board flow — this is separate from the classroom polling.
 
 ## Session Model
 Each lesson run creates a **ClassroomSession** with a 6-char code (e.g. `HX3KM7`). All classroom operations (join, submit, stream, etc.) use the session code instead of lessonId. This enables multiple instances of the same lesson running concurrently.
@@ -199,9 +200,7 @@ Each exercise component self-manages its review restore via the `useReviewRestor
 
 ## Key Files
 - `data/lessons/ideal-beauty-reading/manifest.json` - Lesson manifest (reading lesson)
-- `mcp-server/src/db.ts` - SQLite init, seed, CRUD operations
-- `mcp-server/src/state-manager.ts` - Factory-based state machine with DB persistence
-- `mcp-server/src/index.ts` - 8 MCP tools, DB init + session restore on startup
+- `creator-mcp-server/src/index.ts` - 3 emit_*_card stdio MCP tools used by the creator app
 - `backend/src/main.ts` - NestJS bootstrap (port 3007)
 - `backend/src/infra/app.module.ts` - top-level NestJS module composition
 - `backend/src/adapters/persistence/entities/classroom-session.entity.ts` - Session entity (code, lessonId, status)
@@ -216,13 +215,11 @@ Each exercise component self-manages its review restore via the `useReviewRestor
 - `backend/src/adapters/http/lesson.controller.ts` - Lesson list + manifest API
 - `backend/src/application/lesson/lesson.service.ts` - Lesson seeding + sanitize-manifest dispatch
 - `frontend/src/hooks/useClassroom.ts` - Session create/lookup, student/teacher polling hooks (3s)
-- `frontend/src/hooks/useLiveLesson.ts` - boardState accumulation hook
 - `frontend/src/pages/JoinPage.tsx` - Student entry: code input → name input → classroom
 - `frontend/src/components/student/StudentGuide.tsx` - First-visit welcome guide
 - `frontend/src/components/student/TranslateButton.tsx` - Context-aware translate
 - `frontend/src/components/teacher/ObservationPanel.tsx` - Teacher observation dashboard
 - `frontend/src/components/teacher/CoachingPanel.tsx` - Teacher coaching insights
-- `skills/socratic-teacher/SKILL.md` - AI teacher behavior guide
 
 ## Manifest & DB Seed
 
@@ -247,14 +244,17 @@ The seed logic (`application/lesson/lesson.service.ts`) only inserts if the row 
 
 ## Dev Commands
 ```bash
-# MCP server
-cd mcp-server && npm install && npm run build
+# Creator MCP server (emit_*_card tools)
+cd creator-mcp-server && npm install && npm run build
 
 # Solution backend (NestJS)
 cd backend && npm install --legacy-peer-deps && npx nest build && node dist/main.js
 
-# Frontend
+# Frontend (classroom)
 cd frontend && npm install && npm run dev
+
+# Creator app
+cd creator && npm install && npm run dev
 
 # Type-check frontend (use `npm run build`, NOT `tsc --noEmit`)
 cd frontend && npm run build
@@ -332,16 +332,12 @@ server {
 }
 ```
 
-### CCAAS SDK connection (exception)
-
-`useLiveLesson.ts` 中 `SERVER_URL` 从 `import.meta.env.VITE_CCAAS_URL` 读取（默认 `http://localhost:3001`）。SDK 使用 Socket.IO/SSE 直连 CCAAS 后端，不走 Vite proxy。生产环境在 `frontend/.env` 设置 `VITE_CCAAS_URL` 后重新构建。
-
 ### Checklist
 
 | 路径 | 代理目标 | 说明 |
 |------|----------|------|
-| `/api/*` | Solution Backend (3007) | lesson API + classroom API (REST polling) |
-| CCAAS SDK `serverUrl` | CCAAS Backend (3001) | Socket.IO 直连，不走代理 |
+| `/api/*` | Solution Backend (3007) | lesson API + classroom API (REST polling) + ccaas proxy controllers for creator |
+| Creator app `/api/*` | Solution Backend (3007) | same-origin proxy — creator never holds CCAAS_API_KEY (see Creator app env section) |
 
 ## API Endpoints
 | Method | Route | Purpose |
