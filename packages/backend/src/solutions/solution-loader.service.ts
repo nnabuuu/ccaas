@@ -606,53 +606,11 @@ export class SolutionLoaderService implements OnModuleInit {
       return existing.id;
     }
 
-    let result;
-    try {
-      result = await this.tenants.create({
-        name,
-        slug,
-        description,
-      });
-    } catch (err) {
-      // Race condition or duplicate-slug fallback: another import may have
-      // created the same slug between our findOne and create. Re-query and
-      // use whatever persisted.
-      const fallback = await this.tenants.findOne(slug);
-      if (fallback) {
-        warnings.push(
-          `Tenant "${slug}" create raced with another import — using existing row (${fallback.id})`,
-        );
-        this.logger.warn(
-          `Tenant "${slug}" create failed (${(err as Error).message}); falling back to existing row ${fallback.id}`,
-        );
-        return fallback.id;
-      }
-      throw err;
-    }
-
-    // Verification: tenants.create has been observed (rare TypeORM-SQLite
-    // edge case) to return a fully-populated entity whose row never
-    // persists. Re-query by id; if missing, fall back to the slug match —
-    // otherwise downstream child rows (mcp_servers, api_keys) would
-    // reference an orphan solutionId that no FK or admin tool can resolve.
-    const verify = await this.tenants.findOne(result.tenant.id);
-    if (!verify) {
-      const bySlug = await this.tenants.findOne(slug);
-      if (bySlug) {
-        warnings.push(
-          `Tenant "${slug}" create reported id=${result.tenant.id} but row missing on re-query; ` +
-          `using slug-matched row ${bySlug.id} instead (orphan-tenant guard).`,
-        );
-        this.logger.warn(
-          `Tenant "${slug}" create returned id=${result.tenant.id} but row not persisted — ` +
-          `falling back to slug-matched id=${bySlug.id}`,
-        );
-        return bySlug.id;
-      }
-      throw new Error(
-        `Tenant "${slug}" create reported success but row not persisted and slug lookup also empty`,
-      );
-    }
+    const result = await this.tenants.create({
+      name,
+      slug,
+      description,
+    });
 
     warnings.push(`Created new tenant: ${slug}`);
     this.logger.log(`Created tenant "${slug}" (${result.tenant.id})`);
