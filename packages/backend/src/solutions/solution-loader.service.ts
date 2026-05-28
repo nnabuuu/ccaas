@@ -244,6 +244,7 @@ export class SolutionLoaderService implements OnModuleInit {
       solutionId,
       filteredMcpServers,
       warnings,
+      opts?.solutionDir,
     );
 
     // Step 3: Auto-sync enabledBundles to tenant config
@@ -605,11 +606,53 @@ export class SolutionLoaderService implements OnModuleInit {
       return existing.id;
     }
 
-    const result = await this.tenants.create({
-      name,
-      slug,
-      description,
-    });
+    let result;
+    try {
+      result = await this.tenants.create({
+        name,
+        slug,
+        description,
+      });
+    } catch (err) {
+      // Race condition or duplicate-slug fallback: another import may have
+      // created the same slug between our findOne and create. Re-query and
+      // use whatever persisted.
+      const fallback = await this.tenants.findOne(slug);
+      if (fallback) {
+        warnings.push(
+          `Tenant "${slug}" create raced with another import — using existing row (${fallback.id})`,
+        );
+        this.logger.warn(
+          `Tenant "${slug}" create failed (${(err as Error).message}); falling back to existing row ${fallback.id}`,
+        );
+        return fallback.id;
+      }
+      throw err;
+    }
+
+    // Verification: tenants.create has been observed (rare TypeORM-SQLite
+    // edge case) to return a fully-populated entity whose row never
+    // persists. Re-query by id; if missing, fall back to the slug match —
+    // otherwise downstream child rows (mcp_servers, api_keys) would
+    // reference an orphan solutionId that no FK or admin tool can resolve.
+    const verify = await this.tenants.findOne(result.tenant.id);
+    if (!verify) {
+      const bySlug = await this.tenants.findOne(slug);
+      if (bySlug) {
+        warnings.push(
+          `Tenant "${slug}" create reported id=${result.tenant.id} but row missing on re-query; ` +
+          `using slug-matched row ${bySlug.id} instead (orphan-tenant guard).`,
+        );
+        this.logger.warn(
+          `Tenant "${slug}" create returned id=${result.tenant.id} but row not persisted — ` +
+          `falling back to slug-matched id=${bySlug.id}`,
+        );
+        return bySlug.id;
+      }
+      throw new Error(
+        `Tenant "${slug}" create reported success but row not persisted and slug lookup also empty`,
+      );
+    }
 
     warnings.push(`Created new tenant: ${slug}`);
     this.logger.log(`Created tenant "${slug}" (${result.tenant.id})`);
@@ -628,6 +671,7 @@ export class SolutionLoaderService implements OnModuleInit {
     solutionId: string,
     mcpServers: Record<string, McpServerDefinition>,
     warnings: string[],
+    solutionDir?: string,
   ): Promise<McpServerLoadResult[]> {
     const results: McpServerLoadResult[] = [];
 
@@ -638,6 +682,7 @@ export class SolutionLoaderService implements OnModuleInit {
           slug,
           serverDef,
           warnings,
+          solutionDir,
         );
         results.push(result);
       } catch (err) {
@@ -663,6 +708,7 @@ export class SolutionLoaderService implements OnModuleInit {
     slug: string,
     serverDef: McpServerDefinition,
     warnings: string[],
+    solutionDir?: string,
   ): Promise<McpServerLoadResult> {
     const existing = await this.mcpPool.findOne(solutionId, slug);
 
@@ -679,6 +725,10 @@ export class SolutionLoaderService implements OnModuleInit {
           toolEventTriggers: serverDef.toolEventTriggers,
         },
       });
+
+      if (solutionDir) {
+        this.materializeMcpServerBundle(solutionId, slug, serverDef, solutionDir, warnings);
+      }
 
       return {
         slug,
@@ -705,12 +755,86 @@ export class SolutionLoaderService implements OnModuleInit {
 
     const created = await this.mcpPool.create(solutionId, dto);
 
+    // Materialize the MCP server bundle into the tenant workspace tree so
+    // per-session symlinks (WorkspaceService.createMcpSymlinks) resolve to
+    // real files. Solutions that ship MCP servers in their source repo
+    // (e.g., live-lesson/creator-mcp-server/) need this; without it the
+    // symlink targets an empty dir and `node …/dist/index.js` ENOENTs,
+    // leaving the MCP server invisible to the agent subprocess.
+    if (solutionDir) {
+      this.materializeMcpServerBundle(solutionId, slug, serverDef, solutionDir, warnings);
+    } else {
+      warnings.push(
+        `MCP server "${slug}" registered without solutionDir — files not materialized; ` +
+        `agent sessions will fail to spawn this server unless paths are absolute.`,
+      );
+    }
+
     return {
       slug,
       name: serverDef.description || slug,
       action: 'created',
       serverId: created.id,
     };
+  }
+
+  /**
+   * Materialize MCP server source files from the solution dir into the
+   * tenant workspace tree at `<workspaceDir>/tenants/<solutionId>/mcp-servers/<slug>/`.
+   *
+   * Per-session WorkspaceService.createMcpSymlinks symlinks
+   * `<session>/.claude/mcp-servers/<slug>` → that tenant path. Without
+   * this step, the symlink target is empty and the MCP server fails to
+   * spawn (ENOENT on `node <relative>/dist/index.js`).
+   *
+   * Strategy: write a single symlink from the tenant MCP root to the
+   * solution dir. Yes, this exposes the whole solution dir, but the
+   * agent subprocess can only invoke the exact dist/index.js path
+   * declared in solution.json — the symlink is a routing convenience,
+   * not an access boundary. Solutions that need stricter isolation
+   * should ship MCP servers in a separate subdirectory and reference it
+   * relative.
+   *
+   * Idempotent: removes any existing symlink first.
+   */
+  private materializeMcpServerBundle(
+    solutionId: string,
+    slug: string,
+    serverDef: McpServerDefinition,
+    solutionDir: string,
+    warnings: string[],
+  ): void {
+    if (serverDef.type === 'rest-adapter') {
+      // REST adapters are HTTP shims spawned in-process; no bundle to materialize.
+      return;
+    }
+    const workspaceDir = this.cfg.get<string>('workspace.dir', '.agent-workspace');
+    const workspaceRoot = path.resolve(workspaceDir);
+    const tenantMcpRoot = path.join(workspaceRoot, 'tenants', solutionId, 'mcp-servers');
+    const symlinkPath = path.join(tenantMcpRoot, slug);
+
+    try {
+      fs.mkdirSync(tenantMcpRoot, { recursive: true });
+      if (fs.existsSync(symlinkPath) || fs.lstatSync(symlinkPath).isSymbolicLink?.()) {
+        try { fs.unlinkSync(symlinkPath); } catch { /* missing is fine */ }
+      }
+      fs.symlinkSync(solutionDir, symlinkPath, 'dir');
+      this.logger.debug(`Materialized MCP bundle: ${symlinkPath} → ${solutionDir}`);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT' && !fs.existsSync(symlinkPath)) {
+        // lstatSync threw because path doesn't exist; create the symlink fresh.
+        try {
+          fs.symlinkSync(solutionDir, symlinkPath, 'dir');
+          this.logger.debug(`Materialized MCP bundle: ${symlinkPath} → ${solutionDir}`);
+          return;
+        } catch (err2) {
+          warnings.push(`Failed to materialize MCP "${slug}": ${(err2 as Error).message}`);
+          return;
+        }
+      }
+      warnings.push(`Failed to materialize MCP "${slug}": ${(err as Error).message}`);
+    }
   }
 
   // --------------------------------------------------------------------------
