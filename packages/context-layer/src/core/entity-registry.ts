@@ -129,6 +129,25 @@ export class EntityRegistry {
     return out;
   }
 
+  /**
+   * Read the underlying Zod schema for a registered type.
+   *
+   * Phase 2 addition. Returns the `ObjectTypeDef.schema` that the
+   * delegated `OntologyRegistry` holds. In Phase 2 every registered
+   * type carries a placeholder `z.object({}).passthrough()` because
+   * `ReferenceableOptions` has no schema field; solutions can wire
+   * real schemas later by switching to `defineObjectType` directly.
+   *
+   * Used by downstream consumers (recipe-book's future
+   * schema-driven `@Picker`, ontology projection layer) to introspect
+   * fields without rebuilding the type info from scratch.
+   *
+   * Returns `undefined` when the type was never registered.
+   */
+  getObjectTypeSchema(typeName: string): z.ZodObject<z.ZodRawShape> | undefined {
+    return this.ontology.getObjectType(typeName)?.schema;
+  }
+
   hasChildren(entityType: string): boolean {
     return this.relations.some((r) => r.parent === entityType);
   }
