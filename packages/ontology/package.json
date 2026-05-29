@@ -1,0 +1,58 @@
+{
+  "name": "@kedge-agentic/ontology",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Schema + governance contract layer for kedge-ccaas. Framework-free TypeScript package providing ObjectTypeDef / ActionDef / FunctionDef / ManifestDef / AccessBoundary / OntologyRegistry primitives, plus semantic projection for LLM agents. Zod-first: field shapes live in Zod schemas (the source of truth); the PropertyMeta sidecar carries only governance + presentation hints Zod can't express. See docs/ontology/kedge-ontology-design.md for the spec.",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./manifest": {
+      "types": "./dist/manifest/index.d.ts",
+      "default": "./dist/manifest/index.js"
+    },
+    "./accessor": {
+      "types": "./dist/accessor/index.d.ts",
+      "default": "./dist/accessor/index.js"
+    },
+    "./registry": {
+      "types": "./dist/registry/index.d.ts",
+      "default": "./dist/registry/index.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers/index.d.ts",
+      "default": "./dist/helpers/index.js"
+    },
+    "./semantic": {
+      "types": "./dist/semantic/index.d.ts",
+      "default": "./dist/semantic/index.js"
+    },
+    "./distribution": {
+      "types": "./dist/distribution/index.d.ts",
+      "default": "./dist/distribution/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.0",
+    "zod-to-json-schema": "^3.25.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.0"
+  }
+}
