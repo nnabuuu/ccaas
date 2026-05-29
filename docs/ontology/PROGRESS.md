@@ -12,7 +12,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 | 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
 | 2 — context-layer refactor | ⏳ waiting | — | — | — | Blocked on Phase 1 |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
-| 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive |
+| 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive. **1 candidate identified** — see "Phase 4 trigger candidates" below. |
 | 5 — Tier 3 primitives | ⏳ waiting | — | — | — | Per-item gated on individual promotion criteria |
 
 ## Phase 1 commit log
@@ -39,3 +39,17 @@ Decisions made during implementation that diverge from or refine the spec/impl-p
 - **2026-05-29, commit 1**: Adopted subpath exports (`@kedge-agentic/ontology/schema`, etc.) matching `agent-runtime`'s pattern, instead of the single-root-`index.ts` re-export described in design spec §2.1. Rationale: consistency with sibling framework-free packages + cleaner consumer imports + better tree-shaking. Catch-all root still exists for convenience.
 - **2026-05-29, commit 1**: `AccessBoundary.readable`/`.writable` will ship as `readonly string[]` in Phase 1, not the `BoundaryPathEntry` union shape (`string | { slot, where }`) from design spec §4.4. The union with predicate entries lands in Phase 4 alongside `BoundaryPredicate`. Forward-compatible: callers passing plain strings today work unchanged when the union lands.
 - **2026-05-29, commit 1**: Root `package.json` modified (added `build:ontology` script + chained into `build:libs`) — minor scope expansion vs the impl plan's "no file outside packages/ontology/" exit criterion. Necessary to meet the "build:libs includes ontology" exit criterion.
+
+## Phase 4 trigger candidates
+
+Concrete Tier 2 use cases identified in existing Solutions. Each row is a real
+code/design path that would benefit from the named primitive — recorded here so
+that when Phase 4 gating fires (Phase 3 shipped + at least one Solution committed
+to consuming it), the implementation order can be driven by demand rather than
+spec order.
+
+| Primitive | Solution | Concrete need | Evidence |
+|---|---|---|---|
+| `ObjectSetDef` | `solutions/business/live-lesson` | "Struggling students" / "at-risk students" / "stuck students" are computed on every 3s teacher-dashboard poll and used as hardcoded filter sets across handlers + UI. Tier 2 lets these become named, agent-visible subsets the picker can reference (`strugglingStudents`, `atRiskStudents`) without re-spelling the filter at each call site. | Quadrant algorithm: `solutions/business/live-lesson/design/student-quadrant-algorithm.md` + `frontend/src/components/teacher/summary/summary-helpers.ts:computeStudentQuadrants()`. Hardcoded subset: `backend/src/adapters/observer-engine/handlers/status-change-handler.ts:22` (`ALERTABLE_STATUSES = ['stuck', 'struggling', 'idle']`). Dashboard health cards: `design/teacher-dashboard-design.md`. Audited 2026-05-30. |
+| `InterfaceDef` | — | No clear cross-type query need today; existing polymorphism handled by Zod discriminated unions (observation kinds, answer-key kinds). Would land when a plugin ecosystem or 3rd-party observation types appear. | live-lesson audit 2026-05-30: present but not load-bearing. |
+| `BoundaryPredicate` + predicate-scoped `AccessBoundary` | — | No per-row filtering need today — live-lesson scopes all access by `sessionId`; no `teacherId` / `classId` / `tenantId` axis exists. Triggers: multi-teacher concurrent sessions, parent-facing UI, or cross-session analytics. | live-lesson audit 2026-05-30: no current consumer. |
