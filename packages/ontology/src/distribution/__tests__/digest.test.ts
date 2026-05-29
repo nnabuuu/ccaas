@@ -128,6 +128,44 @@ describe('computeSchemaDigest', () => {
     expect(r.getSchemaDigest()).toBe(r.getSchemaDigest());
   });
 
+  it('empty registry produces a stable, well-formed digest', () => {
+    // The empty digest is the identity for "no schema yet" — useful as
+    // a sentinel for "has anything been registered?" without exposing
+    // the internal Maps. Should be stable across runs.
+    const r1 = new OntologyRegistry();
+    const r2 = new OntologyRegistry();
+    expect(r1.getSchemaDigest()).toBe(r2.getSchemaDigest());
+    expect(r1.getSchemaDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
+  it('function-only registry produces a different digest than empty', () => {
+    // Catches a regression where serializeRegistry might drop the
+    // functions list when objectTypes + manifests are both empty.
+    const empty = new OntologyRegistry().getSchemaDigest();
+    const r = new OntologyRegistry();
+    r.registerFunction({
+      apiName: 'compute',
+      displayName: 'compute',
+      params: z.object({ x: z.number() }),
+      returnType: z.number(),
+      semantic: 's',
+      allowedRoles: ['agent'],
+    });
+    expect(r.getSchemaDigest()).not.toBe(empty);
+    expect(r.getSchemaDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
+  it('serialized output explicitly carries empty arrays (not omitted)', () => {
+    // Explicit empty arrays in serialization keep the JSON Schema shape
+    // predictable for consumers — they don't have to special-case
+    // "missing means empty."
+    const s = serializeRegistry(new OntologyRegistry().context());
+    expect(s.objectTypes).toEqual([]);
+    expect(s.manifests).toEqual([]);
+    expect(s.functions).toEqual([]);
+    expect(s.ontologyVersion).toBeDefined();
+  });
+
   it('digest is independent of ActionDef.preconditions list order', () => {
     function planWithPreconditions(
       preconditions: Array<

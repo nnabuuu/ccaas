@@ -95,6 +95,45 @@ describe('checkBoundary — read', () => {
     });
     expect(d.allowed).toBe(false);
   });
+
+  it('allows deep dot-path when only head is in allowlist (plan → plan.steps.objective)', () => {
+    // Documents Phase 1 behavior: dot-path matching is head-based, not
+    // progressive. 'plan' authorizes ANY depth under 'plan' — not just
+    // one segment deep. If/when we want stricter scoping ('plan' OK
+    // but 'plan.privateMetadata' denied), this test pins the behavior
+    // that would need to change.
+    const d = checkBoundary({
+      manifest: M,
+      role: 'agent',
+      op: { kind: 'read', path: 'plan.steps.objective.text' },
+    });
+    expect(d.allowed).toBe(true);
+  });
+
+  it('denies multi-segment dot-path when head is not in allowlist (no progressive walk)', () => {
+    // Documents Phase 1 behavior: matching only looks at the FIRST
+    // segment. If 'students.id' is in the allowlist but 'students' is
+    // not, a request for 'students.id.suffix' would NOT match
+    // 'students.id' — we don't try `students.id`, only `students`.
+    // This is intentional simplicity; lifted in Phase 4 if needed.
+    const tighter: ManifestDef = {
+      ...M,
+      boundaries: [
+        {
+          role: 'agent',
+          readable: ['students.id'], // explicit nested path; head 'students' NOT separately listed
+          writable: [],
+          actions: [],
+        },
+      ],
+    };
+    const d = checkBoundary({
+      manifest: tighter,
+      role: 'agent',
+      op: { kind: 'read', path: 'students.id.suffix' },
+    });
+    expect(d.allowed).toBe(false);
+  });
 });
 
 describe('checkBoundary — write', () => {

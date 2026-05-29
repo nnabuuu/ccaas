@@ -208,8 +208,38 @@ describe('getDisplayName', () => {
     expect(r.getDisplayName('Student', 'fr')).toBe('Student');
   });
 
+  it('falls back to first available value when locale + en both missing (zh-only displayName, en request)', () => {
+    // N4 from code review. When the LocalizedString has neither the
+    // requested locale nor an 'en' key, the chain returns the first
+    // Object.values entry — better than crashing or returning apiName
+    // when SOME translation exists.
+    const r = new OntologyRegistry();
+    r.registerObjectType({
+      apiName: 'ZhOnlyType',
+      displayName: { zh: '仅中文' },
+      semantic: 's',
+      schema: z.object({ id: z.string() }),
+      links: [],
+      actions: [],
+    });
+    expect(r.getDisplayName('ZhOnlyType', 'en')).toBe('仅中文');
+    expect(r.getDisplayName('ZhOnlyType', 'fr')).toBe('仅中文');
+  });
+
   it('falls back to apiName when no def found', () => {
     expect(new OntologyRegistry().getDisplayName('Ghost')).toBe('Ghost');
+  });
+
+  it('resolves displayName through manifest registry (not just object types)', () => {
+    // Documents lookup order: ObjectType → Manifest → Function.
+    // Manifest-only lookup is the lighter-tested path.
+    const r = new OntologyRegistry();
+    r.registerManifest({
+      ...lessonSession(),
+      displayName: { en: 'Lesson Session', zh: '课堂会话' },
+    });
+    expect(r.getDisplayName('LessonSession', 'en')).toBe('Lesson Session');
+    expect(r.getDisplayName('LessonSession', 'zh')).toBe('课堂会话');
   });
 });
 

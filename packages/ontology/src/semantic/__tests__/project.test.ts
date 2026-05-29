@@ -240,6 +240,95 @@ describe('projectAsSystemPrompt', () => {
   });
 });
 
+describe('projection edge cases', () => {
+  function emptyManifest(): ManifestDef {
+    return {
+      name: 'Empty',
+      displayName: 'Empty',
+      schemaVersion: '0.1.0',
+      semantic: 'no slots, no actions, no streams',
+      slots: [],
+      state: [],
+      boundaries: [
+        { role: 'agent', readable: [], writable: [], actions: [] },
+      ],
+    };
+  }
+
+  it('Anthropic projection returns [] when no actions visible', () => {
+    const r = new OntologyRegistry();
+    const m = emptyManifest();
+    r.registerManifest(m);
+    r.validate();
+    expect(projectAsAnthropicTools(m, r, 'agent')).toEqual([]);
+  });
+
+  it('MCP projection returns [] when no actions visible', () => {
+    const r = new OntologyRegistry();
+    const m = emptyManifest();
+    r.registerManifest(m);
+    r.validate();
+    expect(projectAsMcpTools(m, r, 'agent')).toEqual([]);
+  });
+
+  it('system-prompt for empty manifest is header + semantic only (no section headers)', () => {
+    const r = new OntologyRegistry();
+    const m = emptyManifest();
+    r.registerManifest(m);
+    r.validate();
+    const text = projectAsSystemPrompt(m, r, 'agent');
+    expect(text).toContain('# Empty (Empty)');
+    expect(text).toContain('no slots, no actions, no streams');
+    // No section headers when every section is empty for this role
+    expect(text).not.toContain('## Slots');
+    expect(text).not.toContain('## State');
+    expect(text).not.toContain('## What you can do');
+    expect(text).not.toContain('## What you can subscribe to');
+    expect(text).not.toContain('## What you can compute');
+  });
+
+  it('Anthropic projection includes role-allowed functions even with no manifest actions', () => {
+    // Pure function-only scenario: registry has functions but the
+    // manifest binds no slot whose ObjectType has actions. The
+    // projection still lists the functions since they're
+    // registry-scoped, not slot-bound.
+    const r = new OntologyRegistry();
+    r.registerFunction({
+      apiName: 'pureCompute',
+      displayName: 'pure',
+      params: z.object({ x: z.number() }),
+      returnType: z.number(),
+      semantic: 'compute',
+      allowedRoles: ['agent'],
+    });
+    const m = emptyManifest();
+    r.registerManifest(m);
+    r.validate();
+    const tools = projectAsAnthropicTools(m, r, 'agent');
+    expect(tools.map((t) => t.name)).toEqual(['pureCompute']);
+  });
+
+  it('function with empty allowedRoles is visible to every role', () => {
+    // Documents the contract: allowedRoles=[] means "anyone allowed,"
+    // not "no one allowed." Mirrors the same allowedRoles semantics
+    // for ActionDef in checkBoundary.
+    const r = new OntologyRegistry();
+    r.registerFunction({
+      apiName: 'globalCompute',
+      displayName: 'global',
+      params: z.object({}),
+      returnType: z.number(),
+      semantic: 'visible to all',
+      allowedRoles: [], // empty
+    });
+    const m = emptyManifest();
+    r.registerManifest(m);
+    r.validate();
+    expect(projectAsAnthropicTools(m, r, 'agent').map((t) => t.name)).toContain('globalCompute');
+    expect(projectAsAnthropicTools(m, r, 'picker' as 'agent').map((t) => t.name)).toContain('globalCompute');
+  });
+});
+
 describe('projectManifest dispatcher', () => {
   it('dispatches to anthropic-tools format', () => {
     const { registry, manifest } = setup();
