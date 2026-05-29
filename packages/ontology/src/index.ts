@@ -45,3 +45,16 @@ export type {
   ManifestDef,
   SchemaVersion,
 } from './manifest/index.js';
+
+// Accessor subpath
+export type {
+  ActionResult,
+  ActionErrorCode,
+  StateChange,
+  BoundaryDecision,
+  BoundaryCheckInput,
+  BoundaryOp,
+  ManifestAccessor,
+  ActionDescriptor,
+} from './accessor/index.js';
+export { checkBoundary } from './accessor/index.js';
