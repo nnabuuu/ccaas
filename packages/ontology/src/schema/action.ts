@@ -39,6 +39,26 @@ export type ApiKeyScopeLiteral =
   | 'admin';
 
 /**
+ * Runtime list of every `ApiKeyScopeLiteral`. The validator walks
+ * `ActionDef.requiredScopes` / `FunctionDef.requiredScopes` against
+ * this set to surface typos at registration time. Keep in lockstep
+ * with the union above (the `satisfies` clause guarantees the array
+ * covers the type at compile time).
+ */
+export const API_KEY_SCOPES = [
+  'skills:read',
+  'skills:write',
+  'skills:execute',
+  'skills:delete',
+  'mcp:read',
+  'mcp:write',
+  'chat',
+  'analytics:read',
+  'builder',
+  'admin',
+] as const satisfies readonly ApiKeyScopeLiteral[];
+
+/**
  * Declarative precondition shapes (discriminated by `kind`).
  *
  * Three forms cover the common cases without committing to a

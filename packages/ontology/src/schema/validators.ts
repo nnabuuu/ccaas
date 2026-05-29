@@ -22,12 +22,19 @@
  *                                 payloadSchema must be set
  *   - LINK_TARGET_UNRESOLVED    — LinkDef.target must resolve to a
  *                                 registered ObjectType
+ *   - LINK_INVERSE_UNRESOLVED   — when LinkDef.inverse is set, the
+ *                                 target ObjectType must have a link
+ *                                 with that apiName (bidirectional
+ *                                 traversal sanity check)
  *   - SLOT_TARGET_UNRESOLVED    — SlotDef.target.apiName / .name must
  *                                 resolve to a registered ObjectType
  *                                 (objectType kind) or Manifest
  *                                 (manifest kind)
- *   - DERIVED_FROM_UNRESOLVED   — SlotDef.derivedFrom dot-path must
- *                                 resolve via slot-graph traversal
+ *   - DERIVED_FROM_UNRESOLVED   — SlotDef.derivedFrom 'head.tail' must
+ *                                 resolve: head is a slot on this
+ *                                 manifest, tail (single segment) is a
+ *                                 link apiName on the head slot's
+ *                                 target ObjectType
  *   - LIFECYCLE_ACTION_UNRESOLVED — each LifecycleDef hook apiName must
  *                                   resolve to an ActionDef on a
  *                                   slot-bound ObjectType
@@ -37,6 +44,10 @@
  *                                     manifest slot apiName
  *   - PRECONDITION_NAMED_UNSUPPORTED — Phase 1 stub; named-predicate
  *                                      registry lands in Phase 4
+ *   - REQUIRED_SCOPE_UNKNOWN    — every entry in ActionDef.requiredScopes
+ *                                 / FunctionDef.requiredScopes must be
+ *                                 a member of ApiKeyScopeLiteral
+ *                                 (typo-catch at registration time)
  *
  * Each validator is pure and stateless — no I/O, no mutation. Cross-
  * def validators take a `ValidationContext` so they can resolve
@@ -46,6 +57,7 @@
  */
 
 import type { ActionDef, ActionPrecondition } from './action.js';
+import { API_KEY_SCOPES } from './action.js';
 import type { FunctionDef } from './function.js';
 import type { LinkDef } from './link.js';
 import type { ObjectTypeDef } from './object-type.js';
@@ -58,19 +70,23 @@ import type {
 } from '../manifest/index.js';
 import { getObjectRefTarget } from './zod-helpers.js';
 
+const VALID_SCOPES: ReadonlySet<string> = new Set(API_KEY_SCOPES);
+
 export type ValidationCode =
   | 'SEMANTIC_EMPTY'
   | 'META_KEY_UNKNOWN'
   | 'WILDCARD_OUTSIDE_ADMIN'
   | 'STREAM_PAYLOAD_EXCLUSIVE'
   | 'LINK_TARGET_UNRESOLVED'
+  | 'LINK_INVERSE_UNRESOLVED'
   | 'SLOT_TARGET_UNRESOLVED'
   | 'DERIVED_FROM_UNRESOLVED'
   | 'LIFECYCLE_ACTION_UNRESOLVED'
   | 'PRECONDITION_STATE_UNRESOLVED'
   | 'PRECONDITION_SLOT_UNRESOLVED'
   | 'PRECONDITION_NAMED_UNSUPPORTED'
-  | 'DUPLICATE_DEFINITION';
+  | 'DUPLICATE_DEFINITION'
+  | 'REQUIRED_SCOPE_UNKNOWN';
 
 export interface ValidationError {
   readonly code: ValidationCode;
@@ -121,16 +137,18 @@ export function validateObjectTypeLocal(
     }
   }
 
-  // Per-action local: semantic non-empty
+  // Per-action local: semantic non-empty + requiredScopes membership
   for (let i = 0; i < t.actions.length; i++) {
     const a = t.actions[i];
+    const actionPath = `${base}.actions[${i}]:${a.apiName}`;
     if (!a.semantic || a.semantic.trim().length === 0) {
       errors.push({
         code: 'SEMANTIC_EMPTY',
         message: 'ActionDef.semantic is required and must be non-empty',
-        path: `${base}.actions[${i}]:${a.apiName}`,
+        path: actionPath,
       });
     }
+    errors.push(...validateRequiredScopes(a.requiredScopes, actionPath));
   }
 
   // Per-link local: semantic non-empty
@@ -158,6 +176,26 @@ export function validateFunction(f: FunctionDef): ValidationError[] {
       message: 'FunctionDef.semantic is required and must be non-empty',
       path: base,
     });
+  }
+  errors.push(...validateRequiredScopes(f.requiredScopes, base));
+  return errors;
+}
+
+/** Surfaces REQUIRED_SCOPE_UNKNOWN for any entry not in `ApiKeyScopeLiteral`. */
+function validateRequiredScopes(
+  scopes: readonly string[] | undefined,
+  ownerPath: string,
+): ValidationError[] {
+  if (!scopes || scopes.length === 0) return [];
+  const errors: ValidationError[] = [];
+  for (const s of scopes) {
+    if (!VALID_SCOPES.has(s)) {
+      errors.push({
+        code: 'REQUIRED_SCOPE_UNKNOWN',
+        message: `requiredScopes value '${s}' is not in ApiKeyScopeLiteral`,
+        path: `${ownerPath}.requiredScopes`,
+      });
+    }
   }
   return errors;
 }
@@ -231,12 +269,24 @@ export function validateObjectType(
 
   for (let i = 0; i < t.links.length; i++) {
     const l: LinkDef = t.links[i];
-    if (!ctx.objectTypes.has(l.target)) {
+    const targetType = ctx.objectTypes.get(l.target);
+    if (!targetType) {
       errors.push({
         code: 'LINK_TARGET_UNRESOLVED',
         message: `LinkDef.target '${l.target}' does not resolve to a registered ObjectType`,
         path: `${base}.links[${i}]:${l.apiName}.target`,
       });
+      continue; // skip inverse check; nothing to walk
+    }
+    if (l.inverse !== undefined) {
+      const inverseLink = targetType.links.find((tl) => tl.apiName === l.inverse);
+      if (!inverseLink) {
+        errors.push({
+          code: 'LINK_INVERSE_UNRESOLVED',
+          message: `LinkDef.inverse '${l.inverse}' does not resolve to a link on target ObjectType '${l.target}'`,
+          path: `${base}.links[${i}]:${l.apiName}.inverse`,
+        });
+      }
     }
   }
 
@@ -373,20 +423,65 @@ function validateSlot(
     }
   }
 
-  // derivedFrom: must reference another slot on THIS manifest (head),
-  // and the head must be a non-collection slot whose target type has a
-  // link with the trailing apiName. Phase 1 only checks the head.
+  // derivedFrom: 'head.tail' must resolve. Head is a slot on THIS
+  // manifest; tail (single segment in Phase 1) is the apiName of a
+  // link on the head slot's target ObjectType. Deeper paths
+  // (`a.b.c.d`) only validate `a` and `a.b`; the rest is structurally
+  // permitted as forward-compat for future graph-walk implementations.
   if (slot.derivedFrom) {
-    const head = slot.derivedFrom.split('.')[0];
-    if (!slotApiNames.has(head)) {
-      errors.push({
-        code: 'DERIVED_FROM_UNRESOLVED',
-        message: `SlotDef.derivedFrom '${slot.derivedFrom}' head '${head}' is not a slot on this manifest`,
-        path: `${path}.derivedFrom`,
-      });
-    }
+    errors.push(...validateDerivedFrom(slot, m, ctx, path));
   }
 
+  return errors;
+}
+
+function validateDerivedFrom(
+  slot: SlotDef,
+  m: ManifestDef,
+  ctx: ValidationContext,
+  slotPath: string,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const derivedFrom = slot.derivedFrom!;
+  const parts = derivedFrom.split('.');
+  const head = parts[0];
+
+  const headSlot = m.slots.find((s) => s.apiName === head);
+  if (!headSlot) {
+    errors.push({
+      code: 'DERIVED_FROM_UNRESOLVED',
+      message: `SlotDef.derivedFrom '${derivedFrom}' head '${head}' is not a slot on this manifest`,
+      path: `${slotPath}.derivedFrom`,
+    });
+    return errors;
+  }
+
+  if (parts.length === 1) return errors; // head-only is structurally valid
+
+  // Walk one tail segment: requires the head slot to target an
+  // ObjectType (not a Manifest) and that type to declare a link with
+  // the tail apiName.
+  if (headSlot.target.kind !== 'objectType') {
+    errors.push({
+      code: 'DERIVED_FROM_UNRESOLVED',
+      message: `SlotDef.derivedFrom '${derivedFrom}' head '${head}' targets a Manifest; tail traversal needs an ObjectType target`,
+      path: `${slotPath}.derivedFrom`,
+    });
+    return errors;
+  }
+
+  const tailLinkName = parts[1];
+  const targetType = ctx.objectTypes.get(headSlot.target.apiName);
+  if (!targetType) return errors; // SLOT_TARGET_UNRESOLVED on headSlot already covers this
+
+  const hasLink = targetType.links.some((l) => l.apiName === tailLinkName);
+  if (!hasLink) {
+    errors.push({
+      code: 'DERIVED_FROM_UNRESOLVED',
+      message: `SlotDef.derivedFrom '${derivedFrom}' tail link '${tailLinkName}' is not a link on target ObjectType '${headSlot.target.apiName}'`,
+      path: `${slotPath}.derivedFrom`,
+    });
+  }
   return errors;
 }
 

@@ -292,6 +292,276 @@ describe('DERIVED_FROM_UNRESOLVED', () => {
       'DERIVED_FROM_UNRESOLVED',
     );
   });
+
+  it('flags tail link that does not exist on head slot target', () => {
+    // 'students' derivedFrom 'class.ghostLink' — 'class' resolves to Class,
+    // but Class has no link called 'ghostLink'.
+    const studentT = objectType({ apiName: 'Student' });
+    const classT = objectType({
+      apiName: 'Class',
+      semantic: 'A class.',
+      links: [
+        {
+          apiName: 'contains',
+          displayName: 'contains',
+          target: 'Student',
+          cardinality: '1:N',
+          semantic: 'enrolled students',
+        },
+      ],
+    });
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'class',
+          displayName: 'class',
+          target: { kind: 'objectType', apiName: 'Class' },
+          semantic: 'the class',
+        },
+        {
+          apiName: 'students',
+          displayName: 'students',
+          target: { kind: 'objectType', apiName: 'Student' },
+          collection: true,
+          derivedFrom: 'class.ghostLink',
+          semantic: 'enrolled',
+        },
+      ],
+    });
+    expect(
+      codes(validateManifest(m, ctxFromArrays({ objectTypes: [studentT, classT] }))),
+    ).toContain('DERIVED_FROM_UNRESOLVED');
+  });
+
+  it('passes when head + tail link both resolve', () => {
+    const studentT = objectType({ apiName: 'Student' });
+    const classT = objectType({
+      apiName: 'Class',
+      semantic: 'A class.',
+      links: [
+        {
+          apiName: 'contains',
+          displayName: 'contains',
+          target: 'Student',
+          cardinality: '1:N',
+          semantic: 'enrolled students',
+        },
+      ],
+    });
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'class',
+          displayName: 'class',
+          target: { kind: 'objectType', apiName: 'Class' },
+          semantic: 'the class',
+        },
+        {
+          apiName: 'students',
+          displayName: 'students',
+          target: { kind: 'objectType', apiName: 'Student' },
+          collection: true,
+          derivedFrom: 'class.contains',
+          semantic: 'enrolled',
+        },
+      ],
+    });
+    expect(
+      codes(validateManifest(m, ctxFromArrays({ objectTypes: [studentT, classT] }))),
+    ).not.toContain('DERIVED_FROM_UNRESOLVED');
+  });
+
+  it('flags tail walk when head slot targets a Manifest (not an ObjectType)', () => {
+    const inner = manifest({ name: 'Inner', semantic: 'inner' });
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'nested',
+          displayName: 'nested',
+          target: { kind: 'manifest', name: 'Inner' },
+          semantic: 'nested manifest',
+        },
+        {
+          apiName: 'derived',
+          displayName: 'derived',
+          target: { kind: 'objectType', apiName: 'Whatever' },
+          derivedFrom: 'nested.anything',
+          semantic: 'd',
+        },
+      ],
+    });
+    const ot = objectType({ apiName: 'Whatever' });
+    expect(
+      codes(validateManifest(m, ctxFromArrays({ objectTypes: [ot], manifests: [inner] }))),
+    ).toContain('DERIVED_FROM_UNRESOLVED');
+  });
+
+  it('head-only derivedFrom is structurally valid (no tail to walk)', () => {
+    const planT = objectType({ apiName: 'Plan' });
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'plan',
+          displayName: 'plan',
+          target: { kind: 'objectType', apiName: 'Plan' },
+          semantic: 'p',
+        },
+        {
+          apiName: 'planAlias',
+          displayName: 'planAlias',
+          target: { kind: 'objectType', apiName: 'Plan' },
+          derivedFrom: 'plan',
+          semantic: 'alias',
+        },
+      ],
+    });
+    expect(
+      codes(validateManifest(m, ctxFromArrays({ objectTypes: [planT] }))),
+    ).not.toContain('DERIVED_FROM_UNRESOLVED');
+  });
+});
+
+describe('LINK_INVERSE_UNRESOLVED', () => {
+  it('flags inverse pointing to a link that does not exist on the target', () => {
+    const studentT = objectType({ apiName: 'Student' });
+    const classT = objectType({
+      apiName: 'Class',
+      semantic: 'A class.',
+      links: [
+        {
+          apiName: 'contains',
+          displayName: 'contains',
+          target: 'Student',
+          cardinality: '1:N',
+          inverse: 'ghostInverse',
+          semantic: 'enrolled',
+        },
+      ],
+    });
+    expect(
+      codes(validateObjectType(classT, ctxFromArrays({ objectTypes: [classT, studentT] }))),
+    ).toContain('LINK_INVERSE_UNRESOLVED');
+  });
+
+  it('passes when inverse resolves to a real link on target', () => {
+    const studentT = objectType({
+      apiName: 'Student',
+      links: [
+        {
+          apiName: 'enrolledIn',
+          displayName: 'enrolled in',
+          target: 'Class',
+          cardinality: 'N:1',
+          semantic: 'belongs to',
+        },
+      ],
+    });
+    const classT = objectType({
+      apiName: 'Class',
+      semantic: 'A class.',
+      links: [
+        {
+          apiName: 'contains',
+          displayName: 'contains',
+          target: 'Student',
+          cardinality: '1:N',
+          inverse: 'enrolledIn',
+          semantic: 'enrolled',
+        },
+      ],
+    });
+    expect(
+      codes(validateObjectType(classT, ctxFromArrays({ objectTypes: [classT, studentT] }))),
+    ).not.toContain('LINK_INVERSE_UNRESOLVED');
+  });
+
+  it('inverse check is skipped when LinkDef.target itself is unresolved', () => {
+    const t = objectType({
+      links: [
+        {
+          apiName: 'enrolledIn',
+          displayName: 'enrolled in',
+          target: 'GhostType',
+          cardinality: 'N:1',
+          inverse: 'whatever',
+          semantic: 'x',
+        },
+      ],
+    });
+    const errs = codes(validateObjectType(t, ctxFromArrays({ objectTypes: [t] })));
+    expect(errs).toContain('LINK_TARGET_UNRESOLVED');
+    // Should NOT cascade — only the target error surfaces.
+    expect(errs).not.toContain('LINK_INVERSE_UNRESOLVED');
+  });
+});
+
+describe('REQUIRED_SCOPE_UNKNOWN', () => {
+  it('flags ActionDef.requiredScopes containing an unknown scope', () => {
+    const t = objectType({
+      actions: [
+        {
+          apiName: 'doThing',
+          displayName: 'do',
+          params: z.object({}),
+          sideEffects: [],
+          allowedRoles: ['agent'],
+          auditLevel: 'log',
+          semantic: 'a',
+          requiredScopes: ['skills:execute', 'ghost:typo' as 'admin'],
+        },
+      ],
+    });
+    expect(codes(validateObjectTypeLocal(t))).toContain('REQUIRED_SCOPE_UNKNOWN');
+  });
+
+  it('passes when ActionDef.requiredScopes contains only valid scopes', () => {
+    const t = objectType({
+      actions: [
+        {
+          apiName: 'doThing',
+          displayName: 'do',
+          params: z.object({}),
+          sideEffects: [],
+          allowedRoles: ['agent'],
+          auditLevel: 'log',
+          semantic: 'a',
+          requiredScopes: ['skills:execute', 'admin'],
+        },
+      ],
+    });
+    expect(codes(validateObjectTypeLocal(t))).not.toContain('REQUIRED_SCOPE_UNKNOWN');
+  });
+
+  it('flags FunctionDef.requiredScopes containing an unknown scope', () => {
+    const f: FunctionDef = {
+      apiName: 'compute',
+      displayName: 'compute',
+      params: z.object({}),
+      returnType: z.number(),
+      semantic: 's',
+      allowedRoles: ['agent'],
+      requiredScopes: ['analytics:read', 'bogus' as 'admin'],
+    };
+    expect(codes(validateFunction(f))).toContain('REQUIRED_SCOPE_UNKNOWN');
+  });
+
+  it('absent requiredScopes is a no-op (does not flag)', () => {
+    const t = objectType({
+      actions: [
+        {
+          apiName: 'doThing',
+          displayName: 'do',
+          params: z.object({}),
+          sideEffects: [],
+          allowedRoles: ['agent'],
+          auditLevel: 'log',
+          semantic: 'a',
+          // requiredScopes intentionally absent
+        },
+      ],
+    });
+    expect(codes(validateObjectTypeLocal(t))).not.toContain('REQUIRED_SCOPE_UNKNOWN');
+  });
 });
 
 describe('LIFECYCLE_ACTION_UNRESOLVED', () => {
