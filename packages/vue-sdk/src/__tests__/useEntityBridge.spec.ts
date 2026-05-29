@@ -64,7 +64,7 @@ describe('useEntityBridge', () => {
 
   let mockChat: UseAgentChatReturn
   let updateSectionMock: ReturnType<typeof vi.fn>
-  let saveToBackendMock: ReturnType<typeof vi.fn<[], Promise<void>>>
+  let saveToBackendMock: ReturnType<typeof vi.fn<() => Promise<void>>>
   let config: EntityBridgeConfig
 
   beforeEach(() => {
@@ -72,7 +72,7 @@ describe('useEntityBridge', () => {
 
     mockChat = createMockChat()
     updateSectionMock = vi.fn()
-    saveToBackendMock = vi.fn<[], Promise<void>>().mockResolvedValue(undefined)
+    saveToBackendMock = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 
     config = {
       chat: mockChat,
