@@ -236,7 +236,9 @@ export interface ApplyRequest {
 
 export type EditOperation =
   | { op: 'str_replace'; old_string: string; new_string: string }
-  | { op: 'field_set'; field: string; value: any };
+  | { op: 'field_set'; field: string; value: any }
+  | { op: 'block_attr_set'; block_index: number; attributes: Record<string, any> }
+  | { op: 'block_content_set'; block_index: number; field: string; value: any };
 
 export interface EditResult {
   success: boolean;
