@@ -2,7 +2,7 @@
 
 Schema + governance contract layer for kedge-ccaas agentic services.
 
-> **Status: Phase 1 in progress (v0.1.0).** Core primitives + Tier 1 only. Tier 2/3 primitives compile-time-blocked. See [Implementation Progress](../../docs/ontology/PROGRESS.md) for what's shipped vs in-flight.
+> **Status: Phase 1 shipped (v0.1.0).** Core primitives + Tier 1 are live. Tier 2/3 primitives compile-time-blocked. See [Implementation Progress](../../docs/ontology/PROGRESS.md) for the full commit log and what's deferred to Phases 2–5.
 
 ## What's in this package
 
