@@ -9,7 +9,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 
 | Phase | Status | Started | Shipped | Final commit | Notes |
 |---|---|---|---|---|---|
-| 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | commit 10 (see log) | 10-commit sequence landed; 160+ tests; framework-free verified by architecture test |
+| 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
 | 2 — context-layer refactor | ⏳ waiting | — | — | — | Blocked on Phase 1 |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
 | 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive |
@@ -30,7 +30,7 @@ Within Phase 1's single PR, work is broken into 10 incremental commits, one per 
 | 7 | feat: ontology registry (phase 1, commit 7/10) | `7ddc3db1` | `src/registry/ontology-registry.ts` — OntologyRegistry class. Two-phase registration (local validation eager / cross-def deferred to validate()/seal()). Read API + queries (getPickableTypes / getTraversableLinks / getManifestsForType / getDisplayName). DUPLICATE_DEFINITION ValidationCode added. Out-of-order registration supported. getSchemaDigest stubbed (commit 8). 133 tests across 14 files. |
 | 8 | feat: ontology distribution — serialize + digest (phase 1, commit 8/10) | `24a22e9d` | `src/distribution/{serialize,digest}.ts` — serializeRegistry (Zod → JSON Schema via zod-to-json-schema; lists sorted), canonicalize (recursive key-sort), computeSchemaDigest (sha256). Wires real impl into OntologyRegistry.getSchemaDigest. 145 tests across 15 files. |
 | 9 | feat: ontology semantic projection (phase 1, commit 9/10) | `33133e06` | `src/semantic/{project,formats/*}.ts` — projectManifest dispatcher + 3 format adapters (anthropic-tools, mcp-tools, system-prompt). Action visibility via checkBoundary (boundary + allowedRoles); preconditions ignored at projection time (no runtime state). 159 tests across 16 files. |
-| 10 | feat: ontology architecture test + phase 1 ✅ (phase 1, commit 10/10) | _pending_ | Beefed-up architecture test (recursive walk of src/: bans @nestjs/*, React/Vue/Svelte, any @kedge-agentic/* import, solutions/* paths; allowlists zod + zod-to-json-schema + node builtins). README → "Phase 1 shipped". PROGRESS.md → Phase 1 ✅ + commit 9 SHA. |
+| 10 | feat: ontology architecture test + phase 1 shipped (phase 1, commit 10/10) | `be66d366` | Beefed-up architecture test (recursive walk of src/: bans @nestjs/*, React/Vue/Svelte, any @kedge-agentic/* import, solutions/* paths; allowlists zod + zod-to-json-schema + node builtins). README → "Phase 1 shipped". PROGRESS.md → Phase 1 ✅ + commit 9 SHA. 165 tests; all subpath .d.ts emitted; framework-free verified. |
 
 ## Decisions log
 
