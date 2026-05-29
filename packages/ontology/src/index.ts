@@ -82,3 +82,6 @@ export {
   defineManifest,
   defineStateField,
 } from './helpers/index.js';
+
+// Registry subpath
+export { OntologyRegistry } from './registry/index.js';

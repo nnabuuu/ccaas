@@ -69,7 +69,8 @@ export type ValidationCode =
   | 'LIFECYCLE_ACTION_UNRESOLVED'
   | 'PRECONDITION_STATE_UNRESOLVED'
   | 'PRECONDITION_SLOT_UNRESOLVED'
-  | 'PRECONDITION_NAMED_UNSUPPORTED';
+  | 'PRECONDITION_NAMED_UNSUPPORTED'
+  | 'DUPLICATE_DEFINITION';
 
 export interface ValidationError {
   readonly code: ValidationCode;
