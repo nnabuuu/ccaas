@@ -242,9 +242,16 @@ describe('seal', () => {
   });
 });
 
-describe('getSchemaDigest (Phase 7 stub)', () => {
-  it('returns a placeholder; real impl lands in commit 8', () => {
+describe('getSchemaDigest', () => {
+  it('returns a sha256-prefixed hex digest for an empty registry', () => {
     const r = new OntologyRegistry();
-    expect(r.getSchemaDigest()).toContain('phase-8-pending');
+    expect(r.getSchemaDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
+  });
+
+  it('digest changes when a definition is added', () => {
+    const r = new OntologyRegistry();
+    const before = r.getSchemaDigest();
+    r.registerObjectType(student());
+    expect(r.getSchemaDigest()).not.toBe(before);
   });
 });

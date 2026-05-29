@@ -85,3 +85,16 @@ export {
 
 // Registry subpath
 export { OntologyRegistry } from './registry/index.js';
+
+// Distribution subpath
+export {
+  serializeRegistry,
+  canonicalize,
+  computeSchemaDigest,
+  type SerializedOntology,
+  type SerializedObjectType,
+  type SerializedLink,
+  type SerializedAction,
+  type SerializedFunction,
+  type SerializedManifest,
+} from './distribution/index.js';

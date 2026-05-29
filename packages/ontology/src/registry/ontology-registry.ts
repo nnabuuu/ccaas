@@ -51,6 +51,10 @@ import {
   validateObjectTypeLocal,
   type ValidationContext,
 } from '../schema/index.js';
+import {
+  serializeRegistry,
+  computeSchemaDigest,
+} from '../distribution/index.js';
 
 export class OntologyRegistry {
   private readonly objectTypes = new Map<string, ObjectTypeDef>();
@@ -222,12 +226,13 @@ export class OntologyRegistry {
   }
 
   /**
-   * Phase 7 stub. The real implementation lands in commit 8 alongside
-   * the canonical serialization. Used today only by tests that want
-   * to assert the registry exposes this method.
+   * SHA-256 digest of the canonical serialization. Stable identifier
+   * for "this exact ontology shape" — two registries with the same
+   * defs in different registration order return the same digest.
+   * Implementation: `computeSchemaDigest(serializeRegistry(this.context()))`.
    */
   getSchemaDigest(): string {
-    return 'sha256:phase-8-pending';
+    return computeSchemaDigest(serializeRegistry(this.context()));
   }
 
   // ────────────────────────────────────────────────────────────────
