@@ -98,3 +98,16 @@ export {
   type SerializedFunction,
   type SerializedManifest,
 } from './distribution/index.js';
+
+// Semantic subpath
+export {
+  projectManifest,
+  projectAsAnthropicTools,
+  projectAsMcpTools,
+  projectAsSystemPrompt,
+  type ProjectionFormat,
+  type ProjectionInput,
+  type ProjectionResult,
+  type AnthropicTool,
+  type McpTool,
+} from './semantic/index.js';
