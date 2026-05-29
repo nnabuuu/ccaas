@@ -74,18 +74,18 @@ describe('EntityRegistry.getObjectTypeSchema', () => {
     }
   });
 
-  it('the schema accessor reflects re-registration (overwrite semantics)', () => {
-    // After register-with-overwrite, the placeholder schema is still
-    // there but came from the rebuilt underlying OntologyRegistry.
+  it('the schema accessor still returns a valid Zod schema after re-registration', () => {
+    // After register-with-overwrite, the schema must still be a
+    // valid placeholder. (We deliberately don't assert instance
+    // identity vs the pre-overwrite schema — the implementation may
+    // share a hoisted constant or rebuild; the contract is "valid
+    // schema after overwrite", not "fresh instance".)
     const r = new EntityRegistry();
     r.register(RECIPE_OPTS);
-    const first = r.getObjectTypeSchema('recipe');
     r.register({ ...RECIPE_OPTS, displayName: '更新菜谱' });
-    const second = r.getObjectTypeSchema('recipe');
-    expect(second).toBeDefined();
-    // Different schema instances (because the underlying OntologyRegistry
-    // was rebuilt), but both equally valid
-    expect(second).not.toBe(first);
-    expect(second).toBeInstanceOf(z.ZodObject);
+    const after = r.getObjectTypeSchema('recipe');
+    expect(after).toBeDefined();
+    expect(after).toBeInstanceOf(z.ZodObject);
+    expect(after!.safeParse({ id: 'x', anything: 1 }).success).toBe(true);
   });
 });

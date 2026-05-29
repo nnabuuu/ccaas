@@ -89,9 +89,20 @@ export async function createSingleSlotManifestAccessor(
 
     getSlot<T = unknown>(apiName: string): T | readonly T[] | null {
       if (apiName !== slot.apiName) return null;
+      // NOTE: snapshot taken at createSingleSlotManifestAccessor()
+      // time — recreate the accessor if the entity may have changed
+      // since construction. No re-fetch happens here; that would
+      // require the (currently sync) ManifestAccessor.getSlot to
+      // become async.
+      //
+      // The `readonly T[]` branch of the return type is unused by
+      // this adapter — single-slot accessors always resolve a scalar.
+      // The branch exists because the ManifestAccessor interface
+      // accepts collection slots in the general case.
+      //
       // The single slot holds the entity's structured data. Caller
-      // gets the same Record<string, any> shape EntityContext.structured
-      // already used.
+      // gets the same Record<string, any> shape
+      // EntityContext.structured already used.
       return context.structured as unknown as T;
     },
 

@@ -12,7 +12,6 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
 import type {
   AtReference,
   EntityContext,
@@ -256,11 +255,5 @@ describe('createSingleSlotManifestAccessor — structural', () => {
     expect(typeof a.subscribe).toBe('function');
     expect(a.manifest).toBeDefined();
     expect(a.role).toBeDefined();
-  });
-
-  // Make sure the test file actually uses zod to silence unused-import
-  // warnings in case future iterations split this out.
-  it.skip('placeholder for future zod-aware tests', () => {
-    expect(z.string()).toBeDefined();
   });
 });
