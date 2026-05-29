@@ -22,7 +22,7 @@ Within Phase 1's single PR, work is broken into 10 incremental commits, one per 
 | # | Commit subject | SHA | Notes |
 |---|---|---|---|
 | 1 | feat: bootstrap @kedge-agentic/ontology package skeleton (phase 1, commit 1/10) | `8c6aed39` | package.json / tsconfig.json / vitest.config.ts / README.md / src/index.ts stub / src/__tests__/architecture.test.ts smoke. Root package.json wires `build:ontology` into `build:libs`. |
-| 2 | feat(ontology): phase 1 commit 2 — schema primitives | _pending_ | `src/schema/*` — LocalizedString, PropertyMeta, zod-helpers (objectRef), LinkDef, ActionDef + ActionPrecondition, FunctionDef, ObjectTypeDef, StreamDef + tests |
+| 2 | feat: ontology schema primitives — layer 1 (phase 1, commit 2/10) | `abcb3526` | `src/schema/*` (8 primitives + barrel) + `src/types.ts` (cross-layer BoundaryRole). 30 tests across 7 files. Phase 4/5 deferred fields verified compile-time-blocked via @ts-expect-error. |
 | 3 | feat(ontology): phase 1 commit 3 — manifest primitives | _pending_ | `src/manifest/*` — SlotDef, StateDef, AccessBoundary, LifecycleDef, ManifestDef + integration test |
 | 4 | feat(ontology): phase 1 commit 4 — accessor types + checkBoundary | _pending_ | `src/accessor/*` — ManifestAccessor, ActionResult, BoundaryDecision, checkBoundary (handles Tier 1 preconditions; named-predicates stubbed for Phase 4) |
 | 5 | feat(ontology): phase 1 commit 5 — define helpers | _pending_ | `src/helpers/define.ts` — defineObjectType, defineAction, defineFunction, defineManifest, defineStateField (type-narrowing passthroughs) |

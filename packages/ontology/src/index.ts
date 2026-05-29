@@ -34,3 +34,14 @@ export type {
   StreamDef,
 } from './schema/index.js';
 export { objectRef, getObjectRefTarget } from './schema/index.js';
+
+// Manifest subpath
+export type {
+  SlotDef,
+  SlotTarget,
+  StateDef,
+  AccessBoundary,
+  LifecycleDef,
+  ManifestDef,
+  SchemaVersion,
+} from './manifest/index.js';
