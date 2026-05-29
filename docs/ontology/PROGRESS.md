@@ -10,7 +10,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 | Phase | Status | Started | Shipped | Final commit | Notes |
 |---|---|---|---|---|---|
 | 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
-| 2 — context-layer refactor | ⏳ waiting | — | — | — | Blocked on Phase 1 |
+| 2 — context-layer refactor | ✅ shipped | 2026-05-30 | 2026-05-30 | `103da290` | 8-commit sequence on branch `phase2-context-layer-refactor`; 66 tests across 4 files (36 parity baseline + 5 schema accessor + 14 converter + 11 adapter); 2 code-reviewer passes (pass 2 zero must-fix); EntityRegistry now delegates to OntologyRegistry while keeping every public signature source-compatible |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
 | 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive. **1 candidate identified** — see "Phase 4 trigger candidates" below. |
 | 5 — Tier 3 primitives | ⏳ waiting | — | — | — | Per-item gated on individual promotion criteria |
@@ -39,6 +39,14 @@ Decisions made during implementation that diverge from or refine the spec/impl-p
 - **2026-05-29, commit 1**: Adopted subpath exports (`@kedge-agentic/ontology/schema`, etc.) matching `agent-runtime`'s pattern, instead of the single-root-`index.ts` re-export described in design spec §2.1. Rationale: consistency with sibling framework-free packages + cleaner consumer imports + better tree-shaking. Catch-all root still exists for convenience.
 - **2026-05-29, commit 1**: `AccessBoundary.readable`/`.writable` will ship as `readonly string[]` in Phase 1, not the `BoundaryPathEntry` union shape (`string | { slot, where }`) from design spec §4.4. The union with predicate entries lands in Phase 4 alongside `BoundaryPredicate`. Forward-compatible: callers passing plain strings today work unchanged when the union lands.
 - **2026-05-29, commit 1**: Root `package.json` modified (added `build:ontology` script + chained into `build:libs`) — minor scope expansion vs the impl plan's "no file outside packages/ontology/" exit criterion. Necessary to meet the "build:libs includes ontology" exit criterion.
+
+- **2026-05-30, Phase 2 commit `bf2a60f4`**: `EntityRegistry` internally holds an `OntologyRegistry` + a meta sidecar Map (carries the bits `ObjectTypeDef` can't model: full `ReferenceableOptions`, `controllerPath`, `entityClass`). Relations / breadcrumb / providers stay as local Maps because `OntologyRegistry`'s slot/link model is richer than parity requires; bridging those is deferred until a real consumer needs it.
+
+- **2026-05-30, Phase 2 commit `bf2a60f4`**: `ReferenceableOptions` → `ObjectTypeDef` projection uses `z.object({}).passthrough()` as the schema placeholder (real `ReferenceableOptions` has no schema field). Solutions can override later by registering via `defineObjectType` directly.
+
+- **2026-05-30, Phase 2 commit `bf2a60f4`**: `EntityRegistry.register`'s "last write wins" overwrite contract preserved by rebuilding the underlying `OntologyRegistry` from the sidecar on re-register (since `OntologyRegistry` rejects duplicate apiNames by design).
+
+- **2026-05-30, Phase 2 commit `d25bd7b5`**: Pre-existing drift fixed — `EditOperation` type union in `interfaces.ts` was missing two variants (`block_attr_set`, `block_content_set`) that the controller already used. Type now matches the runtime shape; no behavior change.
 
 ## Phase 4 trigger candidates
 
