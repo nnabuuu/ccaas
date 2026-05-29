@@ -14,6 +14,12 @@ export { ContextInjector } from './core/context-injector.js';
 export { ShortcutManager } from './core/shortcut-manager.js';
 export { RelationInferrer } from './core/relation-inferrer.js';
 
+// Ontology converters (Phase 2)
+export {
+  referenceableOptionsToPicker,
+  pickerToReferenceableOptions,
+} from './core/referenceable-options-converter.js';
+
 // All types
 export * from './core/interfaces.js';
 

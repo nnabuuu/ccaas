@@ -8,4 +8,8 @@ export { ContextInjector } from './context-injector.js';
 export { ContextRouter } from './context-router.js';
 export { ShortcutManager } from './shortcut-manager.js';
 export { DocumentEditProvider } from './document-edit-provider.js';
+export {
+  referenceableOptionsToPicker,
+  pickerToReferenceableOptions,
+} from './referenceable-options-converter.js';
 export * from './interfaces.js';
