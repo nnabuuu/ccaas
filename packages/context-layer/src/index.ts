@@ -19,6 +19,10 @@ export {
   referenceableOptionsToPicker,
   pickerToReferenceableOptions,
 } from './core/referenceable-options-converter.js';
+export {
+  createSingleSlotManifestAccessor,
+  type SingleSlotManifestAccessorArgs,
+} from './core/entity-context-provider-adapter.js';
 
 // All types
 export * from './core/interfaces.js';

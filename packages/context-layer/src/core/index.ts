@@ -12,4 +12,8 @@ export {
   referenceableOptionsToPicker,
   pickerToReferenceableOptions,
 } from './referenceable-options-converter.js';
+export {
+  createSingleSlotManifestAccessor,
+  type SingleSlotManifestAccessorArgs,
+} from './entity-context-provider-adapter.js';
 export * from './interfaces.js';
