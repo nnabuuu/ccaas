@@ -268,9 +268,15 @@ describe('Core Backend Architecture Rules', () => {
 - Related: `docs/PROJECT_MANAGEMENT_GUIDE.md` (documentation guidelines)
 - Related: `CLAUDE.md` (architecture principles section)
 
+## See also
+
+- [`docs/architecture/package-layering.md`](../architecture/package-layering.md) — extends this ADR's lean-core principle to the broader workspace package set. Where ADR-0001 says "core backend must be infrastructure-only," the layering analysis says "foundation packages must be framework-free." Same spirit, different scope.
+- [`docs/architecture/package-refactor-plan.md`](../architecture/package-refactor-plan.md) — concrete refactor moves that codify and apply the layering convention.
+
 ---
 
 ## Update History
 
 - **2026-02-13**: Initial ADR created from architecture violation case study
 - **2026-02-14**: Formalized as ADR-0001 during documentation cleanup
+- **2026-05-29**: Added "See also" link to `docs/architecture/` analysis + refactor plan that extend this ADR's lean-core principle to the broader package layout.

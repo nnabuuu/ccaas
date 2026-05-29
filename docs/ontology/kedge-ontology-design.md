@@ -228,6 +228,7 @@ Palantir built this as a heavy enterprise platform (Foundry) with its own data i
 - A UI component library (the @Picker UI components in `context-layer-react` remain there)
 - An Agent framework (the agent engine is pluggable — Claude Code, OpenCode, etc.)
 - A bypass of [ADR-0001](../adr/0001-core-must-not-contain-domain-entities.md). The ontology package itself ships **zero** domain types. It defines the meta-types (`ObjectTypeDef`, `ManifestDef`, `InterfaceDef`, `ActionDef`, `FunctionDef`, `ObjectSetDef`, `PropertyMeta`, `BoundaryPredicate`); concrete `LessonPlan` / `Class` / `Student` `ObjectTypeDef` instances are defined in `solutions/business/live-lesson/backend/` and registered at solution-import time.
+- A framework-coupled package. Per the layering convention codified in [`docs/architecture/package-layering.md`](../architecture/package-layering.md), `@kedge-agentic/ontology` is framework-free at its main entry point — no NestJS, no React, no Vue. The bridge code that wires it into NestJS lives in `packages/backend/src/ontology/`, mirroring how `packages/backend/src/sessions/agent-runtime/` bridges `@kedge-agentic/agent-runtime` into the NestJS service. This keeps the schema layer usable by agent subprocesses, CLI tools, and Solution backends without imposing framework choice.
 
 ### 1.6 What this package enables — the concrete payoffs
 

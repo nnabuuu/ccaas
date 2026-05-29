@@ -21,17 +21,25 @@ ccaas/
 
 ## Package Overview
 
-| Package | Tech Stack | Purpose |
-|---------|------------|---------|
-| `@kedge-agentic/backend` | NestJS, TypeORM, SSE | API server, Agent Engine lifecycle, sessions, scheduled tasks |
-| `@kedge-agentic/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
-| `@kedge-agentic/vue-sdk` | Vue 3 Composition API | Vue client integration |
-| `@kedge-agentic/react-sdk` | React hooks, SSE | React client integration |
-| `@kedge-agentic/chat-interface` | React, Tailwind, Vite | Extensible chat UI component library |
-| `@kedge-agentic/entity-document` | TypeScript, Vitest | Block ↔ Markdown bidirectional transform, pluggable TransformRegistry |
-| `@kedge-agentic/context-layer` | TypeScript, NestJS (optional) | Entity context routing, DocumentEditProvider base class |
-| `@kedge-agentic/agent-runtime` | TypeScript (framework-free) | workspace (`BaseMaterializer`) + artifact (`JsonEditProvider` + `WorkspaceArtifactSource`) + sync (`SyncEngine` + `InMemoryChangeStream` + `SnapshotStore`). Bidirectional agent ↔ solution-DB sync via `solution.config.artifactUrl`. Renamed from `agentfs-runtime` in May 2026. |
-| `@kedge-agentic/common` | TypeScript, Zod | Shared types and protocols |
+> Framework-coupling column reflects the layering convention codified in [`docs/architecture/package-layering.md`](./docs/architecture/package-layering.md) — a package's main entry MUST be framework-free OR carry a framework suffix. Three packages (⚠) currently violate this and are scheduled for refactor; see [`docs/architecture/package-refactor-plan.md`](./docs/architecture/package-refactor-plan.md).
+
+| Package | Framework coupling | Tech Stack | Purpose |
+|---------|--------------------|------------|---------|
+| `@kedge-agentic/backend` | NestJS (application) | NestJS, TypeORM, SSE | API server, Agent Engine lifecycle, sessions, scheduled tasks |
+| `@kedge-agentic/admin-next` | React (application) | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
+| `@kedge-agentic/vue-sdk` | Vue (binding) | Vue 3 Composition API | Vue client integration |
+| `@kedge-agentic/react-sdk` | React (binding) | React hooks, SSE | React client integration |
+| `@kedge-agentic/chat-interface` | React (binding) | React, Tailwind, Vite | Extensible chat UI component library |
+| `@kedge-agentic/entity-document` | None | TypeScript, Vitest | Block ↔ Markdown bidirectional transform, pluggable TransformRegistry |
+| `@kedge-agentic/context-layer` | NestJS ⚠ (refactor pending — split into `-core` + `-nest`) | TypeScript, NestJS | Entity context routing, DocumentEditProvider base class |
+| `@kedge-agentic/context-layer-react` | React (binding) | React | React Picker UI on top of context-layer |
+| `@kedge-agentic/agent-runtime` | None | TypeScript (framework-free, zero-dep) | workspace (`BaseMaterializer`) + artifact (`JsonEditProvider` + `WorkspaceArtifactSource`) + sync (`SyncEngine` + `InMemoryChangeStream` + `SnapshotStore`). Bidirectional agent ↔ solution-DB sync via `solution.config.artifactUrl`. Renamed from `agentfs-runtime` in May 2026. |
+| `@kedge-agentic/common` | None | TypeScript, Zod | Shared types and protocols |
+| `@kedge-agentic/harness` | NestJS ⚠ (suffix-pending) | TypeScript, NestJS | Harness orchestration framework for iterative agent tasks |
+| `@kedge-agentic/observer-engine` | NestJS ⚠ (suffix-pending) | TypeScript, NestJS, TypeORM | Event/Observer engine: dispatch events, execute handlers, persist observations, cascade |
+| `@kedge-agentic/exercise-preview` | None | TypeScript | Preview platform for exercise type plugins — CLI sandbox, Admin Playground, public demo |
+| `@kedge-agentic/vfs-poc` | None | TypeScript | **Archive** — design + validation reference for agentfs overlay + just-bash sandbox; production code in `packages/backend/src/sessions/{workspace,sandbox}/` |
+| `packages/mcp/` (folder, not a workspace package) | — | — | 4 standalone MCP-server subprocesses: `attach-file-server`, `rest-adapter-bridge`, `shared-context-server`, `tool-caller-proxy-server` |
 
 ## Build
 
