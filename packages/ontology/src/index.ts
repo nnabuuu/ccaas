@@ -58,3 +58,12 @@ export type {
   ActionDescriptor,
 } from './accessor/index.js';
 export { checkBoundary } from './accessor/index.js';
+
+// Helpers subpath
+export {
+  defineObjectType,
+  defineAction,
+  defineFunction,
+  defineManifest,
+  defineStateField,
+} from './helpers/index.js';
