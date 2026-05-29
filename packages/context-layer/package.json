@@ -43,7 +43,8 @@
     "class-transformer": { "optional": true }
   },
   "dependencies": {
-    "@kedge-agentic/entity-document": "^0.1.0"
+    "@kedge-agentic/entity-document": "^0.1.0",
+    "@kedge-agentic/ontology": "^0.1.0"
   },
   "devDependencies": {
     "@nestjs/common": "^10.4.15",
