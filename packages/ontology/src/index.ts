@@ -1,13 +1,36 @@
 /**
- * `@kedge-agentic/ontology` — Phase 1 (v0.1.0) skeleton.
+ * `@kedge-agentic/ontology` — Phase 1 (v0.1.0) catch-all entry.
  *
- * This is the catch-all entry point. Prefer subpath imports for new code:
+ * Prefer subpath imports for new code:
  *   import { ObjectTypeDef } from '@kedge-agentic/ontology/schema';
  *   import { ManifestDef } from '@kedge-agentic/ontology/manifest';
  *   import { OntologyRegistry } from '@kedge-agentic/ontology/registry';
  *
- * Subsequent commits in Phase 1 will populate the subpaths and re-export
- * their public APIs here. See `docs/ontology/PROGRESS.md` for status.
+ * This barrel re-exports everything from the subpaths for convenience.
+ * Subsequent commits in Phase 1 will populate the rest of the
+ * subpaths (manifest, accessor, registry, helpers, semantic,
+ * distribution). See `docs/ontology/PROGRESS.md` for status.
  */
 
 export const ONTOLOGY_VERSION = '0.1.0';
+
+// Cross-layer type aliases
+export type { BoundaryRole } from './types.js';
+
+// Schema subpath
+export type {
+  LocalizedString,
+  PropertyMeta,
+  PropertyMetaMap,
+  LinkDef,
+  LinkCardinality,
+  ActionDef,
+  ActionPrecondition,
+  ApiKeyScopeLiteral,
+  AuditLevel,
+  FunctionDef,
+  ObjectTypeDef,
+  PickerConfig,
+  StreamDef,
+} from './schema/index.js';
+export { objectRef, getObjectRefTarget } from './schema/index.js';

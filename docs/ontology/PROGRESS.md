@@ -21,7 +21,7 @@ Within Phase 1's single PR, work is broken into 10 incremental commits, one per 
 
 | # | Commit subject | SHA | Notes |
 |---|---|---|---|
-| 1 | feat(ontology): phase 1 commit 1 — package skeleton + PROGRESS.md seed | _pending_ | package.json / tsconfig.json / vitest.config.ts / README.md / src/index.ts stub / src/__tests__/architecture.test.ts smoke. Root package.json wires `build:ontology` into `build:libs`. |
+| 1 | feat: bootstrap @kedge-agentic/ontology package skeleton (phase 1, commit 1/10) | `8c6aed39` | package.json / tsconfig.json / vitest.config.ts / README.md / src/index.ts stub / src/__tests__/architecture.test.ts smoke. Root package.json wires `build:ontology` into `build:libs`. |
 | 2 | feat(ontology): phase 1 commit 2 — schema primitives | _pending_ | `src/schema/*` — LocalizedString, PropertyMeta, zod-helpers (objectRef), LinkDef, ActionDef + ActionPrecondition, FunctionDef, ObjectTypeDef, StreamDef + tests |
 | 3 | feat(ontology): phase 1 commit 3 — manifest primitives | _pending_ | `src/manifest/*` — SlotDef, StateDef, AccessBoundary, LifecycleDef, ManifestDef + integration test |
 | 4 | feat(ontology): phase 1 commit 4 — accessor types + checkBoundary | _pending_ | `src/accessor/*` — ManifestAccessor, ActionResult, BoundaryDecision, checkBoundary (handles Tier 1 preconditions; named-predicates stubbed for Phase 4) |
