@@ -10,7 +10,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 | Phase | Status | Started | Shipped | Final commit | Notes |
 |---|---|---|---|---|---|
 | 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
-| 2 — context-layer refactor | ✅ shipped | 2026-05-30 | 2026-05-30 | `9981d290` | 10-commit sequence on branch `phase2-context-layer-refactor`; 66 tests across 4 files (36 parity baseline + 5 schema accessor + 14 converter + 11 adapter); 2 code-reviewer passes (pass 2 zero must-fix); EntityRegistry now delegates to OntologyRegistry while keeping every public signature source-compatible |
+| 2 — context-layer refactor | ✅ shipped | 2026-05-30 | 2026-05-30 | `f6539eb9` | 12-commit sequence on branch `phase2-context-layer-refactor`; 66 tests across 4 files (36 parity baseline + 5 schema accessor + 14 converter + 11 adapter); 2 code-reviewer passes (pass 2 zero must-fix); EntityRegistry now delegates to OntologyRegistry while keeping every public signature source-compatible; all 10 success criteria satisfied including root typecheck and harness |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
 | 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive. **1 candidate identified** — see "Phase 4 trigger candidates" below. |
 | 5 — Tier 3 primitives | ⏳ waiting | — | — | — | Per-item gated on individual promotion criteria |
