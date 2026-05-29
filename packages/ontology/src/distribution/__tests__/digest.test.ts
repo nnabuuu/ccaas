@@ -127,4 +127,48 @@ describe('computeSchemaDigest', () => {
     r.registerObjectType(classType());
     expect(r.getSchemaDigest()).toBe(r.getSchemaDigest());
   });
+
+  it('digest is independent of ActionDef.preconditions list order', () => {
+    function planWithPreconditions(
+      preconditions: Array<
+        | { kind: 'stateEquals'; path: string; value: string }
+        | { kind: 'slotBound'; slot: string }
+      >,
+    ): ObjectTypeDef {
+      return {
+        apiName: 'Plan',
+        displayName: 'Plan',
+        semantic: 'p',
+        schema: z.object({ id: z.string() }),
+        links: [],
+        actions: [
+          {
+            apiName: 'adj',
+            displayName: 'adj',
+            params: z.object({}),
+            sideEffects: [],
+            allowedRoles: ['agent'],
+            auditLevel: 'log',
+            semantic: 'a',
+            preconditions,
+          },
+        ],
+      };
+    }
+    const r1 = new OntologyRegistry();
+    r1.registerObjectType(
+      planWithPreconditions([
+        { kind: 'stateEquals', path: 'phase', value: 'practice' },
+        { kind: 'slotBound', slot: 'students' },
+      ]),
+    );
+    const r2 = new OntologyRegistry();
+    r2.registerObjectType(
+      planWithPreconditions([
+        { kind: 'slotBound', slot: 'students' },
+        { kind: 'stateEquals', path: 'phase', value: 'practice' },
+      ]),
+    );
+    expect(r1.getSchemaDigest()).toBe(r2.getSchemaDigest());
+  });
 });

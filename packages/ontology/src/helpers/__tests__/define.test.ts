@@ -104,6 +104,7 @@ describe('defineFunction', () => {
       params: z.object({ studentId: z.string() }),
       returnType: z.number(),
       semantic: 'Pure score calculator.',
+      allowedRoles: ['agent'],
     });
     expect(def.apiName).toBe('computeScore');
   });

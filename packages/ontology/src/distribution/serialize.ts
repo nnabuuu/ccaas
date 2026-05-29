@@ -182,13 +182,25 @@ function serializeAction(a: ActionDef): SerializedAction {
     params: jsonSchemaOf(a.params),
     sideEffects: [...a.sideEffects].sort(),
     composes: a.composes ? [...a.composes].sort() : undefined,
-    preconditions: a.preconditions,
+    // Preconditions are AND-combined (spec §3.3), so list order is
+    // semantically irrelevant. Sort by canonical-JSON of each entry
+    // so two registries with the same set in different order produce
+    // byte-equal output and thus equal digests.
+    preconditions: a.preconditions
+      ? [...a.preconditions].sort(byCanonical)
+      : undefined,
     requiresApproval: a.requiresApproval,
     allowedRoles: [...a.allowedRoles].sort(),
     requiredScopes: a.requiredScopes ? [...a.requiredScopes].sort() : undefined,
     auditLevel: a.auditLevel,
     semantic: a.semantic,
   };
+}
+
+function byCanonical(x: unknown, y: unknown): number {
+  const a = canonicalize(x);
+  const b = canonicalize(y);
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 function serializeFunction(f: FunctionDef): SerializedFunction {
