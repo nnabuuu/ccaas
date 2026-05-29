@@ -28,6 +28,22 @@ This is a ~200 KB / ~3000-line spec. It is **dual-audience**: the first half (§
 
 **If something is unclear**, the [FAQ in §12](#12-faq) collects the questions that have come up across the design discussions that produced this spec; check there before assuming the doc is wrong.
 
+> ### ⚠ Status: SPEC vs IMPLEMENTATION
+>
+> **Every primitive in this document is SPEC-merged. None are yet IMPLEMENTED** as of the commit that authored this spec — there is no `@kedge-agentic/ontology` package on disk yet. Reading the spec gives you the *design contract*; reading [`kedge-ontology-implementation-plan.md`](./kedge-ontology-implementation-plan.md) tells you *what currently runs*.
+>
+> The impl plan is a 5-phase build:
+>
+> 1. **Phase 1** — bootstrap the package with core primitives + Tier 1 (FunctionDef, ActionDef.preconditions, LocalizedString).
+> 2. **Phase 2** — refactor `context-layer` to consume the package (recipe-book is the test consumer).
+> 3. **Phase 3** — live-lesson adoption + `ToolCallerProxy` bridge. **Gated on: Chengdu education-bureau PoC having shipped first.**
+> 4. **Phase 4** — Tier 2 primitives implementation (`InterfaceDef`, `ObjectSetDef`, predicate-scoped `AccessBoundary`). **Gated on: real Solution need.**
+> 5. **Phase 5** — Tier 3 primitives implementation, **per-item gated on its individual promotion criterion** from the [gap analysis](./kedge-ontology-gap-analysis.md#tier-3---✓-merged-into-design-spec-2026-05-29). Some Tier 3 primitives may never ship — that's a successful application of the gating, not a missed feature.
+>
+> When you see "Tier N (merged)" in this document (e.g. §0 Glossary footer, §10.1 reconciliation table, §12 FAQ), it means **SPEC-merged**. Implementation status varies per the phase mapping above.
+>
+> If you call `defineObjectSet({...})` in solution code today and get "module not found," that is correct behavior — Phase 1 hasn't shipped yet, let alone Phase 4. The gap analysis explains *what would trigger* each Tier 2/3 primitive's implementation.
+
 ---
 
 ## 0. Glossary — terms you'll see throughout
@@ -63,9 +79,11 @@ A short reference for vocabulary used across this doc and the wider repo. Most t
 
 > **Sister document**: [kedge-ontology-gap-analysis.md](./kedge-ontology-gap-analysis.md) — what this spec *intentionally* does not yet include vs Palantir Ontology, organized by Tier 1–4.
 >
-> **Tier 1 (merged)**: `FunctionDef` (§3.7), `ActionDef.preconditions` (§3.3), `LocalizedString` displayName (§3.0).
-> **Tier 2 (merged)**: `InterfaceDef` (§3.8), `ObjectSetDef` (§3.9), predicate-scoped `AccessBoundary` + `BoundaryPredicate` sub-language (§4.4 + §5.5).
-> **Tier 3 (merged)**: `ValidationRuleMeta` (§3.10), `StateMachineDef` (§3.11), `PropertyMeta.classification` + `.redaction` (§3.1), `NotificationRule` (§4.8), `ActionDef.returnType` + `ActionResult.returnValue` (§3.3 + §5.3).
+> All "merged" annotations below mean **SPEC-merged** (designed and documented in this file). Implementation status is in [kedge-ontology-implementation-plan.md](./kedge-ontology-implementation-plan.md); see the ⚠ Status callout above.
+>
+> **Tier 1 (SPEC-merged → Phase 1 implementation)**: `FunctionDef` (§3.7), `ActionDef.preconditions` (§3.3), `LocalizedString` displayName (§3.0).
+> **Tier 2 (SPEC-merged → Phase 4 implementation, gated on real Solution need)**: `InterfaceDef` (§3.8), `ObjectSetDef` (§3.9), predicate-scoped `AccessBoundary` + `BoundaryPredicate` sub-language (§4.4 + §5.5).
+> **Tier 3 (SPEC-merged → Phase 5 implementation, per-item gated on individual promotion criterion)**: `ValidationRuleMeta` (§3.10), `StateMachineDef` (§3.11), `PropertyMeta.classification` + `.redaction` (§3.1), `NotificationRule` (§4.8), `ActionDef.returnType` + `ActionResult.returnValue` (§3.3 + §5.3).
 > **Tier 4** (lineage, schema branching, set versioning, datasource binding, MDM, geo/time-series types, Workshop, custom type system): explicit non-goals; reopening requires an ADR.
 >
 > Read both docs together if you're auditing the design surface.
@@ -2496,6 +2514,8 @@ All seven were locked down during the 2026-05-29 design pass. Each carries its d
 This package does not land in a vacuum. The repo already has working primitives that overlap. The disposition for each is below.
 
 ### 10.1 Concept → primitive map
+
+> Reminder: the "Disposition" column describes what happens *at SPEC level*. Implementation lands per the 5-phase build in [the impl plan](./kedge-ontology-implementation-plan.md). Disposition that says "Move + generalize" or "Add new" doesn't mean code exists today.
 
 | Ontology concept | Existing primitive (path) | Disposition |
 |---|---|---|
