@@ -35,6 +35,21 @@ export type {
 } from './schema/index.js';
 export { objectRef, getObjectRefTarget } from './schema/index.js';
 
+// Validators + RegistrationError
+export type {
+  ValidationCode,
+  ValidationError,
+  ValidationContext,
+} from './schema/index.js';
+export {
+  validateObjectType,
+  validateObjectTypeLocal,
+  validateManifest,
+  validateFunction,
+  validateAll,
+  RegistrationError,
+} from './schema/index.js';
+
 // Manifest subpath
 export type {
   SlotDef,

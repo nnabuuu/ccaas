@@ -21,3 +21,18 @@ export type {
 export type { FunctionDef } from './function.js';
 export type { ObjectTypeDef, PickerConfig } from './object-type.js';
 export type { StreamDef } from './stream.js';
+
+// Validators + RegistrationError
+export type {
+  ValidationCode,
+  ValidationError,
+  ValidationContext,
+} from './validators.js';
+export {
+  validateObjectType,
+  validateObjectTypeLocal,
+  validateManifest,
+  validateFunction,
+  validateAll,
+} from './validators.js';
+export { RegistrationError } from './registration-error.js';
