@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>@kedge-agentic/ontology · Phase 1 · 决定档案</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+  --red:#942929; --red-bg:#f6dada;
+  --green:#2d6612; --green-bg:#e6f2dc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+code{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:.88em}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 48px 80px}
+
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+.meta{display:flex;gap:28px;align-items:center}
+.meta-pair{display:flex;flex-direction:column;gap:3px;text-align:right}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;
+}
+.status-pill.shipped{background:var(--green-bg);color:var(--green)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.hero{margin-bottom:24px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-1.2px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+
+.context{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px 30px;margin-bottom:48px;
+  border-left:3px solid var(--teal);
+}
+.context p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:10px}
+.context p:last-child{margin-bottom:0}
+.context p strong{color:var(--t1);font-weight:600}
+.context p em{color:var(--teal);font-style:italic;font-weight:500}
+
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;margin-top:8px}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);font-weight:500;font-style:italic}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+.decisions{display:flex;flex-direction:column;gap:22px;margin-bottom:56px}
+
+.d-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:28px 32px;
+  display:flex;flex-direction:column;gap:20px;
+}
+
+.d-head{
+  display:flex;align-items:flex-start;gap:14px;
+  padding-bottom:18px;border-bottom:1px solid var(--border);
+}
+.d-num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-weight:500;
+  color:var(--t3);font-style:italic;letter-spacing:-.1px;
+  min-width:46px;padding-top:5px;
+}
+.d-title{flex:1}
+.d-title h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:4px}
+.d-title h3 .q{color:var(--t3);font-weight:500;font-style:italic}
+.d-scope{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  padding:3px 8px;border-radius:3px;
+  background:var(--surface2);color:var(--t2);
+  align-self:flex-start;margin-top:5px;
+}
+.d-scope.runtime{background:var(--teal-bg);color:var(--teal)}
+.d-scope.backend{background:var(--purple-bg);color:var(--purple)}
+.d-scope.design{background:var(--amber-bg);color:var(--amber)}
+.d-scope.security{background:var(--red-bg);color:var(--red)}
+
+.d-frame{
+  display:grid;grid-template-columns:auto 1fr;gap:10px 16px;
+  font-size:13px;line-height:1.6;color:var(--t2);
+}
+.d-frame .lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);padding-top:3px;white-space:nowrap;
+}
+.d-frame .val strong{color:var(--t1);font-weight:600}
+.d-frame .val code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-options{
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.d-options-h{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:9px 16px;font-size:9px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.5px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+}
+.d-option{
+  display:grid;grid-template-columns:90px 1fr 140px;gap:14px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  font-size:13px;line-height:1.55;align-items:start;
+}
+.d-option:last-child{border-bottom:none}
+.d-option .opt-name{font-weight:600;color:var(--t2);position:relative}
+.d-option .opt-desc{color:var(--t2)}
+.d-option .opt-desc code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.d-option .opt-verdict{font-size:11px;color:var(--t3);line-height:1.5}
+.d-option.chosen{background:#f6f9f5}
+.d-option.chosen .opt-name{color:var(--green)}
+.d-option.chosen .opt-name::before{
+  content:'▸ ';color:var(--green);font-weight:700;
+}
+.d-option.chosen .opt-verdict{color:var(--green);font-weight:600}
+
+.d-why{
+  background:var(--bg);border-left:3px solid var(--t1);border-radius:0 8px 8px 0;
+  padding:18px 22px;
+}
+.d-why-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t1);margin-bottom:8px;
+}
+.d-why p{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:15px;font-weight:400;line-height:1.65;color:var(--t1);
+  margin-bottom:10px;
+}
+.d-why p:last-child{margin-bottom:0}
+.d-why p strong{font-weight:600;font-style:italic;color:var(--teal)}
+.d-why p code{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:13px;background:var(--surface);padding:1px 5px;border-radius:3px;
+  font-style:normal;font-weight:500;
+}
+
+.d-locks{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.d-lock{
+  padding:14px 16px;border-radius:8px;
+  background:var(--surface2);font-size:12.5px;line-height:1.55;color:var(--t2);
+}
+.d-lock-lbl{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  margin-bottom:6px;
+}
+.d-lock.in{background:#eef3eb;border-left:2px solid var(--green)}
+.d-lock.in .d-lock-lbl{color:var(--green)}
+.d-lock.out{background:#f4ece4;border-left:2px solid var(--amber)}
+.d-lock.out .d-lock-lbl{color:var(--amber)}
+.d-lock code{font-size:11px;background:rgba(255,255,255,.5);padding:1px 5px;border-radius:3px;color:var(--t1)}
+
+.d-artifact{
+  font-size:11px;color:var(--t3);font-weight:500;
+  padding-top:14px;border-top:1px solid var(--border);
+  display:flex;flex-wrap:wrap;gap:14px;
+}
+.d-artifact .lbl{font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9px}
+.d-artifact code{font-size:10.5px;color:var(--t2);background:var(--bg);padding:1px 5px;border-radius:3px;font-weight:500}
+
+.dq-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:48px}
+.dq-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;
+  display:grid;grid-template-columns:60px 1fr;gap:18px;align-items:start;
+}
+.dq-num{
+  font-family:"Fraunces",Georgia,serif;font-size:12px;font-style:italic;
+  color:var(--t3);font-weight:500;padding-top:3px;
+}
+.dq-body h4{font-size:14px;font-weight:600;margin-bottom:6px;letter-spacing:-.2px;color:var(--t1)}
+.dq-body h4 .q{color:var(--t3);font-weight:500;font-style:italic}
+.dq-body p{font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:5px}
+.dq-body p:last-child{margin-bottom:0}
+.dq-body p strong{color:var(--t1);font-weight:600}
+.dq-body p code{font-size:11px;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--t1)}
+.dq-body p .lbl{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t3);margin-right:6px;
+}
+.dq-card.deferred{border-left:3px solid var(--amber)}
+.dq-card.open{border-left:3px solid var(--purple)}
+
+details.change-surface{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:36px;
+}
+details.change-surface > summary{
+  list-style:none;cursor:pointer;
+  padding:16px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;font-weight:700;color:var(--t1);
+}
+details.change-surface > summary::-webkit-details-marker{display:none}
+details.change-surface > summary .lead{display:flex;align-items:center;gap:10px}
+details.change-surface > summary .lead .ic{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;font-style:italic;color:var(--t3);font-weight:500;
+}
+details.change-surface > summary .hint{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+details.change-surface > summary .chev{font-size:16px;color:var(--t3);transition:transform .2s}
+details.change-surface[open] > summary .chev{transform:rotate(90deg)}
+.cs-body{padding:0 22px 20px;border-top:1px solid var(--border);padding-top:18px}
+.cs-stat-row{display:flex;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.cs-stat{display:flex;flex-direction:column;gap:2px}
+.cs-stat-n{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-stat-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.cs-commits{display:flex;flex-direction:column;gap:5px}
+.cs-row{
+  display:grid;grid-template-columns:82px 64px 1fr;gap:12px;align-items:center;
+  padding:7px 10px;border-radius:5px;background:var(--bg);font-size:11.5px;
+}
+.cs-row .hash{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10.5px;color:var(--t3);font-weight:600}
+.cs-row .tag{font-size:9px;font-weight:700;text-align:center;padding:2px 6px;border-radius:3px}
+.cs-row .tag.feat{background:var(--teal-bg);color:var(--teal)}
+.cs-row .tag.fix{background:var(--amber-bg);color:var(--amber)}
+.cs-row .tag.refactor{background:var(--purple-bg);color:var(--purple)}
+.cs-row .tag.docs{background:var(--surface2);color:var(--t2)}
+.cs-row .tag.test{background:var(--purple-bg);color:var(--purple)}
+.cs-row .msg{color:var(--t1);font-weight:500;line-height:1.4}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:32px 0 0;letter-spacing:.3px}
+
+@media (max-width:760px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:30px}
+  .d-card{padding:22px}
+  .d-options-h,.d-option{grid-template-columns:1fr;gap:6px}
+  .d-locks{grid-template-columns:1fr}
+  .cs-row{grid-template-columns:1fr;gap:3px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mk">O</div>
+      <div class="brand-tx">
+        <div class="brand-a">ccaas · 决定档案</div>
+        <div class="brand-b">@kedge-agentic/ontology · Phase 1 · 2026-05-30</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">提交范围</span><span class="meta-v">8c6aed39..f11d5da6</span></div>
+      <span class="status-pill shipped"><span class="dot"></span>SHIPPED</span>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Decision Archive</span>
+      <span style="color:var(--t3)">·</span>
+      <span style="color:var(--t3)">@kedge-agentic/ontology v0.1 · 2026-05-30</span>
+    </div>
+    <h1>Phase 1 上线 <code style="font-size:.85em;font-family:'JetBrains Mono',monospace;background:var(--surface);padding:2px 10px;border-radius:6px;font-weight:600">@kedge-agentic/ontology</code> v0.1 —— Zod 优先的<em>契约层</em>,Tier 2/3 字段在编译期屏蔽。</h1>
+  </section>
+
+  <div class="context">
+    <p>
+      <strong>What.</strong>
+      Phase 1 上线了 <code>@kedge-agentic/ontology</code> v0.1.0 包 —— 一个 framework-free 的 TypeScript 包,
+      提供 <code>ObjectTypeDef</code> / <code>ActionDef</code> / <code>FunctionDef</code> /
+      <code>ManifestDef</code> / <code>AccessBoundary</code> / <code>OntologyRegistry</code> 这套描述业务对象 + 操作 + 权限的原语,
+      加 Anthropic-tools、MCP、system-prompt 三种 LLM 投影格式,加 SHA-256 内容寻址的 schema digest。
+      Zod schema 是字段形状的<strong>唯一来源</strong>,<code>PropertyMeta</code> sidecar 只承载 Zod 表达不了的元数据
+      (searchable / displayRole / computed)。
+    </p>
+    <p>
+      <strong>Why.</strong>
+      ccaas 之前没有统一的契约层来回答"这个 Solution 有哪些业务对象 + Agent 能做什么 + 谁能看到 / 写入什么 + 怎么把这些投影给 Agent" ——
+      每个 Solution(recipe-book、live-lesson)各自造一套表达。借鉴 Palantir Ontology 的形状,
+      建一个跨 Solution 的契约层,让 schema 既是设计文档、也是运行时检查、还是 Agent 的可见性投影源。
+      Phase 1 是 5 阶段 rollout 的第一阶段 —— 只 ship <em>核心原语 + Tier 1 gap items</em>
+      (<code>FunctionDef</code>、<code>ActionDef.preconditions</code>、<code>LocalizedString</code>),
+      Tier 2/3 留待真实 Solution 触发再做。
+    </p>
+    <p>
+      <strong>Scope.</strong>
+      <em>In</em>:8 个 subpath 导出(schema、manifest、accessor、registry、helpers、semantic、distribution、根 barrel),
+      12 个 Tier 1 ValidationCode,两阶段注册流程(local-eager + cross-def deferred),三种投影格式,
+      framework-free 由架构测试强制(0 NestJS / React / Vue import,0 跨包 import)。
+      <em>Out</em>:NestJS 桥接 + <code>ManifestAccessor</code> 实现(Phase 3)、
+      <code>context-layer</code> 改造(Phase 2)、Tier 2 原语
+      (<code>InterfaceDef</code> / <code>ObjectSetDef</code> / <code>BoundaryPredicate</code>,Phase 4)、
+      Tier 3 原语(<code>validationRules</code> / <code>StateMachineDef</code> / <code>classification</code> /
+      <code>NotificationRule</code> / <code>ActionDef.returnType</code>,Phase 5)。
+    </p>
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>Decisions <span class="en">这次想清楚了的</span></h2>
+    </div>
+    <span class="hint">7 项 · 按对话顺序</span>
+  </div>
+
+  <div class="decisions">
+
+    <!-- D-01 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-01</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 字段形状写在自定义 <code>PropertyDef</code> 里,还是 Zod schema 里?</h3>
+        </div>
+        <span class="d-scope design">Design · Schema</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计细化中途,用户直接打回:<em>"我感觉很多定义是不是太细了,如果我们默认就是使用 TypeScript 的话..."</em></span>
+        <span class="lbl">约束</span>
+        <span class="val">Palantir 风格的 <code>PropertyDef</code> 每个字段都要写 <code>type, required, min, max, pattern, enum</code>。TypeScript + Zod 已经把这些全部表达完了。再做一遍 = 两份 source of truth,迟早会 drift。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保留自定义 <code>PropertyDef</code> 作为 canonical 形状。Runtime 每个字段同时持有 Zod 和 PropertyDef,代码层保证一致。</span>
+          <span class="opt-verdict">❌ 拒 —— 两份真相,必然 drift。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Zod schema 是字段形状的<em>唯一来源</em>。<code>PropertyMeta</code> sidecar 只承载 Zod 表达不了的:<code>searchable</code> / <code>displayRole</code> / <code>computed</code> / <code>displayName</code> i18n。</span>
+          <span class="opt-verdict">✓ 选 —— 一份真相,一套类型系统。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          一个 TypeScript-native 包的本意,就是<strong>不再发明一套平行的类型系统</strong>。
+          Zod 已经能表达 discriminated union、refinement、branded type、optional/nullable ——
+          Palantir 当年要造 <code>PropertyDef</code>,是因为他们没有 Zod。我们有。
+        </p>
+        <p>
+          <em>Sidecar 模式</em>把真正非 Zod 的元数据(picker 提示、治理标记)隔离到一个很小的接触面。
+          <code>PropertyMetaMap&lt;S&gt;</code> 用 <code>keyof z.infer&lt;S&gt;</code> 做 key 约束,
+          meta key 拼错就是<strong>编译期错误,直接在调用点报</strong>。TypeScript 每次都检的东西,你 drift 不了。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Solution 写字段就是 <code>z.object({...})</code>。每字段的语义文本走 <code>.describe()</code>。再也没有平行的 "字段类型" 类型。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          针对非 TS runtime 的 Solution 不能直接复用 Zod schema —— 它们消费的是 <code>distribution/serialize</code> 投影出来的 JSON Schema。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/ontology/src/schema/{object-type,action,function,property-meta}.ts</code>
+        <span class="lbl">commit</span><code>abcb3526</code>
+      </div>
+    </div>
+
+    <!-- D-02 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-02</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> 一个根 barrel,还是 subpath exports?</h3>
+        </div>
+        <span class="d-scope design">Design · Package</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">commit 1 设计 <code>package.json</code> 的 <code>exports</code> map。impl plan 原本写的是单一根 re-export。</span>
+        <span class="lbl">约束</span>
+        <span class="val">兄弟包 <code>@kedge-agentic/agent-runtime</code> 用的是 subpath exports(<code>/workspace</code> / <code>/artifact</code> / <code>/sync</code>)。跨包一致性对认知成本很关键。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>形状</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">单一根 <code>@kedge-agentic/ontology</code> re-export 所有东西。<code>package.json</code> 更简单。</span>
+          <span class="opt-verdict">❌ 拒 —— 跟兄弟包不一致;tree-shaking 弱;import 范围大。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Subpath exports:<code>/schema</code>、<code>/manifest</code>、<code>/accessor</code>、<code>/registry</code>、<code>/helpers</code>、<code>/semantic</code>、<code>/distribution</code>。根 catch-all 仍然存在。</span>
+          <span class="opt-verdict">✓ 选 —— 跟 agent-runtime 对齐。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          跟 framework-free 兄弟包的一致性,值得 <code>exports</code> map 多写几行。
+          <strong>两个包定了一个 convention</strong>,第三个不跟才是异常。
+        </p>
+        <p>
+          实务收益:tree-shaking 更准(consumer 只 import 它要的,
+          <code>import { ObjectTypeDef } from '@kedge-agentic/ontology/schema'</code> 不会把 projection 代码拖进来)。
+          测试可以单 subpath 隔离跑。根 catch-all 仍然在,所以这个改动对 consumer 是<em>严格 additive</em>。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每个新模块都有自己的 subpath。架构测试(<code>__tests__/architecture.test.ts</code>)强制每个 subpath 都 framework-free。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          subpath 改名就是 breaking change。今天 ship 的 7 个路径已经是 API 面。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/ontology/package.json</code>
+        <span class="lbl">commit</span><code>8c6aed39</code>
+      </div>
+    </div>
+
+    <!-- D-03 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-03</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Registry 注册时强制依赖顺序吗?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Registry</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">实现 <code>OntologyRegistry</code> 时遇到:所有 cross-def validator(link / slot / precondition 的引用解析)都要求被引用的 def 已经注册。强行要求顺序 = 注册顺序敏感。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Solution 作者通常先把全套 ontology 写完再注册。逼他们按依赖图拓扑排序很烦。但完全 batch 又会丢掉本地错误(空 semantic、payload 互斥)的及时反馈。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">严格顺序 —— <code>register*</code> 跑完整 validation 含 cross-def;引用没解析就抛。caller 自己排序。</span>
+          <span class="opt-verdict">❌ 拒 —— 把拓扑排序的负担压给 caller。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">两阶段。<code>register*</code> 只跑 LOCAL validation(semantic、meta key、payload)。<code>validate()</code> / <code>seal()</code> 跑 cross-def。幂等。</span>
+          <span class="opt-verdict">✓ 选 —— 保住本地反馈环 + 允许乱序注册。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">只暴露 <code>registerBatch</code>;不提供单个 <code>register*</code>。</span>
+          <span class="opt-verdict">❌ 拒 —— 杀掉增量开发的体感。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          两阶段在<strong>自然接缝处</strong>切开 validation —— 本地能查的保持 eager(写错就在调用点报),
+          需要更广上下文的延迟到一次显式的 <code>seal()</code>。写坏的 def(空 <code>semantic</code>)永远进不了 registry;
+          引用缺失在启动时作为一个聚合错误报出。
+        </p>
+        <p>
+          <code>seal()</code> 作为一个独立动词,给 caller 一个<em>"我写完了,锁上"</em>的信号 ——
+          flag 一翻,后续的 <code>register*</code> 直接抛。原子性的保证(seal 先调 validate,通过后才置 flag)
+          意味着 seal 失败时 registry 仍然可变,可以修完再 seal,不用重启。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          任何 ontology bootstrap 都是两阶段:注册全部 → 启动时 <code>seal()</code> 一次。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          预期"注册了就一定有效"的 consumer 会被坑 —— register 和 seal 之间 registry 可能处于 cross-def 无效状态。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/ontology/src/registry/ontology-registry.ts</code>
+        <span class="lbl">commit</span><code>7ddc3db1</code>
+      </div>
+    </div>
+
+    <!-- D-04 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-04</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Phase 4/5 的字段怎么禁止 Phase 1 的人用?</h3>
+        </div>
+        <span class="d-scope security">Contract · Deferral</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">Phase 1 明确推迟 Tier 2(Interface、ObjectSet、BoundaryPredicate)和 Tier 3(validationRules、stateMachine、classification、NotificationRule、returnType)。如果 consumer 不小心写 <code>ObjectTypeDef.implements: [...]</code>,什么挡得住?</span>
+        <span class="lbl">约束</span>
+        <span class="val">Phase 1 <em>现在</em>就要 ship;Phase 4/5 可能几个月之后。这个"推迟"必须由 toolchain 强制,不能靠 reviewer 警觉。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">Runtime feature flag —— 字段在 type 上存在,Phase 1 注册时如果被 set 就抛。</span>
+          <span class="opt-verdict">❌ 拒 —— Runtime 才在启动时报错,不是写代码时报。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">字段直接从接口里 omit 掉。set 它就是 <em>TypeScript 编译错</em>。在 tests 里用 <code>@ts-expect-error</code> 钉住覆盖。</span>
+          <span class="opt-verdict">✓ 选 —— 最强约束,在调用点失败。</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">C</span>
+          <span class="opt-desc">README 里写不要用;type 层放过。</span>
+          <span class="opt-verdict">❌ 拒 —— 靠记性。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          对一个还没 ship 的 feature 来说,<strong>编译期屏蔽是最强的约束</strong> —— 你的 IDE 把字段名标红了,
+          推迟就是真的。Runtime error 只有跑代码才触发;review 纪律只能抓 reviewer 看见的东西。
+        </p>
+        <p>
+          tests 里的 <code>@ts-expect-error</code> gate 还有<em>第二个</em>作用:
+          Phase 4 给 <code>ObjectTypeDef</code> 加 <code>implements</code> 的时候,那行 expect-error 会失败成 "unused expectation" ——
+          这是给未来实现者的<strong>结构化交接信号</strong>。(这一点差点失效 —— code review 发现 <code>tsc</code> 默认把测试文件排除了;
+          靠加一个独立的 <code>tsconfig.test.json</code> 进 typecheck pipeline 补上。)
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          加任何 Phase 4/5 字段都是可发现的变更 —— 各处的 <code>@ts-expect-error</code> 在自己 typecheck 时浮出来。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          反序列化进来的 def(比如从 JSON)绕过 TS —— runtime validator 必须覆盖同样的不变式。Validator 套件已经覆盖,但 parity 需要记得。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/ontology/{tsconfig.test.json, src/**/__tests__/*.test.ts}</code>
+        <span class="lbl">commits</span><code>abcb3526</code> · <code>ff5f7402</code>
+      </div>
+    </div>
+
+    <!-- D-05 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-05</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Distribution 依赖 Registry,还是反过来?</h3>
+        </div>
+        <span class="d-scope runtime">Runtime · Layering</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">在 registry 上实现 <code>getSchemaDigest()</code>。真正算 digest 要用 distribution 层的 <code>serializeRegistry</code> + <code>computeSchemaDigest</code>。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Distribution 函数需要遍历所有注册的 def(横切访问)。直接 <code>distribution → registry</code> import 在 registry 反向 import 时会循环。但让 <code>getSchemaDigest</code> 永久 stub 又别扭。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">保持 <code>getSchemaDigest</code> stub。Consumer 外部组合:<code>computeSchemaDigest(serializeRegistry(registry))</code>。</span>
+          <span class="opt-verdict">❌ 拒 —— consumer 用着别扭;registry 自己的 digest 方法应该能用。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">Distribution 函数接收 <code>ValidationContext</code>(Map 形状)而不是 <code>OntologyRegistry</code>。Registry 暴露 <code>context()</code>;<code>registry → distribution</code> 是干净的单向 import。</span>
+          <span class="opt-verdict">✓ 选 —— 无循环,distribution 跟 registry 解耦。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          <code>ValidationContext</code> 本来就存在,作为 validator 的最小 cross-def 查询面 ——
+          三个 <code>ReadonlyMap</code>(object types、manifests、functions)。
+          Distribution 想要同样的面不是巧合:<strong>两边都要 "遍历所有 def"</strong>,
+          两边都不需要 register / validate / seal 机制。
+        </p>
+        <p>
+          方向锁定后,distribution 可以脱离 registry 单独测(手搓一个 Map,
+          直接调 <code>serializeRegistry(context)</code>)。Registry 的 <code>getSchemaDigest()</code>
+          变成一行,把组合藏在方法后面。<em>层只往下依赖,不往侧面依赖。</em>
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          未来任何 "遍历所有 def" 的特性(export、diff、search)都接收 <code>ValidationContext</code>,不接收 <code>OntologyRegistry</code>。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          需要 registry 的 seal/validate 状态的特性不能住在 distribution —— 得另起家。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">files</span><code>packages/ontology/src/distribution/{serialize,digest}.ts</code>
+        <span class="lbl">commit</span><code>24a22e9d</code>
+      </div>
+    </div>
+
+    <!-- D-06 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-06</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> Serialize 是 round-trip codec 还是单向投影?</h3>
+        </div>
+        <span class="d-scope design">Design · Distribution</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">设计 distribution 层 —— 需要一个稳定的 digest 输入。<code>zod-to-json-schema</code> 是天然的投影,但是<em>有损</em>的(refinement、transform、branded type 元数据都不留存)。</span>
+        <span class="lbl">约束</span>
+        <span class="val">Phase 1 的 use case —— 缓存键、wire 传输、diff 工具 —— 只需要单方向。Round-trip 需要一套并行 codec + 它自己的 validation surface,永久维护。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc">无损 codec —— 设计一个能 round-trip 回 Zod(含所有 refinement、brand)的 JSON 形状。</span>
+          <span class="opt-verdict">❌ 拒 —— 接触面大,当前无 consumer,drift 风险。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc">单向投影,走 <code>zod-to-json-schema</code>。递归 key sort 用 <code>canonicalize</code>。canonical bytes 上跑 SHA-256。</span>
+          <span class="opt-verdict">✓ 选 —— 最小;贴合 Phase 1;复杂度推迟。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          Phase 1 对 serialized 形式的每个使用 —— digest 计算、给 peer 看有哪些字段的 wire 传输、diff 工具 ——
+          都是<strong>只读</strong>的。没有一个需要从 JSON 重建一个 live Zod schema。
+          建那个能力就是在给一个不存在的 consumer 做设计。
+        </p>
+        <p>
+          有损投影对自己的边界很诚实:<em>"这是可以分享的;这不是源 schema 的替代品。"</em>
+          等真的来了需要重建的 consumer(浏览器端 validation、schema-as-data 的 CLI),
+          那是另一个独立的 <strong>codec 包</strong>,有它自己的维护契约,不是塞进 distribution。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          Digest 是 "这个 ontology 形状" 的 canonical 身份。同样的 def 不同顺序 → 同样的 digest,由 14 个 distribution 测试验证。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          Consumer 没法从 serialized 形态重建 Zod schema。真要的时候,是个新 codec 包 —— opt-in 成本。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/ontology/src/distribution/serialize.ts</code>
+        <span class="lbl">commit</span><code>24a22e9d</code> · 排序修复 <code>ff5f7402</code>
+      </div>
+    </div>
+
+    <!-- D-07 -->
+    <div class="d-card">
+      <div class="d-head">
+        <div class="d-num">D-07</div>
+        <div class="d-title">
+          <h3><span class="q">问:</span> <code>checkBoundary</code> 从哪拿 precondition 评估需要的 state?</h3>
+        </div>
+        <span class="d-scope security">Security · Boundary</span>
+      </div>
+
+      <div class="d-frame">
+        <span class="lbl">触发</span>
+        <span class="val">实现 <code>checkBoundary</code> —— spec 说它要评估 Tier 1 precondition(<code>stateEquals</code>、<code>slotBound</code>),但这些需要 runtime state(当前 phase、当前绑定的 slot)。spec 从来没说 state 从哪来。</span>
+        <span class="lbl">约束</span>
+        <span class="val"><code>checkBoundary</code> 应该是<strong>唯一一个纯函数安全 gate</strong>,被每个 <code>ManifestAccessor</code> 实现调用。把 precondition 评估拆到第二个函数 = 有两个 gate 要 audit。</span>
+      </div>
+
+      <div class="d-options">
+        <div class="d-options-h">
+          <span>Option</span><span>方案</span><span>结论</span>
+        </div>
+        <div class="d-option">
+          <span class="opt-name">A</span>
+          <span class="opt-desc"><code>checkBoundary</code> 忽略 precondition;caller(ManifestAccessor 实现)走另一个函数评估。</span>
+          <span class="opt-verdict">❌ 拒 —— 两个 gate 要审 security。</span>
+        </div>
+        <div class="d-option chosen">
+          <span class="opt-name">B</span>
+          <span class="opt-desc"><code>BoundaryCheckInput</code> 可选携带 <code>state</code> + <code>boundSlots</code> 快照。precondition 在同一次调用里评估。缺上下文时 <em>fail-safe 拒绝</em>。</span>
+          <span class="opt-verdict">✓ 选 —— 单 gate;结构上 fail-safe。</span>
+        </div>
+      </div>
+
+      <div class="d-why">
+        <div class="d-why-lbl">为什么这么选</div>
+        <p>
+          一个<strong>单一 audit 面</strong>来回答 "这个操作能不能做",远比签名的小别扭重要得多。
+          两个 gate 存在时,不只是更容易误调一个漏一个 —— <em>未来代码</em>在系统长大时更容易漏掉其中一个。
+        </p>
+        <p>
+          可选 state 的设计<strong>默认是安全的</strong>:caller 忘了传 state context,
+          stateEquals/slotBound precondition 评估为未满足,操作被拒。最坏情况:一个合法操作被拒,
+          开发者去查为什么;永远不会反过来 —— 一个被拒操作意外被放过去。
+          第三种 precondition <code>named</code> 是 Phase 1 stub,永远返回未满足 ——
+          同样的 fail-safe 原则,等 Phase 4 ship predicate registry。
+        </p>
+      </div>
+
+      <div class="d-locks">
+        <div class="d-lock in">
+          <div class="d-lock-lbl">Locked in</div>
+          每个 ManifestAccessor 实现(Phase 3+)都要把 state + boundSlots 快照塞进 <code>BoundaryCheckInput</code>。Pattern 写在文档里;测试覆盖四种 op kind + precondition 组合。
+        </div>
+        <div class="d-lock out">
+          <div class="d-lock-lbl">Locked out</div>
+          需要更丰富上下文的 precondition(比如跨 manifest 的 state)需要新的 precondition kind。stateEquals/slotBound 形状之内,这个设计是 final 的。
+        </div>
+      </div>
+
+      <div class="d-artifact">
+        <span class="lbl">file</span><code>packages/ontology/src/accessor/boundary-check.ts</code>
+        <span class="lbl">commit</span><code>3b91e09b</code>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>Deferred <span class="en">显式没做的</span></h2>
+    </div>
+    <span class="hint">4 项 · 带重新审视的触发</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-01</div>
+      <div class="dq-body">
+        <h4>Tier 2 原语 —— <code>InterfaceDef</code>、<code>ObjectSetDef</code>、<code>BoundaryPredicate</code>、predicate-scoped <code>AccessBoundary</code></h4>
+        <p><span class="lbl">现状</span>四个全在 type 层屏蔽。<code>SlotTarget</code> 只有 <code>'objectType'</code> + <code>'manifest'</code>。<code>AccessBoundary.readable/writable</code> 只是 <code>readonly string[]</code>。named-precondition registry 返回 unmet stub。</p>
+        <p><span class="lbl">推迟理由</span>impl plan §B-Phase 4:Tier 2 等真实 Solution 对至少一个 Tier 2 原语提出具体需求时落地。提前做没有 consumer 的抽象 = 100% 猜。</p>
+        <p><span class="lbl">重新审视的触发</span>第一个想做 polymorphic 查询(Interface)、saved-set 过滤(ObjectSet)、或者 per-row read scope(BoundaryPredicate)的 Solution。<strong>2026-05-30 audit 已经识别到 live-lesson 的 <code>ObjectSetDef</code> 触发候选</strong>(strugglingStudents / atRiskStudents 当前在每 3 秒 dashboard poll 里重算),记在 PROGRESS.md。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-02</div>
+      <div class="dq-body">
+        <h4>Tier 3 原语 —— <code>validationRules</code>、<code>StateMachineDef</code>、<code>classification</code>/<code>redaction</code>、<code>NotificationRule</code>、<code>ActionDef.returnType</code></h4>
+        <p><span class="lbl">现状</span>都在 type 层屏蔽。Per-item gated,不是 phase-gated。</p>
+        <p><span class="lbl">推迟理由</span>每一项有自己的 promotion 标准。<code>returnType</code> 等 Solution 想要 typed action return 时上。<code>classification</code> 等合规要的时候上。State machine 等实体真的有显式状态转移时上。</p>
+        <p><span class="lbl">重新审视的触发</span>逐项,标准见 impl plan §B-Phase 5。<code>ActionResult.returnValue</code> 跟 <code>returnType</code> 同时 ship。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-03</div>
+      <div class="dq-body">
+        <h4>NestJS 桥接 + REST endpoint + <code>ManifestAccessor</code> 实现</h4>
+        <p><span class="lbl">现状</span><code>ManifestAccessor</code> 只在 <code>src/accessor/manifest-accessor.ts</code> 里是 interface。没有任何实现住在这个包里。</p>
+        <p><span class="lbl">推迟理由</span>framework-free 契约要求任何地方都不能 import NestJS。实现该住在 <code>packages/backend/src/ontology/</code>,属于 Phase 3。</p>
+        <p><span class="lbl">重新审视的触发</span>Phase 3 —— 由 Chengdu PoC 是否 ship 触发,因为那是驱动持久化形状的 consumer。</p>
+      </div>
+    </div>
+
+    <div class="dq-card deferred">
+      <div class="dq-num">DEF-04</div>
+      <div class="dq-body">
+        <h4><code>context-layer</code> 重构去消费 ontology</h4>
+        <p><span class="lbl">现状</span>现有的 <code>@kedge-agentic/context-layer</code> 包还在用自己的 type 定义;还没 import <code>@kedge-agentic/ontology</code>。</p>
+        <p><span class="lbl">推迟理由</span>Phase 2。Phase 1 有一条 "不动其他包" 的 exit criterion,就是为了证明这个包能独立站立,再开始下游接入。</p>
+        <p><span class="lbl">重新审视的触发</span>Phase 2 开始。同时也是 Phase 1 API 第一次真实世界 fitness test —— 见 OQ-01。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>Open Questions <span class="en">真正没答案的</span></h2>
+    </div>
+    <span class="hint">3 项 · 没 confident answer</span>
+  </div>
+
+  <div class="dq-grid">
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-01</div>
+      <div class="dq-body">
+        <h4>Phase 2 的 <code>context-layer</code> 重构会暴露 Phase 1 的 API 缺口吗?</h4>
+        <p><span class="lbl">问题</span>Phase 1 API 是从 spec 设计的 —— 不是从真实 consumer 集成里出来的。<code>OntologyRegistry</code> 的方法集、<code>ManifestAccessor</code> 的 interface、<code>projectManifest</code> 的格式形状,纸面上都合理。没有一个被真实消费验证过。</p>
+        <p><span class="lbl">为什么 open</span>等 <code>context-layer</code> 真的来用这些原语,我们才知道哪些签名要调。最可能的结果:Phase 2 调 1-3 个小 API。更大的结果:发现一个我们没想到的缺失原语。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-02</div>
+      <div class="dq-body">
+        <h4>Digest 在浏览器里怎么工作?</h4>
+        <p><span class="lbl">问题</span><code>computeSchemaDigest</code> 用的是 <code>node:crypto</code>(刻意 —— 保持包依赖轻)。浏览器侧消费要换 <code>SubtleCrypto</code>。</p>
+        <p><span class="lbl">为什么 open</span>今天没有浏览器 consumer 在用 digest。真出现的时候计划:同名 export 走兄弟文件 <code>browser-digest.ts</code>,通过 package.json <code>"browser"</code> 字段条件化。但这是纸面设计,等真实 consumer 出现才落实。</p>
+      </div>
+    </div>
+
+    <div class="dq-card open">
+      <div class="dq-num">OQ-03</div>
+      <div class="dq-body">
+        <h4>Named-precondition registry 长什么样?</h4>
+        <p><span class="lbl">问题</span>Phase 1 ship 了 <code>ActionPrecondition</code> 的 <code>'named'</code> kind 作为永远返回未满足的 stub。意图(spec §3.3)是 Phase 4 ship <code>OntologyRegistry.registerPredicate</code> 跟 <code>BoundaryPredicate</code> 一起。形状:<code>(state, slotContext, params) =&gt; boolean</code>?支持 async 吗?跟 <code>checkBoundary</code> 的同步签名怎么集成?</p>
+        <p><span class="lbl">为什么 open</span>形状决定要等 Phase 4 的 <code>BoundaryPredicate</code> 设计(predicate-scoped <code>AccessBoundary</code>)先定下来 —— 它俩是兄弟概念。两个都推迟到 Phase 4。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <details class="change-surface">
+    <summary>
+      <span class="lead">
+        <span class="ic">↳</span>
+        <span>变更面 · commits、文件、测试数</span>
+      </span>
+      <span class="hint">点击展开 · git 的工作,留作参考</span>
+      <span class="chev">›</span>
+    </summary>
+    <div class="cs-body">
+      <div class="cs-stat-row">
+        <div class="cs-stat"><span class="cs-stat-n">15</span><span class="cs-stat-l">Commits</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">210</span><span class="cs-stat-l">Tests Pass · 0 Fail</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">8</span><span class="cs-stat-l">Subpath Exports</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">NestJS Imports</span></div>
+        <div class="cs-stat"><span class="cs-stat-n">0</span><span class="cs-stat-l">Cross-Pkg Imports</span></div>
+      </div>
+      <div class="cs-commits">
+        <div class="cs-row"><span class="hash">8c6aed39</span><span class="tag feat">feat</span><span class="msg">bootstrap @kedge-agentic/ontology package skeleton (1/10)</span></div>
+        <div class="cs-row"><span class="hash">abcb3526</span><span class="tag feat">feat</span><span class="msg">ontology schema primitives — layer 1 (2/10) · D-01 lands</span></div>
+        <div class="cs-row"><span class="hash">42966864</span><span class="tag feat">feat</span><span class="msg">ontology manifest primitives — layer 2 (3/10)</span></div>
+        <div class="cs-row"><span class="hash">3b91e09b</span><span class="tag feat">feat</span><span class="msg">ontology accessor layer + boundary check (4/10) · D-07 lands</span></div>
+        <div class="cs-row"><span class="hash">36e22d2b</span><span class="tag feat">feat</span><span class="msg">ontology define helpers (5/10)</span></div>
+        <div class="cs-row"><span class="hash">c55f6322</span><span class="tag feat">feat</span><span class="msg">ontology validators + registration error (6/10)</span></div>
+        <div class="cs-row"><span class="hash">7ddc3db1</span><span class="tag feat">feat</span><span class="msg">ontology registry (7/10) · D-03 lands</span></div>
+        <div class="cs-row"><span class="hash">24a22e9d</span><span class="tag feat">feat</span><span class="msg">ontology distribution — serialize + digest (8/10) · D-05 + D-06</span></div>
+        <div class="cs-row"><span class="hash">33133e06</span><span class="tag feat">feat</span><span class="msg">ontology semantic projection (9/10)</span></div>
+        <div class="cs-row"><span class="hash">be66d366</span><span class="tag feat">feat</span><span class="msg">architecture test + phase 1 shipped (10/10)</span></div>
+        <div class="cs-row"><span class="hash">f6613a03</span><span class="tag docs">docs</span><span class="msg">fill commit 10 sha in ontology progress tracker</span></div>
+        <div class="cs-row"><span class="hash">ff5f7402</span><span class="tag fix">fix</span><span class="msg">code-review s1 + s3 (test typecheck + sort preconditions) · D-04 强化</span></div>
+        <div class="cs-row"><span class="hash">302dceb3</span><span class="tag fix">fix</span><span class="msg">code-review s2 + s4 + s5 (three validator gaps)</span></div>
+        <div class="cs-row"><span class="hash">ce266862</span><span class="tag docs">docs</span><span class="msg">log live-lesson tier 2 trigger candidates in ontology progress</span></div>
+        <div class="cs-row"><span class="hash">f11d5da6</span><span class="tag test">test</span><span class="msg">ontology phase 1 coverage — integration + review nits + edge cases</span></div>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Generated 2026-05-30 · ccaas 决定档案 · @kedge-agentic/ontology v0.1.0 · Phase 1 已 ship
+  </footer>
+
+</div>
+
+</body>
+</html>
