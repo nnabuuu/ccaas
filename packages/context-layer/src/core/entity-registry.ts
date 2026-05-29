@@ -34,7 +34,6 @@ import { z } from 'zod';
 import {
   OntologyRegistry,
   type ObjectTypeDef,
-  type PickerConfig,
 } from '@kedge-agentic/ontology';
 import type {
   EntityTypeInfo,
@@ -46,6 +45,20 @@ import type {
   BreadcrumbItem,
   EntityContextProvider,
 } from './interfaces.js';
+import { referenceableOptionsToPicker } from './referenceable-options-converter.js';
+
+/**
+ * Hoisted placeholder schema reused on every `optionsToObjectTypeDef`
+ * call.
+ *
+ * `z.object({}).passthrough()` returns `ZodObject<{}, "passthrough">`
+ * — a narrower type than `ObjectTypeDef.schema`'s
+ * `ZodObject<ZodRawShape>`. The `as unknown as` cast bridges that
+ * known Zod typing quirk in one place so the rest of the file isn't
+ * sprinkled with it.
+ */
+const PASSTHROUGH_SCHEMA: z.ZodObject<z.ZodRawShape> =
+  z.object({}).passthrough() as unknown as z.ZodObject<z.ZodRawShape>;
 
 interface MetaEntry {
   readonly options: ReferenceableOptions;
@@ -238,20 +251,19 @@ export class EntityRegistry {
    *     UI affordance).
    */
   private optionsToObjectTypeDef(options: ReferenceableOptions): ObjectTypeDef {
-    const def: ObjectTypeDef = {
+    // Use the exported converter as the single source of truth for
+    // the picker projection — no parallel private helper to drift
+    // against.
+    const picker = referenceableOptionsToPicker(options);
+    return {
       apiName: options.type,
       displayName: options.displayName,
       semantic: `Derived from ReferenceableOptions for '${options.type}'.`,
-      schema: z.object({}).passthrough() as unknown as z.ZodObject<z.ZodRawShape>,
+      schema: PASSTHROUGH_SCHEMA,
       links: [],
       actions: [],
+      ...(picker ? { picker } : {}),
     };
-    const picker = buildPickerFromOptions(options);
-    if (picker) {
-      // Assign without losing the readonly contract on ObjectTypeDef
-      (def as { picker?: PickerConfig }).picker = picker;
-    }
-    return def;
   }
 
   private rebuildOntologyFromMeta(): void {
@@ -260,36 +272,4 @@ export class EntityRegistry {
       this.ontology.registerObjectType(this.optionsToObjectTypeDef(entry.options));
     }
   }
-}
-
-/**
- * Best-effort projection of `ReferenceableOptions` into a Phase 1
- * `PickerConfig`. Returns `undefined` when the source has no
- * picker-able affordance (both search and browse disabled).
- *
- * The full bidirectional converter (with the reverse direction) lives
- * in `referenceable-options-converter.ts` and is the public API; this
- * private helper exists to keep `EntityRegistry` self-contained until
- * downstream consumers start using the converter directly.
- */
-function buildPickerFromOptions(options: ReferenceableOptions): PickerConfig | undefined {
-  const browseable = options.abilities?.browse !== false;
-  const searchable =
-    options.abilities?.search !== false &&
-    (options.abilities?.search === true ||
-      options.abilities?.search === undefined ||
-      typeof options.abilities?.search === 'object');
-  if (!browseable && !searchable) return undefined;
-  const picker: PickerConfig = {
-    icon: options.icon,
-    color: options.color,
-    // `ReferenceableOptions` has no first-class search-field list;
-    // consumers wire that through @Picker UI helpers separately.
-    searchFields: [],
-    // Generic placeholder; `getEntityTypes()`/picker UI surfaces
-    // `displayName` as the headline today, so this is the honest
-    // default.
-    titleField: 'displayName',
-  };
-  return picker;
 }
