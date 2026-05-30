@@ -41,6 +41,8 @@ export {
   getObjectRefTarget,
   objectSetRef,
   getObjectSetRefTarget,
+  evaluateSetFilter,
+  type FilterRow,
 } from './schema/index.js';
 
 // Validators + RegistrationError
