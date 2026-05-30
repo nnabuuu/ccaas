@@ -267,6 +267,12 @@ export class StatusChangeService implements OnApplicationBootstrap {
     return this.heuristicStatus(opts);
   }
 
+  /**
+   * Try LLM derivation. The prompt only enumerates active/struggling/
+   * stuck/cruising — `idle` is intentionally heuristic-only because the
+   * LLM has no wall-clock context. See `heuristicStatus` for the
+   * IDLE_THRESHOLD_MS path.
+   */
   private async tryLlmStatusDerivation(opts: {
     observations: readonly Observation[];
     indicators: readonly IndicatorDef[];
@@ -378,6 +384,20 @@ Respond with JSON only:
   }
 }
 
+/**
+ * Student-activity event types. `lastActiveAt` is derived from these
+ * ONLY — pass-1 review MF2: including `student_status` (which this
+ * service itself mutates on every cascade) means its `updatedAt` jumps
+ * to now on every derivation, so `sinceLastActive ≈ 0` and the `idle`
+ * heuristic becomes unreachable. Including `lifecycle` would mix join
+ * pings into "active" signal which the legacy dashboard doesn't count.
+ */
+const ACTIVITY_TYPES: ReadonlySet<string> = new Set([
+  'indicator_hit',
+  'exercise',
+  'progress',
+]);
+
 function computeMetrics(observations: readonly Observation[]): ComputedMetrics {
   let messageCount = 0;
   let misconceptionCount = 0;
@@ -385,7 +405,13 @@ function computeMetrics(observations: readonly Observation[]): ComputedMetrics {
   const scores: number[] = [];
   let lastActiveAt = 0;
   for (const obs of observations) {
-    if (obs.updatedAt > lastActiveAt) lastActiveAt = obs.updatedAt;
+    // Pass-1 review MF3: use createdAt (the event's wall-clock time),
+    // NOT updatedAt (which jumps when this service overwrites the
+    // student_status row). Aligns with the projector's metric
+    // (observation-dashboard.projector.ts:135).
+    if (ACTIVITY_TYPES.has(obs.type) && obs.createdAt > lastActiveAt) {
+      lastActiveAt = obs.createdAt;
+    }
     if (obs.type === 'indicator_hit') {
       messageCount += 1;
       const anchors = (obs.data as { anchors?: string[] }).anchors ?? [];

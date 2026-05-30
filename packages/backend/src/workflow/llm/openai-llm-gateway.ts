@@ -68,7 +68,11 @@ export class OpenAiLlmGateway implements LlmGateway {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`LLM API error ${res.status}: ${text}`);
+      // Pass-1 review N2: some upstreams echo the Authorization header
+      // back in their error body (e.g. on 401). Redact any `Bearer …`
+      // before raising so the key cannot flow into downstream logs.
+      const safe = redactBearer(text);
+      throw new Error(`LLM API error ${res.status}: ${safe}`);
     }
 
     const data = (await res.json()) as {
@@ -76,4 +80,8 @@ export class OpenAiLlmGateway implements LlmGateway {
     };
     return data.choices?.[0]?.message?.content ?? '';
   }
+}
+
+function redactBearer(text: string): string {
+  return text.replace(/Bearer\s+[A-Za-z0-9._\-+/=]+/g, 'Bearer [REDACTED]');
 }

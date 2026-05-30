@@ -44,6 +44,7 @@ import { ToolCallerProxyService } from '../../../tool-caller/tool-caller-proxy.s
 import { ObservationRecord, ObserverEventRecord } from '../../entities';
 import { ObservationRepository } from '../../persistence/observation-repository';
 import { ObserverEventRepository } from '../../persistence/observer-event-repository';
+import { IndicatorRegistryService } from '../../llm/indicator-registry.service';
 import { WorkflowEngineService } from '../../workflow-engine.service';
 import { WorkflowMetricsService } from '../../workflow-metrics.service';
 import { WorkflowRegistry } from '../../workflow-registry';
@@ -118,6 +119,7 @@ describe('LifecycleObservationService — M2 end-to-end (cross-process loop)', (
         WorkflowRegistry,
         WorkflowMetricsService,
         WorkflowEngineService,
+        IndicatorRegistryService,
         ObservationRepository,
         ObserverEventRepository,
         LifecycleObservationService,

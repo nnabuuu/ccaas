@@ -43,6 +43,7 @@ import {
   withChildCascade,
   withRootCascade,
 } from './cascade-context';
+import { IndicatorRegistryService } from './llm/indicator-registry.service';
 import { WORKFLOW_TRIGGER_METADATA } from './workflow-trigger.decorator';
 import { WorkflowMetricsService } from './workflow-metrics.service';
 import { WorkflowRegistry } from './workflow-registry';
@@ -80,6 +81,7 @@ export class WorkflowEngineService implements OnApplicationBootstrap {
     private readonly accessor: ManifestAccessorService,
     private readonly discovery: DiscoveryService,
     private readonly metadataScanner: MetadataScanner,
+    private readonly indicators: IndicatorRegistryService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -165,9 +167,79 @@ export class WorkflowEngineService implements OnApplicationBootstrap {
     });
   }
 
-  /** Drain + drop the per-session queue. Called from session teardown. */
+  /**
+   * In-process cascade event dispatch. Called from inside an ActionDef
+   * handler that wants to publish a downstream event AND fire any
+   * event-kind triggers watching that stream.
+   *
+   * Unlike `ingestEvent` (which opens a fresh root cascade frame for
+   * external HTTP-ingested events), this enters a CHILD cascade frame
+   * so depth tracking + ceiling enforcement work end-to-end across
+   * the chain. Pass-1 review MF1: the prior implementation used
+   * `ManifestAccessorService.publish` directly, which only fanned to
+   * subscribers (SSE bridges, debug consoles) and NEVER re-entered the
+   * engine — so the M4 cascade chain
+   * `chat_turn → indicator_hit → student_observation_changed → student_status`
+   * was silently dead in production.
+   *
+   * Fire-and-forget semantics from the caller: each per-session
+   * `enqueueDispatch` is awaited so the queue ordering invariant holds,
+   * but downstream trigger errors are swallowed by the engine and
+   * counted in metrics. The returned promise resolves once all
+   * triggers have been ENQUEUED — it does not wait for them to finish
+   * (the per-session FIFO would deadlock if the caller is itself a
+   * queued task on the same session).
+   */
+  async cascadeEvent(input: {
+    sessionId: string;
+    solutionId: string;
+    manifestName: string;
+    streamApiName: string;
+    payload: unknown;
+  }): Promise<void> {
+    await withChildCascade(input.streamApiName, () => {
+      const cascade = currentCascade();
+      const triggers = this.registry.lookup(input.manifestName, {
+        kind: 'event',
+        stream: input.streamApiName,
+      });
+      for (const trigger of triggers) {
+        // void: do NOT await — caller may itself be running inside the
+        // same session's FIFO entry, in which case awaiting the new
+        // enqueue would deadlock (the new task chains behind us; we
+        // can't complete until it does).
+        void this.enqueueDispatch(input.sessionId, () =>
+          this.dispatchTrigger(trigger, {
+            sessionId: input.sessionId,
+            solutionId: input.solutionId,
+            event: {
+              streamApiName: input.streamApiName,
+              payload: input.payload,
+            },
+            cascade: { ...cascade, originStream: input.streamApiName },
+          }),
+        );
+      }
+      this.accessor.publish(
+        input.sessionId,
+        input.streamApiName,
+        input.payload,
+      );
+      return Promise.resolve();
+    });
+  }
+
+  /**
+   * Drain + drop the per-session queue. Called from session teardown.
+   * Cascades into all workflow-owned per-session state — pass-1 review
+   * SF1: `IndicatorRegistryService` accumulates per-session
+   * `IndicatorDef[]` and was previously never cleaned; centralizing
+   * teardown here means future SessionService teardown only needs to
+   * call this one entry point.
+   */
   clearSession(sessionId: string): void {
     this.sessionQueues.delete(sessionId);
+    this.indicators.clearSession(sessionId);
   }
 
   /** Test helper. */

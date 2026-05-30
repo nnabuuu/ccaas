@@ -138,13 +138,11 @@ export class ObservationDashboardProjector {
       switch (obs.type) {
         case 'lifecycle': {
           const action = typeof data.action === 'string' ? data.action : 'unknown';
-          // Pass-1 review S2: messageCount must NOT over-count.
-          // Legacy ObservationQueryService counts ONLY chat_turn rows
-          // (which M4 produces). Until M4 lands, messageCount stays 0
-          // from the ontology path. Bumping on system events would
-          // diverge from the legacy dashboard number during dual-write.
-          // join → skip; translate_request/discuss_complete/continue_chat_turn
-          // are observable but not "messages" per the legacy definition.
+          // messageCount is bumped only in `indicator_hit` (M4) — the
+          // M3 source of chat-turn truth. Lifecycle events
+          // (join / translate_request / discuss_complete /
+          // continue_chat_turn) are NOT counted as messages by the
+          // legacy dashboard definition, so they fall through here.
           events.push({
             timestamp,
             source: 'system',

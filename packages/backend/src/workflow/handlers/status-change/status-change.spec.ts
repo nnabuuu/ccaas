@@ -300,6 +300,45 @@ describe('StatusChangeService', () => {
     expect((status!.data as Record<string, unknown>).status).toBe('active');
   });
 
+  it('heuristic idle is reachable across repeated derivations (pass-1 MF2)', async () => {
+    // Regression for pass-1 MF2: prior `computeMetrics` walked all
+    // observation rows including the student_status row this service
+    // itself mutates on every cascade — and `student_status.updatedAt`
+    // jumped to `Date.now()` on every update. So `lastActiveAt` was
+    // always ~now, `sinceLastActive` was always ~0, and `idle` was
+    // unreachable.
+    //
+    // The fix: only count ACTIVITY_TYPES (indicator_hit/exercise/progress)
+    // toward lastActiveAt, and source it from createdAt not updatedAt.
+    //
+    // This test seeds a stale exercise row (>3 min old), forces the
+    // heuristic path, runs derivation TWICE, and asserts both runs
+    // produce `idle`. Pre-fix this would have flipped to `active` on
+    // the second run because the student_status row's updatedAt would
+    // dominate.
+    const stale = Date.now() - 5 * 60 * 1000;
+    await repo.append({
+      id: 'ex-stale',
+      sessionId: SESSION_ID,
+      entityId: 'student-1',
+      solutionId: TENANT_UUID,
+      type: 'exercise',
+      data: { step: 1, score: 50 },
+      triggerEventId: 'evt-stale',
+      createdAt: stale,
+      updatedAt: stale,
+    });
+    // No indicators registered → heuristic path (no LLM).
+    await invoke();
+    const first = await observations.findOne({ where: { type: 'student_status' } });
+    expect((first!.data as Record<string, unknown>).status).toBe('idle');
+
+    await invoke();
+    const second = await observations.findOne({ where: { type: 'student_status' } });
+    expect((second!.data as Record<string, unknown>).status).toBe('idle');
+    expect(llm.callCount).toBe(0);
+  });
+
   it('heuristic struggling when ≥3 misconception anchors', async () => {
     indicators.setIndicators(SESSION_ID, INDICATORS);
     // 3 indicator_hits with misconception anchors
