@@ -10,6 +10,7 @@ import { ObservationQueryService } from '../observation/observation-query.servic
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
+import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 import { buildTaskMap } from '../../domain/classroom/task-map.utils';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
@@ -41,7 +42,28 @@ export class DiscussService {
     private readonly coachingService: CoachingService,
     private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
+    private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
+
+  /** M3 dual-write helper for discuss_complete events. */
+  private pushDiscussCompleteEvent(
+    session: ClassroomSessionRecord,
+    studentId: string,
+    step: number,
+  ): void {
+    this.workflowDispatch
+      .pushEvent({
+        sessionId: session.id,
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: studentId,
+        payload: { type: 'discuss_complete', studentId, step },
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Workflow outbox enqueue (discuss_complete) failed: ${msg}`);
+      });
+  }
 
   async aiDiscuss(
     session: ClassroomSessionRecord,
@@ -181,6 +203,7 @@ export class DiscussService {
       await this.studentRepo.save(student);
 
       if (goalReached) {
+        // M3 dual-write — discuss_complete (goal-reached path)
         this.engine.dispatch({
           type: 'discuss_complete',
           sessionId: session.id,
@@ -188,6 +211,10 @@ export class DiscussService {
           solutionId: session.lessonId,
           payload: { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
         }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
+        // Map taskNum → step. live-lesson uses step internally; M3
+        // payload schema requires step. Fall back to taskNum if no
+        // mapping (shouldn't happen but stays robust).
+        this.pushDiscussCompleteEvent(session, studentId, taskNum);
       }
 
       this.engine.dispatch({
@@ -281,6 +308,8 @@ export class DiscussService {
       }
     }
 
+    // M3 dual-write — discuss_complete (forceComplete path)
+    this.pushDiscussCompleteEvent(session, studentId, taskNum);
     this.engine.dispatch({
       type: 'discuss_complete',
       sessionId: session.id,

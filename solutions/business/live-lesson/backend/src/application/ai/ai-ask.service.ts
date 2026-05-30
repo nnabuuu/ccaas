@@ -9,6 +9,7 @@ import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
+import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 
 @Injectable()
 export class AiAskService {
@@ -27,6 +28,7 @@ export class AiAskService {
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
+    private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
   async aiAsk(
