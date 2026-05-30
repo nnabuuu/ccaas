@@ -28,8 +28,9 @@
  *                                 traversal sanity check)
  *   - SLOT_TARGET_UNRESOLVED    — SlotDef.target.apiName / .name must
  *                                 resolve to a registered ObjectType
- *                                 (objectType kind) or Manifest
- *                                 (manifest kind)
+ *                                 (objectType kind), Manifest (manifest
+ *                                 kind), or ObjectSet (objectSet kind,
+ *                                 Phase 4)
  *   - DERIVED_FROM_UNRESOLVED   — SlotDef.derivedFrom 'head.tail' must
  *                                 resolve: head is a slot on this
  *                                 manifest, tail (single segment) is a
@@ -48,6 +49,19 @@
  *                                 / FunctionDef.requiredScopes must be
  *                                 a member of ApiKeyScopeLiteral
  *                                 (typo-catch at registration time)
+ *
+ * Phase 4 (Tier 2 — partial) additions:
+ *
+ *   - OBJECTSET_TARGET_UNRESOLVED — ObjectSetDef.objectType must
+ *                                   resolve to a registered ObjectType
+ *   - OBJECTSET_FIELD_UNRESOLVED  — every SetFilter / orderBy `path`
+ *                                   operand must resolve to a top-level
+ *                                   field on the target ObjectType's
+ *                                   Zod schema; recursive over
+ *                                   and/or/not
+ *   - OBJECTSET_NAMED_UNSUPPORTED — named SetFilter clauses dispatch to
+ *                                   a predicate registry that's still
+ *                                   gated; fail-closed until landed
  *
  * Each validator is pure and stateless — no I/O, no mutation. Cross-
  * def validators take a `ValidationContext` so they can resolve

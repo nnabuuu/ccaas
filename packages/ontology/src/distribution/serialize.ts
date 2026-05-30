@@ -25,6 +25,7 @@ import type {
   ActionDef,
   FunctionDef,
   LinkDef,
+  ObjectSetDef,
   ObjectTypeDef,
   ValidationContext,
 } from '../schema/index.js';
@@ -88,11 +89,22 @@ export interface SerializedManifest {
   readonly inheritParentRole?: boolean;
 }
 
+export interface SerializedObjectSet {
+  readonly apiName: string;
+  readonly displayName: unknown;
+  readonly objectType: string;
+  readonly filter: unknown;
+  readonly orderBy?: readonly unknown[];
+  readonly defaultLimit?: number;
+  readonly semantic: string;
+}
+
 export interface SerializedOntology {
   readonly ontologyVersion: string;
   readonly objectTypes: readonly SerializedObjectType[];
   readonly manifests: readonly SerializedManifest[];
   readonly functions: readonly SerializedFunction[];
+  readonly objectSets: readonly SerializedObjectSet[];
 }
 
 const ONTOLOGY_VERSION = '0.1.0';
@@ -115,11 +127,16 @@ export function serializeRegistry(ctx: ValidationContext): SerializedOntology {
     ? Array.from(ctx.functions.values()).sort(byKey('apiName')).map(serializeFunction)
     : [];
 
+  const objectSets = ctx.objectSets
+    ? Array.from(ctx.objectSets.values()).sort(byKey('apiName')).map(serializeObjectSet)
+    : [];
+
   return {
     ontologyVersion: ONTOLOGY_VERSION,
     objectTypes,
     manifests,
     functions,
+    objectSets,
   };
 }
 
@@ -212,6 +229,21 @@ function serializeFunction(f: FunctionDef): SerializedFunction {
     semantic: f.semantic,
     allowedRoles: [...f.allowedRoles].sort(),
     requiredScopes: f.requiredScopes ? [...f.requiredScopes].sort() : undefined,
+  };
+}
+
+function serializeObjectSet(s: ObjectSetDef): SerializedObjectSet {
+  return {
+    apiName: s.apiName,
+    displayName: s.displayName,
+    objectType: s.objectType,
+    // SetFilter is plain JSON; canonicalize will sort its keys
+    // recursively when used by computeSchemaDigest, so we don't need
+    // to massage it here.
+    filter: s.filter,
+    orderBy: s.orderBy,
+    defaultLimit: s.defaultLimit,
+    semantic: s.semantic,
   };
 }
 
