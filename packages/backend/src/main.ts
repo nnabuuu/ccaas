@@ -5,11 +5,67 @@
  */
 
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, DynamicModule, Type } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
+
+/**
+ * Resolve solution-specific handler bundles from the env var
+ * `PLATFORM_HANDLER_PACKAGES` (CSV). Each package is dynamic-imported
+ * and expected to export a NestJS module class.
+ *
+ * Convention (phase 5.5): the package's main `index.ts` exports
+ * exactly ONE module class named with a `*Module` suffix. The loader
+ * picks the first such export so solutions can pick any name (e.g.
+ * `LiveLessonPlatformHandlersModule`). When env is unset/empty, the
+ * platform boots truly generic — no handlers loaded.
+ *
+ * On dynamic-import failure the loader logs the underlying error and
+ * exits with status 1 — a missing handler package is a deploy
+ * configuration error, not a degraded mode.
+ */
+async function loadPlatformHandlerModules(
+  logger: Logger,
+): Promise<Array<Type<unknown> | DynamicModule>> {
+  const raw = process.env.PLATFORM_HANDLER_PACKAGES ?? '';
+  const names = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (names.length === 0) {
+    logger.warn(
+      'PLATFORM_HANDLER_PACKAGES is unset — platform boots without any ' +
+        'solution handlers; trigger registry will be empty.',
+    );
+    return [];
+  }
+  const out: Array<Type<unknown> | DynamicModule> = [];
+  for (const name of names) {
+    try {
+      const mod = await import(name);
+      const moduleClass = Object.values(mod).find(
+        (v): v is Type<unknown> =>
+          typeof v === 'function' && /Module$/.test((v as Function).name),
+      );
+      if (!moduleClass) {
+        throw new Error(
+          `package "${name}" has no export ending in "Module"; check its index.ts`,
+        );
+      }
+      out.push(moduleClass);
+      logger.log(`Loaded handler module ${moduleClass.name} from "${name}"`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(
+        `Failed to load handler package "${name}": ${msg}`,
+      );
+      process.exit(1);
+    }
+  }
+  return out;
+}
 
 async function bootstrap() {
   // Prevent nested Claude Code session errors by removing CLAUDECODE env var
@@ -22,7 +78,8 @@ async function bootstrap() {
 
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create(AppModule);
+  const extraModules = await loadPlatformHandlerModules(logger);
+  const app = await NestFactory.create(AppModule.register({ extraModules }));
 
   // Wire SIGTERM/SIGINT → onModuleDestroy. Without this, NestJS just exits
   // when the process is signaled and lifecycle hooks never run, so e.g.
