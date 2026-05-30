@@ -32,68 +32,80 @@ import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
 const REPO_ROOT = resolve(__dirname, '..', '..', '..', '..');
-const HANDLER_SRC = join(
+const HANDLER_PKG_ROOT = join(
   REPO_ROOT,
-  'solutions/business/live-lesson/platform-handlers/src',
+  'solutions/business/live-lesson/platform-handlers',
 );
+const HANDLER_SCAN_ROOTS = [
+  join(HANDLER_PKG_ROOT, 'src'),
+  // Pass-2 S1: also walk the handler's test/ tree — test-database.ts
+  // imports 28 entity subpaths and a future refactor that collapses
+  // an entity directory into a barrel re-export would silently break
+  // those imports without this scan covering them.
+  join(HANDLER_PKG_ROOT, 'test'),
+];
 const BACKEND_DIST = join(REPO_ROOT, 'packages/backend/dist/src');
 
 function distExists(): boolean {
   return existsSync(BACKEND_DIST) && statSync(BACKEND_DIST).isDirectory();
 }
 
-function collectSubpaths(handlerSrcRoot: string): Set<string> {
+function collectSubpaths(handlerScanRoots: readonly string[]): Set<string> {
   // Find every `@kedge-agentic/backend/<subpath>` mentioned in source
   // (.ts files, excluding compiled .d.ts under dist/).
   const out = new Set<string>();
-  const files = execSync(
-    `find "${handlerSrcRoot}" -type f -name '*.ts' -not -name '*.d.ts'`,
-    { encoding: 'utf8' },
-  )
-    .split('\n')
-    .filter(Boolean);
   const pattern = /['"]@kedge-agentic\/backend\/([^'"]+)['"]/g;
-  for (const file of files) {
-    const body = readFileSync(file, 'utf8');
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(body)) !== null) {
-      out.add(match[1]);
+  for (const root of handlerScanRoots) {
+    if (!existsSync(root)) continue;
+    const files = execSync(
+      `find "${root}" -type f -name '*.ts' -not -name '*.d.ts'`,
+      { encoding: 'utf8' },
+    )
+      .split('\n')
+      .filter(Boolean);
+    for (const file of files) {
+      const body = readFileSync(file, 'utf8');
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(body)) !== null) {
+        out.add(match[1]);
+      }
     }
   }
   return out;
 }
 
-describe('@kedge-agentic/backend npm exports map', () => {
-  const subpaths = distExists()
-    ? Array.from(collectSubpaths(HANDLER_SRC)).sort()
-    : [];
+const HAS_DIST = distExists();
+const SUBPATHS = HAS_DIST
+  ? Array.from(collectSubpaths(HANDLER_SCAN_ROOTS)).sort()
+  : [];
 
-  if (!distExists()) {
-    it.skip('SKIPPED — backend dist not built; run `npm run build:backend` first', () => {
-      // Skipped via it.skip
-    });
-    return;
-  }
+const describeOrSkip =
+  HAS_DIST && SUBPATHS.length > 0 ? describe : describe.skip;
 
-  if (subpaths.length === 0) {
-    it.skip('SKIPPED — no @kedge-agentic/backend subpath imports found in handler src (handler package likely empty or deleted)', () => {
-      // Skipped via it.skip
-    });
-    return;
-  }
-
-  it.each(subpaths)(
+describeOrSkip('@kedge-agentic/backend npm exports map (handler scan roots)', () => {
+  it.each(SUBPATHS)(
     'subpath "@kedge-agentic/backend/%s" resolves at runtime via require.resolve',
     (subpath) => {
       // Use Node's require.resolve from the handler package's directory so
       // node_modules walks find the workspace symlink + honor the exports
       // map. If a directory-shaped subpath (e.g. `workflow/types`) is
       // missing from exports, this throws MODULE_NOT_FOUND.
-      const handlerPkgDir = join(REPO_ROOT, 'solutions/business/live-lesson/platform-handlers');
       const resolved = require.resolve(`@kedge-agentic/backend/${subpath}`, {
-        paths: [handlerPkgDir],
+        paths: [HANDLER_PKG_ROOT],
       });
       expect(resolved).toMatch(/packages\/backend\/dist\/src\//);
     },
   );
 });
+
+// Surface the skip reason in jest output so a contributor sees the path
+// rather than a silent absent suite.
+if (!HAS_DIST) {
+  describe('@kedge-agentic/backend npm exports map', () => {
+    it.skip('SKIPPED — backend dist not built; run `npm run build:backend` first', () => {});
+  });
+} else if (SUBPATHS.length === 0) {
+  describe('@kedge-agentic/backend npm exports map', () => {
+    it.skip('SKIPPED — handler scan found 0 @kedge-agentic/backend imports (handler package empty?)', () => {});
+  });
+}
