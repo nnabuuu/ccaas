@@ -123,8 +123,12 @@ function narrowPayload(payload: unknown): DashboardFetchResult {
       indicatorStats: Array.isArray(obj.indicatorStats)
         ? (obj.indicatorStats as IndicatorStats[])
         : [],
+      // M6 pass-1 S5: defensive filter to the narrow knowledge/misconception
+      // union the live-lesson schema declares. Platform IndicatorRegistry
+      // accepts any string `type`; without this filter the cast would lie
+      // when a future caller pushes `type: 'process'`.
       indicators: Array.isArray(obj.indicators)
-        ? (obj.indicators as IndicatorDef[])
+        ? filterIndicators(obj.indicators as unknown[])
         : [],
       source: 'platform',
     };
@@ -136,4 +140,27 @@ function narrowPayload(payload: unknown): DashboardFetchResult {
     indicators: [],
     source: 'platform',
   };
+}
+
+function filterIndicators(arr: unknown[]): IndicatorDef[] {
+  const out: IndicatorDef[] = [];
+  for (const raw of arr) {
+    if (!raw || typeof raw !== 'object') continue;
+    const d = raw as Record<string, unknown>;
+    if (
+      typeof d.id !== 'string' ||
+      typeof d.label !== 'string' ||
+      typeof d.description !== 'string'
+    ) {
+      continue;
+    }
+    if (d.type !== 'knowledge' && d.type !== 'misconception') continue;
+    out.push({
+      id: d.id,
+      type: d.type,
+      label: d.label,
+      description: d.description,
+    });
+  }
+  return out;
 }

@@ -20,6 +20,7 @@ import { WorkflowDispatchService } from './workflow-dispatch.service';
 import { WorkflowIndicatorPushService } from './workflow-indicator-push.service';
 import { WorkflowOutboxDrainService } from './workflow-outbox-drain.service';
 import { WorkflowOutboxRepository } from './workflow-outbox.repository';
+import { WorkflowSessionLifecycleService } from './workflow-session-lifecycle.service';
 
 @Module({
   imports: [
@@ -32,11 +33,13 @@ import { WorkflowOutboxRepository } from './workflow-outbox.repository';
     WorkflowIndicatorPushService,
     WorkflowDashboardFetchService,
     WorkflowOutboxDrainService,
+    WorkflowSessionLifecycleService,
   ],
   exports: [
     WorkflowDispatchService,
     WorkflowIndicatorPushService,
     WorkflowDashboardFetchService,
+    WorkflowSessionLifecycleService,
   ],
 })
 export class WorkflowOutboxModule {}

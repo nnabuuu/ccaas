@@ -241,6 +241,19 @@ describe('ObservationDashboardProjector', () => {
     ]);
   });
 
+  it('M6 pass-1 S4: projector returns the indicator catalog populated from IndicatorRegistry', async () => {
+    const indicators = module.get(IndicatorRegistryService);
+    indicators.setIndicators('tenant-a', 's1', [
+      { id: 'K1', type: 'knowledge', label: 'concept', description: 'd1' },
+      { id: 'M1', type: 'misconception', label: 'mix-up', description: 'd2' },
+    ]);
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.indicators).toEqual([
+      { id: 'K1', type: 'knowledge', label: 'concept', description: 'd1' },
+      { id: 'M1', type: 'misconception', label: 'mix-up', description: 'd2' },
+    ]);
+  });
+
   it('M5.3b: indicatorStats fails closed on unknown anchors (no surface)', async () => {
     const indicators = module.get(IndicatorRegistryService);
     indicators.setIndicators('tenant-a', 's1', [

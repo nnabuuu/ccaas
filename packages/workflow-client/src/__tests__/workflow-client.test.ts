@@ -292,6 +292,44 @@ describe('WorkflowClient', () => {
     expect(f.calls).toHaveLength(0);
   });
 
+  // ──────────── clearSession (M6 pass-1 S1) ────────────
+
+  it('clearSession DELETEs the session endpoint', async () => {
+    const f = fakeFetch({ status: 204, body: null });
+    const client = new WorkflowClient({
+      baseUrl: 'http://localhost:3001',
+      apiKey: 'sk-test',
+      fetchImpl: f.fetch,
+    });
+    const out = await client.clearSession('s1');
+    expect(out).toEqual({ status: 'ok' });
+    expect(f.calls).toHaveLength(1);
+    expect(f.calls[0].url).toBe('http://localhost:3001/api/v1/workflow/sessions/s1');
+    expect(f.calls[0].init?.method).toBe('DELETE');
+    const headers = f.calls[0].init?.headers as Record<string, string>;
+    expect(headers['Authorization']).toBe('Bearer sk-test');
+  });
+
+  it('clearSession maps 401 to retryable=false', async () => {
+    const f = fakeFetch({ status: 401, body: { message: 'unauthorized' } });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = (await client.clearSession('s1')) as Extract<
+      Awaited<ReturnType<typeof client.clearSession>>,
+      { status: 'failed' }
+    >;
+    expect(out.status).toBe('failed');
+    expect(out.httpStatus).toBe(401);
+    expect(out.retryable).toBe(false);
+  });
+
+  it('clearSession rejects empty sessionId without calling fetch', async () => {
+    const f = fakeFetch({ status: 204, body: null });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = await client.clearSession('');
+    expect(out.status).toBe('failed');
+    expect(f.calls).toHaveLength(0);
+  });
+
   // ──────────── getObservationDashboard (M5.3b) ────────────
 
   it('getObservationDashboard GETs the legacy projector endpoint', async () => {

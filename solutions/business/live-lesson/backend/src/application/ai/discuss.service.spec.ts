@@ -22,8 +22,6 @@ import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DiscussService } from './discuss.service';
-import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
-import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Student } from '../../adapters/persistence/entities/student.entity';
@@ -113,7 +111,7 @@ describe('DiscussService', () => {
         { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
-        DiscussService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
+        DiscussService,  AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         
       ],
     }).compile();
