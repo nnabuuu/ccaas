@@ -31,7 +31,7 @@ import { Repository } from 'typeorm';
 import request from 'supertest';
 import { ApiKeyGuard } from '../../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../../auth/guards/scopes.guard';
-import type { OntologyRegistry } from '@kedge-agentic/ontology';
+import { OntologyRegistry } from '@kedge-agentic/ontology';
 import { ManifestAccessorService } from '../../../ontology/manifest-accessor.service';
 import {
   ONTOLOGY_REGISTRY,
@@ -49,6 +49,8 @@ import { WorkflowMetricsService } from '../../workflow-metrics.service';
 import { WorkflowRegistry } from '../../workflow-registry';
 import { EventIngestController } from '../../event-ingest/event-ingest.controller';
 import { LifecycleObservationService } from './lifecycle-observation.service';
+import { ExerciseObservationService } from '../exercise/exercise-observation.service';
+import { ProgressObservationService } from '../progress/progress-observation.service';
 import { getTestDatabaseOptions } from '../../../../test/setup/test-database';
 import { SessionMetadataService } from '../../../sessions/services/session-metadata.service';
 
@@ -119,6 +121,8 @@ describe('LifecycleObservationService — M2 end-to-end (cross-process loop)', (
         ObservationRepository,
         ObserverEventRepository,
         LifecycleObservationService,
+        ExerciseObservationService,
+        ProgressObservationService,
         // tenant resolver
         { provide: SolutionsService, useClass: FakeSolutionsService },
       ],
@@ -182,7 +186,10 @@ describe('LifecycleObservationService — M2 end-to-end (cross-process loop)', (
     expect(obs[0].triggerEventId).toMatch(/[0-9a-f-]{36}/);
   });
 
-  it('non-matching payload type does NOT fire the trigger', async () => {
+  it('M3: student_submitted fires the exercise trigger (not the join trigger)', async () => {
+    // pre-M3 this test asserted "0 observations"; M3 added the
+    // exercise trigger so student_submitted now produces exactly 1
+    // exercise observation row (and NO lifecycle row).
     await request(app.getHttpServer())
       .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
       .send({
@@ -195,7 +202,165 @@ describe('LifecycleObservationService — M2 end-to-end (cross-process loop)', (
       .expect(202);
     await new Promise<void>((resolve) => setTimeout(resolve, 100));
     const obs = await observations.find({ where: { sessionId: SESSION_ID } });
-    expect(obs).toHaveLength(0);
+    expect(obs).toHaveLength(1);
+    expect(obs[0].type).toBe('exercise');
+  });
+
+  it('M3: student_submitted event → exercise observation row with type/data', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-exercise-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'student_submitted',
+          studentId: 'student-abc',
+          step: 3,
+          score: 0.8,
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'exercise' },
+    });
+    expect(obs).toHaveLength(1);
+    expect(obs[0]).toMatchObject({
+      entityId: 'student-abc',
+      type: 'exercise',
+      data: { step: 3, score: 0.8 },
+    });
+  });
+
+  it('M3: student_submitted without score → exercise row without score field', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-exercise-2',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'student_submitted',
+          studentId: 'student-abc',
+          step: 4,
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'exercise' },
+    });
+    expect(obs).toHaveLength(1);
+    expect(obs[0].data).toEqual({ step: 4 });
+  });
+
+  it('M3: step_completed event → progress observation row', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-progress-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'step_completed',
+          studentId: 'student-abc',
+          step: 5,
+          taskNum: 2,
+          nextTask: 3,
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'progress' },
+    });
+    expect(obs).toHaveLength(1);
+    expect(obs[0].data).toEqual({ step: 5, taskNum: 2, nextTask: 3 });
+  });
+
+  it('M3: discuss_complete event → lifecycle observation with action=discuss_complete', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-discuss-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'discuss_complete',
+          studentId: 'student-abc',
+          step: 2,
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'lifecycle' },
+    });
+    const discussObs = obs.find(
+      (o) => (o.data as Record<string, unknown>).action === 'discuss_complete',
+    );
+    expect(discussObs).toBeDefined();
+    expect(discussObs!.data).toEqual({ action: 'discuss_complete', step: 2 });
+  });
+
+  it('M3: translate_request event → lifecycle observation', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-translate-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'translate_request',
+          studentId: 'student-abc',
+          step: 1,
+          originalText: 'hello',
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'lifecycle' },
+    });
+    const translateObs = obs.find(
+      (o) => (o.data as Record<string, unknown>).action === 'translate_request',
+    );
+    expect(translateObs).toBeDefined();
+    expect(translateObs!.data).toEqual({
+      action: 'translate_request',
+      step: 1,
+      originalText: 'hello',
+    });
+  });
+
+  it('M3: continue_chat_turn event → lifecycle observation', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/v1/workflow/sessions/${SESSION_ID}/events`)
+      .send({
+        eventId: 'evt-continue-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-abc',
+        payload: {
+          type: 'continue_chat_turn',
+          studentId: 'student-abc',
+        },
+      })
+      .expect(202);
+    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    const obs = await observations.find({
+      where: { sessionId: SESSION_ID, type: 'lifecycle' },
+    });
+    const contObs = obs.find(
+      (o) => (o.data as Record<string, unknown>).action === 'continue_chat_turn',
+    );
+    expect(contObs).toBeDefined();
   });
 
   it('repeated eventId is dedup-dropped → exactly one observation row', async () => {

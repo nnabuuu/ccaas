@@ -99,34 +99,89 @@ const RECORD_LIFECYCLE_OBSERVATION_ACTION: ActionDef = defineAction({
  * Workflow actions register under `WORKFLOW_ACTION_NAMESPACE`; trigger
  * definitions reference the resulting qualified name.
  */
-const JOIN_TRIGGER_DEF: TriggerDef = {
+/**
+ * Helper to keep the 4 lifecycle triggers (join + 3 system event
+ * variants) compact. Each is a thin shell over `event` kind +
+ * type-discriminated predicate + args mapper.
+ */
+function lifecycleTrigger(opts: {
+  apiName: string;
+  semantic: string;
+  payloadType: string;
+  toAction: 'join' | 'translate_request' | 'discuss_complete' | 'continue_chat_turn';
+  /** Extra fields from payload preserved in observation.data. */
+  extras?: (payload: Record<string, unknown>) => Record<string, unknown>;
+}): TriggerDef {
+  return {
+    apiName: opts.apiName,
+    manifest: 'LessonSession',
+    semantic: opts.semantic,
+    kind: 'event',
+    watch: { stream: 'events' },
+    when: (input: TriggerFireInput) => {
+      const payload = input.event?.payload as { type?: string } | undefined;
+      return payload?.type === opts.payloadType;
+    },
+    then: {
+      action: `${WORKFLOW_ACTION_NAMESPACE}.record_lifecycle_observation`,
+      args: (input: TriggerFireInput) => {
+        const payload = input.event?.payload as Record<string, unknown> & {
+          studentId: string;
+        };
+        return {
+          entityId: payload.studentId,
+          action: opts.toAction,
+          triggerEventId: input.cascade.correlationId,
+          extra: opts.extras ? opts.extras(payload) : undefined,
+        };
+      },
+      as: 'admin',
+    },
+  };
+}
+
+const JOIN_TRIGGER_DEF: TriggerDef = lifecycleTrigger({
   apiName: 'on_student_joined_record_lifecycle',
-  manifest: 'LessonSession',
   semantic:
     'when a student_joined event arrives on LessonSession.events, record a lifecycle observation.',
-  kind: 'event',
-  watch: { stream: 'events' },
-  when: (input: TriggerFireInput) => {
-    const payload = input.event?.payload as { type?: string } | undefined;
-    return payload?.type === 'student_joined';
-  },
-  then: {
-    action: `${WORKFLOW_ACTION_NAMESPACE}.record_lifecycle_observation`,
-    args: (input: TriggerFireInput) => {
-      const payload = input.event?.payload as {
-        studentId: string;
-        classroomCode: string;
-      };
-      return {
-        entityId: payload.studentId,
-        action: 'join',
-        triggerEventId: input.cascade.correlationId,
-        extra: { classroomCode: payload.classroomCode },
-      };
-    },
-    as: 'admin',
-  },
-};
+  payloadType: 'student_joined',
+  toAction: 'join',
+  extras: (p) => ({ classroomCode: p.classroomCode }),
+});
+
+const TRANSLATE_REQUEST_TRIGGER_DEF: TriggerDef = lifecycleTrigger({
+  apiName: 'on_translate_request_record_lifecycle',
+  semantic: 'M3: translate_request → lifecycle observation (system event).',
+  payloadType: 'translate_request',
+  toAction: 'translate_request',
+  extras: (p) => ({
+    step: p.step,
+    originalText: p.originalText,
+  }),
+});
+
+const DISCUSS_COMPLETE_TRIGGER_DEF: TriggerDef = lifecycleTrigger({
+  apiName: 'on_discuss_complete_record_lifecycle',
+  semantic: 'M3: discuss_complete → lifecycle observation (system event).',
+  payloadType: 'discuss_complete',
+  toAction: 'discuss_complete',
+  extras: (p) => ({ step: p.step }),
+});
+
+const CONTINUE_CHAT_TURN_TRIGGER_DEF: TriggerDef = lifecycleTrigger({
+  apiName: 'on_continue_chat_turn_record_lifecycle',
+  semantic: 'M3: continue_chat_turn → lifecycle observation (system event).',
+  payloadType: 'continue_chat_turn',
+  toAction: 'continue_chat_turn',
+  extras: (p) => ({ step: p.step }),
+});
+
+const LIFECYCLE_TRIGGERS: readonly TriggerDef[] = [
+  JOIN_TRIGGER_DEF,
+  TRANSLATE_REQUEST_TRIGGER_DEF,
+  DISCUSS_COMPLETE_TRIGGER_DEF,
+  CONTINUE_CHAT_TURN_TRIGGER_DEF,
+];
 
 @Injectable()
 export class LifecycleObservationService implements OnApplicationBootstrap {
@@ -183,12 +238,14 @@ export class LifecycleObservationService implements OnApplicationBootstrap {
       tools: [tool],
     });
 
-    this.engine.registerTrigger(JOIN_TRIGGER_DEF);
+    for (const trigger of LIFECYCLE_TRIGGERS) {
+      this.engine.registerTrigger(trigger);
+    }
 
     this.logger.log(
       `Lifecycle observation registered: ActionDef ` +
         `"${WORKFLOW_ACTION_NAMESPACE}.${RECORD_LIFECYCLE_OBSERVATION_ACTION.apiName}" + ` +
-        `TriggerDef "${JOIN_TRIGGER_DEF.apiName}" (solutionId=${tenant.id}).`,
+        `${LIFECYCLE_TRIGGERS.length} triggers (solutionId=${tenant.id}).`,
     );
   }
 
