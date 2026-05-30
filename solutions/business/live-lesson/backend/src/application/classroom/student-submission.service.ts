@@ -392,6 +392,7 @@ export class StudentSubmissionService {
     session: ClassroomSessionRecord, studentId: string, step: number,
     score: GradeResult | null, data: Record<string, unknown>,
   ): void {
+    // M3 dual-write — exercise submission
     this.engine.dispatch({
       type: 'exercise_result',
       sessionId: session.id,
@@ -399,17 +400,49 @@ export class StudentSubmissionService {
       solutionId: session.lessonId,
       payload: { step, score: score?.total ?? null },
     }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
+    this.workflowDispatch.pushEvent({
+      sessionId: session.id,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: studentId,
+      payload: {
+        type: 'student_submitted',
+        studentId,
+        step,
+        score: score?.total ?? undefined,
+      },
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Workflow outbox enqueue (student_submitted) failed: ${msg}`);
+    });
 
+    // M3 dual-write — step complete
     getCachedTaskMap(session.lessonId, this.lessonRepo).then(taskMap => {
       const taskNum = taskMap.stepToTask[step];
       return this.studentRepo.findBySessionAndId(session.id, studentId).then(s => {
         if (s && taskNum !== undefined && s.currentTask > taskNum) {
-          return this.engine.dispatch({
+          this.engine.dispatch({
             type: 'step_complete',
             sessionId: session.id,
             entityId: studentId,
             solutionId: session.lessonId,
             payload: { step, taskNum, nextTask: s.currentTask },
+          }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
+          this.workflowDispatch.pushEvent({
+            sessionId: session.id,
+            manifestName: 'LessonSession',
+            streamApiName: 'events',
+            entityId: studentId,
+            payload: {
+              type: 'step_completed',
+              studentId,
+              step,
+              taskNum,
+              nextTask: s.currentTask,
+            },
+          }).catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.error(`Workflow outbox enqueue (step_completed) failed: ${msg}`);
           });
         }
       });

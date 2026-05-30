@@ -9,6 +9,7 @@ import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
+import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 
 export interface TranslateResponse {
   definition: string;
@@ -56,6 +57,7 @@ export class TranslateService {
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
+    private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
   async translate(
@@ -130,6 +132,7 @@ export class TranslateService {
 
     cache.set(normalized, result);
 
+    // M3 dual-write — translate_request
     this.engine.dispatch({
       type: 'translate_request',
       sessionId: session.id,
@@ -144,6 +147,16 @@ export class TranslateService {
         contextAnalysis: result.contextAnalysis,
       },
     }).catch(e => this.logger.warn(`Observer dispatch translate_request failed: ${e}`));
+    this.workflowDispatch.pushEvent({
+      sessionId: session.id,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: studentId,
+      payload: { type: 'translate_request', studentId, step, originalText: text },
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Workflow outbox enqueue (translate_request) failed: ${msg}`);
+    });
 
     return result;
   }
