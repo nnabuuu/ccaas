@@ -108,6 +108,7 @@ export {
   type SerializedAction,
   type SerializedFunction,
   type SerializedManifest,
+  type SerializedObjectSet,
 } from './distribution/index.js';
 
 // Semantic subpath

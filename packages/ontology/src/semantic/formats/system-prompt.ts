@@ -18,7 +18,7 @@
  * Spec §11 has the canonical golden-output structure this matches.
  */
 
-import type { ManifestDef } from '../../manifest/index.js';
+import type { ManifestDef, SlotDef } from '../../manifest/index.js';
 import type { OntologyRegistry } from '../../registry/index.js';
 import type { BoundaryRole } from '../../types.js';
 import { checkBoundary } from '../../accessor/index.js';
@@ -135,12 +135,7 @@ function displayName(d: unknown): string {
   return '';
 }
 
-function describeSlotTarget(slot: {
-  target:
-    | { kind: 'objectType'; apiName: string }
-    | { kind: 'manifest'; name: string }
-    | { kind: 'objectSet'; name: string };
-}): string {
+function describeSlotTarget(slot: SlotDef): string {
   switch (slot.target.kind) {
     case 'objectType':
       return slot.target.apiName;

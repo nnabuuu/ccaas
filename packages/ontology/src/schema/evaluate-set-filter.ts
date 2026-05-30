@@ -39,14 +39,22 @@ export function evaluateSetFilter(filter: SetFilter, row: FilterRow): boolean {
       return Object.is(resolvePath(row, filter.path), filter.value);
     case 'ne':
       return !Object.is(resolvePath(row, filter.path), filter.value);
-    case 'lt':
-      return compareNumbers(resolvePath(row, filter.path), filter.value) < 0;
-    case 'le':
-      return compareNumbers(resolvePath(row, filter.path), filter.value) <= 0;
-    case 'gt':
-      return compareNumbers(resolvePath(row, filter.path), filter.value) > 0;
-    case 'ge':
-      return compareNumbers(resolvePath(row, filter.path), filter.value) >= 0;
+    case 'lt': {
+      const c = compareNumbers(resolvePath(row, filter.path), filter.value);
+      return Number.isFinite(c) && c < 0;
+    }
+    case 'le': {
+      const c = compareNumbers(resolvePath(row, filter.path), filter.value);
+      return Number.isFinite(c) && c <= 0;
+    }
+    case 'gt': {
+      const c = compareNumbers(resolvePath(row, filter.path), filter.value);
+      return Number.isFinite(c) && c > 0;
+    }
+    case 'ge': {
+      const c = compareNumbers(resolvePath(row, filter.path), filter.value);
+      return Number.isFinite(c) && c >= 0;
+    }
     case 'in': {
       const v = resolvePath(row, filter.path);
       return filter.values.some((candidate) => Object.is(candidate, v));
@@ -94,17 +102,18 @@ function resolvePath(row: FilterRow, path: string): unknown {
 
 /**
  * Numeric comparison helper. Returns:
- *   - negative if a < b
- *   - 0       if a === b OR either side is not a finite number
- *   - positive if a > b
+ *   - a finite negative number if `a < b`
+ *   - a finite 0                if `a === b`
+ *   - a finite positive number if `a > b`
+ *   - `NaN` if either side is not a finite number
  *
- * Non-number operands collapse to 0 instead of throwing because
- * `evaluateSetFilter` is called as a predicate — returning 0 means
- * "comparison is not meaningful," which makes lt/gt return false
- * (matching the fail-closed convention used by the `named` stub).
+ * Callers use `Number.isFinite(c)` as a "comparison was meaningful"
+ * gate before applying `<` / `<=` / `>` / `>=`. This makes lt/le/gt/ge
+ * all fail-closed on non-numeric operands consistently — without the
+ * NaN sentinel, `le`/`ge` would erroneously match (since `0 <= 0`).
  */
 function compareNumbers(a: unknown, b: unknown): number {
-  if (typeof a !== 'number' || typeof b !== 'number') return 0;
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  if (typeof a !== 'number' || typeof b !== 'number') return NaN;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return NaN;
   return a - b;
 }

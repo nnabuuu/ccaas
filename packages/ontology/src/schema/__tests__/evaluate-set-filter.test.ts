@@ -33,9 +33,18 @@ describe('comparison ops', () => {
     expect(evaluateSetFilter({ op: 'ge', path: 'mastery', value: 90 }, BOB)).toBe(true);
   });
 
-  it('lt / gt against non-number operands return false (fail-closed)', () => {
+  it('lt / le / gt / ge against non-number operands all return false (fail-closed, symmetrically)', () => {
     expect(evaluateSetFilter({ op: 'lt', path: 'name', value: 50 }, ALICE)).toBe(false);
-    expect(evaluateSetFilter({ op: 'gt', path: 'mastery', value: 'a' as unknown as number }, ALICE)).toBe(false);
+    expect(evaluateSetFilter({ op: 'le', path: 'name', value: 50 }, ALICE)).toBe(false);
+    expect(evaluateSetFilter({ op: 'gt', path: 'name', value: 50 }, ALICE)).toBe(false);
+    expect(evaluateSetFilter({ op: 'ge', path: 'name', value: 50 }, ALICE)).toBe(false);
+    // Symmetric: value side non-numeric.
+    expect(
+      evaluateSetFilter({ op: 'gt', path: 'mastery', value: 'a' as unknown as number }, ALICE),
+    ).toBe(false);
+    expect(
+      evaluateSetFilter({ op: 'ge', path: 'mastery', value: 'a' as unknown as number }, ALICE),
+    ).toBe(false);
   });
 
   it('eq with null matches only when the value is exactly null', () => {

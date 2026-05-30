@@ -195,11 +195,17 @@ export class OntologyRegistry {
    * Phase 4 (Tier 2 — partial). All registered ObjectSetDefs whose
    * `objectType` matches the given ObjectType apiName. Used by tooling
    * that asks "what curated subsets exist for Student?".
+   *
+   * Iterates the internal Map directly (matching the
+   * `getManifestsForType` convention) — avoids the intermediate
+   * `getAllObjectSets()` array allocation on every call.
    */
   getObjectSetsForType(objectTypeApiName: string): readonly ObjectSetDef[] {
-    return this.getAllObjectSets().filter(
-      (s) => s.objectType === objectTypeApiName,
-    );
+    const out: ObjectSetDef[] = [];
+    for (const s of this.objectSets.values()) {
+      if (s.objectType === objectTypeApiName) out.push(s);
+    }
+    return out;
   }
 
   /**
