@@ -28,9 +28,11 @@
  */
 
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpStatus,
+  Inject,
   Param,
   Post,
   Res,
@@ -42,11 +44,35 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { OntologyRegistry } from '@kedge-agentic/ontology';
+import { ONTOLOGY_REGISTRY } from '../../ontology/ontology-registry.provider';
 import { Auth, TenantId } from '../../auth/decorators';
 import { WorkflowMetricsService } from '../workflow-metrics.service';
 import { WorkflowEngineService } from '../workflow-engine.service';
 import { ObserverEventRepository } from '../persistence/observer-event-repository';
 import { WorkflowEventDto } from './event-ingest.dto';
+
+/**
+ * Detect a unique-constraint violation across SQLite and Postgres
+ * without coupling the controller to a specific driver. The dedup
+ * race-recovery path (pass-1 M-1) needs to recognize these in the
+ * save() catch but treat every other error as a true 500.
+ */
+function isUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const e = err as { code?: unknown; message?: unknown; driverError?: { code?: unknown } };
+  if (typeof e.code === 'string' && /UNIQUE|23505/.test(e.code)) return true;
+  if (
+    typeof e.driverError?.code === 'string' &&
+    /UNIQUE|23505/.test(e.driverError.code)
+  ) {
+    return true;
+  }
+  if (typeof e.message === 'string' && /UNIQUE constraint failed/i.test(e.message)) {
+    return true;
+  }
+  return false;
+}
 
 export type WorkflowIngestResponse =
   | { readonly accepted: true; readonly eventId: string }
@@ -60,6 +86,7 @@ export class EventIngestController {
     private readonly events: ObserverEventRepository,
     private readonly engine: WorkflowEngineService,
     private readonly metrics: WorkflowMetricsService,
+    @Inject(ONTOLOGY_REGISTRY) private readonly ontology: OntologyRegistry,
   ) {}
 
   @Post(':sessionId/events')
@@ -86,8 +113,44 @@ export class EventIngestController {
       throw new Error('solutionId not resolved from auth context');
     }
 
-    // Dedup FIRST. Returns 200 OK with metadata so retrying outbox
-    // workers can mark their row delivered.
+    // Pass-1 M-3: validate manifest + stream + payload shape BEFORE
+    // persisting. Without this gate, a tenant can push events for
+    // unknown manifests/streams + bloat observer_events with garbage.
+    const manifest = this.ontology.getManifest(body.manifestName);
+    if (!manifest) {
+      throw new BadRequestException(
+        `manifest "${body.manifestName}" is not registered in this platform`,
+      );
+    }
+    const streamDef = manifest.streams?.find(
+      (s) => s.apiName === body.streamApiName,
+    );
+    if (!streamDef) {
+      throw new BadRequestException(
+        `stream "${body.streamApiName}" is not declared on manifest "${body.manifestName}"`,
+      );
+    }
+    if (streamDef.payloadSchema) {
+      const parsed = streamDef.payloadSchema.safeParse(body.payload);
+      if (!parsed.success) {
+        throw new BadRequestException(
+          `payload does not match "${body.streamApiName}" stream payloadSchema: ` +
+            parsed.error.issues
+              .map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`)
+              .join('; '),
+        );
+      }
+    }
+
+    // Optimistic dedup check + unique-constraint catch.
+    // The hasEvent() pre-check is a fast path for the common
+    // sequential-retry case (live-lesson outbox processes rows one at
+    // a time). But under concurrent POSTs of the same eventId (parallel
+    // outbox workers, or two retries crossing the wire) both could
+    // pass the gate. The catch on `save()` ABOVE the engine dispatch
+    // protects against that exact race: the PK on observer_events.id
+    // fires a unique-constraint error, which we recover into the same
+    // duplicate response the pre-check would have produced. Pass-1 M-1.
     if (await this.events.hasEvent(body.eventId)) {
       this.metrics.inc('events_dropped_duplicate');
       res.status(HttpStatus.OK);
@@ -101,18 +164,34 @@ export class EventIngestController {
     // Persist BEFORE dispatch — if the engine crashes mid-dispatch,
     // the next outbox retry sees the row via dedup and returns
     // {dropped:'duplicate'} cleanly.
-    await this.events.save({
-      id: body.eventId,
-      type: body.streamApiName, // legacy field reuse — type === stream name
-      sessionId,
-      entityId: body.entityId,
-      solutionId,
-      timestamp: Date.now(),
-      payload: body.payload,
-      metadata: body.correlationId
-        ? { correlationId: body.correlationId, source: 'workflow-client' }
-        : undefined,
-    });
+    try {
+      await this.events.save({
+        id: body.eventId,
+        type: body.streamApiName, // legacy field reuse — type === stream name
+        sessionId,
+        entityId: body.entityId,
+        solutionId,
+        timestamp: Date.now(),
+        payload: body.payload,
+        metadata: body.correlationId
+          ? { correlationId: body.correlationId, source: 'workflow-client' }
+          : undefined,
+      });
+    } catch (err) {
+      // SQLite/Postgres unique-constraint codes vary; match on the
+      // common signals. The cleanup is the same in either case —
+      // treat as duplicate, return 200, never as 500.
+      if (isUniqueViolation(err)) {
+        this.metrics.inc('events_dropped_duplicate');
+        res.status(HttpStatus.OK);
+        return {
+          accepted: false,
+          dropped: 'duplicate',
+          eventId: body.eventId,
+        };
+      }
+      throw err;
+    }
 
     // Env flag gate for boot-time backout.
     if (process.env.WORKFLOW_INGEST !== 'enabled') {

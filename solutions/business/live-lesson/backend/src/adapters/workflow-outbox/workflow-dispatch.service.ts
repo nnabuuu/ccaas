@@ -17,7 +17,7 @@
  * HTTP client directly.
  */
 
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { WorkflowOutboxRepository } from './workflow-outbox.repository';
@@ -36,11 +36,18 @@ export interface DispatchEventInput {
 @Injectable()
 export class WorkflowDispatchService {
   private readonly logger = new Logger(WorkflowDispatchService.name);
+  /** Counter for ops visibility into outbox enqueue failures (pass-1 S-3). */
+  private enqueueFailures = 0;
 
   constructor(
     private readonly outbox: WorkflowOutboxRepository,
-    @Optional() @Inject(ConfigService) private readonly config?: ConfigService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Ops/health hook. Resets only via process restart. */
+  getEnqueueFailureCount(): number {
+    return this.enqueueFailures;
+  }
 
   /**
    * Returns true if env-flag-gated workflow dispatch is enabled. Defaults
@@ -54,7 +61,7 @@ export class WorkflowDispatchService {
    */
   isEnabled(): boolean {
     const v =
-      this.config?.get<string>('LIVE_LESSON_WORKFLOW_DISPATCH') ??
+      this.config.get<string>('LIVE_LESSON_WORKFLOW_DISPATCH') ??
       process.env.LIVE_LESSON_WORKFLOW_DISPATCH;
     return v !== 'disabled';
   }
@@ -76,13 +83,17 @@ export class WorkflowDispatchService {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      this.enqueueFailures += 1;
       this.logger.error(
-        `outbox enqueue failed for event ${eventId} on session ${input.sessionId}: ${msg}`,
+        `outbox enqueue failed for event ${eventId} on session ${input.sessionId}: ${msg} ` +
+          `(total enqueue failures: ${this.enqueueFailures})`,
       );
-      // legacy observer-engine path stays running; M2 dual-write means
-      // a missed outbox row doesn't lose the event from the user-facing
-      // perspective. drain worker will retry next interval if the row
-      // landed but a follow-up update failed.
+      // **No row was persisted** — the catch is on `repo.save()` itself,
+      // so the drain worker has nothing to retry. The event is dropped
+      // from the workflow path. Legacy observer-engine (M2 dual-write)
+      // is the safety net until M3 retires it; after M3, an enqueue
+      // failure here is a real lost event. Monitor via
+      // `getEnqueueFailureCount()` before deploying M3.
     }
   }
 }

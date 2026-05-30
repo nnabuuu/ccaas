@@ -201,6 +201,32 @@ describe('WorkflowClient', () => {
     expect(f.calls).toHaveLength(0); // no fetch attempted
   });
 
+  it('S-6: 408/425/429 are retryable; 501/505 are terminal', async () => {
+    for (const [status, expected] of [
+      [408, true],
+      [425, true],
+      [429, true],
+      [501, false],
+      [505, false],
+    ] as const) {
+      const f = fakeFetch({ status, body: { message: 'x' } });
+      const client = new WorkflowClient({
+        baseUrl: 'http://x',
+        apiKey: 'k',
+        fetchImpl: f.fetch,
+      });
+      const result = (await client.pushEvent('s1', {
+        eventId: 'e',
+        manifestName: 'M',
+        streamApiName: 'e',
+        entityId: 'e',
+        payload: {},
+      })) as Extract<WorkflowPushOutcome, { status: 'failed' }>;
+      expect(result.retryable).toBe(expected);
+      expect(result.httpStatus).toBe(status);
+    }
+  });
+
   it('encodes sessionId in URL (safe against path-injection)', async () => {
     const f = fakeFetch({ status: 202, body: { accepted: true, eventId: 'x' } });
     const client = new WorkflowClient({

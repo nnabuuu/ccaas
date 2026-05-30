@@ -52,6 +52,15 @@ export class WorkflowOutboxDrainService
   private timer: NodeJS.Timeout | undefined;
   private client: WorkflowClient | undefined;
   private apiKeyWarned = false;
+  /**
+   * Re-entrancy guard (pass-1 M-2): setInterval doesn't await prior tick,
+   * so a slow tick can overlap with the next firing. Without this guard,
+   * two ticks would both `findPendingDue` the same rows + push them
+   * concurrently, racing on `markRetry` / `markDelivered` and corrupting
+   * the state machine. We skip the next tick when one is in flight.
+   * The drain just resumes on the following interval.
+   */
+  private tickInFlight = false;
 
   constructor(
     private readonly outbox: WorkflowOutboxRepository,
@@ -71,14 +80,30 @@ export class WorkflowOutboxDrainService
       `Workflow outbox drain worker started (interval=${intervalMs}ms).`,
     );
     this.timer = setInterval(() => {
-      void this.tick().catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        this.logger.error(`outbox drain tick threw: ${msg}`);
-      });
+      if (this.tickInFlight) {
+        // Skip silently; the next interval picks up where this one stopped.
+        return;
+      }
+      this.tickInFlight = true;
+      void this.tick()
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(`outbox drain tick threw: ${msg}`);
+        })
+        .finally(() => {
+          this.tickInFlight = false;
+        });
     }, intervalMs);
     // Run an immediate tick at boot so the first event delivers without
     // waiting a full interval (helpful in tests + dev).
-    void this.tick().catch(() => undefined);
+    if (!this.tickInFlight) {
+      this.tickInFlight = true;
+      void this.tick()
+        .catch(() => undefined)
+        .finally(() => {
+          this.tickInFlight = false;
+        });
+    }
   }
 
   onApplicationShutdown(): void {

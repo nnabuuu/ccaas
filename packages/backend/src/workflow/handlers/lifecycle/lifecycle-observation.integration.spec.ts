@@ -31,11 +31,13 @@ import { Repository } from 'typeorm';
 import request from 'supertest';
 import { ApiKeyGuard } from '../../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../../auth/guards/scopes.guard';
+import type { OntologyRegistry } from '@kedge-agentic/ontology';
 import { ManifestAccessorService } from '../../../ontology/manifest-accessor.service';
 import {
   ONTOLOGY_REGISTRY,
   OntologyRegistryProvider,
 } from '../../../ontology/ontology-registry.provider';
+import { LessonSessionManifest } from '../../../ontology/live-lesson/lesson-session.manifest';
 import { SolutionsService } from '../../../solutions/solutions.service';
 import { SolutionToolkitRegistry } from '../../../tool-caller/solution-toolkit-registry';
 import { ToolCallerProxyService } from '../../../tool-caller/tool-caller-proxy.service';
@@ -129,6 +131,13 @@ describe('LifecycleObservationService — M2 end-to-end (cross-process loop)', (
 
     app = module.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    // Pre-register LessonSession on the test ontology registry so the
+    // LifecycleObservationService's onApplicationBootstrap (which
+    // expects LiveLessonOntologyService to have already registered it
+    // — pass-1 review S-4) can proceed. In production this is wired
+    // through OntologyModule + LiveLessonOntologyService.
+    const ontology = module.get<OntologyRegistry>(ONTOLOGY_REGISTRY);
+    ontology.registerManifest(LessonSessionManifest);
     await app.init();
     observations = module.get(getRepositoryToken(ObservationRecord));
   });

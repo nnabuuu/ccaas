@@ -17,6 +17,12 @@ import { ConfigModule } from '@nestjs/config';
 import request from 'supertest';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
+import { OntologyRegistry } from '@kedge-agentic/ontology';
+import {
+  ONTOLOGY_REGISTRY,
+  OntologyRegistryProvider,
+} from '../../ontology/ontology-registry.provider';
+import { LessonSessionManifest } from '../../ontology/live-lesson/lesson-session.manifest';
 import { ObservationRecord, ObserverEventRecord } from '../entities';
 import { ObservationRepository } from '../persistence/observation-repository';
 import { ObserverEventRepository } from '../persistence/observer-event-repository';
@@ -84,6 +90,7 @@ describe('EventIngestController (integration)', () => {
       ],
       controllers: [EventIngestController],
       providers: [
+        OntologyRegistryProvider,
         ObservationRepository,
         ObserverEventRepository,
         WorkflowRegistry,
@@ -101,6 +108,12 @@ describe('EventIngestController (integration)', () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
     await app.init();
     events = module.get(ObserverEventRepository);
+    // Register LessonSession so the controller's M-3 payload validation
+    // gate has a manifest + stream to check against.
+    const ontology = module.get<OntologyRegistry>(ONTOLOGY_REGISTRY);
+    if (!ontology.getManifest('LessonSession')) {
+      ontology.registerManifest(LessonSessionManifest);
+    }
   });
 
   afterEach(async () => {
@@ -117,7 +130,7 @@ describe('EventIngestController (integration)', () => {
         manifestName: 'LessonSession',
         streamApiName: 'events',
         entityId: 'student-1',
-        payload: { type: 'student_joined', studentName: 'Alice' },
+        payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
       })
       .expect(202);
 
@@ -130,7 +143,7 @@ describe('EventIngestController (integration)', () => {
       sessionId: 's1',
       solutionId: 'live-lesson-tenant-uuid',
       streamApiName: 'events',
-      payload: { type: 'student_joined', studentName: 'Alice' },
+      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
     });
   });
 
@@ -141,7 +154,7 @@ describe('EventIngestController (integration)', () => {
       manifestName: 'LessonSession',
       streamApiName: 'events',
       entityId: 'student-1',
-      payload: { type: 'student_joined' },
+      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
     };
     await request(app.getHttpServer())
       .post('/api/v1/workflow/sessions/s1/events')
@@ -168,7 +181,7 @@ describe('EventIngestController (integration)', () => {
         manifestName: 'LessonSession',
         streamApiName: 'events',
         entityId: 'student-1',
-        payload: { type: 'student_joined' },
+        payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
       })
       .expect(202);
     expect(res.body).toEqual({
@@ -182,6 +195,53 @@ describe('EventIngestController (integration)', () => {
     expect(fakeEngine.ingestCalls).toHaveLength(0);
   });
 
+  it('M-3 schema validation: returns 400 when payload does not match StreamDef.payloadSchema', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-bad-payload',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-1',
+        payload: { type: 'student_joined' /* missing studentId + classroomCode */ },
+      })
+      .expect(400);
+    expect(res.body.message).toMatch(/payload does not match.+payloadSchema/);
+    // Critically: row was NOT persisted (avoids observer_events bloat).
+    expect(await events.hasEvent('evt-bad-payload')).toBe(false);
+    // Engine NOT called.
+    expect(fakeEngine.ingestCalls).toHaveLength(0);
+  });
+
+  it('M-3 manifest/stream check: returns 400 on unknown manifestName', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-bad-mf',
+        manifestName: 'DoesNotExist',
+        streamApiName: 'events',
+        entityId: 'e',
+        payload: { type: 'student_joined', studentId: 's', classroomCode: 'c' },
+      })
+      .expect(400);
+  });
+
+  it('M-3 manifest/stream check: returns 400 on unknown streamApiName', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-bad-stream',
+        manifestName: 'LessonSession',
+        streamApiName: 'bogus_stream',
+        entityId: 'e',
+        payload: { type: 'student_joined', studentId: 's', classroomCode: 'c' },
+      })
+      .expect(400);
+  });
+
   it('returns 400 on missing required fields (class-validator)', async () => {
     process.env.WORKFLOW_INGEST = 'enabled';
     await request(app.getHttpServer())
@@ -191,5 +251,37 @@ describe('EventIngestController (integration)', () => {
         // missing manifestName, streamApiName, entityId, payload
       })
       .expect(400);
+  });
+
+  it('M-1 race: concurrent POSTs with same eventId → exactly one persisted + one duplicate', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    const body = {
+      eventId: 'evt-concurrent',
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: 'student-1',
+      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+    };
+    const [r1, r2] = await Promise.all([
+      request(app.getHttpServer())
+        .post('/api/v1/workflow/sessions/s1/events')
+        .send(body),
+      request(app.getHttpServer())
+        .post('/api/v1/workflow/sessions/s1/events')
+        .send(body),
+    ]);
+    // One returns 202 accepted, the other returns 200 duplicate.
+    // Both are non-5xx so the outbox client sees a stable outcome.
+    const statuses = [r1.status, r2.status].sort();
+    expect(statuses).toEqual([200, 202]);
+    const accepted = (r1.status === 202 ? r1 : r2).body;
+    const dup = (r1.status === 200 ? r1 : r2).body;
+    expect(accepted.accepted).toBe(true);
+    expect(dup.dropped).toBe('duplicate');
+    expect(await events.hasEvent('evt-concurrent')).toBe(true);
+    // Wait long enough for any fire-and-forget dispatch to settle.
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+    // Engine dispatched at most ONCE (the accepted call's fire-and-forget).
+    expect(fakeEngine.ingestCalls.length).toBeLessThanOrEqual(1);
   });
 });

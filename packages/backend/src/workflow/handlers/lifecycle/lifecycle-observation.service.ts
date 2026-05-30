@@ -31,7 +31,7 @@ import {
   Inject,
   Injectable,
   Logger,
-  OnModuleInit,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -129,7 +129,7 @@ const JOIN_TRIGGER_DEF: TriggerDef = {
 };
 
 @Injectable()
-export class LifecycleObservationService implements OnModuleInit {
+export class LifecycleObservationService implements OnApplicationBootstrap {
   private readonly logger = new Logger(LifecycleObservationService.name);
 
   constructor(
@@ -140,10 +140,16 @@ export class LifecycleObservationService implements OnModuleInit {
     private readonly engine: WorkflowEngineService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
-    // Tenant resolution mirrors LiveLessonOntologyService (phase 3 m1
-    // code-review): SolutionToolkitRegistry is uuid-keyed, so passing
-    // the slug here would dead-code the entire path.
+  /**
+   * Runs at `OnApplicationBootstrap` (not `OnModuleInit`) so:
+   *   1. Tenant resolution sees rows created by other modules'
+   *      `OnModuleInit` (e.g. `SolutionLoaderService`).
+   *   2. The LessonSession manifest registered by
+   *      `LiveLessonOntologyService.onModuleInit` (Phase 3) is already
+   *      present — no duplicate-register attempt, no race.
+   * Pass-1 code-review S-4 + S-8.
+   */
+  async onApplicationBootstrap(): Promise<void> {
     const tenant = await this.solutions.findOne(LIVE_LESSON_TENANT_SLUG);
     if (!tenant) {
       this.logger.warn(
@@ -153,12 +159,15 @@ export class LifecycleObservationService implements OnModuleInit {
       return;
     }
 
-    // Ensure LessonSession manifest is registered. Phase 3's
-    // LiveLessonOntologyService registers it on the SAME registry, but
-    // we register defensively here so M2 stays revertible without
-    // requiring phase 3 to be active.
+    // Phase 3 `LiveLessonOntologyService` is responsible for the
+    // LessonSession manifest registration. If it's missing here, that's
+    // a wiring bug — fail loudly rather than fix it defensively.
     if (!this.registry.getManifest('LessonSession')) {
-      this.registry.registerManifest(LessonSessionManifest);
+      this.logger.error(
+        'LessonSession manifest is not registered. Check that ' +
+          'LiveLessonOntologyService is wired into AppModule (Phase 3).',
+      );
+      return;
     }
 
     const tool = compileActionToToolDefinition(
