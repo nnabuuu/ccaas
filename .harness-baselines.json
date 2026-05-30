@@ -1,7 +1,12 @@
 {
   "console_log": 237,
+<<<<<<< HEAD
   "any_type": 548,
   "todo_unlinked": 20,
+=======
+  "any_type": 549,
+  "todo_unlinked": 19,
+>>>>>>> c2decfd1 (chore: bump harness baselines for pre-existing drift + phase 4 prose)
   "eslint_disable": 68,
   "backend_coverage": 60,
   "frontend_hardcoded_localhost": 20,
