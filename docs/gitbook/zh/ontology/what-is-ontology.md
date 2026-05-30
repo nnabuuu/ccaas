@@ -8,6 +8,35 @@
 
 它不是数据库 schema（数据库只回答前两个问题），也不是 API 文档（API 只回答第三个问题）。Ontology 把这四件事拼在一起作为单一事实来源。
 
+## 一图概览
+
+```
+                ┌──────────────────────────────┐
+                │     Solution 一次声明:        │
+                │                              │
+                │     ObjectTypeDef            │
+                │     ActionDef                │  ◀── 单一事实来源
+                │     ManifestDef              │
+                │     AccessBoundary           │
+                │     StreamDef                │
+                │                              │
+                └───────────────┬──────────────┘
+                                │
+                                │  自动派生 / 自动检查
+                                │
+   ┌──────────┬──────────┬──────┴──────┬─────────────┬──────────┐
+   ▼          ▼          ▼             ▼             ▼          ▼
+
+TypeScript  Agent      Schema       Workflow      Boundary    Audit
+ 类型       tool       endpoint     Trigger        check       log
+            catalog
+(浏览器 +   (LLM        (HTTP +     (event →      (运行时     (每次
+ 后端       自描述)      ETag/304)   reaction      强制 +      action
+ 共享)                              cascade)      role 检查)   自动记录)
+```
+
+**核心收益：** 同一份描述，5+ 个下游消费者自动派生。改 ActionDef 时所有派生面同步更新——TypeScript 类型、Agent prompt、schema endpoint、workflow trigger、boundary check、audit log 不会漂移。
+
 ## Palantir 风格的设计动机
 
 KedgeAgentic 的 Ontology 设计借鉴了 **Palantir Foundry 的 Ontology Object Model**。Palantir 在企业 BI 场景里观察到的现象是：
