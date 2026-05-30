@@ -87,7 +87,10 @@ export type ValidationCode =
   | 'PRECONDITION_SLOT_UNRESOLVED'
   | 'PRECONDITION_NAMED_UNSUPPORTED'
   | 'DUPLICATE_DEFINITION'
-  | 'REQUIRED_SCOPE_UNKNOWN';
+  | 'REQUIRED_SCOPE_UNKNOWN'
+  | 'OBJECTSET_TARGET_UNRESOLVED'
+  | 'OBJECTSET_FIELD_UNRESOLVED'
+  | 'OBJECTSET_NAMED_UNSUPPORTED';
 
 export interface ValidationError {
   readonly code: ValidationCode;
@@ -446,6 +449,15 @@ function validateSlot(
         path: `${path}.target`,
       });
     }
+  } else if (slot.target.kind === 'objectSet') {
+    // Phase 4 (Tier 2 — partial). Resolve the named ObjectSet.
+    if (!ctx.objectSets || !ctx.objectSets.has(slot.target.name)) {
+      errors.push({
+        code: 'SLOT_TARGET_UNRESOLVED',
+        message: `SlotDef.target objectSet '${slot.target.name}' does not resolve to a registered ObjectSet`,
+        path: `${path}.target`,
+      });
+    }
   }
 
   // derivedFrom: 'head.tail' must resolve. Head is a slot on THIS
@@ -593,6 +605,108 @@ function validateActionPreconditions(
 }
 
 // ────────────────────────────────────────────────────────────────────
+// ObjectSetDef cross-def validation (Phase 4)
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Full ObjectSetDef walk: local + target ObjectType resolution +
+ * SetFilter path resolution against the target's Zod schema fields.
+ *
+ * Top-level schema only — nested object/array property paths beyond
+ * the first dot-segment are accepted but not walked, matching the
+ * other Phase 1 cross-def validators' explicit Phase 1 scope.
+ */
+export function validateObjectSet(
+  s: ObjectSetDef,
+  ctx: ValidationContext,
+): ValidationError[] {
+  const errors = validateObjectSetLocal(s);
+  const base = `ObjectSet:${s.apiName}`;
+
+  const target = ctx.objectTypes.get(s.objectType);
+  if (!target) {
+    errors.push({
+      code: 'OBJECTSET_TARGET_UNRESOLVED',
+      message: `ObjectSetDef.objectType '${s.objectType}' does not resolve to a registered ObjectType`,
+      path: `${base}.objectType`,
+    });
+    // Path-resolution depends on the target's schema; skip if unresolved.
+    return errors;
+  }
+
+  const fieldNames = new Set(Object.keys(target.schema.shape));
+  errors.push(...validateSetFilterPaths(s.filter, fieldNames, `${base}.filter`));
+
+  // orderBy paths also resolve through the target schema.
+  if (s.orderBy) {
+    for (let i = 0; i < s.orderBy.length; i++) {
+      const head = s.orderBy[i].path.split('.')[0];
+      if (!fieldNames.has(head)) {
+        errors.push({
+          code: 'OBJECTSET_FIELD_UNRESOLVED',
+          message: `ObjectSetDef.orderBy[${i}].path '${s.orderBy[i].path}' head '${head}' is not a field on target ObjectType '${s.objectType}'`,
+          path: `${base}.orderBy[${i}].path`,
+        });
+      }
+    }
+  }
+
+  return errors;
+}
+
+function validateSetFilterPaths(
+  filter: import('./object-set.js').SetFilter,
+  fieldNames: ReadonlySet<string>,
+  basePath: string,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  switch (filter.op) {
+    case 'eq':
+    case 'ne':
+    case 'lt':
+    case 'le':
+    case 'gt':
+    case 'ge':
+    case 'in':
+    case 'has': {
+      const head = filter.path.split('.')[0];
+      if (!fieldNames.has(head)) {
+        errors.push({
+          code: 'OBJECTSET_FIELD_UNRESOLVED',
+          message: `SetFilter path '${filter.path}' head '${head}' is not a field on the target ObjectType`,
+          path: basePath,
+        });
+      }
+      break;
+    }
+    case 'and':
+    case 'or': {
+      for (let i = 0; i < filter.clauses.length; i++) {
+        errors.push(
+          ...validateSetFilterPaths(filter.clauses[i], fieldNames, `${basePath}.clauses[${i}]`),
+        );
+      }
+      break;
+    }
+    case 'not': {
+      errors.push(
+        ...validateSetFilterPaths(filter.clause, fieldNames, `${basePath}.clause`),
+      );
+      break;
+    }
+    case 'named': {
+      errors.push({
+        code: 'OBJECTSET_NAMED_UNSUPPORTED',
+        message: `named SetFilter '${filter.name}' — registerPredicate lands in a follow-up Phase 4 sliver`,
+        path: basePath,
+      });
+      break;
+    }
+  }
+  return errors;
+}
+
+// ────────────────────────────────────────────────────────────────────
 // Aggregate
 // ────────────────────────────────────────────────────────────────────
 
@@ -612,6 +726,11 @@ export function validateAll(ctx: ValidationContext): ValidationError[] {
   if (ctx.functions) {
     for (const f of ctx.functions.values()) {
       errors.push(...validateFunction(f));
+    }
+  }
+  if (ctx.objectSets) {
+    for (const s of ctx.objectSets.values()) {
+      errors.push(...validateObjectSet(s, ctx));
     }
   }
   return errors;
