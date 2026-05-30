@@ -211,10 +211,10 @@ export class DiscussService {
           solutionId: session.lessonId,
           payload: { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
         }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
-        // Map taskNum → step. live-lesson uses step internally; M3
-        // payload schema requires step. Fall back to taskNum if no
-        // mapping (shouldn't happen but stays robust).
-        this.pushDiscussCompleteEvent(session, studentId, taskNum);
+        // Pass-1 review M1 fix: workflow schema field is `step`, not
+        // `taskNum`. reuse the stepIdx computed at line 124
+        // (taskMap.taskToStep[taskNum]) which is already in scope.
+        this.pushDiscussCompleteEvent(session, studentId, stepIdx);
       }
 
       this.engine.dispatch({
@@ -295,21 +295,24 @@ export class DiscussService {
 
     let mcCorrect: boolean | undefined;
 
-    if (mcSelectedIndex !== undefined) {
-      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
-      if (manifest) {
-        const taskMap = buildTaskMap(manifest);
-        const stepIdx = taskMap.taskToStep[taskNum];
-        const stepDef = (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx);
-        const correctIndex = stepDef?.discuss?.fallbackMC?.correctIndex;
-        if (correctIndex !== undefined) {
-          mcCorrect = mcSelectedIndex === correctIndex;
-        }
+    // Pass-1 review S1 fix: resolve stepIdx unconditionally so the
+    // workflow dual-write below uses the correct schema-required `step`
+    // (not `taskNum`). Falls back to taskNum if no manifest/mapping.
+    const manifestForStep = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    const stepIdx = manifestForStep
+      ? buildTaskMap(manifestForStep).taskToStep[taskNum] ?? taskNum
+      : taskNum;
+
+    if (mcSelectedIndex !== undefined && manifestForStep) {
+      const stepDef = (manifestForStep.readingSteps || []).find((s: any) => s.idx === stepIdx);
+      const correctIndex = stepDef?.discuss?.fallbackMC?.correctIndex;
+      if (correctIndex !== undefined) {
+        mcCorrect = mcSelectedIndex === correctIndex;
       }
     }
 
     // M3 dual-write — discuss_complete (forceComplete path)
-    this.pushDiscussCompleteEvent(session, studentId, taskNum);
+    this.pushDiscussCompleteEvent(session, studentId, stepIdx);
     this.engine.dispatch({
       type: 'discuss_complete',
       sessionId: session.id,

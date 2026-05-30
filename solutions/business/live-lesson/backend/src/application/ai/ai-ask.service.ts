@@ -82,6 +82,8 @@ export class AiAskService {
         aiContent: parsed.answer,
       });
 
+      // M3 dual-write — continue_chat_turn (pass-1 review M2: this call
+      // was claimed in the m3 commit but the edit didn't land; here now).
       this.engine.dispatch({
         type: 'continue_chat_turn',
         sessionId: session.id,
@@ -89,6 +91,16 @@ export class AiAskService {
         solutionId: session.lessonId,
         payload: { step, messageCount: messages.length },
       }).catch(err => this.logger.error(`Observer dispatch continue_chat_turn failed: ${err}`));
+      this.workflowDispatch.pushEvent({
+        sessionId: session.id,
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: studentId,
+        payload: { type: 'continue_chat_turn', studentId, step },
+      }).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Workflow outbox enqueue (continue_chat_turn) failed: ${msg}`);
+      });
     }
 
     this.engine.dispatch({

@@ -13,7 +13,7 @@
  * endpoint AND delete the projector + this controller.
  */
 
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Header, Param } from '@nestjs/common';
 import {
   ApiOperation,
   ApiParam,
@@ -35,6 +35,7 @@ export class ObservationDashboardController {
 
   @Get(':sessionId/observation-dashboard')
   @Auth('chat')
+  @Header('Cache-Control', 'no-store')
   @ApiOperation({
     summary: '获取教师 dashboard 观察数据（projector 包装的 legacy shape） / Get observation dashboard (Path B projector output)',
     description:
