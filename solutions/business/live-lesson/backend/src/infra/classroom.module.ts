@@ -120,11 +120,14 @@ import { TaskDemoController } from '../adapters/http/task-demo.controller';
 import { TASK_DEMO_ATTEMPT_REPO_PORT } from '../domain/ports/task-demo-attempt-repo.port';
 import { TypeOrmTaskDemoAttemptRepository } from '../adapters/persistence/repositories/task-demo-attempt.repository';
 
+import { WorkflowOutboxModule } from '../adapters/workflow-outbox/workflow-outbox.module';
+
 @Module({
   imports: [
     CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
     TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, TaskDemoAttempt, ObservationRecord, ObserverEventRecord]),
+    WorkflowOutboxModule,
   ],
   controllers: [
     ClassroomController,

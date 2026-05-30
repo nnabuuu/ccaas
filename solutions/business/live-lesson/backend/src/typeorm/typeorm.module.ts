@@ -16,13 +16,14 @@ import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-
 import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
 import { RequirementInterpretation } from '../teaching-requirements/requirement-interpretation.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
+import { OntologyEventOutbox } from '../adapters/persistence/entities/ontology-event-outbox.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: path.resolve(process.cwd(), 'data/live-lesson.db'),
-      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, TaskDemoAttempt, RequirementInterpretation, ObservationRecord, ObserverEventRecord],
+      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, TaskDemoAttempt, RequirementInterpretation, ObservationRecord, ObserverEventRecord, OntologyEventOutbox],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: false,
     }),
