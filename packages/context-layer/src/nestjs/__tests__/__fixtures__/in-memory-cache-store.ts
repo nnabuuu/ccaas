@@ -80,13 +80,22 @@ export class InMemoryCacheStore implements CacheStore {
 
   // ─── Test helpers (not on the CacheStore interface) ───
 
-  /** Snapshot the current member set + scores for a sorted-set key. */
+  /**
+   * Snapshot the current member set + scores for a sorted-set key.
+   * Uses the same sort order as `zrevrange` (score desc, member
+   * asc-localeCompare tiebreak) so introspection assertions can
+   * compare directly against what a read through the public API
+   * would return.
+   */
   getZsetSnapshot(key: string): Array<{ member: string; score: number }> {
     const zset = this.zsets.get(key);
     if (!zset) return [];
     return Array.from(zset.entries())
       .map(([member, score]) => ({ member, score }))
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.member.localeCompare(b.member);
+      });
   }
 
   /** Snapshot a hash key as a plain object. */

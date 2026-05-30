@@ -1,5 +1,5 @@
 import { Module, DynamicModule } from '@nestjs/common';
-import { DiscoveryModule, Reflector } from '@nestjs/core';
+import { DiscoveryModule } from '@nestjs/core';
 import { EntityRegistry } from '../core/entity-registry.js';
 import { RelationInferrer } from '../core/relation-inferrer.js';
 import { ActivityEmitter } from '../core/activity-emitter.js';
@@ -46,7 +46,8 @@ export class ContextLayerModule {
         { provide: CONTEXT_LAYER_OPTIONS, useValue: options },
         ContextLayerInterceptor,
         ContextLayerInitService,
-        Reflector,
+        // Reflector is provided automatically by Nest's core platform
+        // (no explicit registration needed).
       ],
       controllers: [ContextLayerController],
       exports: [EntityRegistry, RecommendEngine, ActivityEmitter, ContextInjector, ContextRouter, ShortcutManager],

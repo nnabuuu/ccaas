@@ -24,6 +24,9 @@ export class StubOrmAdapter implements OrmAdapter {
     this.relations.set(entityClass, relations);
   }
 
+  // Unused by ContextLayerInitService today; implemented to satisfy
+  // the OrmAdapter interface shape so tests can swap this fixture in
+  // for the real adapter without per-method TODO casts.
   setEntityClassForController(controllerPath: string, entityClass: unknown): void {
     this.controllerToEntity.set(controllerPath, entityClass);
   }

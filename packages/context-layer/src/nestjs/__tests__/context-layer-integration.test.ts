@@ -438,15 +438,19 @@ describe('/context/shortcuts round-trip', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────
-// ContextLayerInterceptor — auto-tracking on write requests
+// ActivityEmitter contract (interceptor depends on this)
+//
+// The interceptor itself is NOT HTTP-tested here. The
+// ContextLayerModule registers it as a provider but does NOT apply
+// it globally — Solutions opt in via `app.useGlobalInterceptors` or
+// `@UseInterceptors`. The block below verifies that when an
+// interceptor or any other consumer does call ActivityEmitter, the
+// pipeline through RecommendEngine + CacheStore lands the data
+// correctly. Direct HTTP coverage of the interceptor is a follow-up.
 // ────────────────────────────────────────────────────────────────────
 
-describe('ContextLayerInterceptor auto-tracking', () => {
-  // The interceptor is registered as a provider but not applied
-  // globally by the module — Solutions opt into it. We exercise the
-  // emit pipeline directly here by re-using the ActivityEmitter the
-  // module wires up, which is the contract the interceptor depends on.
-  it('ActivityEmitter records a referenced action into the CacheStore', async () => {
+describe('ActivityEmitter contract (interceptor depends on this)', () => {
+  it('records a referenced action into the CacheStore', async () => {
     const emitter = app.get(ActivityEmitter);
     await emitter.emit(
       { userId: 'u', tenantId: 't', sessionId: 's' },
@@ -463,7 +467,7 @@ describe('ContextLayerInterceptor auto-tracking', () => {
     expect(snapshot[0].member).toBe('recipe:rec-1');
   });
 
-  it('different action verbs apply different score weights', async () => {
+  it('action verbs apply different score weights', async () => {
     const emitter = app.get(ActivityEmitter);
     // 'referenced' has a higher weight than 'viewed' per RecommendEngine.
     await emitter.emit(
@@ -490,5 +494,37 @@ describe('ContextLayerInterceptor auto-tracking', () => {
     expect(snapshot).toHaveLength(2);
     expect(snapshot[0].member).toBe('recipe:rec-1');
     expect(snapshot[0].score).toBeGreaterThan(snapshot[1].score);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────
+// Interceptor absence: documents the "not globally applied" contract
+// ────────────────────────────────────────────────────────────────────
+
+describe('interceptor presence contract', () => {
+  // Without `app.useGlobalInterceptors(ContextLayerInterceptor)` or
+  // an explicit `@UseInterceptors` on the controller, the module
+  // does NOT auto-track requests. ExplicitTrackingController has a
+  // method-level `@Tracked` decorator, but firing a request against
+  // it should produce zero activity because no interceptor is
+  // attached in this test app.
+  //
+  // When a Solution wires the interceptor globally, the test setup
+  // would add `app.useGlobalInterceptors(...)` here and assert the
+  // opposite. Today's assertion pins the default-off behavior so a
+  // future change to "always-on by default" cannot land silently.
+  it('hitting a @Tracked endpoint without a wired interceptor records nothing', async () => {
+    await request(app.getHttpServer())
+      .get('/explicit-tracking/rec-tracked')
+      .expect(200);
+
+    // No activity should have been recorded against any session key.
+    // Walk every zset key we care about; all empty.
+    expect(
+      cacheStore.getZsetSnapshot('ctx:recents:default:anonymous:'),
+    ).toEqual([]);
+    expect(
+      cacheStore.getZsetSnapshot('ctx:recents:default:default-user:'),
+    ).toEqual([]);
   });
 });

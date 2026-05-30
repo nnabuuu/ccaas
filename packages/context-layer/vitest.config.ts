@@ -1,11 +1,17 @@
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
 
+// SWC preserves `design:paramtypes` metadata required by NestJS's
+// constructor-based DI. esbuild (vitest's default transformer) does
+// NOT emit that metadata even with `emitDecoratorMetadata: true` in
+// tsconfig, which silently breaks any NestJS DI-driven test.
+//
+// Applies to ALL test files under `src/**/__tests__/**/*.test.ts`,
+// not just the NestJS integration suite. Cross-checked at commit
+// `8902ba80`: the 4 pre-existing suites (entity-registry parity +
+// schema-accessor + converter + adapter) all pass under SWC just as
+// they did under esbuild. `target: 'es2020'` mirrors tsconfig.json.
 export default defineConfig({
-  // SWC preserves design:paramtypes metadata required by NestJS's
-  // constructor-based DI. esbuild (the default vitest transformer)
-  // does not emit that metadata even with emitDecoratorMetadata in
-  // tsconfig, which silently breaks any NestJS DI-driven test.
   plugins: [
     swc.vite({
       jsc: {
