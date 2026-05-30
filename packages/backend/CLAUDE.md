@@ -2,6 +2,23 @@
 
 NestJS relay server: spawns AgentEngine (Claude Code / OpenCode / custom) as subprocesses, streams events via SSE, manages sessions, skills, MCP servers, and scheduled tasks.
 
+## Solution-free boundary (phase 5.5)
+
+`@kedge-agentic/backend` is **solution-free infrastructure**. Its source + dist contain zero references to live-lesson or any other specific solution. `AppModule` is a `DynamicModule.register({ extraModules })` factory; solution-specific handler bundles are loaded into the NestJS module tree at boot from packages named in the `PLATFORM_HANDLER_PACKAGES` env var (CSV).
+
+```bash
+# Boot with live-lesson handlers
+PLATFORM_HANDLER_PACKAGES=@kedge-agentic/live-lesson-platform-handlers \
+  node packages/backend/dist/src/main.js
+
+# Boot truly generic (no handlers; triggers won't fire)
+node packages/backend/dist/src/main.js
+```
+
+Each handler package is a workspace under `solutions/<biz-or-mock>/<slug>/platform-handlers/`. The first such package is [`@kedge-agentic/live-lesson-platform-handlers`](../../solutions/business/live-lesson/platform-handlers/CLAUDE.md) which holds the `LessonSession` ontology registrar + 5 workflow handlers (lifecycle / exercise / progress / chat-turn / status-change) + dashboard endpoints. To add a second solution, mirror that layout and add the new package name to the env var — no changes to ccaas backend required.
+
+Cross-package mechanics: backend's `package.json` declares an NPM `exports` map with wildcard `./*` so consumers can `import "@kedge-agentic/backend/<subpath>"`. Handler-package typecheck resolves through backend's built `dist/src/*.d.ts` (build backend first); runtime resolves through Node's native exports-map support (Node 18+). See the handler package's CLAUDE.md for the full setup.
+
 ## Architecture
 
 ```

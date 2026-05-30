@@ -25,8 +25,16 @@
  * `main.ts` can hand back a fully-configured `DynamicModule`.
  */
 
-import { DynamicModule, Module, Type } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { OntologyModule } from '@kedge-agentic/backend/ontology/ontology.module';
+import { WorkflowModule } from '@kedge-agentic/backend/workflow/workflow.module';
+import { ToolCallerModule } from '@kedge-agentic/backend/tool-caller/tool-caller.module';
+import { SolutionsModule } from '@kedge-agentic/backend/solutions/solutions.module';
+import {
+  ObservationRecord,
+  ObserverEventRecord,
+} from '@kedge-agentic/backend/workflow/entities';
 import { LiveLessonOntologyService } from './ontology/live-lesson-ontology.service';
 import { LifecycleObservationService } from './workflow-handlers/lifecycle/lifecycle-observation.service';
 import { ExerciseObservationService } from './workflow-handlers/exercise/exercise-observation.service';
@@ -37,13 +45,13 @@ import { ObservationDashboardProjector } from './workflow-handlers/dashboard/obs
 import { ObservationDashboardController } from './workflow-handlers/dashboard/observation-dashboard.controller';
 import { DashboardService } from './workflow-handlers/dashboard/dashboard.service';
 import { DashboardController } from './workflow-handlers/dashboard/dashboard.controller';
-import {
-  ObservationRecord,
-  ObserverEventRecord,
-} from '@kedge-agentic/backend/workflow/entities';
 
 @Module({
   imports: [
+    OntologyModule,
+    WorkflowModule,
+    ToolCallerModule,
+    SolutionsModule,
     TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
