@@ -21,6 +21,7 @@ import {
   OntologyRegistryProvider,
 } from './ontology-registry.provider';
 import { SessionMetadataService } from '../sessions/services/session-metadata.service';
+import { SolutionToolkitRegistry } from '../tool-caller/solution-toolkit-registry';
 import { ToolCallerProxyService } from '../tool-caller/tool-caller-proxy.service';
 import { NotFoundException } from '@nestjs/common';
 import type { SessionMetadataRow } from '../sessions/services/session-metadata.service';
@@ -254,6 +255,66 @@ describe('ManifestAccessorService', () => {
       role: 'picker',
     });
     expect(() => picker.subscribe('events', () => {})).toThrow(/denied/);
+  });
+
+  it('clearSession releases all stream handlers for that session (S2)', async () => {
+    const a = await service.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const received: unknown[] = [];
+    a.subscribe('events', (e) => received.push(e));
+    service.clearSession('s1');
+    service.publish('s1', 'events', { type: 'after-clear' });
+    expect(received).toEqual([]);
+  });
+
+  it('invokeAction with no proxy bound returns internal_error', async () => {
+    // The default test module above already provides no ToolCallerProxy,
+    // so the existing service has `proxy === undefined`. Exercise the
+    // no-proxy branch explicitly.
+    const a = await service.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const result = await a.invokeAction('some_action', {});
+    expect(result).toEqual({
+      ok: false,
+      errorCode: 'internal_error',
+      message: expect.stringMatching(/no ToolCallerProxyService bound/),
+    });
+  });
+
+  it('invokeAction maps tool_not_found from proxy to internal_error (S5 coverage)', async () => {
+    const toolkits = new SolutionToolkitRegistry();
+    const proxy = new ToolCallerProxyService(toolkits);
+    // No tools registered — proxy.invoke returns tool_not_found.
+    const module = await Test.createTestingModule({
+      providers: [
+        OntologyRegistryProvider,
+        ManifestAccessorService,
+        { provide: SessionMetadataService, useValue: metadata },
+        { provide: ToolCallerProxyService, useValue: proxy },
+      ],
+    }).compile();
+    const accessorService = module.get(ManifestAccessorService);
+    const registry2 = module.get(ONTOLOGY_REGISTRY);
+    registry2.registerManifest(buildManifest());
+    const a = await accessorService.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const result = await a.invokeAction('does_not_exist', {});
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorCode).toBe('internal_error');
+    }
   });
 
   it('publish swallows per-handler errors so one bad subscriber cannot poison the fanout', async () => {
