@@ -175,14 +175,22 @@ function computeMetrics(rows: readonly Observation[]): DashboardStudentMetrics {
   let knowledgeCount = 0;
   let misconceptionCount = 0;
   const scores: number[] = [];
-  let lastActiveAt: number | null = null;
+  // M5 pass-2 S2: activity time wins; lifecycle as fallback so a
+  // student who only joined has a real number for lastActiveAt instead
+  // of null (which the frontend's `now - lastActiveAt > STUCK` evaluates
+  // to NaN > X = false, masking idle students).
+  let activityAt: number | null = null;
+  let lifecycleAt: number | null = null;
   let currentStep: number | null = null;
 
   for (const r of rows) {
     if (ACTIVITY_TYPES.has(r.type)) {
-      if (lastActiveAt === null || r.createdAt > lastActiveAt) {
-        lastActiveAt = r.createdAt;
+      if (activityAt === null || r.createdAt > activityAt) {
+        activityAt = r.createdAt;
       }
+    }
+    if (r.type === 'lifecycle' && (lifecycleAt === null || r.createdAt > lifecycleAt)) {
+      lifecycleAt = r.createdAt;
     }
     if (r.type === 'indicator_hit') {
       messageCount += 1;
@@ -204,10 +212,14 @@ function computeMetrics(rows: readonly Observation[]): DashboardStudentMetrics {
     }
   }
 
-  const exerciseCorrectRate =
+  // M5 pass-2 S1: null when no scores (signals "no data yet") vs
+  // 0 (which would be indistinguishable from "all scores are 0" and
+  // also misleadingly tank the frontend's `>= 80` cruising check).
+  const exerciseCorrectRate: number | null =
     scores.length > 0
       ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-      : 0;
+      : null;
+  const lastActiveAt: number | null = activityAt ?? lifecycleAt;
 
   return {
     messageCount,

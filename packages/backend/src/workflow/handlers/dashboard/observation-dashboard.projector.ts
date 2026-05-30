@@ -194,7 +194,14 @@ export class ObservationDashboardProjector {
     const studentName = resolveStudentNameFromObservations(entityId, observations);
     const events: StudentEvent[] = [];
     let messageCount = 0;
-    let lastActiveAt: number | null = null;
+    // M5 pass-2 S2: track activity time + lifecycle time separately.
+    // Activity (indicator_hit/exercise/progress) is the primary signal.
+    // Lifecycle (join/translate/etc.) is a fallback so a student who
+    // ONLY joined gets `lastActiveAt = joinTime` instead of `null` — the
+    // null fallback caused the frontend's `now - lastActiveAt > STUCK`
+    // to become `NaN > X = false`, marking idle students as not-idle.
+    let activityAt: number | null = null;
+    let lifecycleAt: number | null = null;
     // M5 pass-1 SF3: legacy live-lesson averaged all exercise scores;
     // pre-M5 projector tracked the LAST score (write-overwrites). After
     // the M5.3b cutover the frontend's "exerciseCorrectRate >= 80"
@@ -212,9 +219,12 @@ export class ObservationDashboardProjector {
       // in StatusChangeService.computeMetrics + DashboardService.
       if (
         PROJECTOR_ACTIVITY_TYPES.has(obs.type) &&
-        (lastActiveAt === null || timestamp > lastActiveAt)
+        (activityAt === null || timestamp > activityAt)
       ) {
-        lastActiveAt = timestamp;
+        activityAt = timestamp;
+      }
+      if (obs.type === 'lifecycle' && (lifecycleAt === null || timestamp > lifecycleAt)) {
+        lifecycleAt = timestamp;
       }
 
       switch (obs.type) {
@@ -318,6 +328,9 @@ export class ObservationDashboardProjector {
             exerciseScores.reduce((a, b) => a + b, 0) / exerciseScores.length,
           )
         : null;
+    // M5 pass-2 S2: activity time wins; lifecycle as fallback. Frontend
+    // sees a real number whenever the student has any observation row.
+    const lastActiveAt: number | null = activityAt ?? lifecycleAt;
 
     return {
       log: {

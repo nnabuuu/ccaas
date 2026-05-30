@@ -108,8 +108,13 @@ export interface DashboardStudentMetrics {
   readonly messageCount: number;
   readonly knowledgeCount: number;
   readonly misconceptionCount: number;
-  /** 0..100 integer (avg of all `exercise.score` rows, rounded). */
-  readonly exerciseCorrectRate: number;
+  /**
+   * 0..100 integer (avg of all `exercise.score` rows, rounded). `null`
+   * when the student has no scored exercises yet — distinguishes
+   * "no data" from "all-zero scores" (M5 pass-2 S1). Frontend should
+   * treat null as "hide the metric" rather than render `0%`.
+   */
+  readonly exerciseCorrectRate: number | null;
   /**
    * Epoch ms. Sourced from `createdAt` of the most recent
    * `indicator_hit` / `exercise` / `progress` row (i.e. activity
