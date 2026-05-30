@@ -15,15 +15,18 @@ import { ProjectFile } from '../adapters/persistence/entities/project-file.entit
 import { ExerciseTypeDef } from '../adapters/persistence/entities/exercise-type-def.entity';
 import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
 import { RequirementInterpretation } from '../teaching-requirements/requirement-interpretation.entity';
-import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import { OntologyEventOutbox } from '../adapters/persistence/entities/ontology-event-outbox.entity';
+
+// M6 pass-1 S6: legacy `observations` + `observer_events` tables are
+// no longer written or read from the live-lesson side. Existing
+// databases retain the tables (no migration); new databases skip them.
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: path.resolve(process.cwd(), 'data/live-lesson.db'),
-      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, TaskDemoAttempt, RequirementInterpretation, ObservationRecord, ObserverEventRecord, OntologyEventOutbox],
+      entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, DiscussHighlight, DiscussTargetHit, CourseProject, ProjectFile, ExerciseTypeDef, TaskDemoAttempt, RequirementInterpretation, OntologyEventOutbox],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: false,
     }),

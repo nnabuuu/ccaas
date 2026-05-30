@@ -19,6 +19,7 @@ import { ClassroomStateService } from './classroom-state.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
 import { TranslateService } from '../ai/translate.service';
+import { WorkflowSessionLifecycleService } from '../../adapters/workflow-outbox/workflow-session-lifecycle.service';
 import type { Response } from 'express';
 import type {
   CreateSessionResponse, SessionInfoResponse, StartSessionResponse,
@@ -51,6 +52,7 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly stateService: ClassroomStateService,
     private readonly stateCache: StateCacheService,
     private readonly translateService: TranslateService,
+    private readonly workflowLifecycle: WorkflowSessionLifecycleService,
   ) {}
 
   onModuleInit() {
@@ -249,11 +251,16 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     this.stateService.cleanupSession(session.id, session.lessonId);
     this.broadcastService.cleanupSession(session.id);
 
-    // M6.2: observer-engine retired; session meta (indicators etc.) is
-    // owned by the platform's IndicatorRegistryService now. The
-    // platform retires its in-memory copy via WorkflowEngineService.clearSession
-    // (wired in a separate follow-up — see workflow-engine.service.ts:
-    // pass-1 SF1).
+    // M6 pass-1 S1: signal session-end to the platform so its
+    // IndicatorRegistry + workflow engine queue free per-session
+    // state. Fire-and-forget — failure logs but doesn't disrupt
+    // session-end (idempotent on retry).
+    void this.workflowLifecycle
+      .clearSession(session.id)
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`workflow clearSession failed for ${session.id}: ${msg}`);
+      });
     this.translateService.clearSession(session.id);
 
     this.logger.log(`Session ended: ${code}`);

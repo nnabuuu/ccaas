@@ -23,8 +23,6 @@ import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassroomStateService } from './classroom-state.service';
-import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
-import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
@@ -252,8 +250,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
       providers: [
         ClassroomStateService,
         StateCacheService,
-        TypeOrmObservationRecordRepository,
-        { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
+        
         TypeOrmDiscussTargetHitRepository,
         TypeOrmDiscussHighlightRepository,
         { provide: DISCUSS_HIGHLIGHT_REPO_PORT, useExisting: TypeOrmDiscussHighlightRepository },

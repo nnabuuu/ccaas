@@ -12,9 +12,6 @@ import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../adapters/persistence/entities/discuss-target-hit.entity';
 import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
-// observer-engine is retained for the ObservationRecord / ObserverEventRecord
-// TypeORM entities only (M6 retired the in-process engine + handlers).
-import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 
 // ── Application services + the controller that fronts them ──
 import { ClassroomService } from '../application/classroom/classroom.service';
@@ -24,8 +21,6 @@ import { StudentSubmissionService } from '../application/classroom/student-submi
 import { ClassroomController } from '../adapters/http/classroom.controller';
 import { AiPromptBuilder } from '../application/ai/ai-prompt-builder';
 import { LLM_PORT } from '../domain/ports/llm.port';
-import { OBSERVATION_RECORD_REPO_PORT } from '../domain/ports/observation-record-repo.port';
-import { TypeOrmObservationRecordRepository } from '../adapters/persistence/repositories/observation-record.repository';
 import { DISCUSS_TARGET_HIT_REPO_PORT } from '../domain/ports/discuss-target-hit-repo.port';
 import { TypeOrmDiscussTargetHitRepository } from '../adapters/persistence/repositories/discuss-target-hit.repository';
 import { DISCUSS_HIGHLIGHT_REPO_PORT } from '../domain/ports/discuss-highlight-repo.port';
@@ -110,7 +105,7 @@ import { WorkflowOutboxModule } from '../adapters/workflow-outbox/workflow-outbo
   imports: [
     CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, TaskDemoAttempt, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, DiscussHighlight, DiscussTargetHit, TaskDemoAttempt]),
     WorkflowOutboxModule,
   ],
   controllers: [
@@ -129,8 +124,6 @@ import { WorkflowOutboxModule } from '../adapters/workflow-outbox/workflow-outbo
     // The consumer in domain/* injects the symbol token; the module decides which
     // concrete class fulfils the contract.
     { provide: LLM_PORT, useExisting: AiPromptBuilder },
-    TypeOrmObservationRecordRepository,
-    { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
     TypeOrmDiscussTargetHitRepository,
     { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
     TypeOrmDiscussHighlightRepository,

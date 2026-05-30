@@ -75,6 +75,15 @@ export type WorkflowSetIndicatorsOutcome =
       readonly retryable: boolean;
     };
 
+export type WorkflowClearSessionOutcome =
+  | { readonly status: 'ok' }
+  | {
+      readonly status: 'failed';
+      readonly httpStatus?: number;
+      readonly error: string;
+      readonly retryable: boolean;
+    };
+
 /**
  * The legacy `{logs, alerts, indicatorStats}` dashboard shape served by
  * the platform's `ObservationDashboardController`. Typed as `unknown`
@@ -269,6 +278,68 @@ export class WorkflowClient {
         parsed = await res.json();
       } catch {
         // body may be empty (204 case is already handled); ignore
+      }
+      return {
+        status: 'failed',
+        httpStatus: res.status,
+        error: extractError(parsed, `HTTP ${res.status}`),
+        retryable: isRetryableStatus(res.status),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort = msg.toLowerCase().includes('abort');
+      return {
+        status: 'failed',
+        error: isAbort ? `request timed out after ${this.timeoutMs}ms` : msg,
+        retryable: true,
+      };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Signal session-end to the platform so per-session state (indicator
+   * catalog, workflow engine queue) is freed. Idempotent — calling on
+   * an unknown sessionId returns ok. Same retryable bucketing as
+   * `pushEvent`. M6 pass-1 S1.
+   */
+  async clearSession(sessionId: string): Promise<WorkflowClearSessionOutcome> {
+    if (!sessionId || typeof sessionId !== 'string') {
+      return {
+        status: 'failed',
+        error: 'sessionId is required',
+        retryable: false,
+      };
+    }
+    const url = `${this.baseUrl}/api/v1/workflow/sessions/${encodeURIComponent(sessionId)}`;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.onBehalfOf) {
+      headers['X-Ccaas-On-Behalf-Of'] = this.onBehalfOf;
+    }
+
+    const controller =
+      typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+    const timer = controller
+      ? setTimeout(() => controller.abort(), this.timeoutMs)
+      : undefined;
+
+    try {
+      const res = await this.fetchImpl(url, {
+        method: 'DELETE',
+        headers,
+        signal: controller?.signal,
+      });
+      if (res.status === 204 || res.status === 200) {
+        return { status: 'ok' };
+      }
+      let parsed: unknown = null;
+      try {
+        parsed = await res.json();
+      } catch {
+        // empty body on non-2xx is fine
       }
       return {
         status: 'failed',
