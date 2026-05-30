@@ -10,8 +10,9 @@
   "scripts": {
     "prepare": "husky install",
     "dev": "npm run dev --workspaces --if-present",
-    "build": "npm run build:libs && npm run build --workspaces --if-present --workspace=@kedge-agentic/backend --workspace=@kedge-agentic/admin-next --workspace=@kedge-agentic/vue-sdk --workspace=@kedge-agentic/react-sdk",
+    "build": "npm run build:libs && npm run build --workspaces --if-present --workspace=@kedge-agentic/backend --workspace=@kedge-agentic/admin-next --workspace=@kedge-agentic/vue-sdk --workspace=@kedge-agentic/react-sdk && npm run build:solution-handlers",
     "build:libs": "npm run build:common && npm run build:agent-runtime && npm run build:ontology && npm run build:workflow-client",
+    "build:solution-handlers": "npm run build -w @kedge-agentic/live-lesson-platform-handlers",
     "build:agent-runtime": "npm run build -w @kedge-agentic/agent-runtime",
     "build:ontology": "npm run build -w @kedge-agentic/ontology",
     "build:workflow-client": "npm run build -w @kedge-agentic/workflow-client",

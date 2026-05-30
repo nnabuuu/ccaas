@@ -2,7 +2,7 @@
  * DTO for `POST /api/v1/workflow/sessions/:sessionId/events`.
  *
  * Phase 5 M1 ships a minimal schema — validator-friendly + small
- * enough that retries from the live-lesson outbox are cheap. The
+ * enough that retries from a solution-side outbox are cheap. The
  * actual `payload` shape is validated by the stream's `payloadSchema`
  * inside the WorkflowEngine, not at the HTTP boundary, so different
  * solutions can push different payload shapes through the same endpoint.
@@ -19,7 +19,7 @@ import {
 
 export class WorkflowEventDto {
   @ApiProperty({
-    description: 'Stable event id for cross-process dedup. Caller-supplied (live-lesson outbox uses an outbox row id).',
+    description: 'Stable event id for cross-process dedup. Caller-supplied — a solution-side outbox typically uses the outbox row id.',
     example: 'evt_018b1d3a-7c2e-4b91-9d3a-ef5c1b8a4d12',
   })
   @IsString()
@@ -28,8 +28,8 @@ export class WorkflowEventDto {
   eventId!: string;
 
   @ApiProperty({
-    description: 'Manifest the stream is declared on.',
-    example: 'LessonSession',
+    description: 'Manifest the stream is declared on (the `ManifestDef.name` the calling solution registered).',
+    example: '<YourSolutionManifest>',
   })
   @IsString()
   @MinLength(1)
@@ -46,8 +46,8 @@ export class WorkflowEventDto {
   streamApiName!: string;
 
   @ApiProperty({
-    description: 'The entity the event is about (e.g. student id).',
-    example: 'student-abc-123',
+    description: 'The entity the event is about (the ObjectType instance id — solution-defined).',
+    example: 'entity-abc-123',
   })
   @IsString()
   @MinLength(1)
@@ -55,8 +55,8 @@ export class WorkflowEventDto {
   entityId!: string;
 
   @ApiProperty({
-    description: 'Event payload — shape determined by the StreamDef.payloadSchema.',
-    example: { type: 'student_joined', studentId: 's1', classroomCode: 'HX3KM7' },
+    description: 'Event payload — shape determined by the StreamDef.payloadSchema the solution registered.',
+    example: { type: '<solution_event_type>', '<solution_field>': '<value>' },
   })
   @IsObject()
   payload!: Record<string, unknown>;

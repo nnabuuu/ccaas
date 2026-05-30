@@ -2,9 +2,13 @@
  * DTOs for `PUT /api/v1/workflow/sessions/:sessionId/indicators`.
  *
  * Minimal class-validator shape matching the existing event-ingest
- * pattern. Phase 5 M5.3a — live-lesson backend pushes the lesson
- * manifest's indicator catalog so platform M4 LLM handlers can
- * classify chat turns against the right anchor set.
+ * pattern. Phase 5 M5.3a — a solution-side worker pushes the
+ * session's indicator catalog so platform LLM-driven handlers can
+ * classify chat turns / observations against the right anchor set.
+ * Indicator `type` is free-form (the platform does not enforce a
+ * taxonomy); solutions register their own (e.g. `knowledge` /
+ * `misconception` / `process` / etc.) and the LLM prompt is
+ * solution-supplied.
  */
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -18,13 +22,13 @@ import {
 } from 'class-validator';
 
 export class IndicatorDefDto {
-  @ApiProperty({ description: 'Indicator id (anchor token). Typically `K1`/`M2`/etc.' })
+  @ApiProperty({ description: 'Indicator id (anchor token). Solution-defined; opaque to the platform.' })
   @IsString()
   @MinLength(1)
   @MaxLength(50)
   id!: string;
 
-  @ApiProperty({ description: 'Free-form indicator type — `knowledge` / `misconception` / etc.' })
+  @ApiProperty({ description: 'Free-form indicator type. Solutions register their own taxonomy.' })
   @IsString()
   @MinLength(1)
   @MaxLength(50)
@@ -36,7 +40,7 @@ export class IndicatorDefDto {
   @MaxLength(200)
   label!: string;
 
-  @ApiProperty({ description: 'Longer description shown in LLM classifier prompt.' })
+  @ApiProperty({ description: 'Longer description; solution LLM handlers can show it in the classifier prompt.' })
   @IsString()
   @MaxLength(1000)
   description!: string;

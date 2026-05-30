@@ -18,13 +18,19 @@ import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filte
  *
  * Convention (phase 5.5): the package's main `index.ts` exports
  * exactly ONE module class named with a `*Module` suffix. The loader
- * picks the first such export so solutions can pick any name (e.g.
- * `LiveLessonPlatformHandlersModule`). When env is unset/empty, the
- * platform boots truly generic — no handlers loaded.
+ * enforces "exactly one" — a misconfigured `index.ts` (e.g. someone
+ * re-exports `OntologyModule` for convenience alongside their own
+ * aggregator) is reported with the list of offending names rather
+ * than silently picking whichever comes first.
+ *
+ * When env is unset/empty, the platform boots truly generic — no
+ * handlers loaded. This is a supported configuration (not a
+ * misconfiguration) so the log is informational, not warn-level —
+ * see phase 5.5 pass-1 review N4.
  *
  * On dynamic-import failure the loader logs the underlying error and
- * exits with status 1 — a missing handler package is a deploy
- * configuration error, not a degraded mode.
+ * exits with status 1 — a missing handler package IS a deploy
+ * configuration error.
  */
 async function loadPlatformHandlerModules(
   logger: Logger,
@@ -35,9 +41,10 @@ async function loadPlatformHandlerModules(
     .map((s) => s.trim())
     .filter(Boolean);
   if (names.length === 0) {
-    logger.warn(
-      'PLATFORM_HANDLER_PACKAGES is unset — platform boots without any ' +
-        'solution handlers; trigger registry will be empty.',
+    logger.log(
+      'PLATFORM_HANDLER_PACKAGES is unset — booting as generic platform ' +
+        '(no solution handlers will load; trigger registry stays empty). ' +
+        'Set the env var to a CSV of handler package names to register triggers.',
     );
     return [];
   }
@@ -45,15 +52,24 @@ async function loadPlatformHandlerModules(
   for (const name of names) {
     try {
       const mod = await import(name);
-      const moduleClass = Object.values(mod).find(
+      const candidates = Object.values(mod).filter(
         (v): v is Type<unknown> =>
           typeof v === 'function' && /Module$/.test((v as Function).name),
       );
-      if (!moduleClass) {
+      if (candidates.length === 0) {
         throw new Error(
-          `package "${name}" has no export ending in "Module"; check its index.ts`,
+          `package "${name}" has no exported class ending in "Module"; check its index.ts`,
         );
       }
+      if (candidates.length > 1) {
+        const names = candidates.map((c) => c.name).join(', ');
+        throw new Error(
+          `package "${name}" must export exactly one *Module class; ` +
+            `found ${candidates.length}: ${names}. Trim re-exports from its index.ts ` +
+            `to keep the loader unambiguous.`,
+        );
+      }
+      const moduleClass = candidates[0];
       out.push(moduleClass);
       logger.log(`Loaded handler module ${moduleClass.name} from "${name}"`);
     } catch (err) {

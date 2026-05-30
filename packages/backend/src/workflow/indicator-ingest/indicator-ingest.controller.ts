@@ -52,7 +52,7 @@ export class IndicatorIngestController {
   @ApiOperation({
     summary: '注册 session 指标目录 / Register session indicator catalog',
     description:
-      'Phase 5 M5.3a: live-lesson solution backend pushes the session indicator catalog so the platform M4 LLM handlers can classify chat turns against the right anchor set. PUT semantics (idempotent replace). Empty `indicators` array clears the session.',
+      'A solution-side worker pushes the session indicator catalog so the platform\'s LLM-driven handlers can classify chat turns / observations against the right anchor set. PUT semantics (idempotent replace). Empty `indicators` array clears the session.',
   })
   @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
   @ApiResponse({ status: 204, description: 'Indicators replaced' })
