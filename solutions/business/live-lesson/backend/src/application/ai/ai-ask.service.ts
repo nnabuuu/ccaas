@@ -103,6 +103,7 @@ export class AiAskService {
       });
     }
 
+    // M4 dual-write — chat_turn
     this.engine.dispatch({
       type: 'chat_turn',
       sessionId: session.id,
@@ -110,6 +111,22 @@ export class AiAskService {
       solutionId: session.lessonId,
       payload: { student: question, ai: parsed.answer, step },
     }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+    this.workflowDispatch.pushEvent({
+      sessionId: session.id,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: studentId,
+      payload: {
+        type: 'chat_turn',
+        studentId,
+        step,
+        student: question,
+        ai: parsed.answer,
+      },
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Workflow outbox enqueue (chat_turn) failed: ${msg}`);
+    });
 
     return { answer: parsed.answer, category: parsed.category };
   }
