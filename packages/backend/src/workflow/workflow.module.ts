@@ -37,6 +37,8 @@ import { WorkflowMetricsService } from './workflow-metrics.service';
 import { WorkflowRegistry } from './workflow-registry';
 import { EventIngestController } from './event-ingest/event-ingest.controller';
 import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
+import { ExerciseObservationService } from './handlers/exercise/exercise-observation.service';
+import { ProgressObservationService } from './handlers/progress/progress-observation.service';
 
 @Module({
   imports: [
@@ -54,6 +56,9 @@ import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-obse
     ObserverEventRepository,
     // Phase 5 M2: first trigger + action registrar.
     LifecycleObservationService,
+    // Phase 5 M3: simple-handler triggers + actions.
+    ExerciseObservationService,
+    ProgressObservationService,
   ],
   exports: [
     WorkflowEngineService,

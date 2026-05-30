@@ -32,6 +32,16 @@ import {
   type StreamDef,
 } from '@kedge-agentic/ontology';
 
+/**
+ * Phase 5 M2 introduced `student_joined`. M3 extends the stream with
+ * `student_submitted` (+ optional `score`), `step_completed`
+ * (+ optional `taskNum`), and three system event variants used by
+ * DiscussService / TranslateService / AiAskService.
+ *
+ * M4 will add `student_status_changed` (cascade target for the
+ * StatusChangeHandler rewrite). Don't add it until then — the
+ * discriminator union is exhaustive in current use.
+ */
 const EventPayloadSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('student_joined'),
@@ -42,19 +52,30 @@ const EventPayloadSchema = z.discriminatedUnion('type', [
     type: z.literal('student_submitted'),
     studentId: z.string(),
     step: z.number().int().nonnegative(),
-  }),
-  z.object({
-    type: z.literal('student_status_changed'),
-    studentId: z.string(),
-    status: z.string(),
+    score: z.number().optional(),
   }),
   z.object({
     type: z.literal('step_completed'),
+    studentId: z.string(),
+    step: z.number().int().nonnegative(),
+    taskNum: z.number().int().nonnegative().optional(),
+    nextTask: z.number().int().nonnegative().optional(),
+  }),
+  z.object({
+    type: z.literal('translate_request'),
+    studentId: z.string(),
+    step: z.number().int().nonnegative().optional(),
+    originalText: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('discuss_complete'),
+    studentId: z.string(),
     step: z.number().int().nonnegative(),
   }),
   z.object({
-    type: z.literal('system'),
-    detail: z.string(),
+    type: z.literal('continue_chat_turn'),
+    studentId: z.string(),
+    step: z.number().int().nonnegative().optional(),
   }),
 ]);
 
