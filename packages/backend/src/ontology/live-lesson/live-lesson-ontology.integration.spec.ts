@@ -14,12 +14,13 @@ import { OntologyRegistry } from '@kedge-agentic/ontology';
 import {
   LiveLessonOntologyService,
   LIVE_LESSON_ACTION_NAMESPACE,
-  LIVE_LESSON_SOLUTION_ID,
+  LIVE_LESSON_TENANT_SLUG,
 } from './live-lesson-ontology.service';
 import {
   ONTOLOGY_REGISTRY,
   OntologyRegistryProvider,
 } from '../ontology-registry.provider';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { SolutionToolkitRegistry } from '../../tool-caller/solution-toolkit-registry';
 import {
   ToolCallerProxyService,
@@ -29,6 +30,17 @@ import type {
   ExecutionContext,
   ToolCallAuditEntry,
 } from '../../tool-caller/types';
+
+const FAKE_LIVE_LESSON_UUID = 'live-lesson-uuid-0000-0000-0000-000000000000';
+
+class FakeSolutionsService {
+  async findOne(idOrSlug: string) {
+    if (idOrSlug === LIVE_LESSON_TENANT_SLUG || idOrSlug === FAKE_LIVE_LESSON_UUID) {
+      return { id: FAKE_LIVE_LESSON_UUID, slug: LIVE_LESSON_TENANT_SLUG };
+    }
+    return null;
+  }
+}
 
 describe('LiveLessonOntologyService (integration)', () => {
   let registry: OntologyRegistry;
@@ -43,6 +55,7 @@ describe('LiveLessonOntologyService (integration)', () => {
         SolutionToolkitRegistry,
         ToolCallerProxyService,
         LiveLessonOntologyService,
+        { provide: SolutionsService, useClass: FakeSolutionsService },
       ],
     }).compile();
     registry = module.get(ONTOLOGY_REGISTRY);
@@ -61,7 +74,7 @@ describe('LiveLessonOntologyService (integration)', () => {
     await module.init();
   });
 
-  it('registers 4 object types + LessonSession manifest + seals', () => {
+  it('registers 4 object types + LessonSession manifest (registry NOT sealed yet — OntologySealService seals at onApplicationBootstrap)', () => {
     expect(registry.getAllObjectTypes().map((t) => t.apiName).sort()).toEqual([
       'ClassroomSession',
       'Lesson',
@@ -69,20 +82,32 @@ describe('LiveLessonOntologyService (integration)', () => {
       'Student',
     ]);
     expect(registry.getManifest('LessonSession')).toBeDefined();
-    expect(registry.isSealed()).toBe(true);
+    // Sealing is the OntologySealService's job, not this service's —
+    // registering here only adds to the registry. See pass-3 review S1.
+    expect(registry.isSealed()).toBe(false);
   });
 
-  it('registers emit_todo_card under namespace "creator-actions"', () => {
-    const tools = toolkits.listToolsForSolution(LIVE_LESSON_SOLUTION_ID);
+  it('resolves slug → UUID and registers toolkit under the UUID (pass-3 review M1)', () => {
+    // Pass-3 review caught: prior version passed slug `live-lesson` as
+    // solutionId, but ExecutionContext.solutionId is the tenant UUID at
+    // runtime, so the proxy lookup would silently miss. The registrar
+    // now resolves slug → UUID via SolutionsService.findOne.
+    const tools = toolkits.listToolsForSolution(FAKE_LIVE_LESSON_UUID);
     expect(tools).toHaveLength(1);
+    expect(tools[0].solutionId).toBe(FAKE_LIVE_LESSON_UUID);
     expect(tools[0].qualifiedName).toBe(
       `${LIVE_LESSON_ACTION_NAMESPACE}.emit_todo_card`,
     );
+
+    // Sanity: looking up by slug returns nothing — registry IS UUID-keyed.
+    expect(
+      toolkits.listToolsForSolution(LIVE_LESSON_TENANT_SLUG),
+    ).toHaveLength(0);
   });
 
   it('proxy.invoke(emit_todo_card) returns the todo card content + audits ok', async () => {
     const ctx: ExecutionContext = {
-      solutionId: LIVE_LESSON_SOLUTION_ID,
+      solutionId: FAKE_LIVE_LESSON_UUID,
       sessionId: 's1',
       actingUserId: 'agent-runtime',
       actingRole: 'agent',
@@ -116,7 +141,7 @@ describe('LiveLessonOntologyService (integration)', () => {
     expect(auditEntries[0]).toMatchObject({
       tool: `${LIVE_LESSON_ACTION_NAMESPACE}.emit_todo_card`,
       outcome: 'ok',
-      solutionId: LIVE_LESSON_SOLUTION_ID,
+      solutionId: FAKE_LIVE_LESSON_UUID,
       sessionId: 's1',
       actingUserId: 'agent-runtime',
     });
@@ -124,7 +149,7 @@ describe('LiveLessonOntologyService (integration)', () => {
 
   it('proxy.invoke denies permission for role=picker (boundary check fires)', async () => {
     const ctx: ExecutionContext = {
-      solutionId: LIVE_LESSON_SOLUTION_ID,
+      solutionId: FAKE_LIVE_LESSON_UUID,
       sessionId: 's1',
       actingRole: 'picker',
     };
@@ -145,7 +170,7 @@ describe('LiveLessonOntologyService (integration)', () => {
 
   it('proxy.invoke validation_failed when args miss required fields (zod gate)', async () => {
     const ctx: ExecutionContext = {
-      solutionId: LIVE_LESSON_SOLUTION_ID,
+      solutionId: FAKE_LIVE_LESSON_UUID,
       sessionId: 's1',
       actingRole: 'agent',
     };
