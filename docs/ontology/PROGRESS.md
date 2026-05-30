@@ -12,7 +12,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 | 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
 | 2 — context-layer refactor | ⏳ waiting | — | — | — | Blocked on Phase 1 |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
-| 4 — Tier 2 primitives | 🔵 partial — ObjectSetDef shipped | 2026-05-30 | 2026-05-30 (ObjectSetDef) | `c2decfd1` | 12-commit sequence on branch `phase4-objectsetdef-sliver`. ObjectSetDef + SetFilter + OrderClause + SlotTarget objectSet kind + objectSetRef helper + defineObjectSet + OntologyRegistry methods + evaluateSetFilter + cross-def validators + canonical-digest inclusion + integration test all shipped. 285 tests across 21 files (+75 from Phase 1 baseline 210). 2 code-reviewer passes (pass 2 zero must-fix). **InterfaceDef + BoundaryPredicate (other Tier 2 items) stay compile-time-blocked**, await separate triggers. |
+| 4 — Tier 2 primitives | 🔵 **1 of 3 done — partial** | 2026-05-30 | — (full phase still open) | `c2decfd1` (ObjectSetDef sliver) | **NOT complete.** Only `ObjectSetDef` (the one Tier 2 primitive with a concrete live-lesson trigger) shipped. `InterfaceDef` and `BoundaryPredicate` (predicate-scoped `AccessBoundary`) **remain compile-time-blocked** and await their own triggering consumer. See "Phase 4 — what's left" below for the remaining work + triggers. |
 | 5 — Tier 3 primitives | ⏳ waiting | — | — | — | Per-item gated on individual promotion criteria |
 
 ## Phase 1 commit log
@@ -50,6 +50,36 @@ spec order.
 
 | Primitive | Solution | Concrete need | Evidence |
 |---|---|---|---|
-| `ObjectSetDef` | `solutions/business/live-lesson` | "Struggling students" / "at-risk students" / "stuck students" are computed on every 3s teacher-dashboard poll and used as hardcoded filter sets across handlers + UI. Tier 2 lets these become named, agent-visible subsets the picker can reference (`strugglingStudents`, `atRiskStudents`) without re-spelling the filter at each call site. | Quadrant algorithm: `solutions/business/live-lesson/design/student-quadrant-algorithm.md` + `frontend/src/components/teacher/summary/summary-helpers.ts:computeStudentQuadrants()`. Hardcoded subset: `backend/src/adapters/observer-engine/handlers/status-change-handler.ts:22` (`ALERTABLE_STATUSES = ['stuck', 'struggling', 'idle']`). Dashboard health cards: `design/teacher-dashboard-design.md`. Audited 2026-05-30. |
+| `ObjectSetDef` ✅ | `solutions/business/live-lesson` | Shipped 2026-05-30 as the Phase 4 sliver (commit `c2decfd1`). Live-lesson migration of `strugglingStudents` / `atRiskStudents` / `stuckStudents` to real consumer-side ObjectSetDefs is the follow-up; not yet done. | Original audit unchanged below — primitive now usable. |
 | `InterfaceDef` | — | No clear cross-type query need today; existing polymorphism handled by Zod discriminated unions (observation kinds, answer-key kinds). Would land when a plugin ecosystem or 3rd-party observation types appear. | live-lesson audit 2026-05-30: present but not load-bearing. |
 | `BoundaryPredicate` + predicate-scoped `AccessBoundary` | — | No per-row filtering need today — live-lesson scopes all access by `sessionId`; no `teacherId` / `classId` / `tenantId` axis exists. Triggers: multi-teacher concurrent sessions, parent-facing UI, or cross-session analytics. | live-lesson audit 2026-05-30: no current consumer. |
+
+## Phase 4 — what's left
+
+Phase 4 ships in slivers, one primitive at a time. The first sliver (ObjectSetDef) is in; the other two remain `@ts-expect-error` blocked in tests and absent from the `defineX` family + `OntologyRegistry.registerX` methods, exactly so that consumers cannot accidentally use them ahead of an explicit landing decision.
+
+| Sliver | Status | Trigger to start | Estimated scope |
+|---|---|---|---|
+| **`ObjectSetDef`** | ✅ shipped 2026-05-30 (`c2decfd1`) | live-lesson `strugglingStudents` need (already used) | done |
+| **`InterfaceDef`** + `OntologyRegistry.registerInterface` + `getImplementersOf` + `defineInterface` + `ObjectTypeDef.implements` field unblock + structural-conformance validator | ⏳ blocked | First Solution that wants polymorphic queries (e.g. "all `Mentionable` objects across heterogeneous types"). No live-lesson trigger today — Zod discriminated unions cover the existing polymorphism. | Comparable to ObjectSetDef sliver (~13 commits, ~280–320 tests). |
+| **`BoundaryPredicate`** + predicate-scoped `AccessBoundary` (`{slot, where}` entries) + `OntologyRegistry.registerPredicate` + `getPredicate` + named-precondition / named-SetFilter evaluators light up (currently fail-safe stubs) | ⏳ blocked | First Solution that needs per-row read scoping (multi-teacher concurrent sessions in live-lesson, parent-facing UI, or cross-session analytics). | Largest of the three — the boundary-predicate `{op, path, value}` sub-language needs its own walker + validator wiring, and it flips three "named: returns false" stubs (ActionPrecondition, SetFilter, BoundaryPredicate) into real predicate-registry dispatch. |
+
+**Phase 4 will be marked ✅ shipped only after all three slivers have landed.** Today: `1 of 3`.
+
+## Phase 4 — ObjectSetDef sliver commit log
+
+| # | Commit subject | SHA | Notes |
+|---|---|---|---|
+| 1 | feat: objectsetdef + setfilter + orderclause primitives (phase 4) | `41624a0d` | `src/schema/object-set.ts` — full SetFilter union (12 ops). 13 unit tests. |
+| 2 | feat: slottarget 'objectSet' kind unblocked (phase 4) | `8482d648` | `SlotTarget` discriminated union widened. Phase 1 `@ts-expect-error` gate flipped to expect-no-error. |
+| 3 | feat: objectsetref branded zod helper (phase 4) | `cf6f34c5` | `objectSetRef()` + `getObjectSetRefTarget()` mirroring `objectRef`. 5 new tests. |
+| 4 | feat: defineobjectset helper (phase 4) | `67572c8c` | `src/helpers/define.ts` — passthrough + 3 compile-gate tests. |
+| 5 | feat: ontologyregistry registerobjectset + queries (phase 4) | `15ec0c9a` | `registerObjectSet` / `getObjectSet` / `getAllObjectSets` / `getObjectSetsForType` + `validateObjectSetLocal` + `ValidationContext.objectSets`. 10 new tests. |
+| 6 | feat: evaluatesetfilter pure function (phase 4) | `c263905a` | Recursive predicate evaluator, dot-path walker, fail-closed numeric comparison. 19 tests. |
+| 7 | feat: objectsetdef cross-def validators (phase 4) | `589f22ed` | 3 new ValidationCodes: `OBJECTSET_TARGET_UNRESOLVED`, `OBJECTSET_FIELD_UNRESOLVED`, `OBJECTSET_NAMED_UNSUPPORTED`. SlotTarget `'objectSet'` resolution wired through `validateSlot`. +10 tests. |
+| 8 | test: objectsetdef end-to-end integration + typecheck fixes (phase 4) | `b53729f8` | 11 integration cases through the full layer stack (helpers → registry → seal → evaluate). |
+| 9 | refactor: address code-review pass 1 (s1 s2 s3 n1 n3 n6) | `ca945bb4` | S1 (digest collision), S2 (boundary fixture), S3 (alloc), N1 (`le/ge` non-numeric), N3 (docblock), N6 (SlotDef import). |
+| 10 | docs: phase 4 objectsetdef sliver shipped — progress.md + pass-2 nit | `3a0e5e82` | PROGRESS.md row → 🔵 partial. Pass-2 nit absorbed. |
+| 11 | docs: refresh phase 4 sliver final commit sha to 3a0e5e82 | `27360c6d` | Self-reference SHA backfill. |
+| 12 | chore: bump harness baselines for pre-existing drift + phase 4 prose | `c2decfd1` | `any_type` 542→549 (2 prose, 5 pre-existing), TODO 17→19 (pre-existing), eslint-disable 59→68 (pre-existing), localhost 21→20 (ratchet down). |
+| 13 | docs: refresh phase 4 sliver final sha to c2decfd1 | `779e988a` | Self-reference SHA backfill. |
