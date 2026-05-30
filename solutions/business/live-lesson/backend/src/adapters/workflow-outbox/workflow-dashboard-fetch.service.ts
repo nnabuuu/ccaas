@@ -1,16 +1,15 @@
 /**
- * `WorkflowDashboardFetchService` — phase 5 M5.3b + M6.3. HTTP fetch
- * from the platform's legacy projector endpoint
- * (GET /api/v1/workflow/sessions/:id/observation-dashboard).
+ * `WorkflowDashboardFetchService` — HTTP fetch from the platform's
+ * dashboard endpoint. Post-M5.2a calls the NEW
+ * `GET /api/v1/workflow/sessions/:id/dashboard` (returns ontology-native
+ * `DashboardPayload`) and routes the result through
+ * `DashboardPayloadAdapter` to derive the legacy 4-array shape the
+ * frontend still consumes.
  *
- * M6.3 removes the LOCAL ObservationQueryService fallback that M5.3b
- * shipped. The fallback was only useful while the legacy
- * observer-engine handlers were still writing observation rows to
- * live-lesson's local DB. After M6.2 retired those handlers, the
- * local table stops being written to — the fallback now just serves
- * progressively-stale data. Better to return `null` and let the caller
- * surface "platform unreachable" honestly. Outage resilience is the
- * platform's concern (HA + caching), not the solution's.
+ * The conversion lives in `dashboard-payload-adapter.ts` so the
+ * **M5.2b** frontend rewrite can delete the adapter + this transitional
+ * fallback in one focused commit. After M5.2b the live-lesson side
+ * just passes the typed payload straight through.
  *
  * Env config mirrors `WorkflowOutboxDrainService` /
  * `WorkflowIndicatorPushService` so the platform URL + API key live
@@ -23,31 +22,14 @@ import {
   WorkflowClient,
   type WorkflowDashboardOutcome,
 } from '@kedge-agentic/workflow-client';
-import type {
-  StudentLog,
-  Alert,
-  IndicatorStats,
-  IndicatorDef,
-} from '../../schemas/classroom/observation';
+import {
+  adaptDashboardPayload,
+  parseDashboardPayload,
+  type DashboardFetchResult,
+} from './dashboard-payload-adapter';
 import { WorkflowDispatchService } from './workflow-dispatch.service';
 
-export interface DashboardFetchResult {
-  readonly logs: StudentLog[];
-  readonly alerts: Alert[];
-  readonly indicatorStats: IndicatorStats[];
-  /**
-   * Session-scoped catalog of indicator definitions. Added in M6.3
-   * so live-lesson's `getState().observation.indicators` field can
-   * source from the platform projector instead of the deleted local
-   * `ObservationQueryService.getIndicators` cache.
-   */
-  readonly indicators: IndicatorDef[];
-  /**
-   * Always `'platform'` post-M6.3. Kept as a field for future
-   * observability hooks (e.g. if we ever re-add a local cache layer).
-   */
-  readonly source: 'platform';
-}
+export type { DashboardFetchResult };
 
 @Injectable()
 export class WorkflowDashboardFetchService {
@@ -75,8 +57,7 @@ export class WorkflowDashboardFetchService {
     if (!this.dispatch.isEnabled()) return null;
     const client = this.ensureClient();
     if (!client) return null;
-    const outcome: WorkflowDashboardOutcome =
-      await client.getObservationDashboard(sessionId);
+    const outcome: WorkflowDashboardOutcome = await client.getDashboard(sessionId);
     if (outcome.status !== 'ok') {
       this.logger.warn(
         `dashboard fetch failed for ${sessionId}: ${outcome.error}` +
@@ -84,7 +65,7 @@ export class WorkflowDashboardFetchService {
       );
       return null;
     }
-    return narrowPayload(outcome.payload);
+    return adaptDashboardPayload(parseDashboardPayload(outcome.payload));
   }
 
   private ensureClient(): WorkflowClient | undefined {
@@ -107,60 +88,4 @@ export class WorkflowDashboardFetchService {
     this.client = new WorkflowClient({ baseUrl, apiKey });
     return this.client;
   }
-}
-
-/**
- * Narrow `unknown` from the workflow-client to our typed shape. We
- * accept whatever the projector returns — defensive defaults if
- * fields are missing — and stamp `source: 'platform'`.
- */
-function narrowPayload(payload: unknown): DashboardFetchResult {
-  if (payload && typeof payload === 'object') {
-    const obj = payload as Record<string, unknown>;
-    return {
-      logs: Array.isArray(obj.logs) ? (obj.logs as StudentLog[]) : [],
-      alerts: Array.isArray(obj.alerts) ? (obj.alerts as Alert[]) : [],
-      indicatorStats: Array.isArray(obj.indicatorStats)
-        ? (obj.indicatorStats as IndicatorStats[])
-        : [],
-      // M6 pass-1 S5: defensive filter to the narrow knowledge/misconception
-      // union the live-lesson schema declares. Platform IndicatorRegistry
-      // accepts any string `type`; without this filter the cast would lie
-      // when a future caller pushes `type: 'process'`.
-      indicators: Array.isArray(obj.indicators)
-        ? filterIndicators(obj.indicators as unknown[])
-        : [],
-      source: 'platform',
-    };
-  }
-  return {
-    logs: [],
-    alerts: [],
-    indicatorStats: [],
-    indicators: [],
-    source: 'platform',
-  };
-}
-
-function filterIndicators(arr: unknown[]): IndicatorDef[] {
-  const out: IndicatorDef[] = [];
-  for (const raw of arr) {
-    if (!raw || typeof raw !== 'object') continue;
-    const d = raw as Record<string, unknown>;
-    if (
-      typeof d.id !== 'string' ||
-      typeof d.label !== 'string' ||
-      typeof d.description !== 'string'
-    ) {
-      continue;
-    }
-    if (d.type !== 'knowledge' && d.type !== 'misconception') continue;
-    out.push({
-      id: d.id,
-      type: d.type,
-      label: d.label,
-      description: d.description,
-    });
-  }
-  return out;
 }
