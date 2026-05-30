@@ -32,8 +32,16 @@ export type {
   ObjectTypeDef,
   PickerConfig,
   StreamDef,
+  ObjectSetDef,
+  SetFilter,
+  OrderClause,
 } from './schema/index.js';
-export { objectRef, getObjectRefTarget } from './schema/index.js';
+export {
+  objectRef,
+  getObjectRefTarget,
+  objectSetRef,
+  getObjectSetRefTarget,
+} from './schema/index.js';
 
 // Validators + RegistrationError
 export type {
@@ -81,6 +89,7 @@ export {
   defineFunction,
   defineManifest,
   defineStateField,
+  defineObjectSet,
 } from './helpers/index.js';
 
 // Registry subpath

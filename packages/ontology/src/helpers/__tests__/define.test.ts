@@ -15,6 +15,7 @@ import {
   defineAction,
   defineFunction,
   defineManifest,
+  defineObjectSet,
   defineObjectType,
   defineStateField,
 } from '../define.js';
@@ -167,5 +168,47 @@ describe('defineStateField', () => {
       semantic: 's',
     });
     expect(stepId.initial).toBeNull();
+  });
+});
+
+describe('defineObjectSet (Phase 4)', () => {
+  it('returns the literal unchanged', () => {
+    const def = defineObjectSet({
+      apiName: 'strugglingStudents',
+      displayName: '挣扎中的学生',
+      objectType: 'Student',
+      filter: {
+        op: 'and',
+        clauses: [
+          { op: 'lt', path: 'mastery', value: 50 },
+          { op: 'ge', path: 'engagement', value: 50 },
+        ],
+      },
+      orderBy: [{ path: 'mastery', direction: 'asc' }],
+      defaultLimit: 20,
+      semantic: 'Students with low mastery but engaged.',
+    });
+    expect(def.apiName).toBe('strugglingStudents');
+    expect(def.filter.op).toBe('and');
+  });
+
+  it('rejects missing semantic at compile time', () => {
+    defineObjectSet({
+      apiName: 'x',
+      displayName: 'x',
+      objectType: 'Student',
+      filter: { op: 'has', path: 'id' },
+      // @ts-expect-error — semantic is required
+    });
+  });
+
+  it('rejects missing objectType at compile time', () => {
+    // @ts-expect-error — objectType is required
+    defineObjectSet({
+      apiName: 'x',
+      displayName: 'x',
+      filter: { op: 'has', path: 'id' },
+      semantic: 's',
+    });
   });
 });
