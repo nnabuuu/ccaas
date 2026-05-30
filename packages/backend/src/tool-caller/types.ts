@@ -12,6 +12,7 @@
  */
 
 import type { ZodTypeAny } from 'zod';
+import type { ActionPrecondition } from '@kedge-agentic/ontology';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -77,6 +78,13 @@ export type ToolResult =
         | 'permission_denied'
         | 'tool_not_found'
         | 'handler_error';
+      /**
+       * Phase 3: structured precondition failure detail from the
+       * action-to-tool-definition bridge. Populated only when a
+       * permission denial is driven by `ActionPrecondition` evaluation
+       * (rather than a missing boundary or role). Audit ignores it.
+       */
+      unmetPreconditions?: readonly ActionPrecondition[];
     };
 
 export interface ToolResultContent {
