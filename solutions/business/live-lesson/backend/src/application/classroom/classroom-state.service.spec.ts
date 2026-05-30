@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { WorkflowIndicatorPushService } from '../../adapters/workflow-outbox/workflow-indicator-push.service';
 import { DISCUSS_HIGHLIGHT_REPO_PORT } from "../../domain/ports/discuss-highlight-repo.port";
 import { TypeOrmDiscussHighlightRepository } from "../../adapters/persistence/repositories/discuss-highlight.repository";
 import { AI_QUESTION_REPO_PORT } from "../../domain/ports/ai-question-repo.port";
@@ -91,6 +92,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         { provide: CoachingService, useValue: mockCoachingService },
         { provide: DepthRankingService, useValue: { cleanupSession: jest.fn(), getCached: jest.fn().mockReturnValue(null) } },
         { provide: ManifestCacheService, useValue: { getManifest: jest.fn().mockResolvedValue(null), invalidate: jest.fn() } },
+        { provide: WorkflowIndicatorPushService, useValue: { pushIndicators: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -286,6 +288,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         ManifestCacheService,
         AiPromptBuilder,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        { provide: WorkflowIndicatorPushService, useValue: { pushIndicators: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

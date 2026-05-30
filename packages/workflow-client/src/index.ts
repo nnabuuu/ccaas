@@ -54,6 +54,27 @@ export type WorkflowPushOutcome =
       readonly retryable: boolean;
     };
 
+/**
+ * Indicator catalog entry pushed via `setIndicators`. Shape matches the
+ * platform's `IndicatorDef`. The platform's PUT endpoint validates
+ * each field (non-empty `id`/`type`/`label`).
+ */
+export interface WorkflowIndicatorDef {
+  readonly id: string;
+  readonly type: string;
+  readonly label: string;
+  readonly description: string;
+}
+
+export type WorkflowSetIndicatorsOutcome =
+  | { readonly status: 'ok' }
+  | {
+      readonly status: 'failed';
+      readonly httpStatus?: number;
+      readonly error: string;
+      readonly retryable: boolean;
+    };
+
 export interface WorkflowClientOptions {
   /** Platform base URL — e.g. `http://localhost:3001`. No trailing slash. */
   readonly baseUrl: string;
@@ -165,6 +186,77 @@ export class WorkflowClient {
         httpStatus: res.status,
         error: extractError(parsed, `HTTP ${res.status}`),
         retryable,
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort = msg.toLowerCase().includes('abort');
+      return {
+        status: 'failed',
+        error: isAbort ? `request timed out after ${this.timeoutMs}ms` : msg,
+        retryable: true,
+      };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Replace the platform-side indicator catalog for the given session.
+   * Idempotent (PUT semantics). The platform M4 LLM handlers
+   * (ChatTurn / StatusChange) read indicators from this registry; this
+   * method is the cross-process wire for live-lesson to push them in.
+   *
+   * Never throws — failures land in the `status: 'failed'` arm.
+   * Retryable bucket matches `pushEvent`.
+   */
+  async setIndicators(
+    sessionId: string,
+    indicators: readonly WorkflowIndicatorDef[],
+  ): Promise<WorkflowSetIndicatorsOutcome> {
+    if (!sessionId || typeof sessionId !== 'string') {
+      return {
+        status: 'failed',
+        error: 'sessionId is required',
+        retryable: false,
+      };
+    }
+    const url = `${this.baseUrl}/api/v1/workflow/sessions/${encodeURIComponent(sessionId)}/indicators`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.onBehalfOf) {
+      headers['X-Ccaas-On-Behalf-Of'] = this.onBehalfOf;
+    }
+    const body = JSON.stringify({ indicators });
+
+    const controller =
+      typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+    const timer = controller
+      ? setTimeout(() => controller.abort(), this.timeoutMs)
+      : undefined;
+
+    try {
+      const res = await this.fetchImpl(url, {
+        method: 'PUT',
+        headers,
+        body,
+        signal: controller?.signal,
+      });
+      if (res.status === 204 || res.status === 200) {
+        return { status: 'ok' };
+      }
+      let parsed: unknown = null;
+      try {
+        parsed = await res.json();
+      } catch {
+        // body may be empty (204 case is already handled); ignore
+      }
+      return {
+        status: 'failed',
+        httpStatus: res.status,
+        error: extractError(parsed, `HTTP ${res.status}`),
+        retryable: isRetryableStatus(res.status),
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

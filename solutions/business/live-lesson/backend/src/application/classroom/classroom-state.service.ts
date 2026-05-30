@@ -8,6 +8,7 @@ import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/por
 import { CLASSROOM_SESSION_REPO_PORT, type ClassroomSessionRepoPort } from '../../domain/ports/classroom-session-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { ObservationQueryService } from '../observation/observation-query.service';
+import { WorkflowIndicatorPushService } from '../../adapters/workflow-outbox/workflow-indicator-push.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
@@ -48,6 +49,7 @@ export class ClassroomStateService {
     private readonly depthRankingService: DepthRankingService,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
+    private readonly workflowIndicators: WorkflowIndicatorPushService,
   ) {}
 
   // ── Notification map operations ──
@@ -381,6 +383,18 @@ export class ClassroomStateService {
 
       if (indicators.length > 0) {
         this.observationQuery.setIndicators(sessionId, indicators);
+        // Phase 5 M5.3a: also push to the platform's IndicatorRegistryService
+        // so the M4 LLM handlers (ChatTurnService / StatusChangeService) can
+        // fire. Fire-and-forget; failure logs but doesn't disrupt session
+        // start (legacy observer-engine path still classifies locally).
+        void this.workflowIndicators
+          .pushIndicators(sessionId, indicators)
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            this.logger.warn(
+              `workflow indicator push failed for ${sessionId}: ${msg}`,
+            );
+          });
       }
 
       this.observeRegistryCache.set(lessonId, buildRegistry(manifest));
