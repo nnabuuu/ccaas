@@ -155,19 +155,16 @@ export class WorkflowClient {
       if (res.status === 200) {
         return mapResponse(parsed, event.eventId, 'duplicate');
       }
-      if (res.status >= 400 && res.status < 500) {
-        return {
-          status: 'failed',
-          httpStatus: res.status,
-          error: extractError(parsed, `HTTP ${res.status}`),
-          retryable: false,
-        };
-      }
+      // Pass-1 review S-6: distinguish retryable 4xx (408 timeout / 429
+      // rate limit / 425 too-early) from terminal ones, and treat a few
+      // 5xx that signal "upgrade required" as terminal so the outbox
+      // doesn't burn its budget retrying impossible requests.
+      const retryable = isRetryableStatus(res.status);
       return {
         status: 'failed',
         httpStatus: res.status,
         error: extractError(parsed, `HTTP ${res.status}`),
-        retryable: true,
+        retryable,
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -210,6 +207,21 @@ function mapResponse(
     }
   }
   return { status: defaultStatus, eventId: fallbackEventId };
+}
+
+/**
+ * Bucket the HTTP status into "outbox should retry later" vs "outbox
+ * should poison and stop". Defaults: 4xx terminal except 408/425/429;
+ * 5xx retryable except 501/505 (server doesn't support the request and
+ * never will).
+ */
+function isRetryableStatus(status: number): boolean {
+  if (status === 408 || status === 425 || status === 429) return true;
+  if (status >= 400 && status < 500) return false;
+  if (status === 501 || status === 505) return false;
+  if (status >= 500) return true;
+  // Anything outside known codes — treat as retryable; transient by default.
+  return true;
 }
 
 function extractError(parsed: unknown, fallback: string): string {
