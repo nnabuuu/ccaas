@@ -40,7 +40,6 @@ import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-hi
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
 import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
-import { ObservationQueryService } from '../observation/observation-query.service';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
@@ -283,7 +282,7 @@ describe('ClassroomService — persistence', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -530,7 +529,7 @@ describe('ClassroomService — extended coverage', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3200,7 +3199,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3374,7 +3373,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3717,7 +3716,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3984,7 +3983,7 @@ describe('ClassroomService — snapshots', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4171,7 +4170,7 @@ describe('StudentSubmissionService — getSubmission', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4299,7 +4298,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4599,7 +4598,7 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4798,7 +4797,7 @@ describe('Submission phase separation — cross-module', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -5053,7 +5052,7 @@ describe('REST polling scenarios — student', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -5146,7 +5145,7 @@ describe('REST polling scenarios — teacher getState', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+        TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -5286,7 +5285,7 @@ async function buildAntiPatternTestModule(): Promise<TestingModule> {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-      ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
+      TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, TranslateService, StateCacheService,
       { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
     ],
   }).compile();

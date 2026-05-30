@@ -1,24 +1,16 @@
 /**
- * `WorkflowDashboardFetchService` — phase 5 M5.3b. HTTP fetch from
- * the platform's legacy projector endpoint
- * (GET /api/v1/workflow/sessions/:id/observation-dashboard) so the
- * live-lesson backend can stop reading from its OWN observation table
- * for the dashboard. Cross-process source-of-truth alignment.
+ * `WorkflowDashboardFetchService` — phase 5 M5.3b + M6.3. HTTP fetch
+ * from the platform's legacy projector endpoint
+ * (GET /api/v1/workflow/sessions/:id/observation-dashboard).
  *
- * Why HTTP fetch instead of direct DB:
- *   - Post-M3 the canonical observation rows live on the PLATFORM
- *     side (workflow handlers write there). Live-lesson's local DB
- *     observations are dual-written-dead-code until M6 deletion.
- *   - HTTP keeps the network boundary explicit so M6 can drop the
- *     local observation table cleanly without code changes here.
- *
- * Fallback: if the fetch fails, we fall back to the LOCAL
- * `ObservationQueryService.getObservationDashboard(sessionId)`. The
- * local path is "stale during transition" — it reads live-lesson's
- * own observation table which still has dual-written rows — so it's
- * not wrong, just slightly behind the platform on chat_turn data.
- * The fallback prevents dashboard from going dark when the platform
- * is unreachable.
+ * M6.3 removes the LOCAL ObservationQueryService fallback that M5.3b
+ * shipped. The fallback was only useful while the legacy
+ * observer-engine handlers were still writing observation rows to
+ * live-lesson's local DB. After M6.2 retired those handlers, the
+ * local table stops being written to — the fallback now just serves
+ * progressively-stale data. Better to return `null` and let the caller
+ * surface "platform unreachable" honestly. Outage resilience is the
+ * platform's concern (HA + caching), not the solution's.
  *
  * Env config mirrors `WorkflowOutboxDrainService` /
  * `WorkflowIndicatorPushService` so the platform URL + API key live
@@ -35,6 +27,7 @@ import type {
   StudentLog,
   Alert,
   IndicatorStats,
+  IndicatorDef,
 } from '../../schemas/classroom/observation';
 import { WorkflowDispatchService } from './workflow-dispatch.service';
 
@@ -42,7 +35,18 @@ export interface DashboardFetchResult {
   readonly logs: StudentLog[];
   readonly alerts: Alert[];
   readonly indicatorStats: IndicatorStats[];
-  readonly source: 'platform' | 'local-fallback';
+  /**
+   * Session-scoped catalog of indicator definitions. Added in M6.3
+   * so live-lesson's `getState().observation.indicators` field can
+   * source from the platform projector instead of the deleted local
+   * `ObservationQueryService.getIndicators` cache.
+   */
+  readonly indicators: IndicatorDef[];
+  /**
+   * Always `'platform'` post-M6.3. Kept as a field for future
+   * observability hooks (e.g. if we ever re-add a local cache layer).
+   */
+  readonly source: 'platform';
 }
 
 @Injectable()
@@ -58,15 +62,14 @@ export class WorkflowDashboardFetchService {
 
   /**
    * Fetch the dashboard from the platform. Returns `null` when the
-   * caller should fall back to the local path (HTTP failed AND the
-   * caller has a local source). The outcome's `source` field lets
-   * the caller emit metrics about platform vs local serving.
+   * platform is unreachable — caller surfaces an empty dashboard
+   * (post-M6.3 there is no local fallback).
    *
    * Returns `null` on:
-   *   - `LIVE_LESSON_WORKFLOW_DISPATCH=disabled` (treat platform as
-   *     unreachable)
-   *   - missing CCAAS_API_KEY (treat platform as unauthorized)
-   *   - any non-200 from the platform (5xx, 4xx, network)
+   *   - `LIVE_LESSON_WORKFLOW_DISPATCH=disabled`
+   *   - missing CCAAS_API_KEY
+   *   - any non-200 from the platform (5xx, 4xx, network, timeout)
+   *   - malformed payload (shape doesn't match the projector contract)
    */
   async fetchPlatform(sessionId: string): Promise<DashboardFetchResult | null> {
     if (!this.dispatch.isEnabled()) return null;
@@ -95,7 +98,7 @@ export class WorkflowDashboardFetchService {
     if (!apiKey) {
       if (!this.apiKeyWarned) {
         this.logger.warn(
-          'CCAAS_API_KEY not set — dashboard fetch is disabled; using local fallback.',
+          'CCAAS_API_KEY not set — dashboard fetch is disabled.',
         );
         this.apiKeyWarned = true;
       }
@@ -120,8 +123,17 @@ function narrowPayload(payload: unknown): DashboardFetchResult {
       indicatorStats: Array.isArray(obj.indicatorStats)
         ? (obj.indicatorStats as IndicatorStats[])
         : [],
+      indicators: Array.isArray(obj.indicators)
+        ? (obj.indicators as IndicatorDef[])
+        : [],
       source: 'platform',
     };
   }
-  return { logs: [], alerts: [], indicatorStats: [], source: 'platform' };
+  return {
+    logs: [],
+    alerts: [],
+    indicatorStats: [],
+    indicators: [],
+    source: 'platform',
+  };
 }

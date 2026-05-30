@@ -36,7 +36,6 @@ import { AiAskService } from '../../application/ai/ai-ask.service';
 import { PersonalizationService } from '../../application/ai/personalization.service';
 import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
 import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
-import { ObservationQueryService } from '../../application/observation/observation-query.service';
 import { ObserveRegistry } from '../../application/observation/observe-registry';
 import { QuizObserveHandler } from '../../domain/exercise-types/quiz/quiz.observe';
 import { SelectEvidenceObserveHandler } from '../../domain/exercise-types/select-evidence/select-evidence.observe';
@@ -212,7 +211,7 @@ describe('Classroom polling — HTTP integration', () => {
         ...PLUGIN_PROVIDERS,
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler,
+        ObserveRegistry, QuizObserveHandler, SelectEvidenceObserveHandler,
         MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
         AiPromptBuilder, MetricsAggregator, ClusterClassifier,
         ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService, TranslateService,

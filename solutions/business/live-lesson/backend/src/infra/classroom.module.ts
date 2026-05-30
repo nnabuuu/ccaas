@@ -97,8 +97,6 @@ import { TranslateController } from '../adapters/http/translate.controller';
 import { PersonalizationService } from '../application/ai/personalization.service';
 import { PersonalTouchController } from '../adapters/http/personal-touch.controller';
 
-// ── Observation component ──
-import { ObservationQueryService } from '../application/observation/observation-query.service';
 
 // ── Task-demo component (shareable single-task sessions) ──
 import { TaskDemoService } from '../application/task-demo/task-demo.service';
@@ -169,9 +167,6 @@ import { WorkflowOutboxModule } from '../adapters/workflow-outbox/workflow-outbo
     TranslateService,
     // Personal Touch
     PersonalizationService,
-    // Observation (M6.3 deletes ObservationQueryService when the
-    // local fallback is removed from WorkflowDashboardFetchService).
-    ObservationQueryService,
   ],
   exports: [ExerciseTypeRegistry],
 })

@@ -73,10 +73,30 @@ export interface IndicatorStats {
   readonly updatedAt: number;
 }
 
+/**
+ * Session-scoped indicator catalog entry. Same shape as the
+ * IndicatorRegistry's `IndicatorDef`. Surfaced via the projector so
+ * post-M6.3 callers (live-lesson getState) no longer need their own
+ * local indicator cache.
+ */
+export interface IndicatorCatalogEntry {
+  readonly id: string;
+  readonly type: string;
+  readonly label: string;
+  readonly description: string;
+}
+
 export interface ObservationDashboardPayload {
   readonly logs: readonly StudentLog[];
   readonly alerts: readonly Alert[];
   readonly indicatorStats: readonly IndicatorStats[];
+  /**
+   * Session-scoped catalog of indicator definitions. Added in M6.3
+   * so live-lesson's `getState().observation.indicators` field can
+   * source from the platform projector instead of holding a duplicate
+   * local cache via `ObservationQueryService` (deleted in M6.3).
+   */
+  readonly indicators: readonly IndicatorCatalogEntry[];
 }
 
 /**
@@ -127,6 +147,7 @@ export class ObservationDashboardProjector {
     // ordered; sorting makes diff tooling happy + frontend doesn't care).
     logs.sort((a, b) => a.studentId.localeCompare(b.studentId));
 
+    const catalog = this.indicators.getIndicators(solutionId, sessionId);
     return {
       logs,
       alerts,
@@ -135,16 +156,22 @@ export class ObservationDashboardProjector {
       // M5 second pass deletes this projector entirely, so the
       // throwaway compute lives here rather than in DashboardService
       // (which serves the new ontology-native shape).
-      indicatorStats: this.computeIndicatorStats(solutionId, sessionId, rows),
+      indicatorStats: this.computeIndicatorStats(catalog, rows),
+      // M6.3: catalog surfaces directly so live-lesson's getState()
+      // drops its local ObservationQueryService cache.
+      indicators: catalog.map((def) => ({
+        id: def.id,
+        type: def.type,
+        label: def.label,
+        description: def.description,
+      })),
     };
   }
 
   private computeIndicatorStats(
-    solutionId: string,
-    sessionId: string,
+    catalog: ReturnType<IndicatorRegistryService['getIndicators']>,
     rows: readonly Observation[],
   ): IndicatorStats[] {
-    const catalog = this.indicators.getIndicators(solutionId, sessionId);
     if (catalog.length === 0) return [];
 
     type Acc = { students: Set<string>; latestGist: string; updatedAt: number };

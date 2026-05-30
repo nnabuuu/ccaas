@@ -36,9 +36,9 @@ describe('ObservationDashboardProjector', () => {
     await module.close();
   });
 
-  it('empty session → empty logs + alerts + indicatorStats', async () => {
+  it('empty session → empty logs + alerts + indicatorStats + indicators', async () => {
     const result = await projector.project('tenant-a','empty-session');
-    expect(result).toEqual({ logs: [], alerts: [], indicatorStats: [] });
+    expect(result).toEqual({ logs: [], alerts: [], indicatorStats: [], indicators: [] });
   });
 
   it('lifecycle observations roll up into StudentLog with system events', async () => {
