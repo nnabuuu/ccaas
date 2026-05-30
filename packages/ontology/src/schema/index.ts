@@ -27,6 +27,7 @@ export type { FunctionDef } from './function.js';
 export type { ObjectTypeDef, PickerConfig } from './object-type.js';
 export type { StreamDef } from './stream.js';
 export type { ObjectSetDef, SetFilter, OrderClause } from './object-set.js';
+export { evaluateSetFilter, type FilterRow } from './evaluate-set-filter.js';
 
 // Validators + RegistrationError
 export type {
