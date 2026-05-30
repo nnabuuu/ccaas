@@ -7,6 +7,7 @@ import {
   ONTOLOGY_REGISTRY,
 } from './ontology-registry.provider';
 import { ManifestAccessorService } from './manifest-accessor.service';
+import { LiveLessonOntologyService } from './live-lesson/live-lesson-ontology.service';
 
 /**
  * Wires the ontology layer into NestJS:
@@ -28,7 +29,11 @@ import { ManifestAccessorService } from './manifest-accessor.service';
 @Module({
   imports: [forwardRef(() => SessionsModule), ToolCallerModule],
   controllers: [OntologyController],
-  providers: [OntologyRegistryProvider, ManifestAccessorService],
+  providers: [
+    OntologyRegistryProvider,
+    ManifestAccessorService,
+    LiveLessonOntologyService,
+  ],
   exports: [ONTOLOGY_REGISTRY, ManifestAccessorService],
 })
 export class OntologyModule {}

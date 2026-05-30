@@ -1,0 +1,149 @@
+/**
+ * `LessonSession` — the canonical manifest for a live-lesson run.
+ *
+ * Slot bindings: plan (Lesson), class (ClassroomSession), students
+ * (collection derived from class.contains), resources (collection).
+ *
+ * State (lives in SessionMetadata KV — `manifest.LessonSession.<field>`):
+ *   - phase: lifecycle of the session
+ *   - activeResourceIndex: pointer into resources slot
+ *
+ * Streams:
+ *   - events: classroom-side observer-engine events. Phase 3 ships the
+ *     stream surface; the observer-engine bridge that publishes into
+ *     `ManifestAccessorService.publish('events', ...)` lives in the
+ *     live-lesson backend process — see docs/ontology/PROGRESS.md for
+ *     the cross-process deferral.
+ *
+ * Boundaries:
+ *   - agent: read plan/class/students/phase/activeResourceIndex,
+ *     write phase + activeResourceIndex, subscribe events.
+ *   - picker: read plan/class only; no streams; no actions.
+ *   - admin: '*' (everything).
+ *
+ * Lifecycle skipped for first pass per the impl-plan.
+ */
+
+import { z } from 'zod';
+import {
+  defineManifest,
+  defineStateField,
+  type ManifestDef,
+  type StreamDef,
+} from '@kedge-agentic/ontology';
+
+const EventPayloadSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('student_joined'),
+    studentId: z.string(),
+    classroomCode: z.string(),
+  }),
+  z.object({
+    type: z.literal('student_submitted'),
+    studentId: z.string(),
+    step: z.number().int().nonnegative(),
+  }),
+  z.object({
+    type: z.literal('student_status_changed'),
+    studentId: z.string(),
+    status: z.string(),
+  }),
+  z.object({
+    type: z.literal('step_completed'),
+    step: z.number().int().nonnegative(),
+  }),
+  z.object({
+    type: z.literal('system'),
+    detail: z.string(),
+  }),
+]);
+
+const eventsStream: StreamDef = {
+  apiName: 'events',
+  displayName: 'Classroom Events',
+  payloadSchema: EventPayloadSchema,
+  semantic: '课堂内学生加入/提交/状态变化等观察事件',
+  backpressure: 'drop_oldest',
+};
+
+export const LessonSessionManifest: ManifestDef = defineManifest({
+  name: 'LessonSession',
+  displayName: '课时运行 / Lesson Session',
+  schemaVersion: '0.1.0',
+  semantic: '一次具体课堂运行的运行时上下文',
+  slots: [
+    {
+      apiName: 'plan',
+      displayName: '课程计划 / Plan',
+      target: { kind: 'objectType', apiName: 'Lesson' },
+      semantic: '本次课堂运行的 Lesson 定义',
+    },
+    {
+      apiName: 'class',
+      displayName: '课堂会话 / Classroom',
+      target: { kind: 'objectType', apiName: 'ClassroomSession' },
+      semantic: '本次课堂的 ClassroomSession 实例',
+    },
+    {
+      apiName: 'students',
+      displayName: '学生 / Students',
+      target: { kind: 'objectType', apiName: 'Student' },
+      collection: true,
+      derivedFrom: 'class.contains',
+      semantic: '本次课堂中的学生（从 class.contains 派生）',
+    },
+    {
+      apiName: 'resources',
+      displayName: '资源 / Resources',
+      target: { kind: 'objectType', apiName: 'Resource' },
+      collection: true,
+      semantic: '本次课堂可用的资源列表',
+    },
+  ],
+  streams: [eventsStream],
+  state: [
+    defineStateField({
+      apiName: 'phase',
+      displayName: '阶段 / Phase',
+      schema: z.enum(['waiting', 'active', 'ended']),
+      initial: 'waiting',
+      semantic: '课堂生命周期阶段',
+    }),
+    defineStateField({
+      apiName: 'activeResourceIndex',
+      displayName: '当前资源索引 / Active Resource Index',
+      schema: z.number().int().nonnegative(),
+      initial: 0,
+      semantic: '指向 resources 集合的当前下标',
+    }),
+  ],
+  boundaries: [
+    {
+      role: 'agent',
+      readable: [
+        'plan',
+        'class',
+        'students',
+        'resources',
+        'phase',
+        'activeResourceIndex',
+      ],
+      writable: ['phase', 'activeResourceIndex'],
+      actions: ['emit_todo_card'],
+      subscribes: ['events'],
+    },
+    {
+      role: 'picker',
+      readable: ['plan', 'class', 'students', 'resources'],
+      writable: [],
+      actions: [],
+    },
+    {
+      role: 'admin',
+      readable: ['*'],
+      writable: ['*'],
+      actions: ['*'],
+      subscribes: ['*'],
+    },
+  ],
+});
