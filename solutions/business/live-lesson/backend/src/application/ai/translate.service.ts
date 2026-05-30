@@ -8,7 +8,6 @@ import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/p
 import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
-import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 
 export interface TranslateResponse {
@@ -56,7 +55,6 @@ export class TranslateService {
     private readonly chatMessageRepo: ChatMessageRepoPort,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
-    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
     private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
@@ -132,21 +130,6 @@ export class TranslateService {
 
     cache.set(normalized, result);
 
-    // M3 dual-write — translate_request
-    this.engine.dispatch({
-      type: 'translate_request',
-      sessionId: session.id,
-      entityId: studentId,
-      solutionId: session.lessonId,
-      payload: {
-        step,
-        sourceContext,
-        phase: phase ?? null,
-        text,
-        definition: result.definition,
-        contextAnalysis: result.contextAnalysis,
-      },
-    }).catch(e => this.logger.warn(`Observer dispatch translate_request failed: ${e}`));
     this.workflowDispatch.pushEvent({
       sessionId: session.id,
       manifestName: 'LessonSession',
@@ -230,13 +213,12 @@ export class TranslateService {
       question, reply,
     });
 
-    this.engine.dispatch({
-      type: 'translate_chat_turn',
-      sessionId: session.id,
-      entityId: studentId,
-      solutionId: session.lessonId,
-      payload: { step, threadId, sourceContext, questionLength: question.length },
-    }).catch(e => this.logger.warn(`Observer dispatch translate_chat_turn failed: ${e}`));
+    // Note: translate_chat_turn was never dual-written to the workflow
+    // side (no platform handler for it). The legacy observer-engine
+    // had no handler either — the event was dispatched but landed in
+    // the default no-op arm. M6: cleanly drop. If a teacher signal for
+    // translate-chat depth is needed, model it as a new ontology
+    // event + workflow handler in a follow-up.
 
     return { reply };
   }
