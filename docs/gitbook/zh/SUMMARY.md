@@ -13,6 +13,17 @@
 * [Solution 案例展示](platform/solutions.md)
 * [定价](platform/pricing.md)
 
+## Ontology & Workflow <a href="#ontology" id="ontology"></a>
+
+* [概述](ontology/README.md)
+* [Schema 原语](ontology/schema-primitives.md)
+* [Trigger + Workflow 引擎](ontology/trigger-and-workflow-engine.md)
+* [Observation 管线](ontology/observation-pipeline.md)
+* [Indicator 目录](ontology/indicator-catalog.md)
+* [Dashboard 契约](ontology/dashboard-contract.md)
+* [跨进程事件推送](ontology/cross-process-events.md)
+* [Session 生命周期](ontology/session-lifecycle.md)
+
 ## 快速开始 <a href="#getting-started" id="getting-started"></a>
 
 * [概述](getting-started/README.md)
