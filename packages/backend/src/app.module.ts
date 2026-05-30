@@ -58,6 +58,7 @@ import { SessionArtifactSnapshot } from './sessions/agent-runtime/session-artifa
 import { SolutionLoaderModule } from './solutions/solution-loader.module';
 import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
+import { OntologyModule } from './ontology/ontology.module';
 
 @Module({
   imports: [
@@ -170,6 +171,10 @@ import { BuilderModule } from './builder/builder.module';
 
     // Builder module (external developer self-service)
     BuilderModule,
+
+    // Ontology layer (Phase 3): manifest accessor + ActionDef bridge.
+    // Dead-code at boot until Solutions register manifests + actions.
+    OntologyModule,
   ],
   providers: [
     {
