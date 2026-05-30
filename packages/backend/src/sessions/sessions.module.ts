@@ -149,6 +149,6 @@ import { BundleModule } from '../bundles/bundle.module';
     // details.
     WorkspaceAccessGuard,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, WORKSPACE_ARTIFACT_SOURCE_REGISTRY],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService, WORKSPACE_PROVIDER, SessionAssetSyncer, WORKSPACE_ARTIFACT_SOURCE_REGISTRY, SessionMetadataService],
 })
 export class SessionsModule {}
