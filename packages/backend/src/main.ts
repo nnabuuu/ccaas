@@ -62,11 +62,18 @@ async function loadPlatformHandlerModules(
         );
       }
       if (candidates.length > 1) {
-        const names = candidates.map((c) => c.name).join(', ');
+        // Pass-2 S2: renamed local from `names` to avoid shadowing the
+        // outer `names` (the env-CSV list at line 39).
+        // Pass-2 N3: message lists candidates without prescribing the
+        // fix — the loader doesn't know whether the extra `*Module`
+        // export was an accidental re-export or a deliberate
+        // additional bundle.
+        const offenders = candidates.map((c) => c.name).join(', ');
         throw new Error(
           `package "${name}" must export exactly one *Module class; ` +
-            `found ${candidates.length}: ${names}. Trim re-exports from its index.ts ` +
-            `to keep the loader unambiguous.`,
+            `found ${candidates.length} candidates: ${offenders}. ` +
+            `Update the package's index.ts so only the handler ` +
+            `aggregator module is reachable by the loader.`,
         );
       }
       const moduleClass = candidates[0];
