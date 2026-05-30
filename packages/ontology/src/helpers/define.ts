@@ -28,9 +28,9 @@
  * their inputs and let the registry reject misshapen defs at register
  * time.
  *
- * Phase 4/5 helpers absent: `defineInterface`, `defineObjectSet` (Phase
- * 4); no Phase 5 helpers planned beyond extensions to the existing
- * ones.
+ * Phase 4 (Tier 2 — partial): `defineObjectSet` shipped. `defineInterface`
+ * stays absent until the Interface primitive lands. No Phase 5 helpers
+ * planned beyond extensions to the existing ones.
  *
  * @see ../../../docs/ontology/kedge-ontology-design.md (§6 Registry / §9.7 invariants)
  */
@@ -39,6 +39,7 @@ import type { z } from 'zod';
 import type {
   ActionDef,
   FunctionDef,
+  ObjectSetDef,
   ObjectTypeDef,
 } from '../schema/index.js';
 import type { ManifestDef, StateDef } from '../manifest/index.js';
@@ -81,5 +82,18 @@ export function defineStateField<S extends z.ZodTypeAny>(def: {
   readonly initial: z.infer<S>;
   readonly semantic: string;
 }): StateDef {
+  return def;
+}
+
+/**
+ * Passthrough for ObjectSetDef literals. Phase 4 (Tier 2 — partial).
+ *
+ * Spec §3.9 — `apiName` identity (not filter structure) + first-order
+ * filter language + optional ordering. The Zod-shape constraint on
+ * filter `path`s (every path must resolve through the target
+ * ObjectType's `.shape`) is enforced at `registerObjectSet` time, not
+ * by this helper.
+ */
+export function defineObjectSet(def: ObjectSetDef): ObjectSetDef {
   return def;
 }
