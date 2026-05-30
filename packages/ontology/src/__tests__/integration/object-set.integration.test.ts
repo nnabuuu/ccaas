@@ -78,7 +78,12 @@ const ALICE: FilterRow = { id: 'a', name: 'Alice', mastery: 30, engagement: 80 }
 const BOB: FilterRow = { id: 'b', name: 'Bob', mastery: 90, engagement: 90 };
 const CARA: FilterRow = { id: 'c', name: 'Cara', mastery: 20, engagement: 20 };
 const DAN: FilterRow = { id: 'd', name: 'Dan', mastery: 40, engagement: 60 };
-const ALL_STUDENTS = [ALICE, BOB, CARA, DAN] as const;
+// Eli sits exactly on the `engagement >= 50` boundary. He distinguishes
+// `ge` (which matches him) from `gt` (which doesn't). A bug that flipped
+// the filter's `ge` to `gt` would un-match Eli — without him the
+// integration test wouldn't notice.
+const ELI: FilterRow = { id: 'e', name: 'Eli', mastery: 30, engagement: 50 };
+const ALL_STUDENTS = [ALICE, BOB, CARA, DAN, ELI] as const;
 
 // ────────────────────────────────────────────────────────────────────
 // Registration + seal end-to-end
@@ -131,12 +136,19 @@ describe('strugglingStudents filter selects the right subset', () => {
     expect(evaluateSetFilter(strugglingStudents.filter, DAN)).toBe(true);
   });
 
-  it('filtering the whole class yields exactly { Alice, Dan }', () => {
+  it('Eli matches at the ge-50 boundary (engagement exactly 50)', () => {
+    // Probes `ge` vs `gt` — a regression that flipped the operator
+    // would drop Eli but keep Alice/Dan.
+    const { strugglingStudents } = buildOntologyWithStudents();
+    expect(evaluateSetFilter(strugglingStudents.filter, ELI)).toBe(true);
+  });
+
+  it('filtering the whole class yields exactly { Alice, Dan, Eli }', () => {
     const { strugglingStudents } = buildOntologyWithStudents();
     const matching = ALL_STUDENTS.filter((s) =>
       evaluateSetFilter(strugglingStudents.filter, s),
     );
-    expect(matching.map((s) => s.id).sort()).toEqual(['a', 'd']);
+    expect(matching.map((s) => s.id).sort()).toEqual(['a', 'd', 'e']);
   });
 });
 

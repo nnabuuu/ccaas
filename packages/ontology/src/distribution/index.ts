@@ -15,5 +15,6 @@ export {
   type SerializedAction,
   type SerializedFunction,
   type SerializedManifest,
+  type SerializedObjectSet,
 } from './serialize.js';
 export { computeSchemaDigest } from './digest.js';

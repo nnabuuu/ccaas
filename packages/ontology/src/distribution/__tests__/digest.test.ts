@@ -210,3 +210,96 @@ describe('computeSchemaDigest', () => {
     expect(r1.getSchemaDigest()).toBe(r2.getSchemaDigest());
   });
 });
+
+// ────────────────────────────────────────────────────────────────────
+// Phase 4 — ObjectSetDef inclusion in the serialized payload + digest
+// ────────────────────────────────────────────────────────────────────
+
+describe('ObjectSetDef inclusion (Phase 4)', () => {
+  function student(): import('../../schema/index.js').ObjectTypeDef {
+    return {
+      apiName: 'Student',
+      displayName: 'Student',
+      semantic: 'A learner',
+      schema: z.object({ id: z.string(), mastery: z.number() }),
+      links: [],
+      actions: [],
+    };
+  }
+
+  it('serializeRegistry now exposes the objectSets array', () => {
+    const r = new OntologyRegistry();
+    r.registerObjectType(student());
+    r.registerObjectSet({
+      apiName: 'strugglingStudents',
+      displayName: 's',
+      objectType: 'Student',
+      filter: { op: 'lt', path: 'mastery', value: 50 },
+      semantic: 'x',
+    });
+    const out = serializeRegistry(r.context());
+    expect(out.objectSets).toHaveLength(1);
+    expect(out.objectSets[0].apiName).toBe('strugglingStudents');
+  });
+
+  it('digest changes when an ObjectSetDef is added (S1 regression)', () => {
+    const r1 = new OntologyRegistry();
+    r1.registerObjectType(student());
+    const before = r1.getSchemaDigest();
+
+    const r2 = new OntologyRegistry();
+    r2.registerObjectType(student());
+    r2.registerObjectSet({
+      apiName: 'strugglingStudents',
+      displayName: 's',
+      objectType: 'Student',
+      filter: { op: 'lt', path: 'mastery', value: 50 },
+      semantic: 'x',
+    });
+    expect(r2.getSchemaDigest()).not.toBe(before);
+  });
+
+  it('digest changes when only the filter shape differs', () => {
+    function makeReg(filter: import('../../schema/index.js').SetFilter) {
+      const r = new OntologyRegistry();
+      r.registerObjectType(student());
+      r.registerObjectSet({
+        apiName: 'subset',
+        displayName: 's',
+        objectType: 'Student',
+        filter,
+        semantic: 'x',
+      });
+      return r;
+    }
+    const a = makeReg({ op: 'lt', path: 'mastery', value: 50 });
+    const b = makeReg({ op: 'lt', path: 'mastery', value: 70 });
+    expect(a.getSchemaDigest()).not.toBe(b.getSchemaDigest());
+  });
+
+  it('digest is order-independent across ObjectSetDefs registered in different order', () => {
+    const setA: import('../../schema/index.js').ObjectSetDef = {
+      apiName: 'a',
+      displayName: 'a',
+      objectType: 'Student',
+      filter: { op: 'has', path: 'id' },
+      semantic: 'x',
+    };
+    const setB: import('../../schema/index.js').ObjectSetDef = {
+      apiName: 'b',
+      displayName: 'b',
+      objectType: 'Student',
+      filter: { op: 'has', path: 'id' },
+      semantic: 'x',
+    };
+    const r1 = new OntologyRegistry();
+    r1.registerObjectType(student());
+    r1.registerObjectSet(setA);
+    r1.registerObjectSet(setB);
+    const r2 = new OntologyRegistry();
+    r2.registerObjectType(student());
+    r2.registerObjectSet(setB);
+    r2.registerObjectSet(setA);
+    expect(r1.getSchemaDigest()).toBe(r2.getSchemaDigest());
+  });
+});
