@@ -35,6 +35,10 @@ import { User } from '../../src/users/entities/user.entity';
 import { UserSolution } from '../../src/users/entities/user-solution.entity';
 import { Session } from '../../src/admin/entities/session.entity';
 import { Turn } from '../../src/admin/entities/turn.entity';
+import {
+  ObservationRecord,
+  ObserverEventRecord,
+} from '../../src/workflow/entities';
 
 export const TEST_ENTITIES = [
   Message,
@@ -64,6 +68,8 @@ export const TEST_ENTITIES = [
   UserSolution,
   Session,
   Turn,
+  ObservationRecord,
+  ObserverEventRecord,
 ];
 
 /**

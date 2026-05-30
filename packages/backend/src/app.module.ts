@@ -59,6 +59,10 @@ import { SolutionLoaderModule } from './solutions/solution-loader.module';
 import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
 import { OntologyModule } from './ontology/ontology.module';
+import {
+  ObservationRecord,
+  ObserverEventRecord,
+} from './workflow/entities';
 
 @Module({
   imports: [
@@ -112,6 +116,9 @@ import { OntologyModule } from './ontology/ontology.module';
         Session,
         SessionArtifactSnapshot,
         SessionMetadata,
+        // Workflow / observation persistence (phase 5)
+        ObservationRecord,
+        ObserverEventRecord,
         // Storage entities
         LargeContent,
         SystemPromptVersion,
