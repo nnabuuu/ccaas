@@ -60,6 +60,7 @@ import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
 import { OntologyModule } from './ontology/ontology.module';
 import { WorkflowModule } from './workflow/workflow.module';
+import { LiveLessonPlatformHandlersModule } from '@kedge-agentic/live-lesson-platform-handlers';
 import {
   ObservationRecord,
   ObserverEventRecord,
@@ -185,9 +186,18 @@ import {
     OntologyModule,
 
     // Workflow layer (Phase 5): declarative triggers + cross-process
-    // event ingest. Dead-code until solutions register TriggerDefs and
-    // start pushing events through the ingest endpoint.
+    // event ingest. Generic — knows nothing about live-lesson. Dead-
+    // code until solutions register TriggerDefs and start pushing
+    // events through the ingest endpoint.
     WorkflowModule,
+
+    // PLACEHOLDER (phase 5.5 step 2): hard-import the live-lesson
+    // handler bundle so existing dev/test behavior continues to
+    // work. The next phase 5.5 step replaces `AppModule` with a
+    // `DynamicModule` factory `AppModule.register({ extraModules })`
+    // and removes this line — handler packages will be loaded by
+    // `main.ts` via `PLATFORM_HANDLER_PACKAGES` env var instead.
+    LiveLessonPlatformHandlersModule,
   ],
   providers: [
     {

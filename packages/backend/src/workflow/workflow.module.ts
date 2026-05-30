@@ -38,18 +38,9 @@ import { WorkflowRegistry } from './workflow-registry';
 import { EventIngestController } from './event-ingest/event-ingest.controller';
 import { IndicatorIngestController } from './indicator-ingest/indicator-ingest.controller';
 import { SessionLifecycleController } from './session-lifecycle/session-lifecycle.controller';
-import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
-import { ExerciseObservationService } from './handlers/exercise/exercise-observation.service';
-import { ProgressObservationService } from './handlers/progress/progress-observation.service';
-import { ObservationDashboardProjector } from './handlers/dashboard/observation-dashboard.projector';
-import { ObservationDashboardController } from './handlers/dashboard/observation-dashboard.controller';
-import { DashboardService } from './handlers/dashboard/dashboard.service';
-import { DashboardController } from './handlers/dashboard/dashboard.controller';
 import { OpenAiLlmGateway } from './llm/openai-llm-gateway';
 import { LLM_GATEWAY } from './llm/llm-gateway';
 import { IndicatorRegistryService } from './llm/indicator-registry.service';
-import { ChatTurnService } from './handlers/chat-turn/chat-turn.service';
-import { StatusChangeService } from './handlers/status-change/status-change.service';
 
 @Module({
   imports: [
@@ -62,8 +53,6 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     EventIngestController,
     IndicatorIngestController,
     SessionLifecycleController,
-    ObservationDashboardController,
-    DashboardController,
   ],
   providers: [
     WorkflowRegistry,
@@ -71,21 +60,13 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     WorkflowEngineService,
     ObservationRepository,
     ObserverEventRepository,
-    // Phase 5 M2: first trigger + action registrar.
-    LifecycleObservationService,
-    // Phase 5 M3: simple-handler triggers + actions.
-    ExerciseObservationService,
-    ProgressObservationService,
-    // Phase 5 M3: Path B projector — exposed via ObservationDashboardController.
-    ObservationDashboardProjector,
-    // Phase 5 M5.2: ontology-native dashboard service + controller.
-    DashboardService,
-    // Phase 5 M4: LLM gateway + indicator registry + LLM handlers.
+    // Generic LLM gateway + indicator registry (consumed by
+    // solution-specific handlers that live in
+    // `@kedge-agentic/<solution>-platform-handlers` packages —
+    // phase 5.5).
     OpenAiLlmGateway,
     { provide: LLM_GATEWAY, useExisting: OpenAiLlmGateway },
     IndicatorRegistryService,
-    ChatTurnService,
-    StatusChangeService,
   ],
   exports: [
     WorkflowEngineService,

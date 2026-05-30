@@ -19,17 +19,17 @@ import {
 import {
   ONTOLOGY_REGISTRY,
   OntologyRegistryProvider,
-} from '../ontology-registry.provider';
-import { SolutionsService } from '../../solutions/solutions.service';
-import { SolutionToolkitRegistry } from '../../tool-caller/solution-toolkit-registry';
+} from '@kedge-agentic/backend/ontology/ontology-registry.provider';
+import { SolutionsService } from '@kedge-agentic/backend/solutions/solutions.service';
+import { SolutionToolkitRegistry } from '@kedge-agentic/backend/tool-caller/solution-toolkit-registry';
 import {
   ToolCallerProxyService,
   type ToolCallAuditSink,
-} from '../../tool-caller/tool-caller-proxy.service';
+} from '@kedge-agentic/backend/tool-caller/tool-caller-proxy.service';
 import type {
   ExecutionContext,
   ToolCallAuditEntry,
-} from '../../tool-caller/types';
+} from '@kedge-agentic/backend/tool-caller/types';
 
 const FAKE_LIVE_LESSON_UUID = 'live-lesson-uuid-0000-0000-0000-000000000000';
 

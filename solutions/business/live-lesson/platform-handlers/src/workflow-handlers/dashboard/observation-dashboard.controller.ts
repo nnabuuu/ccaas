@@ -26,7 +26,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Auth, TenantId } from '../../../auth/decorators';
+import { Auth, TenantId } from '@kedge-agentic/backend/auth/decorators';
 import {
   ObservationDashboardProjector,
   type ObservationDashboardPayload,

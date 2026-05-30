@@ -16,8 +16,8 @@ import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 import { ObservationDashboardController } from './observation-dashboard.controller';
 import { ObservationDashboardProjector } from './observation-dashboard.projector';
-import { ApiKeyGuard } from '../../../auth/guards/api-key.guard';
-import { ScopesGuard } from '../../../auth/guards/scopes.guard';
+import { ApiKeyGuard } from '@kedge-agentic/backend/auth/guards/api-key.guard';
+import { ScopesGuard } from '@kedge-agentic/backend/auth/guards/scopes.guard';
 
 const TENANT = 'tenant-dash-test';
 

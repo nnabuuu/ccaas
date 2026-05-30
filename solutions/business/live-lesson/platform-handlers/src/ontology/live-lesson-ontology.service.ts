@@ -29,10 +29,10 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { OntologyRegistry } from '@kedge-agentic/ontology';
-import { SolutionsService } from '../../solutions/solutions.service';
-import { SolutionToolkitRegistry } from '../../tool-caller/solution-toolkit-registry';
-import { ONTOLOGY_REGISTRY } from '../ontology-registry.provider';
-import { compileActionToToolDefinition } from '../action-to-tool-definition';
+import { SolutionsService } from '@kedge-agentic/backend/solutions/solutions.service';
+import { SolutionToolkitRegistry } from '@kedge-agentic/backend/tool-caller/solution-toolkit-registry';
+import { ONTOLOGY_REGISTRY } from '@kedge-agentic/backend/ontology/ontology-registry.provider';
+import { compileActionToToolDefinition } from '@kedge-agentic/backend/ontology/action-to-tool-definition';
 import { LIVE_LESSON_OBJECT_TYPES } from './object-types';
 import { LessonSessionManifest } from './lesson-session.manifest';
 import {

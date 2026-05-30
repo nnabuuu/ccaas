@@ -36,25 +36,25 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { defineAction, type ActionDef } from '@kedge-agentic/ontology';
-import { SolutionsService } from '../../../solutions/solutions.service';
-import { compileActionToToolDefinition } from '../../../ontology/action-to-tool-definition';
-import { LessonSessionManifest } from '../../../ontology/live-lesson/lesson-session.manifest';
-import { ONTOLOGY_REGISTRY } from '../../../ontology/ontology-registry.provider';
+import { SolutionsService } from '@kedge-agentic/backend/solutions/solutions.service';
+import { compileActionToToolDefinition } from '@kedge-agentic/backend/ontology/action-to-tool-definition';
+import { LessonSessionManifest } from '../../ontology/lesson-session.manifest';
+import { ONTOLOGY_REGISTRY } from '@kedge-agentic/backend/ontology/ontology-registry.provider';
 import type { OntologyRegistry } from '@kedge-agentic/ontology';
-import { SolutionToolkitRegistry } from '../../../tool-caller/solution-toolkit-registry';
+import { SolutionToolkitRegistry } from '@kedge-agentic/backend/tool-caller/solution-toolkit-registry';
 import type {
   ToolInvocation,
   ToolResult,
-} from '../../../tool-caller/types';
-import { ObservationRepository } from '../../persistence/observation-repository';
-import { WorkflowEngineService } from '../../workflow-engine.service';
-import type { TriggerDef, TriggerFireInput } from '../../types';
+} from '@kedge-agentic/backend/tool-caller/types';
+import { ObservationRepository } from '@kedge-agentic/backend/workflow/persistence/observation-repository';
+import { WorkflowEngineService } from '@kedge-agentic/backend/workflow/workflow-engine.service';
+import type { TriggerDef, TriggerFireInput } from '@kedge-agentic/backend/workflow/types';
 
 import {
   LIVE_LESSON_TENANT_SLUG,
   WORKFLOW_LIFECYCLE_NAMESPACE as WORKFLOW_ACTION_NAMESPACE,
-} from '../constants';
-export { LIVE_LESSON_TENANT_SLUG } from '../constants';
+} from '../../constants';
+export { LIVE_LESSON_TENANT_SLUG } from '../../constants';
 
 const LifecycleObservationArgsSchema = z.object({
   /** Entity the observation is about — e.g. studentId. */

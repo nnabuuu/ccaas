@@ -22,7 +22,7 @@ import {
   ONTOLOGY_REGISTRY,
   OntologyRegistryProvider,
 } from '../../ontology/ontology-registry.provider';
-import { LessonSessionManifest } from '../../ontology/live-lesson/lesson-session.manifest';
+import { EventIngestTestManifest } from '../../../test/fixtures/event-ingest-test-manifest';
 import { ObservationRecord, ObserverEventRecord } from '../entities';
 import { ObservationRepository } from '../persistence/observation-repository';
 import { ObserverEventRepository } from '../persistence/observer-event-repository';
@@ -112,7 +112,7 @@ describe('EventIngestController (integration)', () => {
     // gate has a manifest + stream to check against.
     const ontology = module.get<OntologyRegistry>(ONTOLOGY_REGISTRY);
     if (!ontology.getManifest('LessonSession')) {
-      ontology.registerManifest(LessonSessionManifest);
+      ontology.registerManifest(EventIngestTestManifest);
     }
   });
 

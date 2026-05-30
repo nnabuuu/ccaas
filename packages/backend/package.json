@@ -3,7 +3,18 @@
   "private": true,
   "version": "3.0.0",
   "description": "Claude Code as a Service - NestJS-based relay server for Claude Code CLI",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
+  "exports": {
+    ".": {
+      "types": "./dist/src/main.d.ts",
+      "default": "./dist/src/main.js"
+    },
+    "./*": {
+      "types": "./dist/src/*.d.ts",
+      "default": "./dist/src/*.js"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",

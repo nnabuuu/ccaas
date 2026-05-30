@@ -11,27 +11,27 @@ import { Repository } from 'typeorm';
 import { DiscoveryModule } from '@nestjs/core';
 import { NotFoundException } from '@nestjs/common';
 import { StatusChangeService } from './status-change.service';
-import { LLM_GATEWAY, type LlmGateway } from '../../llm/llm-gateway';
+import { LLM_GATEWAY, type LlmGateway } from '@kedge-agentic/backend/workflow/llm/llm-gateway';
 import {
   IndicatorRegistryService,
   type IndicatorDef,
-} from '../../llm/indicator-registry.service';
-import { ManifestAccessorService } from '../../../ontology/manifest-accessor.service';
+} from '@kedge-agentic/backend/workflow/llm/indicator-registry.service';
+import { ManifestAccessorService } from '@kedge-agentic/backend/ontology/manifest-accessor.service';
 import {
   ONTOLOGY_REGISTRY,
   OntologyRegistryProvider,
-} from '../../../ontology/ontology-registry.provider';
-import { LessonSessionManifest } from '../../../ontology/live-lesson/lesson-session.manifest';
-import { SolutionsService } from '../../../solutions/solutions.service';
-import { SolutionToolkitRegistry } from '../../../tool-caller/solution-toolkit-registry';
-import { ToolCallerProxyService } from '../../../tool-caller/tool-caller-proxy.service';
-import { ObservationRecord, ObserverEventRecord } from '../../entities';
-import { ObservationRepository } from '../../persistence/observation-repository';
-import { WorkflowEngineService } from '../../workflow-engine.service';
-import { WorkflowMetricsService } from '../../workflow-metrics.service';
-import { WorkflowRegistry } from '../../workflow-registry';
-import { SessionMetadataService } from '../../../sessions/services/session-metadata.service';
-import { getTestDatabaseOptions } from '../../../../test/setup/test-database';
+} from '@kedge-agentic/backend/ontology/ontology-registry.provider';
+import { LessonSessionManifest } from '../../ontology/lesson-session.manifest';
+import { SolutionsService } from '@kedge-agentic/backend/solutions/solutions.service';
+import { SolutionToolkitRegistry } from '@kedge-agentic/backend/tool-caller/solution-toolkit-registry';
+import { ToolCallerProxyService } from '@kedge-agentic/backend/tool-caller/tool-caller-proxy.service';
+import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/backend/workflow/entities';
+import { ObservationRepository } from '@kedge-agentic/backend/workflow/persistence/observation-repository';
+import { WorkflowEngineService } from '@kedge-agentic/backend/workflow/workflow-engine.service';
+import { WorkflowMetricsService } from '@kedge-agentic/backend/workflow/workflow-metrics.service';
+import { WorkflowRegistry } from '@kedge-agentic/backend/workflow/workflow-registry';
+import { SessionMetadataService } from '@kedge-agentic/backend/sessions/services/session-metadata.service';
+import { getTestDatabaseOptions } from '../../../test/setup/test-database';
 import { OntologyRegistry } from '@kedge-agentic/ontology';
 
 const TENANT_UUID = 'tenant-status-change-test';
