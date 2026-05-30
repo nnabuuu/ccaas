@@ -170,7 +170,7 @@ describe('ChatTurnService', () => {
   }
 
   it('skips when no indicators registered', async () => {
-    indicators.setIndicators(SESSION_ID, []);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, []);
     await invokeHandler({ student: 'I think mitochondria...', ai: 'Yes, and...' });
     const obs = await observations.find();
     expect(obs).toHaveLength(0);
@@ -178,14 +178,14 @@ describe('ChatTurnService', () => {
   });
 
   it('skips when student text is empty', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await invokeHandler({ student: '', ai: 'something' });
     expect(llm.callCount).toBe(0);
     expect(await observations.find()).toHaveLength(0);
   });
 
   it('LLM action=append writes a new indicator_hit observation + cascades', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({
       action: 'append',
       anchors: ['K1'],
@@ -219,7 +219,7 @@ describe('ChatTurnService', () => {
   });
 
   it('LLM action=update patches existing indicator_hit', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'obs-prior',
       sessionId: SESSION_ID,
@@ -253,7 +253,7 @@ describe('ChatTurnService', () => {
     // with empty anchors/gist or null quote, the prior row's data
     // must be PRESERVED, not blanked. The LLM picked `update` because
     // the turn refines an existing observation, not to wipe it.
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'obs-prior',
       sessionId: SESSION_ID,
@@ -290,7 +290,7 @@ describe('ChatTurnService', () => {
   });
 
   it('LLM action=update with unknown target falls back to append', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({
       action: 'update',
       updateTarget: 'does-not-exist',
@@ -305,7 +305,7 @@ describe('ChatTurnService', () => {
   });
 
   it('filters hallucinated anchors to declared indicator IDs', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({
       action: 'append',
       anchors: ['K1', 'NOT_A_REAL_ID', 'M1', 'PROMPT_INJECTED'],
@@ -318,7 +318,7 @@ describe('ChatTurnService', () => {
   });
 
   it('LLM throw → skip; no observation written; no cascade', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = new Error('LLM 503');
     await invokeHandler({ student: 'x', ai: 'y' });
     expect(await observations.find()).toHaveLength(0);
@@ -326,21 +326,21 @@ describe('ChatTurnService', () => {
   });
 
   it('LLM bad JSON → skip', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = 'this is not json';
     await invokeHandler({ student: 'x', ai: 'y' });
     expect(await observations.find()).toHaveLength(0);
   });
 
   it('LLM unknown action → skip', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({ action: 'invalid_action', anchors: [], gist: '', quote: null });
     await invokeHandler({ student: 'x', ai: 'y' });
     expect(await observations.find()).toHaveLength(0);
   });
 
   it('LLM action=skip → no observation written; no cascade', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({ action: 'skip', anchors: [], gist: '', quote: null });
     await invokeHandler({ student: 'x', ai: 'y' });
     expect(await observations.find()).toHaveLength(0);

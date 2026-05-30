@@ -79,6 +79,20 @@ export interface ObservationDashboardPayload {
   readonly indicatorStats: readonly IndicatorStats[];
 }
 
+/**
+ * Activity-type allowlist for `lastActiveAt`. Same set as
+ * `StatusChangeService.ACTIVITY_TYPES` + `DashboardService.ACTIVITY_TYPES` —
+ * `student_status` mutations bump its `updatedAt`/`createdAt` on every
+ * cascade re-derive, so including it would make the heuristic
+ * `Date.now() - lastActiveAt > IDLE_THRESHOLD` permanently false. M5
+ * pass-1 MF2.
+ */
+const PROJECTOR_ACTIVITY_TYPES: ReadonlySet<string> = new Set([
+  'indicator_hit',
+  'exercise',
+  'progress',
+]);
+
 @Injectable()
 export class ObservationDashboardProjector {
   constructor(
@@ -86,7 +100,10 @@ export class ObservationDashboardProjector {
     private readonly indicators: IndicatorRegistryService,
   ) {}
 
-  async project(sessionId: string): Promise<ObservationDashboardPayload> {
+  async project(
+    solutionId: string,
+    sessionId: string,
+  ): Promise<ObservationDashboardPayload> {
     const rows = await this.observations.getBySession(sessionId);
     const byStudent = new Map<string, Observation[]>();
     for (const obs of rows) {
@@ -118,15 +135,16 @@ export class ObservationDashboardProjector {
       // M5 second pass deletes this projector entirely, so the
       // throwaway compute lives here rather than in DashboardService
       // (which serves the new ontology-native shape).
-      indicatorStats: this.computeIndicatorStats(sessionId, rows),
+      indicatorStats: this.computeIndicatorStats(solutionId, sessionId, rows),
     };
   }
 
   private computeIndicatorStats(
+    solutionId: string,
     sessionId: string,
     rows: readonly Observation[],
   ): IndicatorStats[] {
-    const catalog = this.indicators.getIndicators(sessionId);
+    const catalog = this.indicators.getIndicators(solutionId, sessionId);
     if (catalog.length === 0) return [];
 
     type Acc = { students: Set<string>; latestGist: string; updatedAt: number };
@@ -170,10 +188,18 @@ export class ObservationDashboardProjector {
     entityId: string,
     observations: readonly Observation[],
   ): { log: StudentLog; alert: Alert | null } {
+    // M5 pass-1 MF1: resolve display name from the join lifecycle event
+    // so post-cutover dashboards show "Alice" not "student-abc-123".
+    // Same lookup as DashboardService.resolveStudentName.
+    const studentName = resolveStudentNameFromObservations(entityId, observations);
     const events: StudentEvent[] = [];
     let messageCount = 0;
     let lastActiveAt: number | null = null;
-    let exerciseCorrectRate: number | null = null;
+    // M5 pass-1 SF3: legacy live-lesson averaged all exercise scores;
+    // pre-M5 projector tracked the LAST score (write-overwrites). After
+    // the M5.3b cutover the frontend's "exerciseCorrectRate >= 80"
+    // semantics drift; average matches legacy.
+    const exerciseScores: number[] = [];
     let currentStep: number | null = null;
     let status: string | undefined;
     let alert: Alert | null = null;
@@ -181,7 +207,13 @@ export class ObservationDashboardProjector {
     for (const obs of observations) {
       const data = (obs.data ?? {}) as Record<string, unknown>;
       const timestamp = obs.createdAt;
-      if (lastActiveAt === null || timestamp > lastActiveAt) {
+      // M5 pass-1 MF2: skip non-activity types (especially student_status
+      // which jumps on every cascade re-derive). Matches the M4 MF2 fix
+      // in StatusChangeService.computeMetrics + DashboardService.
+      if (
+        PROJECTOR_ACTIVITY_TYPES.has(obs.type) &&
+        (lastActiveAt === null || timestamp > lastActiveAt)
+      ) {
         lastActiveAt = timestamp;
       }
 
@@ -203,7 +235,7 @@ export class ObservationDashboardProjector {
         }
         case 'exercise': {
           if (typeof data.score === 'number') {
-            exerciseCorrectRate = data.score;
+            exerciseScores.push(data.score);
           }
           if (typeof data.step === 'number') {
             currentStep = data.step;
@@ -256,7 +288,7 @@ export class ObservationDashboardProjector {
                   : 'info';
             alert = {
               timestamp,
-              studentName: entityId, // M3-style placeholder
+              studentName, // M5 pass-1 MF1
               studentId: entityId,
               severity: sev,
               message:
@@ -280,11 +312,17 @@ export class ObservationDashboardProjector {
       }
     }
 
+    const exerciseCorrectRate: number | null =
+      exerciseScores.length > 0
+        ? Math.round(
+            exerciseScores.reduce((a, b) => a + b, 0) / exerciseScores.length,
+          )
+        : null;
+
     return {
       log: {
         studentId: entityId,
-        // M3 placeholder; M4 resolves real student name (see file header).
-        studentName: entityId,
+        studentName,
         events,
         systemMetrics: {
           messageCount,
@@ -297,4 +335,28 @@ export class ObservationDashboardProjector {
       alert,
     };
   }
+}
+
+/**
+ * Resolve a display name from the student's `join` lifecycle observation
+ * (`data.studentName`). Falls back to `entityId` when no join row
+ * exists or the field is missing — same fallback semantics as
+ * `DashboardService.resolveStudentName`. M5 pass-1 MF1.
+ */
+function resolveStudentNameFromObservations(
+  entityId: string,
+  observations: readonly Observation[],
+): string {
+  for (const r of observations) {
+    if (r.type !== 'lifecycle') continue;
+    const data = (r.data ?? {}) as { action?: string; studentName?: string };
+    if (
+      data.action === 'join' &&
+      typeof data.studentName === 'string' &&
+      data.studentName.length > 0
+    ) {
+      return data.studentName;
+    }
+  }
+  return entityId;
 }

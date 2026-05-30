@@ -39,7 +39,7 @@ describe('DashboardService', () => {
   });
 
   it('returns empty students array + empty indicators for an unused session', async () => {
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     expect(payload.sessionId).toBe(SESSION_ID);
     expect(payload.students).toEqual([]);
     expect(payload.indicators).toEqual([]);
@@ -69,7 +69,7 @@ describe('DashboardService', () => {
       createdAt: 2000,
       updatedAt: 2000,
     });
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     expect(payload.students.map((s) => s.studentId)).toEqual(['student-a', 'student-b']);
     expect(payload.students[0].studentName).toBe('Alice');
     expect(payload.students[1].studentName).toBe('Bob');
@@ -87,7 +87,7 @@ describe('DashboardService', () => {
       createdAt: 1000,
       updatedAt: 1000,
     });
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     expect(payload.students[0].studentName).toBe('student-anon');
   });
 
@@ -114,7 +114,7 @@ describe('DashboardService', () => {
       createdAt: 1000,
       updatedAt: 1000,
     });
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     const observations = payload.students[0].observations;
     expect(observations.map((o) => o.id)).toEqual(['early', 'late']);
     expect(observations[1].data).toMatchObject({ anchors: ['K1'], gist: 'g' });
@@ -176,7 +176,7 @@ describe('DashboardService', () => {
       createdAt: 5000,
       updatedAt: 5000,
     });
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     const m = payload.students[0].metrics;
     expect(m.messageCount).toBe(2);
     expect(m.knowledgeCount).toBe(2);
@@ -212,7 +212,7 @@ describe('DashboardService', () => {
       createdAt: 9999,
       updatedAt: 9999,
     });
-    const m = (await service.buildPayload(SESSION_ID)).students[0].metrics;
+    const m = (await service.buildPayload(TENANT, SESSION_ID)).students[0].metrics;
     expect(m.lastActiveAt).toBe(stale);
   });
 
@@ -244,7 +244,7 @@ describe('DashboardService', () => {
       createdAt: 2000,
       updatedAt: 2000,
     });
-    const slice = (await service.buildPayload(SESSION_ID)).students[0];
+    const slice = (await service.buildPayload(TENANT, SESSION_ID)).students[0];
     expect(slice.status).toEqual({
       current: 'struggling',
       previous: 'active',
@@ -266,16 +266,16 @@ describe('DashboardService', () => {
       createdAt: 1000,
       updatedAt: 1000,
     });
-    const slice = (await service.buildPayload(SESSION_ID)).students[0];
+    const slice = (await service.buildPayload(TENANT, SESSION_ID)).students[0];
     expect(slice.status).toBeNull();
   });
 
   it('surfaces session indicators from IndicatorRegistryService', async () => {
-    indicators.setIndicators(SESSION_ID, [
+    indicators.setIndicators(TENANT, SESSION_ID, [
       { id: 'K1', type: 'knowledge', label: 'concept', description: 'desc' },
       { id: 'M1', type: 'misconception', label: 'mix-up', description: 'desc' },
     ]);
-    const payload = await service.buildPayload(SESSION_ID);
+    const payload = await service.buildPayload(TENANT, SESSION_ID);
     expect(payload.indicators).toEqual([
       { id: 'K1', type: 'knowledge', label: 'concept', description: 'desc' },
       { id: 'M1', type: 'misconception', label: 'mix-up', description: 'desc' },

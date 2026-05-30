@@ -160,7 +160,7 @@ export class ChatTurnService implements OnApplicationBootstrap {
     const sessionId = invocation.context.sessionId;
     const solutionId = invocation.context.solutionId;
 
-    const indicators = this.indicators.getIndicators(sessionId);
+    const indicators = this.indicators.getIndicators(solutionId, sessionId);
     if (indicators.length === 0) {
       return ok('no indicators registered; skip');
     }

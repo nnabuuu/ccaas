@@ -21,6 +21,7 @@
  */
 
 import {
+  BadRequestException,
   Body,
   Controller,
   HttpCode,
@@ -33,7 +34,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Auth } from '../../auth/decorators';
+import { Auth, TenantId } from '../../auth/decorators';
 import {
   IndicatorRegistryService,
   type IndicatorDef,
@@ -58,14 +59,24 @@ export class IndicatorIngestController {
   @ApiResponse({ status: 400, description: '校验失败 / Validation failed' })
   async putIndicators(
     @Param('sessionId') sessionId: string,
+    @TenantId() solutionId: string | undefined,
     @Body() body: PutIndicatorsDto,
   ): Promise<void> {
+    // M5 pass-1 MF3: require a tenant binding. Without this, any
+    // `chat`-scoped key from tenant A could clobber tenant B's
+    // catalog (IndicatorRegistry is keyed by `${solutionId}:${sessionId}`).
+    // Matches EventIngestController:103-114.
+    if (!solutionId) {
+      throw new BadRequestException(
+        'solutionId not resolved from auth context; PUT indicators requires a tenant-bound API key',
+      );
+    }
     const indicators: IndicatorDef[] = body.indicators.map((i) => ({
       id: i.id,
       type: i.type,
       label: i.label,
       description: i.description,
     }));
-    this.indicators.setIndicators(sessionId, indicators);
+    this.indicators.setIndicators(solutionId, sessionId, indicators);
   }
 }
