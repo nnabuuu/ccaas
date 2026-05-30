@@ -10,7 +10,12 @@
 
 export type { LocalizedString } from './localized-string.js';
 export type { PropertyMeta, PropertyMetaMap } from './property-meta.js';
-export { objectRef, getObjectRefTarget } from './zod-helpers.js';
+export {
+  objectRef,
+  getObjectRefTarget,
+  objectSetRef,
+  getObjectSetRefTarget,
+} from './zod-helpers.js';
 export type { LinkDef, LinkCardinality } from './link.js';
 export type {
   ActionDef,
