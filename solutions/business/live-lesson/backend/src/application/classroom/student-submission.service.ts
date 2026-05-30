@@ -9,6 +9,7 @@ import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
+import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 import type { GradeResult, RichContentQuizAnswerKey } from '../../schemas';
 import { getCachedTaskMap } from './task-map-cache';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../../schemas/classroom';
@@ -31,6 +32,7 @@ export class StudentSubmissionService {
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
+    private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
   async join(session: ClassroomSessionRecord, name: string): Promise<JoinResponse> {
@@ -46,6 +48,13 @@ export class StudentSubmissionService {
     });
     this.stateCache.markDirty(session.id);
 
+    // M2 dual-write:
+    //   1) legacy observer-engine path — still produces dashboard
+    //      observation rows on the live-lesson side. M3 retires this.
+    //   2) workflow-outbox path — enqueues to ontology_event_outbox; the
+    //      drain worker pushes to platform's POST /workflow/.../events
+    //      where the JoinTrigger fires + record_lifecycle_observation
+    //      writes the platform-side row. dedup via eventId.
     this.engine.dispatch({
       type: 'student_join',
       sessionId: session.id,
@@ -53,6 +62,23 @@ export class StudentSubmissionService {
       solutionId: session.lessonId,
       payload: { studentName: saved.name },
     }).catch(err => this.logger.error(`Observer dispatch student_join failed: ${err}`));
+
+    this.workflowDispatch
+      .pushEvent({
+        sessionId: session.id,
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: saved.id,
+        payload: {
+          type: 'student_joined',
+          studentId: saved.id,
+          classroomCode: session.code,
+        },
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Workflow outbox enqueue failed: ${msg}`);
+      });
 
     return { studentId: saved.id, name: saved.name, lessonId: session.lessonId, _broadcast: true };
   }
