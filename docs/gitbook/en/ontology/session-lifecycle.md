@@ -95,6 +95,72 @@ The platform has two clear APIs serving different purposes:
 
 **Why two:** the engine teardown runs in-process and trusts sessionIds to be globally unique (UUIDs); the broad clear is cheaper. The external HTTP DELETE crosses the auth boundary, so it must be tenant-scoped.
 
+### Both paths visualized
+
+Example state of the in-memory `IndicatorRegistry.byKey` map (`\x1f` is ASCII Unit Separator — avoids collisions if a slug ever contains whitespace, see [Indicator catalog](indicator-catalog.md)):
+
+```
+   IndicatorRegistry.byKey  (in-memory Map<string, IndicatorDef[]>)
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ key                        │ value                        │
+   ├────────────────────────────┼──────────────────────────────┤
+   │ "tenant-A\x1fsess-1"       │ [{id:K1,...}, {id:M2,...}]    │
+   │ "tenant-B\x1fsess-1"       │ [{id:K3,...}]                │
+   │ "tenant-A\x1fsess-2"       │ [{id:K5,...}]                │
+   └────────────────────────────┴──────────────────────────────┘
+
+
+Path 1 ── Engine teardown (broad, cross-tenant)
+
+   engine.clearSession("sess-1")
+        │
+        ├─ sessionQueues.delete("sess-1")          [drain queue]
+        │
+        └─ indicators.clearSession("sess-1")
+             │
+             ▼  for each key:
+                if key.endsWith("\x1fsess-1") { delete }
+
+   Resulting map:
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ "tenant-A\x1fsess-1"       │  ✗  DELETED                  │
+   │ "tenant-B\x1fsess-1"       │  ✗  DELETED  ◀── cross-tenant │
+   │ "tenant-A\x1fsess-2"       │  ✓  kept                     │
+   └────────────────────────────┴──────────────────────────────┘
+   (Safe under the UUID-uniqueness assumption; this path doesn't
+    cross an auth boundary.)
+
+
+Path 2 ── External DELETE (tenant-scoped, M6 pass-2 SF3)
+
+   DELETE /api/v1/workflow/sessions/sess-1  Bearer <tenant-A's chat key>
+        │
+        │ @TenantId() → "tenant-A"           [400 if missing]
+        │
+        ▼
+   SessionLifecycleController.clearSession("sess-1", "tenant-A")
+        │
+        ├─ engine.clearSessionQueue("sess-1")            [drain queue only]
+        │
+        └─ indicators.clearTenantSession("tenant-A", "sess-1")
+             │
+             ▼  Map.delete("tenant-A" + "\x1f" + "sess-1")    [O(1) direct]
+
+   Resulting map:
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ "tenant-A\x1fsess-1"       │  ✗  DELETED                  │
+   │ "tenant-B\x1fsess-1"       │  ✓  kept  ◀── tenant isolated │
+   │ "tenant-A\x1fsess-2"       │  ✓  kept                     │
+   └────────────────────────────┴──────────────────────────────┘
+```
+
+**The principle in one sentence:** the auth entry point determines the teardown scope.
+
+| Entry | Auth gate | Scope | Clear APIs called |
+|---|---|---|---|
+| Engine-internal teardown | In-process, trusted | All tenants for sessionId | `clearSession` |
+| External HTTP DELETE | `@TenantId()` resolves solutionId | Only `(solutionId, sessionId)` tuple | `clearSessionQueue` + `clearTenantSession` |
+
 ## Race condition: indicator push in flight + chat_turn already arrives
 
 Immediately after session start:
