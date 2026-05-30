@@ -39,6 +39,8 @@ import { EventIngestController } from './event-ingest/event-ingest.controller';
 import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
 import { ExerciseObservationService } from './handlers/exercise/exercise-observation.service';
 import { ProgressObservationService } from './handlers/progress/progress-observation.service';
+import { ObservationDashboardProjector } from './handlers/dashboard/observation-dashboard.projector';
+import { ObservationDashboardController } from './handlers/dashboard/observation-dashboard.controller';
 
 @Module({
   imports: [
@@ -47,7 +49,7 @@ import { ProgressObservationService } from './handlers/progress/progress-observa
     DiscoveryModule,
     TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
   ],
-  controllers: [EventIngestController],
+  controllers: [EventIngestController, ObservationDashboardController],
   providers: [
     WorkflowRegistry,
     WorkflowMetricsService,
@@ -59,6 +61,8 @@ import { ProgressObservationService } from './handlers/progress/progress-observa
     // Phase 5 M3: simple-handler triggers + actions.
     ExerciseObservationService,
     ProgressObservationService,
+    // Phase 5 M3: Path B projector — exposed via ObservationDashboardController.
+    ObservationDashboardProjector,
   ],
   exports: [
     WorkflowEngineService,
