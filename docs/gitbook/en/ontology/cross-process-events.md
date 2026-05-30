@@ -57,30 +57,89 @@ The caller handles each arm (`accepted` / `duplicate` / `disabled` → mark deli
 
 ## Outbox + Drain Worker pattern (recommended)
 
-Events cannot be pushed synchronously on the request thread — a brief platform outage would drop them. Live-lesson uses this pattern:
+Events cannot be pushed synchronously on the request thread — a brief platform outage would drop them. Live-lesson uses the classic transactional outbox pattern: atomically write the event row to a local `ontology_event_outbox` table, and a separate drain worker periodically picks up the pending rows, calls `WorkflowClient.pushEvent`, and advances row state based on the outcome.
+
+### Row state machine
 
 ```
-Application service (e.g. ClassroomService.join)
-  ↓ enqueue
-WorkflowOutboxRepository (TypeORM table ontology_event_outbox)
-  ↓ persisted
-WorkflowOutboxDrainService (setInterval 2s)
-  ↓ findPendingDue(now, 50)
-  ↓ for each row:
-       client.pushEvent → outcome
-       handleOutcome:
-         accepted/duplicate/disabled → markDelivered
-         failed retryable + nextAttempts < POISON_AFTER → markRetry + exp backoff
-         failed terminal OR > POISON_AFTER → markPoisoned
+   Application service
+   (e.g. ClassroomService.join)
+            │
+            │ workflowDispatch.pushEvent({eventId, payload, ...})
+            │ outbox.enqueue(row)
+            ▼
+   ┌──────────────────────┐
+   │  pending             │ ◀── freshly inserted; nextAttemptAtEpoch = now
+   │  attempts = 0        │
+   └──────────┬───────────┘
+              │ drain tick (default every 2s)
+              │ findPendingDue(now, batch=50)
+              ▼
+   ┌──────────────────────┐
+   │  in-flight           │ ◀── drain is calling client.pushEvent
+   └──┬───────┬───────┬───┘
+      │       │       │
+      │       │       │ outcome.status =
+      │       │       │   'failed' & retryable=false
+      │       │       │   OR attempts ≥ POISON_AFTER (8)
+      │       │       └──────────────────────┐
+      │       │                              │
+      │       │ outcome.status =             │
+      │       │   'failed' & retryable=true  │
+      │       │   & attempts < POISON_AFTER  │
+      │       │                              │
+      │       │ markRetry:                   │
+      │       │   attempts++                 │
+      │       │   nextAttemptAtEpoch =       │
+      │       │     now + backoff_sec(N)     │
+      │       │                              │
+      │       ▼                              │
+      │ ┌──────────────────────┐             │
+      │ │  retry (= pending +  │             │
+      │ │   future due time)   │             │
+      │ │  attempts = N        │             │
+      │ └──────────┬───────────┘             │
+      │            │  ↺ when now >= nextAttemptAtEpoch │
+      │            │  drain re-picks via findPendingDue
+      │            ▼                              │
+      │  (back to in-flight)                      │
+      │                                            │
+      │ outcome.status ∈                           ▼
+      │   {accepted, duplicate, disabled}    ┌────────────┐
+      │ markDelivered                       │  poisoned   │
+      ▼                                      │  (terminal; │
+   ┌──────────────────────┐                  │ ops review) │
+   │  delivered           │                  └────────────┘
+   │  (terminal)          │
+   └──────────────────────┘
 ```
 
-Reference:
-- `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-outbox-drain.service.ts`
-- `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-dispatch.service.ts`
+### Backoff progression
 
-Backoff schedule: attempt N fails → retry after `min(2^(2N-1), 600)` seconds; poison after 8 attempts (~10 minutes).
+| Nth failure | Wait seconds `min(2^(2N-1), 600)` | Approximate when |
+|---|---|---|
+| 1 | 2s | immediate retry |
+| 2 | 8s | by ~10s in |
+| 3 | 32s | by ~42s in |
+| 4 | 128s | ~3 minutes |
+| 5 | 512s | ~12 minutes |
+| 6–7 | 600s (capped) | ~22 / ~32 minutes |
+| 8 | — | **poison** (give up after ~10+ minutes) |
 
-Re-entrancy guard: if a drain tick is in flight, the next interval skips (prevents setInterval overlap + multi-write on the same row).
+A poisoned row never gets re-fetched by drain; ops review `lastError` and decide whether to replay or drop.
+
+### Re-entrancy + ordering guarantees
+
+- **Re-entrancy guard:** when a drain tick is in flight, the next setInterval firing is skipped (the `tickInFlight` flag). Prevents setInterval-overlap and same-row races.
+- **Ordering:** within a drain tick the rows are processed sequentially (one row's push completes before the next begins). Same-session events come out in createdAt-ASC order, so an upstream event always reaches the platform before its cascade downstream.
+- **eventId dedup:** caller supplies the eventId (typically a UUID); pushing the same eventId twice returns `dropped: 'duplicate'` from the platform and the outbox marks delivered. Mid-restart races cannot double-fire triggers.
+
+### Key files
+
+- `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-dispatch.service.ts` — application-layer enqueue API
+- `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-outbox.repository.ts` — TypeORM persistence + row state transitions
+- `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-outbox-drain.service.ts` — drain worker + outcome → state routing
+- Env: `LIVE_LESSON_WORKFLOW_DISPATCH=disabled` turns the outbox off entirely; `LIVE_LESSON_WORKFLOW_DRAIN_INTERVAL_MS` tunes the tick interval
 
 ## Platform ingest endpoint: POST `/api/v1/workflow/sessions/:sessionId/events`
 
