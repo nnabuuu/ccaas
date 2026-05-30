@@ -4,7 +4,7 @@
  * endpoint after M5.2a deleted the legacy
  * `ObservationDashboardController` + `/observation-dashboard` route.
  * For the rationale behind the cutover (and what the legacy 4-array
- * shape was) see the History section of
+ * shape was) see § "Legacy shape" of
  * `docs/gitbook/zh/ontology/dashboard-contract.md` +
  * `docs/ontology/PROGRESS.md` M5 row.
  *

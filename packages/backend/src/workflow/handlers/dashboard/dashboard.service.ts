@@ -3,12 +3,11 @@
  * `DashboardPayload` from observation rows + the session indicator
  * catalog.
  *
- * Producer for `GET /api/v1/workflow/sessions/:sessionId/dashboard`
- * (DashboardController). Lives alongside the M3
- * `ObservationDashboardProjector` (legacy `{logs, alerts,
- * indicatorStats}` shape) during the M5 transition — both endpoints
- * serve the same observation rows, just two wire shapes. The M5
- * second pass (frontend rewrite) deletes the projector + controller.
+ * Sole producer for `GET /api/v1/workflow/sessions/:sessionId/dashboard`
+ * after M5.2a deleted the legacy `ObservationDashboardProjector` +
+ * `ObservationDashboardController` (the `{logs, alerts, indicatorStats}`
+ * 4-array shape lives on transitionally inside live-lesson's
+ * `DashboardPayloadAdapter` until the M5.2b frontend rewrite).
  *
  * Shape rationale lives next to the types
  * (`dashboard-payload.types.ts`); this file is the assembly logic.

@@ -3,7 +3,7 @@
  * wire shape emitted by the sole dashboard endpoint
  * `GET /api/v1/workflow/sessions/:sessionId/dashboard` (the legacy
  * M3 `ObservationDashboardProjector` + `/observation-dashboard` route
- * were deleted in M5.2a; see the History section of
+ * were deleted in M5.2a; see § "Legacy shape" of
  * `docs/gitbook/zh/ontology/dashboard-contract.md`).
  *
  * ## Design notes
