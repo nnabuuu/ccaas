@@ -41,8 +41,6 @@ import { SessionLifecycleController } from './session-lifecycle/session-lifecycl
 import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
 import { ExerciseObservationService } from './handlers/exercise/exercise-observation.service';
 import { ProgressObservationService } from './handlers/progress/progress-observation.service';
-import { ObservationDashboardProjector } from './handlers/dashboard/observation-dashboard.projector';
-import { ObservationDashboardController } from './handlers/dashboard/observation-dashboard.controller';
 import { DashboardService } from './handlers/dashboard/dashboard.service';
 import { DashboardController } from './handlers/dashboard/dashboard.controller';
 import { OpenAiLlmGateway } from './llm/openai-llm-gateway';
@@ -62,7 +60,6 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     EventIngestController,
     IndicatorIngestController,
     SessionLifecycleController,
-    ObservationDashboardController,
     DashboardController,
   ],
   providers: [
@@ -76,9 +73,10 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     // Phase 5 M3: simple-handler triggers + actions.
     ExerciseObservationService,
     ProgressObservationService,
-    // Phase 5 M3: Path B projector — exposed via ObservationDashboardController.
-    ObservationDashboardProjector,
     // Phase 5 M5.2: ontology-native dashboard service + controller.
+    // (Legacy `ObservationDashboardProjector` + its controller deleted
+    // in M5.2a — live-lesson now derives the legacy shape from the
+    // new payload via `DashboardPayloadAdapter`.)
     DashboardService,
     // Phase 5 M4: LLM gateway + indicator registry + LLM handlers.
     OpenAiLlmGateway,

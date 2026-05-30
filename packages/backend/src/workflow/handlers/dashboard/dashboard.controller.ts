@@ -1,17 +1,12 @@
 /**
  * `DashboardController` — phase 5 M5.2. Exposes
- * `DashboardService.buildPayload` over HTTP.
+ * `DashboardService.buildPayload` over HTTP. **Sole** dashboard
+ * endpoint after M5.2a deleted the legacy
+ * `ObservationDashboardController` + `/observation-dashboard` route.
  *
  * Endpoint: GET /api/v1/workflow/sessions/:sessionId/dashboard
  *
- * Parallel to the M3 `ObservationDashboardController` (legacy
- * `{logs, alerts, indicatorStats}` shape, served at
- * `/observation-dashboard`). Both live concurrently during the M5
- * transition; the projector + its controller get deleted in the
- * M5 second pass (frontend rewrite) per the phase-5 plan.
- *
- * Auth: `@Auth('chat')` matches the projector + ingest endpoint
- * convention.
+ * Auth: `@Auth('chat')` matches the ingest endpoint convention.
  */
 
 import {
@@ -42,7 +37,7 @@ export class DashboardController {
   @ApiOperation({
     summary: '获取教师 dashboard（ontology-native shape）/ Get dashboard (ontology-native shape)',
     description:
-      'Phase 5 M5.2: returns the ontology-native `DashboardPayload` (students[] with linked status + metrics + raw observations + session indicator catalog). M5 second pass migrates the frontend to this shape + deletes the legacy `/observation-dashboard` endpoint.',
+      'Returns the ontology-native `DashboardPayload` (students[] with linked status + metrics + raw observations + session indicator catalog). Sole dashboard endpoint after M5.2a deleted the legacy `/observation-dashboard` route.',
   })
   @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
   @ApiResponse({ status: 200, description: 'Dashboard payload' })
