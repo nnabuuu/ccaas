@@ -8,7 +8,6 @@ import { GradingService } from '../exercise/grading.service';
 import { ExerciseTypeRegistry } from '../exercise/exercise-type-registry';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
-import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 import type { GradeResult, RichContentQuizAnswerKey } from '../../schemas';
 import { getCachedTaskMap } from './task-map-cache';
@@ -31,7 +30,6 @@ export class StudentSubmissionService {
     private readonly registry: ExerciseTypeRegistry,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
-    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
     private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
@@ -48,21 +46,10 @@ export class StudentSubmissionService {
     });
     this.stateCache.markDirty(session.id);
 
-    // M2 dual-write:
-    //   1) legacy observer-engine path — still produces dashboard
-    //      observation rows on the live-lesson side. M3 retires this.
-    //   2) workflow-outbox path — enqueues to ontology_event_outbox; the
-    //      drain worker pushes to platform's POST /workflow/.../events
-    //      where the JoinTrigger fires + record_lifecycle_observation
-    //      writes the platform-side row. dedup via eventId.
-    this.engine.dispatch({
-      type: 'student_join',
-      sessionId: session.id,
-      entityId: saved.id,
-      solutionId: session.lessonId,
-      payload: { studentName: saved.name },
-    }).catch(err => this.logger.error(`Observer dispatch student_join failed: ${err}`));
-
+    // Workflow-outbox path — enqueues to ontology_event_outbox; the
+    // drain worker pushes to platform's POST /workflow/.../events
+    // where the JoinTrigger fires + record_lifecycle_observation
+    // writes the platform-side row. dedup via eventId.
     this.workflowDispatch
       .pushEvent({
         sessionId: session.id,
@@ -392,14 +379,6 @@ export class StudentSubmissionService {
     session: ClassroomSessionRecord, studentId: string, step: number,
     score: GradeResult | null, data: Record<string, unknown>,
   ): void {
-    // M3 dual-write — exercise submission
-    this.engine.dispatch({
-      type: 'exercise_result',
-      sessionId: session.id,
-      entityId: studentId,
-      solutionId: session.lessonId,
-      payload: { step, score: score?.total ?? null },
-    }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
     this.workflowDispatch.pushEvent({
       sessionId: session.id,
       manifestName: 'LessonSession',
@@ -416,18 +395,11 @@ export class StudentSubmissionService {
       this.logger.error(`Workflow outbox enqueue (student_submitted) failed: ${msg}`);
     });
 
-    // M3 dual-write — step complete
+    // step complete signal (workflow-only)
     getCachedTaskMap(session.lessonId, this.lessonRepo).then(taskMap => {
       const taskNum = taskMap.stepToTask[step];
       return this.studentRepo.findBySessionAndId(session.id, studentId).then(s => {
         if (s && taskNum !== undefined && s.currentTask > taskNum) {
-          this.engine.dispatch({
-            type: 'step_complete',
-            sessionId: session.id,
-            entityId: studentId,
-            solutionId: session.lessonId,
-            payload: { step, taskNum, nextTask: s.currentTask },
-          }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
           this.workflowDispatch.pushEvent({
             sessionId: session.id,
             manifestName: 'LessonSession',
@@ -446,17 +418,14 @@ export class StudentSubmissionService {
           });
         }
       });
-    }).catch(err => this.logger.error(`Observer dispatch step_complete pipeline failed: ${err}`));
+    }).catch(err => this.logger.error(`step_complete pipeline failed: ${err}`));
 
     const exerciseCorrectRate = score?.total ?? 0;
-    // M4 dual-write — chat_turn (synthetic exercise summary turn)
-    this.engine.dispatch({
-      type: 'chat_turn',
-      sessionId: session.id,
-      entityId: studentId,
-      solutionId: session.lessonId,
-      payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
-    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+    // Synthetic chat_turn for the exercise summary. M4 pass-2 SF3-p2
+    // flagged this as a cost concern (one LLM call per submission on
+    // top of legitimate dialogue) — kept here because dropping it
+    // would lose the exercise content from the indicator classifier;
+    // revisit in a follow-up.
     this.workflowDispatch.pushEvent({
       sessionId: session.id,
       manifestName: 'LessonSession',

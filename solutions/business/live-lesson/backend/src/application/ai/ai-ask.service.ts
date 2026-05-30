@@ -8,7 +8,6 @@ import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
-import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
 
 @Injectable()
@@ -27,7 +26,6 @@ export class AiAskService {
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
-    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
     private readonly workflowDispatch: WorkflowDispatchService,
   ) {}
 
@@ -82,15 +80,6 @@ export class AiAskService {
         aiContent: parsed.answer,
       });
 
-      // M3 dual-write — continue_chat_turn (pass-1 review M2: this call
-      // was claimed in the m3 commit but the edit didn't land; here now).
-      this.engine.dispatch({
-        type: 'continue_chat_turn',
-        sessionId: session.id,
-        entityId: studentId,
-        solutionId: session.lessonId,
-        payload: { step, messageCount: messages.length },
-      }).catch(err => this.logger.error(`Observer dispatch continue_chat_turn failed: ${err}`));
       this.workflowDispatch.pushEvent({
         sessionId: session.id,
         manifestName: 'LessonSession',
@@ -103,14 +92,6 @@ export class AiAskService {
       });
     }
 
-    // M4 dual-write — chat_turn
-    this.engine.dispatch({
-      type: 'chat_turn',
-      sessionId: session.id,
-      entityId: studentId,
-      solutionId: session.lessonId,
-      payload: { student: question, ai: parsed.answer, step },
-    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
     this.workflowDispatch.pushEvent({
       sessionId: session.id,
       manifestName: 'LessonSession',
