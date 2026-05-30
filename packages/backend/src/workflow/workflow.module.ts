@@ -41,6 +41,8 @@ import { ExerciseObservationService } from './handlers/exercise/exercise-observa
 import { ProgressObservationService } from './handlers/progress/progress-observation.service';
 import { ObservationDashboardProjector } from './handlers/dashboard/observation-dashboard.projector';
 import { ObservationDashboardController } from './handlers/dashboard/observation-dashboard.controller';
+import { DashboardService } from './handlers/dashboard/dashboard.service';
+import { DashboardController } from './handlers/dashboard/dashboard.controller';
 import { OpenAiLlmGateway } from './llm/openai-llm-gateway';
 import { LLM_GATEWAY } from './llm/llm-gateway';
 import { IndicatorRegistryService } from './llm/indicator-registry.service';
@@ -54,7 +56,11 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     DiscoveryModule,
     TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
   ],
-  controllers: [EventIngestController, ObservationDashboardController],
+  controllers: [
+    EventIngestController,
+    ObservationDashboardController,
+    DashboardController,
+  ],
   providers: [
     WorkflowRegistry,
     WorkflowMetricsService,
@@ -68,6 +74,8 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
     ProgressObservationService,
     // Phase 5 M3: Path B projector — exposed via ObservationDashboardController.
     ObservationDashboardProjector,
+    // Phase 5 M5.2: ontology-native dashboard service + controller.
+    DashboardService,
     // Phase 5 M4: LLM gateway + indicator registry + LLM handlers.
     OpenAiLlmGateway,
     { provide: LLM_GATEWAY, useExisting: OpenAiLlmGateway },
