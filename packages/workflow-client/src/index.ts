@@ -85,13 +85,10 @@ export type WorkflowClearSessionOutcome =
     };
 
 /**
- * The legacy `{logs, alerts, indicatorStats}` dashboard shape served by
- * the platform's `ObservationDashboardController`. Typed as `unknown`
- * here because the package stays framework-free + framework-agnostic;
- * the live-lesson outbox wrapper narrows to the concrete shape on
- * receipt. M5 second pass deletes this endpoint; until then, the live-
- * lesson backend HTTP-fetches via this method to source the dashboard
- * from the platform's observation table.
+ * Outcome of `WorkflowClient.getDashboard`. The platform returns the
+ * ontology-native `DashboardPayload` shape; the client stays
+ * framework-free so `payload` is typed as `unknown` here and consumers
+ * narrow it on receipt (live-lesson uses `DashboardPayloadAdapter`).
  */
 export type WorkflowDashboardOutcome =
   | { readonly status: 'ok'; readonly payload: unknown }
@@ -361,12 +358,12 @@ export class WorkflowClient {
   }
 
   /**
-   * GET the legacy `{logs, alerts, indicatorStats}` dashboard for the
-   * session from the platform's `/observation-dashboard` endpoint.
-   * Cross-process source of truth for the M5.3b live-lesson cutover.
-   * Returns `unknown` payload; callers narrow with their own schema.
+   * GET the ontology-native `DashboardPayload` for the session from
+   * the platform's `/dashboard` endpoint (M5.2 producer). Returns
+   * `unknown` payload; callers narrow with their own schema (e.g.
+   * live-lesson's `DashboardPayloadAdapter`).
    */
-  async getObservationDashboard(
+  async getDashboard(
     sessionId: string,
   ): Promise<WorkflowDashboardOutcome> {
     if (!sessionId || typeof sessionId !== 'string') {
@@ -376,7 +373,7 @@ export class WorkflowClient {
         retryable: false,
       };
     }
-    const url = `${this.baseUrl}/api/v1/workflow/sessions/${encodeURIComponent(sessionId)}/observation-dashboard`;
+    const url = `${this.baseUrl}/api/v1/workflow/sessions/${encodeURIComponent(sessionId)}/dashboard`;
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
     };
@@ -423,6 +420,7 @@ export class WorkflowClient {
       if (timer) clearTimeout(timer);
     }
   }
+
 }
 
 /**
