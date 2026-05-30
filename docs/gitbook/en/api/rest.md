@@ -1390,7 +1390,6 @@ Phase 5 introduced a declarative workflow layer. A Solution uses this group of e
 | `POST` | `/api/v1/workflow/sessions/:sessionId/events` | Cross-process event ingest (dedup via eventId) |
 | `PUT` | `/api/v1/workflow/sessions/:sessionId/indicators` | Register session indicator catalog |
 | `DELETE` | `/api/v1/workflow/sessions/:sessionId` | Session-end teardown (frees indicators + engine queue) |
-| `GET` | `/api/v1/workflow/sessions/:sessionId/observation-dashboard` | Dashboard (legacy projector shape) |
 | `GET` | `/api/v1/workflow/sessions/:sessionId/dashboard` | Dashboard (new ontology-native shape) |
 
 All endpoints require `Authorization: Bearer <chat-scope key>` and resolve a solutionId via `@TenantId()` (400 if missing).

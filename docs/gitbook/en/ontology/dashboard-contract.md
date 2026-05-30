@@ -1,47 +1,84 @@
 # Dashboard Contract
 
-> Two dashboard endpoints, two wire shapes: the legacy projector and the new ontology-native. This page tells you what each returns, when to use which, and how the transition closes out.
+> One dashboard endpoint, one wire shape. Pre-M5.2a the page documented two endpoints coexisting (legacy projector + new ontology-native); M5.2a deleted the legacy projector. This page describes the current `/dashboard` endpoint's `DashboardPayload` and the Solution-side adapter live-lesson uses until the M5.2b frontend rewrite lands.
 
-## Two endpoints coexist
+## Current endpoint
 
-| Endpoint | Vintage | Shape | Status |
-|---|---|---|---|
-| `GET /api/v1/workflow/sessions/:id/observation-dashboard` | M3 / live | `{logs, alerts, indicatorStats, indicators}` (legacy) | live-lesson frontend consumes this |
-| `GET /api/v1/workflow/sessions/:id/dashboard` | M5.2 / awaiting consumer | `DashboardPayload` (student-centric) | Awaits M5 second-pass frontend rewrite |
+| Endpoint | Method | Shape |
+|---|---|---|
+| `GET /api/v1/workflow/sessions/:id/dashboard` | GET | `DashboardPayload` (student-centric) |
 
-Both endpoints read from the same `observations` table + the same IndicatorRegistry; only the wire shape differs.
+Reads from the same `observations` table + the same `IndicatorRegistry`, tenant-isolated by `(solutionId, sessionId)`.
 
-## Legacy shape: `ObservationDashboardPayload`
+> **History:** M3 shipped the legacy `/observation-dashboard` endpoint + `ObservationDashboardProjector` emitting `{logs, alerts, indicatorStats, indicators}`. M5.2 added the new `/dashboard` endpoint. M5.2a deleted the legacy; live-lesson's frontend still consumes the 4-array shape, derived locally by `DashboardPayloadAdapter` (deleted in M5.2b).
+
+## Solution-side adapter (transitional, M5.2a → M5.2b)
+
+live-lesson's `WorkflowDashboardFetchService` fetches the new endpoint, then routes through `DashboardPayloadAdapter`:
+
+```typescript
+client.getDashboard(sessionId)
+  → outcome.payload (unknown)
+  → parseDashboardPayload(payload)  → DashboardPayload | null
+  → adaptDashboardPayload(payload)  → { logs, alerts, indicatorStats, indicators }
+  → returned to the frontend via /api/classroom/:code/state
+```
+
+The adapter (`solutions/business/live-lesson/backend/src/adapters/workflow-outbox/dashboard-payload-adapter.ts`) does four things:
+
+1. **Derives `logs[]`** — flattens `students[].observations[]` into legacy `StudentLog.events[]`, rendering the Chinese gist per type
+2. **Derives `alerts[]`** — filters students whose `status.current ∈ {stuck, struggling, idle}` into single Alert rows
+3. **Groups `indicatorStats[]`** — aggregates all `indicator_hit` rows by anchor
+4. **Filters `indicators[]`** — narrows the platform's open `type: string` to the `'knowledge' | 'misconception'` union (defensive against future schema evolution)
+
+**Gist rendering table** (lifted from the deleted `ObservationQueryService` — restores the synthesis lost when M6.3 deleted that service):
+
+| obs.type | data.action | Template |
+|---|---|---|
+| `lifecycle` | `join` | `${studentName} 加入课堂` |
+| `lifecycle` | `leave` | `${studentName} 离开课堂` |
+| `lifecycle` | `translate_request` | `查词：${data.text}` |
+| `lifecycle` | `discuss_complete` | `完成讨论` |
+| `lifecycle` | `continue_chat_turn` | `继续追问` |
+| `exercise` | n/a | `提交 Step ${step} 答案，得分 ${score}%` |
+| `progress` | n/a | `完成 Task ${taskNum}，进入 Task ${nextTask}` |
+| `indicator_hit` | n/a | `data.gist` (LLM-generated, pass-through) |
+| `student_status` | — | **NOT in events**, drives alert only |
+| any other | — | `obs.type` (fallback; guarantees no `undefined`) |
+
+After the M5.2b frontend rewrite this file + its spec get deleted entirely.
+
+## Legacy shape (historical, used only inside the adapter)
+
+The wire shape pre-M5.2a. After deleting `ObservationDashboardProjector`, this shape only lives in the `state.observation` field between live-lesson backend and frontend (derived by the adapter).
 
 ```typescript
 interface ObservationDashboardPayload {
   logs: StudentLog[];                  // one row per student: event timeline + system metrics
   alerts: Alert[];                     // flat alert list (severity: info/warn/urgent)
-  indicatorStats: IndicatorStats[];    // one row per indicator: hit students, latest gist, updatedAt
-  indicators: IndicatorCatalogEntry[]; // session indicator catalog (added M6.3)
+  indicatorStats: IndicatorStats[];    // one row per indicator: student count, latest gist, updatedAt
+  indicators: IndicatorCatalogEntry[]; // session indicator catalog
 }
 
 interface StudentLog {
   studentId: string;
-  studentName: string;                 // resolved from join lifecycle (fixed in M5 pass-1 MF1)
+  studentName: string;                 // resolved from join lifecycle
   events: StudentEvent[];
   systemMetrics: {
     messageCount: number;
-    lastActiveAt: number | null;       // ACTIVITY_TYPES + lifecycle fallback (M5 pass-2 S2)
+    lastActiveAt: number | null;
     exerciseCorrectRate: number | null;
     currentStep: number | null;
   };
-  status?: string;                     // status field from the M4 student_status row
+  status?: string;
 }
 ```
 
-Produced by `ObservationDashboardProjector.project(solutionId, sessionId)` (tenant arg required since M5 pass-1 MF3).
+**Why `alerts` is a flat array (instead of per-student filter):** the legacy frontend expects the flat alert list for the banner at the top of the teacher panel. The adapter emits the alert alongside `adaptDashboardPayload`'s per-student loop so the frontend doesn't re-filter.
 
-**Why both `alerts` and `StudentLog.status`:** the legacy frontend expects a flat alert list (banner at the top of the teacher panel). The projector emits the alert alongside `buildStudentLog` so the frontend doesn't re-filter.
+**Why `indicatorStats` is its own field:** the legacy frontend expects per-indicator aggregates; pre-computing them in the adapter avoids forcing the frontend to groupBy `indicator_hit` rows.
 
-**Why `indicatorStats` is its own field:** the legacy frontend expects per-indicator aggregates (how many students hit each indicator). Having the projector pre-compute it avoids the frontend re-groupBy on `indicator_hit` rows.
-
-## New shape: `DashboardPayload`
+## DashboardPayload shape (current wire)
 
 ```typescript
 interface DashboardPayload {
@@ -143,13 +180,12 @@ const indicators     = payload.indicators;
 
 ## When to use which
 
-- **Today / live-lesson in prod:** legacy. `WorkflowDashboardFetchService` calls `WorkflowClient.getObservationDashboard`; the 3 teacher tabs consume directly.
-- **After M5 second pass:** rewrite the 3 teacher tabs against `DashboardPayload`; delete `ObservationDashboardProjector` + the legacy endpoint. Not scheduled yet; tracked as outstanding in PROGRESS.md.
-- **New Solutions:** use the new shape; legacy lives only for live-lesson migration continuity.
+- **New Solutions:** consume the new `/dashboard` endpoint and render `DashboardPayload` directly in your own frontend.
+- **live-lesson (current state):** backend `WorkflowDashboardFetchService` fetches the new endpoint; `DashboardPayloadAdapter` derives the legacy 4-array shape for the existing frontend. **After M5.2b** the adapter + this transitional shape are both deleted.
 
-## Metric algorithm (three implementations must agree)
+## Metric algorithm (two implementations must agree)
 
-`DashboardService.computeMetrics` + `ObservationDashboardProjector.buildStudentLog` + `StatusChangeService.computeMetrics` all compute metrics. **They must stay in sync** or the dashboard view and status derivation drift.
+`DashboardService.computeMetrics` + `StatusChangeService.computeMetrics` both compute metrics. **They must stay in sync** or the dashboard view and status derivation drift. (Pre-M5.2a `ObservationDashboardProjector` was the third site; deleting it left two.)
 
 - `messageCount` = count of indicator_hit rows
 - `misconceptionCount` = sum of `anchors.filter(a => a.startsWith('M')).length` over indicator_hit
@@ -157,15 +193,14 @@ const indicators     = payload.indicators;
 - `exerciseCorrectRate` = round(avg(exercise.score)); empty → null
 - `lastActiveAt` = max(createdAt over ACTIVITY_TYPES = {indicator_hit, exercise, progress}); empty → fall back to lifecycle createdAt; both empty → null
 
-The M5 pass-2 backlog (S2) calls out extracting ACTIVITY_TYPES into one const (three copies will drift); still outstanding.
+The M5 pass-2 backlog (S2) calls out extracting ACTIVITY_TYPES into one const (two copies will drift); still outstanding.
 
 ## Auth model
 
-Both endpoints:
-
 - `@Auth('chat')` — chat-scope key
 - `@TenantId()` must resolve a solutionId — 400 otherwise
-- The session's observation rows are **NOT tenant-filtered**: the projector queries `getBySession` directly because sessionIds are UUIDs (globally unique).
+- The session's observation rows are **NOT tenant-filtered** at the DB level: `DashboardService` queries `getBySession` directly because sessionIds are UUIDs (globally unique).
+- IndicatorRegistry is keyed by `(solutionId, sessionId)` for tenant isolation — see [Session lifecycle](session-lifecycle.md) §tenant scoping.
 
 **Potential future hardening:** if sessionIds can no longer be assumed globally unique, the controller layer should add a session-ownership check ("does this sessionId actually belong to my tenant"). Not needed today thanks to UUIDs.
 
@@ -173,10 +208,9 @@ Both endpoints:
 
 | File | Responsibility |
 |---|---|
-| `packages/backend/src/workflow/handlers/dashboard/observation-dashboard.projector.ts` | Legacy projector |
-| `packages/backend/src/workflow/handlers/dashboard/observation-dashboard.controller.ts` | Legacy GET endpoint |
-| `packages/backend/src/workflow/handlers/dashboard/dashboard.service.ts` | New projector |
-| `packages/backend/src/workflow/handlers/dashboard/dashboard.controller.ts` | New GET endpoint |
-| `packages/backend/src/workflow/handlers/dashboard/dashboard-payload.types.ts` | New shape types + design notes |
-| `packages/workflow-client/src/index.ts` `getObservationDashboard` | Client-side fetch (legacy shape) |
-| `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-dashboard-fetch.service.ts` | Solution-side wrapper + defensive narrowPayload |
+| `packages/backend/src/workflow/handlers/dashboard/dashboard.service.ts` | Produces `DashboardPayload` |
+| `packages/backend/src/workflow/handlers/dashboard/dashboard.controller.ts` | `GET /dashboard` endpoint |
+| `packages/backend/src/workflow/handlers/dashboard/dashboard-payload.types.ts` | Wire shape types + design notes |
+| `packages/workflow-client/src/index.ts` `getDashboard` | Client-side HTTP fetch |
+| `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/workflow-dashboard-fetch.service.ts` | Solution-side wrapper |
+| `solutions/business/live-lesson/backend/src/adapters/workflow-outbox/dashboard-payload-adapter.ts` | **Transitional**: new → legacy 4-array derivation + gist rendering (deleted in M5.2b) |

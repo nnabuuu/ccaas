@@ -32,8 +32,8 @@ await client.setIndicators('sess-123', [
   { id: 'K1', type: 'knowledge', label: '...', description: '...' },
 ]);
 
-// 3. GET dashboard（M5.3b 起）
-const outcome = await client.getObservationDashboard('sess-123');
+// 3. GET dashboard（M5.3b 起；M5.2a 改为 getDashboard，返回 DashboardPayload）
+const outcome = await client.getDashboard('sess-123');
 
 // 4. DELETE session（M6 pass-1/2 起）
 await client.clearSession('sess-123');
@@ -189,6 +189,5 @@ Solution-scope key 推荐做法：用 `scripts/create-dev-api-key.ts <slug>` 给
 | `/api/v1/workflow/sessions/:id/events` | POST | 事件 ingest | 本页 |
 | `/api/v1/workflow/sessions/:id/indicators` | PUT | indicator 目录 | [Indicator 目录](indicator-catalog.md) |
 | `/api/v1/workflow/sessions/:id` | DELETE | session 生命周期 | [Session 生命周期](session-lifecycle.md) |
-| `/api/v1/workflow/sessions/:id/observation-dashboard` | GET | dashboard (legacy) | [Dashboard 契约](dashboard-contract.md) |
 | `/api/v1/workflow/sessions/:id/dashboard` | GET | dashboard (新) | [Dashboard 契约](dashboard-contract.md) |
 | `/api/v1/ontology/schema` | GET | ontology schema digest + ETag | (Phase 3) |

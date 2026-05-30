@@ -32,8 +32,8 @@ await client.setIndicators('sess-123', [
   { id: 'K1', type: 'knowledge', label: '...', description: '...' },
 ]);
 
-// 3. GET dashboard (M5.3b onwards)
-const outcome = await client.getObservationDashboard('sess-123');
+// 3. GET dashboard (M5.3b onwards; M5.2a switched to getDashboard returning DashboardPayload)
+const outcome = await client.getDashboard('sess-123');
 
 // 4. DELETE session (M6 pass-1/2 onwards)
 await client.clearSession('sess-123');
@@ -190,6 +190,5 @@ Recommended pattern: mint a per-Solution chat-scope key via `scripts/create-dev-
 | `/api/v1/workflow/sessions/:id/events` | POST | Event ingest | This page |
 | `/api/v1/workflow/sessions/:id/indicators` | PUT | Indicator catalog | [Indicator catalog](indicator-catalog.md) |
 | `/api/v1/workflow/sessions/:id` | DELETE | Session lifecycle | [Session lifecycle](session-lifecycle.md) |
-| `/api/v1/workflow/sessions/:id/observation-dashboard` | GET | Dashboard (legacy) | [Dashboard contract](dashboard-contract.md) |
 | `/api/v1/workflow/sessions/:id/dashboard` | GET | Dashboard (new) | [Dashboard contract](dashboard-contract.md) |
 | `/api/v1/ontology/schema` | GET | Ontology schema + ETag | (Phase 3) |
