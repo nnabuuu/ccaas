@@ -16,6 +16,7 @@
 ## Ontology & Workflow <a href="#ontology" id="ontology"></a>
 
 * [Overview](ontology/README.md)
+* [What is an Ontology](ontology/what-is-ontology.md)
 * [Schema Primitives](ontology/schema-primitives.md)
 * [Trigger + Workflow Engine](ontology/trigger-and-workflow-engine.md)
 * [Observation Pipeline](ontology/observation-pipeline.md)

@@ -23,9 +23,13 @@ packages/backend/src/workflow/  (NestJS)         Workflow = 触发器 + 引擎 +
 
 ## 你为什么需要读这章
 
+{% hint style="info" %}
+**第一次接触 Ontology 这个概念？** 先读 [什么是 Ontology](what-is-ontology.md) —— 用最少代码讲清 Palantir 风格 ontology 解决什么问题、什么 Solution 适合用。
+{% endhint %}
+
 | 你是 | 你关心 | 重点章节 |
 |---|---|---|
-| Solution 作者 | 用 ObjectType + Action 描述业务，让 Agent 调用 | [Schema 原语](schema-primitives.md) → [Trigger + Workflow](trigger-and-workflow-engine.md) |
+| Solution 作者 | 用 ObjectType + Action 描述业务，让 Agent 调用 | [什么是 Ontology](what-is-ontology.md) → [Schema 原语](schema-primitives.md) → [Trigger + Workflow](trigger-and-workflow-engine.md) |
 | 后端工程师 | 平台如何处理跨进程事件、cascade、teardown | [跨进程事件推送](cross-process-events.md) → [Session 生命周期](session-lifecycle.md) |
 | 前端工程师 | 教师 dashboard 的 wire shape、observation 如何投影 | [Dashboard 契约](dashboard-contract.md) → [Observation 管线](observation-pipeline.md) |
 | 运维 / SRE | schema endpoint、ingest endpoint、auth、tenant 隔离 | [跨进程事件推送](cross-process-events.md) §auth + [Session 生命周期](session-lifecycle.md) §租户隔离 |
@@ -42,6 +46,7 @@ packages/backend/src/workflow/  (NestJS)         Workflow = 触发器 + 引擎 +
 
 | 章节 | 内容 |
 |---|---|
+| [什么是 Ontology](what-is-ontology.md) | 概念 / 设计动机 / Palantir 风格 / 4 个核心问题 / 不用 vs 用对比 / 何时适用 |
 | [Schema 原语](schema-primitives.md) | ObjectTypeDef / ActionDef / ManifestDef / StreamDef / StateDef / defineXxx 辅助 |
 | [Trigger + Workflow 引擎](trigger-and-workflow-engine.md) | TriggerDef 三种 kind / WorkflowEngine 调度 / cascade / 队列 |
 | [Observation 管线](observation-pipeline.md) | `Observation` 行类型 / 5 种 type（lifecycle / exercise / progress / indicator_hit / student_status）/ observer-engine 退役时间线 |

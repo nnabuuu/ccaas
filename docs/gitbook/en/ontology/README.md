@@ -23,9 +23,13 @@ packages/backend/src/workflow/  (NestJS)         Workflow = triggers + engine + 
 
 ## Why you'd read this section
 
+{% hint style="info" %}
+**New to the concept of an ontology?** Start with [What is an Ontology](what-is-ontology.md) — explains in minimal code what problem the Palantir-style ontology solves and which Solutions should adopt it.
+{% endhint %}
+
 | You are | You care about | Start here |
 |---|---|---|
-| Solution author | Modeling business with ObjectType + Action so Agents can call them | [Schema primitives](schema-primitives.md) → [Trigger + Workflow](trigger-and-workflow-engine.md) |
+| Solution author | Modeling business with ObjectType + Action so Agents can call them | [What is an Ontology](what-is-ontology.md) → [Schema primitives](schema-primitives.md) → [Trigger + Workflow](trigger-and-workflow-engine.md) |
 | Backend engineer | Cross-process events, cascade depth, teardown wiring | [Cross-process events](cross-process-events.md) → [Session lifecycle](session-lifecycle.md) |
 | Frontend engineer | Teacher-dashboard wire shape; how observations project | [Dashboard contract](dashboard-contract.md) → [Observation pipeline](observation-pipeline.md) |
 | Ops / SRE | schema endpoint, ingest endpoint, auth, tenant isolation | [Cross-process events](cross-process-events.md) §auth + [Session lifecycle](session-lifecycle.md) §tenant scoping |
@@ -42,6 +46,7 @@ packages/backend/src/workflow/  (NestJS)         Workflow = triggers + engine + 
 
 | Page | Content |
 |---|---|
+| [What is an Ontology](what-is-ontology.md) | Concept / design motivation / Palantir style / the 4 core questions / without-vs-with comparison / when it applies |
 | [Schema primitives](schema-primitives.md) | ObjectTypeDef / ActionDef / ManifestDef / StreamDef / StateDef + `defineXxx` helpers |
 | [Trigger + Workflow engine](trigger-and-workflow-engine.md) | TriggerDef three kinds / WorkflowEngine dispatch / cascade / queue |
 | [Observation pipeline](observation-pipeline.md) | `Observation` row type / 5 types (lifecycle / exercise / progress / indicator_hit / student_status) / observer-engine retirement timeline |
