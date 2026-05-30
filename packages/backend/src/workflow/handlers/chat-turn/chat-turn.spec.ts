@@ -248,6 +248,47 @@ describe('ChatTurnService', () => {
     });
   });
 
+  it('LLM action=update with empty fields preserves prior row data (pass-2 SF2)', async () => {
+    // Regression for pass-1 SF5: when the LLM returns action=update
+    // with empty anchors/gist or null quote, the prior row's data
+    // must be PRESERVED, not blanked. The LLM picked `update` because
+    // the turn refines an existing observation, not to wipe it.
+    indicators.setIndicators(SESSION_ID, INDICATORS);
+    await repo.append({
+      id: 'obs-prior',
+      sessionId: SESSION_ID,
+      entityId: 'student-1',
+      solutionId: TENANT_UUID,
+      type: 'indicator_hit',
+      data: {
+        anchors: ['K1', 'M1'],
+        gist: 'prior detailed gist',
+        quote: 'prior quote',
+      },
+      triggerEventId: 'evt-prior',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    // LLM returns update with all fields empty/blank.
+    llm.nextResult = JSON.stringify({
+      action: 'update',
+      updateTarget: 'obs-prior',
+      anchors: [],
+      gist: '',
+      quote: null,
+    });
+    await invokeHandler({ student: 'more thoughts', ai: 'Yes' });
+    const obs = await observations.find();
+    expect(obs).toHaveLength(1);
+    // All prior fields preserved.
+    expect(obs[0].data).toMatchObject({
+      anchors: ['K1', 'M1'],
+      gist: 'prior detailed gist',
+      quote: 'prior quote',
+      action: 'update',
+    });
+  });
+
   it('LLM action=update with unknown target falls back to append', async () => {
     indicators.setIndicators(SESSION_ID, INDICATORS);
     llm.nextResult = JSON.stringify({

@@ -205,6 +205,79 @@ describe('M4 cascade — chat_turn → indicator_hit → student_status (through
     expect(llm.callCount).toBe(2);
   });
 
+  it('cascade depth is tracked across the chain (pass-2 N2 regression)', async () => {
+    // Regression for pass-1 MF1 + pass-2 N2: the in-process cascade
+    // must propagate depth via AsyncLocalStorage so the engine's
+    // ceiling guard can fire on runaway chains.
+    //
+    // We register an extra synthetic event-kind trigger watching the
+    // `student_alerts` stream. StatusChangeService publishes to that
+    // stream only via the bare `accessor.publish` (alerts have no
+    // cascade-back path), so this stays a single-hop probe. But it
+    // exercises the same trigger-registration + dispatch machinery
+    // and gives us a place to assert `cascade.depth`.
+    //
+    // Easier shape: subscribe to the `events` stream a second time
+    // and assert that the SECOND-hop event (student_observation_changed,
+    // published by ChatTurnService through engine.cascadeEvent) carries
+    // depth>=1. We capture by hijacking dispatchTrigger via a probe
+    // trigger registered before bootstrap.
+    indicators.setIndicators(SESSION_ID, INDICATORS);
+    const seenDepths: number[] = [];
+    const registry = module.get(WorkflowRegistry);
+    registry.register({
+      apiName: 'probe_depth_tracker',
+      manifest: 'LessonSession',
+      semantic: 'test probe — capture cascade depth on each fire',
+      kind: 'event',
+      watch: { stream: 'events' },
+      when: () => true,
+      then: {
+        action: 'noop',
+        args: (input) => {
+          seenDepths.push(input.cascade.depth);
+          return {};
+        },
+        as: 'admin',
+      },
+    });
+    llm.queue(
+      JSON.stringify({
+        action: 'append',
+        anchors: ['K1'],
+        gist: 'g',
+        quote: null,
+      }),
+    );
+    llm.queue(
+      JSON.stringify({
+        status: 'active',
+        summary: '',
+        alertMessage: null,
+      }),
+    );
+    await engine.ingestEvent({
+      sessionId: SESSION_ID,
+      solutionId: TENANT_UUID,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      payload: {
+        type: 'chat_turn',
+        studentId: 'student-1',
+        student: 'I think it is photosynthesis',
+        ai: 'Tell me more',
+      },
+    });
+    await settleQueues();
+    // The probe fires once per dispatched event on the 'events' stream:
+    //   - chat_turn: depth 0 (root)
+    //   - student_observation_changed: depth 1 (child cascade)
+    expect(seenDepths).toContain(0);
+    expect(seenDepths).toContain(1);
+    // Confirms the cascade frame's depth+1 actually carries through
+    // the enqueued dispatch.
+  });
+
   it('engine ignores events whose payload.type does not match either trigger', async () => {
     indicators.setIndicators(SESSION_ID, INDICATORS);
     await engine.ingestEvent({
