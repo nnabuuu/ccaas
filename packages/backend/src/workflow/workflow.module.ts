@@ -41,6 +41,10 @@ import { ExerciseObservationService } from './handlers/exercise/exercise-observa
 import { ProgressObservationService } from './handlers/progress/progress-observation.service';
 import { ObservationDashboardProjector } from './handlers/dashboard/observation-dashboard.projector';
 import { ObservationDashboardController } from './handlers/dashboard/observation-dashboard.controller';
+import { OpenAiLlmGateway } from './llm/openai-llm-gateway';
+import { LLM_GATEWAY } from './llm/llm-gateway';
+import { IndicatorRegistryService } from './llm/indicator-registry.service';
+import { ChatTurnService } from './handlers/chat-turn/chat-turn.service';
 
 @Module({
   imports: [
@@ -63,6 +67,11 @@ import { ObservationDashboardController } from './handlers/dashboard/observation
     ProgressObservationService,
     // Phase 5 M3: Path B projector — exposed via ObservationDashboardController.
     ObservationDashboardProjector,
+    // Phase 5 M4: LLM gateway + indicator registry + LLM handlers.
+    OpenAiLlmGateway,
+    { provide: LLM_GATEWAY, useExisting: OpenAiLlmGateway },
+    IndicatorRegistryService,
+    ChatTurnService,
   ],
   exports: [
     WorkflowEngineService,
@@ -70,6 +79,8 @@ import { ObservationDashboardController } from './handlers/dashboard/observation
     WorkflowMetricsService,
     ObservationRepository,
     ObserverEventRepository,
+    LLM_GATEWAY,
+    IndicatorRegistryService,
   ],
 })
 export class WorkflowModule {}
