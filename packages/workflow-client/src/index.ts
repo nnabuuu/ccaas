@@ -75,6 +75,24 @@ export type WorkflowSetIndicatorsOutcome =
       readonly retryable: boolean;
     };
 
+/**
+ * The legacy `{logs, alerts, indicatorStats}` dashboard shape served by
+ * the platform's `ObservationDashboardController`. Typed as `unknown`
+ * here because the package stays framework-free + framework-agnostic;
+ * the live-lesson outbox wrapper narrows to the concrete shape on
+ * receipt. M5 second pass deletes this endpoint; until then, the live-
+ * lesson backend HTTP-fetches via this method to source the dashboard
+ * from the platform's observation table.
+ */
+export type WorkflowDashboardOutcome =
+  | { readonly status: 'ok'; readonly payload: unknown }
+  | {
+      readonly status: 'failed';
+      readonly httpStatus?: number;
+      readonly error: string;
+      readonly retryable: boolean;
+    };
+
 export interface WorkflowClientOptions {
   /** Platform base URL — e.g. `http://localhost:3001`. No trailing slash. */
   readonly baseUrl: string;
@@ -251,6 +269,70 @@ export class WorkflowClient {
         parsed = await res.json();
       } catch {
         // body may be empty (204 case is already handled); ignore
+      }
+      return {
+        status: 'failed',
+        httpStatus: res.status,
+        error: extractError(parsed, `HTTP ${res.status}`),
+        retryable: isRetryableStatus(res.status),
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort = msg.toLowerCase().includes('abort');
+      return {
+        status: 'failed',
+        error: isAbort ? `request timed out after ${this.timeoutMs}ms` : msg,
+        retryable: true,
+      };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /**
+   * GET the legacy `{logs, alerts, indicatorStats}` dashboard for the
+   * session from the platform's `/observation-dashboard` endpoint.
+   * Cross-process source of truth for the M5.3b live-lesson cutover.
+   * Returns `unknown` payload; callers narrow with their own schema.
+   */
+  async getObservationDashboard(
+    sessionId: string,
+  ): Promise<WorkflowDashboardOutcome> {
+    if (!sessionId || typeof sessionId !== 'string') {
+      return {
+        status: 'failed',
+        error: 'sessionId is required',
+        retryable: false,
+      };
+    }
+    const url = `${this.baseUrl}/api/v1/workflow/sessions/${encodeURIComponent(sessionId)}/observation-dashboard`;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+    };
+    if (this.onBehalfOf) {
+      headers['X-Ccaas-On-Behalf-Of'] = this.onBehalfOf;
+    }
+
+    const controller =
+      typeof AbortController !== 'undefined' ? new AbortController() : undefined;
+    const timer = controller
+      ? setTimeout(() => controller.abort(), this.timeoutMs)
+      : undefined;
+
+    try {
+      const res = await this.fetchImpl(url, {
+        method: 'GET',
+        headers,
+        signal: controller?.signal,
+      });
+      let parsed: unknown = null;
+      try {
+        parsed = await res.json();
+      } catch {
+        // body parse failure on non-2xx is non-fatal; we report error below
+      }
+      if (res.status === 200) {
+        return { status: 'ok', payload: parsed };
       }
       return {
         status: 'failed',

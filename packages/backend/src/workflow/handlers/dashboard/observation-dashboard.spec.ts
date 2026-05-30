@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ObservationRecord, ObserverEventRecord } from '../../entities';
 import { ObservationRepository } from '../../persistence/observation-repository';
+import { IndicatorRegistryService } from '../../llm/indicator-registry.service';
 import { ObservationDashboardProjector } from './observation-dashboard.projector';
 import { getTestDatabaseOptions } from '../../../../test/setup/test-database';
 
@@ -21,7 +22,11 @@ describe('ObservationDashboardProjector', () => {
         TypeOrmModule.forRoot(getTestDatabaseOptions()),
         TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
       ],
-      providers: [ObservationRepository, ObservationDashboardProjector],
+      providers: [
+        ObservationRepository,
+        ObservationDashboardProjector,
+        IndicatorRegistryService,
+      ],
     }).compile();
     projector = module.get(ObservationDashboardProjector);
     repo = module.get(ObservationRepository);
@@ -168,6 +173,75 @@ describe('ObservationDashboardProjector', () => {
       'student-alpha',
       'student-zebra',
     ]);
+  });
+
+  it('M5.3b: indicatorStats populated from IndicatorRegistry + indicator_hit rows', async () => {
+    const indicators = module.get(IndicatorRegistryService);
+    indicators.setIndicators('s1', [
+      { id: 'K1', type: 'knowledge', label: 'concept', description: 'd' },
+      { id: 'M1', type: 'misconception', label: 'mix-up', description: 'd' },
+    ]);
+    await repo.append({
+      id: 'h1',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'indicator_hit',
+      data: { anchors: ['K1'], gist: 'first concept' },
+      triggerEventId: 'e1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await repo.append({
+      id: 'h2',
+      sessionId: 's1',
+      entityId: 'student-2',
+      solutionId: 'live-lesson',
+      type: 'indicator_hit',
+      data: { anchors: ['K1', 'M1'], gist: 'newer gist' },
+      triggerEventId: 'e2',
+      createdAt: 2000,
+      updatedAt: 2000,
+    });
+    const out = await projector.project('s1');
+    expect(out.indicatorStats).toEqual([
+      {
+        indicatorId: 'K1',
+        label: 'concept',
+        type: 'knowledge',
+        studentCount: 2,
+        latestGist: 'newer gist',
+        updatedAt: 2000,
+      },
+      {
+        indicatorId: 'M1',
+        label: 'mix-up',
+        type: 'misconception',
+        studentCount: 1,
+        latestGist: 'newer gist',
+        updatedAt: 2000,
+      },
+    ]);
+  });
+
+  it('M5.3b: indicatorStats fails closed on unknown anchors (no surface)', async () => {
+    const indicators = module.get(IndicatorRegistryService);
+    indicators.setIndicators('s1', [
+      { id: 'K1', type: 'knowledge', label: 'known', description: 'd' },
+    ]);
+    await repo.append({
+      id: 'h',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'indicator_hit',
+      data: { anchors: ['K1', 'UNKNOWN_PHANTOM'], gist: 'g' },
+      triggerEventId: 'e',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    const out = await projector.project('s1');
+    expect(out.indicatorStats.map((s) => s.indicatorId)).toEqual(['K1']);
   });
 
   it('does not include observations from other sessions', async () => {
