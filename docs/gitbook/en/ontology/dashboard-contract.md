@@ -71,6 +71,76 @@ interface DashboardStudentSlice {
 
 The new shape fetches once and lets the frontend decide how to present.
 
+### Structural change at a glance (4 sibling arrays vs 1 student tree)
+
+```
+Legacy: 4 sibling arrays, frontend must JOIN
+GET /api/v1/workflow/sessions/:id/observation-dashboard
+
+   ObservationDashboardPayload
+   ├── logs[]                                ◀── per-student
+   │     { studentId, studentName, events[], systemMetrics, status }
+   │
+   ├── alerts[]                              ◀── per-alert (flat)
+   │     { studentId, studentName, severity, message, indicatorId }
+   │
+   ├── indicatorStats[]                      ◀── per-indicator
+   │     { indicatorId, label, type, studentCount, latestGist }
+   │
+   └── indicators[]                          ◀── session catalog
+         { id, type, label, description }
+
+   Putting one student's full picture together?
+     1. logs.find(l => l.studentId === X)
+     2. alerts.filter(a => a.studentId === X)
+     3. indicatorStats isn't student-indexed → use logs[X].events to find anchors
+     4 arrays, 3 joins, frontend glues it.
+
+
+New: 1 students tree, no join
+GET /api/v1/workflow/sessions/:id/dashboard
+
+   DashboardPayload
+   ├── sessionId
+   ├── generatedAt
+   ├── indicators[]                          ◀── session catalog (still flat)
+   │     { id, type, label, description }
+   │
+   └── students[]                            ◀── student-centric tree
+         {
+           studentId, studentName,
+           status: {                          ◀── embedded in the student
+             current: 'struggling',
+             previous: 'active',
+             derivedAt, summary, alertMessage,
+           },
+           metrics: {
+             messageCount, knowledgeCount, misconceptionCount,
+             exerciseCorrectRate, lastActiveAt, currentStep,
+           },
+           observations: [                    ◀── raw rows (NOT translated StudentEvents)
+             { id, type, data, createdAt, ... },
+             ...
+           ],
+         }
+
+   Putting one student's full picture together?
+     students.find(s => s.studentId === X)     done.
+```
+
+**Equivalence derivations:** if the frontend wants to keep the legacy 4-array shape (pre-M5-second-pass), the new payload derives all four in one pass:
+
+```typescript
+const logs           = payload.students;
+const alerts         = payload.students.filter(s =>
+                          ['stuck', 'struggling', 'idle']
+                          .includes(s.status?.current ?? ''));
+const indicatorStats = groupBy(payload.students.flatMap(s =>
+                          s.observations.filter(o => o.type === 'indicator_hit')
+                       ), o => o.data.anchors);
+const indicators     = payload.indicators;
+```
+
 ## When to use which
 
 - **Today / live-lesson in prod:** legacy. `WorkflowDashboardFetchService` calls `WorkflowClient.getObservationDashboard`; the 3 teacher tabs consume directly.
