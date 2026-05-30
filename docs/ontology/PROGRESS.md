@@ -10,7 +10,7 @@ Status emoji legend: 🔵 in progress · ✅ shipped · ⏳ waiting · ❌ block
 | Phase | Status | Started | Shipped | Final commit | Notes |
 |---|---|---|---|---|---|
 | 1 — Bootstrap v0.1 (core + Tier 1) | ✅ shipped | 2026-05-29 | 2026-05-29 | `be66d366` | 10-commit sequence landed; 165 tests; framework-free verified by architecture test |
-| 2 — context-layer refactor | ✅ shipped | 2026-05-30 | 2026-05-30 | `f6539eb9` | 12-commit sequence on branch `phase2-context-layer-refactor`; 66 tests across 4 files (36 parity baseline + 5 schema accessor + 14 converter + 11 adapter); 2 code-reviewer passes (pass 2 zero must-fix); EntityRegistry now delegates to OntologyRegistry while keeping every public signature source-compatible; all 10 success criteria satisfied including root typecheck and harness |
+| 2 — context-layer refactor | ✅ shipped | 2026-05-30 | 2026-05-30 | `cf1dbd2d` | 16-commit sequence on branch `phase2-context-layer-refactor`; 90 tests across 5 files (36 parity baseline + 5 schema accessor + 14 converter + 11 adapter + 24 NestJS integration); 2 code-reviewer passes (pass 2 zero must-fix); EntityRegistry delegates to OntologyRegistry source-compatibly; NestJS integration suite found + fixed a pre-existing bug in `ContextLayerModule`'s discovery path (`fix(context-layer)` 2695fbcd) |
 | 3 — live-lesson + bridge | ⏳ waiting | — | — | — | Gated on Chengdu PoC having shipped (per impl plan §B-Phase 3) |
 | 4 — Tier 2 primitives | ⏳ waiting | — | — | — | Gated on a real Solution expressing need for at least one Tier 2 primitive. **1 candidate identified** — see "Phase 4 trigger candidates" below. |
 | 5 — Tier 3 primitives | ⏳ waiting | — | — | — | Per-item gated on individual promotion criteria |
@@ -47,6 +47,10 @@ Decisions made during implementation that diverge from or refine the spec/impl-p
 - **2026-05-30, Phase 2 commit `bf2a60f4`**: `EntityRegistry.register`'s "last write wins" overwrite contract preserved by rebuilding the underlying `OntologyRegistry` from the sidecar on re-register (since `OntologyRegistry` rejects duplicate apiNames by design).
 
 - **2026-05-30, Phase 2 commit `d25bd7b5`**: Pre-existing drift fixed — `EditOperation` type union in `interfaces.ts` was missing two variants (`block_attr_set`, `block_content_set`) that the controller already used. Type now matches the runtime shape; no behavior change.
+
+- **2026-05-30, Phase 2 commit `2695fbcd`**: **Pre-existing bug fix surfaced by integration tests** — `ContextLayerModule` used constructor DI on the dynamic-module class itself for `DiscoveryService` + `Reflector` + `EntityRegistry` + `RelationInferrer`. NestJS does NOT inject dynamic-module class constructors (only `@Injectable()` providers). Result: `discoveryService` was `undefined` at `onModuleInit`, so the `@Referenceable` auto-discovery silently never registered any controller. Recipe-book didn't notice because it uses its own `ContextLayerLocalModule` with manual registration. Fix: extracted discovery + `RelationInferrer.scanAndRegister` into a new `@Injectable() ContextLayerInitService`. Zero observable behavior change for recipe-book; enables `ContextLayerModule.forRoot()`'s auto-discovery path to actually work for any future Solution.
+
+- **2026-05-30, Phase 2 commit `cf1dbd2d`**: Vitest config adds `unplugin-swc` to preserve `design:paramtypes` decorator metadata. esbuild (vitest's default transformer) doesn't emit this even with `emitDecoratorMetadata: true` in tsconfig — silently breaks any NestJS DI under vitest. Required to make the integration suite work.
 
 ## Phase 4 trigger candidates
 
