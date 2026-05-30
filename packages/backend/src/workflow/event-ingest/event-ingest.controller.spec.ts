@@ -1,0 +1,195 @@
+/**
+ * EventIngestController integration tests.
+ *
+ * Proves the M1 success criterion: POST /workflow/sessions/:id/events
+ * returns 202 + writes a row in `observer_events` + invokes the engine
+ * (or, when disabled by env flag, persists without dispatching).
+ *
+ * Uses guard overrides to skip Auth (the auth guard is verified
+ * separately by AuthModule's own spec); we want a tight focused test
+ * on the endpoint's dedup + persistence + engine wiring.
+ */
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import request from 'supertest';
+import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
+import { ScopesGuard } from '../../auth/guards/scopes.guard';
+import { ObservationRecord, ObserverEventRecord } from '../entities';
+import { ObservationRepository } from '../persistence/observation-repository';
+import { ObserverEventRepository } from '../persistence/observer-event-repository';
+import { WorkflowEngineService } from '../workflow-engine.service';
+import { WorkflowMetricsService } from '../workflow-metrics.service';
+import { WorkflowRegistry } from '../workflow-registry';
+import { EventIngestController } from './event-ingest.controller';
+import { getTestDatabaseOptions } from '../../../test/setup/test-database';
+
+class AllowAllGuard {
+  canActivate(context: any) {
+    // Stamp a fake request.solutionId so @TenantId() resolves.
+    const req = context.switchToHttp().getRequest();
+    req.solutionId = 'live-lesson-tenant-uuid';
+    req.context = {
+      solutionId: 'live-lesson-tenant-uuid',
+      apiKeyId: 'fake',
+      requestId: 'fake',
+    };
+    return true;
+  }
+}
+
+class FakeWorkflowEngine {
+  ingestCalls: Array<{
+    sessionId: string;
+    solutionId: string;
+    streamApiName: string;
+    payload: unknown;
+  }> = [];
+
+  async ingestEvent(input: {
+    sessionId: string;
+    solutionId: string;
+    manifestName: string;
+    streamApiName: string;
+    payload: unknown;
+    eventId?: string;
+  }): Promise<boolean> {
+    this.ingestCalls.push({
+      sessionId: input.sessionId,
+      solutionId: input.solutionId,
+      streamApiName: input.streamApiName,
+      payload: input.payload,
+    });
+    return true;
+  }
+}
+
+describe('EventIngestController (integration)', () => {
+  let app: INestApplication;
+  let events: ObserverEventRepository;
+  let fakeEngine: FakeWorkflowEngine;
+  let module: TestingModule;
+  let originalEnv: string | undefined;
+
+  beforeEach(async () => {
+    originalEnv = process.env.WORKFLOW_INGEST;
+    fakeEngine = new FakeWorkflowEngine();
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot(getTestDatabaseOptions()),
+        TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
+      ],
+      controllers: [EventIngestController],
+      providers: [
+        ObservationRepository,
+        ObserverEventRepository,
+        WorkflowRegistry,
+        WorkflowMetricsService,
+        { provide: WorkflowEngineService, useValue: fakeEngine },
+      ],
+    })
+      .overrideGuard(ApiKeyGuard)
+      .useClass(AllowAllGuard)
+      .overrideGuard(ScopesGuard)
+      .useClass(AllowAllGuard)
+      .compile();
+
+    app = module.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    await app.init();
+    events = module.get(ObserverEventRepository);
+  });
+
+  afterEach(async () => {
+    process.env.WORKFLOW_INGEST = originalEnv;
+    await app.close();
+  });
+
+  it('returns 202 + persists event row + dispatches when WORKFLOW_INGEST=enabled', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-1',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-1',
+        payload: { type: 'student_joined', studentName: 'Alice' },
+      })
+      .expect(202);
+
+    expect(res.body).toEqual({ accepted: true, eventId: 'evt-1' });
+    expect(await events.hasEvent('evt-1')).toBe(true);
+    // Engine dispatch is fire-and-forget — give the microtask a tick.
+    await new Promise<void>((resolve) => setTimeout(resolve, 5));
+    expect(fakeEngine.ingestCalls).toHaveLength(1);
+    expect(fakeEngine.ingestCalls[0]).toEqual({
+      sessionId: 's1',
+      solutionId: 'live-lesson-tenant-uuid',
+      streamApiName: 'events',
+      payload: { type: 'student_joined', studentName: 'Alice' },
+    });
+  });
+
+  it('returns 200 with dropped:duplicate on a repeated eventId', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    const body = {
+      eventId: 'evt-dup',
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: 'student-1',
+      payload: { type: 'student_joined' },
+    };
+    await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send(body)
+      .expect(202);
+    const second = await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send(body)
+      .expect(200);
+    expect(second.body).toEqual({
+      accepted: false,
+      dropped: 'duplicate',
+      eventId: 'evt-dup',
+    });
+    expect(fakeEngine.ingestCalls).toHaveLength(1);
+  });
+
+  it('persists but skips dispatch when WORKFLOW_INGEST is not enabled', async () => {
+    delete process.env.WORKFLOW_INGEST;
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-disabled',
+        manifestName: 'LessonSession',
+        streamApiName: 'events',
+        entityId: 'student-1',
+        payload: { type: 'student_joined' },
+      })
+      .expect(202);
+    expect(res.body).toEqual({
+      accepted: false,
+      dropped: 'disabled',
+      eventId: 'evt-disabled',
+    });
+    // Still persisted so the outbox-side can mark its row delivered.
+    expect(await events.hasEvent('evt-disabled')).toBe(true);
+    // Dispatch did NOT happen.
+    expect(fakeEngine.ingestCalls).toHaveLength(0);
+  });
+
+  it('returns 400 on missing required fields (class-validator)', async () => {
+    process.env.WORKFLOW_INGEST = 'enabled';
+    await request(app.getHttpServer())
+      .post('/api/v1/workflow/sessions/s1/events')
+      .send({
+        eventId: 'evt-x',
+        // missing manifestName, streamApiName, entityId, payload
+      })
+      .expect(400);
+  });
+});
