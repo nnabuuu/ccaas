@@ -150,7 +150,7 @@ describe('M4 cascade — chat_turn → indicator_hit → student_status (through
   });
 
   it('chat_turn event through the engine fires the full cascade end-to-end', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     // First LLM call: classify the chat turn.
     llm.queue(
       JSON.stringify({
@@ -222,7 +222,7 @@ describe('M4 cascade — chat_turn → indicator_hit → student_status (through
     // published by ChatTurnService through engine.cascadeEvent) carries
     // depth>=1. We capture by hijacking dispatchTrigger via a probe
     // trigger registered before bootstrap.
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     const seenDepths: number[] = [];
     const registry = module.get(WorkflowRegistry);
     registry.register({
@@ -279,7 +279,7 @@ describe('M4 cascade — chat_turn → indicator_hit → student_status (through
   });
 
   it('engine ignores events whose payload.type does not match either trigger', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await engine.ingestEvent({
       sessionId: SESSION_ID,
       solutionId: TENANT_UUID,

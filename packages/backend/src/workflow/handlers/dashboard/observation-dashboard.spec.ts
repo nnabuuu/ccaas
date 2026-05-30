@@ -37,7 +37,7 @@ describe('ObservationDashboardProjector', () => {
   });
 
   it('empty session → empty logs + alerts + indicatorStats', async () => {
-    const result = await projector.project('empty-session');
+    const result = await projector.project('tenant-a','empty-session');
     expect(result).toEqual({ logs: [], alerts: [], indicatorStats: [] });
   });
 
@@ -64,7 +64,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 2000,
       updatedAt: 2000,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.logs).toHaveLength(1);
     const log = out.logs[0];
     expect(log.studentId).toBe('student-1');
@@ -84,7 +84,10 @@ describe('ObservationDashboardProjector', () => {
     // lands. legacy dashboard counted ONLY chat_turn rows; bumping on
     // non-chat lifecycle would diverge from legacy during dual-write.
     expect(log.systemMetrics.messageCount).toBe(0);
-    expect(log.systemMetrics.lastActiveAt).toBe(2000);
+    // M5 pass-1 MF2: lifecycle observations don't count toward
+    // lastActiveAt (only indicator_hit / exercise / progress do).
+    // This fixture only has lifecycle rows → null.
+    expect(log.systemMetrics.lastActiveAt).toBeNull();
   });
 
   it('pass-1 N4: unknown observation type → opaque system event (forward-compat default arm)', async () => {
@@ -99,7 +102,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 1234,
       updatedAt: 1234,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.logs).toHaveLength(1);
     expect(out.logs[0].events).toHaveLength(1);
     expect(out.logs[0].events[0]).toMatchObject({
@@ -110,20 +113,33 @@ describe('ObservationDashboardProjector', () => {
     });
   });
 
-  it('exercise observation populates exerciseCorrectRate + currentStep', async () => {
+  it('exercise observation populates exerciseCorrectRate (avg) + currentStep', async () => {
+    // M5 pass-1 SF3: legacy live-lesson averaged 0..100 scores; projector
+    // pre-M5 last-writer-wins drifted from that. Two exercises → average.
     await repo.append({
-      id: 'obs-3',
+      id: 'obs-3a',
       sessionId: 's1',
       entityId: 'student-1',
       solutionId: 'live-lesson',
       type: 'exercise',
-      data: { step: 3, score: 0.85 },
-      triggerEventId: 'evt-3',
+      data: { step: 3, score: 80 },
+      triggerEventId: 'evt-3a',
       createdAt: 1500,
       updatedAt: 1500,
     });
-    const out = await projector.project('s1');
-    expect(out.logs[0].systemMetrics.exerciseCorrectRate).toBe(0.85);
+    await repo.append({
+      id: 'obs-3b',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'exercise',
+      data: { step: 3, score: 60 },
+      triggerEventId: 'evt-3b',
+      createdAt: 1600,
+      updatedAt: 1600,
+    });
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.logs[0].systemMetrics.exerciseCorrectRate).toBe(70); // avg(80,60)
     expect(out.logs[0].systemMetrics.currentStep).toBe(3);
     expect(out.logs[0].events[0].systemType).toBe('exercise_result');
   });
@@ -140,7 +156,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 1700,
       updatedAt: 1700,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.logs[0].systemMetrics.currentStep).toBe(5);
     expect(out.logs[0].events[0].systemType).toBe('step_complete');
   });
@@ -168,7 +184,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 1100,
       updatedAt: 1100,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.logs.map((l) => l.studentId)).toEqual([
       'student-alpha',
       'student-zebra',
@@ -177,7 +193,7 @@ describe('ObservationDashboardProjector', () => {
 
   it('M5.3b: indicatorStats populated from IndicatorRegistry + indicator_hit rows', async () => {
     const indicators = module.get(IndicatorRegistryService);
-    indicators.setIndicators('s1', [
+    indicators.setIndicators('tenant-a', 's1', [
       { id: 'K1', type: 'knowledge', label: 'concept', description: 'd' },
       { id: 'M1', type: 'misconception', label: 'mix-up', description: 'd' },
     ]);
@@ -203,7 +219,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 2000,
       updatedAt: 2000,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.indicatorStats).toEqual([
       {
         indicatorId: 'K1',
@@ -226,7 +242,7 @@ describe('ObservationDashboardProjector', () => {
 
   it('M5.3b: indicatorStats fails closed on unknown anchors (no surface)', async () => {
     const indicators = module.get(IndicatorRegistryService);
-    indicators.setIndicators('s1', [
+    indicators.setIndicators('tenant-a', 's1', [
       { id: 'K1', type: 'knowledge', label: 'known', description: 'd' },
     ]);
     await repo.append({
@@ -240,8 +256,83 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 1000,
       updatedAt: 1000,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.indicatorStats.map((s) => s.indicatorId)).toEqual(['K1']);
+  });
+
+  it('M5 pass-1 MF1: resolves studentName from join lifecycle event', async () => {
+    await repo.append({
+      id: 'jl',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'lifecycle',
+      data: { action: 'join', studentName: 'Alice' },
+      triggerEventId: 'e0',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await repo.append({
+      id: 'st',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'student_status',
+      data: { status: 'stuck', alertMessage: 'help' },
+      triggerEventId: 'e1',
+      createdAt: 2000,
+      updatedAt: 2000,
+    });
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.logs[0].studentName).toBe('Alice');
+    // Alert payload also picks up the resolved name.
+    expect(out.alerts).toHaveLength(1);
+    expect(out.alerts[0].studentName).toBe('Alice');
+  });
+
+  it('M5 pass-1 MF1: falls back to studentId when no join name', async () => {
+    await repo.append({
+      id: 'l',
+      sessionId: 's1',
+      entityId: 'student-anon',
+      solutionId: 'live-lesson',
+      type: 'exercise',
+      data: { score: 50 },
+      triggerEventId: 'e',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.logs[0].studentName).toBe('student-anon');
+  });
+
+  it('M5 pass-1 MF2: lastActiveAt excludes student_status (heuristic stays reachable)', async () => {
+    // Stale activity row at t=1000, then a fresh student_status row at
+    // t=9999. lastActiveAt must reflect ONLY the activity row.
+    await repo.append({
+      id: 'a',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'exercise',
+      data: { score: 60 },
+      triggerEventId: 'e1',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    await repo.append({
+      id: 'st',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'student_status',
+      data: { status: 'active' },
+      triggerEventId: 'e2',
+      createdAt: 9999,
+      updatedAt: 9999,
+    });
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.logs[0].systemMetrics.lastActiveAt).toBe(1000);
   });
 
   it('does not include observations from other sessions', async () => {
@@ -256,7 +347,7 @@ describe('ObservationDashboardProjector', () => {
       createdAt: 1000,
       updatedAt: 1000,
     });
-    const out = await projector.project('s1');
+    const out = await projector.project('tenant-a','s1');
     expect(out.logs).toEqual([]);
   });
 });

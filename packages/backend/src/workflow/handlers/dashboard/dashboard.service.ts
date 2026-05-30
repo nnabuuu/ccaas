@@ -47,10 +47,20 @@ export class DashboardService {
   ) {}
 
   /**
-   * Build the dashboard payload for a session. Single DB read for
-   * observations, single map lookup for indicators.
+   * Build the dashboard payload for a session under the given tenant.
+   * Single DB read for observations, single map lookup for indicators.
+   *
+   * `solutionId` is required for tenant-isolated indicator lookup —
+   * see `IndicatorRegistryService` (M5 pass-1 MF3). The observation
+   * read isn't filtered by solutionId because the `observations`
+   * table's `solutionId` column is informational and not currently
+   * enforced as an authorization boundary; that hardening lives at
+   * the controller layer (which checks `@TenantId()`).
    */
-  async buildPayload(sessionId: string): Promise<DashboardPayload> {
+  async buildPayload(
+    solutionId: string,
+    sessionId: string,
+  ): Promise<DashboardPayload> {
     const rows = await this.observations.getBySession(sessionId);
     const byStudent = groupByEntity(rows);
 
@@ -62,7 +72,7 @@ export class DashboardService {
     students.sort((a, b) => a.studentId.localeCompare(b.studentId));
 
     const indicatorDefs: DashboardIndicatorDef[] = this.indicators
-      .getIndicators(sessionId)
+      .getIndicators(solutionId, sessionId)
       .map((i) => ({
         id: i.id,
         type: i.type,

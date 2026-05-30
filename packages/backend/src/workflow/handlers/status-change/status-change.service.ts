@@ -204,7 +204,7 @@ export class StatusChangeService implements OnApplicationBootstrap {
       (existingStatus?.data as { status?: StudentStatus } | undefined)?.status ?? null;
 
     const metrics = computeMetrics(observations);
-    const indicators = this.indicators.getIndicators(sessionId);
+    const indicators = this.indicators.getIndicators(solutionId, sessionId);
     const { status, summary, alertMessage } = await this.deriveStatus({
       observations,
       indicators,

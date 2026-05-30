@@ -14,14 +14,20 @@
  * convention.
  */
 
-import { Controller, Get, Header, Param } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Header,
+  Param,
+} from '@nestjs/common';
 import {
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Auth } from '../../../auth/decorators';
+import { Auth, TenantId } from '../../../auth/decorators';
 import { DashboardService } from './dashboard.service';
 import type { DashboardPayload } from './dashboard-payload.types';
 
@@ -42,7 +48,16 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Dashboard payload' })
   async getDashboard(
     @Param('sessionId') sessionId: string,
+    @TenantId() solutionId: string | undefined,
   ): Promise<DashboardPayload> {
-    return this.dashboards.buildPayload(sessionId);
+    // M5 pass-1 MF3 / SF6: require a tenant binding. Without this any
+    // `chat`-scoped key from tenant A could read tenant B's session
+    // observations (data-leak vector).
+    if (!solutionId) {
+      throw new BadRequestException(
+        'solutionId not resolved from auth context; GET dashboard requires a tenant-bound API key',
+      );
+    }
+    return this.dashboards.buildPayload(solutionId, sessionId);
   }
 }

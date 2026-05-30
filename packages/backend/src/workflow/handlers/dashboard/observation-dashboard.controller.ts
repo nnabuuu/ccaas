@@ -13,14 +13,20 @@
  * endpoint AND delete the projector + this controller.
  */
 
-import { Controller, Get, Header, Param } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Header,
+  Param,
+} from '@nestjs/common';
 import {
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Auth } from '../../../auth/decorators';
+import { Auth, TenantId } from '../../../auth/decorators';
 import {
   ObservationDashboardProjector,
   type ObservationDashboardPayload,
@@ -45,7 +51,15 @@ export class ObservationDashboardController {
   @ApiResponse({ status: 200, description: '观察 dashboard payload / Observation dashboard payload' })
   async getDashboard(
     @Param('sessionId') sessionId: string,
+    @TenantId() solutionId: string | undefined,
   ): Promise<ObservationDashboardPayload> {
-    return this.projector.project(sessionId);
+    // M5 pass-1 MF3 / SF6: tenant-bound auth required (same data-leak
+    // concern as the new DashboardController).
+    if (!solutionId) {
+      throw new BadRequestException(
+        'solutionId not resolved from auth context; GET observation-dashboard requires a tenant-bound API key',
+      );
+    }
+    return this.projector.project(solutionId, sessionId);
   }
 }

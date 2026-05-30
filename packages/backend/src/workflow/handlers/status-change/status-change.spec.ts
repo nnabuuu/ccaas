@@ -146,7 +146,7 @@ describe('StatusChangeService', () => {
   });
 
   it('LLM happy path: derives active status + no alert', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'obs-1',
       sessionId: SESSION_ID,
@@ -177,7 +177,7 @@ describe('StatusChangeService', () => {
   });
 
   it('LLM struggling → publishes alert on student_alerts stream (urgent transition)', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'obs-1',
       sessionId: SESSION_ID,
@@ -207,7 +207,7 @@ describe('StatusChangeService', () => {
   });
 
   it('updates existing student_status row instead of appending', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'st-prior',
       sessionId: SESSION_ID,
@@ -243,7 +243,7 @@ describe('StatusChangeService', () => {
   });
 
   it('no alert when status unchanged (active → active)', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'st-prior',
       sessionId: SESSION_ID,
@@ -340,7 +340,7 @@ describe('StatusChangeService', () => {
   });
 
   it('heuristic struggling when ≥3 misconception anchors', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     // 3 indicator_hits with misconception anchors
     for (let i = 0; i < 3; i++) {
       await repo.append({
@@ -364,7 +364,7 @@ describe('StatusChangeService', () => {
   });
 
   it('computed metrics correctness', async () => {
-    indicators.setIndicators(SESSION_ID, INDICATORS);
+    indicators.setIndicators(TENANT_UUID, SESSION_ID, INDICATORS);
     await repo.append({
       id: 'h1',
       sessionId: SESSION_ID,
