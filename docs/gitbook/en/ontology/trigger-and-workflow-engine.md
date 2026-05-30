@@ -78,11 +78,73 @@ for each matching trigger:
 
 ## Cascade — chained dispatch from one event
 
-ChatTurnService writes `indicator_hit` and then calls `engine.cascadeEvent({stream: 'events', payload: {type: 'student_observation_changed', ...}})` to feed the event back into the engine. StatusChangeTrigger hits → re-derives student_status → fires student_alerts.
+ChatTurnService writes `indicator_hit` and then calls `engine.cascadeEvent(...)` to feed the event back into the engine. StatusChangeTrigger hits → re-derives student_status → fires student_alerts. The diagram below is the actual M4 chain end-to-end:
 
-Cascade depth is tracked via Node `AsyncLocalStorage` (`cascade-context.ts`), with a global ceiling `maxCascadeDepth = 5` and per-trigger `cascadeBudget` override.
+```
+   External HTTP ingest               Or in-process originator
+   POST /workflow/.../events
+            │
+            ▼
+   ┌─────────────────────────────┐
+   │ engine.ingestEvent          │  ◀── withRootCascade(stream)
+   │   depth = 0                 │      mints a fresh correlationId
+   │   payload.type = chat_turn  │
+   └────────────┬────────────────┘
+                │
+                ▼  WorkflowRegistry.lookup(manifest, kind=event, stream=events)
+                │  per-session FIFO enqueueDispatch
+                ▼
+   ┌─────────────────────────────┐
+   │ ChatTurnTrigger             │
+   │   when(input) → true        │
+   └────────────┬────────────────┘
+                │ predicate hits
+                ▼
+   ┌─────────────────────────────┐
+   │ classify_chat_turn_         │  ◀── through the Phase 3 bridge:
+   │ indicators Action  (LLM)    │      ToolCallerProxy + boundary + audit
+   │   ├─ writes indicator_hit   │
+   │   └─ engine.cascadeEvent ───┼─┐
+   └─────────────────────────────┘ │ withChildCascade
+                                   │   depth = 1
+                                   │   correlationId preserved
+                                   ▼
+                          ┌──────────────────────────────┐
+                          │ StatusChangeTrigger          │
+                          │  when payload.type ===       │
+                          │    student_observation_      │
+                          │    changed                   │
+                          └────────────┬─────────────────┘
+                                       │ predicate hits
+                                       ▼
+                          ┌──────────────────────────────┐
+                          │ derive_student_status        │
+                          │ Action  (LLM or heuristic)   │
+                          │   ├─ writes student_status   │
+                          │   └─ accessor.publish        │  ◀── student_alerts
+                          │      (subscribers only,       │      is a terminal
+                          │       does NOT re-enter)      │      stream
+                          └──────────────────────────────┘
+```
 
-**Important:** to trigger a downstream event from inside an action handler, **use `engine.cascadeEvent`, not `accessor.publish`**. The latter only fans out to subscribers and does NOT re-enter the engine. M4 pass-1 MF1 was exactly this bug — the fix used `withChildCascade` to preserve depth tracking.
+### Cascade depth + ceiling
+
+| Frame | How it's entered | depth |
+|---|---|---|
+| Root | `engine.ingestEvent` (HTTP) or `engine.cascadeEvent` (in-process root) | 0 |
+| Child | `engine.cascadeEvent` from inside an action handler | parent + 1 |
+| Drop | `depth >= cascadeBudget ?? maxCascadeDepth` (default 5) | trigger dropped + `cascade_depth_exceeded` counter |
+
+Depth tracking uses Node's `AsyncLocalStorage` via `cascade-context.ts` (`withChildCascade` / `withRootCascade`); the `correlationId` is preserved across the entire cascade for trace stitching.
+
+### The crucial gotcha: `cascadeEvent` vs `accessor.publish`
+
+| Call | What it triggers | When to use |
+|---|---|---|
+| `engine.cascadeEvent(...)` | Re-enters the engine (fires matching event-kind triggers) AND publishes to subscribers | An action handler emitting a downstream event that needs to fire follow-on triggers |
+| `accessor.publish(...)` | ONLY fans out to subscribers; does NOT re-enter the engine | Sending a stream event to frontend SSE / debug console / terminal events (like `student_alerts`) that no trigger needs to react to |
+
+**M4 pass-1 MF1 was exactly this trap:** ChatTurnService originally used `accessor.publish` to emit `student_observation_changed`, so StatusChangeTrigger never fired — and there was no visible failure because `accessor.publish` still delivered to subscribers. The fix routes through `cascadeEvent` so `withChildCascade` preserves depth tracking. If your downstream event needs trigger reactions, you MUST use `cascadeEvent`.
 
 ## Per-session FIFO queue + backpressure
 

@@ -78,11 +78,73 @@ WorkflowRegistry.lookup(manifest, {kind, stream/state/objectSet})
 
 ## Cascade — 一次调度的连锁反应
 
-ChatTurnService 写完 `indicator_hit` 后调 `engine.cascadeEvent({stream: 'events', payload: {type: 'student_observation_changed', ...}})`，把事件再喂回引擎。StatusChangeTrigger 命中 → 重新派生 student_status → 触发 student_alerts。
+ChatTurnService 写完 `indicator_hit` 后调 `engine.cascadeEvent(...)` 把事件再喂回引擎。StatusChangeTrigger 命中 → 重新派生 student_status → 发 student_alerts。下面是 M4 实际跑起来的完整链路：
 
-cascade 深度通过 Node `AsyncLocalStorage` 跟踪（`cascade-context.ts`），全局上限 `maxCascadeDepth = 5`，每个 trigger 可用 `cascadeBudget` override。
+```
+   外部 HTTP ingest                   或同进程发起
+   POST /workflow/.../events
+            │
+            ▼
+   ┌─────────────────────────────┐
+   │ engine.ingestEvent          │  ◀── withRootCascade(stream)
+   │   depth = 0                 │      新建 correlationId
+   │   payload.type = chat_turn  │
+   └────────────┬────────────────┘
+                │
+                ▼  WorkflowRegistry.lookup(manifest, kind=event, stream=events)
+                │  per-session FIFO enqueueDispatch
+                ▼
+   ┌─────────────────────────────┐
+   │ ChatTurnTrigger             │
+   │   when(input) → true        │
+   └────────────┬────────────────┘
+                │ predicate 命中
+                ▼
+   ┌─────────────────────────────┐
+   │ classify_chat_turn_         │  ◀── 走 Phase 3 桥:
+   │ indicators Action  (LLM)    │      ToolCallerProxy + boundary + audit
+   │   ├─ writes indicator_hit   │
+   │   └─ engine.cascadeEvent ───┼─┐
+   └─────────────────────────────┘ │ withChildCascade
+                                   │   depth = 1
+                                   │   correlationId 保持
+                                   ▼
+                          ┌──────────────────────────────┐
+                          │ StatusChangeTrigger          │
+                          │  when payload.type ===       │
+                          │    student_observation_      │
+                          │    changed                   │
+                          └────────────┬─────────────────┘
+                                       │ predicate 命中
+                                       ▼
+                          ┌──────────────────────────────┐
+                          │ derive_student_status        │
+                          │ Action  (LLM 或启发式)        │
+                          │   ├─ writes student_status   │
+                          │   └─ accessor.publish        │  ◀── student_alerts
+                          │      (subscribers only,       │      是终点
+                          │       不再进引擎)             │
+                          └──────────────────────────────┘
+```
 
-**注意：** Action handler 内部要触发下游事件，**必须用 `engine.cascadeEvent`，不要用 `accessor.publish`**。后者只 fanout 到 subscribers，不会重新进入引擎调度。M4 pass-1 MF1 就是这个 bug —— 修复后的 `cascadeEvent` 用 `withChildCascade` 保留 depth tracking。
+### Cascade 深度 + ceiling
+
+| 帧 | 怎么进 | depth |
+|---|---|---|
+| 根 | `engine.ingestEvent` (HTTP) 或 `engine.cascadeEvent` (in-process root) | 0 |
+| 子 | Action handler 内调 `engine.cascadeEvent` | 父 +1 |
+| 跌出 | `depth >= cascadeBudget ?? maxCascadeDepth` (默认 5) | 该 trigger 丢弃 + `cascade_depth_exceeded` 计数 |
+
+深度通过 Node `AsyncLocalStorage`（`cascade-context.ts` 的 `withChildCascade` / `withRootCascade`）跟踪；`correlationId` 横跨整条 cascade 不变，方便审计串联。
+
+### 关键陷阱：`cascadeEvent` vs `accessor.publish`
+
+| 用法 | 谁会触发 | 适合做什么 |
+|---|---|---|
+| `engine.cascadeEvent(...)` | 进入引擎调度（命中 event-kind triggers）+ 同时 publish 到 subscribers | Action handler 内发起下游事件，希望触发后续 trigger |
+| `accessor.publish(...)` | 只 fanout 到 subscribers，**不进引擎** | 发 stream 给前端 SSE / debug console / 不需要后续 trigger 的事件（如 `student_alerts`） |
+
+**M4 pass-1 MF1 就是踩了这个：** 当时 ChatTurnService 用 `accessor.publish` 发 `student_observation_changed`，结果 StatusChangeTrigger 永远没触发；前端看不出来，因为 `accessor.publish` 还是把事件给了 subscribers。修复后 `cascadeEvent` 走 `withChildCascade` 保留 depth tracking。如果你的下游事件需要 trigger 反应——一定用 `cascadeEvent`。
 
 ## Per-Session FIFO 队列 + 回压
 
