@@ -83,7 +83,16 @@ export type ArgsMapper = (
  * agent-level boundaries.
  */
 export interface ActionRef {
-  /** Bare ActionDef.apiName (the `qualifyTool` resolver maps to qualified name). */
+  /**
+   * Tool identifier handed to `ManifestAccessor.invokeAction(...)`. When
+   * the accessor's `qualifyTool` resolver is the default identity (the
+   * normal case for workflow triggers), this MUST be the fully-qualified
+   * `<namespace>.<actionApiName>` as registered in
+   * `SolutionToolkitRegistry` — e.g.
+   * `'workflow-actions.record_lifecycle_observation'`. Bare apiName
+   * silently `tool_not_found`s. See the interface JSDoc above for
+   * the full rationale.
+   */
   readonly action: string;
   readonly args: ArgsMapper;
   readonly as?: BoundaryRole;
