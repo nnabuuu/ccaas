@@ -136,11 +136,19 @@ function displayName(d: unknown): string {
 }
 
 function describeSlotTarget(slot: {
-  target: { kind: 'objectType'; apiName: string } | { kind: 'manifest'; name: string };
+  target:
+    | { kind: 'objectType'; apiName: string }
+    | { kind: 'manifest'; name: string }
+    | { kind: 'objectSet'; name: string };
 }): string {
-  return slot.target.kind === 'objectType'
-    ? slot.target.apiName
-    : `Manifest:${slot.target.name}`;
+  switch (slot.target.kind) {
+    case 'objectType':
+      return slot.target.apiName;
+    case 'manifest':
+      return `Manifest:${slot.target.name}`;
+    case 'objectSet':
+      return `ObjectSet:${slot.target.name}`;
+  }
 }
 
 function describeParams(shape: Record<string, unknown>): string[] {
