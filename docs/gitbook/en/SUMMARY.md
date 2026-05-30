@@ -13,6 +13,17 @@
 * [Solution Showcase](platform/solutions.md)
 * [Pricing](platform/pricing.md)
 
+## Ontology & Workflow <a href="#ontology" id="ontology"></a>
+
+* [Overview](ontology/README.md)
+* [Schema Primitives](ontology/schema-primitives.md)
+* [Trigger + Workflow Engine](ontology/trigger-and-workflow-engine.md)
+* [Observation Pipeline](ontology/observation-pipeline.md)
+* [Indicator Catalog](ontology/indicator-catalog.md)
+* [Dashboard Contract](ontology/dashboard-contract.md)
+* [Cross-Process Events](ontology/cross-process-events.md)
+* [Session Lifecycle](ontology/session-lifecycle.md)
+
 ## Getting Started <a href="#getting-started" id="getting-started"></a>
 
 * [Overview](getting-started/README.md)
