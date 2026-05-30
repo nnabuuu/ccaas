@@ -139,7 +139,7 @@ export class ObservationDashboardProjector {
         case 'lifecycle': {
           const action = typeof data.action === 'string' ? data.action : 'unknown';
           // messageCount is bumped only in `indicator_hit` (M4) — the
-          // M3 source of chat-turn truth. Lifecycle events
+          // M4 source of chat-turn truth. Lifecycle events
           // (join / translate_request / discuss_complete /
           // continue_chat_turn) are NOT counted as messages by the
           // legacy dashboard definition, so they fall through here.
