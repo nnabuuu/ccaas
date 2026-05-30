@@ -1,10 +1,24 @@
 /**
- * Claude Code as a Service - Root Module
+ * Claude Code as a Service — Root Module (phase 5.5 dynamic factory).
  *
- * Assembles all feature modules into the application.
+ * `AppModule` is a `DynamicModule` factory rather than a static
+ * `@Module({})`. Call `AppModule.register({ extraModules })` to
+ * compose the platform with solution-specific handler bundles loaded
+ * dynamically at boot. This is how `main.ts` wires
+ * `PLATFORM_HANDLER_PACKAGES` env-driven handler packages
+ * (e.g. `@kedge-agentic/live-lesson-platform-handlers`) into the
+ * NestJS module tree WITHOUT `@kedge-agentic/backend` itself naming
+ * any solution at compile time.
+ *
+ * Generic infrastructure stays inside this module's static `imports`.
+ * Solution-specific behavior (LessonSession ontology registrar,
+ * live-lesson workflow handlers, dashboard endpoints) is injected by
+ * the deploy entrypoint via `extraModules`. With `extraModules` empty,
+ * the backend boots as a truly generic platform — engine + ingest
+ * endpoints idle, no triggers register.
  */
 
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module, Type } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -60,150 +74,158 @@ import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
 import { OntologyModule } from './ontology/ontology.module';
 import { WorkflowModule } from './workflow/workflow.module';
-import { LiveLessonPlatformHandlersModule } from '@kedge-agentic/live-lesson-platform-handlers';
 import {
   ObservationRecord,
   ObserverEventRecord,
 } from './workflow/entities';
 
-@Module({
-  imports: [
-    // Configuration
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
-    }),
+export interface AppModuleRegisterOptions {
+  /**
+   * Solution-specific handler bundles to register in the NestJS
+   * module tree. Each entry is either a NestJS `Module` class
+   * (static `@Module({})`) or a `DynamicModule` (returned by a
+   * `register()` factory). `main.ts` populates this list by
+   * dynamically `await import()`ing the packages named in
+   * `PLATFORM_HANDLER_PACKAGES`.
+   */
+  readonly extraModules?: Array<Type<unknown> | DynamicModule>;
+}
 
-    // Rate Limiting (Global defaults, overridden per endpoint)
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 10000,  // high limit for benchmark workloads
-      },
-    ]),
+@Module({})
+export class AppModule {
+  static register(opts: AppModuleRegisterOptions = {}): DynamicModule {
+    const extraModules = opts.extraModules ?? [];
+    return {
+      module: AppModule,
+      imports: [
+        // Configuration
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [configuration],
+        }),
 
-    // Event Emitter (Week 5: WebSocket events)
-    EventEmitterModule.forRoot(),
+        // Rate Limiting (Global defaults, overridden per endpoint)
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60000, // 1 minute
+            limit: 10000, // high limit for benchmark workloads
+          },
+        ]),
 
-    // Database (SQLite for simplicity, can switch to PostgreSQL)
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: process.env.DATABASE_PATH || '.agent-workspace/data.db',
-      entities: [
-        // Core entities
-        Skill,
-        SkillVersion,
-        SkillFile,
-        SkillVersionFile,
-        Solution,
-        ApiKey,
-        McpServer,
-        AgentFile,
-        FileVersion,
-        // User entities
-        User,
-        UserSolution,
-        // Message entities
-        Message,
-        ToolEvent,
-        ConversationContext,
-        ProcessLifecycleEvent,
-        ApiErrorEvent,
-        ThinkingBlock,
-        TokenUsageEvent,
-        UserContextEvent,
-        SessionEventRecord,
-        // Session entities
-        MessageQueue,
-        Session,
-        SessionArtifactSnapshot,
-        SessionMetadata,
-        // Workflow / observation persistence (phase 5)
-        ObservationRecord,
-        ObserverEventRecord,
-        // Storage entities
-        LargeContent,
-        SystemPromptVersion,
-        // Admin entities
-        AdminAuditLog,
-        SessionAlert,
-        SolutionQuota,
-        Turn,
-        // Scheduler entities
-        ScheduledTask,
-        ScheduledTaskExecution,
-        // Job entities
-        JobEntity,
+        // Event Emitter (Week 5: WebSocket events)
+        EventEmitterModule.forRoot(),
+
+        // Database (SQLite for simplicity, can switch to PostgreSQL)
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: process.env.DATABASE_PATH || '.agent-workspace/data.db',
+          entities: [
+            // Core entities
+            Skill,
+            SkillVersion,
+            SkillFile,
+            SkillVersionFile,
+            Solution,
+            ApiKey,
+            McpServer,
+            AgentFile,
+            FileVersion,
+            // User entities
+            User,
+            UserSolution,
+            // Message entities
+            Message,
+            ToolEvent,
+            ConversationContext,
+            ProcessLifecycleEvent,
+            ApiErrorEvent,
+            ThinkingBlock,
+            TokenUsageEvent,
+            UserContextEvent,
+            SessionEventRecord,
+            // Session entities
+            MessageQueue,
+            Session,
+            SessionArtifactSnapshot,
+            SessionMetadata,
+            // Workflow / observation persistence (phase 5)
+            ObservationRecord,
+            ObserverEventRecord,
+            // Storage entities
+            LargeContent,
+            SystemPromptVersion,
+            // Admin entities
+            AdminAuditLog,
+            SessionAlert,
+            SolutionQuota,
+            Turn,
+            // Scheduler entities
+            ScheduledTask,
+            ScheduledTaskExecution,
+            // Job entities
+            JobEntity,
+          ],
+          synchronize: process.env.NODE_ENV !== 'production',
+          logging: process.env.DEBUG === 'true',
+        }),
+
+        // Core modules
+        ProtocolModule,
+        AuthModule,
+        McpModule,
+        ToolCallerModule,
+        StorageModule,
+
+        // Feature modules
+        SessionsModule,
+        HealthModule,
+        SkillsModule,
+        SolutionsModule,
+        MessagesModule,
+        FilesModule,
+        UsersModule,
+
+        // Quota enforcement
+        QuotaModule,
+
+        // Admin
+        AdminModule,
+
+        // Scheduler
+        SchedulerModule,
+
+        // Background jobs
+        JobModule,
+
+        // Solution auto-discovery (tenant rows + MCP + skills + bundles)
+        SolutionLoaderModule,
+
+        // Bundle system (platform capability packages)
+        BundleModule,
+
+        // Builder module (external developer self-service)
+        BuilderModule,
+
+        // Ontology layer (Phase 3): generic manifest accessor + action
+        // bridge. Knows nothing about live-lesson; solution-specific
+        // ontology registrars come in via `extraModules`.
+        OntologyModule,
+
+        // Workflow layer (Phase 5): generic declarative triggers +
+        // cross-process event ingest. Knows nothing about live-lesson;
+        // solution-specific handlers come in via `extraModules`.
+        WorkflowModule,
+
+        // Solution-specific handler bundles injected at boot by main.ts
+        // based on the PLATFORM_HANDLER_PACKAGES env var.
+        ...extraModules,
       ],
-      synchronize: process.env.NODE_ENV !== 'production',
-      logging: process.env.DEBUG === 'true',
-    }),
-
-    // Core modules
-    ProtocolModule,
-    AuthModule,
-    McpModule,
-    ToolCallerModule,
-    StorageModule,
-
-    // Note: AgentRuntimeModule.forRoot() is imported by SessionsModule
-    // (transitively reaches AppModule via SessionsModule below). The
-    // artifact callback URL lives on `tenant.config.artifactUrl`, set via
-    // solution.json auto-discovery or `PUT /solutions/:id` — no env vars.
-
-    // Feature modules
-    SessionsModule, // Unified session management (WebSocket + REST)
-    HealthModule,   // System health monitoring
-    SkillsModule,
-    SolutionsModule,
-    MessagesModule,
-    FilesModule,
-    UsersModule,
-
-    // Quota enforcement (global — used by Sessions + Messages + Admin)
-    QuotaModule,
-
-    // Admin module
-    AdminModule,
-
-    // Scheduler module
-    SchedulerModule,
-
-    // Background jobs module
-    JobModule,
-
-    // Solution auto-discovery
-    SolutionLoaderModule,
-
-    // Bundle system (platform capability packages)
-    BundleModule,
-
-    // Builder module (external developer self-service)
-    BuilderModule,
-
-    // Ontology layer (Phase 3): manifest accessor + ActionDef bridge.
-    // Dead-code at boot until Solutions register manifests + actions.
-    OntologyModule,
-
-    // Workflow layer (Phase 5): declarative triggers + cross-process
-    // event ingest. Generic — knows nothing about live-lesson. Dead-
-    // code until solutions register TriggerDefs and start pushing
-    // events through the ingest endpoint.
-    WorkflowModule,
-
-    // PLACEHOLDER (phase 5.5 step 2): hard-import the live-lesson
-    // handler bundle so existing dev/test behavior continues to
-    // work. The next phase 5.5 step replaces `AppModule` with a
-    // `DynamicModule` factory `AppModule.register({ extraModules })`
-    // and removes this line — handler packages will be loaded by
-    // `main.ts` via `PLATFORM_HANDLER_PACKAGES` env var instead.
-    LiveLessonPlatformHandlersModule,
-  ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-  ],
-})
-export class AppModule {}
+      providers: [
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
+        },
+      ],
+    };
+  }
+}
