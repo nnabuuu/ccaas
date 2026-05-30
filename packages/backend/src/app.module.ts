@@ -59,6 +59,7 @@ import { SolutionLoaderModule } from './solutions/solution-loader.module';
 import { BundleModule } from './bundles/bundle.module';
 import { BuilderModule } from './builder/builder.module';
 import { OntologyModule } from './ontology/ontology.module';
+import { WorkflowModule } from './workflow/workflow.module';
 import {
   ObservationRecord,
   ObserverEventRecord,
@@ -182,6 +183,11 @@ import {
     // Ontology layer (Phase 3): manifest accessor + ActionDef bridge.
     // Dead-code at boot until Solutions register manifests + actions.
     OntologyModule,
+
+    // Workflow layer (Phase 5): declarative triggers + cross-process
+    // event ingest. Dead-code until solutions register TriggerDefs and
+    // start pushing events through the ingest endpoint.
+    WorkflowModule,
   ],
   providers: [
     {
