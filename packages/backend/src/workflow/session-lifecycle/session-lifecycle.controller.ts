@@ -66,17 +66,13 @@ export class SessionLifecycleController {
         'solutionId not resolved from auth context; DELETE session requires a tenant-bound API key',
       );
     }
-    // engine.clearSession cascades into IndicatorRegistryService.clearSession,
-    // but that one drops entries across ALL tenants for the sessionId
-    // (intentional: session ids are globally unique and the engine queue
-    // is tenant-agnostic). The IndicatorRegistry's tenant-scoped behavior
-    // is the AUTH check above + the (solutionId, sessionId) keying on
-    // setIndicators/getIndicators. Both deletions are safe to run here.
-    this.engine.clearSession(sessionId);
-    // Belt-and-suspenders: also call IndicatorRegistry.clearSession
-    // directly. engine.clearSession ALREADY cascades into it (per M5
-    // pass-1 SF1 wiring), so this is redundant but explicit — the
-    // intent is "this endpoint clears indicator state."
-    this.indicators.clearSession(sessionId);
+    // M6 pass-2 SF3: tenant-scoped teardown. Engine queue drain is
+    // tenant-agnostic (the queue is keyed by sessionId only), but
+    // indicator clear must respect the auth boundary so a chat key
+    // from tenant A cannot drop tenant B's catalog. Bypass
+    // `engine.clearSession` (which broad-clears indicators) — call
+    // the narrow queue drain + the tenant-scoped indicator clear.
+    this.engine.clearSessionQueue(sessionId);
+    this.indicators.clearTenantSession(solutionId, sessionId);
   }
 }

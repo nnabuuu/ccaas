@@ -61,6 +61,18 @@ describe('IndicatorRegistryService', () => {
     expect(svc.getIndicators('tenant-a', 'barfoo')).toEqual([B]);
   });
 
+  it('M6 pass-2 SF3: clearTenantSession only drops the (solutionId, sessionId) tuple', () => {
+    // Tenant A's DELETE for a shared sessionId must NOT touch tenant B's
+    // catalog. The broad clearSession (used by engine teardown) DOES
+    // drop both; clearTenantSession is the auth-boundary-respecting
+    // variant.
+    svc.setIndicators('tenant-a', 'shared-session', [A]);
+    svc.setIndicators('tenant-b', 'shared-session', [B]);
+    svc.clearTenantSession('tenant-a', 'shared-session');
+    expect(svc.getIndicators('tenant-a', 'shared-session')).toEqual([]);
+    expect(svc.getIndicators('tenant-b', 'shared-session')).toEqual([B]);
+  });
+
   it('reset() empties the registry', () => {
     svc.setIndicators('tenant-a', 'sess-1', [A]);
     svc.reset();

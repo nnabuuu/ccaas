@@ -9,7 +9,6 @@
     "test": "jest --no-coverage"
   },
   "dependencies": {
-    "@kedge-agentic/observer-engine": "file:../../../../packages/observer-engine",
     "@kedge-agentic/workflow-client": "file:../../../../packages/workflow-client",
     "@nestjs/cache-manager": "^3.1.2",
     "@nestjs/schedule": "^4.1.2",
@@ -32,6 +31,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@kedge-agentic/observer-engine": "file:../../../../packages/observer-engine",
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@nestjs/testing": "^11.1.19",
