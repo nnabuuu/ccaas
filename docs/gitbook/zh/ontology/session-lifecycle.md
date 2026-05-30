@@ -94,6 +94,71 @@ private async cleanupStaleSessions(): Promise<void> {
 
 **为什么两套：** 引擎 teardown 在进程内 trusts sessionId 全局唯一（UUID），用广义清理更省事；外部 HTTP DELETE 走 auth 边界，必须 tenant-scoped。
 
+### 一图看清两条清理路径
+
+举例：内存里 `IndicatorRegistry.byKey` Map 当前状态（`\x1f` 是 ASCII Unit Separator，避免 slug 含空格的冲突，见 [Indicator 目录](indicator-catalog.md)）：
+
+```
+   IndicatorRegistry.byKey  (内存 Map<string, IndicatorDef[]>)
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ key                        │ value                        │
+   ├────────────────────────────┼──────────────────────────────┤
+   │ "tenant-A\x1fsess-1"       │ [{id:K1,...}, {id:M2,...}]    │
+   │ "tenant-B\x1fsess-1"       │ [{id:K3,...}]                │
+   │ "tenant-A\x1fsess-2"       │ [{id:K5,...}]                │
+   └────────────────────────────┴──────────────────────────────┘
+
+
+Path 1 ── 引擎 teardown（广义，跨 tenant）
+
+   engine.clearSession("sess-1")
+        │
+        ├─ sessionQueues.delete("sess-1")          [drain queue]
+        │
+        └─ indicators.clearSession("sess-1")
+             │
+             ▼  for each key:
+                if key.endsWith("\x1fsess-1") { delete }
+
+   结果 Map:
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ "tenant-A\x1fsess-1"       │  ✗  DELETED                  │
+   │ "tenant-B\x1fsess-1"       │  ✗  DELETED  ◀── 跨 tenant   │
+   │ "tenant-A\x1fsess-2"       │  ✓  kept                     │
+   └────────────────────────────┴──────────────────────────────┘
+   (UUID 全局唯一假设下 OK；这条路径不走 auth boundary)
+
+
+Path 2 ── 外部 DELETE（tenant-scoped，M6 pass-2 SF3）
+
+   POST /api/v1/workflow/sessions/sess-1  Bearer <tenant-A 的 chat-key>
+        │
+        │ @TenantId() → "tenant-A"     [400 if missing]
+        │
+        ▼
+   SessionLifecycleController.clearSession("sess-1", "tenant-A")
+        │
+        ├─ engine.clearSessionQueue("sess-1")            [drain queue only]
+        │
+        └─ indicators.clearTenantSession("tenant-A", "sess-1")
+             │
+             ▼  Map.delete("tenant-A" + "\x1f" + "sess-1")    [O(1) 直查]
+
+   结果 Map:
+   ┌────────────────────────────┬──────────────────────────────┐
+   │ "tenant-A\x1fsess-1"       │  ✗  DELETED                  │
+   │ "tenant-B\x1fsess-1"       │  ✓  kept     ◀── 跨 tenant 隔离  │
+   │ "tenant-A\x1fsess-2"       │  ✓  kept                     │
+   └────────────────────────────┴──────────────────────────────┘
+```
+
+**对应关系一句话：** auth 进入点是哪一层、teardown 范围就到哪一层。
+
+| 入口 | 进入条件 | 范围 | 调用的清理 API |
+|---|---|---|---|
+| 引擎内部 teardown | 进程内可信，不过 auth | sessionId 全部 tenant | `clearSession` |
+| 外部 HTTP DELETE | `@TenantId()` 解出 solutionId | (solutionId, sessionId) tuple | `clearSessionQueue` + `clearTenantSession` |
+
 ## Race condition：indicator push 还在飞 + chat_turn 已到
 
 Session 启动后立刻：
