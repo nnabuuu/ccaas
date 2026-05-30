@@ -39,6 +39,7 @@ export {
   validateObjectTypeLocal,
   validateManifest,
   validateFunction,
+  validateObjectSetLocal,
   validateAll,
 } from './validators.js';
 export { RegistrationError } from './registration-error.js';

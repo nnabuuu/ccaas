@@ -33,21 +33,23 @@
  * `getSchemaDigest()` is a Phase 8 deliverable (distribution layer).
  * The Phase 7 stub returns a placeholder and is replaced in commit 8.
  *
- * Phase 4 additions (deferred): `registerInterface`,
- * `registerObjectSet`, `registerPredicate`, `getImplementersOf`,
- * `getObjectSetsForType`, `getPredicate`. Phase 5 additions:
- * `getPropertiesByClassification`, `registerNotificationChannel`.
+ * Phase 4 additions (partial): `registerObjectSet`, `getObjectSet`,
+ * `getAllObjectSets`, `getObjectSetsForType` shipped. Still deferred:
+ * `registerInterface`, `registerPredicate`, `getImplementersOf`,
+ * `getPredicate`. Phase 5 additions: `getPropertiesByClassification`,
+ * `registerNotificationChannel`.
  *
  * @see ../../../docs/ontology/kedge-ontology-design.md (§6)
  */
 
-import type { FunctionDef, ObjectTypeDef } from '../schema/index.js';
+import type { FunctionDef, ObjectSetDef, ObjectTypeDef } from '../schema/index.js';
 import type { LinkDef } from '../schema/index.js';
 import type { ManifestDef } from '../manifest/index.js';
 import {
   RegistrationError,
   validateAll,
   validateFunction,
+  validateObjectSetLocal,
   validateObjectTypeLocal,
   type ValidationContext,
 } from '../schema/index.js';
@@ -60,6 +62,8 @@ export class OntologyRegistry {
   private readonly objectTypes = new Map<string, ObjectTypeDef>();
   private readonly manifests = new Map<string, ManifestDef>();
   private readonly functions = new Map<string, FunctionDef>();
+  /** Phase 4 (Tier 2 — partial). Keyed by ObjectSetDef.apiName. */
+  private readonly objectSets = new Map<string, ObjectSetDef>();
   private sealed = false;
 
   registerObjectType(t: ObjectTypeDef): void {
@@ -111,6 +115,30 @@ export class OntologyRegistry {
   }
 
   /**
+   * Register an `ObjectSetDef`. Phase 4 (Tier 2 — partial).
+   *
+   * Local validation runs eagerly: semantic non-empty + duplicate
+   * detection. Filter path resolution against the target
+   * `ObjectType`'s Zod schema is cross-def and runs in
+   * `validate()`/`seal()`.
+   */
+  registerObjectSet(s: ObjectSetDef): void {
+    this.assertNotSealed();
+    if (this.objectSets.has(s.apiName)) {
+      throw new RegistrationError([
+        {
+          code: 'DUPLICATE_DEFINITION',
+          message: `duplicate ObjectSet apiName '${s.apiName}'`,
+          path: `ObjectSet:${s.apiName}`,
+        },
+      ]);
+    }
+    const errors = validateObjectSetLocal(s);
+    if (errors.length > 0) throw new RegistrationError(errors);
+    this.objectSets.set(s.apiName, s);
+  }
+
+  /**
    * Run full cross-def validation. Throws `RegistrationError` if any
    * invariants are violated. Idempotent.
    */
@@ -155,6 +183,24 @@ export class OntologyRegistry {
   getAllFunctions(): readonly FunctionDef[] {
     return Array.from(this.functions.values());
   }
+  /** Phase 4 (Tier 2 — partial). */
+  getObjectSet(apiName: string): ObjectSetDef | undefined {
+    return this.objectSets.get(apiName);
+  }
+  /** Phase 4 (Tier 2 — partial). */
+  getAllObjectSets(): readonly ObjectSetDef[] {
+    return Array.from(this.objectSets.values());
+  }
+  /**
+   * Phase 4 (Tier 2 — partial). All registered ObjectSetDefs whose
+   * `objectType` matches the given ObjectType apiName. Used by tooling
+   * that asks "what curated subsets exist for Student?".
+   */
+  getObjectSetsForType(objectTypeApiName: string): readonly ObjectSetDef[] {
+    return this.getAllObjectSets().filter(
+      (s) => s.objectType === objectTypeApiName,
+    );
+  }
 
   /**
    * Cross-def lookup surface for validators / other tooling. Exposed
@@ -166,6 +212,7 @@ export class OntologyRegistry {
       objectTypes: this.objectTypes,
       manifests: this.manifests,
       functions: this.functions,
+      objectSets: this.objectSets,
     };
   }
 
