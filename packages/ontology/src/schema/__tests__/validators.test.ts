@@ -733,3 +733,188 @@ describe('validateAll + RegistrationError', () => {
     expect(err.message).toContain('2 error(s)');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────
+// Phase 4 — ObjectSetDef validators
+// ────────────────────────────────────────────────────────────────────
+
+describe('OBJECTSET_TARGET_UNRESOLVED', () => {
+  it('flags ObjectSet whose target ObjectType is not registered', () => {
+    const s: import('../object-set.js').ObjectSetDef = {
+      apiName: 'strugglingStudents',
+      displayName: '挣扎中的学生',
+      objectType: 'Ghost',
+      filter: { op: 'has', path: 'id' },
+      semantic: 'low mastery',
+    };
+    const ctx: ValidationContext = {
+      objectTypes: new Map(),
+      manifests: new Map(),
+      objectSets: new Map([[s.apiName, s]]),
+    };
+    expect(codes(validateAll(ctx))).toContain('OBJECTSET_TARGET_UNRESOLVED');
+  });
+});
+
+describe('OBJECTSET_FIELD_UNRESOLVED', () => {
+  function studentType(): ObjectTypeDef {
+    return {
+      apiName: 'Student',
+      displayName: 'Student',
+      semantic: 'a learner',
+      schema: z.object({
+        id: z.string(),
+        mastery: z.number(),
+        engagement: z.number(),
+      }),
+      links: [],
+      actions: [],
+    };
+  }
+  function setWithFilter(filter: import('../object-set.js').SetFilter): import('../object-set.js').ObjectSetDef {
+    return {
+      apiName: 'someSet',
+      displayName: 's',
+      objectType: 'Student',
+      filter,
+      semantic: 'x',
+    };
+  }
+  function ctx(set: import('../object-set.js').ObjectSetDef): ValidationContext {
+    return {
+      objectTypes: new Map([['Student', studentType()]]),
+      manifests: new Map(),
+      objectSets: new Map([[set.apiName, set]]),
+    };
+  }
+
+  it('flags a comparison op whose path is not a field on the target', () => {
+    const s = setWithFilter({ op: 'lt', path: 'ghost', value: 50 });
+    expect(codes(validateAll(ctx(s)))).toContain('OBJECTSET_FIELD_UNRESOLVED');
+  });
+
+  it('flags a nested and/or whose leaf path is missing', () => {
+    const s = setWithFilter({
+      op: 'and',
+      clauses: [
+        { op: 'lt', path: 'mastery', value: 50 },
+        { op: 'eq', path: 'phantomField', value: 'x' },
+      ],
+    });
+    const errs = validateAll(ctx(s));
+    expect(codes(errs)).toContain('OBJECTSET_FIELD_UNRESOLVED');
+  });
+
+  it('flags a not-wrapped clause whose path is missing', () => {
+    const s = setWithFilter({
+      op: 'not',
+      clause: { op: 'eq', path: 'missing', value: 'x' },
+    });
+    expect(codes(validateAll(ctx(s)))).toContain('OBJECTSET_FIELD_UNRESOLVED');
+  });
+
+  it('passes when every path resolves to a field on the target', () => {
+    const s = setWithFilter({
+      op: 'and',
+      clauses: [
+        { op: 'lt', path: 'mastery', value: 50 },
+        { op: 'ge', path: 'engagement', value: 50 },
+      ],
+    });
+    expect(codes(validateAll(ctx(s)))).not.toContain('OBJECTSET_FIELD_UNRESOLVED');
+  });
+
+  it('flags orderBy paths that do not resolve to fields', () => {
+    const s: import('../object-set.js').ObjectSetDef = {
+      apiName: 'someSet',
+      displayName: 's',
+      objectType: 'Student',
+      filter: { op: 'has', path: 'id' },
+      orderBy: [{ path: 'phantom', direction: 'asc' }],
+      semantic: 'x',
+    };
+    expect(codes(validateAll(ctx(s)))).toContain('OBJECTSET_FIELD_UNRESOLVED');
+  });
+});
+
+describe('OBJECTSET_NAMED_UNSUPPORTED', () => {
+  it('flags a named SetFilter (predicate registry is still gated)', () => {
+    const studentType: ObjectTypeDef = {
+      apiName: 'Student',
+      displayName: 'S',
+      semantic: 's',
+      schema: z.object({ id: z.string() }),
+      links: [],
+      actions: [],
+    };
+    const s: import('../object-set.js').ObjectSetDef = {
+      apiName: 'special',
+      displayName: 's',
+      objectType: 'Student',
+      filter: { op: 'named', name: 'isHighRisk' },
+      semantic: 'x',
+    };
+    const ctx: ValidationContext = {
+      objectTypes: new Map([['Student', studentType]]),
+      manifests: new Map(),
+      objectSets: new Map([[s.apiName, s]]),
+    };
+    expect(codes(validateAll(ctx))).toContain('OBJECTSET_NAMED_UNSUPPORTED');
+  });
+});
+
+describe('SLOT_TARGET_UNRESOLVED (objectSet kind, Phase 4)', () => {
+  it('flags a slot.target.objectSet whose name is not registered', () => {
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'students',
+          displayName: 'students',
+          target: { kind: 'objectSet', name: 'unknownSet' },
+          semantic: 's',
+        },
+      ],
+    });
+    expect(
+      codes(validateManifest(m, {
+        objectTypes: new Map(),
+        manifests: new Map(),
+        objectSets: new Map(),
+      })),
+    ).toContain('SLOT_TARGET_UNRESOLVED');
+  });
+
+  it('passes when slot.target.objectSet name is registered', () => {
+    const studentType: ObjectTypeDef = {
+      apiName: 'Student',
+      displayName: 'S',
+      semantic: 's',
+      schema: z.object({ id: z.string() }),
+      links: [],
+      actions: [],
+    };
+    const struggling: import('../object-set.js').ObjectSetDef = {
+      apiName: 'strugglingStudents',
+      displayName: 's',
+      objectType: 'Student',
+      filter: { op: 'has', path: 'id' },
+      semantic: 'x',
+    };
+    const m = manifest({
+      slots: [
+        {
+          apiName: 'students',
+          displayName: 'students',
+          target: { kind: 'objectSet', name: 'strugglingStudents' },
+          semantic: 's',
+        },
+      ],
+    });
+    const ctx: ValidationContext = {
+      objectTypes: new Map([['Student', studentType]]),
+      manifests: new Map(),
+      objectSets: new Map([['strugglingStudents', struggling]]),
+    };
+    expect(codes(validateManifest(m, ctx))).not.toContain('SLOT_TARGET_UNRESOLVED');
+  });
+});

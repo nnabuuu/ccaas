@@ -40,6 +40,7 @@ export {
   validateObjectTypeLocal,
   validateManifest,
   validateFunction,
+  validateObjectSet,
   validateObjectSetLocal,
   validateAll,
 } from './validators.js';
