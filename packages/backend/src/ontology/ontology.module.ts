@@ -7,6 +7,7 @@ import {
   ONTOLOGY_REGISTRY,
 } from './ontology-registry.provider';
 import { ManifestAccessorService } from './manifest-accessor.service';
+import { OntologySealService } from './ontology-seal.service';
 import { LiveLessonOntologyService } from './live-lesson/live-lesson-ontology.service';
 
 /**
@@ -33,6 +34,9 @@ import { LiveLessonOntologyService } from './live-lesson/live-lesson-ontology.se
     OntologyRegistryProvider,
     ManifestAccessorService,
     LiveLessonOntologyService,
+    // Seal runs after every solution registrar's onModuleInit. See
+    // OntologySealService header for the lifecycle rationale.
+    OntologySealService,
   ],
   exports: [ONTOLOGY_REGISTRY, ManifestAccessorService],
 })

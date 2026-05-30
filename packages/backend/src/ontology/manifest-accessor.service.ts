@@ -72,6 +72,15 @@ export interface ManifestAccessorInput {
    * platform's job and the accessor doesn't fabricate it.
    */
   readonly actingUserId?: string;
+  /**
+   * Resolves an `ActionDef.apiName` (bare, e.g. `'emit_todo_card'`) to
+   * the namespaced qualified tool name the proxy looks up
+   * (e.g. `'creator-actions.emit_todo_card'`). Default: identity, which
+   * matches the assumption that the caller hands in qualified names —
+   * but live registrations under a namespace require an explicit
+   * resolver to bridge the apiName↔qualifiedName gap. Pass-3 code-review S2.
+   */
+  readonly qualifyTool?: (actionApiName: string) => string;
 }
 
 type StreamHandler = (event: unknown) => void;
@@ -143,6 +152,7 @@ export class ManifestAccessorService {
       stateCache,
       metadata: this.metadata,
       proxy: this.proxy,
+      qualifyTool: input.qualifyTool ?? ((name) => name),
       subscribe: (streamApiName, handler) =>
         this.subscribeInternal(input.sessionId, streamApiName, handler),
     });
@@ -257,6 +267,7 @@ interface BoundDeps {
   readonly stateCache: Map<string, unknown>;
   readonly metadata: SessionMetadataService;
   readonly proxy?: ToolCallerProxyService;
+  readonly qualifyTool: (actionApiName: string) => string;
   readonly subscribe: (
     streamApiName: string,
     handler: StreamHandler,
@@ -372,7 +383,7 @@ class BoundManifestAccessor implements ManifestAccessor {
       actingRole: this.deps.role,
     };
     const result = await this.deps.proxy.invoke(
-      { tool: apiName, args: params },
+      { tool: this.deps.qualifyTool(apiName), args: params },
       ctx,
     );
     if (result.ok) {

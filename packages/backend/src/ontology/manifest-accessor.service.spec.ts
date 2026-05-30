@@ -289,6 +289,44 @@ describe('ManifestAccessorService', () => {
     });
   });
 
+  it('invokeAction uses qualifyTool to map bare apiName → namespaced tool (pass-3 S2)', async () => {
+    const toolkits = new SolutionToolkitRegistry();
+    const proxy = new ToolCallerProxyService(toolkits);
+    toolkits.registerToolkit({
+      solutionId: 'live-lesson',
+      namespace: 'creator-actions',
+      tools: [
+        {
+          name: 'emit_todo_card',
+          description: 'fixture',
+          argsSchema: z.object({}).passthrough(),
+          handler: async () => ({ ok: true, content: [{ type: 'text', text: 'fixture-ok' }] }),
+        },
+      ],
+    });
+    const module = await Test.createTestingModule({
+      providers: [
+        OntologyRegistryProvider,
+        ManifestAccessorService,
+        { provide: SessionMetadataService, useValue: metadata },
+        { provide: ToolCallerProxyService, useValue: proxy },
+      ],
+    }).compile();
+    const accessorService = module.get(ManifestAccessorService);
+    const registry2 = module.get(ONTOLOGY_REGISTRY);
+    registry2.registerManifest(buildManifest());
+    const a = await accessorService.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+      qualifyTool: (n) => `creator-actions.${n}`,
+    });
+    // Caller passes bare apiName — accessor's qualifyTool prepends the namespace.
+    const result = await a.invokeAction('emit_todo_card', {});
+    expect(result).toEqual({ ok: true });
+  });
+
   it('invokeAction maps tool_not_found from proxy to internal_error (S5 coverage)', async () => {
     const toolkits = new SolutionToolkitRegistry();
     const proxy = new ToolCallerProxyService(toolkits);

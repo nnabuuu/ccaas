@@ -29,6 +29,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { OntologyRegistry } from '@kedge-agentic/ontology';
+import { SolutionsService } from '../../solutions/solutions.service';
 import { SolutionToolkitRegistry } from '../../tool-caller/solution-toolkit-registry';
 import { ONTOLOGY_REGISTRY } from '../ontology-registry.provider';
 import { compileActionToToolDefinition } from '../action-to-tool-definition';
@@ -39,7 +40,15 @@ import {
   emitTodoCardHandler,
 } from './actions/emit-todo-card.action';
 
-export const LIVE_LESSON_SOLUTION_ID = 'live-lesson';
+/**
+ * Tenant slug used in `solution.json`. At boot we resolve this slug to
+ * the tenant UUID — `ExecutionContext.solutionId` carries the UUID at
+ * runtime (see `api-key.service.ts:174` + `session.service.ts`), and
+ * `SolutionToolkitRegistry` keys strictly by that UUID. Passing the
+ * slug here would silently turn the whole ActionDef path into dead
+ * code (pass-3 code review M1).
+ */
+export const LIVE_LESSON_TENANT_SLUG = 'live-lesson';
 /**
  * Namespace under which ActionDef-routed tools register. Distinct from
  * the legacy stdio `creator` namespace so both paths coexist while
@@ -54,23 +63,30 @@ export class LiveLessonOntologyService implements OnModuleInit {
   constructor(
     @Inject(ONTOLOGY_REGISTRY) private readonly registry: OntologyRegistry,
     private readonly toolkits: SolutionToolkitRegistry,
+    private readonly solutions: SolutionsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    // ObjectTypes first — manifest validators look these up by apiName.
+    // Ontology registration (object types + manifest) is independent of
+    // tenant existence — register first so the schema endpoint sees
+    // them even if no tenant is provisioned yet.
     for (const t of LIVE_LESSON_OBJECT_TYPES) {
       this.registry.registerObjectType(t);
     }
     this.registry.registerManifest(LessonSessionManifest);
+    // Note: `registry.seal()` lives in `OntologySealService.onApplicationBootstrap`
+    // (a single seal stage after every solution registrar has run) —
+    // sealing here would crash boot the moment a second solution
+    // registrar tried to register. Pass-3 review S1.
 
-    try {
-      this.registry.seal();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(
-        `Live-lesson ontology registration sealed-validate failed: ${msg}`,
+    const tenant = await this.solutions.findOne(LIVE_LESSON_TENANT_SLUG);
+    if (!tenant) {
+      this.logger.warn(
+        `Tenant slug "${LIVE_LESSON_TENANT_SLUG}" not provisioned at boot — skipping ` +
+          `toolkit registration. Ontology types/manifest stay registered; the ` +
+          `ActionDef tool path activates once the tenant row exists.`,
       );
-      throw err;
+      return;
     }
 
     const emitTodo = compileActionToToolDefinition(
@@ -80,7 +96,7 @@ export class LiveLessonOntologyService implements OnModuleInit {
     );
 
     this.toolkits.registerToolkit({
-      solutionId: LIVE_LESSON_SOLUTION_ID,
+      solutionId: tenant.id,
       namespace: LIVE_LESSON_ACTION_NAMESPACE,
       tools: [emitTodo],
     });
@@ -88,7 +104,8 @@ export class LiveLessonOntologyService implements OnModuleInit {
     this.logger.log(
       `Live-lesson ontology registered: ${LIVE_LESSON_OBJECT_TYPES.length} object types, ` +
         `manifest "${LessonSessionManifest.name}", 1 action tool ` +
-        `"${LIVE_LESSON_ACTION_NAMESPACE}.${EmitTodoCardAction.apiName}".`,
+        `"${LIVE_LESSON_ACTION_NAMESPACE}.${EmitTodoCardAction.apiName}" ` +
+        `(solutionId=${tenant.id}, slug="${LIVE_LESSON_TENANT_SLUG}").`,
     );
   }
 }
