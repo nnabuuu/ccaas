@@ -193,12 +193,12 @@ describe('defineObjectSet (Phase 4)', () => {
   });
 
   it('rejects missing semantic at compile time', () => {
+    // @ts-expect-error — semantic is required
     defineObjectSet({
       apiName: 'x',
       displayName: 'x',
       objectType: 'Student',
       filter: { op: 'has', path: 'id' },
-      // @ts-expect-error — semantic is required
     });
   });
 

@@ -11,11 +11,23 @@ import type { ObjectSetDef, OrderClause, SetFilter } from '../object-set.js';
 
 describe('SetFilter shape', () => {
   it('accepts every comparison op kind', () => {
-    const ops: SetFilter['op'][] = ['eq', 'ne', 'lt', 'le', 'gt', 'ge'];
-    for (const op of ops) {
-      const f: SetFilter = { op, path: 'mastery', value: 50 };
-      expect(f.op).toBe(op);
-    }
+    // Enumerate explicitly because the SetFilter union narrows per
+    // op — a generic loop variable widens to the full union and
+    // breaks the value/path constraints. One direct literal each.
+    const eq: SetFilter = { op: 'eq', path: 'mastery', value: 50 };
+    const ne: SetFilter = { op: 'ne', path: 'mastery', value: 50 };
+    const lt: SetFilter = { op: 'lt', path: 'mastery', value: 50 };
+    const le: SetFilter = { op: 'le', path: 'mastery', value: 50 };
+    const gt: SetFilter = { op: 'gt', path: 'mastery', value: 50 };
+    const ge: SetFilter = { op: 'ge', path: 'mastery', value: 50 };
+    expect([eq.op, ne.op, lt.op, le.op, gt.op, ge.op]).toEqual([
+      'eq',
+      'ne',
+      'lt',
+      'le',
+      'gt',
+      'ge',
+    ]);
   });
 
   it('accepts boolean and null values on comparisons', () => {
