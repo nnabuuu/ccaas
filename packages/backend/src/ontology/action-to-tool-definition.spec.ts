@@ -28,7 +28,7 @@ import { SolutionToolkitRegistry } from '../tool-caller/solution-toolkit-registr
 import type { ToolCallAuditEntry } from '../tool-caller/types';
 import { compileActionToToolDefinition } from './action-to-tool-definition';
 
-const TODO_ACTION: ActionDef = defineAction({
+const EMIT_CARD_FIXTURE: ActionDef = defineAction({
   apiName: 'emit_todo_card',
   displayName: 'Emit Todo Card',
   semantic: '弹出 todo card 给学生',
@@ -76,13 +76,13 @@ describe('compileActionToToolDefinition (unit)', () => {
   it('copies ActionDef fields into the ToolDefinition shape', () => {
     const handler = jest.fn();
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       handler,
       manifestWith({ agentActions: ['emit_todo_card'] }),
     );
     expect(td.name).toBe('emit_todo_card');
-    expect(td.description).toBe(TODO_ACTION.semantic);
-    expect(td.argsSchema).toBe(TODO_ACTION.params);
+    expect(td.description).toBe(EMIT_CARD_FIXTURE.semantic);
+    expect(td.argsSchema).toBe(EMIT_CARD_FIXTURE.params);
     expect(td.visibility?.roles).toEqual(['agent']);
     expect(td.requiredPermissions).toEqual([]);
   });
@@ -93,7 +93,7 @@ describe('compileActionToToolDefinition (unit)', () => {
       content: [{ type: 'text', text: 'ok' }],
     });
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       inner,
       manifestWith({ agentActions: ['emit_todo_card'] }),
     );
@@ -110,7 +110,7 @@ describe('compileActionToToolDefinition (unit)', () => {
   it('denies when the role boundary does NOT cover the action; inner handler not called', async () => {
     const inner = jest.fn();
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       inner,
       manifestWith({ agentActions: [] }),
     );
@@ -130,7 +130,7 @@ describe('compileActionToToolDefinition (unit)', () => {
   it('denies when actingRole is not in ActionDef.allowedRoles', async () => {
     const inner = jest.fn();
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       inner,
       defineManifest({
         name: 'M',
@@ -212,7 +212,7 @@ describe('compileActionToToolDefinition (unit)', () => {
       content: [{ type: 'text', text: 'ok' }],
     });
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       inner,
       manifestWith({ agentActions: ['emit_todo_card'] }),
     );
@@ -245,7 +245,7 @@ describe('compileActionToToolDefinition (proxy integration)', () => {
 
   it('audit row written with outcome=ok when ActionDef path allows', async () => {
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       async () => ({ ok: true, content: [{ type: 'text', text: 'ok' }] }),
       manifestWith({ agentActions: ['emit_todo_card'] }),
     );
@@ -276,7 +276,7 @@ describe('compileActionToToolDefinition (proxy integration)', () => {
 
   it('audit row written with outcome=permission_denied when ActionDef path denies', async () => {
     const td = compileActionToToolDefinition(
-      TODO_ACTION,
+      EMIT_CARD_FIXTURE,
       async () => ({ ok: true, content: [{ type: 'text', text: 'ok' }] }),
       manifestWith({ agentActions: [] }),
     );
