@@ -1,7 +1,7 @@
-import { Module, Logger, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { CacheModule } from '@nestjs/cache-manager';
-import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
-import { DiscoveryModule, DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DiscoveryModule } from '@nestjs/core';
 import { Student } from '../adapters/persistence/entities/student.entity';
 import { Submission } from '../adapters/persistence/entities/submission.entity';
 import { ClassroomSession } from '../adapters/persistence/entities/classroom-session.entity';
@@ -12,15 +12,9 @@ import { Lesson } from '../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../adapters/persistence/entities/discuss-target-hit.entity';
 import { TaskDemoAttempt } from '../adapters/persistence/entities/task-demo-attempt.entity';
+// observer-engine is retained for the ObservationRecord / ObserverEventRecord
+// TypeORM entities only (M6 retired the in-process engine + handlers).
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
-import {
-  ObserverEngine,
-  TypeormObservationStore,
-  TypeormEventStore,
-  OBSERVER_ENGINE,
-  OBSERVER_HANDLER_METADATA,
-} from '@kedge-agentic/observer-engine';
-import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySink } from '@kedge-agentic/observer-engine';
 
 // ── Application services + the controller that fronts them ──
 import { ClassroomService } from '../application/classroom/classroom.service';
@@ -105,14 +99,6 @@ import { PersonalTouchController } from '../adapters/http/personal-touch.control
 
 // ── Observation component ──
 import { ObservationQueryService } from '../application/observation/observation-query.service';
-import { OpenAiLlmGateway } from '../adapters/observer-engine/openai-llm-gateway';
-import { ClassroomNotifySink } from '../adapters/observer-engine/classroom-notify-sink';
-import { JoinHandler } from '../adapters/observer-engine/handlers/join-handler';
-import { ExerciseHandler } from '../adapters/observer-engine/handlers/exercise-handler';
-import { StepCompleteHandler } from '../adapters/observer-engine/handlers/step-complete-handler';
-import { ChatTurnHandler } from '../adapters/observer-engine/handlers/chat-turn-handler';
-import { StatusChangeHandler } from '../adapters/observer-engine/handlers/status-change-handler';
-import { SystemEventHandler } from '../adapters/observer-engine/handlers/system-event-handler';
 
 // ── Task-demo component (shareable single-task sessions) ──
 import { TaskDemoService } from '../application/task-demo/task-demo.service';
@@ -183,83 +169,10 @@ import { WorkflowOutboxModule } from '../adapters/workflow-outbox/workflow-outbo
     TranslateService,
     // Personal Touch
     PersonalizationService,
-    // Observation
-    ObservationQueryService, OpenAiLlmGateway, ClassroomNotifySink,
-    JoinHandler, ExerciseHandler, StepCompleteHandler, ChatTurnHandler, StatusChangeHandler, SystemEventHandler,
-    {
-      provide: OBSERVER_ENGINE,
-      useFactory: (
-        observationRepo: any,
-        eventRepo: any,
-        llmGateway: LlmGateway,
-        notifySink: NotifySink,
-      ) => {
-        const observationStore = new TypeormObservationStore(observationRepo);
-        const eventStore = new TypeormEventStore(eventRepo);
-        const logger = new Logger('ObserverEngine');
-        return new ObserverEngine(
-          observationStore,
-          eventStore,
-          llmGateway,
-          notifySink,
-          {
-            log: (msg, ...args) => logger.log(msg, ...args),
-            warn: (msg, ...args) => logger.warn(msg, ...args),
-            error: (msg, ...args) => logger.error(msg, ...args),
-          },
-          { maxCascadeDepth: 3 },
-        );
-      },
-      inject: [
-        getRepositoryToken(ObservationRecord),
-        getRepositoryToken(ObserverEventRecord),
-        OpenAiLlmGateway,
-        ClassroomNotifySink,
-      ],
-    },
+    // Observation (M6.3 deletes ObservationQueryService when the
+    // local fallback is removed from WorkflowDashboardFetchService).
+    ObservationQueryService,
   ],
   exports: [ExerciseTypeRegistry],
 })
-export class ClassroomModule implements OnModuleInit {
-  private readonly logger = new Logger(ClassroomModule.name);
-
-  constructor(
-    private readonly discoveryService: DiscoveryService,
-    private readonly metadataScanner: MetadataScanner,
-    private readonly reflector: Reflector,
-  ) {}
-
-  onModuleInit(): void {
-    // Manually inject engine from the module container
-    const wrappers = this.discoveryService.getProviders();
-    let engine: ObserverEngine | undefined;
-    for (const w of wrappers) {
-      if (w.token === OBSERVER_ENGINE && w.instance) {
-        engine = w.instance as ObserverEngine;
-        break;
-      }
-    }
-    if (!engine) { this.logger.warn('ObserverEngine not found, handler discovery skipped'); return; }
-
-    let registered = 0;
-    for (const wrapper of wrappers) {
-      const { instance } = wrapper;
-      if (!instance || typeof instance !== 'object') continue;
-      const prototype = Object.getPrototypeOf(instance);
-      const methodNames = this.metadataScanner.getAllMethodNames(prototype);
-      for (const methodName of methodNames) {
-        const meta = this.reflector.get<{ eventType: string } | undefined>(
-          OBSERVER_HANDLER_METADATA,
-          prototype[methodName],
-        );
-        if (!meta) continue;
-        const boundHandler = (event: ObserverEvent, ctx: HandlerContext): Promise<HandlerResult> =>
-          (instance as any)[methodName](event, ctx);
-        engine.register(meta.eventType, boundHandler);
-        registered++;
-        this.logger.log(`Registered handler ${instance.constructor.name}.${methodName} for "${meta.eventType}"`);
-      }
-    }
-    this.logger.log(`Total handlers registered: ${registered}`);
-  }
-}
+export class ClassroomModule {}
