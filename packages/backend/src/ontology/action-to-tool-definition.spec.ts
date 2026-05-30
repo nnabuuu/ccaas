@@ -206,6 +206,73 @@ describe('compileActionToToolDefinition (unit)', () => {
     }
   });
 
+  it('allows when stateEquals precondition is satisfied via resolveState (M2 coverage)', async () => {
+    const actionWithPrecondition = defineAction({
+      apiName: 'flag_intervention',
+      displayName: 'Flag',
+      semantic: 'flag',
+      params: z.object({}),
+      sideEffects: [],
+      allowedRoles: ['agent'],
+      auditLevel: 'log',
+      preconditions: [{ kind: 'stateEquals', path: 'phase', value: 'active' }],
+    });
+    const inner = jest.fn().mockResolvedValue({
+      ok: true,
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const td = compileActionToToolDefinition(
+      actionWithPrecondition,
+      inner,
+      defineManifest({
+        name: 'M',
+        displayName: 'M',
+        schemaVersion: '0.1.0',
+        semantic: 'm',
+        slots: [],
+        state: [],
+        boundaries: [
+          {
+            role: 'agent',
+            readable: [],
+            writable: [],
+            actions: ['flag_intervention'],
+          },
+        ],
+      }),
+      { resolveState: () => ({ phase: 'active' }) },
+    );
+    const result = await td.handler({
+      tool: 'creator.flag_intervention',
+      args: {},
+      context: { solutionId: 'live-lesson', sessionId: 's1', actingRole: 'agent' },
+    });
+    expect(result.ok).toBe(true);
+    expect(inner).toHaveBeenCalled();
+  });
+
+  it('coerces an unrecognized claimed role back to the defaultRole (M3 defense in depth)', async () => {
+    const inner = jest.fn().mockResolvedValue({
+      ok: true,
+      content: [{ type: 'text', text: 'ok' }],
+    });
+    const td = compileActionToToolDefinition(
+      EMIT_CARD_FIXTURE,
+      inner,
+      manifestWith({ agentActions: ['emit_todo_card'] }),
+    );
+    const result = await td.handler({
+      tool: 'creator.emit_todo_card',
+      args: { title: 'T', items: [] },
+      // bogus role — bridge should treat as undefined and fall back to defaultRole='agent'
+      context: { solutionId: 'live-lesson', sessionId: 's1', actingRole: 'root' as any },
+    });
+    // With defaultRole='agent', the allow rule for emit_todo_card is satisfied,
+    // so the inner handler runs. Proves the bogus role wasn't honored.
+    expect(result.ok).toBe(true);
+    expect(inner).toHaveBeenCalled();
+  });
+
   it('defaults role to "agent" when context.actingRole is absent', async () => {
     const inner = jest.fn().mockResolvedValue({
       ok: true,

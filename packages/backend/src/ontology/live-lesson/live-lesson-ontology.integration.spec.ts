@@ -55,7 +55,10 @@ describe('LiveLessonOntologyService (integration)', () => {
       },
     };
     proxy.setAuditSink(sink);
-    await module.get(LiveLessonOntologyService).onModuleInit();
+    // module.init() fires every provider's onModuleInit lifecycle hook
+    // — same path production uses — instead of calling our service's
+    // hook by hand (which would break if a second init crept in).
+    await module.init();
   });
 
   it('registers 4 object types + LessonSession manifest + seals', () => {

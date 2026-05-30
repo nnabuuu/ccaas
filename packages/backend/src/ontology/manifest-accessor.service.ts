@@ -31,7 +31,13 @@
  * @see docs/ontology/kedge-ontology-design.md §5.1, §10.3
  */
 
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import {
   checkBoundary,
   type ActionDescriptor,
@@ -166,6 +172,15 @@ export class ManifestAccessorService {
     }
   }
 
+  /**
+   * Release all subscriptions for a session. Call from SessionService
+   * teardown so a long-running backend doesn't accumulate dead Map
+   * entries.
+   */
+  clearSession(sessionId: string): void {
+    this.streams.delete(sessionId);
+  }
+
   private subscribeInternal(
     sessionId: string,
     streamApiName: string,
@@ -182,14 +197,26 @@ export class ManifestAccessorService {
       session.set(streamApiName, handlers);
     }
     handlers.add(handler);
+    // Cleanup pins references to the Map + Set this handler was added
+    // to. Re-checking identity on teardown (`this.streams.get(...) === s`)
+    // guards against a recreate-while-cleaning interleaving — see
+    // code-review M4.
+    const sCaptured = session;
+    const hsCaptured = handlers;
     return () => {
-      const s = this.streams.get(sessionId);
-      if (!s) return;
-      const hs = s.get(streamApiName);
-      if (!hs) return;
-      hs.delete(handler);
-      if (hs.size === 0) s.delete(streamApiName);
-      if (s.size === 0) this.streams.delete(sessionId);
+      hsCaptured.delete(handler);
+      if (
+        hsCaptured.size === 0 &&
+        sCaptured.get(streamApiName) === hsCaptured
+      ) {
+        sCaptured.delete(streamApiName);
+      }
+      if (
+        sCaptured.size === 0 &&
+        this.streams.get(sessionId) === sCaptured
+      ) {
+        this.streams.delete(sessionId);
+      }
     };
   }
 
@@ -204,8 +231,16 @@ export class ManifestAccessorService {
         const row = await this.metadata.get(input.sessionId, input.solutionId, key);
         cache.set(field.apiName, row.value);
       } catch (err) {
-        // NotFound is expected for fresh sessions — seed with field.initial.
-        cache.set(field.apiName, field.initial);
+        // Only NotFound (no row yet) is a "seed initial" signal — every
+        // other error (DB down, permission denied, serialization error)
+        // means we'd silently reset persisted state to `initial` on the
+        // next setState. Bubble those up so the caller sees the real
+        // failure instead of getting a stealthily-clean fresh accessor.
+        if (err instanceof NotFoundException) {
+          cache.set(field.apiName, field.initial);
+        } else {
+          throw err;
+        }
       }
     }
     return cache;
