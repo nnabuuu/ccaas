@@ -18,7 +18,6 @@ import { ClassroomBroadcastService } from '../../adapters/transport/classroom-br
 import { ClassroomStateService } from './classroom-state.service';
 import { StateCacheService } from '../../adapters/transport/state-cache.service';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
-import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { TranslateService } from '../ai/translate.service';
 import type { Response } from 'express';
 import type {
@@ -52,7 +51,6 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     private readonly stateService: ClassroomStateService,
     private readonly stateCache: StateCacheService,
     private readonly translateService: TranslateService,
-    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
   onModuleInit() {
@@ -251,7 +249,11 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     this.stateService.cleanupSession(session.id, session.lessonId);
     this.broadcastService.cleanupSession(session.id);
 
-    this.engine.clearSessionMeta(session.id);
+    // M6.2: observer-engine retired; session meta (indicators etc.) is
+    // owned by the platform's IndicatorRegistryService now. The
+    // platform retires its in-memory copy via WorkflowEngineService.clearSession
+    // (wired in a separate follow-up — see workflow-engine.service.ts:
+    // pass-1 SF1).
     this.translateService.clearSession(session.id);
 
     this.logger.log(`Session ended: ${code}`);
