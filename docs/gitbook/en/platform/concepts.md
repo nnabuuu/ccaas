@@ -95,3 +95,17 @@ Platform (your KedgeAgentic account)
 ```
 
 A Solution defines the intelligence (Skills + MCP). A Workspace is the container for one end user's data. A Session is one conversation within that container.
+
+---
+
+## Advanced: Ontology + Workflow
+
+For Solutions that need a **typed domain model**, **declarative workflows**, or **structured observation**, the platform offers a separate Ontology + Workflow layer:
+
+- **ObjectType** — domain entities (Lesson / Student / ...)
+- **ActionDef** — actions that Agents and the WorkflowEngine can both invoke
+- **ManifestDef** — session-scoped binding of ObjectTypes + event streams + state
+- **TriggerDef** — declarative trigger rules (event / state-change / object-set-change)
+- **Observation** — the platform's `observations` table + projector
+
+This layer is opt-in, not every Solution needs it. See the [Ontology & Workflow](../ontology/README.md) section.

@@ -105,6 +105,8 @@ What claude sees:
 
 → Can you still hit `fs/diff` on a closed session? **No** — once it's purged from the in-memory Map these endpoints 404. Forensic re-mount is on the backlog.
 
+If the Solution uses the Ontology + Workflow layer, session-close additionally needs to signal the platform WorkflowEngine to free the per-session IndicatorRegistry catalog + the engine queue. See [Ontology & Workflow — Session Lifecycle](../ontology/session-lifecycle.md).
+
 ---
 
 ## 2. WorkspaceProvider — the file-layer abstraction

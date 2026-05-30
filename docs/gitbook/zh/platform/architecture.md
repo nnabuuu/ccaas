@@ -84,6 +84,7 @@ Solution
 - 编写定制化的 Skill
 - 构建独立的前端界面
 - 接入平台的全部基础能力
+- **（可选）** 用 Ontology 描述领域类型 + 用 TriggerDef 声明工作流，让平台 WorkflowEngine 自动调度。详见 [Ontology & Workflow](../ontology/README.md) 章节。
 
 ## 数据流
 

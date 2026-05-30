@@ -112,6 +112,18 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 - **Relation tree** — Auto-inferred from ORM `@ManyToOne` metadata; supports drill-down navigation
 - **Frontend** — `<AtPicker />` component with recents, search, drill-down, breadcrumb, and keyboard navigation
 
+## Ontology & Workflow (advanced, opt-in)
+
+A declarative domain-type layer + trigger layer. Solutions describe business with ObjectType / Action / ManifestDef; the platform's WorkflowEngine dispatches automatically. Introduced in Phase 5; live-lesson is the first complete consumer.
+
+- **Typed domain model** — `ObjectTypeDef` / `ActionDef` / `ManifestDef` + Zod schema; one definition reusable from browser, CLI, Node
+- **Declarative triggers** — `TriggerDef` in three kinds (event / state-change / object-set-change); engine dispatches the matched ActionDef
+- **Cross-process events** — `@kedge-agentic/workflow-client` pushes events to the platform WorkflowEngine over HTTP, with an outbox + retry + dedup
+- **Tenant isolation** — Indicator catalog and dashboard data keyed by `(solutionId, sessionId)` tuple
+- **Observation pipeline** — Canonical `observations` table + 5 types (lifecycle / exercise / progress / indicator_hit / student_status)
+
+See the [Ontology & Workflow](../ontology/README.md) section for the full chapter.
+
 ## Multi-Solution Management
 
 - **Solution Isolation** -- Each solution has independent configuration, Skills, and data

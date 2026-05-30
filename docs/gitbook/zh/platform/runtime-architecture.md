@@ -105,6 +105,8 @@ claude 看到的世界：
 
 → 关闭后还能用 runtime REST API 看 `fs/diff` 吗？**不能**，session 从内存 Map 删了之后这些 API 返回 404（forensic re-mount 在 backlog 里）。
 
+如果 Solution 用了 Ontology + Workflow 层，session 关闭时还需要单独通知平台 WorkflowEngine 释放每 session 的 IndicatorRegistry 目录 + 引擎队列。详见 [Ontology & Workflow — Session 生命周期](../ontology/session-lifecycle.md)。
+
 ---
 
 ## 2. WorkspaceProvider — 文件层抽象

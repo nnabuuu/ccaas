@@ -95,3 +95,17 @@ Session 会持久化保存，断线后可以恢复继续。
 ```
 
 Solution 定义智能（Skills + MCP）。Workspace 是单个终端用户数据的容器。Session 是该容器内的一次对话。
+
+---
+
+## 进阶：Ontology + Workflow
+
+对于需要 **类型化领域模型**、**声明式工作流**、**结构化观测** 的 Solution，平台还提供独立的 Ontology + Workflow 层：
+
+- **ObjectType** — 领域实体（Lesson / Student / ...）
+- **ActionDef** — Agent 和 WorkflowEngine 都能调用的动作
+- **ManifestDef** — session 内绑定的 ObjectType + 事件流 + 状态
+- **TriggerDef** — 声明式触发规则（event / state-change / object-set-change）
+- **Observation** — 平台 `observations` 表 + projector
+
+这一层是可选的，不是所有 Solution 都需要。详见 [Ontology & Workflow](../ontology/README.md) 章节。
