@@ -227,6 +227,71 @@ describe('WorkflowClient', () => {
     }
   });
 
+  // ──────────── setIndicators (M5.3a) ────────────
+
+  it('setIndicators PUTs to /indicators with the catalog payload', async () => {
+    const f = fakeFetch({ status: 204, body: null });
+    const client = new WorkflowClient({
+      baseUrl: 'http://localhost:3001',
+      apiKey: 'sk-test',
+      fetchImpl: f.fetch,
+    });
+    const out = await client.setIndicators('s1', [
+      { id: 'K1', type: 'knowledge', label: 'concept', description: 'desc' },
+      { id: 'M1', type: 'misconception', label: 'mix', description: 'desc' },
+    ]);
+    expect(out).toEqual({ status: 'ok' });
+    expect(f.calls).toHaveLength(1);
+    expect(f.calls[0].url).toBe(
+      'http://localhost:3001/api/v1/workflow/sessions/s1/indicators',
+    );
+    expect(f.calls[0].init?.method).toBe('PUT');
+    const body = JSON.parse(String(f.calls[0].init?.body));
+    expect(body).toEqual({
+      indicators: [
+        { id: 'K1', type: 'knowledge', label: 'concept', description: 'desc' },
+        { id: 'M1', type: 'misconception', label: 'mix', description: 'desc' },
+      ],
+    });
+  });
+
+  it('setIndicators accepts 200 in addition to 204', async () => {
+    const f = fakeFetch({ status: 200, body: { ok: true } });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    expect(await client.setIndicators('s1', [])).toEqual({ status: 'ok' });
+  });
+
+  it('setIndicators maps 401 to retryable=false', async () => {
+    const f = fakeFetch({ status: 401, body: { message: 'unauthorized' } });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = (await client.setIndicators('s1', [])) as Extract<
+      Awaited<ReturnType<typeof client.setIndicators>>,
+      { status: 'failed' }
+    >;
+    expect(out.status).toBe('failed');
+    expect(out.httpStatus).toBe(401);
+    expect(out.retryable).toBe(false);
+    expect(out.error).toContain('unauthorized');
+  });
+
+  it('setIndicators maps 503 to retryable=true', async () => {
+    const f = fakeFetch({ status: 503, body: {} });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = (await client.setIndicators('s1', [])) as Extract<
+      Awaited<ReturnType<typeof client.setIndicators>>,
+      { status: 'failed' }
+    >;
+    expect(out.retryable).toBe(true);
+  });
+
+  it('setIndicators rejects empty sessionId without calling fetch', async () => {
+    const f = fakeFetch({ status: 204, body: null });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = await client.setIndicators('', []);
+    expect(out.status).toBe('failed');
+    expect(f.calls).toHaveLength(0);
+  });
+
   it('encodes sessionId in URL (safe against path-injection)', async () => {
     const f = fakeFetch({ status: 202, body: { accepted: true, eventId: 'x' } });
     const client = new WorkflowClient({

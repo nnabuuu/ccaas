@@ -36,6 +36,7 @@ import { WorkflowEngineService } from './workflow-engine.service';
 import { WorkflowMetricsService } from './workflow-metrics.service';
 import { WorkflowRegistry } from './workflow-registry';
 import { EventIngestController } from './event-ingest/event-ingest.controller';
+import { IndicatorIngestController } from './indicator-ingest/indicator-ingest.controller';
 import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
 import { ExerciseObservationService } from './handlers/exercise/exercise-observation.service';
 import { ProgressObservationService } from './handlers/progress/progress-observation.service';
@@ -58,6 +59,7 @@ import { StatusChangeService } from './handlers/status-change/status-change.serv
   ],
   controllers: [
     EventIngestController,
+    IndicatorIngestController,
     ObservationDashboardController,
     DashboardController,
   ],
