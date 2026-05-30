@@ -12,18 +12,18 @@
 import type { LocalizedString } from '../schema/index.js';
 
 /**
- * Slot target discriminator. Phase 1 ships two kinds:
+ * Slot target discriminator. Three kinds:
  *
  *  - `'objectType'`: bind to an ObjectTypeDef instance (the default).
  *  - `'manifest'`:   nest a child manifest (spec §9.2).
- *
- * Phase 4 adds:
- *  - `'objectSet'`: bind to an ObjectSetDef (Tier 2). Collection-typed
- *    by definition.
+ *  - `'objectSet'`:  bind to an ObjectSetDef (Tier 2, Phase 4).
+ *                    Collection-typed by definition — no `collection: true`
+ *                    needed on the SlotDef.
  */
 export type SlotTarget =
   | { readonly kind: 'objectType'; readonly apiName: string }
-  | { readonly kind: 'manifest'; readonly name: string };
+  | { readonly kind: 'manifest'; readonly name: string }
+  | { readonly kind: 'objectSet'; readonly name: string };
 
 export interface SlotDef {
   readonly apiName: string;

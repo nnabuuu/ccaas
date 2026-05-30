@@ -42,11 +42,9 @@ describe('SlotDef + SlotTarget', () => {
     expect(slot.target.kind).toBe('manifest');
   });
 
-  it('rejects Phase 4 target.kind objectSet at compile time', () => {
-    const t: SlotTarget =
-      // @ts-expect-error — 'objectSet' is Tier 2, lands in Phase 4
-      { kind: 'objectSet', name: 'struggling' };
-    expect(t).toBeDefined();
+  it('accepts target.kind objectSet (Tier 2, Phase 4)', () => {
+    const t: SlotTarget = { kind: 'objectSet', name: 'strugglingStudents' };
+    expect(t.kind).toBe('objectSet');
   });
 
   it('accepts derivedFrom dot-path', () => {
