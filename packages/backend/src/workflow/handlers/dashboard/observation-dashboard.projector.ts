@@ -95,8 +95,11 @@ export class ObservationDashboardProjector {
     }
 
     const logs: StudentLog[] = [];
+    const alerts: Alert[] = [];
     for (const [entityId, observations] of byStudent) {
-      logs.push(this.buildStudentLog(entityId, observations));
+      const { log, alert } = this.buildStudentLog(entityId, observations);
+      logs.push(log);
+      if (alert) alerts.push(alert);
     }
 
     // Sort logs by studentId for stable output (legacy was insertion-
@@ -105,12 +108,10 @@ export class ObservationDashboardProjector {
 
     return {
       logs,
-      // M3 simplification: alerts derive from student_status observations
-      // which the StatusChangeHandler (M4) writes. Until M4 lands, no
-      // alerts surface from the ontology path.
-      alerts: [],
-      // M3 simplification: indicator stats need the IndicatorRegistry
-      // which moves in M4. Until then no indicator stats from this path.
+      alerts,
+      // M4 simplification: indicator stats need indicator definitions
+      // which live in IndicatorRegistryService (in-memory, per-session,
+      // not joined here). M5 dashboard rewrite picks up the read-side.
       indicatorStats: [],
     };
   }
@@ -118,12 +119,14 @@ export class ObservationDashboardProjector {
   private buildStudentLog(
     entityId: string,
     observations: readonly Observation[],
-  ): StudentLog {
+  ): { log: StudentLog; alert: Alert | null } {
     const events: StudentEvent[] = [];
     let messageCount = 0;
     let lastActiveAt: number | null = null;
     let exerciseCorrectRate: number | null = null;
     let currentStep: number | null = null;
+    let status: string | undefined;
+    let alert: Alert | null = null;
 
     for (const obs of observations) {
       const data = (obs.data ?? {}) as Record<string, unknown>;
@@ -177,6 +180,45 @@ export class ObservationDashboardProjector {
           });
           break;
         }
+        case 'indicator_hit': {
+          // M4: LLM-classified indicator hit. Counts as a chat-turn
+          // message in the legacy dashboard's messageCount metric.
+          messageCount += 1;
+          events.push({
+            timestamp,
+            source: 'llm',
+            anchors: Array.isArray(data.anchors) ? (data.anchors as string[]) : [],
+            gist: typeof data.gist === 'string' ? data.gist : undefined,
+            quote: typeof data.quote === 'string' ? data.quote : undefined,
+            data,
+          });
+          break;
+        }
+        case 'student_status': {
+          // M4: derived status. Surface the latest status + build alert
+          // when the status is alertable (stuck/struggling/idle).
+          status = typeof data.status === 'string' ? data.status : undefined;
+          const alertable = ['stuck', 'struggling', 'idle'] as const;
+          if (typeof status === 'string' && alertable.includes(status as any)) {
+            const sev =
+              status === 'stuck'
+                ? 'urgent'
+                : status === 'struggling'
+                  ? 'warn'
+                  : 'info';
+            alert = {
+              timestamp,
+              studentName: entityId, // M3-style placeholder
+              studentId: entityId,
+              severity: sev,
+              message:
+                typeof data.alertMessage === 'string' && data.alertMessage.length > 0
+                  ? data.alertMessage
+                  : `Status: ${status}`,
+            };
+          }
+          break;
+        }
         default: {
           // Unknown observation types fall through as opaque system events
           // so the dashboard never silently drops data.
@@ -191,16 +233,20 @@ export class ObservationDashboardProjector {
     }
 
     return {
-      studentId: entityId,
-      // M3 placeholder; M4 resolves real student name (see file header).
-      studentName: entityId,
-      events,
-      systemMetrics: {
-        messageCount,
-        lastActiveAt,
-        exerciseCorrectRate,
-        currentStep,
+      log: {
+        studentId: entityId,
+        // M3 placeholder; M4 resolves real student name (see file header).
+        studentName: entityId,
+        events,
+        systemMetrics: {
+          messageCount,
+          lastActiveAt,
+          exerciseCorrectRate,
+          currentStep,
+        },
+        status,
       },
+      alert,
     };
   }
 }

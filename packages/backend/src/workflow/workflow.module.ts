@@ -45,6 +45,7 @@ import { OpenAiLlmGateway } from './llm/openai-llm-gateway';
 import { LLM_GATEWAY } from './llm/llm-gateway';
 import { IndicatorRegistryService } from './llm/indicator-registry.service';
 import { ChatTurnService } from './handlers/chat-turn/chat-turn.service';
+import { StatusChangeService } from './handlers/status-change/status-change.service';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ChatTurnService } from './handlers/chat-turn/chat-turn.service';
     { provide: LLM_GATEWAY, useExisting: OpenAiLlmGateway },
     IndicatorRegistryService,
     ChatTurnService,
+    StatusChangeService,
   ],
   exports: [
     WorkflowEngineService,

@@ -449,6 +449,7 @@ export class StudentSubmissionService {
     }).catch(err => this.logger.error(`Observer dispatch step_complete pipeline failed: ${err}`));
 
     const exerciseCorrectRate = score?.total ?? 0;
+    // M4 dual-write — chat_turn (synthetic exercise summary turn)
     this.engine.dispatch({
       type: 'chat_turn',
       sessionId: session.id,
@@ -456,6 +457,22 @@ export class StudentSubmissionService {
       solutionId: session.lessonId,
       payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
     }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+    this.workflowDispatch.pushEvent({
+      sessionId: session.id,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      entityId: studentId,
+      payload: {
+        type: 'chat_turn',
+        studentId,
+        step,
+        student: JSON.stringify(data),
+        ai: `得分 ${exerciseCorrectRate}%`,
+      },
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Workflow outbox enqueue (chat_turn) failed: ${msg}`);
+    });
   }
 
   private static readonly PHASE_RANK: Record<string, number> = { listen: 0, practice: 1, discuss: 2, takeaway: 3, completed: 4 };
