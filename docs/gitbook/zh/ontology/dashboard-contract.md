@@ -71,6 +71,76 @@ interface DashboardStudentSlice {
 
 新 shape 一次取所有数据；前端有更多自由决定如何 render。
 
+### 一图看结构变化（4 个平铺 vs 1 棵学生 tree）
+
+```
+Legacy: 4 个 sibling 数组，前端要 JOIN
+GET /api/v1/workflow/sessions/:id/observation-dashboard
+
+   ObservationDashboardPayload
+   ├── logs[]                                ◀── per-student
+   │     { studentId, studentName, events[], systemMetrics, status }
+   │
+   ├── alerts[]                              ◀── per-alert (扁平)
+   │     { studentId, studentName, severity, message, indicatorId }
+   │
+   ├── indicatorStats[]                      ◀── per-indicator
+   │     { indicatorId, label, type, studentCount, latestGist }
+   │
+   └── indicators[]                          ◀── session catalog
+         { id, type, label, description }
+
+   想拼出某学生的完整画像？
+     1. logs.find(l => l.studentId === X)
+     2. alerts.filter(a => a.studentId === X)
+     3. indicatorStats 不按 student 索引 → 看 logs[X].events 里有哪些 anchor
+     4 个数组、3 次 join、前端自己粘合
+
+
+New: 1 students 树，无 join
+GET /api/v1/workflow/sessions/:id/dashboard
+
+   DashboardPayload
+   ├── sessionId
+   ├── generatedAt
+   ├── indicators[]                          ◀── session catalog（仍是 flat）
+   │     { id, type, label, description }
+   │
+   └── students[]                            ◀── 学生中心化的 tree
+         {
+           studentId, studentName,
+           status: {                          ◀── 嵌进 student
+             current: 'struggling',
+             previous: 'active',
+             derivedAt, summary, alertMessage,
+           },
+           metrics: {
+             messageCount, knowledgeCount, misconceptionCount,
+             exerciseCorrectRate, lastActiveAt, currentStep,
+           },
+           observations: [                    ◀── 原始 row（不是翻译过的 StudentEvent）
+             { id, type, data, createdAt, ... },
+             ...
+           ],
+         }
+
+   想拼出某学生的完整画像？
+     students.find(s => s.studentId === X)     完事
+```
+
+**等价导出：** 如果前端代码还想保持 legacy 风格的 4 个数组用法（M5 second pass 之前），可以从新 shape 一次性派生：
+
+```typescript
+const logs           = payload.students;
+const alerts         = payload.students.filter(s =>
+                          ['stuck', 'struggling', 'idle']
+                          .includes(s.status?.current ?? ''));
+const indicatorStats = groupBy(payload.students.flatMap(s =>
+                          s.observations.filter(o => o.type === 'indicator_hit')
+                       ), o => o.data.anchors);
+const indicators     = payload.indicators;
+```
+
 ## 何时用哪个
 
 - **现在 / live-lesson 现役：** legacy。`WorkflowDashboardFetchService` 用 `WorkflowClient.getObservationDashboard` 拉，3 个 teacher tab 直接消费。
