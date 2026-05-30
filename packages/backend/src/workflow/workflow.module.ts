@@ -28,6 +28,7 @@ import { Module } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OntologyModule } from '../ontology/ontology.module';
+import { ToolCallerModule } from '../tool-caller/tool-caller.module';
 import { ObservationRecord, ObserverEventRecord } from './entities';
 import { ObservationRepository } from './persistence/observation-repository';
 import { ObserverEventRepository } from './persistence/observer-event-repository';
@@ -35,10 +36,12 @@ import { WorkflowEngineService } from './workflow-engine.service';
 import { WorkflowMetricsService } from './workflow-metrics.service';
 import { WorkflowRegistry } from './workflow-registry';
 import { EventIngestController } from './event-ingest/event-ingest.controller';
+import { LifecycleObservationService } from './handlers/lifecycle/lifecycle-observation.service';
 
 @Module({
   imports: [
     OntologyModule,
+    ToolCallerModule,
     DiscoveryModule,
     TypeOrmModule.forFeature([ObservationRecord, ObserverEventRecord]),
   ],
@@ -49,6 +52,8 @@ import { EventIngestController } from './event-ingest/event-ingest.controller';
     WorkflowEngineService,
     ObservationRepository,
     ObserverEventRepository,
+    // Phase 5 M2: first trigger + action registrar.
+    LifecycleObservationService,
   ],
   exports: [
     WorkflowEngineService,
