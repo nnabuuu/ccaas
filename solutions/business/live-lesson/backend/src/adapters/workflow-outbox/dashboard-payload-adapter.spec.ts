@@ -22,7 +22,9 @@ function emptyMetrics() {
   } as const;
 }
 
-function student(over: Partial<Parameters<typeof adaptDashboardPayload>[0] extends DashboardPayload | null ? DashboardPayload['students'][number] : never>) {
+type SpecStudent = DashboardPayload['students'][number];
+
+function student(over: Partial<SpecStudent>): SpecStudent {
   return {
     studentId: 'student-1',
     studentName: 'Alice',
@@ -30,7 +32,7 @@ function student(over: Partial<Parameters<typeof adaptDashboardPayload>[0] exten
     metrics: emptyMetrics(),
     observations: [],
     ...over,
-  } as DashboardPayload['students'][number];
+  };
 }
 
 function payload(students: DashboardPayload['students'], indicators: DashboardPayload['indicators'] = []): DashboardPayload {
@@ -68,7 +70,6 @@ describe('DashboardPayloadAdapter', () => {
       expect(out.alerts).toEqual([]);
       expect(out.indicatorStats).toEqual([]);
       expect(out.indicators).toEqual([]);
-      expect(out.source).toBe('platform');
     });
 
     it('returns empty 4-array shape on payload with no students', () => {
@@ -143,6 +144,28 @@ describe('DashboardPayloadAdapter', () => {
       expect(out.logs[0].events[0].gist).toBe('查词：photosynthesis');
     });
 
+    it('leave with studentName → "Alice 离开课堂"', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            observations: [
+              {
+                id: 'o1',
+                type: 'lifecycle',
+                data: { action: 'leave', studentName: 'Alice' },
+                createdAt: 1,
+                updatedAt: 1,
+                triggerEventId: 'e1',
+              },
+            ],
+          }),
+        ]),
+      );
+      const evt = out.logs[0].events[0];
+      expect(evt.gist).toBe('Alice 离开课堂');
+      expect(evt.systemType).toBe('leave');
+    });
+
     it('discuss_complete + continue_chat_turn render fixed strings', () => {
       const out = adaptDashboardPayload(
         payload([
@@ -196,6 +219,46 @@ describe('DashboardPayloadAdapter', () => {
       expect(out.logs[0].events[0].systemType).toBe('exercise_result');
     });
 
+    it('exercise without step → "提交 Step ? 答案" (S2 legacy fallback, no raw object bleed)', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            observations: [
+              {
+                id: 'o1',
+                type: 'exercise',
+                data: { score: 50 },
+                createdAt: 1,
+                updatedAt: 1,
+                triggerEventId: 'e1',
+              },
+            ],
+          }),
+        ]),
+      );
+      expect(out.logs[0].events[0].gist).toBe('提交 Step ? 答案，得分 50%');
+    });
+
+    it('exercise with non-scalar step → falls back to "?" (no raw object render)', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            observations: [
+              {
+                id: 'o1',
+                type: 'exercise',
+                data: { step: { weird: true }, score: 10 },
+                createdAt: 1,
+                updatedAt: 1,
+                triggerEventId: 'e1',
+              },
+            ],
+          }),
+        ]),
+      );
+      expect(out.logs[0].events[0].gist).toBe('提交 Step ? 答案，得分 10%');
+    });
+
     it('exercise without score → no suffix', () => {
       const out = adaptDashboardPayload(
         payload([
@@ -235,6 +298,26 @@ describe('DashboardPayloadAdapter', () => {
       );
       expect(out.logs[0].events[0].gist).toBe('完成 Task 2，进入 Task 3');
       expect(out.logs[0].events[0].systemType).toBe('step_complete');
+    });
+
+    it('progress with nextTask=null drops the suffix (S1 null guard)', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            observations: [
+              {
+                id: 'o1',
+                type: 'progress',
+                data: { taskNum: 2, nextTask: null },
+                createdAt: 1,
+                updatedAt: 1,
+                triggerEventId: 'e1',
+              },
+            ],
+          }),
+        ]),
+      );
+      expect(out.logs[0].events[0].gist).toBe('完成 Task 2');
     });
 
     it('progress missing taskNum falls back to step', () => {
@@ -533,7 +616,7 @@ describe('DashboardPayloadAdapter', () => {
   });
 
   describe('systemMetrics legacy compatibility (non-null fallbacks)', () => {
-    it('lastActiveAt=null falls back to Date.now(); exerciseCorrectRate=null falls back to 0; currentStep formatted', () => {
+    it('S4 layered fallback: lastActiveAt prefers metrics.lastActiveAt when present', () => {
       const out = adaptDashboardPayload(
         payload([
           student({
@@ -542,16 +625,84 @@ describe('DashboardPayloadAdapter', () => {
               knowledgeCount: 1,
               misconceptionCount: 1,
               exerciseCorrectRate: null,
+              lastActiveAt: 1234,
+              currentStep: 3,
+            },
+          }),
+        ]),
+      );
+      expect(out.logs[0].systemMetrics.lastActiveAt).toBe(1234);
+    });
+
+    it('S4 layered fallback: when metrics.lastActiveAt=null, falls back to earliest observation createdAt', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            metrics: {
+              messageCount: 0,
+              knowledgeCount: 0,
+              misconceptionCount: 0,
+              exerciseCorrectRate: null,
               lastActiveAt: null,
+              currentStep: null,
+            },
+            observations: [
+              {
+                id: 'lj',
+                type: 'lifecycle',
+                data: { action: 'join' },
+                createdAt: 5000,
+                updatedAt: 5000,
+                triggerEventId: 'e1',
+              },
+            ],
+          }),
+        ]),
+      );
+      // Join-only student must NOT look active forever — preserves
+      // frontend idle-detection math against M5 pass-1 MF2 family.
+      expect(out.logs[0].systemMetrics.lastActiveAt).toBe(5000);
+    });
+
+    it('S4 layered fallback: no metrics, no observations → Date.now() final guard (non-null contract)', () => {
+      const before = Date.now();
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            metrics: {
+              messageCount: 0,
+              knowledgeCount: 0,
+              misconceptionCount: 0,
+              exerciseCorrectRate: null,
+              lastActiveAt: null,
+              currentStep: null,
+            },
+            observations: [],
+          }),
+        ]),
+      );
+      const t = out.logs[0].systemMetrics.lastActiveAt;
+      expect(typeof t).toBe('number');
+      expect(t).toBeGreaterThanOrEqual(before);
+    });
+
+    it('exerciseCorrectRate=null falls back to 0; currentStep formatted', () => {
+      const out = adaptDashboardPayload(
+        payload([
+          student({
+            metrics: {
+              messageCount: 2,
+              knowledgeCount: 1,
+              misconceptionCount: 1,
+              exerciseCorrectRate: null,
+              lastActiveAt: 1,
               currentStep: 3,
             },
           }),
         ]),
       );
       const m = out.logs[0].systemMetrics;
-      expect(m.messageCount).toBe(2);
       expect(m.exerciseCorrectRate).toBe(0);
-      expect(typeof m.lastActiveAt).toBe('number');
       expect(m.currentStep).toBe('step-3');
     });
 

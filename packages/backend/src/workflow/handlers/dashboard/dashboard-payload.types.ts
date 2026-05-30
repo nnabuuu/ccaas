@@ -1,10 +1,10 @@
 /**
- * `DashboardPayload` — phase 5 M5.1. The new ontology-native dashboard
- * wire shape. This is the schema the NEW endpoint
- * (`GET /api/v1/workflow/sessions/:sessionId/dashboard`, landing in
- * M5.2) emits. Replaces the legacy `{logs, alerts, indicatorStats,
- * indicators}` shape that the M3 `ObservationDashboardProjector`
- * currently produces.
+ * `DashboardPayload` — phase 5 M5.1. The ontology-native dashboard
+ * wire shape emitted by the sole dashboard endpoint
+ * `GET /api/v1/workflow/sessions/:sessionId/dashboard` (the legacy
+ * M3 `ObservationDashboardProjector` + `/observation-dashboard` route
+ * were deleted in M5.2a; see the History section of
+ * `docs/gitbook/zh/ontology/dashboard-contract.md`).
  *
  * ## Design notes
  *

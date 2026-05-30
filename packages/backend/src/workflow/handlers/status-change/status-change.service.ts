@@ -407,8 +407,8 @@ function computeMetrics(observations: readonly Observation[]): ComputedMetrics {
   for (const obs of observations) {
     // Pass-1 review MF3: use createdAt (the event's wall-clock time),
     // NOT updatedAt (which jumps when this service overwrites the
-    // student_status row). Aligns with the projector's metric
-    // (observation-dashboard.projector.ts:135).
+    // student_status row). Aligns with the metric the M5.2 dashboard
+    // exposes — see `DashboardStudentMetrics.lastActiveAt` JSDoc.
     if (ACTIVITY_TYPES.has(obs.type) && obs.createdAt > lastActiveAt) {
       lastActiveAt = obs.createdAt;
     }

@@ -3,6 +3,10 @@
  * `DashboardService.buildPayload` over HTTP. **Sole** dashboard
  * endpoint after M5.2a deleted the legacy
  * `ObservationDashboardController` + `/observation-dashboard` route.
+ * For the rationale behind the cutover (and what the legacy 4-array
+ * shape was) see the History section of
+ * `docs/gitbook/zh/ontology/dashboard-contract.md` +
+ * `docs/ontology/PROGRESS.md` M5 row.
  *
  * Endpoint: GET /api/v1/workflow/sessions/:sessionId/dashboard
  *

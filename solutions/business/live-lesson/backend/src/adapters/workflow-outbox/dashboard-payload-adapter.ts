@@ -35,8 +35,18 @@
  * types (`indicator_hit / exercise / progress`); see
  * `DashboardStudentMetrics` JSDoc + M5 pass-2 S2. The legacy schema
  * declares `systemMetrics.lastActiveAt: number` (non-null), so we
- * fall back to `Date.now()` when the platform returns `null` — same
- * fallback as the deleted ObservationQueryService used.
+ * provide a layered fallback (M5.2a pass-1 S4):
+ *   1. `metrics.lastActiveAt` — the activity-derived value when present
+ *   2. earliest observation `createdAt` (lifecycle join etc.) — keeps
+ *      `now - lastActiveAt` math meaningful for join-only students
+ *   3. `Date.now()` — final guard so the legacy non-null contract holds
+ *      even when the student slice carries no observations at all
+ *
+ * This matches the platform-side `DashboardService.computeMetrics`
+ * lifecycle-fallback semantics rather than the deleted
+ * `ObservationQueryService`'s eager `Date.now()` fallback, which
+ * re-introduced the M5 pass-1 MF2 pattern of `lastActiveAt` jumping
+ * on every cascade and breaking the frontend's idle-detection math.
  */
 
 import type {
@@ -111,16 +121,15 @@ export interface DashboardFetchResult {
   readonly alerts: Alert[];
   readonly indicatorStats: IndicatorStats[];
   readonly indicators: IndicatorDef[];
-  /**
-   * Stamped `'platform'` always (post-M6.3 — no local fallback).
-   * Kept as a field for future observability if a local layer ever
-   * comes back.
-   */
-  readonly source: 'platform';
 }
 
 // ──────────────────────────────────────────────────────────────
 // Severity mapping (mirrors platform's `DASHBOARD_SEVERITY_MAP`).
+// `Record<string, ...>` rather than a narrowed key set: a forward-compat
+// status (a new value the platform adds before we update the live-lesson
+// schema) hits the `undefined` branch and is dropped at the call-site
+// `!= null` guard — never raised to the frontend. The `as` cast at the
+// dispatch site is type-safe in concert with that guard.
 // ──────────────────────────────────────────────────────────────
 
 const SEVERITY_MAP: Record<string, 'info' | 'warn' | 'urgent' | null> = {
@@ -165,7 +174,6 @@ export function adaptDashboardPayload(
       alerts: [],
       indicatorStats: [],
       indicators: [],
-      source: 'platform',
     };
   }
 
@@ -224,10 +232,15 @@ export function adaptDashboardPayload(
       systemMetrics: {
         messageCount: student.metrics.messageCount,
         // Legacy schema declares non-null number; new shape allows
-        // null. Fall back to now() so the frontend's
-        // `now - lastActiveAt` math never NaNs. Matches the deleted
-        // ObservationQueryService fallback.
-        lastActiveAt: student.metrics.lastActiveAt ?? Date.now(),
+        // null. M5.2a pass-1 S4: layered fallback — activity-derived
+        // value → earliest observation createdAt (preserves
+        // join-only student idle math) → Date.now() final guard.
+        // Eager `Date.now()` (the deleted ObservationQueryService's
+        // fallback) re-introduced the M5 pass-1 MF2 pattern.
+        lastActiveAt:
+          student.metrics.lastActiveAt ??
+          student.observations[0]?.createdAt ??
+          Date.now(),
         exerciseCorrectRate: student.metrics.exerciseCorrectRate ?? 0,
         currentStep:
           student.metrics.currentStep != null
@@ -270,7 +283,6 @@ export function adaptDashboardPayload(
     alerts,
     indicatorStats,
     indicators,
-    source: 'platform',
   };
 }
 
@@ -340,15 +352,23 @@ function observationToStudentEvent(
     }
   } else if (obs.type === 'exercise') {
     systemType = 'exercise_result';
-    const step = opaqueData.step ?? '?';
+    // S2: type-guard `step` so a malformed event never bleeds a raw
+    // object/array into the rendered string. Legacy fallback `'?'`
+    // matches the deleted ObservationQueryService.
+    const rawStep = opaqueData.step;
+    const step =
+      typeof rawStep === 'number' || typeof rawStep === 'string' ? rawStep : '?';
     const score = opaqueData.score;
     const scoreSuffix = typeof score === 'number' ? `，得分 ${score}%` : '';
     gist = `提交 Step ${step} 答案${scoreSuffix}`;
   } else if (obs.type === 'progress') {
     systemType = 'step_complete';
     const taskNum = opaqueData.taskNum ?? opaqueData.step ?? '?';
+    // S1: `!= null` (not `!== undefined`) so a writer that emits
+    // `nextTask: null` doesn't render "进入 Task null". The wire
+    // schema is `Record<string, unknown>` so either is observable.
     const nextTask = opaqueData.nextTask;
-    const nextSuffix = nextTask !== undefined ? `，进入 Task ${nextTask}` : '';
+    const nextSuffix = nextTask != null ? `，进入 Task ${nextTask}` : '';
     gist = `完成 Task ${taskNum}${nextSuffix}`;
   } else {
     // Unknown observation type — never undefined.
@@ -442,6 +462,10 @@ function buildIndicatorStats(
  * live-lesson schema declares. Platform IndicatorRegistry's `type` is
  * `string`; we drop anything else. Mirrors the helper that previously
  * lived inside `workflow-dashboard-fetch.service.ts`.
+ *
+ * Order-preserving: catalog input order propagates into `indicatorStats`
+ * via `buildIndicatorStats`, which the frontend renders in declaration
+ * order.
  */
 function filterIndicators(arr: readonly DashboardIndicatorDef[]): IndicatorDef[] {
   const out: IndicatorDef[] = [];

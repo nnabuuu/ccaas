@@ -270,11 +270,14 @@ export class WorkflowClient {
       if (res.status === 204 || res.status === 200) {
         return { status: 'ok' };
       }
+      // Failed arm: try to lift a {message|error} string out of an
+      // optional JSON body. Empty body is fine — extractError falls
+      // back to the HTTP status.
       let parsed: unknown = null;
       try {
         parsed = await res.json();
       } catch {
-        // body may be empty (204 case is already handled); ignore
+        // intentional
       }
       return {
         status: 'failed',
@@ -332,11 +335,12 @@ export class WorkflowClient {
       if (res.status === 204 || res.status === 200) {
         return { status: 'ok' };
       }
+      // Failed arm: best-effort parse of a {message|error} body.
       let parsed: unknown = null;
       try {
         parsed = await res.json();
       } catch {
-        // empty body on non-2xx is fine
+        // intentional
       }
       return {
         status: 'failed',

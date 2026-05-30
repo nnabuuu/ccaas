@@ -43,15 +43,19 @@ export class WorkflowDashboardFetchService {
   ) {}
 
   /**
-   * Fetch the dashboard from the platform. Returns `null` when the
-   * platform is unreachable — caller surfaces an empty dashboard
-   * (post-M6.3 there is no local fallback).
+   * Fetch the dashboard from the platform and return the legacy
+   * 4-array shape the live-lesson teacher frontend already consumes.
    *
-   * Returns `null` on:
+   * Returns `null` on (caller surfaces an empty dashboard; post-M6.3
+   * there is no local fallback):
    *   - `LIVE_LESSON_WORKFLOW_DISPATCH=disabled`
    *   - missing CCAAS_API_KEY
    *   - any non-200 from the platform (5xx, 4xx, network, timeout)
-   *   - malformed payload (shape doesn't match the projector contract)
+   *
+   * Returns an EMPTY `DashboardFetchResult` (logs=[], alerts=[], …)
+   * on malformed payload — `parseDashboardPayload` returns `null`,
+   * `adaptDashboardPayload(null)` lands in the empty arm. The
+   * dashboard goes dark rather than crashing the polling endpoint.
    */
   async fetchPlatform(sessionId: string): Promise<DashboardFetchResult | null> {
     if (!this.dispatch.isEnabled()) return null;
