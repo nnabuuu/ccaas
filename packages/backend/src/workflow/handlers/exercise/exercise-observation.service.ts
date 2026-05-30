@@ -36,16 +36,10 @@ import type {
 import { ObservationRepository } from '../../persistence/observation-repository';
 import { WorkflowEngineService } from '../../workflow-engine.service';
 import type { TriggerDef, TriggerFireInput } from '../../types';
-import { LIVE_LESSON_TENANT_SLUG } from '../lifecycle/lifecycle-observation.service';
-
-/**
- * Each observation handler service registers its toolkit under a
- * UNIQUE namespace because `SolutionToolkitRegistry.registerToolkit` is
- * idempotent-per-namespace — sharing a namespace would have the
- * last-bootstrapped service overwrite every prior service's tools.
- * Pass-2 self-review (M3 vertical slice debugging).
- */
-const WORKFLOW_ACTION_NAMESPACE = 'workflow-actions-exercise';
+import {
+  LIVE_LESSON_TENANT_SLUG,
+  WORKFLOW_EXERCISE_NAMESPACE as WORKFLOW_ACTION_NAMESPACE,
+} from '../constants';
 
 const ExerciseObservationArgsSchema = z.object({
   /** Student the observation is about. */

@@ -75,9 +75,34 @@ describe('ObservationDashboardProjector', () => {
       source: 'system',
       systemType: 'discuss_complete',
     });
-    // join doesn't bump messageCount; discuss_complete does.
-    expect(log.systemMetrics.messageCount).toBe(1);
+    // pass-1 S2 fix: messageCount stays 0 until M4's chat_turn handler
+    // lands. legacy dashboard counted ONLY chat_turn rows; bumping on
+    // non-chat lifecycle would diverge from legacy during dual-write.
+    expect(log.systemMetrics.messageCount).toBe(0);
     expect(log.systemMetrics.lastActiveAt).toBe(2000);
+  });
+
+  it('pass-1 N4: unknown observation type → opaque system event (forward-compat default arm)', async () => {
+    await repo.append({
+      id: 'obs-unknown',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'future_phase_5_type',
+      data: { whatever: 'opaque' },
+      triggerEventId: 'evt-u',
+      createdAt: 1234,
+      updatedAt: 1234,
+    });
+    const out = await projector.project('s1');
+    expect(out.logs).toHaveLength(1);
+    expect(out.logs[0].events).toHaveLength(1);
+    expect(out.logs[0].events[0]).toMatchObject({
+      timestamp: 1234,
+      source: 'system',
+      systemType: 'future_phase_5_type',
+      data: { whatever: 'opaque' },
+    });
   });
 
   it('exercise observation populates exerciseCorrectRate + currentStep', async () => {

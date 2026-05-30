@@ -50,8 +50,11 @@ import { ObservationRepository } from '../../persistence/observation-repository'
 import { WorkflowEngineService } from '../../workflow-engine.service';
 import type { TriggerDef, TriggerFireInput } from '../../types';
 
-export const LIVE_LESSON_TENANT_SLUG = 'live-lesson';
-export const WORKFLOW_ACTION_NAMESPACE = 'workflow-actions';
+import {
+  LIVE_LESSON_TENANT_SLUG,
+  WORKFLOW_LIFECYCLE_NAMESPACE as WORKFLOW_ACTION_NAMESPACE,
+} from '../constants';
+export { LIVE_LESSON_TENANT_SLUG } from '../constants';
 
 const LifecycleObservationArgsSchema = z.object({
   /** Entity the observation is about — e.g. studentId. */

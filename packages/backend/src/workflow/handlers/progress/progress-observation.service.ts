@@ -31,10 +31,10 @@ import type {
 import { ObservationRepository } from '../../persistence/observation-repository';
 import { WorkflowEngineService } from '../../workflow-engine.service';
 import type { TriggerDef, TriggerFireInput } from '../../types';
-import { LIVE_LESSON_TENANT_SLUG } from '../lifecycle/lifecycle-observation.service';
-
-/** See exercise-observation.service.ts header for the unique-namespace rationale. */
-const WORKFLOW_ACTION_NAMESPACE = 'workflow-actions-progress';
+import {
+  LIVE_LESSON_TENANT_SLUG,
+  WORKFLOW_PROGRESS_NAMESPACE as WORKFLOW_ACTION_NAMESPACE,
+} from '../constants';
 
 const ProgressObservationArgsSchema = z.object({
   entityId: z.string().min(1),
