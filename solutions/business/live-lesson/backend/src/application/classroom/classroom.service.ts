@@ -76,6 +76,11 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     for (const session of staleSessions) {
       this.stateService.cleanupSession(session.id, session.lessonId);
       this.broadcastService.cleanupSession(session.id);
+      // M6 pass-2 SF1: also signal platform teardown so crash-path
+      // sessions (process kill / abandoned endSession) don't leak the
+      // IndicatorRegistry catalog forever. Fire-and-forget; idempotent
+      // server-side.
+      void this.workflowLifecycle.clearSession(session.id);
     }
     if (staleSessions.length > 0) {
       this.logger.log(`Cleaned up ${staleSessions.length} stale session(s)`);
@@ -238,6 +243,12 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
 
   async endSession(code: string): Promise<EndSessionResponse> {
     const session = await this.resolveSession(code);
+    // M6 pass-2 SF2: platform DELETE runs BEFORE the already-ended
+    // early-return. The first endSession may have failed to reach the
+    // platform (transient 5xx, CCAAS_URL outage, etc.); subsequent
+    // calls retry the clear. The endpoint is idempotent server-side
+    // (unknown sessionId → 204).
+    void this.workflowLifecycle.clearSession(session.id);
     if (session.status === 'ended') {
       return { ok: true, status: 'ended' };
     }
@@ -251,16 +262,6 @@ export class ClassroomService implements OnModuleInit, OnModuleDestroy {
     this.stateService.cleanupSession(session.id, session.lessonId);
     this.broadcastService.cleanupSession(session.id);
 
-    // M6 pass-1 S1: signal session-end to the platform so its
-    // IndicatorRegistry + workflow engine queue free per-session
-    // state. Fire-and-forget — failure logs but doesn't disrupt
-    // session-end (idempotent on retry).
-    void this.workflowLifecycle
-      .clearSession(session.id)
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`workflow clearSession failed for ${session.id}: ${msg}`);
-      });
     this.translateService.clearSession(session.id);
 
     this.logger.log(`Session ended: ${code}`);

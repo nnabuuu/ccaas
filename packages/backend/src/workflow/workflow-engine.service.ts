@@ -230,16 +230,28 @@ export class WorkflowEngineService implements OnApplicationBootstrap {
   }
 
   /**
-   * Drain + drop the per-session queue. Called from session teardown.
-   * Cascades into all workflow-owned per-session state — pass-1 review
-   * SF1: `IndicatorRegistryService` accumulates per-session
-   * `IndicatorDef[]` and was previously never cleaned; centralizing
-   * teardown here means future SessionService teardown only needs to
-   * call this one entry point.
+   * Drain + drop the per-session queue + cascade indicator teardown
+   * across ALL tenants for the sessionId. The broad indicator drop is
+   * safe because session ids are UUIDs (no realistic collision).
+   * Pass-1 review SF1.
+   *
+   * Use `clearSessionQueue` (below) when the caller has tenant
+   * context and wants to scope indicator teardown — the tenant-bound
+   * DELETE endpoint (M6 pass-2 SF3) does this.
    */
   clearSession(sessionId: string): void {
     this.sessionQueues.delete(sessionId);
     this.indicators.clearSession(sessionId);
+  }
+
+  /**
+   * Drain + drop the per-session queue WITHOUT touching indicators.
+   * Indicator teardown is the caller's responsibility — they use
+   * `IndicatorRegistryService.clearTenantSession(solutionId, sessionId)`
+   * to respect the tenant boundary. M6 pass-2 SF3.
+   */
+  clearSessionQueue(sessionId: string): void {
+    this.sessionQueues.delete(sessionId);
   }
 
   /** Test helper. */

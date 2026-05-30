@@ -63,8 +63,9 @@ export class IndicatorRegistryService {
    * Drop a session's catalog. Removes entries across ALL tenants for
    * the given sessionId — used by `WorkflowEngineService.clearSession`
    * which only has `sessionId` from the engine's per-session queue.
-   * Safe because tenant-scoping is the AUTHORIZATION boundary, not the
-   * teardown boundary.
+   * The teardown boundary is intentionally broader than the
+   * authorization boundary because session ids are globally unique by
+   * construction (UUIDv4).
    *
    * The suffix check uses the `\x1f` delimiter so a sessionId that
    * happens to be a substring of another sessionId is NOT
@@ -78,6 +79,18 @@ export class IndicatorRegistryService {
         this.byKey.delete(k);
       }
     }
+  }
+
+  /**
+   * Tenant-scoped clear. Drops the catalog only for the
+   * `(solutionId, sessionId)` tuple. Used by external HTTP callers
+   * (the DELETE endpoint) where we want the cleared scope to match
+   * the tenant binding — so a chat-scoped key from tenant A can't
+   * accidentally clear tenant B's data even if both tenants
+   * coincidentally share a sessionId. M6 pass-2 SF3.
+   */
+  clearTenantSession(solutionId: string, sessionId: string): void {
+    this.byKey.delete(key(solutionId, sessionId));
   }
 
   /** Test helper. */
