@@ -15,6 +15,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OntologyEventOutbox } from '../persistence/entities/ontology-event-outbox.entity';
+import { WorkflowDashboardFetchService } from './workflow-dashboard-fetch.service';
 import { WorkflowDispatchService } from './workflow-dispatch.service';
 import { WorkflowIndicatorPushService } from './workflow-indicator-push.service';
 import { WorkflowOutboxDrainService } from './workflow-outbox-drain.service';
@@ -29,8 +30,13 @@ import { WorkflowOutboxRepository } from './workflow-outbox.repository';
     WorkflowOutboxRepository,
     WorkflowDispatchService,
     WorkflowIndicatorPushService,
+    WorkflowDashboardFetchService,
     WorkflowOutboxDrainService,
   ],
-  exports: [WorkflowDispatchService, WorkflowIndicatorPushService],
+  exports: [
+    WorkflowDispatchService,
+    WorkflowIndicatorPushService,
+    WorkflowDashboardFetchService,
+  ],
 })
 export class WorkflowOutboxModule {}

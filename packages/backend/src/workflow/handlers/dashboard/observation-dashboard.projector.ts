@@ -27,6 +27,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Observation } from '@kedge-agentic/observer-engine';
 import { ObservationRepository } from '../../persistence/observation-repository';
+import { IndicatorRegistryService } from '../../llm/indicator-registry.service';
 
 /** Legacy contract. Matches `solutions/business/live-lesson/backend/src/schemas/classroom/observation.ts`. */
 export interface StudentEvent {
@@ -80,7 +81,10 @@ export interface ObservationDashboardPayload {
 
 @Injectable()
 export class ObservationDashboardProjector {
-  constructor(private readonly observations: ObservationRepository) {}
+  constructor(
+    private readonly observations: ObservationRepository,
+    private readonly indicators: IndicatorRegistryService,
+  ) {}
 
   async project(sessionId: string): Promise<ObservationDashboardPayload> {
     const rows = await this.observations.getBySession(sessionId);
@@ -109,11 +113,57 @@ export class ObservationDashboardProjector {
     return {
       logs,
       alerts,
-      // M4 simplification: indicator stats need indicator definitions
-      // which live in IndicatorRegistryService (in-memory, per-session,
-      // not joined here). M5 dashboard rewrite picks up the read-side.
-      indicatorStats: [],
+      // M5.3b: indicator stats computed from the IndicatorRegistry
+      // catalog + the platform's indicator_hit observation rows. The
+      // M5 second pass deletes this projector entirely, so the
+      // throwaway compute lives here rather than in DashboardService
+      // (which serves the new ontology-native shape).
+      indicatorStats: this.computeIndicatorStats(sessionId, rows),
     };
+  }
+
+  private computeIndicatorStats(
+    sessionId: string,
+    rows: readonly Observation[],
+  ): IndicatorStats[] {
+    const catalog = this.indicators.getIndicators(sessionId);
+    if (catalog.length === 0) return [];
+
+    type Acc = { students: Set<string>; latestGist: string; updatedAt: number };
+    const accByAnchor = new Map<string, Acc>();
+    for (const def of catalog) {
+      accByAnchor.set(def.id, { students: new Set(), latestGist: '', updatedAt: 0 });
+    }
+    for (const r of rows) {
+      if (r.type !== 'indicator_hit') continue;
+      const data = (r.data ?? {}) as { anchors?: string[]; gist?: string };
+      const anchors = data.anchors ?? [];
+      const gist = data.gist ?? '';
+      for (const anchor of anchors) {
+        const acc = accByAnchor.get(anchor);
+        if (!acc) continue; // unknown anchor — fail-closed, don't surface
+        acc.students.add(r.entityId);
+        if (r.updatedAt > acc.updatedAt) {
+          acc.latestGist = gist;
+          acc.updatedAt = r.updatedAt;
+        }
+      }
+    }
+    return catalog.map((def) => {
+      const acc = accByAnchor.get(def.id) ?? {
+        students: new Set<string>(),
+        latestGist: '',
+        updatedAt: 0,
+      };
+      return {
+        indicatorId: def.id,
+        label: def.label,
+        type: def.type,
+        studentCount: acc.students.size,
+        latestGist: acc.latestGist,
+        updatedAt: acc.updatedAt,
+      };
+    });
   }
 
   private buildStudentLog(

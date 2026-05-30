@@ -292,6 +292,62 @@ describe('WorkflowClient', () => {
     expect(f.calls).toHaveLength(0);
   });
 
+  // ──────────── getObservationDashboard (M5.3b) ────────────
+
+  it('getObservationDashboard GETs the legacy projector endpoint', async () => {
+    const f = fakeFetch({
+      status: 200,
+      body: { logs: [], alerts: [], indicatorStats: [] },
+    });
+    const client = new WorkflowClient({
+      baseUrl: 'http://localhost:3001',
+      apiKey: 'sk-test',
+      fetchImpl: f.fetch,
+    });
+    const out = await client.getObservationDashboard('s1');
+    expect(out).toEqual({
+      status: 'ok',
+      payload: { logs: [], alerts: [], indicatorStats: [] },
+    });
+    expect(f.calls).toHaveLength(1);
+    expect(f.calls[0].url).toBe(
+      'http://localhost:3001/api/v1/workflow/sessions/s1/observation-dashboard',
+    );
+    expect(f.calls[0].init?.method).toBe('GET');
+    const headers = f.calls[0].init?.headers as Record<string, string>;
+    expect(headers['Authorization']).toBe('Bearer sk-test');
+  });
+
+  it('getObservationDashboard maps 401 to retryable=false', async () => {
+    const f = fakeFetch({ status: 401, body: { message: 'unauthorized' } });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = (await client.getObservationDashboard('s1')) as Extract<
+      Awaited<ReturnType<typeof client.getObservationDashboard>>,
+      { status: 'failed' }
+    >;
+    expect(out.status).toBe('failed');
+    expect(out.httpStatus).toBe(401);
+    expect(out.retryable).toBe(false);
+  });
+
+  it('getObservationDashboard maps 503 to retryable=true', async () => {
+    const f = fakeFetch({ status: 503, body: {} });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = (await client.getObservationDashboard('s1')) as Extract<
+      Awaited<ReturnType<typeof client.getObservationDashboard>>,
+      { status: 'failed' }
+    >;
+    expect(out.retryable).toBe(true);
+  });
+
+  it('getObservationDashboard rejects empty sessionId without calling fetch', async () => {
+    const f = fakeFetch({ status: 200, body: {} });
+    const client = new WorkflowClient({ baseUrl: 'http://x', apiKey: 'k', fetchImpl: f.fetch });
+    const out = await client.getObservationDashboard('');
+    expect(out.status).toBe('failed');
+    expect(f.calls).toHaveLength(0);
+  });
+
   it('encodes sessionId in URL (safe against path-injection)', async () => {
     const f = fakeFetch({ status: 202, body: { accepted: true, eventId: 'x' } });
     const client = new WorkflowClient({
