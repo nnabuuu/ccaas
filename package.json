@@ -4,7 +4,8 @@
   "private": true,
   "description": "Claude Code as a Service - Monorepo",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "solutions/business/live-lesson/platform-handlers"
   ],
   "scripts": {
     "prepare": "husky install",
