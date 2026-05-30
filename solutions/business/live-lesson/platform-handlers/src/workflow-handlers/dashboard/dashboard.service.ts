@@ -16,8 +16,8 @@
 
 import { Injectable } from '@nestjs/common';
 import type { Observation } from '@kedge-agentic/observer-engine';
-import { ObservationRepository } from '../../persistence/observation-repository';
-import { IndicatorRegistryService } from '../../llm/indicator-registry.service';
+import { ObservationRepository } from '@kedge-agentic/backend/workflow/persistence/observation-repository';
+import { IndicatorRegistryService } from '@kedge-agentic/backend/workflow/llm/indicator-registry.service';
 import type {
   DashboardIndicatorDef,
   DashboardObservationView,

@@ -6,11 +6,11 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ObservationRecord, ObserverEventRecord } from '../../entities';
-import { ObservationRepository } from '../../persistence/observation-repository';
-import { IndicatorRegistryService } from '../../llm/indicator-registry.service';
+import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/backend/workflow/entities';
+import { ObservationRepository } from '@kedge-agentic/backend/workflow/persistence/observation-repository';
+import { IndicatorRegistryService } from '@kedge-agentic/backend/workflow/llm/indicator-registry.service';
 import { DashboardService } from './dashboard.service';
-import { getTestDatabaseOptions } from '../../../../test/setup/test-database';
+import { getTestDatabaseOptions } from '../../../test/setup/test-database';
 
 const SESSION_ID = 'sess-dashboard-test';
 const TENANT = 'tenant-dashboard-test';

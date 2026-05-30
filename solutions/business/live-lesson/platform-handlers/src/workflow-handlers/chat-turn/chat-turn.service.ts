@@ -34,24 +34,24 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import { defineAction, type ActionDef } from '@kedge-agentic/ontology';
 import type { OntologyRegistry } from '@kedge-agentic/ontology';
-import { SolutionsService } from '../../../solutions/solutions.service';
-import { compileActionToToolDefinition } from '../../../ontology/action-to-tool-definition';
-import { LessonSessionManifest } from '../../../ontology/live-lesson/lesson-session.manifest';
-import { ONTOLOGY_REGISTRY } from '../../../ontology/ontology-registry.provider';
-import { SolutionToolkitRegistry } from '../../../tool-caller/solution-toolkit-registry';
+import { SolutionsService } from '@kedge-agentic/backend/solutions/solutions.service';
+import { compileActionToToolDefinition } from '@kedge-agentic/backend/ontology/action-to-tool-definition';
+import { LessonSessionManifest } from '../../ontology/lesson-session.manifest';
+import { ONTOLOGY_REGISTRY } from '@kedge-agentic/backend/ontology/ontology-registry.provider';
+import { SolutionToolkitRegistry } from '@kedge-agentic/backend/tool-caller/solution-toolkit-registry';
 import type {
   ToolInvocation,
   ToolResult,
-} from '../../../tool-caller/types';
-import { ObservationRepository } from '../../persistence/observation-repository';
-import { WorkflowEngineService } from '../../workflow-engine.service';
-import type { TriggerDef, TriggerFireInput } from '../../types';
-import { LIVE_LESSON_TENANT_SLUG } from '../constants';
+} from '@kedge-agentic/backend/tool-caller/types';
+import { ObservationRepository } from '@kedge-agentic/backend/workflow/persistence/observation-repository';
+import { WorkflowEngineService } from '@kedge-agentic/backend/workflow/workflow-engine.service';
+import type { TriggerDef, TriggerFireInput } from '@kedge-agentic/backend/workflow/types';
+import { LIVE_LESSON_TENANT_SLUG } from '../../constants';
 import {
   IndicatorRegistryService,
   type IndicatorDef,
-} from '../../llm/indicator-registry.service';
-import { LLM_GATEWAY, type LlmGateway } from '../../llm/llm-gateway';
+} from '@kedge-agentic/backend/workflow/llm/indicator-registry.service';
+import { LLM_GATEWAY, type LlmGateway } from '@kedge-agentic/backend/workflow/llm/llm-gateway';
 
 const WORKFLOW_CHAT_TURN_NAMESPACE = 'workflow-actions-chat-turn';
 

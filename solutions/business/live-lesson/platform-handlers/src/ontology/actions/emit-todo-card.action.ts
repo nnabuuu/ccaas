@@ -21,7 +21,7 @@ import { defineAction, type ActionDef } from '@kedge-agentic/ontology';
 import type {
   ToolInvocation,
   ToolResult,
-} from '../../../tool-caller/types';
+} from '@kedge-agentic/backend/tool-caller/types';
 
 const TodoItemSchema = z.object({
   id: z.string(),

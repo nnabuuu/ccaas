@@ -1,0 +1,6 @@
+dist/
+node_modules/
+*.tsbuildinfo
+test/setup/test-database.d.ts
+test/setup/test-database.js
+test/setup/test-database.js.map
