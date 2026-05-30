@@ -17,7 +17,7 @@ import { ClassroomSession } from '../../adapters/persistence/entities/classroom-
 import { AiQuestion } from '../../adapters/persistence/entities/ai-question.entity';
 import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+// OBSERVER_ENGINE removed in M6.4
 import { SUBMISSION_REPO_PORT } from '../../domain/ports/submission-repo.port';
 import { TypeOrmSubmissionRepository } from '../../adapters/persistence/repositories/submission.repository';
 import { STUDENT_REPO_PORT } from "../../domain/ports/student-repo.port";
@@ -101,7 +101,7 @@ describe('StudentSubmissionService — getProgress checkItems', () => {
         GradingService,
         ManifestCacheService,
         StateCacheService,
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        
         {
           provide: AiPromptBuilder,
           useValue: { callLlm: jest.fn().mockRejectedValue(new Error('not configured')) },

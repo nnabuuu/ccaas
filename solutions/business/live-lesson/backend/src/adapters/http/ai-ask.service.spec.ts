@@ -15,7 +15,7 @@ import { AiQuestion } from '../../adapters/persistence/entities/ai-question.enti
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+// OBSERVER_ENGINE removed in M6.4
 import { AI_QUESTION_REPO_PORT } from '../../domain/ports/ai-question-repo.port';
 import { TypeOrmAiQuestionRepository } from '../../adapters/persistence/repositories/ai-question.repository';
 import { CHAT_MESSAGE_REPO_PORT } from '../../domain/ports/chat-message-repo.port';
@@ -81,7 +81,7 @@ describe('AiAskService', () => {
         { provide: STUDENT_REPO_PORT, useExisting: TypeOrmStudentRepository },
         TypeOrmLessonRepository,
         { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        
       ],
     }).compile();
 

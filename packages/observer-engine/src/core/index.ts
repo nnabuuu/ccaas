@@ -1,20 +1,3 @@
-export type {
-  ObserverEvent,
-  EventMetadata,
-  Observation,
-  ObservationOp,
-  HandlerResult,
-  HandlerContext,
-  EventHandler,
-  LlmChatMessage,
-  LlmCompletionOptions,
-  LlmGateway,
-  ObservationStore,
-  EventStore,
-  NotifySink,
-  MinimalLogger,
-  EngineOptions,
-  HandlerRegistration,
-} from './interfaces.js';
+// Storage-layer-only post-M6.4. See interfaces.ts for context.
 
-export { ObserverEngine } from './observer-engine.js';
+export type { Observation, ObserverEvent, EventMetadata } from './interfaces.js';

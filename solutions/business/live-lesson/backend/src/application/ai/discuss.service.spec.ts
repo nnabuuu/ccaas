@@ -35,7 +35,7 @@ import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
-import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
+import { ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from '../../domain/classroom/cluster-classifier';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
@@ -114,7 +114,7 @@ describe('DiscussService', () => {
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
         DiscussService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        
       ],
     }).compile();
 
