@@ -14,7 +14,7 @@ import { AiQuestion } from '../../adapters/persistence/entities/ai-question.enti
 import { ChatMessage } from '../../adapters/persistence/entities/chat-message.entity';
 import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom-snapshot.entity';
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
-import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+// OBSERVER_ENGINE removed in M6.4
 import { CHAT_MESSAGE_REPO_PORT } from '../../domain/ports/chat-message-repo.port';
 import { TypeOrmChatMessageRepository } from '../../adapters/persistence/repositories/chat-message.repository';
 import { STUDENT_REPO_PORT } from "../../domain/ports/student-repo.port";
@@ -75,7 +75,7 @@ describe('TranslateService', () => {
         TypeOrmLessonRepository,
         { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
         TranslateService, AiPromptBuilder, ManifestCacheService,
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        
       ],
     }).compile();
 

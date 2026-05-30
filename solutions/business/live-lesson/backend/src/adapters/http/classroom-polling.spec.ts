@@ -62,7 +62,7 @@ import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
 import { CacheModule } from '@nestjs/cache-manager';
-import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+// OBSERVER_ENGINE removed in M6.4
 
 const mockObserverEngine = {
   dispatch: jest.fn().mockResolvedValue(undefined),
@@ -215,7 +215,7 @@ describe('Classroom polling — HTTP integration', () => {
         MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
         AiPromptBuilder, MetricsAggregator, ClusterClassifier,
         ClusterAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService, TranslateService,
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+        
       ],
     }).compile();
 

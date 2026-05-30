@@ -1,7 +1,7 @@
 {
   "name": "@kedge-agentic/observer-engine",
   "version": "0.1.0",
-  "description": "Event/Observer engine: dispatch events, execute handlers, persist observations, cascade",
+  "description": "Storage-layer-only legacy: Observation interface + TypeORM entities. The in-process engine retired in Phase 5 M6.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -12,10 +12,6 @@
     "./core": {
       "types": "./dist/core/index.d.ts",
       "default": "./dist/core/index.js"
-    },
-    "./nestjs": {
-      "types": "./dist/nestjs/index.d.ts",
-      "default": "./dist/nestjs/index.js"
     }
   },
   "scripts": {
