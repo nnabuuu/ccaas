@@ -6,7 +6,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { objectRef, getObjectRefTarget } from '../zod-helpers.js';
+import {
+  objectRef,
+  getObjectRefTarget,
+  objectSetRef,
+  getObjectSetRefTarget,
+} from '../zod-helpers.js';
 
 describe('objectRef', () => {
   it('returns a Zod string that parses string input', () => {
@@ -62,5 +67,41 @@ describe('getObjectRefTarget', () => {
     });
     const classIdSchema = StudentSchema.shape.classId;
     expect(getObjectRefTarget(classIdSchema)).toBe('Class');
+  });
+});
+
+describe('objectSetRef + getObjectSetRefTarget (Phase 4)', () => {
+  it('recovers the ObjectSet apiName from a decorated schema', () => {
+    const ref = objectSetRef('strugglingStudents');
+    expect(getObjectSetRefTarget(ref)).toBe('strugglingStudents');
+  });
+
+  it('parses string input like objectRef', () => {
+    const ref = objectSetRef('atRiskStudents');
+    expect(ref.parse('subset-1')).toBe('subset-1');
+    expect(() => ref.parse(42)).toThrow();
+  });
+
+  it('distinguishes objectSetRef from objectRef on the same string target', () => {
+    // Both target the literal string 'Student' but they're semantically
+    // different references — objectSetRef points at an ObjectSetDef,
+    // objectRef at an ObjectTypeDef. The runtime helpers see them as
+    // separate brands.
+    const setRef = objectSetRef('Student');
+    const objRef = objectRef('Student');
+    expect(getObjectSetRefTarget(setRef)).toBe('Student');
+    expect(getObjectRefTarget(setRef)).toBeUndefined();
+    expect(getObjectRefTarget(objRef)).toBe('Student');
+    expect(getObjectSetRefTarget(objRef)).toBeUndefined();
+  });
+
+  it('returns undefined for plain Zod schemas', () => {
+    expect(getObjectSetRefTarget(z.string())).toBeUndefined();
+    expect(getObjectSetRefTarget(z.object({}))).toBeUndefined();
+  });
+
+  it('returns undefined for a wrapped objectSetRef (.optional)', () => {
+    const wrapped = objectSetRef('strugglingStudents').optional();
+    expect(getObjectSetRefTarget(wrapped)).toBeUndefined();
   });
 });

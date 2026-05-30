@@ -23,6 +23,13 @@ import { z } from 'zod';
 const OBJECT_REF_TARGET = Symbol.for('@kedge-agentic/ontology/objectRef.target');
 
 /**
+ * Companion symbol for `objectSetRef` — same pattern, separate key so
+ * a schema branded as an objectRef vs objectSetRef stays
+ * distinguishable at runtime.
+ */
+const OBJECT_SET_REF_TARGET = Symbol.for('@kedge-agentic/ontology/objectSetRef.target');
+
+/**
  * Declare a property as a reference to another ObjectTypeDef.
  *
  * @example
@@ -62,5 +69,49 @@ export function objectRef<T extends string>(target: T) {
 export function getObjectRefTarget(schema: z.ZodTypeAny): string | undefined {
   const def = schema._def as unknown as Record<symbol, unknown>;
   const value = def[OBJECT_REF_TARGET];
+  return typeof value === 'string' ? value : undefined;
+}
+
+/**
+ * Declare a property as a reference to a named ObjectSetDef.
+ *
+ * Mirrors `objectRef` but the brand carries an ObjectSetDef apiName
+ * (vs an ObjectTypeDef apiName). Used inside `ActionDef.params` Zod
+ * schemas to accept an ObjectSet as a parameter — the runtime
+ * introspection via `getObjectSetRefTarget` recovers the apiName for
+ * the ManifestAccessor to resolve at invocation time.
+ *
+ * Phase 4 (Tier 2). Per spec §3.9.
+ *
+ * @example
+ *   const Params = z.object({
+ *     targets: objectSetRef('strugglingStudents').describe('students to flag'),
+ *     reason: z.string(),
+ *   });
+ */
+export function objectSetRef<T extends string>(target: T) {
+  const schema = z.string().brand<`__objectSetRef:${T}`>();
+  Object.defineProperty(
+    schema._def as unknown as Record<symbol, unknown>,
+    OBJECT_SET_REF_TARGET,
+    {
+      value: target,
+      enumerable: false,
+      writable: false,
+      configurable: false,
+    },
+  );
+  return schema;
+}
+
+/**
+ * Read the target ObjectSet apiName from a schema previously decorated
+ * by `objectSetRef(...)`. Returns `undefined` for any schema that
+ * wasn't decorated — including `.optional()` wrappers around an
+ * objectSetRef (same caveat as `getObjectRefTarget`).
+ */
+export function getObjectSetRefTarget(schema: z.ZodTypeAny): string | undefined {
+  const def = schema._def as unknown as Record<symbol, unknown>;
+  const value = def[OBJECT_SET_REF_TARGET];
   return typeof value === 'string' ? value : undefined;
 }
