@@ -8,6 +8,36 @@
 
 It's not a database schema (the DB answers only the first two questions), and it's not API documentation (an API answers only the third). An ontology binds these four together as the single source of truth.
 
+## At a glance
+
+```
+                ┌───────────────────────────────┐
+                │  Solution declares once:      │
+                │                               │
+                │     ObjectTypeDef             │
+                │     ActionDef                 │  ◀── single source of truth
+                │     ManifestDef               │
+                │     AccessBoundary            │
+                │     StreamDef                 │
+                │                               │
+                └───────────────┬───────────────┘
+                                │
+                                │  derived / enforced automatically
+                                │
+   ┌──────────┬──────────┬──────┴──────┬─────────────┬──────────┐
+   ▼          ▼          ▼             ▼             ▼          ▼
+
+TypeScript  Agent      Schema       Workflow      Boundary    Audit
+ types      tool       endpoint     Trigger        check       log
+            catalog
+(browser    (LLM       (HTTP +     (event →      (runtime   (every
+ + backend  introspects ETag/304)   reaction      enforce +    action
+ shared)    callable               + cascade)    role check)  recorded)
+            actions)
+```
+
+**Why this matters:** one description, 5+ downstream consumers derived automatically. Change the ActionDef and all derived surfaces update in lockstep — TypeScript types, Agent prompt, schema endpoint, workflow trigger, boundary check, audit log can't drift apart.
+
 ## Palantir-style design motivation
 
 KedgeAgentic's ontology design borrows from **Palantir Foundry's Ontology Object Model**. In enterprise BI Palantir observed:
