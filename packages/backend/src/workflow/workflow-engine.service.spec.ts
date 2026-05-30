@@ -12,6 +12,7 @@ import { Test } from '@nestjs/testing';
 import { DiscoveryService, MetadataScanner } from '@nestjs/core';
 import type { ActionResult } from '@kedge-agentic/ontology';
 import { ManifestAccessorService } from '../ontology/manifest-accessor.service';
+import { IndicatorRegistryService } from './llm/indicator-registry.service';
 import { WorkflowEngineService } from './workflow-engine.service';
 import { WorkflowMetricsService } from './workflow-metrics.service';
 import { WorkflowRegistry } from './workflow-registry';
@@ -86,6 +87,7 @@ async function buildEngine(): Promise<{
       WorkflowEngineService,
       DiscoveryService,
       MetadataScanner,
+      IndicatorRegistryService,
       { provide: ManifestAccessorService, useValue: fake },
     ],
   }).compile();

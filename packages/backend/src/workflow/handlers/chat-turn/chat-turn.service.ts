@@ -37,7 +37,6 @@ import type { OntologyRegistry } from '@kedge-agentic/ontology';
 import { SolutionsService } from '../../../solutions/solutions.service';
 import { compileActionToToolDefinition } from '../../../ontology/action-to-tool-definition';
 import { LessonSessionManifest } from '../../../ontology/live-lesson/lesson-session.manifest';
-import { ManifestAccessorService } from '../../../ontology/manifest-accessor.service';
 import { ONTOLOGY_REGISTRY } from '../../../ontology/ontology-registry.provider';
 import { SolutionToolkitRegistry } from '../../../tool-caller/solution-toolkit-registry';
 import type {
@@ -123,7 +122,6 @@ export class ChatTurnService implements OnApplicationBootstrap {
     private readonly toolkits: SolutionToolkitRegistry,
     private readonly engine: WorkflowEngineService,
     private readonly indicators: IndicatorRegistryService,
-    private readonly accessor: ManifestAccessorService,
     @Inject(LLM_GATEWAY) private readonly llm: LlmGateway,
   ) {}
 
@@ -197,11 +195,27 @@ export class ChatTurnService implements OnApplicationBootstrap {
     if (llmOutput.action === 'update' && llmOutput.updateTarget) {
       const target = indicatorHits.find((o) => o.id === llmOutput.updateTarget);
       if (target) {
+        // Pass-1 review SF5: merge with existing row data — the LLM
+        // chose `update` because the turn REFINES an existing
+        // observation, not because it wants to blank it. Empty
+        // anchors/gist/quote from the LLM are treated as "keep prior."
+        const prior = (target.data ?? {}) as {
+          anchors?: string[];
+          gist?: string;
+          quote?: string | null;
+        };
+        const mergedAnchors =
+          llmOutput.anchors.length > 0 ? llmOutput.anchors : prior.anchors ?? [];
+        const mergedGist = llmOutput.gist || prior.gist || '';
+        const mergedQuote =
+          llmOutput.quote !== null && llmOutput.quote !== undefined
+            ? llmOutput.quote
+            : prior.quote ?? null;
         await this.observations.update(target.id, {
           data: {
-            anchors: llmOutput.anchors,
-            gist: llmOutput.gist,
-            quote: llmOutput.quote,
+            anchors: mergedAnchors,
+            gist: mergedGist,
+            quote: mergedQuote,
             action: 'update',
           },
         });
@@ -243,21 +257,31 @@ export class ChatTurnService implements OnApplicationBootstrap {
   }
 
   /**
-   * Publish a `student_observation_changed` event via the
-   * `ManifestAccessorService` per-session stream router. In-process
-   * cascade — picked up by the M4 StatusChangeHandler subscriber.
-   * Critical that this stays in-process: the cascade depth tracking
-   * via `AsyncLocalStorage` only works inside one engine.
+   * Cascade: publish `student_observation_changed` to LessonSession.events
+   * so the StatusChangeTrigger fires + re-derives the student's status.
+   *
+   * Routed through `WorkflowEngineService.cascadeEvent` (NOT the bare
+   * `ManifestAccessorService.publish`). Bare `publish` only fans to
+   * subscribers and does not re-enter the engine, so event-kind triggers
+   * watching the stream never see the cascade — pass-1 review MF1.
+   * `cascadeEvent` opens a child cascade frame so depth tracking +
+   * ceiling enforcement work across the chain.
    */
   private async cascadeStudentObservationChanged(
     sessionId: string,
-    _solutionId: string,
+    solutionId: string,
     entityId: string,
   ): Promise<void> {
-    this.accessor.publish(sessionId, 'events', {
-      type: 'student_observation_changed',
-      studentId: entityId,
-      trigger: 'chat_turn',
+    await this.engine.cascadeEvent({
+      sessionId,
+      solutionId,
+      manifestName: 'LessonSession',
+      streamApiName: 'events',
+      payload: {
+        type: 'student_observation_changed',
+        studentId: entityId,
+        trigger: 'chat_turn',
+      },
     });
   }
 
