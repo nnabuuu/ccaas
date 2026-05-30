@@ -17,6 +17,10 @@
       "types": "./dist/src/workflow/entities/index.d.ts",
       "default": "./dist/src/workflow/entities/index.js"
     },
+    "./workflow/types": {
+      "types": "./dist/src/workflow/types/index.d.ts",
+      "default": "./dist/src/workflow/types/index.js"
+    },
     "./*": {
       "types": "./dist/src/*.d.ts",
       "default": "./dist/src/*.js"

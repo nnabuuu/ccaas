@@ -36,9 +36,9 @@ class AllowAllGuard {
   canActivate(context: any) {
     // Stamp a fake request.solutionId so @TenantId() resolves.
     const req = context.switchToHttp().getRequest();
-    req.solutionId = 'live-lesson-tenant-uuid';
+    req.solutionId = 'test-tenant-uuid';
     req.context = {
-      solutionId: 'live-lesson-tenant-uuid',
+      solutionId: 'test-tenant-uuid',
       apiKeyId: 'fake',
       requestId: 'fake',
     };
@@ -108,10 +108,10 @@ describe('EventIngestController (integration)', () => {
     app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
     await app.init();
     events = module.get(ObserverEventRepository);
-    // Register LessonSession so the controller's M-3 payload validation
+    // Register TestSession so the controller's M-3 payload validation
     // gate has a manifest + stream to check against.
     const ontology = module.get<OntologyRegistry>(ONTOLOGY_REGISTRY);
-    if (!ontology.getManifest('LessonSession')) {
+    if (!ontology.getManifest('TestSession')) {
       ontology.registerManifest(EventIngestTestManifest);
     }
   });
@@ -127,10 +127,10 @@ describe('EventIngestController (integration)', () => {
       .post('/api/v1/workflow/sessions/s1/events')
       .send({
         eventId: 'evt-1',
-        manifestName: 'LessonSession',
+        manifestName: 'TestSession',
         streamApiName: 'events',
-        entityId: 'student-1',
-        payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+        entityId: 'entity-1',
+        payload: { type: 'entity_join', entityRefId: 'entity-1', sessionRef: 'SESS_TEST' },
       })
       .expect(202);
 
@@ -141,9 +141,9 @@ describe('EventIngestController (integration)', () => {
     expect(fakeEngine.ingestCalls).toHaveLength(1);
     expect(fakeEngine.ingestCalls[0]).toEqual({
       sessionId: 's1',
-      solutionId: 'live-lesson-tenant-uuid',
+      solutionId: 'test-tenant-uuid',
       streamApiName: 'events',
-      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+      payload: { type: 'entity_join', entityRefId: 'entity-1', sessionRef: 'SESS_TEST' },
     });
   });
 
@@ -151,10 +151,10 @@ describe('EventIngestController (integration)', () => {
     process.env.WORKFLOW_INGEST = 'enabled';
     const body = {
       eventId: 'evt-dup',
-      manifestName: 'LessonSession',
+      manifestName: 'TestSession',
       streamApiName: 'events',
-      entityId: 'student-1',
-      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+      entityId: 'entity-1',
+      payload: { type: 'entity_join', entityRefId: 'entity-1', sessionRef: 'SESS_TEST' },
     };
     await request(app.getHttpServer())
       .post('/api/v1/workflow/sessions/s1/events')
@@ -178,10 +178,10 @@ describe('EventIngestController (integration)', () => {
       .post('/api/v1/workflow/sessions/s1/events')
       .send({
         eventId: 'evt-disabled',
-        manifestName: 'LessonSession',
+        manifestName: 'TestSession',
         streamApiName: 'events',
-        entityId: 'student-1',
-        payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+        entityId: 'entity-1',
+        payload: { type: 'entity_join', entityRefId: 'entity-1', sessionRef: 'SESS_TEST' },
       })
       .expect(202);
     expect(res.body).toEqual({
@@ -201,10 +201,10 @@ describe('EventIngestController (integration)', () => {
       .post('/api/v1/workflow/sessions/s1/events')
       .send({
         eventId: 'evt-bad-payload',
-        manifestName: 'LessonSession',
+        manifestName: 'TestSession',
         streamApiName: 'events',
-        entityId: 'student-1',
-        payload: { type: 'student_joined' /* missing studentId + classroomCode */ },
+        entityId: 'entity-1',
+        payload: { type: 'entity_join' /* missing entityRefId + sessionRef */ },
       })
       .expect(400);
     expect(res.body.message).toMatch(/payload does not match.+payloadSchema/);
@@ -223,7 +223,7 @@ describe('EventIngestController (integration)', () => {
         manifestName: 'DoesNotExist',
         streamApiName: 'events',
         entityId: 'e',
-        payload: { type: 'student_joined', studentId: 's', classroomCode: 'c' },
+        payload: { type: 'entity_join', entityRefId: 's', sessionRef: 'sess-c' },
       })
       .expect(400);
   });
@@ -234,10 +234,10 @@ describe('EventIngestController (integration)', () => {
       .post('/api/v1/workflow/sessions/s1/events')
       .send({
         eventId: 'evt-bad-stream',
-        manifestName: 'LessonSession',
+        manifestName: 'TestSession',
         streamApiName: 'bogus_stream',
         entityId: 'e',
-        payload: { type: 'student_joined', studentId: 's', classroomCode: 'c' },
+        payload: { type: 'entity_join', entityRefId: 's', sessionRef: 'sess-c' },
       })
       .expect(400);
   });
@@ -257,10 +257,10 @@ describe('EventIngestController (integration)', () => {
     process.env.WORKFLOW_INGEST = 'enabled';
     const body = {
       eventId: 'evt-concurrent',
-      manifestName: 'LessonSession',
+      manifestName: 'TestSession',
       streamApiName: 'events',
-      entityId: 'student-1',
-      payload: { type: 'student_joined', studentId: 'student-1', classroomCode: 'HX3KM7' },
+      entityId: 'entity-1',
+      payload: { type: 'entity_join', entityRefId: 'entity-1', sessionRef: 'SESS_TEST' },
     };
     const [r1, r2] = await Promise.all([
       request(app.getHttpServer())
