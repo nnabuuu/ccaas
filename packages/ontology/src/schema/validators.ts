@@ -61,6 +61,7 @@ import { API_KEY_SCOPES } from './action.js';
 import type { FunctionDef } from './function.js';
 import type { LinkDef } from './link.js';
 import type { ObjectTypeDef } from './object-type.js';
+import type { ObjectSetDef } from './object-set.js';
 import type { StreamDef } from './stream.js';
 import type {
   AccessBoundary,
@@ -99,6 +100,10 @@ export interface ValidationContext {
   readonly objectTypes: ReadonlyMap<string, ObjectTypeDef>;
   readonly manifests: ReadonlyMap<string, ManifestDef>;
   readonly functions?: ReadonlyMap<string, FunctionDef>;
+  /** Phase 4 (Tier 2 — partial). Optional so Phase 1/2 callers can
+   *  build a context without the new map. Cross-def validators that
+   *  need to resolve `objectSet`-kinded slot targets read this. */
+  readonly objectSets?: ReadonlyMap<string, ObjectSetDef>;
 }
 
 // ────────────────────────────────────────────────────────────────────
@@ -178,6 +183,26 @@ export function validateFunction(f: FunctionDef): ValidationError[] {
     });
   }
   errors.push(...validateRequiredScopes(f.requiredScopes, base));
+  return errors;
+}
+
+/**
+ * Validates one ObjectSetDef in isolation. Phase 4 (Tier 2 — partial).
+ *
+ * Local checks: semantic non-empty. Cross-def filter-path resolution
+ * lives in `validateObjectSet` (cross-def section) — it needs the
+ * target ObjectType's Zod shape to walk.
+ */
+export function validateObjectSetLocal(s: ObjectSetDef): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const base = `ObjectSet:${s.apiName}`;
+  if (!s.semantic || s.semantic.trim().length === 0) {
+    errors.push({
+      code: 'SEMANTIC_EMPTY',
+      message: 'ObjectSetDef.semantic is required and must be non-empty',
+      path: base,
+    });
+  }
   return errors;
 }
 
