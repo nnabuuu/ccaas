@@ -9,6 +9,14 @@
       "types": "./dist/src/main.d.ts",
       "default": "./dist/src/main.js"
     },
+    "./auth/decorators": {
+      "types": "./dist/src/auth/decorators/index.d.ts",
+      "default": "./dist/src/auth/decorators/index.js"
+    },
+    "./workflow/entities": {
+      "types": "./dist/src/workflow/entities/index.d.ts",
+      "default": "./dist/src/workflow/entities/index.js"
+    },
     "./*": {
       "types": "./dist/src/*.d.ts",
       "default": "./dist/src/*.js"
