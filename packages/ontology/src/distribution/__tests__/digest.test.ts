@@ -163,6 +163,7 @@ describe('computeSchemaDigest', () => {
     expect(s.objectTypes).toEqual([]);
     expect(s.manifests).toEqual([]);
     expect(s.functions).toEqual([]);
+    expect(s.objectSets).toEqual([]);
     expect(s.ontologyVersion).toBeDefined();
   });
 
