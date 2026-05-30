@@ -7,7 +7,6 @@ import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson
 import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/ports/ai-question-repo.port';
 import { CLASSROOM_SESSION_REPO_PORT, type ClassroomSessionRepoPort } from '../../domain/ports/classroom-session-repo.port';
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
-import { ObservationQueryService } from '../observation/observation-query.service';
 import { WorkflowIndicatorPushService } from '../../adapters/workflow-outbox/workflow-indicator-push.service';
 import { WorkflowDashboardFetchService } from '../../adapters/workflow-outbox/workflow-dashboard-fetch.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
@@ -25,6 +24,7 @@ import type {
   StudentLog,
   Alert,
   IndicatorStats,
+  IndicatorDef,
 } from '../../schemas/classroom/observation';
 
 /**
@@ -50,7 +50,6 @@ export class ClassroomStateService {
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
-    private readonly observationQuery: ObservationQueryService,
     private readonly coachingService: CoachingService,
     private readonly depthRankingService: DepthRankingService,
     private readonly manifestCache: ManifestCacheService,
@@ -91,7 +90,9 @@ export class ClassroomStateService {
 
   cleanupSession(sessionId: string, lessonId: string): void {
     this.activeNotificationsMap.delete(sessionId);
-    this.observationQuery.clearSession(sessionId);
+    // M6.3: indicator catalog now lives on the platform; teardown is
+    // handled via WorkflowEngineService.clearSession (currently
+    // unwired in production — same M5 pass-1 SF1 follow-up).
     this.clusterAggregator.cleanupSession(sessionId);
     this.coachingService.cleanupSession(sessionId);
     this.depthRankingService.cleanupSession(sessionId);
@@ -303,16 +304,7 @@ export class ClassroomStateService {
       stepMetrics,
       healthCards,
       questions: questionRecords,
-      observation: {
-        // M5.3b: source dashboard from the platform projector via HTTP.
-        // Falls back to the local ObservationQueryService if the platform
-        // is unreachable (legacy observer-engine still dual-writes to
-        // live-lesson's DB until M6, so the fallback stays warm).
-        // M5 second pass migrates the frontend to the new
-        // DashboardPayload + deletes both paths.
-        ...(await this.fetchObservationDashboard(sessionId)),
-        indicators: this.observationQuery.getIndicators(sessionId),
-      },
+      observation: await this.fetchObservationDashboard(sessionId),
       clusterStats,
       coaching: {
         highlights: await this.coachingService.getHighlights(sessionId),
@@ -327,18 +319,18 @@ export class ClassroomStateService {
   }
 
   /**
-   * Fetch the observation dashboard, preferring the platform projector
-   * over the local ObservationQueryService. Falls back to local when
-   * the platform is unreachable so the dashboard never goes dark.
-   *
-   * Phase 5 M5.3b — the cutover. M5 second pass deletes the local
-   * ObservationQueryService path entirely once the frontend migrates
-   * to the new DashboardPayload shape.
+   * Fetch the observation dashboard from the platform projector.
+   * Returns an empty payload when platform is unreachable — M6.3
+   * retired the local fallback because the local observation table
+   * is no longer written to (observer-engine handlers deleted in
+   * M6.2). The dashboard going dark on platform outage is the right
+   * failure mode: HA + caching are the platform's concerns.
    */
   private async fetchObservationDashboard(sessionId: string): Promise<{
     logs: StudentLog[];
     alerts: Alert[];
     indicatorStats: IndicatorStats[];
+    indicators: IndicatorDef[];
   }> {
     const platform = await this.workflowDashboard.fetchPlatform(sessionId);
     if (platform) {
@@ -346,12 +338,10 @@ export class ClassroomStateService {
         logs: platform.logs,
         alerts: platform.alerts,
         indicatorStats: platform.indicatorStats,
+        indicators: platform.indicators,
       };
     }
-    // Fallback: local observation query. The legacy observer-engine
-    // dual-writes to the live-lesson DB until M6, so this path is
-    // stale-but-not-empty during the transition.
-    return this.observationQuery.getObservationDashboard(sessionId);
+    return { logs: [], alerts: [], indicatorStats: [], indicators: [] };
   }
 
   // ── Surfaces (on-demand observe data) ──
@@ -423,11 +413,9 @@ export class ClassroomStateService {
         );
 
       if (indicators.length > 0) {
-        this.observationQuery.setIndicators(sessionId, indicators);
-        // Phase 5 M5.3a: also push to the platform's IndicatorRegistryService
-        // so the M4 LLM handlers (ChatTurnService / StatusChangeService) can
-        // fire. Fire-and-forget; failure logs but doesn't disrupt session
-        // start (legacy observer-engine path still classifies locally).
+        // M6.3: indicators flow only to the platform's IndicatorRegistry
+        // (M4 LLM handlers + projector both read from there). Fire-and-
+        // forget; failure logs but doesn't disrupt session start.
         void this.workflowIndicators
           .pushIndicators(sessionId, indicators)
           .catch((err: unknown) => {

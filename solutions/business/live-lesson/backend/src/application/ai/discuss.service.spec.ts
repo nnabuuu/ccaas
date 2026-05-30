@@ -24,7 +24,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DiscussService } from './discuss.service';
 import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
 import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
-import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { Student } from '../../adapters/persistence/entities/student.entity';
@@ -81,7 +80,6 @@ describe('DiscussService', () => {
   let sessionRepo: Repository<ClassroomSession>;
   let aiQuestionRepo: Repository<AiQuestion>;
   let aiPromptBuilder: AiPromptBuilder;
-  let observationQuery: ObservationQueryService;
   let studentSubmissionService: StudentSubmissionService;
 
   beforeAll(async () => {
@@ -115,7 +113,7 @@ describe('DiscussService', () => {
         { provide: LESSON_REPO_PORT, useExisting: TypeOrmLessonRepository },
         { provide: DISCUSS_TARGET_HIT_REPO_PORT, useExisting: TypeOrmDiscussTargetHitRepository },
         ...PLUGIN_PROVIDERS,
-        DiscussService, ObservationQueryService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
+        DiscussService, TypeOrmObservationRecordRepository, { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository }, AiPromptBuilder, ManifestCacheService, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService, StateCacheService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -126,7 +124,6 @@ describe('DiscussService', () => {
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     aiQuestionRepo = module.get(getRepositoryToken(AiQuestion));
     aiPromptBuilder = module.get(AiPromptBuilder);
-    observationQuery = module.get(ObservationQueryService);
     studentSubmissionService = module.get(StudentSubmissionService);
 
     await lessonRepo.save(lessonRepo.create({
@@ -164,7 +161,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Good observation!');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('system prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -189,7 +186,7 @@ describe('DiscussService', () => {
       );
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -207,7 +204,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Done [GOAL_REACHED]');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -230,7 +227,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Reply');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -247,7 +244,7 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValue(new Error('LLM down'));
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -271,7 +268,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Nice thinking!');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -290,7 +287,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Correct! [GOAL_REACHED]');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -309,7 +306,7 @@ describe('DiscussService', () => {
         .mockResolvedValueOnce('I see a formula')       // main vision call
         .mockResolvedValueOnce('(a+b)(a-b)');           // extraction call
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -329,7 +326,7 @@ describe('DiscussService', () => {
         .mockRejectedValueOnce(new Error('timeout'))     // extraction attempt 1
         .mockRejectedValueOnce(new Error('timeout'));    // extraction retry
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -346,7 +343,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Text reply');
       jest.spyOn(aiPromptBuilder, 'callVisionConversation');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -365,7 +362,7 @@ describe('DiscussService', () => {
         .mockResolvedValueOnce('Vision reply')
         .mockResolvedValueOnce('extracted desc');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -389,7 +386,7 @@ describe('DiscussService', () => {
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Tell me more');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
 
-      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
+      // observationQuery removed in M6.3
 
       await service.aiDiscuss(
         session, student.id, 1,

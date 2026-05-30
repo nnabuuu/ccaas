@@ -25,7 +25,6 @@ import { Repository } from 'typeorm';
 import { ClassroomStateService } from './classroom-state.service';
 import { OBSERVATION_RECORD_REPO_PORT } from '../../domain/ports/observation-record-repo.port';
 import { TypeOrmObservationRecordRepository } from '../../adapters/persistence/repositories/observation-record.repository';
-import { ObservationQueryService } from '../observation/observation-query.service';
 import { MetricsAggregator } from '../../domain/classroom/metrics-aggregator';
 import { ClusterAggregator } from '../../application/discussion/cluster-aggregator';
 import { CoachingService } from '../observation/coaching.service';
@@ -42,14 +41,7 @@ import { ClassroomSnapshot } from '../../adapters/persistence/entities/classroom
 import { Lesson } from '../../adapters/persistence/entities/lesson.entity';
 import { DiscussHighlight } from '../../adapters/persistence/entities/discuss-highlight.entity';
 import { DiscussTargetHit } from '../../adapters/persistence/entities/discuss-target-hit.entity';
-import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
-
-const mockObserverEngine = {
-  dispatch: jest.fn().mockResolvedValue(undefined),
-  setSessionMeta: jest.fn(),
-  clearSessionMeta: jest.fn(),
-  register: jest.fn(),
-};
+import { ObservationRecord } from '@kedge-agentic/observer-engine';
 
 // ──────────────────────────────────────────────────────────────
 // Part 1: Unit Tests — mocked repos + services, pure in-memory logic
@@ -57,17 +49,10 @@ const mockObserverEngine = {
 
 describe('ClassroomStateService — unit (mocked deps)', () => {
   let service: ClassroomStateService;
-  let mockObservationQuery: { clearSession: jest.Mock; getIndicators: jest.Mock; setIndicators: jest.Mock; getObservationDashboard: jest.Mock };
   let mockClusterAggregator: { cleanupSession: jest.Mock; getClusterStats: jest.Mock };
   let mockCoachingService: { cleanupSession: jest.Mock; getHighlights: jest.Mock; getCached: jest.Mock };
 
   beforeAll(async () => {
-    mockObservationQuery = {
-      clearSession: jest.fn(),
-      getIndicators: jest.fn().mockReturnValue([]),
-      setIndicators: jest.fn(),
-      getObservationDashboard: jest.fn().mockResolvedValue({ logs: [], alerts: [], indicatorStats: [] }),
-    };
     mockClusterAggregator = {
       cleanupSession: jest.fn(),
       getClusterStats: jest.fn().mockReturnValue([]),
@@ -87,7 +72,6 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         { provide: LESSON_REPO_PORT, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: CLASSROOM_SESSION_REPO_PORT, useValue: { findById: jest.fn().mockResolvedValue(null) } },
         { provide: AI_QUESTION_REPO_PORT, useValue: { findBySession: jest.fn().mockResolvedValue([]) } },
-        { provide: ObservationQueryService, useValue: mockObservationQuery },
         { provide: MetricsAggregator, useValue: {} },
         { provide: ClusterAggregator, useValue: mockClusterAggregator },
         { provide: CoachingService, useValue: mockCoachingService },
@@ -177,7 +161,8 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
       service.cleanupSession('cleanup-1', 'lesson-1');
 
       expect(service.getActiveNotifications('cleanup-1')).toEqual([]);
-      expect(mockObservationQuery.clearSession).toHaveBeenCalledWith('cleanup-1');
+      // M6.3: observationQuery.clearSession removed — indicator catalog
+      // now lives on the platform IndicatorRegistry, not locally.
       expect(mockClusterAggregator.cleanupSession).toHaveBeenCalledWith('cleanup-1');
       expect(mockCoachingService.cleanupSession).toHaveBeenCalledWith('cleanup-1');
     });
@@ -247,6 +232,9 @@ describe('ClassroomStateService — integration (SQLite)', () => {
   let studentRepo: Repository<Student>;
   let submissionRepo: Repository<Submission>;
   let lessonRepo: Repository<Lesson>;
+  const mockWorkflowIndicators = {
+    pushIndicators: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -264,7 +252,6 @@ describe('ClassroomStateService — integration (SQLite)', () => {
       providers: [
         ClassroomStateService,
         StateCacheService,
-        ObservationQueryService,
         TypeOrmObservationRecordRepository,
         { provide: OBSERVATION_RECORD_REPO_PORT, useExisting: TypeOrmObservationRecordRepository },
         TypeOrmDiscussTargetHitRepository,
@@ -289,8 +276,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         DepthRankingService,
         ManifestCacheService,
         AiPromptBuilder,
-        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
-        { provide: WorkflowIndicatorPushService, useValue: { pushIndicators: jest.fn().mockResolvedValue(undefined) } },
+        { provide: WorkflowIndicatorPushService, useValue: mockWorkflowIndicators },
         { provide: WorkflowDashboardFetchService, useValue: { fetchPlatform: jest.fn().mockResolvedValue(null) } },
       ],
     }).compile();
@@ -320,23 +306,27 @@ describe('ClassroomStateService — integration (SQLite)', () => {
   // ── initObservation ──
 
   describe('initObservation', () => {
-    it('sets indicators from manifest observations field', async () => {
+    beforeEach(() => mockWorkflowIndicators.pushIndicators.mockClear());
+
+    it('pushes indicators from manifest to the platform IndicatorRegistry', async () => {
       const sessionId = 'init-obs-1';
       await service.initObservation(sessionId, 'obs-lesson');
-
-      const observationQuery = module.get(ObservationQueryService);
-      const indicators = observationQuery.getIndicators(sessionId);
+      expect(mockWorkflowIndicators.pushIndicators).toHaveBeenCalledTimes(1);
+      const [actualSessionId, indicators] =
+        mockWorkflowIndicators.pushIndicators.mock.calls[0];
+      expect(actualSessionId).toBe(sessionId);
       expect(indicators).toHaveLength(2);
-      expect(indicators.map(i => i.id).sort()).toEqual(['K1', 'M1']);
+      expect((indicators as Array<{ id: string }>).map((i) => i.id).sort()).toEqual([
+        'K1',
+        'M1',
+      ]);
     });
 
     it('no-op when lesson does not exist', async () => {
       await expect(
         service.initObservation('init-obs-2', 'nonexistent-lesson'),
       ).resolves.toBeUndefined();
-
-      const observationQuery = module.get(ObservationQueryService);
-      expect(observationQuery.getIndicators('init-obs-2')).toEqual([]);
+      expect(mockWorkflowIndicators.pushIndicators).not.toHaveBeenCalled();
     });
 
     it('handles invalid manifestJson without throwing', async () => {

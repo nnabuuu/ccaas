@@ -6,7 +6,7 @@ import { AI_QUESTION_REPO_PORT, type AiQuestionRepoPort } from '../../domain/por
 import { SUBMISSION_REPO_PORT, type SubmissionRepoPort } from '../../domain/ports/submission-repo.port';
 import { CHAT_MESSAGE_REPO_PORT, type ChatMessageRepoPort } from '../../domain/ports/chat-message-repo.port';
 import { LESSON_REPO_PORT, type LessonRepoPort } from '../../domain/ports/lesson-repo.port';
-import { ObservationQueryService } from '../observation/observation-query.service';
+import { WorkflowDashboardFetchService } from '../../adapters/workflow-outbox/workflow-dashboard-fetch.service';
 import { AiPromptBuilder } from '../ai/ai-prompt-builder';
 import { ManifestCacheService } from '../classroom/manifest-cache.service';
 import { WorkflowDispatchService } from '../../adapters/workflow-outbox/workflow-dispatch.service';
@@ -32,7 +32,7 @@ export class DiscussService {
     private readonly aiQuestionRepo: AiQuestionRepoPort,
     @Inject(CHAT_MESSAGE_REPO_PORT)
     private readonly chatMessageRepo: ChatMessageRepoPort,
-    private readonly observationQuery: ObservationQueryService,
+    private readonly workflowDashboard: WorkflowDashboardFetchService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     private readonly clusterClassifier: ClusterClassifier,
@@ -380,8 +380,12 @@ export class DiscussService {
       session.id, studentId, stepIdx, 'exercise',
     );
 
-    const allLogs = await this.observationQuery.getStudentLogs(session.id);
-    const studentLog = allLogs.find(l => l.studentId === studentId) ?? null;
+    // M6.3: fetch logs from the platform projector instead of the
+    // local ObservationQueryService (deleted). The projector returns
+    // the same `logs[]` shape; we filter to this student locally.
+    const platform = await this.workflowDashboard.fetchPlatform(session.id);
+    const studentLog =
+      platform?.logs.find((l) => l.studentId === studentId) ?? null;
     let priorObservationContext: string | null = null;
     if (studentLog?.events.length) {
       const relevantEvents = studentLog.events
