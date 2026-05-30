@@ -186,6 +186,42 @@ describe('DashboardService', () => {
     expect(m.currentStep).toBe(3);
   });
 
+  it('M5 pass-2 S2: lastActiveAt falls back to lifecycle when no activity rows', async () => {
+    // Join-only student must NOT have lastActiveAt = null (which would
+    // break the frontend's `now - lastActiveAt > STUCK` check).
+    await repo.append({
+      id: 'l',
+      sessionId: SESSION_ID,
+      entityId: 'student-1',
+      solutionId: TENANT,
+      type: 'lifecycle',
+      data: { action: 'join', studentName: 'Alice' },
+      triggerEventId: 'e0',
+      createdAt: 1234,
+      updatedAt: 1234,
+    });
+    const m = (await service.buildPayload(TENANT, SESSION_ID)).students[0].metrics;
+    expect(m.lastActiveAt).toBe(1234);
+  });
+
+  it('M5 pass-2 S1: exerciseCorrectRate is null (not 0) when no scored exercises', async () => {
+    // Distinguishes "no data yet" from "all-zero scores" so the
+    // frontend can hide the metric instead of rendering misleading 0%.
+    await repo.append({
+      id: 'h',
+      sessionId: SESSION_ID,
+      entityId: 'student-1',
+      solutionId: TENANT,
+      type: 'indicator_hit',
+      data: { anchors: ['K1'] },
+      triggerEventId: 'e',
+      createdAt: 1000,
+      updatedAt: 1000,
+    });
+    const m = (await service.buildPayload(TENANT, SESSION_ID)).students[0].metrics;
+    expect(m.exerciseCorrectRate).toBeNull();
+  });
+
   it('lastActiveAt excludes student_status (regression for pass-1 MF2)', async () => {
     const stale = 1000;
     await repo.append({

@@ -84,10 +84,11 @@ describe('ObservationDashboardProjector', () => {
     // lands. legacy dashboard counted ONLY chat_turn rows; bumping on
     // non-chat lifecycle would diverge from legacy during dual-write.
     expect(log.systemMetrics.messageCount).toBe(0);
-    // M5 pass-1 MF2: lifecycle observations don't count toward
-    // lastActiveAt (only indicator_hit / exercise / progress do).
-    // This fixture only has lifecycle rows → null.
-    expect(log.systemMetrics.lastActiveAt).toBeNull();
+    // M5 pass-2 S2: lifecycle doesn't count as activity (MF2) but IS a
+    // fallback when no activity rows exist — gives frontend a real
+    // number instead of null/NaN. Two lifecycle rows here → latest
+    // (2000) wins.
+    expect(log.systemMetrics.lastActiveAt).toBe(2000);
   });
 
   it('pass-1 N4: unknown observation type → opaque system event (forward-compat default arm)', async () => {
@@ -304,6 +305,37 @@ describe('ObservationDashboardProjector', () => {
     });
     const out = await projector.project('tenant-a', 's1');
     expect(out.logs[0].studentName).toBe('student-anon');
+  });
+
+  it('M5 pass-2 S2: lastActiveAt prefers activity over lifecycle when both exist', async () => {
+    // Lifecycle at t=500, activity at t=2000 → activity wins. Lifecycle
+    // is only a fallback to keep a join-only student from showing
+    // null/NaN; once activity arrives it must take precedence so the
+    // idle heuristic sees the real freshness.
+    await repo.append({
+      id: 'l',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'lifecycle',
+      data: { action: 'join' },
+      triggerEventId: 'e0',
+      createdAt: 500,
+      updatedAt: 500,
+    });
+    await repo.append({
+      id: 'h',
+      sessionId: 's1',
+      entityId: 'student-1',
+      solutionId: 'live-lesson',
+      type: 'indicator_hit',
+      data: { anchors: ['K1'] },
+      triggerEventId: 'e1',
+      createdAt: 2000,
+      updatedAt: 2000,
+    });
+    const out = await projector.project('tenant-a', 's1');
+    expect(out.logs[0].systemMetrics.lastActiveAt).toBe(2000);
   });
 
   it('M5 pass-1 MF2: lastActiveAt excludes student_status (heuristic stays reachable)', async () => {
