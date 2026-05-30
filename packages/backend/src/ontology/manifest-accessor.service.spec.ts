@@ -355,6 +355,73 @@ describe('ManifestAccessorService', () => {
     }
   });
 
+  it('onStateChange fires after setState with before+after, skips when Object.is matches', async () => {
+    const a = await service.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const events: Array<{ path: string; before: unknown; after: unknown }> = [];
+    const unsub = service.onStateChange((e) => {
+      events.push({ path: e.path, before: e.before, after: e.after });
+    });
+
+    a.setState('phase', 'active');
+    expect(events).toEqual([
+      { path: 'phase', before: 'waiting', after: 'active' },
+    ]);
+
+    // Spurious set — value unchanged, listener should NOT fire again.
+    a.setState('phase', 'active');
+    expect(events).toHaveLength(1);
+
+    // Real change again — listener fires.
+    a.setState('phase', 'ended');
+    expect(events).toHaveLength(2);
+    expect(events[1]).toEqual({
+      path: 'phase',
+      before: 'active',
+      after: 'ended',
+    });
+
+    unsub();
+    a.setState('phase', 'active');
+    expect(events).toHaveLength(2); // unsubscribed listener doesn't fire
+  });
+
+  it('onStateChange listener errors are swallowed; other listeners still fire', async () => {
+    const a = await service.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const okEvents: unknown[] = [];
+    service.onStateChange(() => {
+      throw new Error('boom');
+    });
+    service.onStateChange((e) => {
+      okEvents.push(e.path);
+    });
+    expect(() => a.setState('phase', 'active')).not.toThrow();
+    expect(okEvents).toEqual(['phase']);
+  });
+
+  it('onStateChange does NOT fire when setState was a no-op (spurious set guard)', async () => {
+    const a = await service.getAccessorFor({
+      sessionId: 's1',
+      solutionId: 'live-lesson',
+      manifestName: 'LessonSession',
+      role: 'agent',
+    });
+    const events: unknown[] = [];
+    service.onStateChange((e) => events.push(e));
+    // The seeded initial for 'phase' is 'waiting'. Setting to 'waiting' is a no-op.
+    a.setState('phase', 'waiting');
+    expect(events).toEqual([]);
+  });
+
   it('publish swallows per-handler errors so one bad subscriber cannot poison the fanout', async () => {
     const a = await service.getAccessorFor({
       sessionId: 's1',

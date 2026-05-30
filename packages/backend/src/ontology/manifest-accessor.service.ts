@@ -85,6 +85,28 @@ export interface ManifestAccessorInput {
 
 type StreamHandler = (event: unknown) => void;
 
+/**
+ * Listener fired when a manifest state field's value changes via
+ * `BoundManifestAccessor.setState`. The Workflow layer's
+ * `state-change` triggers wire one global listener through this hook
+ * and route by (`manifestName`, `path`) to the indexed trigger registry.
+ *
+ * Listeners are invoked synchronously after the in-memory cache write
+ * but before the fire-and-forget DB persist resolves. `Object.is(before,
+ * after)` no-op guard means listeners never see spurious sets.
+ * Per-listener errors are caught + logged so one bad listener can't
+ * block the rest.
+ */
+export interface StateChangeEvent {
+  readonly sessionId: string;
+  readonly solutionId: string;
+  readonly manifestName: string;
+  readonly path: string;
+  readonly before: unknown;
+  readonly after: unknown;
+}
+export type StateChangeListener = (e: StateChangeEvent) => void;
+
 const STATE_KEY_PREFIX = 'manifest';
 
 function stateKey(manifestName: string, fieldApiName: string): string {
@@ -123,6 +145,9 @@ export class ManifestAccessorService {
     Map<string, Set<StreamHandler>>
   >();
 
+  /** Global state-change listeners. See `StateChangeListener` JSDoc. */
+  private readonly stateListeners = new Set<StateChangeListener>();
+
   constructor(
     @Inject(ONTOLOGY_REGISTRY) private readonly registry: OntologyRegistry,
     private readonly metadata: SessionMetadataService,
@@ -155,6 +180,7 @@ export class ManifestAccessorService {
       qualifyTool: input.qualifyTool ?? ((name) => name),
       subscribe: (streamApiName, handler) =>
         this.subscribeInternal(input.sessionId, streamApiName, handler),
+      fireStateChange: (e) => this.fireStateChange(e),
     });
   }
 
@@ -189,6 +215,39 @@ export class ManifestAccessorService {
    */
   clearSession(sessionId: string): void {
     this.streams.delete(sessionId);
+  }
+
+  /**
+   * Register a global state-change listener. Returns an unsubscribe fn.
+   * The Workflow engine registers exactly one listener at bootstrap;
+   * solution-side callers shouldn't register listeners directly —
+   * declare a `state-change` TriggerDef instead.
+   */
+  onStateChange(listener: StateChangeListener): () => void {
+    this.stateListeners.add(listener);
+    return () => {
+      this.stateListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Fan a state change out to every listener. Per-listener errors are
+   * caught + logged so one bad listener can't block the rest.
+   * Called from `BoundManifestAccessor.setState` after the in-memory
+   * cache write + `Object.is(before, after)` no-op guard.
+   */
+  private fireStateChange(e: StateChangeEvent): void {
+    for (const l of this.stateListeners) {
+      try {
+        l(e);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `state-change listener threw for ${e.manifestName}.${e.path} ` +
+            `(session ${e.sessionId}): ${msg}`,
+        );
+      }
+    }
   }
 
   private subscribeInternal(
@@ -272,6 +331,7 @@ interface BoundDeps {
     streamApiName: string,
     handler: StreamHandler,
   ) => () => void;
+  readonly fireStateChange: (e: StateChangeEvent) => void;
 }
 
 /**
@@ -315,18 +375,35 @@ class BoundManifestAccessor implements ManifestAccessor {
         `setState denied for role '${this.deps.role}' on path '${apiName}': ${decision.reason}`,
       );
     }
+    const before = this.deps.stateCache.get(apiName);
     this.deps.stateCache.set(apiName, value);
-    const key = stateKey(this.deps.manifest.name, apiName);
-    // Fire-and-forget persistence. Failure is logged but not surfaced
-    // to the caller because the sync interface has no error channel.
-    void this.deps.metadata
-      .put(this.deps.sessionId, this.deps.solutionId, key, value)
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        this.logger.error(
-          `setState persistence failed for ${this.deps.sessionId}/${key}: ${msg}`,
-        );
+
+    // Spurious-set guard: when the new value is structurally identical
+    // (Object.is), suppress both persistence and listener notification.
+    // Prevents thrashing when callers re-assert the same value.
+    if (!Object.is(before, value)) {
+      const key = stateKey(this.deps.manifest.name, apiName);
+      // Fire-and-forget persistence. Failure is logged but not surfaced
+      // to the caller because the sync interface has no error channel.
+      void this.deps.metadata
+        .put(this.deps.sessionId, this.deps.solutionId, key, value)
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.logger.error(
+            `setState persistence failed for ${this.deps.sessionId}/${key}: ${msg}`,
+          );
+        });
+      // Notify state-change listeners synchronously. Listeners catch
+      // their own errors via fireStateChange (the service method).
+      this.deps.fireStateChange({
+        sessionId: this.deps.sessionId,
+        solutionId: this.deps.solutionId,
+        manifestName: this.deps.manifest.name,
+        path: apiName,
+        before,
+        after: value,
       });
+    }
   }
 
   getSlot<T = unknown>(apiName: string): T | readonly T[] | null {
