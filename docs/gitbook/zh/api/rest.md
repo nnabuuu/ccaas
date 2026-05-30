@@ -1382,3 +1382,25 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 ### GET /scheduled-tasks/:id/executions/:execId
 
 获取执行详情（结果文本、Token 用量、耗时、错误信息）。
+
+## Workflow（Ontology & Workflow 层）
+
+Phase 5 引入的声明式工作流层。Solution 通过这一组 endpoint 推事件、注册 indicator 目录、拉 dashboard、信号 session 结束。详细 wire shape + 鉴权 + 出错处理见 [Ontology & Workflow — 跨进程事件推送](../ontology/cross-process-events.md)。
+
+| Method | 路径 | 用途 |
+|---|---|---|
+| `POST` | `/api/v1/workflow/sessions/:sessionId/events` | 跨进程事件 ingest（dedup via eventId） |
+| `PUT` | `/api/v1/workflow/sessions/:sessionId/indicators` | 注册 session indicator 目录 |
+| `DELETE` | `/api/v1/workflow/sessions/:sessionId` | session-end teardown（清 indicator + engine queue） |
+| `GET` | `/api/v1/workflow/sessions/:sessionId/observation-dashboard` | dashboard（legacy projector shape） |
+| `GET` | `/api/v1/workflow/sessions/:sessionId/dashboard` | dashboard（新 ontology-native shape） |
+
+所有 endpoint 都需 `Authorization: Bearer <chat-scope key>`，并通过 `@TenantId()` 解析出 solutionId（缺失返回 400）。
+
+## Ontology Schema
+
+| Method | 路径 | 用途 |
+|---|---|---|
+| `GET` | `/api/v1/ontology/schema` | 整个 ontology 的 JSON Schema 投影 + ETag/304 |
+
+详见 [Ontology & Workflow — Schema 原语](../ontology/schema-primitives.md) §序列化 + 投影。

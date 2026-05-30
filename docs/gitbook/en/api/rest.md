@@ -1380,3 +1380,25 @@ List execution history for a task.
 ### GET /scheduled-tasks/:id/executions/:execId
 
 Get execution detail (result text, token usage, duration, error message).
+
+## Workflow (Ontology & Workflow Layer)
+
+Phase 5 introduced a declarative workflow layer. A Solution uses this group of endpoints to push events, register the indicator catalog, fetch the dashboard, and signal session-end. Full wire shape + auth + error handling: [Ontology & Workflow — Cross-Process Events](../ontology/cross-process-events.md).
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/workflow/sessions/:sessionId/events` | Cross-process event ingest (dedup via eventId) |
+| `PUT` | `/api/v1/workflow/sessions/:sessionId/indicators` | Register session indicator catalog |
+| `DELETE` | `/api/v1/workflow/sessions/:sessionId` | Session-end teardown (frees indicators + engine queue) |
+| `GET` | `/api/v1/workflow/sessions/:sessionId/observation-dashboard` | Dashboard (legacy projector shape) |
+| `GET` | `/api/v1/workflow/sessions/:sessionId/dashboard` | Dashboard (new ontology-native shape) |
+
+All endpoints require `Authorization: Bearer <chat-scope key>` and resolve a solutionId via `@TenantId()` (400 if missing).
+
+## Ontology Schema
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/ontology/schema` | JSON Schema projection of the entire ontology + ETag/304 |
+
+See [Ontology & Workflow — Schema Primitives](../ontology/schema-primitives.md) §Serialization + projection.

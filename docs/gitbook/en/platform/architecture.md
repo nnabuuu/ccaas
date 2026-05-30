@@ -90,6 +90,7 @@ Each Solution can:
 - Write customized Skills
 - Build an independent frontend interface
 - Leverage all platform capabilities
+- **(Opt-in)** Describe domain types with the ontology + declare workflows with TriggerDef so the platform WorkflowEngine dispatches them automatically. See the [Ontology & Workflow](../ontology/README.md) chapter.
 
 ## Data Flow
 
