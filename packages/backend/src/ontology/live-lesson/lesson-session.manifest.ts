@@ -38,9 +38,9 @@ import {
  * (+ optional `taskNum`), and three system event variants used by
  * DiscussService / TranslateService / AiAskService.
  *
- * M4 will add `student_status_changed` (cascade target for the
- * StatusChangeHandler rewrite). Don't add it until then — the
- * discriminator union is exhaustive in current use.
+ * M4 adds `chat_turn` (LLM-driven indicator classification handler)
+ * and `student_observation_changed` (cascade signal published when an
+ * observation row is added — drives the M4 StatusChangeHandler).
  */
 const EventPayloadSchema = z.discriminatedUnion('type', [
   z.object({
@@ -76,6 +76,34 @@ const EventPayloadSchema = z.discriminatedUnion('type', [
     type: z.literal('continue_chat_turn'),
     studentId: z.string(),
     step: z.number().int().nonnegative().optional(),
+  }),
+  /**
+   * M4 — chat_turn: emitted by DiscussService/AiAskService/etc when a
+   * round of student↔AI dialogue happens. ChatTurnHandler classifies
+   * the turn against indicators + appends an indicator_hit observation.
+   */
+  z.object({
+    type: z.literal('chat_turn'),
+    studentId: z.string(),
+    step: z.number().int().nonnegative().optional(),
+    student: z.string(),
+    ai: z.string(),
+    /** Optional taskNum for legacy compat; ChatTurnHandler doesn't read it. */
+    taskNum: z.number().int().nonnegative().optional(),
+    /** Optional round counter from the discuss flow. */
+    round: z.number().int().nonnegative().optional(),
+  }),
+  /**
+   * M4 — student_observation_changed: cascade signal. ChatTurnHandler
+   * publishes this AFTER writing an indicator_hit observation. The
+   * StatusChangeHandler watches this stream to re-derive student_status.
+   * Cross-process: published in-process from the platform action
+   * handler (NOT pushed via the live-lesson outbox).
+   */
+  z.object({
+    type: z.literal('student_observation_changed'),
+    studentId: z.string(),
+    trigger: z.string(),
   }),
 ]);
 
